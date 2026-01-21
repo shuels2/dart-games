@@ -35,6 +35,24 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # State management
+  provider: ^6.1.1
+
+  # HTTP requests for API calls
+  http: ^1.1.0
+
+  # Secure storage for bearer token
+  flutter_secure_storage: ^9.0.0
+
+  # Simple local storage
+  shared_preferences: ^2.2.2
+
+  # URL launcher for OAuth redirect
+  url_launcher: ^6.2.2
+
+  # WebView for OAuth (alternative)
+  webview_flutter: ^4.4.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
