@@ -50,6 +50,21 @@ class AuthService {
     await _storageService.clearAll();
   }
 
+  // Login with username and password
+  Future<String?> loginWithCredentials(String username, String password) async {
+    try {
+      final loginData = await _apiService.login(username, password);
+      final token = loginData['bearerToken'] as String;
+
+      // Save token to secure storage
+      await _storageService.saveBearerToken(token);
+
+      return token;
+    } catch (e) {
+      return null;
+    }
+  }
+
   // OAuth login (placeholder for future implementation)
   // This would open a WebView or browser to Scolia's OAuth login page
   // and capture the bearer token from the callback

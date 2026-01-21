@@ -63,6 +63,35 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // Login with username and password
+  Future<bool> login(String username, String password) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final token = await _authService.loginWithCredentials(username, password);
+
+      if (token != null) {
+        _isAuthenticated = true;
+        _bearerToken = token;
+        _error = null;
+        return true;
+      }
+
+      _error = 'Invalid username or password';
+      _isAuthenticated = false;
+      return false;
+    } catch (e) {
+      _error = 'Login failed: ${e.toString()}';
+      _isAuthenticated = false;
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Login with OAuth (future implementation)
   Future<bool> loginWithOAuth() async {
     _isLoading = true;

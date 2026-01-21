@@ -14,12 +14,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _tokenController = TextEditingController();
-  bool _obscureToken = true;
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _tokenController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -31,7 +33,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = context.read<AuthProvider>();
     final wizardProvider = context.read<SetupWizardProvider>();
 
-    final success = await authProvider.setToken(_tokenController.text.trim());
+    final success = await authProvider.login(
+      _usernameController.text.trim(),
+      _passwordController.text,
+    );
 
     if (!mounted) return;
 
@@ -41,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.error ?? 'Invalid bearer token'),
+          content: Text(authProvider.error ?? 'Login failed'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -86,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Connect Your Scolia Account',
+                  'Sign In to Scolia',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -94,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Enter your Scolia bearer token to connect your account. You can find this token in your Scolia account settings.',
+                  'Enter your Scolia account credentials to continue',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -102,31 +107,50 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
                 TextFormField(
-                  controller: _tokenController,
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Username or Email',
+                    hintText: 'Enter your username or email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your username or email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
                   decoration: InputDecoration(
-                    labelText: 'Bearer Token',
-                    hintText: 'Paste your bearer token here',
+                    labelText: 'Password',
+                    hintText: 'Enter your password',
                     border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.key),
+                    prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureToken ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
-                          _obscureToken = !_obscureToken;
+                          _obscurePassword = !_obscurePassword;
                         });
                       },
                     ),
                   ),
-                  obscureText: _obscureToken,
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _handleLogin(),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your bearer token';
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
                     }
                     return null;
                   },
-                  maxLines: 1,
                 ),
                 const SizedBox(height: 24),
                 Container(
@@ -145,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Your token is stored securely and never shared.',
+                          'Your credentials are stored securely and never shared.',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onPrimaryContainer,
                           ),
@@ -156,9 +180,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
                 CustomButton(
-                  text: 'Continue',
+                  text: 'Sign In',
                   onPressed: authProvider.isLoading ? null : _handleLogin,
                   isLoading: authProvider.isLoading,
+                  icon: Icons.login,
                 ),
                 const SizedBox(height: 16),
                 CustomButton(

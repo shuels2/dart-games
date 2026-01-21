@@ -5,6 +5,40 @@ import '../models/dartboard.dart';
 class ScoliaApiService {
   static const String baseUrl = 'https://game.scoliadarts.com';
 
+  // Login with username and password to get bearer token
+  Future<Map<String, dynamic>> login(String username, String password) async {
+    final url = Uri.parse('$baseUrl/api/social/auth/login');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'username': username,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'bearerToken': data['accessToken'] ?? data['bearerToken'] ?? data['token'],
+          'userId': data['userId'],
+          'email': data['email'] ?? username,
+        };
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw Exception('Invalid username or password');
+      } else {
+        throw Exception('Login failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: $e');
+    }
+  }
+
   // Get all boards connected to the account
   Future<List<Dartboard>> getBoards(String bearerToken) async {
     final url = Uri.parse('$baseUrl/api/social/boards');
