@@ -12,6 +12,7 @@ import '../../../widgets/horse_race/player_avatar_widget.dart';
 import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
 import '../../../services/dart_announcer_service.dart';
+import '../../../services/victory_music_service.dart';
 import 'horse_race_menu_screen.dart';
 import 'horse_race_game_screen.dart';
 
@@ -67,15 +68,22 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
 
   void _playVictoryMusic() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final customMusicPath = prefs.getString('victory_music_path');
+      final musicService = VictoryMusicService();
+      final customMusicSource = await musicService.getMusicSource();
 
       await _audioPlayer.setVolume(0.7);
 
-      if (customMusicPath != null && customMusicPath.isNotEmpty) {
-        // Play custom music file
-        await _audioPlayer.play(DeviceFileSource(customMusicPath));
-        debugPrint('Playing custom victory music: $customMusicPath');
+      if (customMusicSource != null && customMusicSource.isNotEmpty) {
+        // Check if it's a data URL (from web file picker) or a file path
+        if (customMusicSource.startsWith('data:')) {
+          // Play from data URL (web)
+          await _audioPlayer.play(UrlSource(customMusicSource));
+          debugPrint('Playing custom victory music from data URL');
+        } else {
+          // Play from file path (native platforms)
+          await _audioPlayer.play(DeviceFileSource(customMusicSource));
+          debugPrint('Playing custom victory music: $customMusicSource');
+        }
       } else {
         // Play default victory fanfare
         await _audioPlayer.play(UrlSource(

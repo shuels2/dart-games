@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/dart_announcer_service.dart';
 import '../services/app_settings.dart';
+import '../services/victory_music_service.dart';
 import 'test_dartboard_screen.dart';
 
 class OptionsScreen extends StatefulWidget {
@@ -18,14 +20,15 @@ class OptionsScreen extends StatefulWidget {
 }
 
 class _OptionsScreenState extends State<OptionsScreen> {
-  late VoiceEngine _voiceEngine;
-  late AnnouncerVoice _selectedVoice;
-  late String _selectedSystemVoice;
-  late String _selectedResponsiveVoice;
+  VoiceEngine _voiceEngine = VoiceEngine.responsiveVoice;
+  AnnouncerVoice _selectedVoice = AnnouncerVoice.professional;
+  String _selectedSystemVoice = '';
+  String _selectedResponsiveVoice = 'Australian Female';
   List<dynamic> _systemVoices = [];
   bool _responsiveVoiceReady = false;
   bool _isSaving = false;
   String? _victoryMusicPath;
+  String? _victoryMusicName;
 
   @override
   void initState() {
@@ -81,9 +84,19 @@ class _OptionsScreenState extends State<OptionsScreen> {
       // Load ResponsiveVoice
       _selectedResponsiveVoice = prefs.getString('responsive_voice') ?? 'Australian Female';
 
-      // Load victory music path
-      _victoryMusicPath = prefs.getString('victory_music_path');
     });
+
+    // Load victory music from service
+    final musicService = VictoryMusicService();
+    final hasMusic = await musicService.hasCustomMusic();
+    if (hasMusic) {
+      final musicName = await musicService.getMusicName();
+      final musicSource = await musicService.getMusicSource();
+      setState(() {
+        _victoryMusicPath = musicSource;
+        _victoryMusicName = musicName;
+      });
+    }
 
     // Apply loaded settings to announcer
     _applySettings();
@@ -101,6 +114,9 @@ class _OptionsScreenState extends State<OptionsScreen> {
     await prefs.setString('responsive_voice', _selectedResponsiveVoice);
     if (_victoryMusicPath != null) {
       await prefs.setString('victory_music_path', _victoryMusicPath!);
+    }
+    if (_victoryMusicName != null) {
+      await prefs.setString('victory_music_name', _victoryMusicName!);
     }
 
     setState(() {
@@ -164,29 +180,66 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
   Future<void> _selectVictoryMusic() async {
     try {
+      // WMA is not supported in web browsers, only allow web-compatible formats
+      final allowedExtensions = kIsWeb
+          ? ['mp3', 'wav', 'ogg', 'aac']
+          : ['mp3', 'wav', 'wma', 'ogg', 'aac'];
+
+      debugPrint('Opening file picker...');
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['mp3', 'wav', 'wma'],
-        withData: false,
+        allowedExtensions: allowedExtensions,
+        withData: kIsWeb, // Get bytes on web since paths aren't available
         withReadStream: false,
       );
 
-      if (result != null && result.files.single.path != null) {
+      debugPrint('File picker result: $result');
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.single;
+        final fileName = file.name;
+        final fileSize = file.size;
+        final hasBytes = file.bytes != null;
+
+        debugPrint('Selected file: $fileName, size: $fileSize, hasBytes: $hasBytes');
+
+        if (kIsWeb && file.bytes == null) {
+          throw Exception('Could not read file bytes. Please try again.');
+        }
+
+        // Use the VictoryMusicService to save the music
+        debugPrint('Saving music...');
+        final musicService = VictoryMusicService();
+        await musicService.saveMusic(
+          fileName: fileName,
+          filePath: kIsWeb ? null : file.path, // path not available on web
+          fileBytes: file.bytes,
+        );
+
+        debugPrint('Music saved, getting source...');
+        // Get the saved source for local state
+        final musicSource = await musicService.getMusicSource();
+
+        debugPrint('Music source retrieved: ${musicSource != null ? 'yes' : 'no'}');
+
         setState(() {
-          _victoryMusicPath = result.files.single.path!;
+          _victoryMusicPath = musicSource;
+          _victoryMusicName = fileName;
         });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Victory music selected: ${result.files.single.name}'),
+              content: Text('Victory music saved: $fileName'),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 2),
             ),
           );
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Error selecting file: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -199,18 +252,24 @@ class _OptionsScreenState extends State<OptionsScreen> {
     }
   }
 
-  void _clearVictoryMusic() {
+  void _clearVictoryMusic() async {
+    final musicService = VictoryMusicService();
+    await musicService.clearMusic();
+
     setState(() {
       _victoryMusicPath = null;
+      _victoryMusicName = null;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Victory music cleared. Default music will be used.'),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Victory music cleared. Default music will be used.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -509,7 +568,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                _victoryMusicPath!.split('\\').last,
+                                _victoryMusicName ?? 'Custom music file',
                                 style: const TextStyle(fontSize: 12),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -567,7 +626,9 @@ class _OptionsScreenState extends State<OptionsScreen> {
                         child: ElevatedButton.icon(
                           onPressed: _selectVictoryMusic,
                           icon: const Icon(Icons.folder_open),
-                          label: const Text('Select Music File (MP3, WAV, WMA)'),
+                          label: Text(kIsWeb
+                              ? 'Select Music File (MP3, WAV, OGG)'
+                              : 'Select Music File (MP3, WAV, WMA)'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.amber,
                             padding: const EdgeInsets.symmetric(vertical: 12),

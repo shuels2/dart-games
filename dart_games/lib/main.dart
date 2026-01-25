@@ -61,7 +61,7 @@ class DartGamesApp extends StatelessWidget {
               shadowColor: Colors.black45,
             ),
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             elevation: 4,
             shadowColor: Colors.black26,
             shape: RoundedRectangleBorder(
