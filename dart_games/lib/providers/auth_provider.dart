@@ -92,6 +92,35 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // Login with Google account
+  Future<bool> loginWithGoogle() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final token = await _authService.loginWithGoogle();
+
+      if (token != null) {
+        _isAuthenticated = true;
+        _bearerToken = token;
+        _error = null;
+        return true;
+      }
+
+      _error = 'Google login failed';
+      _isAuthenticated = false;
+      return false;
+    } catch (e) {
+      _error = e.toString();
+      _isAuthenticated = false;
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Login with OAuth (future implementation)
   Future<bool> loginWithOAuth() async {
     _isLoading = true;

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'providers/auth_provider.dart';
 import 'providers/dartboard_provider.dart';
-import 'providers/setup_wizard_provider.dart';
+import 'providers/player_provider.dart';
+import 'providers/horse_race_provider.dart';
 import 'screens/splash_screen.dart';
-import 'screens/setup_wizard/welcome_screen.dart';
-import 'screens/setup_wizard/login_screen.dart';
-import 'screens/setup_wizard/register_board_screen.dart';
+import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -20,9 +18,9 @@ class DartGamesApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DartboardProvider()),
-        ChangeNotifierProvider(create: (_) => SetupWizardProvider()),
+        ChangeNotifierProvider(create: (_) => PlayerProvider()),
+        ChangeNotifierProvider(create: (_) => HorseRaceProvider()),
       ],
       child: MaterialApp(
         title: 'Dart Games',
@@ -106,9 +104,7 @@ class DartGamesApp extends StatelessWidget {
         initialRoute: '/',
         routes: {
           '/': (context) => const SplashScreen(),
-          '/welcome': (context) => const WelcomeScreen(),
-          '/login': (context) => const LoginScreen(),
-          '/register-board': (context) => const RegisterBoardScreen(),
+          '/dartboard-setup': (context) => const DartboardSetupScreen(),
           '/home': (context) => const HomeScreen(),
         },
       ),

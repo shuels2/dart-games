@@ -1,18 +1,126 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../providers/dartboard_provider.dart';
-import '../providers/setup_wizard_provider.dart';
+import '../services/dart_announcer_service.dart';
+import '../widgets/dartboard_status_indicator.dart';
+import '../widgets/compact_dartboard_info.dart';
+import 'test_dartboard_screen.dart';
+import 'options_screen.dart';
+import 'games/carnival_horse_race/horse_race_menu_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  Future<void> _handleLogout(BuildContext context) async {
-    final shouldLogout = await showDialog<bool>(
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final DartAnnouncerService _announcer = DartAnnouncerService();
+
+  @override
+  void dispose() {
+    _announcer.dispose();
+    super.dispose();
+  }
+
+
+  Widget _buildGameCard({
+    required BuildContext context,
+    IconData? icon,
+    String? imageAssetPath,
+    required String title,
+    required Color color,
+    required VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
+    final isDisabled = onTap == null;
+
+    // If image asset is provided, use simple icon layout
+    if (imageAssetPath != null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Opacity(
+                  opacity: isDisabled ? 0.5 : 1.0,
+                  child: Image.asset(
+                    imageAssetPath,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Default card layout for icon-based games
+    return Card(
+      elevation: isDisabled ? 1 : 4,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: isDisabled
+                ? null
+                : LinearGradient(
+                    colors: [
+                      color.withOpacity(0.7),
+                      color.withOpacity(0.9),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon ?? Icons.games,
+                size: 48,
+                color: isDisabled ? Colors.grey : Colors.white,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: isDisabled ? Colors.grey : Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleDisconnect(BuildContext context) async {
+    final shouldDisconnect = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout? You will need to set up the app again.'),
+        title: const Text('Disconnect Dartboard'),
+        content: const Text('Are you sure you want to disconnect? You will need to set up the dartboard again.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -20,20 +128,16 @@ class HomeScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Logout'),
+            child: const Text('Disconnect'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
           ),
         ],
       ),
     );
 
-    if (shouldLogout == true && context.mounted) {
-      final authProvider = context.read<AuthProvider>();
+    if (shouldDisconnect == true && context.mounted) {
       final dartboardProvider = context.read<DartboardProvider>();
-      final wizardProvider = context.read<SetupWizardProvider>();
-
-      await authProvider.logout();
       await dartboardProvider.clearDartboard();
-      await wizardProvider.resetWizard();
 
       if (context.mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
@@ -50,110 +154,104 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Dart Games'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _handleLogout(context),
-            tooltip: 'Logout',
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: CompactDartboardInfo(provider: dartboardProvider),
           ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.check_circle_outline,
-                size: 100,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'Setup Complete!',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Your Scolia account is connected.',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              if (dartboardProvider.dartboard != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(16),
+          const Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: DartboardStatusIndicator(),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Menu',
+            onSelected: (value) {
+              if (value == 'options') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => OptionsScreen(announcer: _announcer),
                   ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.developer_board,
-                        size: 48,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Connected Dartboard',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        dartboardProvider.dartboard!.name,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'S/N: ${dartboardProvider.dartboard!.serialNumber}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 48),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                );
+              } else if (value == 'disconnect') {
+                _handleDisconnect(context);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'options',
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.construction,
-                      color: theme.colorScheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Game features coming soon! Your setup is complete and ready.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.8),
-                        ),
-                      ),
-                    ),
+                    Icon(Icons.settings),
+                    SizedBox(width: 12),
+                    Text('Options'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'disconnect',
+                child: Row(
+                  children: [
+                    Icon(Icons.link_off, color: Colors.red),
+                    SizedBox(width: 12),
+                    Text('Disconnect Dartboard'),
                   ],
                 ),
               ),
             ],
           ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Games',
+              style: theme.textTheme.headlineLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                SizedBox(
+                  width: 315,
+                  height: 350,
+                  child: _buildGameCard(
+                    context: context,
+                    imageAssetPath: 'assets/icon/icon.png',
+                    title: 'Carnival\nDerby',
+                    color: Colors.amber,
+                    onTap: dartboardProvider.canPlayGames
+                        ? () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const HorseRaceMenuScreen(),
+                              ),
+                            );
+                          }
+                        : null,
+                  ),
+                ),
+                SizedBox(
+                  width: 315,
+                  height: 350,
+                  child: _buildGameCard(
+                    context: context,
+                    icon: Icons.casino,
+                    title: 'More Games\nComing Soon',
+                    color: Colors.grey,
+                    onTap: null,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

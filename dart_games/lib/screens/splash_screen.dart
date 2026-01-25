@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../providers/dartboard_provider.dart';
-import '../providers/setup_wizard_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,40 +17,23 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkSetupStatus() async {
-    final authProvider = context.read<AuthProvider>();
     final dartboardProvider = context.read<DartboardProvider>();
-    final wizardProvider = context.read<SetupWizardProvider>();
 
     // Small delay for splash effect
     await Future.delayed(const Duration(seconds: 1));
 
-    // Check authentication status
-    await authProvider.checkAuthStatus();
+    // Load dartboard configuration
+    await dartboardProvider.loadConfiguration();
 
     if (!mounted) return;
 
-    // If not authenticated, go to setup wizard
-    if (!authProvider.isAuthenticated) {
-      Navigator.of(context).pushReplacementNamed('/welcome');
-      return;
-    }
-
-    // If authenticated, check dartboard status
-    await dartboardProvider.checkDartboardStatus(authProvider.bearerToken!);
-
-    if (!mounted) return;
-
-    // If no dartboard registered, go to dartboard registration
+    // If no dartboard configured, go to setup screen
     if (!dartboardProvider.isRegistered) {
-      // Skip to dartboard registration step
-      wizardProvider.goToStep(2);
-      Navigator.of(context).pushReplacementNamed('/register-board');
+      Navigator.of(context).pushReplacementNamed('/dartboard-setup');
       return;
     }
 
-    // If everything is set up, go to home
-    await wizardProvider.completeSetup();
-    if (!mounted) return;
+    // If dartboard is configured, go to home
     Navigator.of(context).pushReplacementNamed('/home');
   }
 

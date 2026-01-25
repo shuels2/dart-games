@@ -16,6 +16,7 @@ class RegisterBoardScreen extends StatefulWidget {
 class _RegisterBoardScreenState extends State<RegisterBoardScreen> {
   final _formKey = GlobalKey<FormState>();
   final _serialController = TextEditingController();
+  bool _showEmulatorOption = false;
 
   @override
   void dispose() {
@@ -55,6 +56,10 @@ class _RegisterBoardScreenState extends State<RegisterBoardScreen> {
 
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
+      setState(() {
+        _showEmulatorOption = true;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(dartboardProvider.error ?? 'Failed to register dartboard'),
@@ -62,6 +67,17 @@ class _RegisterBoardScreenState extends State<RegisterBoardScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _handleUseEmulator() async {
+    final dartboardProvider = context.read<DartboardProvider>();
+    final wizardProvider = context.read<SetupWizardProvider>();
+
+    await dartboardProvider.useEmulatorMode();
+    await wizardProvider.completeSetup();
+
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   @override
@@ -181,6 +197,53 @@ class _RegisterBoardScreenState extends State<RegisterBoardScreen> {
                   onPressed: dartboardProvider.isLoading ? null : _handleRegister,
                   isLoading: dartboardProvider.isLoading,
                 ),
+                if (_showEmulatorOption) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.error.withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.warning_amber,
+                              color: theme.colorScheme.error,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Connection Failed',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: theme.colorScheme.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Unable to connect to dartboard. You can continue with the emulator for testing.',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  CustomButton(
+                    text: 'Use Dartboard Emulator',
+                    onPressed: dartboardProvider.isLoading ? null : _handleUseEmulator,
+                    isOutlined: true,
+                  ),
+                ],
                 const SizedBox(height: 16),
                 CustomButton(
                   text: 'Back',

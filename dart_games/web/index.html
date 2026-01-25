@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Carnival Derby - Play Horse Race dart games with your Scolia dartboard">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Carnival Derby">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/Icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/Icon-512.png"/>
+  <title>Carnival Derby</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="google_sign_in_helper.js"></script>
+
+  <!-- ResponsiveVoice for natural text-to-speech -->
+  <script src="https://code.responsivevoice.org/responsivevoice.js?key=T5FY9Jio"></script>
+
+  <script>
+    // Wait for ResponsiveVoice to be ready
+    window.responsiveVoiceReady = false;
+
+    // Check if ResponsiveVoice is loaded
+    function checkResponsiveVoice() {
+      if (typeof responsiveVoice !== 'undefined' && responsiveVoice.voiceSupport()) {
+        console.log('ResponsiveVoice loaded and ready');
+        window.responsiveVoiceReady = true;
+      } else {
+        console.log('Waiting for ResponsiveVoice...');
+        setTimeout(checkResponsiveVoice, 100);
+      }
+    }
+
+    // Start checking when DOM is loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkResponsiveVoice);
+    } else {
+      checkResponsiveVoice();
+    }
+  </script>
+
+  <script>
+    // This will be set to your service worker version if configured.
+    // The service worker cache will be purged if _flutter.serviceWorkerVersion_ changes.
+    var serviceWorkerVersion = null;
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</head>
+<body>
+</body>
+</html>

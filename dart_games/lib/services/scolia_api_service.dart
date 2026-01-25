@@ -39,6 +39,39 @@ class ScoliaApiService {
     }
   }
 
+  // Login with Google OAuth token to get Scolia bearer token
+  Future<Map<String, dynamic>> loginWithGoogle(String googleIdToken) async {
+    final url = Uri.parse('$baseUrl/api/social/auth/google');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'idToken': googleIdToken,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'bearerToken': data['accessToken'] ?? data['bearerToken'] ?? data['token'],
+          'userId': data['userId'],
+          'email': data['email'],
+        };
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw Exception('Google authentication failed');
+      } else {
+        throw Exception('Login failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: $e');
+    }
+  }
+
   // Get all boards connected to the account
   Future<List<Dartboard>> getBoards(String bearerToken) async {
     final url = Uri.parse('$baseUrl/api/social/boards');

@@ -1,0 +1,5 @@
+{
+  "googleApiKey": "PASTE_YOUR_GOOGLE_API_KEY_HERE",
+  "voiceEngine": "google",
+  "googleVoiceName": "en-US-Neural2-D"
+}
