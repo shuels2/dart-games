@@ -310,15 +310,18 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                 horseRaceProvider,
               ),
 
-              // Takeout prompt banner (only show when using emulator)
-              if (shouldPromptTakeout && !dartboardProvider.isConnected)
-                _buildTakeoutPrompt(),
-
-              // Race track
+              // Race track with optional modal overlay
               Expanded(
-                child: RaceTrackWidget(
-                  players: players,
-                  targetScore: currentGame.targetScore,
+                child: Stack(
+                  children: [
+                    RaceTrackWidget(
+                      players: players,
+                      targetScore: currentGame.targetScore,
+                    ),
+                    // Modal overlay for remove darts prompt
+                    if (shouldPromptTakeout && !dartboardProvider.isConnected)
+                      _buildRemoveDartsModal(currentPlayer),
+                  ],
                 ),
               ),
 
@@ -407,27 +410,55 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     );
   }
 
-  Widget _buildTakeoutPrompt() {
+  Widget _buildRemoveDartsModal(Player? currentPlayer) {
+    final playerName = currentPlayer?.name ?? 'Player';
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-      decoration: const BoxDecoration(
-        color: Colors.red,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.warning, color: Colors.white),
-          const SizedBox(width: 8),
-          const Text(
-            'REMOVE YOUR DARTS',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+      color: Colors.black.withOpacity(0.7),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(32),
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 48),
+          decoration: BoxDecoration(
+            color: Colors.red[700],
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.pan_tool,
+                color: Colors.white,
+                size: 64,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                playerName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Remove Your Darts',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
