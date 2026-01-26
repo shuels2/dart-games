@@ -543,6 +543,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                     final currentGame = horseRaceProvider.currentGame;
                     final playerIds = currentGame?.playerIds ?? [];
                     final targetScore = currentGame?.targetScore ?? 150;
+                    final exactScoreMode = currentGame?.exactScoreMode ?? false;
 
                     // Clear game and go back to menu with preselected values
                     horseRaceProvider.clearGame();
@@ -552,6 +553,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                         builder: (context) => HorseRaceMenuScreen(
                           preselectedPlayerIds: playerIds,
                           initialTargetScore: targetScore,
+                          initialExactScoreMode: exactScoreMode,
                         ),
                       ),
                       (route) => route.isFirst,

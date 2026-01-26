@@ -15,11 +15,13 @@ import 'horse_race_game_screen.dart';
 class HorseRaceMenuScreen extends StatefulWidget {
   final List<String>? preselectedPlayerIds;
   final int? initialTargetScore;
+  final bool? initialExactScoreMode;
 
   const HorseRaceMenuScreen({
     super.key,
     this.preselectedPlayerIds,
     this.initialTargetScore,
+    this.initialExactScoreMode,
   });
 
   @override
@@ -35,6 +37,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
   void initState() {
     super.initState();
     _targetScore = widget.initialTargetScore?.toDouble() ?? 150;
+    _exactScoreMode = widget.initialExactScoreMode ?? false;
 
     // Load players when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
