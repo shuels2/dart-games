@@ -46,7 +46,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
     );
 
     _confettiController = ConfettiController(
-      duration: const Duration(seconds: 5),
+      duration: const Duration(hours: 1), // Keep confetti going until user leaves
     );
 
     _animationController.forward();

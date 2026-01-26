@@ -152,7 +152,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dart Games'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 40,
+              width: 40,
+            ),
+            const SizedBox(width: 12),
+            const Text('Dart Games'),
+          ],
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),

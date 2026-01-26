@@ -301,7 +301,17 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('⚙️ Options'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 40,
+              width: 40,
+            ),
+            const SizedBox(width: 12),
+            const Text('⚙️ Options'),
+          ],
+        ),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
       ),

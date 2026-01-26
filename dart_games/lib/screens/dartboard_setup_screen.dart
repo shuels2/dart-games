@@ -109,7 +109,17 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dartboard Setup'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 40,
+              width: 40,
+            ),
+            const SizedBox(width: 12),
+            const Text('Dartboard Setup'),
+          ],
+        ),
         backgroundColor: theme.colorScheme.primary,
       ),
       body: Center(
