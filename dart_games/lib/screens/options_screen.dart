@@ -107,40 +107,57 @@ class _OptionsScreenState extends State<OptionsScreen> {
       _isSaving = true;
     });
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('voice_engine', _voiceEngine.name);
-    await prefs.setString('announcer_style', _selectedVoice.name);
-    await prefs.setString('system_voice', _selectedSystemVoice);
-    await prefs.setString('responsive_voice', _selectedResponsiveVoice);
-    if (_victoryMusicPath != null) {
-      await prefs.setString('victory_music_path', _victoryMusicPath!);
-    }
-    if (_victoryMusicName != null) {
-      await prefs.setString('victory_music_name', _victoryMusicName!);
-    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('voice_engine', _voiceEngine.name);
+      await prefs.setString('announcer_style', _selectedVoice.name);
+      await prefs.setString('system_voice', _selectedSystemVoice);
+      await prefs.setString('responsive_voice', _selectedResponsiveVoice);
+      // Only save victory music to SharedPreferences on native platforms
+      // On web, it's stored in IndexedDB by VictoryMusicService (base64 data is too large for localStorage)
+      if (!kIsWeb) {
+        if (_victoryMusicPath != null) {
+          await prefs.setString('victory_music_path', _victoryMusicPath!);
+        }
+        if (_victoryMusicName != null) {
+          await prefs.setString('victory_music_name', _victoryMusicName!);
+        }
+      }
 
-    setState(() {
-      _isSaving = false;
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Default voice settings saved!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Default voice settings saved!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving settings: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
   void _applySettings() {
-    widget.announcer.setVoice(_selectedVoice);
-
     if (_voiceEngine == VoiceEngine.responsiveVoice) {
       widget.announcer.useResponsiveVoice();
       widget.announcer.setResponsiveVoice(_selectedResponsiveVoice);
     } else {
+      widget.announcer.setVoice(_selectedVoice);
       widget.announcer.useBrowserVoices();
       if (_selectedSystemVoice.isNotEmpty) {
         widget.announcer.setSystemVoice(_selectedSystemVoice);
@@ -149,16 +166,22 @@ class _OptionsScreenState extends State<OptionsScreen> {
   }
 
   void _testVoice() {
+    // Apply current settings before testing
+    _applySettings();
     widget.announcer.speak('The quick brown fox jumped over the lazy dog');
   }
 
   void _checkResponsiveVoice() {
+    final isReady = widget.announcer.isResponsiveVoiceReady();
+
     setState(() {
-      _responsiveVoiceReady = widget.announcer.isResponsiveVoiceReady();
+      _responsiveVoiceReady = isReady;
+      if (isReady) {
+        _voiceEngine = VoiceEngine.responsiveVoice;
+      }
     });
 
-    if (_responsiveVoiceReady) {
-      _voiceEngine = VoiceEngine.responsiveVoice;
+    if (isReady) {
       _applySettings();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -473,52 +496,87 @@ class _OptionsScreenState extends State<OptionsScreen> {
               ),
             const SizedBox(height: 16),
 
-            // Personality Style
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.sentiment_satisfied),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Announcer Style',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+            // Personality Style (only for browser voices)
+            if (_voiceEngine == VoiceEngine.browser)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.sentiment_satisfied),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Announcer Style',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<AnnouncerVoice>(
-                      value: _selectedVoice,
-                      decoration: const InputDecoration(
-                        labelText: 'Style',
-                        border: OutlineInputBorder(),
+                        ],
                       ),
-                      onChanged: (AnnouncerVoice? newVoice) {
-                        if (newVoice != null) {
-                          setState(() {
-                            _selectedVoice = newVoice;
-                          });
-                          _applySettings();
-                        }
-                      },
-                      items: AnnouncerVoice.values.map((voice) {
-                        return DropdownMenuItem<AnnouncerVoice>(
-                          value: voice,
-                          child: Text(voice.displayName),
-                        );
-                      }).toList(),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<AnnouncerVoice>(
+                        value: _selectedVoice,
+                        decoration: const InputDecoration(
+                          labelText: 'Style',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (AnnouncerVoice? newVoice) {
+                          if (newVoice != null) {
+                            setState(() {
+                              _selectedVoice = newVoice;
+                            });
+                            _applySettings();
+                          }
+                        },
+                        items: AnnouncerVoice.values.map((voice) {
+                          return DropdownMenuItem<AnnouncerVoice>(
+                            value: voice,
+                            child: Text(voice.displayName),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
             const SizedBox(height: 24),
+
+            // Announcer Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _testVoice,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Test Voice'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isSaving ? null : _saveSettings,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save),
+                    label: Text(_isSaving ? 'Saving...' : 'Save as Default'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 48),
 
             // Victory Music Section
             Text(
@@ -639,40 +697,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _testVoice,
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('Test Voice'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isSaving ? null : _saveSettings,
-                    icon: _isSaving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.save),
-                    label: Text(_isSaving ? 'Saving...' : 'Save as Default'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ),
-              ],
             ),
             const SizedBox(height: 48),
 

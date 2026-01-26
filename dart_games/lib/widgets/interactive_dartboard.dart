@@ -19,6 +19,7 @@ class InteractiveDartboard extends StatefulWidget {
 }
 
 class InteractiveDartboardState extends State<InteractiveDartboard> {
+  // Store normalized positions (0.0-1.0) so they scale with dartboard size
   final List<Offset> dartPositions = [];
 
   // Standard dartboard number sequence (clockwise from top)
@@ -50,25 +51,42 @@ class InteractiveDartboardState extends State<InteractiveDartboard> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (details) => _handleTap(details.localPosition),
-      child: CustomPaint(
-        size: Size(widget.size, widget.size),
-        painter: DartboardPainter(dartPositions: List.from(dartPositions)),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Get the actual rendered size (might be smaller than widget.size)
+        final actualSize = math.min(
+          math.min(constraints.maxWidth, constraints.maxHeight),
+          widget.size,
+        );
+
+        return GestureDetector(
+          onTapDown: (details) => _handleTap(details.localPosition, actualSize),
+          child: SizedBox(
+            width: actualSize,
+            height: actualSize,
+            child: CustomPaint(
+              size: Size(actualSize, actualSize),
+              painter: DartboardPainter(
+                dartPositions: List.from(dartPositions),
+                dartboardSize: actualSize,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  void _handleTap(Offset position) {
-    final center = Offset(widget.size / 2, widget.size / 2);
+  void _handleTap(Offset position, double actualSize) {
+    final center = Offset(actualSize / 2, actualSize / 2);
     final dx = position.dx - center.dx;
     final dy = position.dy - center.dy;
     final distance = math.sqrt(dx * dx + dy * dy);
-    final radius = widget.size / 2;
+    final radius = actualSize / 2;
 
-    // Add dart position to the list
+    // Add dart position to the list (normalized to 0.0-1.0 range)
     setState(() {
-      dartPositions.add(position);
+      dartPositions.add(Offset(position.dx / actualSize, position.dy / actualSize));
     });
 
     // Calculate angle from center (atan2 gives angle in radians)
@@ -128,9 +146,13 @@ class InteractiveDartboardState extends State<InteractiveDartboard> {
 
 /// Custom painter for the dartboard
 class DartboardPainter extends CustomPainter {
-  final List<Offset> dartPositions;
+  final List<Offset> dartPositions; // Normalized positions (0.0-1.0)
+  final double dartboardSize;
 
-  const DartboardPainter({this.dartPositions = const []});
+  const DartboardPainter({
+    this.dartPositions = const [],
+    required this.dartboardSize,
+  });
 
   static const List<int> dartboardNumbers = [
     20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5
@@ -301,7 +323,13 @@ class DartboardPainter extends CustomPainter {
     );
 
     // Draw darts on the board
-    for (final dartPos in dartPositions) {
+    for (final normalizedDartPos in dartPositions) {
+      // Denormalize position (convert from 0.0-1.0 to actual pixel coordinates)
+      final dartPos = Offset(
+        normalizedDartPos.dx * dartboardSize,
+        normalizedDartPos.dy * dartboardSize,
+      );
+
       // Draw dart shadow
       final shadowPaint = Paint()
         ..color = Colors.black.withOpacity(0.3)
@@ -330,6 +358,10 @@ class DartboardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant DartboardPainter oldDelegate) {
+    // Repaint if dartboard size changed (for proper dart scaling)
+    if (dartboardSize != oldDelegate.dartboardSize) {
+      return true;
+    }
     // Always repaint if dart positions have changed
     if (dartPositions.length != oldDelegate.dartPositions.length) {
       return true;

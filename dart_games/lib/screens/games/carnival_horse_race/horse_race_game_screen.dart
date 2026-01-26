@@ -200,15 +200,15 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     if (sector == '25') return 25;
     if (sector == 'None') return 0;
 
-    // Extract number from sector (e.g., "D20" -> 20, "T19" -> 19, "S18" -> 18)
-    final match = RegExp(r'[A-Z](\d+)').firstMatch(sector);
+    // Extract number from sector (e.g., "D20" -> 20, "T19" -> 19, "S18" -> 18, "s18" -> 18)
+    final match = RegExp(r'[A-Za-z](\d+)').firstMatch(sector);
     if (match == null) return 0;
 
     final baseScore = int.parse(match.group(1)!);
 
     if (sector.startsWith('D')) return baseScore * 2;
     if (sector.startsWith('T')) return baseScore * 3;
-    if (sector.startsWith('S')) return baseScore;
+    if (sector.startsWith('S') || sector.startsWith('s')) return baseScore;
 
     return 0;
   }
@@ -219,7 +219,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     if (sector == 'None') return 'miss';
     if (sector.startsWith('D')) return 'double';
     if (sector.startsWith('T')) return 'triple';
-    if (sector.startsWith('S')) return 'single';
+    if (sector.startsWith('S') || sector.startsWith('s')) return 'single';
     return 'single';
   }
 
@@ -228,7 +228,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     if (sector == '25') return 25;
     if (sector == 'None') return 0;
 
-    final match = RegExp(r'[A-Z](\d+)').firstMatch(sector);
+    final match = RegExp(r'[A-Za-z](\d+)').firstMatch(sector);
     if (match == null) return 0;
     return int.parse(match.group(1)!);
   }

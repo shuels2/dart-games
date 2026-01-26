@@ -64,9 +64,9 @@ class HorseRaceProvider extends ChangeNotifier {
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
     _currentGame!.recordDartThrow(currentPlayerId, score);
 
-    // Check if this was the 3rd dart
+    // Check if this was the 3rd dart or if there's a winner
     final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3) {
+    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
       _waitingForTakeout = true;
     }
 

@@ -168,7 +168,7 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
                   TextFormField(
                     controller: _serialController,
                     decoration: const InputDecoration(
-                      labelText: 'Serial Number',
+                      labelText: 'Scolia Dartboard Serial Number',
                       hintText: 'ABC-123-XYZ',
                       prefixIcon: Icon(Icons.pin),
                       border: OutlineInputBorder(),
