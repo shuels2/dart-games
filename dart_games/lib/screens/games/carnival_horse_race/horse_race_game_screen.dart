@@ -133,6 +133,34 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       // Process the dart throw
       horseRaceProvider.processDartThrow(score);
 
+      // Check if player busted
+      if (horseRaceProvider.currentPlayerBusted) {
+        // Player busted - announce bust and initiate takeout
+        if (currentPlayer != null) {
+          // Announce the score first
+          _announcer?.announceDart(
+            score,
+            _getMultiplierFromSector(throwData['sector']),
+          );
+
+          // Wait for score announcement to complete (~1.5s) then announce bust
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            _announcer?.speak('${currentPlayer.name} busted and your turn is over');
+
+            // Trigger takeout events
+            Future.delayed(const Duration(milliseconds: 2000), () {
+              _mockApi?.simulateTakeoutStarted();
+
+              // Auto-complete takeout after a short delay
+              Future.delayed(const Duration(milliseconds: 500), () {
+                _mockApi?.simulateTakeoutFinished();
+              });
+            });
+          });
+        }
+        return;
+      }
+
       // Announce the score
       _announcer?.announceDart(
         score,

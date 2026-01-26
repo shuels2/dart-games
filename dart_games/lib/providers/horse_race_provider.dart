@@ -30,12 +30,14 @@ class HorseRaceProvider extends ChangeNotifier {
 
   bool get hasWinner => _currentGame?.hasWinner() ?? false;
 
+  bool get currentPlayerBusted => _currentGame?.currentPlayerBusted ?? false;
+
   Player? getWinner(List<Player> players) {
     return _currentGame?.getWinner(players);
   }
 
   // Start a new game
-  void startGame(List<Player> players, int targetScore) {
+  void startGame(List<Player> players, int targetScore, {bool exactScoreMode = false}) {
     if (players.isEmpty) {
       print('Cannot start game with no players');
       return;
@@ -50,6 +52,7 @@ class HorseRaceProvider extends ChangeNotifier {
     _currentGame = HorseRaceGame.create(
       playerIds: playerIds,
       targetScore: targetScore,
+      exactScoreMode: exactScoreMode,
     );
     _waitingForTakeout = false;
 
@@ -63,6 +66,13 @@ class HorseRaceProvider extends ChangeNotifier {
 
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
     _currentGame!.recordDartThrow(currentPlayerId, score);
+
+    // Check if player busted (in exact score mode)
+    if (_currentGame!.currentPlayerBusted) {
+      _waitingForTakeout = true;
+      notifyListeners();
+      return;
+    }
 
     // Check if this was the 3rd dart or if there's a winner
     final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();

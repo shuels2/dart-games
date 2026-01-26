@@ -29,6 +29,7 @@ class HorseRaceMenuScreen extends StatefulWidget {
 class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
   final PhotoService _photoService = PhotoService();
   late double _targetScore;
+  bool _exactScoreMode = false;
 
   @override
   void initState() {
@@ -146,6 +147,54 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           const Text(
             'Range: 20-250 points',
             style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Win Condition',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _exactScoreMode
+                          ? 'Must hit exact target score. Going over ends turn without scoring.'
+                          : 'Any score greater than or equal to target wins.',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _exactScoreMode ? 'Exact Score' : 'Greater or Equal',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Switch(
+                    value: _exactScoreMode,
+                    activeColor: Colors.amber,
+                    onChanged: (value) {
+                      setState(() {
+                        _exactScoreMode = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
@@ -317,7 +366,11 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
     final horseRaceProvider = context.read<HorseRaceProvider>();
 
     // Start the game
-    horseRaceProvider.startGame(selectedPlayers, _targetScore.toInt());
+    horseRaceProvider.startGame(
+      selectedPlayers,
+      _targetScore.toInt(),
+      exactScoreMode: _exactScoreMode,
+    );
 
     // Navigate to game screen
     Navigator.push(
