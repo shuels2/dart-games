@@ -149,48 +149,52 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 16),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Win Condition',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _exactScoreMode
-                          ? 'Must hit exact target score. Going over ends turn without scoring.'
-                          : 'Any score greater than or equal to target wins.',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
+              const Text(
+                'Require exact score to win the game',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  Text(
-                    _exactScoreMode ? 'Exact Score' : 'Greater or Equal',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: RadioListTile<bool>(
+                      title: const Text('Yes'),
+                      subtitle: const Text(
+                        'Must hit exact target score. Going over ends turn without scoring.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      value: true,
+                      groupValue: _exactScoreMode,
+                      activeColor: Colors.amber,
+                      onChanged: (value) {
+                        setState(() {
+                          _exactScoreMode = value!;
+                        });
+                      },
                     ),
                   ),
-                  Switch(
-                    value: _exactScoreMode,
-                    activeColor: Colors.amber,
-                    onChanged: (value) {
-                      setState(() {
-                        _exactScoreMode = value;
-                      });
-                    },
+                  Expanded(
+                    child: RadioListTile<bool>(
+                      title: const Text('No'),
+                      subtitle: const Text(
+                        'Any score greater than or equal to target wins.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      value: false,
+                      groupValue: _exactScoreMode,
+                      activeColor: Colors.amber,
+                      onChanged: (value) {
+                        setState(() {
+                          _exactScoreMode = value!;
+                        });
+                      },
+                    ),
                   ),
                 ],
               ),
