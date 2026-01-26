@@ -191,7 +191,6 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
                       prefixIcon: Icon(Icons.key),
                       border: OutlineInputBorder(),
                     ),
-                    obscureText: true,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter your API key';
