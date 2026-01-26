@@ -1,11 +1,11 @@
 {
-    "name": "Carnival Derby - Dart Games",
-    "short_name": "Carnival Derby",
+    "name": "Dart Games",
+    "short_name": "Dart Games",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#8B4513",
     "theme_color": "#FFC107",
-    "description": "Play Carnival Horse Race dart game with your Scolia dartboard",
+    "description": "Play dart games with your Scolia dartboard",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

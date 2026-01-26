@@ -60,13 +60,31 @@ flutter test test/widgets/interactive_dartboard_test.dart
 - Scaling behavior must be verified at multiple window sizes
 - Segment scoring must be accurate for all positions
 
+## Git Workflow
+
+### Push Permission Required
+
+**NEVER push to the master branch without explicit permission from the user.**
+
+Before pushing any commits to the remote repository:
+1. Ask the user for permission to push
+2. Wait for explicit approval
+3. Only push after receiving confirmation
+
+This applies to all git operations that modify the remote repository, including:
+- `git push origin master`
+- `git push`
+- Force pushes or any other push commands
+
 ## Workflow
 
 1. Make code changes (excluding protected dartboard emulator code)
 2. Run full test suite: `flutter test`
 3. Verify all tests pass
-4. Only then proceed with build/deployment
-5. If tests fail, fix issues before building
+4. Commit changes locally (if appropriate)
+5. **Ask user for permission before pushing to remote**
+6. Only then proceed with build/deployment
+7. If tests fail, fix issues before building
 
 ## Notes
 
