@@ -122,23 +122,26 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
         ),
         backgroundColor: theme.colorScheme.primary,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Icon(
-                    Icons.developer_board,
-                    size: 80,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(height: 24),
+      body: Column(
+        children: [
+          Image.asset(
+            'assets/images/connect_dartboard_icon.png',
+            width: double.infinity,
+            height: 540,
+            fit: BoxFit.cover,
+          ),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                   Text(
                     'Connect Your Dartboard',
                     style: theme.textTheme.headlineMedium?.copyWith(
@@ -146,7 +149,6 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
                   Text(
                     'Enter your Scolia dartboard details to get started',
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -154,7 +156,7 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 8),
 
                   // Dartboard Name
                   TextFormField(
@@ -172,7 +174,7 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // Serial Number
                   TextFormField(
@@ -190,7 +192,7 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // API Key
                   TextFormField(
@@ -208,7 +210,7 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
                   if (_errorMessage != null)
                     Container(
@@ -233,33 +235,37 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
                       ),
                     ),
 
-                  // Connect Button
-                  ElevatedButton(
-                    onPressed: _isConnecting ? null : _connectDartboard,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: _isConnecting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                  // Connect Button (hidden when error is shown)
+                  if (_errorMessage == null)
+                    ElevatedButton(
+                      onPressed: _isConnecting ? null : _connectDartboard,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: _isConnecting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Connect Dartboard',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
-                          )
-                        : const Text(
-                            'Connect Dartboard',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
+                    ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -33,10 +33,13 @@ class WelcomeScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.sports,
-                      size: 100,
-                      color: theme.colorScheme.primary,
+                    SizedBox(
+                      width: 1024,
+                      height: 1024,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     const SizedBox(height: 32),
                     Text(
