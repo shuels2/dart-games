@@ -135,18 +135,33 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
       // Check if player busted
       if (horseRaceProvider.currentPlayerBusted) {
-        // Player busted - announce bust first, then initiate takeout
+        // Player busted - announce score first, then bust, then remove darts
         if (currentPlayer != null) {
-          // Announce bust immediately
-          _announcer?.speak('${currentPlayer.name} busted and your turn is over');
+          // First announce the dart score
+          _announcer?.announceDart(
+            score,
+            _getMultiplierFromSector(throwData['sector']),
+          );
 
-          // Wait for bust announcement to complete (~3s) then initiate takeout
-          Future.delayed(const Duration(milliseconds: 3000), () {
-            _mockApi?.simulateTakeoutStarted();
+          // Wait for score announcement to complete (~1.5s)
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            // Then announce the bust
+            _announcer?.speak('${currentPlayer.name}, you busted and your turn is over');
 
-            // Auto-complete takeout after a short delay
-            Future.delayed(const Duration(milliseconds: 500), () {
-              _mockApi?.simulateTakeoutFinished();
+            // Wait for bust announcement to complete (~3s)
+            Future.delayed(const Duration(milliseconds: 3000), () {
+              // Tell them to remove darts
+              _announcer?.speak('${currentPlayer.name}, remove your darts');
+
+              // Wait for remove darts announcement (~2s) then initiate takeout
+              Future.delayed(const Duration(milliseconds: 2000), () {
+                _mockApi?.simulateTakeoutStarted();
+
+                // Auto-complete takeout after a short delay
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  _mockApi?.simulateTakeoutFinished();
+                });
+              });
             });
           });
         }
