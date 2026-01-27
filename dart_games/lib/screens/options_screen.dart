@@ -309,7 +309,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
               width: 40,
             ),
             const SizedBox(width: 12),
-            const Text('⚙️ Options'),
+            const Text('System Settings'),
           ],
         ),
         backgroundColor: theme.colorScheme.primary,

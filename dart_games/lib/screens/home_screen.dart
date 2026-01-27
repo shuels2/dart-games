@@ -193,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Icon(Icons.settings),
                     SizedBox(width: 12),
-                    Text('Options'),
+                    Text('System Settings'),
                   ],
                 ),
               ),
