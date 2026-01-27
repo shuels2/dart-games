@@ -72,7 +72,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
               width: 48,
             ),
             const SizedBox(width: 8),
-            const Text('Carnival Derby'),
+            const Text('Game Setup'),
           ],
         ),
         backgroundColor: Colors.amber,
@@ -93,30 +93,195 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return Stack(
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                children: [
-                  // Target Score Slider
-                  _buildTargetScoreSection(),
-                  const Divider(),
+              // Left side: Game Description
+              Expanded(
+                flex: 1,
+                child: _buildGameDescription(),
+              ),
 
-                  // Selected Players Section
-                  _buildSelectedPlayersSection(playerProvider),
-                  const Divider(),
+              const VerticalDivider(width: 1),
 
-                  // Available Players Section
-                  Expanded(
-                    child: _buildAvailablePlayersSection(playerProvider),
-                  ),
+              // Right side: Game Settings
+              Expanded(
+                flex: 1,
+                child: Column(
+                  children: [
+                    // Target Score Slider
+                    _buildTargetScoreSection(),
+                    const Divider(),
 
-                  // Start Button
-                  _buildStartButton(playerProvider),
-                ],
+                    // Selected Players Section
+                    _buildSelectedPlayersSection(playerProvider),
+                    const Divider(),
+
+                    // Available Players Section
+                    Expanded(
+                      child: _buildAvailablePlayersSection(playerProvider),
+                    ),
+
+                    // Start Button
+                    _buildStartButton(playerProvider),
+                  ],
+                ),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildGameDescription() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(fontSize: 14, color: Colors.black),
+              children: [
+                TextSpan(text: 'Step right up! Transform your game room into a high-stakes midway with '),
+                TextSpan(
+                  text: 'Carnival Derby',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ', the fast-paced horse racing game where your aim determines your fame!'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'The Race is On!',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(fontSize: 14, color: Colors.black),
+              children: [
+                TextSpan(text: 'In '),
+                TextSpan(
+                  text: 'Carnival Derby',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ', you aren\'t just a spectator—you\'re the engine! Every player commands a horse at the starting gate, but speed is measured in bullseyes.'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(fontSize: 14, color: Colors.black),
+              children: [
+                TextSpan(text: 'The mechanics are simple but addictive: '),
+                TextSpan(
+                  text: 'Throw your darts to move your horse.',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ' The better your shot, the faster your steed gallops down the track toward the finish line. It\'s a heart-pounding blend of precision and racing strategy that keeps everyone on the edge of their seats until the final throw.'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Customize Your Challenge',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Whether you\'re looking for a quick sprint or an epic endurance test, Carnival Derby lets you control the reins:',
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(fontSize: 14, color: Colors.black),
+              children: [
+                TextSpan(text: '• '),
+                TextSpan(
+                  text: 'Set the Distance:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ' Want a lightning-fast "Quarter Horse" dash? Set a low point total. Looking for a grueling "Triple Crown" marathon? Crank up the points required to win!'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(fontSize: 14, color: Colors.black),
+              children: [
+                TextSpan(text: '• '),
+                TextSpan(
+                  text: 'The "Perfect Finish" Rule:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ' For the ultimate test of skill, turn on '),
+                TextSpan(
+                  text: 'Perfect Finish',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ' mode. In this game, you can\'t just blast past the finish line—you have to land your final dart to hit the winning number exactly. If you over-score, your horse stays put, giving your rivals a chance to catch up!'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Why You\'ll Love It',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(fontSize: 14, color: Colors.black),
+              children: [
+                TextSpan(text: '• '),
+                TextSpan(
+                  text: 'Interactive Fun:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ' Unlike traditional darts, every point has a visual impact as you watch your horse pull ahead of the pack.'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(fontSize: 14, color: Colors.black),
+              children: [
+                TextSpan(text: '• '),
+                TextSpan(
+                  text: 'All Skill Levels:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ' Beginners can aim for the big slices, while pros can hunt for triples to leapfrog the competition.'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(fontSize: 14, color: Colors.black),
+              children: [
+                TextSpan(text: '• '),
+                TextSpan(
+                  text: 'High Tension:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ' Nothing beats the roar of the crowd (or your friends!) as three horses neck-and-neck approach the final few points.'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Do you have the steady hand needed to take the winner\'s circle? Grab your darts and let the derby begin!',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }
@@ -128,7 +293,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Target Score: ${_targetScore.toInt()} points',
+            'Target score: ${_targetScore.toInt()} points',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -156,7 +321,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Require exact score to win the game',
+                'Require "Perfect Finish" to win the game',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -169,7 +334,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                     child: RadioListTile<bool>(
                       title: const Text('Yes'),
                       subtitle: const Text(
-                        'Must hit exact target score. Going over ends turn without scoring.',
+                        'A player must hit the exact Target score to win the game. Going over the target score ends the player turn and leaves their score at the value it was before the last dart throw.',
                         style: TextStyle(fontSize: 12),
                       ),
                       value: true,
@@ -186,7 +351,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                     child: RadioListTile<bool>(
                       title: const Text('No'),
                       subtitle: const Text(
-                        'Any score greater than or equal to target wins.',
+                        'A player wins the game when their score is greater than or equal to the Target score.',
                         style: TextStyle(fontSize: 12),
                       ),
                       value: false,
@@ -217,7 +382,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Selected Players (${selectedPlayers.length}/8)',
+            'Selected players (${selectedPlayers.length}/8)',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -268,7 +433,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Text(
-            'Available Players',
+            'Available players',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -361,7 +526,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           disabledBackgroundColor: Colors.grey[300],
         ),
         child: const Text(
-          'Start Race!',
+          'Start the Race!',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ),
