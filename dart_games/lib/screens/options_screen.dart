@@ -1029,7 +1029,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                   style: const TextStyle(fontSize: 11),
                 ),
                 trailing: Text(
-                  _formatDuration(entry.duration),
+                  'This game lasted ${_formatDuration(entry.duration)}',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,

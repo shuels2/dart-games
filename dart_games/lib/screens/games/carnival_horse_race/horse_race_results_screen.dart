@@ -30,6 +30,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   late ConfettiController _confettiController;
   final AudioPlayer _audioPlayer = AudioPlayer();
   DartAnnouncerService? _announcer;
+  bool _statsUpdated = false;
 
   @override
   void initState() {
@@ -104,6 +105,10 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   }
 
   void _updatePlayerStats() async {
+    // Prevent duplicate stats updates
+    if (_statsUpdated) return;
+    _statsUpdated = true;
+
     final horseRaceProvider = context.read<HorseRaceProvider>();
     final playerProvider = context.read<PlayerProvider>();
     final currentGame = horseRaceProvider.currentGame;
