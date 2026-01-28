@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import '../services/dart_announcer_service.dart';
 import '../services/app_settings.dart';
 import '../services/victory_music_service.dart';
+import '../models/victory_music_file.dart';
 import 'test_dartboard_screen.dart';
 
 class OptionsScreen extends StatefulWidget {
@@ -27,8 +28,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
   List<dynamic> _systemVoices = [];
   bool _responsiveVoiceReady = false;
   bool _isSaving = false;
-  String? _victoryMusicPath;
-  String? _victoryMusicName;
+  List<VictoryMusicFile> _victoryMusicFiles = [];
 
   @override
   void initState() {
@@ -86,17 +86,12 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     });
 
-    // Load victory music from service
+    // Load victory music files from service
     final musicService = VictoryMusicService();
-    final hasMusic = await musicService.hasCustomMusic();
-    if (hasMusic) {
-      final musicName = await musicService.getMusicName();
-      final musicSource = await musicService.getMusicSource();
-      setState(() {
-        _victoryMusicPath = musicSource;
-        _victoryMusicName = musicName;
-      });
-    }
+    final files = await musicService.getMusicFiles();
+    setState(() {
+      _victoryMusicFiles = files;
+    });
 
     // Apply loaded settings to announcer
     _applySettings();
@@ -113,16 +108,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
       await prefs.setString('announcer_style', _selectedVoice.name);
       await prefs.setString('system_voice', _selectedSystemVoice);
       await prefs.setString('responsive_voice', _selectedResponsiveVoice);
-      // Only save victory music to SharedPreferences on native platforms
-      // On web, it's stored in IndexedDB by VictoryMusicService (base64 data is too large for localStorage)
-      if (!kIsWeb) {
-        if (_victoryMusicPath != null) {
-          await prefs.setString('victory_music_path', _victoryMusicPath!);
-        }
-        if (_victoryMusicName != null) {
-          await prefs.setString('victory_music_name', _victoryMusicName!);
-        }
-      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -230,30 +215,27 @@ class _OptionsScreenState extends State<OptionsScreen> {
           throw Exception('Could not read file bytes. Please try again.');
         }
 
-        // Use the VictoryMusicService to save the music
-        debugPrint('Saving music...');
+        // Use the VictoryMusicService to add the music file
+        debugPrint('Adding music file...');
         final musicService = VictoryMusicService();
-        await musicService.saveMusic(
+        await musicService.addMusicFile(
           fileName: fileName,
           filePath: kIsWeb ? null : file.path, // path not available on web
           fileBytes: file.bytes,
         );
 
-        debugPrint('Music saved, getting source...');
-        // Get the saved source for local state
-        final musicSource = await musicService.getMusicSource();
-
-        debugPrint('Music source retrieved: ${musicSource != null ? 'yes' : 'no'}');
+        debugPrint('Music file added, reloading list...');
+        // Reload the files list
+        final files = await musicService.getMusicFiles();
 
         setState(() {
-          _victoryMusicPath = musicSource;
-          _victoryMusicName = fileName;
+          _victoryMusicFiles = files;
         });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Victory music saved: $fileName'),
+              content: Text('Added: $fileName'),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 2),
             ),
@@ -275,24 +257,98 @@ class _OptionsScreenState extends State<OptionsScreen> {
     }
   }
 
-  void _clearVictoryMusic() async {
-    final musicService = VictoryMusicService();
-    await musicService.clearMusic();
+  Future<void> _removeMusicFile(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Music File'),
+        content:
+            const Text('Are you sure you want to remove this music file?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
 
-    setState(() {
-      _victoryMusicPath = null;
-      _victoryMusicName = null;
-    });
+    if (confirmed == true) {
+      final musicService = VictoryMusicService();
+      await musicService.removeMusicFile(id);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Victory music cleared. Default music will be used.'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      final files = await musicService.getMusicFiles();
+      setState(() {
+        _victoryMusicFiles = files;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Music file removed'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
+  }
+
+  Future<void> _clearAllVictoryMusic() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear All Music'),
+        content: Text(
+            'Remove all ${_victoryMusicFiles.length} music file(s)?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final musicService = VictoryMusicService();
+      await musicService.clearAllMusic();
+
+      setState(() {
+        _victoryMusicFiles = [];
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All music files cleared'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays == 0) return 'today';
+    if (diff.inDays == 1) return 'yesterday';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
+    if (diff.inDays < 30) {
+      return '${(diff.inDays / 7).floor()} weeks ago';
+    }
+    return '${date.month}/${date.day}/${date.year}';
   }
 
   @override
@@ -614,60 +670,35 @@ class _OptionsScreenState extends State<OptionsScreen> {
                         const Icon(Icons.music_note, color: Colors.amber),
                         const SizedBox(width: 8),
                         Text(
-                          'Custom Victory Music',
+                          'Victory Music',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        const Spacer(),
+                        // Show count badge
+                        if (_victoryMusicFiles.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.amber,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${_victoryMusicFiles.length} file${_victoryMusicFiles.length != 1 ? 's' : ''}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (_victoryMusicPath != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.green),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _victoryMusicName ?? 'Custom music file',
-                                style: const TextStyle(fontSize: 12),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _selectVictoryMusic,
-                              icon: const Icon(Icons.folder_open),
-                              label: const Text('Change File'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _clearVictoryMusic,
-                              icon: const Icon(Icons.clear),
-                              label: const Text('Clear'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else ...[
+
+                    // Info message
+                    if (_victoryMusicFiles.isEmpty)
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -677,7 +708,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                            Icon(Icons.info_outline,
+                                color: Colors.orange, size: 20),
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -687,23 +719,108 @@ class _OptionsScreenState extends State<OptionsScreen> {
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _selectVictoryMusic,
-                          icon: const Icon(Icons.folder_open),
-                          label: Text(kIsWeb
-                              ? 'Select Music File (MP3, WAV, OGG)'
-                              : 'Select Music File (MP3, WAV, WMA)'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle,
+                                color: Colors.green, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _victoryMusicFiles.length == 1
+                                    ? 'Playing one custom music file'
+                                    : 'Randomly selecting from ${_victoryMusicFiles.length} music files',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+
+                    const SizedBox(height: 16),
+
+                    // List of music files
+                    if (_victoryMusicFiles.isNotEmpty) ...[
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 300),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.dividerColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: _victoryMusicFiles.length,
+                          separatorBuilder: (context, index) =>
+                              const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final file = _victoryMusicFiles[index];
+                            return ListTile(
+                              dense: true,
+                              leading:
+                                  const Icon(Icons.music_note, size: 20),
+                              title: Text(
+                                file.name,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                'Added ${_formatDate(file.addedDate)}',
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete, size: 20),
+                                color: Colors.red,
+                                tooltip: 'Remove',
+                                onPressed: () =>
+                                    _removeMusicFile(file.id),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                     ],
+
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _selectVictoryMusic,
+                            icon: const Icon(Icons.add),
+                            label: Text(_victoryMusicFiles.isEmpty
+                                ? 'Add Music File'
+                                : 'Add Another File'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        if (_victoryMusicFiles.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            onPressed: _clearAllVictoryMusic,
+                            icon: const Icon(Icons.clear_all),
+                            label: const Text('Clear All'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),

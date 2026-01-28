@@ -69,7 +69,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   void _playVictoryMusic() async {
     try {
       final musicService = VictoryMusicService();
-      final customMusicSource = await musicService.getMusicSource();
+      final customMusicSource = await musicService.getRandomMusicSource();
 
       await _audioPlayer.setVolume(0.7);
 
@@ -78,11 +78,11 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
         if (customMusicSource.startsWith('data:')) {
           // Play from data URL (web)
           await _audioPlayer.play(UrlSource(customMusicSource));
-          debugPrint('Playing custom victory music from data URL');
+          debugPrint('Playing random custom victory music from data URL');
         } else {
           // Play from file path (native platforms)
           await _audioPlayer.play(DeviceFileSource(customMusicSource));
-          debugPrint('Playing custom victory music: $customMusicSource');
+          debugPrint('Playing random custom victory music: $customMusicSource');
         }
       } else {
         // Play default victory fanfare
