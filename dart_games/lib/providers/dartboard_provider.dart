@@ -132,6 +132,9 @@ class DartboardProvider with ChangeNotifier {
 
   // Use emulator mode
   void useEmulator({required String name, required String serialNumber}) async {
+    // Stop any status checking for physical dartboard
+    stopStatusChecking();
+
     _dartboard = Dartboard(
       name: name,
       serialNumber: serialNumber,
@@ -160,8 +163,10 @@ class DartboardProvider with ChangeNotifier {
     // Simulate connection attempt
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // For now, fall back to emulator if connection fails
-    _activateEmulator();
+    // Set to error state - actual connection status will be determined by status checking
+    _status = DartboardConnectionStatus.error;
+    _error = 'Connecting to dartboard...';
+    notifyListeners();
   }
 
   // Save configuration to storage
@@ -203,6 +208,9 @@ class DartboardProvider with ChangeNotifier {
   // Switch to emulator mode from failed connection
   void switchToEmulator() {
     if (_dartboard != null) {
+      // Stop status checking before switching to emulator
+      stopStatusChecking();
+
       useEmulator(
         name: _dartboard!.name,
         serialNumber: _dartboard!.serialNumber,
@@ -219,7 +227,7 @@ class DartboardProvider with ChangeNotifier {
   // Check dartboard status via GET_SBC_STATUS API
   Future<void> checkDartboardStatus() async {
     // Don't check status for emulator
-    if (_useEmulatorMode || _dartboard == null || _apiKey == null) {
+    if (_useEmulatorMode || _status == DartboardConnectionStatus.emulator || _dartboard == null || _apiKey == null) {
       return;
     }
 
@@ -261,7 +269,7 @@ class DartboardProvider with ChangeNotifier {
   // Start periodic status checking
   void startStatusChecking() {
     // Don't start for emulator
-    if (_useEmulatorMode) return;
+    if (_useEmulatorMode || _status == DartboardConnectionStatus.emulator) return;
 
     _statusCheckTimer?.cancel();
     _statusCheckTimer = Timer.periodic(
