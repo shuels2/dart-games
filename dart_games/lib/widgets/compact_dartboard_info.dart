@@ -18,9 +18,7 @@ class CompactDartboardInfo extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: provider.isEmulator
-            ? Colors.orange.withOpacity(0.1)
-            : Colors.blue.withOpacity(0.1),
+        color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: provider.isEmulator
