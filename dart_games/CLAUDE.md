@@ -16,6 +16,27 @@ Files that require explicit permission before modification:
 
 If a bug is suspected in the dartboard emulator, ask the user to verify the issue before making changes.
 
+### Cross-Platform Compatibility
+
+**All features must work on both web and tablet devices (iOS and Android).**
+
+When implementing new features or modifying existing code:
+- Ensure compatibility with web browsers (Chrome, Safari, Firefox, Edge)
+- Ensure compatibility with iOS tablets (iPad)
+- Ensure compatibility with Android tablets
+- Use platform-specific code only when necessary, with proper conditional imports
+- Test platform-specific features (like file picking, audio playback, storage) on all target platforms
+- Use `kIsWeb` checks when web and native platforms require different implementations
+- Avoid web-only APIs (like `dart:html`, `dart:js`) in shared code without conditional imports
+- Avoid mobile-only APIs in web builds
+
+Common cross-platform considerations:
+- File storage: Use IndexedDB for web, file system for native
+- Audio playback: Ensure audio formats are supported across all platforms
+- File picking: Different APIs for web vs native
+- Responsive layouts: Test on different screen sizes and orientations
+- Touch vs mouse input: Both should work seamlessly
+
 ## Testing Requirements
 
 ### All Tests Must Pass Before Build
