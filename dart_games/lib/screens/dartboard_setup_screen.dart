@@ -135,7 +135,7 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
+                  constraints: const BoxConstraints(maxWidth: 800),
                   child: Form(
                     key: _formKey,
                     child: Column(

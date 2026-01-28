@@ -179,17 +179,7 @@ class _TestDartboardScreenState extends State<TestDartboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/logo.png',
-              height: 40,
-              width: 40,
-            ),
-            const SizedBox(width: 12),
-            const Text('Scolia 2 Dartboard Emulator'),
-          ],
-        ),
+        title: const Text('Scolia 2 Dartboard Emulator'),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
         actions: [
