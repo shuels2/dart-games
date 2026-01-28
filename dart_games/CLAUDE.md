@@ -63,6 +63,109 @@ Common cross-platform considerations:
 - Responsive layouts: Test on different screen sizes and orientations
 - Touch vs mouse input: Both should work seamlessly
 
+### Game Integration Requirements
+
+**ALL games in the dart games app MUST integrate with the global systems.**
+
+Every game (such as Carnival Derby and any future games) must follow these integration requirements:
+
+#### 1. Global User Management
+- **Use the global user list** (`PlayerProvider`) for available players
+- **Add new players to the global list** - when a player is created in any game, they are added to the shared player list
+- Players created in one game are immediately available in all other games
+- Use `PlayerProvider.savePlayer()` to add new players
+- Use `PlayerProvider.allPlayers` to get the list of available players
+
+#### 2. Announcer Integration
+- **Use announcer settings from the global dart games announcer settings**
+- Use `DartAnnouncerService` singleton for all game announcements
+- Respect the user's voice engine selection (Browser Voices or ResponsiveVoice)
+- Respect the user's selected announcer personality (Professional, Excited, Calm, Funny, Drill Sergeant)
+- Respect the user's voice enabled/disabled setting
+- Use `AppSettings` to retrieve and save announcer preferences
+
+#### 3. User Win Tracking
+- **Track user wins to the global user management system**
+- When a player wins a game, call `PlayerProvider.updatePlayerStats()` with:
+  - `playerId` - the ID of the winning player
+  - `won: true` - to increment games won
+  - `gameName` - the name of the game (e.g., "Carnival Derby")
+  - `gameDuration` - the duration of the game
+- Losers should also have stats updated with `won: false` (increments games played only)
+
+#### 4. Game Timer
+- **Every game MUST implement a game timer**
+- Track the start time when the game begins (e.g., when "Start Game" button is pressed)
+- Track the end time when the game completes (winner determined)
+- Calculate duration: `DateTime.now().difference(startTime)`
+- Pass the duration to `updatePlayerStats()` for win tracking
+
+#### 5. Victory Music
+- **Use the dart games victory music list for victory music**
+- Use `VictoryMusicService` singleton to access custom victory music
+- Call `VictoryMusicService.getRandomMusicSource()` to get a random music file
+- If custom music is available (`hasCustomMusic()` returns true), play it
+- Handle both web (data URLs) and native (file paths) music sources
+- Provide fallback behavior if no custom music is configured
+
+#### Implementation Example (Carnival Derby Pattern)
+
+```dart
+class GameScreen extends StatefulWidget {
+  // Game provider with timer
+  final GameProvider gameProvider;
+  final PlayerProvider playerProvider = PlayerProvider();
+  final VictoryMusicService musicService = VictoryMusicService();
+
+  void _startGame() {
+    // Start game with timer
+    gameProvider.startGame(selectedPlayers, targetScore);
+    // gameProvider.currentGame.startedAt is set to DateTime.now()
+  }
+
+  void _onGameComplete() async {
+    final game = gameProvider.currentGame!;
+    final gameDuration = DateTime.now().difference(game.startedAt);
+
+    // Update stats for all players
+    for (final playerId in game.playerIds) {
+      final isWinner = playerId == game.winnerId;
+      await playerProvider.updatePlayerStats(
+        playerId,
+        won: isWinner,
+        gameName: 'Your Game Name',
+        gameDuration: isWinner ? gameDuration : null,
+      );
+    }
+
+    // Play victory music
+    if (await musicService.hasCustomMusic()) {
+      final musicSource = await musicService.getRandomMusicSource();
+      if (musicSource != null) {
+        // Play music using appropriate player for web/native
+      }
+    }
+  }
+}
+```
+
+#### Required Dependencies
+
+Games must import and use:
+- `package:dart_games/providers/player_provider.dart` - Global user management
+- `package:dart_games/services/dart_announcer_service.dart` - Announcer functionality
+- `package:dart_games/services/victory_music_service.dart` - Victory music
+- `package:dart_games/services/app_settings.dart` - Settings persistence
+
+#### Testing Requirements
+
+When adding a new game:
+1. Create integration tests that verify global system integration
+2. Test that players added in the game appear in the global player list
+3. Test that wins are tracked with duration to the global system
+4. Test that game timer calculates duration correctly
+5. Follow the pattern established in `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart`
+
 ## Testing Requirements
 
 ### Complete Test Suite (139 Tests)
