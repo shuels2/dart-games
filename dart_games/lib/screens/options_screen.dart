@@ -37,11 +37,75 @@ class _OptionsScreenState extends State<OptionsScreen> {
   List<VictoryMusicFile> _victoryMusicFiles = [];
   final PhotoService _photoService = PhotoService();
 
+  // Navigation and scrolling
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _announcerKey = GlobalKey();
+  final GlobalKey _musicKey = GlobalKey();
+  final GlobalKey _userManagementKey = GlobalKey();
+  final GlobalKey _adminKey = GlobalKey();
+  String _activeSection = 'announcer';
+
   @override
   void initState() {
     super.initState();
     _loadVoices();
     _loadSettings();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final scrollPosition = _scrollController.offset;
+    String newSection = 'announcer';
+
+    // Check which section is currently visible
+    final announcerPosition = _getKeyPosition(_announcerKey);
+    final musicPosition = _getKeyPosition(_musicKey);
+    final userManagementPosition = _getKeyPosition(_userManagementKey);
+    final adminPosition = _getKeyPosition(_adminKey);
+
+    if (adminPosition != null && scrollPosition >= adminPosition - 100) {
+      newSection = 'admin';
+    } else if (userManagementPosition != null && scrollPosition >= userManagementPosition - 100) {
+      newSection = 'userManagement';
+    } else if (musicPosition != null && scrollPosition >= musicPosition - 100) {
+      newSection = 'music';
+    } else {
+      newSection = 'announcer';
+    }
+
+    if (newSection != _activeSection) {
+      setState(() {
+        _activeSection = newSection;
+      });
+    }
+  }
+
+  double? _getKeyPosition(GlobalKey key) {
+    final RenderBox? renderBox = key.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return null;
+    final position = renderBox.localToGlobal(Offset.zero);
+    return position.dy + _scrollController.offset;
+  }
+
+  void _scrollToSection(GlobalKey key) {
+    final RenderBox? renderBox = key.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final position = renderBox.localToGlobal(Offset.zero);
+    final offset = position.dy + _scrollController.offset - 100; // 100px offset for AppBar
+
+    _scrollController.animateTo(
+      offset,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
   }
 
   Future<void> _loadVoices() async {
@@ -1051,6 +1115,110 @@ class _OptionsScreenState extends State<OptionsScreen> {
     return '${date.month}/${date.day}/${date.year}';
   }
 
+  Widget _buildNavigationMenu(ThemeData theme) {
+    return Container(
+      width: 240,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          right: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+            width: 1,
+          ),
+        ),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Settings',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildNavItem(
+            theme: theme,
+            icon: Icons.campaign,
+            label: 'Game Announcer',
+            sectionKey: 'announcer',
+            onTap: () => _scrollToSection(_announcerKey),
+          ),
+          const SizedBox(height: 8),
+          _buildNavItem(
+            theme: theme,
+            icon: Icons.music_note,
+            label: 'Celebration Music',
+            sectionKey: 'music',
+            onTap: () => _scrollToSection(_musicKey),
+          ),
+          const SizedBox(height: 8),
+          _buildNavItem(
+            theme: theme,
+            icon: Icons.people,
+            label: 'User Management',
+            sectionKey: 'userManagement',
+            onTap: () => _scrollToSection(_userManagementKey),
+          ),
+          const SizedBox(height: 8),
+          _buildNavItem(
+            theme: theme,
+            icon: Icons.admin_panel_settings,
+            label: 'Admin',
+            sectionKey: 'admin',
+            onTap: () => _scrollToSection(_adminKey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required ThemeData theme,
+    required IconData icon,
+    required String label,
+    required String sectionKey,
+    required VoidCallback onTap,
+  }) {
+    final isActive = _activeSection == sectionKey;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? theme.colorScheme.primaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isActive
+                  ? theme.colorScheme.onPrimaryContainer
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: isActive
+                      ? theme.colorScheme.onPrimaryContainer
+                      : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1061,18 +1229,28 @@ class _OptionsScreenState extends State<OptionsScreen> {
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Announcer Setup Section
-            Text(
-              'Game Announcer Setup',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+      body: Row(
+        children: [
+          _buildNavigationMenu(theme),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Announcer Setup Section
+                  Container(
+                    key: _announcerKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Game Announcer Setup',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
             const SizedBox(height: 8),
             Text(
               'Configure the voice for the announcer used by games for notifications and gameplay',
@@ -1332,15 +1510,23 @@ class _OptionsScreenState extends State<OptionsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 48),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 48),
 
-            // Victory Music Section
-            Text(
-              'Game Celebration Music',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+                  // Victory Music Section
+                  Container(
+                    key: _musicKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Game Celebration Music',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
             const SizedBox(height: 8),
             Text(
               'Select the music you would like to be played when a player wins a game. If you select multiple files the order they are used will be randomized to keep things exciting.',
@@ -1515,15 +1701,23 @@ class _OptionsScreenState extends State<OptionsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 48),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 48),
 
-            // User Management Section
-            Text(
-              'User Management',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+                  // User Management Section
+                  Container(
+                    key: _userManagementKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'User Management',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
             const SizedBox(height: 8),
             Text(
               'Manage players and view game statistics. Players will be available for use in all the dart games.',
@@ -1533,21 +1727,29 @@ class _OptionsScreenState extends State<OptionsScreen> {
             ),
             const SizedBox(height: 16),
             _buildUserManagementSection(),
-            const SizedBox(height: 48),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 48),
 
-            // Admin Section
-            Row(
-              children: [
-                Icon(
-                  Icons.admin_panel_settings,
-                  color: Colors.orange,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'ADMIN',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  // Admin Section
+                  Container(
+                    key: _adminKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.admin_panel_settings,
+                              color: Colors.orange,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'ADMIN',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
                     color: Colors.orange,
                     letterSpacing: 1.2,
                   ),
@@ -1555,23 +1757,29 @@ class _OptionsScreenState extends State<OptionsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.computer),
-                title: const Text('Scolia 2 Dartboard Emulator'),
-                subtitle: const Text('Test dartboard functionality'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => TestDartboardScreen(announcer: widget.announcer),
+                        Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.computer),
+                            title: const Text('Scolia 2 Dartboard Emulator'),
+                            subtitle: const Text('Test dartboard functionality'),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => TestDartboardScreen(announcer: widget.announcer),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
