@@ -1057,17 +1057,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/logo.png',
-              height: 40,
-              width: 40,
-            ),
-            const SizedBox(width: 12),
-            const Text('System Settings'),
-          ],
-        ),
+        title: const Text('System Settings'),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
       ),
@@ -1078,14 +1068,14 @@ class _OptionsScreenState extends State<OptionsScreen> {
           children: [
             // Announcer Setup Section
             Text(
-              'Announcer Setup',
+              'Game Announcer Setup',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Configure the voice announcer for dart throw notifications',
+              'Configure the voice for the announcer used by games for notifications and gameplay',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -1346,14 +1336,14 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
             // Victory Music Section
             Text(
-              'Victory Music',
+              'Game Celebration Music',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Select custom music to play when a winner is announced',
+              'Select the music you would like to be played when a player wins a game. If you select multiple files the order they are used will be randomized to keep things exciting.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -1370,7 +1360,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                         const Icon(Icons.music_note, color: Colors.amber),
                         const SizedBox(width: 8),
                         Text(
-                          'Victory Music',
+                          'Game Celebration Music List',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -1536,7 +1526,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Manage players and view game statistics',
+              'Manage players and view game statistics. Players will be available for use in all the dart games.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
