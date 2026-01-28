@@ -1,5 +1,121 @@
 # Claude Development Guidelines for Dart Games
 
+## App Architecture Overview
+
+### Container App Structure
+
+**Dart Games is a container app that provides core infrastructure for multiple games.**
+
+The app architecture consists of:
+
+1. **Core Container App** (Dart Games)
+   - Handles dartboard connection (physical Scolia dartboard or emulator)
+   - Manages global user/player system
+   - Provides centralized settings (announcer, victory music, user management)
+   - Ensures consistent experience across all games
+
+2. **Individual Games** (e.g., Carnival Derby)
+   - Built on top of the container app
+   - Use shared dartboard connection
+   - Integrate with global user management
+   - Use centralized announcer and victory music systems
+   - Follow consistent design language and UX patterns
+
+### Project Structure
+
+```
+dart_games/
+├── lib/
+│   ├── main.dart                    # App entry point, theme, navigation
+│   ├── models/                      # Data models (Player, GameHistoryEntry, etc.)
+│   ├── providers/                   # State management (DartboardProvider, PlayerProvider, etc.)
+│   ├── services/                    # Shared services (DartAnnouncerService, VictoryMusicService, etc.)
+│   ├── widgets/                     # Reusable widgets (dartboard components, status indicators)
+│   └── screens/
+│       ├── splash_screen.dart       # Initial loading screen
+│       ├── dartboard_setup_screen.dart  # Connect to dartboard or emulator
+│       ├── home_screen.dart         # Game selection menu
+│       ├── options_screen.dart      # System Settings (announcer, music, users, admin)
+│       ├── test_dartboard_screen.dart   # Dartboard emulator (admin tool)
+│       └── games/
+│           └── carnival_horse_race/ # Carnival Derby game
+│               ├── horse_race_menu_screen.dart     # Game setup
+│               ├── horse_race_game_screen.dart     # Active gameplay
+│               └── horse_race_results_screen.dart  # Winner announcement
+├── test/                            # Test suite (139 tests)
+└── assets/                          # Images, icons, fonts
+```
+
+### Key Shared Systems
+
+**1. Dartboard Connection (`DartboardProvider`)**
+- Manages connection to physical Scolia dartboard via API
+- Provides emulator mode for testing without hardware
+- Status tracking (connected, disconnected, connecting)
+- Used by all games for dart input
+
+**2. User Management (`PlayerProvider`)**
+- Global player list shared across all games
+- Player profiles with photos and statistics
+- Game history tracking with duration
+- Stats aggregation (total wins, play time, average duration)
+
+**3. Announcer System (`DartAnnouncerService`)**
+- Voice announcements for game events
+- Supports multiple voice engines (Browser Voices, ResponsiveVoice)
+- Customizable personality (Professional, Excited, Calm, Funny, Drill Sergeant)
+- Used by all games for consistent audio feedback
+
+**4. Victory Music (`VictoryMusicService`)**
+- Custom music file management
+- Random selection from user's music library
+- Plays when a player wins any game
+- Cross-platform support (web data URLs, native file paths)
+
+### Design System
+
+**Dart Games Container App Design:**
+
+The design system below applies to the core dart games app screens (splash, home, dartboard setup, system settings, emulator). These screens provide a consistent container experience.
+
+**Theme & Colors:**
+- Primary: Flame Orange (#FF6B35)
+- Secondary: Tangerine Orange (#F7931E)
+- Tertiary: Deep Ocean Blue (#004E89)
+- Gradient AppBars: Red (#F44336) to Amber (#FFC107)
+
+**Typography:**
+- Font Family: Nunito (Google Fonts)
+- Hero Headers: Black (900 weight), 32-40pt, negative letter spacing
+- Screen Titles: Bold (700 weight), 24-28pt
+- Live Scores: Semi-Bold (600 weight), 28pt+, tabular figures
+- Body Text: Regular (400 weight), 16pt, 1.4x line height
+
+**Individual Game Designs:**
+
+Each game can and should have its own unique visual identity to create a distinct experience:
+- **Custom color palettes** - Games can use any colors that fit their theme
+- **Custom typography** - Games can use different fonts and text styles
+- **Unique UI elements** - Games can have custom widgets, animations, and layouts
+- **Theme consistency** - Games should maintain their own internal design consistency
+
+**Example: Carnival Derby**
+- Uses yellow/amber carnival theme colors
+- Has carnival-specific visual elements
+- Maintains distinct identity while integrating with shared systems (announcer, victory music, user management)
+
+### Adding New Games
+
+When adding a new game to the dart games app:
+
+1. **Create game screens** in `lib/screens/games/[game_name]/`
+2. **Design unique visual identity** - Each game should have its own color palette, typography, and theme to feel distinct
+3. **Integrate with global systems** (see Game Integration Requirements section)
+4. **Use shared services** (DartboardProvider, PlayerProvider, DartAnnouncerService, VictoryMusicService)
+5. **Add game card** to `home_screen.dart` for navigation
+6. **Create tests** following existing patterns
+7. **Update CLAUDE.md** with new test counts and game-specific notes
+
 ## Critical Rules
 
 ### Dartboard Emulator Code Protection
