@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'providers/dartboard_provider.dart';
 import 'providers/player_provider.dart';
 import 'providers/horse_race_provider.dart';
@@ -34,25 +35,96 @@ class DartGamesApp extends StatelessWidget {
             brightness: Brightness.light,
           ),
           useMaterial3: true,
-          textTheme: const TextTheme(
-            headlineLarge: TextStyle(
-              fontWeight: FontWeight.bold,
+          textTheme: GoogleFonts.nunitoTextTheme().copyWith(
+            // Hero Headers - Black (900), 32-40pt, negative letter spacing
+            displayLarge: GoogleFonts.nunito(
+              fontWeight: FontWeight.w900,
+              fontSize: 40,
+              letterSpacing: -0.02 * 40, // -0.02em
+              height: 1.2,
+            ),
+            displayMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w900,
+              fontSize: 36,
+              letterSpacing: -0.02 * 36,
+              height: 1.2,
+            ),
+            displaySmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w900,
               fontSize: 32,
-              letterSpacing: 1.2,
+              letterSpacing: -0.02 * 32,
+              height: 1.2,
             ),
-            headlineMedium: TextStyle(
-              fontWeight: FontWeight.bold,
+            // Screen Titles - Bold (700), 24pt
+            headlineLarge: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
               fontSize: 28,
-              letterSpacing: 1.1,
+              height: 1.3,
             ),
-            headlineSmall: TextStyle(
-              fontWeight: FontWeight.bold,
+            headlineMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
               fontSize: 24,
-              letterSpacing: 1.0,
+              height: 1.3,
             ),
-            titleLarge: TextStyle(
+            headlineSmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
+              fontSize: 24,
+              height: 1.3,
+            ),
+            // Live Scores - Semi-Bold (600), 28pt+, tabular nums
+            titleLarge: GoogleFonts.nunito(
               fontWeight: FontWeight.w600,
-              fontSize: 22,
+              fontSize: 28,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              height: 1.2,
+            ),
+            // Sub-headers - Medium (500), 18pt
+            titleMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w500,
+              fontSize: 18,
+              height: 1.3,
+            ),
+            // Primary Actions - Bold (700), 18pt
+            titleSmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              height: 1.2,
+            ),
+            // Body/Rules - Regular (400), 16pt, line height 1.4x
+            bodyLarge: GoogleFonts.nunito(
+              fontWeight: FontWeight.w400,
+              fontSize: 16,
+              height: 1.4,
+            ),
+            // Body - Regular (400), 16pt, line height 1.4x
+            bodyMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w400,
+              fontSize: 16,
+              height: 1.4,
+            ),
+            // Secondary Info - Regular (400), 14pt
+            bodySmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w400,
+              fontSize: 14,
+              height: 1.3,
+            ),
+            // Micro-Copy - Light (300), 12pt
+            labelSmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w300,
+              fontSize: 12,
+              height: 1.3,
+            ),
+            // Labels Medium - Medium (500), 14pt
+            labelMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              height: 1.3,
+            ),
+            // Labels Large - Bold (700), 16pt for buttons
+            labelLarge: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              height: 1.2,
             ),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
@@ -78,25 +150,96 @@ class DartGamesApp extends StatelessWidget {
             brightness: Brightness.dark,
           ),
           useMaterial3: true,
-          textTheme: const TextTheme(
-            headlineLarge: TextStyle(
-              fontWeight: FontWeight.bold,
+          textTheme: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).copyWith(
+            // Hero Headers - Black (900), 32-40pt, negative letter spacing
+            displayLarge: GoogleFonts.nunito(
+              fontWeight: FontWeight.w900,
+              fontSize: 40,
+              letterSpacing: -0.02 * 40,
+              height: 1.2,
+            ),
+            displayMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w900,
+              fontSize: 36,
+              letterSpacing: -0.02 * 36,
+              height: 1.2,
+            ),
+            displaySmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w900,
               fontSize: 32,
-              letterSpacing: 1.2,
+              letterSpacing: -0.02 * 32,
+              height: 1.2,
             ),
-            headlineMedium: TextStyle(
-              fontWeight: FontWeight.bold,
+            // Screen Titles - Bold (700), 24pt
+            headlineLarge: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
               fontSize: 28,
-              letterSpacing: 1.1,
+              height: 1.3,
             ),
-            headlineSmall: TextStyle(
-              fontWeight: FontWeight.bold,
+            headlineMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
               fontSize: 24,
-              letterSpacing: 1.0,
+              height: 1.3,
             ),
-            titleLarge: TextStyle(
+            headlineSmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
+              fontSize: 24,
+              height: 1.3,
+            ),
+            // Live Scores - Semi-Bold (600), 28pt+, tabular nums
+            titleLarge: GoogleFonts.nunito(
               fontWeight: FontWeight.w600,
-              fontSize: 22,
+              fontSize: 28,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              height: 1.2,
+            ),
+            // Sub-headers - Medium (500), 18pt
+            titleMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w500,
+              fontSize: 18,
+              height: 1.3,
+            ),
+            // Primary Actions - Bold (700), 18pt
+            titleSmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              height: 1.2,
+            ),
+            // Body/Rules - Regular (400), 16pt, line height 1.4x
+            bodyLarge: GoogleFonts.nunito(
+              fontWeight: FontWeight.w400,
+              fontSize: 16,
+              height: 1.4,
+            ),
+            // Body - Regular (400), 16pt, line height 1.4x
+            bodyMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w400,
+              fontSize: 16,
+              height: 1.4,
+            ),
+            // Secondary Info - Regular (400), 14pt
+            bodySmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w400,
+              fontSize: 14,
+              height: 1.3,
+            ),
+            // Micro-Copy - Light (300), 12pt
+            labelSmall: GoogleFonts.nunito(
+              fontWeight: FontWeight.w300,
+              fontSize: 12,
+              height: 1.3,
+            ),
+            // Labels Medium - Medium (500), 14pt
+            labelMedium: GoogleFonts.nunito(
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              height: 1.3,
+            ),
+            // Labels Large - Bold (700), 16pt for buttons
+            labelLarge: GoogleFonts.nunito(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              height: 1.2,
             ),
           ),
         ),

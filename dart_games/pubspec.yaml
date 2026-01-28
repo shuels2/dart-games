@@ -77,6 +77,9 @@ dependencies:
   # File picker for selecting custom victory music
   file_picker: ^8.1.4
 
+  # Google Fonts for Nunito typography
+  google_fonts: ^6.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
