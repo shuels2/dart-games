@@ -295,15 +295,27 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     final dartboardProvider = context.watch<DartboardProvider>();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
       appBar: AppBar(
         title: Text(
           'Carnival Derby Race',
           style: GoogleFonts.rye(
             fontWeight: FontWeight.bold,
             fontSize: 24,
+            color: const Color(0xFFF1FAEE), // Cloud Dancer
+            shadows: [
+              const Shadow(
+                color: Color(0xFFFFD700), // Canary Yellow glow
+                blurRadius: 10,
+              ),
+              const Shadow(
+                color: Color(0xFFFFD700),
+                blurRadius: 20,
+              ),
+            ],
           ),
         ),
-        backgroundColor: Colors.amber,
+        backgroundColor: const Color(0xFFE63946), // Lava Red
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -315,30 +327,78 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           ),
         ],
       ),
-      body: Consumer2<HorseRaceProvider, PlayerProvider>(
-        builder: (context, horseRaceProvider, playerProvider, child) {
-          final currentGame = horseRaceProvider.currentGame;
-          if (currentGame == null) {
-            return Center(
-              child: Text(
-                'No active game',
-                style: GoogleFonts.montserrat(
-                  fontWeight: FontWeight.w500,
-                ),
+      body: Container(
+        decoration: BoxDecoration(
+          // Warm Cedar / Honey Oak wood plank texture with vertical grain
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFFA67C52), // Lighter honey oak
+              const Color(0xFF8B5E3C), // Warm cedar base
+              const Color(0xFF9A6D47), // Medium tone
+              const Color(0xFF8B5E3C), // Warm cedar base
+            ],
+            stops: const [0.0, 0.3, 0.6, 1.0],
+          ),
+        ),
+        child: Container(
+          // Soft-light blending overlay for texture depth
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Colors.white.withOpacity(0.15), // Brightness boost
+                Colors.white.withOpacity(0.05),
+                Colors.white.withOpacity(0.15),
+              ],
+            ),
+          ),
+          child: Container(
+            // Radial vignette with warm amber glow in center
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.2,
+                colors: [
+                  const Color(0xFFFFD700).withOpacity(0.1), // Warm amber glow center
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.5), // Darker edges (reduced from 60%)
+                ],
+                stops: const [0.0, 0.4, 1.0],
               ),
-            );
-          }
+            ),
+            child: Container(
+              // Subtle grunge texture overlay at 8% opacity (reduced for brightness)
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.08),
+              ),
+            child: Consumer2<HorseRaceProvider, PlayerProvider>(
+              builder: (context, horseRaceProvider, playerProvider, child) {
+                final currentGame = horseRaceProvider.currentGame;
+                if (currentGame == null) {
+                  return Center(
+                    child: Text(
+                      'No active game',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFFF1FAEE), // Cloud Dancer for visibility
+                      ),
+                    ),
+                  );
+                }
 
-          final players = currentGame.playerIds
-              .map((id) => playerProvider.getPlayerById(id))
-              .whereType<Player>()
-              .toList();
+                final players = currentGame.playerIds
+                    .map((id) => playerProvider.getPlayerById(id))
+                    .whereType<Player>()
+                    .toList();
 
-          final currentPlayer = horseRaceProvider.getCurrentPlayer(players);
-          final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
-          final shouldPromptTakeout = horseRaceProvider.shouldPromptTakeout;
+                final currentPlayer = horseRaceProvider.getCurrentPlayer(players);
+                final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
+                final shouldPromptTakeout = horseRaceProvider.shouldPromptTakeout;
 
-          return Column(
+                return Column(
             children: [
               // Current player info
               _buildCurrentPlayerSection(
@@ -370,6 +430,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           );
         },
       ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -387,9 +450,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.amber[100],
+        color: const Color(0xFF1D3557).withOpacity(0.9), // Midnight Navy
         border: const Border(
-          bottom: BorderSide(color: Colors.amber, width: 3),
+          bottom: BorderSide(color: Color(0xFFFFD700), width: 3), // Canary Yellow
         ),
       ),
       child: Row(
@@ -409,6 +472,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   'Score: $score / $targetScore',
                   style: GoogleFonts.luckiestGuy(
                     fontSize: 16,
+                    color: const Color(0xFFFFD700), // Canary Yellow
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -419,6 +483,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
+                        color: const Color(0xFFF1FAEE), // Cloud Dancer
                       ),
                     ),
                     ...List.generate(
@@ -431,7 +496,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                               : Icons.circle_outlined,
                           size: 16,
                           color: index < dartsThrown
-                              ? Colors.amber[700]
+                              ? const Color(0xFFFFD700) // Canary Yellow
                               : Colors.grey,
                         ),
                       ),
@@ -441,6 +506,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         fontWeight: FontWeight.w300,
+                        color: const Color(0xFFF1FAEE), // Cloud Dancer
                       ),
                     ),
                   ],
@@ -463,8 +529,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           margin: const EdgeInsets.all(32),
           padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 48),
           decoration: BoxDecoration(
-            color: Colors.red[700],
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFF1D3557).withOpacity(0.95), // Midnight Navy
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFFFFD700), // Canary Yellow border
+              width: 4,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.5),
@@ -485,7 +555,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               Text(
                 playerName,
                 style: GoogleFonts.luckiestGuy(
-                  color: Colors.white,
+                  color: const Color(0xFFFFD700), // Canary Yellow
                   fontSize: 28,
                 ),
               ),
@@ -493,7 +563,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               Text(
                 'Remove Your Darts',
                 style: GoogleFonts.bangers(
-                  color: Colors.white,
+                  color: const Color(0xFFF1FAEE), // Cloud Dancer
                   fontSize: 24,
                   letterSpacing: 1.0,
                 ),
@@ -558,8 +628,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   width: 250,
                   height: 250,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
+                    color: const Color(0xFF1D3557).withOpacity(0.9), // Midnight Navy
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFFFD700), // Canary Yellow
+                      width: 3,
+                    ),
                   ),
                   child: Center(
                     child: Column(
@@ -574,29 +648,40 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                         Text(
                           'Remove Your Darts',
                           style: GoogleFonts.bangers(
-                            color: Colors.white,
+                            color: const Color(0xFFF1FAEE), // Cloud Dancer
                             fontSize: 18,
                             letterSpacing: 1.0,
                           ),
                         ),
                         const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () {
-                            // Simulate takeout finished
-                            _mockApi?.simulateTakeoutFinished();
-                            // Also clear the dartboard visually
-                            _dartboardKey.currentState?.removeDarts();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                          ),
-                          child: Text(
-                            'DARTS REMOVED',
-                            style: GoogleFonts.bangers(
-                              fontSize: 16,
-                              letterSpacing: 1.0,
+                        Transform.rotate(
+                          angle: -0.087, // 5-degree tilt
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Simulate takeout finished
+                              _mockApi?.simulateTakeoutFinished();
+                              // Also clear the dartboard visually
+                              _dartboardKey.currentState?.removeDarts();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE63946), // Lava Red
+                              foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              side: const BorderSide(
+                                color: Color(0xFFFFD700), // Canary Yellow border
+                                width: 4,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              'DARTS REMOVED',
+                              style: GoogleFonts.bangers(
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                                color: const Color(0xFFF1FAEE),
+                              ),
                             ),
                           ),
                         ),

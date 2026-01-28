@@ -63,15 +63,27 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
     final dartboardProvider = context.watch<DartboardProvider>();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
       appBar: AppBar(
         title: Text(
           'Carnival Derby Game Setup',
           style: GoogleFonts.rye(
             fontWeight: FontWeight.bold,
             fontSize: 24,
+            color: const Color(0xFFF1FAEE), // Cloud Dancer
+            shadows: [
+              Shadow(
+                color: const Color(0xFFFFD700), // Canary Yellow glow
+                blurRadius: 10,
+              ),
+              Shadow(
+                color: const Color(0xFFFFD700),
+                blurRadius: 20,
+              ),
+            ],
           ),
         ),
-        backgroundColor: Colors.amber,
+        backgroundColor: const Color(0xFFE63946), // Lava Red
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -83,13 +95,60 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           ),
         ],
       ),
-      body: Consumer<PlayerProvider>(
-        builder: (context, playerProvider, child) {
-          if (playerProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Container(
+        decoration: BoxDecoration(
+          // Warm Cedar / Honey Oak wood plank texture with vertical grain
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFFA67C52), // Lighter honey oak
+              const Color(0xFF8B5E3C), // Warm cedar base
+              const Color(0xFF9A6D47), // Medium tone
+              const Color(0xFF8B5E3C), // Warm cedar base
+            ],
+            stops: const [0.0, 0.3, 0.6, 1.0],
+          ),
+        ),
+        child: Container(
+          // Soft-light blending overlay for texture depth
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Colors.white.withOpacity(0.15), // Brightness boost
+                Colors.white.withOpacity(0.05),
+                Colors.white.withOpacity(0.15),
+              ],
+            ),
+          ),
+          child: Container(
+            // Radial vignette with warm amber glow in center
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.2,
+                colors: [
+                  const Color(0xFFFFD700).withOpacity(0.1), // Warm amber glow center
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.5), // Darker edges (reduced from 60%)
+                ],
+                stops: const [0.0, 0.4, 1.0],
+              ),
+            ),
+            child: Container(
+              // Subtle grunge texture overlay at 8% opacity (reduced for brightness)
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.08),
+              ),
+            child: Consumer<PlayerProvider>(
+              builder: (context, playerProvider, child) {
+                if (playerProvider.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          return Row(
+                return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Left side: Game Description
@@ -126,6 +185,9 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             ],
           );
         },
+      ),
+          ),
+        ),
       ),
     );
   }
@@ -367,7 +429,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             max: 250,
             divisions: 46,
             label: _targetScore.toInt().toString(),
-            activeColor: Colors.amber,
+            activeColor: const Color(0xFFFFD700), // Canary Yellow
             onChanged: (value) {
               setState(() {
                 _targetScore = value;
@@ -414,7 +476,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                                 Radio<bool>(
                                   value: true,
                                   groupValue: _exactScoreMode,
-                                  activeColor: Colors.amber,
+                                  activeColor: const Color(0xFF48CAE4), // Electric Teal
                                   onChanged: (value) {
                                     setState(() {
                                       _exactScoreMode = value!;
@@ -458,7 +520,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                                 Radio<bool>(
                                   value: false,
                                   groupValue: _exactScoreMode,
-                                  activeColor: Colors.amber,
+                                  activeColor: const Color(0xFF48CAE4), // Electric Teal
                                   onChanged: (value) {
                                     setState(() {
                                       _exactScoreMode = value!;
@@ -568,21 +630,33 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: ElevatedButton.icon(
-                onPressed: () => _showAddPlayerDialog(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
+              child: Transform.rotate(
+                angle: -0.087, // 5-degree tilt
+                child: ElevatedButton.icon(
+                  onPressed: () => _showAddPlayerDialog(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE63946), // Lava Red
+                    foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    side: const BorderSide(
+                      color: Color(0xFFFFD700), // Canary Yellow border
+                      width: 4,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ),
-                icon: const Icon(Icons.add, size: 20),
-                label: Text(
-                  'NEW PLAYER',
-                  style: GoogleFonts.bangers(
-                    fontSize: 14,
-                    letterSpacing: 1.0,
+                  icon: const Icon(Icons.add, size: 20),
+                  label: Text(
+                    'NEW PLAYER',
+                    style: GoogleFonts.bangers(
+                      fontSize: 14,
+                      letterSpacing: 1.0,
+                      color: const Color(0xFFF1FAEE),
+                    ),
                   ),
                 ),
               ),
@@ -603,21 +677,33 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () => _showAddPlayerDialog(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24.0,
-                            vertical: 16.0,
+                      Transform.rotate(
+                        angle: -0.087, // 5-degree tilt
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showAddPlayerDialog(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE63946), // Lava Red
+                            foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0,
+                              vertical: 16.0,
+                            ),
+                            side: const BorderSide(
+                              color: Color(0xFFFFD700), // Canary Yellow border
+                              width: 4,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
-                        ),
-                        icon: const Icon(Icons.add),
-                        label: Text(
-                          'NEW PLAYER',
-                          style: GoogleFonts.bangers(
-                            fontSize: 16,
-                            letterSpacing: 1.0,
+                          icon: const Icon(Icons.add),
+                          label: Text(
+                            'NEW PLAYER',
+                            style: GoogleFonts.bangers(
+                              fontSize: 16,
+                              letterSpacing: 1.0,
+                              color: const Color(0xFFF1FAEE),
+                            ),
                           ),
                         ),
                       ),
@@ -655,18 +741,32 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16.0),
-      child: ElevatedButton(
-        onPressed: canStart ? () => _startGame(playerProvider) : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.amber,
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          disabledBackgroundColor: Colors.grey[300],
-        ),
-        child: Text(
-          'START THE RACE!',
-          style: GoogleFonts.bangers(
-            fontSize: 18,
-            letterSpacing: 1.0,
+      child: Transform.rotate(
+        angle: -0.087, // 5-degree tilt
+        child: ElevatedButton(
+          onPressed: canStart ? () => _startGame(playerProvider) : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFE63946), // Lava Red
+            foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            disabledBackgroundColor: Colors.grey[300],
+            side: canStart
+                ? const BorderSide(
+                    color: Color(0xFFFFD700), // Canary Yellow border
+                    width: 4,
+                  )
+                : null,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'START THE RACE!',
+            style: GoogleFonts.bangers(
+              fontSize: 18,
+              letterSpacing: 1.0,
+              color: canStart ? const Color(0xFFF1FAEE) : null,
+            ),
           ),
         ),
       ),
@@ -702,11 +802,22 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1D3557).withOpacity(0.95), // Midnight Navy
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           title: Text(
             'Add New Player',
             style: GoogleFonts.montserrat(
               fontSize: 20,
               fontWeight: FontWeight.w900,
+              color: const Color(0xFFF1FAEE), // Cloud Dancer
+              shadows: [
+                const Shadow(
+                  color: Color(0xFFFFD700), // Canary Yellow glow
+                  blurRadius: 10,
+                ),
+              ],
             ),
           ),
           content: SingleChildScrollView(
@@ -761,9 +872,19 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   ),
                 TextField(
                   controller: nameController,
+                  style: const TextStyle(color: Color(0xFFF1FAEE)), // Cloud Dancer
                   decoration: InputDecoration(
                     labelText: 'Player Name',
-                    border: const OutlineInputBorder(),
+                    labelStyle: const TextStyle(color: Color(0xFFF1FAEE)),
+                    border: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF48CAE4)),
+                    ),
+                    enabledBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF48CAE4)),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFFD700), width: 2),
+                    ),
                     errorText: showError ? 'Please enter a player name' : null,
                     errorBorder: const OutlineInputBorder(
                       borderSide: BorderSide(color: Colors.red, width: 2),
@@ -788,6 +909,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   style: GoogleFonts.montserrat(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
+                    color: const Color(0xFFF1FAEE), // Cloud Dancer
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -803,12 +925,21 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                           });
                         }
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF48CAE4), // Electric Teal
+                        foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+                        side: const BorderSide(
+                          color: Color(0xFFFFD700), // Canary Yellow border
+                          width: 2,
+                        ),
+                      ),
                       icon: const Icon(Icons.camera_alt),
                       label: Text(
                         'CAMERA',
                         style: GoogleFonts.bangers(
                           fontSize: 14,
                           letterSpacing: 1.0,
+                          color: const Color(0xFFF1FAEE),
                         ),
                       ),
                     ),
@@ -821,12 +952,21 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                           });
                         }
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF48CAE4), // Electric Teal
+                        foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+                        side: const BorderSide(
+                          color: Color(0xFFFFD700), // Canary Yellow border
+                          width: 2,
+                        ),
+                      ),
                       icon: const Icon(Icons.photo_library),
                       label: Text(
                         'GALLERY',
                         style: GoogleFonts.bangers(
                           fontSize: 14,
                           letterSpacing: 1.0,
+                          color: const Color(0xFFF1FAEE),
                         ),
                       ),
                     ),
@@ -843,10 +983,19 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                 style: GoogleFonts.bangers(
                   fontSize: 14,
                   letterSpacing: 1.0,
+                  color: const Color(0xFFF1FAEE), // Cloud Dancer
                 ),
               ),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE63946), // Lava Red
+                foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+                side: const BorderSide(
+                  color: Color(0xFFFFD700), // Canary Yellow border
+                  width: 3,
+                ),
+              ),
               onPressed: () {
                 if (nameController.text.trim().isEmpty) {
                   setDialogState(() {
@@ -873,6 +1022,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                 style: GoogleFonts.bangers(
                   fontSize: 14,
                   letterSpacing: 1.0,
+                  color: const Color(0xFFF1FAEE),
                 ),
               ),
             ),
