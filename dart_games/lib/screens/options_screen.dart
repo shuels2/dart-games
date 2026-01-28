@@ -1253,7 +1253,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                         ),
             const SizedBox(height: 8),
             Text(
-              'Configure the voice for the announcer used by games for notifications and gameplay',
+              'Configure the voice used by the announcer for game notifications and updates.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -1546,7 +1546,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                         const Icon(Icons.music_note, color: Colors.amber),
                         const SizedBox(width: 8),
                         Text(
-                          'Game Celebration Music List',
+                          'List of celebration music files',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
