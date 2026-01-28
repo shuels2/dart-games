@@ -269,6 +269,57 @@ flutter test test/widgets/
 - Tests cover both web and native platform scenarios
 - Backward compatibility is validated for data migrations
 
+### Maintaining Tests When Features Change
+
+**CRITICAL: When updating features, tests MUST be updated to match.**
+
+Whenever you update a feature of the dart games app or modify one of the games:
+
+1. **Ask the user if they want to update the tests** to match the new functionality
+   - Example: "I've updated the player selection feature. Would you like me to update the tests to cover the new functionality?"
+
+2. **If the user says yes:**
+   - Update existing tests that are affected by the changes
+   - Add new tests to cover the new functionality
+   - Ensure all tests pass with the updated code
+   - Run `flutter test` to verify 100% pass rate
+
+3. **Update CLAUDE.md with the new test count and requirements:**
+   - Update the total test count in the "CRITICAL REQUIREMENTS" section (line 31)
+   - Update the test breakdown in the "Complete Test Suite" section
+   - Add documentation for any new test files created
+   - Update the "Test Expectations" section with the new total
+
+4. **Commit the test updates:**
+   - Include test updates in the same commit as the feature changes, OR
+   - Create a separate commit specifically for test updates
+   - Update CLAUDE.md in the same commit or immediately after
+
+**Important Notes:**
+- Never leave tests broken or outdated after a feature update
+- If tests need to be temporarily disabled, document why and create a task to fix them
+- Test coverage should never decrease - only increase or stay the same
+- Breaking changes to features MUST have corresponding test updates
+
+**Example Workflow:**
+
+```
+User: "Update the player photo feature to support GIF files"
+Claude:
+1. Updates the code to support GIF files
+2. Asks: "I've updated the player photo feature to support GIF files.
+   Would you like me to update the PlayerProvider tests to cover GIF file handling?"
+User: "yes"
+Claude:
+1. Adds tests for GIF file handling to test/providers/player_provider_test.dart
+2. Runs flutter test - now 142 tests (was 139)
+3. Updates CLAUDE.md:
+   - Line 31: "All 142 tests must pass"
+   - Provider Tests section: "player_provider_test.dart (33 tests)" (was 30)
+   - Test Expectations: "All 142 tests must pass"
+4. Commits changes with updated CLAUDE.md
+```
+
 ## Git Workflow
 
 ### Push Permission Required
