@@ -152,6 +152,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF44336), // Red
+                Color(0xFFFFC107), // Amber
+              ],
+            ),
+          ),
+        ),
         title: Row(
           children: [
             Image.asset(

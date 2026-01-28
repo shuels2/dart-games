@@ -876,7 +876,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                     icon: const Icon(Icons.person_add),
                     label: const Text('Add Player'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -1225,9 +1225,20 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF44336), // Red
+                Color(0xFFFFC107), // Amber
+              ],
+            ),
+          ),
+        ),
         title: const Text('System Settings'),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
+        foregroundColor: Colors.white,
       ),
       body: Row(
         children: [
@@ -1676,7 +1687,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
                                 ? 'Add Music File'
                                 : 'Add Another File'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber,
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: Colors.white,
                               padding:
                                   const EdgeInsets.symmetric(vertical: 12),
                             ),
@@ -1738,30 +1750,23 @@ class _OptionsScreenState extends State<OptionsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.admin_panel_settings,
-                              color: Colors.orange,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'ADMIN',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                    color: Colors.orange,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+                        Text(
+                          'Admin Options',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Advanced settings and tools for testing and development.',
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 16),
                         Card(
                           child: ListTile(
                             leading: const Icon(Icons.computer),
                             title: const Text('Scolia 2 Dartboard Emulator'),
-                            subtitle: const Text('Test dartboard functionality'),
+                            subtitle: const Text('Test the Scolia 2 dartboard emulator functions and API calls'),
                             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                             onTap: () {
                               Navigator.of(context).push(

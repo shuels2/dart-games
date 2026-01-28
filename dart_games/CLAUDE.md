@@ -42,6 +42,55 @@ This is NON-NEGOTIABLE. Tests validate critical functionality including:
 - Cross-platform compatibility
 - Game logic and scoring
 
+### Handling Test Failures
+
+**NEVER automatically update tests to make them pass without user approval.**
+
+When tests fail after making code changes:
+
+1. **STOP and analyze the failure**
+   - Read the test failure messages carefully
+   - Understand what functionality the test is validating
+   - Determine if the test is catching a bug in the new code OR if the test is outdated
+
+2. **Ask the user for direction**
+   - Present the test failure details to the user
+   - Ask: "The tests are failing. Would you like me to:
+     - (A) Fix the application code to make the existing tests pass, OR
+     - (B) Update the tests to match the new application behavior?"
+   - Wait for explicit user choice before proceeding
+
+3. **IMPORTANT: Do not assume tests need updating**
+   - Tests often catch real bugs introduced by code changes
+   - Automatically updating tests to pass could hide bugs in the application
+   - The user knows the intended behavior - let them decide
+
+4. **After user decision**
+   - If (A): Fix the application code while preserving test requirements
+   - If (B): Update tests AND update CLAUDE.md with new test count/descriptions
+   - Re-run `flutter test` to verify 100% pass rate
+   - Only then proceed with build/commit
+
+**Example Workflow:**
+
+```
+Scenario: After updating player management, 3 tests fail
+
+❌ WRONG approach:
+- Automatically modify tests to pass
+- Proceed with build
+
+✅ CORRECT approach:
+- Analyze the 3 failing tests
+- Present to user: "Tests are failing because the new code changes how player names are validated.
+  Would you like me to:
+  (A) Revert the validation changes to match the test expectations, OR
+  (B) Update the tests to accept the new validation logic?"
+- Wait for user choice
+- Implement the chosen solution
+- Re-run tests to verify all pass
+```
+
 ### Cross-Platform Compatibility
 
 **All features must work on both web and tablet devices (iOS and Android).**

@@ -28,10 +28,10 @@ class DartGamesApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.red,
-            primary: Colors.red,
-            secondary: const Color(0xFFFFC107), // Amber/Yellow
-            tertiary: const Color(0xFF2196F3), // Blue
+            seedColor: const Color(0xFFFF6B35),
+            primary: const Color(0xFFFF6B35), // Flame Orange
+            secondary: const Color(0xFFF7931E), // Tangerine Orange
+            tertiary: const Color(0xFF004E89), // Deep Ocean Blue
             brightness: Brightness.light,
           ),
           useMaterial3: true,
@@ -143,10 +143,10 @@ class DartGamesApp extends StatelessWidget {
         ),
         darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.red,
-            primary: const Color(0xFFEF5350), // Lighter red for dark mode
-            secondary: const Color(0xFFFFD54F), // Lighter amber
-            tertiary: const Color(0xFF42A5F5), // Lighter blue
+            seedColor: const Color(0xFFFF6B35),
+            primary: const Color(0xFFFF8C5A), // Lighter Flame Orange for dark mode
+            secondary: const Color(0xFFFFB347), // Lighter Tangerine Orange
+            tertiary: const Color(0xFF4A90E2), // Lighter Ocean Blue
             brightness: Brightness.dark,
           ),
           useMaterial3: true,

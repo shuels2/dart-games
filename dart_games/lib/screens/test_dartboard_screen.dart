@@ -179,9 +179,20 @@ class _TestDartboardScreenState extends State<TestDartboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF44336), // Red
+                Color(0xFFFFC107), // Amber
+              ],
+            ),
+          ),
+        ),
         title: const Text('Scolia 2 Dartboard Emulator'),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline),

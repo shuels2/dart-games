@@ -109,6 +109,18 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF44336), // Red
+                Color(0xFFFFC107), // Amber
+              ],
+            ),
+          ),
+        ),
         title: Row(
           children: [
             Image.asset(
@@ -120,7 +132,6 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
             const Text('Dartboard Setup'),
           ],
         ),
-        backgroundColor: theme.colorScheme.primary,
       ),
       body: Column(
         children: [
