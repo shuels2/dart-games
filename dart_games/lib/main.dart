@@ -8,8 +8,42 @@ import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Preload all Google Fonts used in the app to prevent FOUT (Flash of Unstyled Text)
+  await _preloadFonts();
+
   runApp(const DartGamesApp());
+}
+
+Future<void> _preloadFonts() async {
+  // Preload Nunito (main app font) with all weights
+  GoogleFonts.nunito(fontWeight: FontWeight.w300);
+  GoogleFonts.nunito(fontWeight: FontWeight.w400);
+  GoogleFonts.nunito(fontWeight: FontWeight.w500);
+  GoogleFonts.nunito(fontWeight: FontWeight.w600);
+  GoogleFonts.nunito(fontWeight: FontWeight.w700);
+  GoogleFonts.nunito(fontWeight: FontWeight.w900);
+
+  // Preload Carnival Derby fonts
+  GoogleFonts.rye(fontWeight: FontWeight.bold);
+  GoogleFonts.bangers();
+  GoogleFonts.luckiestGuy();
+  GoogleFonts.montserrat(fontWeight: FontWeight.w300);
+  GoogleFonts.montserrat(fontWeight: FontWeight.w500);
+  GoogleFonts.montserrat(fontWeight: FontWeight.w900);
+  GoogleFonts.robotoCondensed(fontWeight: FontWeight.w300);
+
+  // Wait for all fonts to load
+  await GoogleFonts.pendingFonts([
+    GoogleFonts.nunito(),
+    GoogleFonts.rye(),
+    GoogleFonts.bangers(),
+    GoogleFonts.luckiestGuy(),
+    GoogleFonts.montserrat(),
+    GoogleFonts.robotoCondensed(),
+  ]);
 }
 
 class DartGamesApp extends StatelessWidget {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/dartboard_provider.dart';
 import '../services/dart_announcer_service.dart';
 import '../widgets/dartboard_status_indicator.dart';
@@ -58,10 +59,16 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               Text(
                 title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: title == 'Carnival Derby'
+                    ? GoogleFonts.rye(
+                        fontSize: theme.textTheme.titleMedium?.fontSize,
+                        color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                      )
+                    : theme.textTheme.titleMedium?.copyWith(
+                        color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -246,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: _buildGameCard(
                     context: context,
                     imageAssetPath: 'assets/icon/icon.png',
-                    title: 'Carnival\nDerby',
+                    title: 'Carnival Derby',
                     color: Colors.amber,
                     onTap: dartboardProvider.canPlayGames
                         ? () {

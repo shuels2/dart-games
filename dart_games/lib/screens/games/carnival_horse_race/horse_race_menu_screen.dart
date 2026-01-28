@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
@@ -63,17 +64,12 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/icon/icon.png',
-              height: 48,
-              width: 48,
-            ),
-            const SizedBox(width: 8),
-            const Text('Game Setup'),
-          ],
+        title: Text(
+          'Carnival Derby Game Setup',
+          style: GoogleFonts.rye(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
         ),
         backgroundColor: Colors.amber,
         actions: [
@@ -141,145 +137,211 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.black),
+            text: TextSpan(
+              style: GoogleFonts.montserrat(
+                fontSize: 18,
+                color: Colors.black,
+                fontWeight: FontWeight.w900,
+              ),
               children: [
-                TextSpan(text: 'Step right up! Transform your game room into a high-stakes midway with '),
+                const TextSpan(text: 'Step right up! Transform your game room into a high-stakes midway with '),
                 TextSpan(
                   text: 'Carnival Derby',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.rye(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
-                TextSpan(text: ', the fast-paced horse racing game where your aim determines your fame!'),
+                const TextSpan(text: ', the fast-paced horse racing game where your aim determines your fame!'),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'The Race is On!',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 8),
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.black),
+            text: TextSpan(
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
               children: [
-                TextSpan(text: 'In '),
+                const TextSpan(text: 'In '),
                 TextSpan(
                   text: 'Carnival Derby',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.rye(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                TextSpan(text: ', you aren\'t just a spectator—you\'re the engine! Every player commands a horse at the starting gate, but speed is measured in bullseyes.'),
+                const TextSpan(text: ', you aren\'t just a spectator—you\'re the engine! Every player commands a horse at the starting gate, but speed is measured in bullseyes.'),
               ],
             ),
           ),
           const SizedBox(height: 8),
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.black),
+            text: TextSpan(
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
               children: [
-                TextSpan(text: 'The mechanics are simple but addictive: '),
+                const TextSpan(text: 'The mechanics are simple but addictive: '),
                 TextSpan(
                   text: 'Throw your darts to move your horse.',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                TextSpan(text: ' The better your shot, the faster your steed gallops down the track toward the finish line. It\'s a heart-pounding blend of precision and racing strategy that keeps everyone on the edge of their seats until the final throw.'),
+                const TextSpan(text: ' The better your shot, the faster your steed gallops down the track toward the finish line. It\'s a heart-pounding blend of precision and racing strategy that keeps everyone on the edge of their seats until the final throw.'),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Customize Your Challenge',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Whether you\'re looking for a quick sprint or an epic endurance test, Carnival Derby lets you control the reins:',
-            style: TextStyle(fontSize: 14),
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 8),
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.black),
+            text: TextSpan(
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
               children: [
-                TextSpan(text: '• '),
+                const TextSpan(text: '• '),
                 TextSpan(
                   text: 'Set the Distance:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                TextSpan(text: ' Want a lightning-fast "Quarter Horse" dash? Set a low point total. Looking for a grueling "Triple Crown" marathon? Crank up the points required to win!'),
+                const TextSpan(text: ' Want a lightning-fast "Quarter Horse" dash? Set a low point total. Looking for a grueling "Triple Crown" marathon? Crank up the points required to win!'),
               ],
             ),
           ),
           const SizedBox(height: 8),
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.black),
+            text: TextSpan(
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
               children: [
-                TextSpan(text: '• '),
+                const TextSpan(text: '• '),
                 TextSpan(
                   text: 'The "Perfect Finish" Rule:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                TextSpan(text: ' For the ultimate test of skill, turn on '),
+                const TextSpan(text: ' For the ultimate test of skill, turn on '),
                 TextSpan(
                   text: 'Perfect Finish',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                TextSpan(text: ' mode. In this game, you can\'t just blast past the finish line—you have to land your final dart to hit the winning number exactly. If you over-score, your horse stays put, giving your rivals a chance to catch up!'),
+                const TextSpan(text: ' mode. In this game, you can\'t just blast past the finish line—you have to land your final dart to hit the winning number exactly. If you over-score, your horse stays put, giving your rivals a chance to catch up!'),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Why You\'ll Love It',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 8),
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.black),
+            text: TextSpan(
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
               children: [
-                TextSpan(text: '• '),
+                const TextSpan(text: '• '),
                 TextSpan(
                   text: 'Interactive Fun:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                TextSpan(text: ' Unlike traditional darts, every point has a visual impact as you watch your horse pull ahead of the pack.'),
+                const TextSpan(text: ' Unlike traditional darts, every point has a visual impact as you watch your horse pull ahead of the pack.'),
               ],
             ),
           ),
           const SizedBox(height: 8),
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.black),
+            text: TextSpan(
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
               children: [
-                TextSpan(text: '• '),
+                const TextSpan(text: '• '),
                 TextSpan(
                   text: 'All Skill Levels:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                TextSpan(text: ' Beginners can aim for the big slices, while pros can hunt for triples to leapfrog the competition.'),
+                const TextSpan(text: ' Beginners can aim for the big slices, while pros can hunt for triples to leapfrog the competition.'),
               ],
             ),
           ),
           const SizedBox(height: 8),
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.black),
+            text: TextSpan(
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
               children: [
-                TextSpan(text: '• '),
+                const TextSpan(text: '• '),
                 TextSpan(
                   text: 'High Tension:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                TextSpan(text: ' Nothing beats the roar of the crowd (or your friends!) as three horses neck-and-neck approach the final few points.'),
+                const TextSpan(text: ' Nothing beats the roar of the crowd (or your friends!) as three horses neck-and-neck approach the final few points.'),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Do you have the steady hand needed to take the winner\'s circle? Grab your darts and let the derby begin!',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            style: GoogleFonts.montserrat(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ],
       ),
@@ -294,9 +356,9 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
         children: [
           Text(
             'Target score: ${_targetScore.toInt()} points',
-            style: const TextStyle(
+            style: GoogleFonts.montserrat(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
             ),
           ),
           Slider(
@@ -312,56 +374,115 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
               });
             },
           ),
-          const Text(
+          Text(
             'Range: 20-250 points',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              color: Colors.grey,
+              fontWeight: FontWeight.w300,
+            ),
           ),
           const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Require "Perfect Finish" to win the game',
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
               const SizedBox(height: 8),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text('Yes'),
-                      subtitle: const Text(
-                        'A player must hit the exact Target score to win the game. Going over the target score ends the player turn and leaves their score at the value it was before the last dart throw.',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      value: true,
-                      groupValue: _exactScoreMode,
-                      activeColor: Colors.amber,
-                      onChanged: (value) {
+                    child: InkWell(
+                      onTap: () {
                         setState(() {
-                          _exactScoreMode = value!;
+                          _exactScoreMode = true;
                         });
                       },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Radio<bool>(
+                                  value: true,
+                                  groupValue: _exactScoreMode,
+                                  activeColor: Colors.amber,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _exactScoreMode = value!;
+                                    });
+                                  },
+                                ),
+                                Text(
+                                  'Yes',
+                                  style: GoogleFonts.montserrat(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'A player must hit the exact Target score to win the game. Going over the target score ends the player turn and leaves their score at the value it was before the last dart throw.',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text('No'),
-                      subtitle: const Text(
-                        'A player wins the game when their score is greater than or equal to the Target score.',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      value: false,
-                      groupValue: _exactScoreMode,
-                      activeColor: Colors.amber,
-                      onChanged: (value) {
+                    child: InkWell(
+                      onTap: () {
                         setState(() {
-                          _exactScoreMode = value!;
+                          _exactScoreMode = false;
                         });
                       },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Radio<bool>(
+                                  value: false,
+                                  groupValue: _exactScoreMode,
+                                  activeColor: Colors.amber,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _exactScoreMode = value!;
+                                    });
+                                  },
+                                ),
+                                Text(
+                                  'No',
+                                  style: GoogleFonts.montserrat(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'A player wins the game when their score is greater than or equal to the Target score.',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -383,16 +504,19 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
         children: [
           Text(
             'Selected players (${selectedPlayers.length}/8)',
-            style: const TextStyle(
+            style: GoogleFonts.montserrat(
               fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 8),
           if (selectedPlayers.isEmpty)
-            const Text(
+            Text(
               'Select at least 1 player',
-              style: TextStyle(color: Colors.grey),
+              style: GoogleFonts.montserrat(
+                color: Colors.grey,
+                fontWeight: FontWeight.w300,
+              ),
             )
           else
             SizedBox(
@@ -430,13 +554,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Text(
             'Available players',
-            style: TextStyle(
+            style: GoogleFonts.montserrat(
               fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ),
@@ -454,7 +578,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.add, size: 20),
-                label: const Text('New Player'),
+                label: Text(
+                  'NEW PLAYER',
+                  style: GoogleFonts.bangers(
+                    fontSize: 14,
+                    letterSpacing: 1.0,
+                  ),
+                ),
               ),
             ),
           ),
@@ -464,9 +594,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'No players yet. Add your first player!',
-                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                        style: GoogleFonts.montserrat(
+                          color: Colors.grey,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w300,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
@@ -479,9 +613,12 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                           ),
                         ),
                         icon: const Icon(Icons.add),
-                        label: const Text(
-                          'New Player',
-                          style: TextStyle(fontSize: 16),
+                        label: Text(
+                          'NEW PLAYER',
+                          style: GoogleFonts.bangers(
+                            fontSize: 16,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                       ),
                     ],
@@ -525,9 +662,12 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           padding: const EdgeInsets.symmetric(vertical: 16.0),
           disabledBackgroundColor: Colors.grey[300],
         ),
-        child: const Text(
-          'Start the Race!',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        child: Text(
+          'START THE RACE!',
+          style: GoogleFonts.bangers(
+            fontSize: 18,
+            letterSpacing: 1.0,
+          ),
         ),
       ),
     );
@@ -562,7 +702,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add New Player'),
+          title: Text(
+            'Add New Player',
+            style: GoogleFonts.montserrat(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -637,9 +783,12 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Photo (Optional)',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.montserrat(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -655,7 +804,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                         }
                       },
                       icon: const Icon(Icons.camera_alt),
-                      label: const Text('Camera'),
+                      label: Text(
+                        'CAMERA',
+                        style: GoogleFonts.bangers(
+                          fontSize: 14,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                     ElevatedButton.icon(
                       onPressed: () async {
@@ -667,7 +822,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                         }
                       },
                       icon: const Icon(Icons.photo_library),
-                      label: const Text('Gallery'),
+                      label: Text(
+                        'GALLERY',
+                        style: GoogleFonts.bangers(
+                          fontSize: 14,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -677,7 +838,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(
+                'CANCEL',
+                style: GoogleFonts.bangers(
+                  fontSize: 14,
+                  letterSpacing: 1.0,
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -701,7 +868,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
 
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Add Player'),
+              child: Text(
+                'ADD PLAYER',
+                style: GoogleFonts.bangers(
+                  fontSize: 14,
+                  letterSpacing: 1.0,
+                ),
+              ),
             ),
           ],
         ),

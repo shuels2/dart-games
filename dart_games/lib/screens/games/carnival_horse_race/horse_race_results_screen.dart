@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:confetti/confetti.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
@@ -199,7 +200,12 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Race Results'),
+        title: Text(
+          'Race Results',
+          style: GoogleFonts.rye(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.amber,
         automaticallyImplyLeading: false,
         actions: [
@@ -219,7 +225,14 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
             builder: (context, horseRaceProvider, playerProvider, child) {
               final currentGame = horseRaceProvider.currentGame;
               if (currentGame == null) {
-                return const Center(child: Text('No game data'));
+                return Center(
+                  child: Text(
+                    'No game data',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                );
               }
 
               final players = currentGame.playerIds
@@ -245,9 +258,9 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                     const SizedBox(height: 16),
 
                     // Winner announcement
-                    const Text(
+                    Text(
                       'Winner!',
-                      style: TextStyle(
+                      style: GoogleFonts.rye(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Colors.amber,
@@ -269,15 +282,14 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                             const SizedBox(height: 12),
                             Text(
                               winner.name,
-                              style: const TextStyle(
+                              style: GoogleFonts.luckiestGuy(
                                 fontSize: 28,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Final Score: ${currentGame.getPlayerScore(winner.id)}',
-                              style: const TextStyle(
+                              style: GoogleFonts.luckiestGuy(
                                 fontSize: 20,
                                 color: Colors.grey,
                               ),
@@ -297,14 +309,14 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.amber, width: 2),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             '🏆 Congratulations! 🏆',
-                            style: TextStyle(
+                            style: GoogleFonts.bangers(
                               fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
                             ),
                           ),
                         ],
@@ -419,11 +431,11 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                 topRight: Radius.circular(12),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Final Standings',
-              style: TextStyle(
+              style: GoogleFonts.montserrat(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w900,
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,

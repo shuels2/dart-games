@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
@@ -295,17 +296,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/icon/icon.png',
-              height: 48,
-              width: 48,
-            ),
-            const SizedBox(width: 8),
-            const Text('Carnival Derby'),
-          ],
+        title: Text(
+          'Carnival Derby Race',
+          style: GoogleFonts.rye(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
         ),
         backgroundColor: Colors.amber,
         actions: [
@@ -323,7 +319,14 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         builder: (context, horseRaceProvider, playerProvider, child) {
           final currentGame = horseRaceProvider.currentGame;
           if (currentGame == null) {
-            return const Center(child: Text('No active game'));
+            return Center(
+              child: Text(
+                'No active game',
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            );
           }
 
           final players = currentGame.playerIds
@@ -404,17 +407,19 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               children: [
                 Text(
                   'Score: $score / $targetScore',
-                  style: const TextStyle(
+                  style: GoogleFonts.luckiestGuy(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Darts: ',
-                      style: TextStyle(fontSize: 14),
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     ...List.generate(
                       3,
@@ -433,7 +438,10 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     ),
                     Text(
                       '($dartsThrown/3)',
-                      style: const TextStyle(fontSize: 14),
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w300,
+                      ),
                     ),
                   ],
                 ),
@@ -476,19 +484,18 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               const SizedBox(height: 24),
               Text(
                 playerName,
-                style: const TextStyle(
+                style: GoogleFonts.luckiestGuy(
                   color: Colors.white,
                   fontSize: 28,
-                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Remove Your Darts',
-                style: TextStyle(
+                style: GoogleFonts.bangers(
                   color: Colors.white,
                   fontSize: 24,
-                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.0,
                 ),
               ),
             ],
@@ -509,11 +516,11 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'Click dartboard to throw',
-            style: TextStyle(
+            style: GoogleFonts.montserrat(
               fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 8),
@@ -564,12 +571,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                           size: 48,
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Remove Your Darts',
-                          style: TextStyle(
+                          style: GoogleFonts.bangers(
                             color: Colors.white,
                             fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -585,9 +592,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                           ),
-                          child: const Text(
-                            'Darts Removed',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          child: Text(
+                            'DARTS REMOVED',
+                            style: GoogleFonts.bangers(
+                              fontSize: 16,
+                              letterSpacing: 1.0,
+                            ),
                           ),
                         ),
                       ],
