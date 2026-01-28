@@ -1,11 +1,17 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import '../services/dart_announcer_service.dart';
 import '../services/app_settings.dart';
 import '../services/victory_music_service.dart';
+import '../services/photo_service.dart';
 import '../models/victory_music_file.dart';
+import '../models/player.dart';
+import '../providers/player_provider.dart';
 import 'test_dartboard_screen.dart';
 
 class OptionsScreen extends StatefulWidget {
@@ -29,6 +35,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
   bool _responsiveVoiceReady = false;
   bool _isSaving = false;
   List<VictoryMusicFile> _victoryMusicFiles = [];
+  final PhotoService _photoService = PhotoService();
 
   @override
   void initState() {
@@ -348,6 +355,699 @@ class _OptionsScreenState extends State<OptionsScreen> {
     if (diff.inDays < 30) {
       return '${(diff.inDays / 7).floor()} weeks ago';
     }
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  void _showAddPlayerDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    String? photoPath;
+    bool showError = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add New Player'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Photo preview section
+                if (photoPath != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: kIsWeb
+                              ? NetworkImage(photoPath!)
+                              : FileImage(File(photoPath!)) as ImageProvider,
+                        ),
+                        Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              setDialogState(() {
+                                photoPath = null;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey[300],
+                      child: Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Player Name',
+                    border: const OutlineInputBorder(),
+                    errorText: showError ? 'Please enter a player name' : null,
+                    errorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                    ),
+                    focusedErrorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                    ),
+                  ),
+                  autofocus: true,
+                  onChanged: (value) {
+                    // Clear error when user starts typing
+                    if (showError && value.trim().isNotEmpty) {
+                      setDialogState(() {
+                        showError = false;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Photo (Optional)',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final path =
+                            await _photoService.takePhoto(context: context);
+                        if (path != null) {
+                          setDialogState(() {
+                            photoPath = path;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Camera'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final path = await _photoService.selectFromGallery();
+                        if (path != null) {
+                          setDialogState(() {
+                            photoPath = path;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Gallery'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.trim().isEmpty) {
+                  setDialogState(() {
+                    showError = true;
+                  });
+                  return;
+                }
+
+                final player = Player.create(
+                  name: nameController.text.trim(),
+                  photoPath: photoPath,
+                );
+
+                final playerProvider = context.read<PlayerProvider>();
+                await playerProvider.savePlayer(player);
+
+                if (context.mounted) {
+                  Navigator.pop(dialogContext);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Player "${player.name}" added'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Add Player'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditPlayerDialog(BuildContext context, Player player) {
+    final nameController = TextEditingController(text: player.name);
+    String? photoPath = player.photoPath;
+    bool showError = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Player'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Photo preview section
+                if (photoPath != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: kIsWeb
+                              ? NetworkImage(photoPath!)
+                              : FileImage(File(photoPath!)) as ImageProvider,
+                        ),
+                        Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              setDialogState(() {
+                                photoPath = null;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey[300],
+                      child: Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Player Name',
+                    border: const OutlineInputBorder(),
+                    errorText: showError ? 'Please enter a player name' : null,
+                    errorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                    ),
+                    focusedErrorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 2),
+                    ),
+                  ),
+                  autofocus: true,
+                  onChanged: (value) {
+                    if (showError && value.trim().isNotEmpty) {
+                      setDialogState(() {
+                        showError = false;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Photo (Optional)',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final path =
+                            await _photoService.takePhoto(context: context);
+                        if (path != null) {
+                          setDialogState(() {
+                            photoPath = path;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Camera'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final path = await _photoService.selectFromGallery();
+                        if (path != null) {
+                          setDialogState(() {
+                            photoPath = path;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Gallery'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.trim().isEmpty) {
+                  setDialogState(() {
+                    showError = true;
+                  });
+                  return;
+                }
+
+                final updatedPlayer = player.copyWith(
+                  name: nameController.text.trim(),
+                  photoPath: photoPath,
+                );
+
+                final playerProvider = context.read<PlayerProvider>();
+                await playerProvider.savePlayer(updatedPlayer);
+
+                if (context.mounted) {
+                  Navigator.pop(dialogContext);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Player "${updatedPlayer.name}" updated'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deletePlayer(BuildContext context, Player player) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Player'),
+        content: Text(
+          'Are you sure you want to delete "${player.name}"? This will remove all their game history.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final playerProvider = context.read<PlayerProvider>();
+      await playerProvider.deletePlayer(player.id);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Player "${player.name}" deleted'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildUserManagementSection() {
+    return Consumer<PlayerProvider>(
+      builder: (context, playerProvider, child) {
+        final players = playerProvider.allPlayers;
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.people, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Players',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const Spacer(),
+                    if (players.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${players.length} player${players.length != 1 ? 's' : ''}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (players.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            color: Colors.orange, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'No players yet. Click "Add Player" below to get started.',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 400),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Theme.of(context).dividerColor),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: players.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final player = players[index];
+                        return _buildPlayerListTile(player, playerProvider);
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                // Add Player button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showAddPlayerDialog(context),
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('Add Player'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlayerListTile(Player player, PlayerProvider playerProvider) {
+    return ExpansionTile(
+      leading: _buildPlayerAvatar(player),
+      title: Text(
+        player.name,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(
+        '${player.gamesWon} wins • ${player.gamesPlayed} games',
+        style: const TextStyle(fontSize: 12),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.edit, size: 20),
+            tooltip: 'Edit player',
+            onPressed: () => _showEditPlayerDialog(context, player),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, size: 20),
+            tooltip: 'Delete player',
+            color: Colors.red,
+            onPressed: () => _deletePlayer(context, player),
+          ),
+          const Icon(Icons.expand_more),
+        ],
+      ),
+      children: [
+        _buildPlayerDetails(player, playerProvider),
+      ],
+    );
+  }
+
+  Widget _buildPlayerAvatar(Player player) {
+    if (player.photoPath != null) {
+      if (player.photoPath!.startsWith('data:')) {
+        // Web data URL
+        return CircleAvatar(
+          radius: 20,
+          backgroundImage: MemoryImage(
+            base64Decode(player.photoPath!.split(',')[1]),
+          ),
+        );
+      } else {
+        // Mobile file path
+        return CircleAvatar(
+          radius: 20,
+          backgroundImage: FileImage(File(player.photoPath!)),
+        );
+      }
+    }
+    return const CircleAvatar(
+      radius: 20,
+      child: Icon(Icons.person),
+    );
+  }
+
+  Widget _buildPlayerDetails(Player player, PlayerProvider playerProvider) {
+    final history = player.gameHistory;
+    final totalPlayTime = playerProvider.getPlayerTotalPlayTime(player.id);
+    final carnivalDerbyWins = playerProvider.getPlayerHistoryForGame(
+      player.id,
+      'Carnival Derby',
+    );
+    final avgDuration = playerProvider.getPlayerAverageGameDuration(
+      player.id,
+      'Carnival Derby',
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Stats summary
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatCard(
+                icon: Icons.emoji_events,
+                label: 'Total Wins',
+                value: player.gamesWon.toString(),
+                color: Colors.amber,
+              ),
+              _buildStatCard(
+                icon: Icons.timer,
+                label: 'Total Time',
+                value: _formatDuration(totalPlayTime),
+                color: Colors.blue,
+              ),
+              if (avgDuration != null)
+                _buildStatCard(
+                  icon: Icons.speed,
+                  label: 'Avg Game',
+                  value: _formatDuration(avgDuration),
+                  color: Colors.green,
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+          // Game history
+          Text(
+            'Recent Wins (${history.length})',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (history.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No wins yet',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            )
+          else
+            ...history.reversed.take(5).map((entry) {
+              return ListTile(
+                dense: true,
+                leading:
+                    const Icon(Icons.emoji_events, size: 16, color: Colors.amber),
+                title: Text(
+                  entry.gameName,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                subtitle: Text(
+                  _formatHistoryDate(entry.timestamp),
+                  style: const TextStyle(fontSize: 11),
+                ),
+                trailing: Text(
+                  _formatDuration(entry.duration),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              );
+            }).toList(),
+          if (history.length > 5)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'and ${history.length - 5} more...',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (minutes > 0) {
+      return '${minutes}m ${seconds}s';
+    } else {
+      return '${seconds}s';
+    }
+  }
+
+  String _formatHistoryDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays == 0) {
+      final hours = diff.inHours;
+      if (hours == 0) {
+        final minutes = diff.inMinutes;
+        return '$minutes min ago';
+      }
+      return '$hours hr ago';
+    }
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
+
     return '${date.month}/${date.day}/${date.year}';
   }
 
@@ -825,6 +1525,24 @@ class _OptionsScreenState extends State<OptionsScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 48),
+
+            // User Management Section
+            Text(
+              'User Management',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Manage players and view game statistics',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildUserManagementSection(),
             const SizedBox(height: 48),
 
             // Admin Section

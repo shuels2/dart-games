@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import 'game_history_entry.dart';
 
 class Player {
   final String id;
@@ -7,6 +8,7 @@ class Player {
   final DateTime createdAt;
   int gamesPlayed;
   int gamesWon;
+  List<GameHistoryEntry> gameHistory;
 
   Player({
     required this.id,
@@ -15,7 +17,8 @@ class Player {
     required this.createdAt,
     this.gamesPlayed = 0,
     this.gamesWon = 0,
-  });
+    List<GameHistoryEntry>? gameHistory,
+  }) : gameHistory = gameHistory ?? [];
 
   // Factory constructor to create a new player with generated ID
   factory Player.create({
@@ -29,6 +32,7 @@ class Player {
       createdAt: DateTime.now(),
       gamesPlayed: 0,
       gamesWon: 0,
+      gameHistory: [],
     );
   }
 
@@ -41,6 +45,7 @@ class Player {
       'createdAt': createdAt.toIso8601String(),
       'gamesPlayed': gamesPlayed,
       'gamesWon': gamesWon,
+      'gameHistory': gameHistory.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -53,6 +58,10 @@ class Player {
       createdAt: DateTime.parse(json['createdAt']),
       gamesPlayed: json['gamesPlayed'] ?? 0,
       gamesWon: json['gamesWon'] ?? 0,
+      gameHistory: (json['gameHistory'] as List<dynamic>?)
+              ?.map((e) => GameHistoryEntry.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -64,6 +73,7 @@ class Player {
     DateTime? createdAt,
     int? gamesPlayed,
     int? gamesWon,
+    List<GameHistoryEntry>? gameHistory,
   }) {
     return Player(
       id: id ?? this.id,
@@ -72,6 +82,7 @@ class Player {
       createdAt: createdAt ?? this.createdAt,
       gamesPlayed: gamesPlayed ?? this.gamesPlayed,
       gamesWon: gamesWon ?? this.gamesWon,
+      gameHistory: gameHistory ?? this.gameHistory,
     );
   }
 

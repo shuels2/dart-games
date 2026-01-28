@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/player.dart';
+import '../models/game_history_entry.dart';
 import '../services/photo_service.dart';
 
 class PlayerProvider extends ChangeNotifier {
@@ -134,15 +135,34 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   // Update player stats after a game
-  Future<void> updatePlayerStats(String playerId, {bool won = false}) async {
+  Future<void> updatePlayerStats(
+    String playerId, {
+    bool won = false,
+    String? gameName,
+    Duration? gameDuration,
+  }) async {
     try {
       final index = _allPlayers.indexWhere((p) => p.id == playerId);
       if (index >= 0) {
         final player = _allPlayers[index];
+
+        // Create new game history list
+        final updatedHistory = List<GameHistoryEntry>.from(player.gameHistory);
+
+        // If won and we have game details, add to history
+        if (won && gameName != null && gameDuration != null) {
+          updatedHistory.add(GameHistoryEntry.create(
+            gameName: gameName,
+            duration: gameDuration,
+          ));
+        }
+
         _allPlayers[index] = player.copyWith(
           gamesPlayed: player.gamesPlayed + 1,
           gamesWon: won ? player.gamesWon + 1 : player.gamesWon,
+          gameHistory: updatedHistory,
         );
+
         await _savePlayers();
         notifyListeners();
       }
@@ -160,6 +180,40 @@ class PlayerProvider extends ChangeNotifier {
     } catch (e) {
       return null;
     }
+  }
+
+  // Get game history for a player
+  List<GameHistoryEntry> getPlayerHistory(String playerId) {
+    final player = getPlayerById(playerId);
+    return player?.gameHistory ?? [];
+  }
+
+  // Get all wins for a specific game
+  List<GameHistoryEntry> getPlayerHistoryForGame(
+      String playerId, String gameName) {
+    final history = getPlayerHistory(playerId);
+    return history.where((entry) => entry.gameName == gameName).toList();
+  }
+
+  // Get player's total time played across all games
+  Duration getPlayerTotalPlayTime(String playerId) {
+    final history = getPlayerHistory(playerId);
+    return history.fold(
+      Duration.zero,
+      (total, entry) => total + entry.duration,
+    );
+  }
+
+  // Get player's average game duration for a specific game
+  Duration? getPlayerAverageGameDuration(String playerId, String gameName) {
+    final gameHistory = getPlayerHistoryForGame(playerId, gameName);
+    if (gameHistory.isEmpty) return null;
+
+    final totalMs = gameHistory.fold(
+      0,
+      (sum, entry) => sum + entry.duration.inMilliseconds,
+    );
+    return Duration(milliseconds: totalMs ~/ gameHistory.length);
   }
 
   // Clear error message

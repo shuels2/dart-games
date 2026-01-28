@@ -110,10 +110,18 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
 
     if (currentGame == null) return;
 
+    // Calculate game duration
+    final gameDuration = DateTime.now().difference(currentGame.startedAt);
+
     // Update stats for all players
     for (final playerId in currentGame.playerIds) {
       final isWinner = playerId == currentGame.winnerId;
-      await playerProvider.updatePlayerStats(playerId, won: isWinner);
+      await playerProvider.updatePlayerStats(
+        playerId,
+        won: isWinner,
+        gameName: isWinner ? 'Carnival Derby' : null,
+        gameDuration: isWinner ? gameDuration : null,
+      );
     }
   }
 
