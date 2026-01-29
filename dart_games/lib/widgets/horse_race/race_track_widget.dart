@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/player.dart';
 import '../../providers/horse_race_provider.dart';
 import 'player_avatar_widget.dart';
@@ -22,19 +23,6 @@ class RaceTrackWidget extends StatelessWidget {
 
         return Column(
           children: [
-            // Header with target score
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                'Race to $targetScore points!',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const Divider(),
-
             // Race tracks
             Expanded(
               child: ListView.builder(
@@ -70,12 +58,23 @@ class RaceTrackWidget extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
       padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: isCurrentPlayer ? Colors.amber[50] : Colors.grey[100],
+        color: isCurrentPlayer
+            ? const Color(0xFFFFD700).withOpacity(0.3)  // Canary Yellow tint for current player
+            : const Color(0xFF1D3557).withOpacity(0.6), // Navy for other players
         borderRadius: BorderRadius.circular(8.0),
         border: Border.all(
-          color: isCurrentPlayer ? Colors.amber : Colors.grey[300]!,
-          width: isCurrentPlayer ? 3.0 : 1.0,
+          color: isCurrentPlayer
+              ? const Color(0xFFFFD700)  // Canary Yellow border for current player
+              : const Color(0xFF48CAE4), // Electric Teal border for other players
+          width: isCurrentPlayer ? 4.0 : 2.0,
         ),
+        boxShadow: isCurrentPlayer ? [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withOpacity(0.5),
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ] : null,
       ),
       child: Row(
         children: [
@@ -92,9 +91,10 @@ class RaceTrackWidget extends StatelessWidget {
                 width: 80,
                 child: Text(
                   player.name,
-                  style: TextStyle(
-                    fontWeight: isCurrentPlayer ? FontWeight.bold : FontWeight.normal,
+                  style: GoogleFonts.montserrat(
+                    fontWeight: isCurrentPlayer ? FontWeight.w900 : FontWeight.w700,
                     fontSize: 12,
+                    color: const Color(0xFFF1FAEE), // Cloud Dancer
                   ),
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -103,9 +103,11 @@ class RaceTrackWidget extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 '$score / $targetScore',
-                style: const TextStyle(
+                style: GoogleFonts.luckiestGuy(
                   fontSize: 11,
-                  fontWeight: FontWeight.bold,
+                  color: isCurrentPlayer
+                      ? const Color(0xFF1D3557) // Navy for current player (better contrast on yellow)
+                      : const Color(0xFF48CAE4), // Electric Teal for others
                 ),
               ),
             ],
@@ -134,10 +136,15 @@ class RaceTrackWidget extends StatelessWidget {
                             fit: BoxFit.fitHeight,
                           ),
                           borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(color: Colors.grey[400]!, width: 2),
+                          border: Border.all(
+                            color: isCurrentPlayer
+                                ? const Color(0xFFFFD700) // Canary Yellow for current player
+                                : const Color(0xFF457B9D), // Light Blue for others
+                            width: 2,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withOpacity(0.2),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),

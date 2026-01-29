@@ -28,6 +28,10 @@ class HorseRaceProvider extends ChangeNotifier {
     return _currentGame?.getPlayerScore(playerId) ?? 0;
   }
 
+  List<int> getCurrentTurnDartScores(String playerId) {
+    return _currentGame?.getCurrentTurnDartScores(playerId) ?? [];
+  }
+
   bool get hasWinner => _currentGame?.hasWinner() ?? false;
 
   bool get currentPlayerBusted => _currentGame?.currentPlayerBusted ?? false;

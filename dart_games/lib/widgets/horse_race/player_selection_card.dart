@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/player.dart';
 import 'player_avatar_widget.dart';
 
@@ -24,92 +25,146 @@ class PlayerSelectionCard extends StatelessWidget {
       return _buildCompactCard();
     }
 
-    return Card(
-      color: isSelected ? Colors.amber[50] : null,
-      elevation: isSelected ? 4 : 1,
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-        leading: PlayerAvatarWidget(
-          player: player,
-          size: 22.0,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFFFFD700).withOpacity(0.2)  // Canary Yellow tint
+            : const Color(0xFF1D3557).withOpacity(0.6), // Navy
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFFFD700)  // Canary Yellow
+              : const Color(0xFF48CAE4),  // Electric Teal
+          width: isSelected ? 3 : 2,
         ),
-        title: Text(
-          player.name,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            child: Row(
+              children: [
+                PlayerAvatarWidget(
+                  player: player,
+                  size: 22.0,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        player.name,
+                        style: GoogleFonts.montserrat(
+                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                          fontSize: 14,
+                          color: const Color(0xFFF1FAEE), // Cloud Dancer
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Games: ${player.gamesPlayed} | Wins: ${player.gamesWon}',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFFF1FAEE).withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSelected && onRemove != null)
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle, color: Color(0xFFE63946)),
+                    iconSize: 24,
+                    onPressed: onRemove,
+                  )
+                else if (isSelected)
+                  const Icon(Icons.check_circle, color: Color(0xFF48CAE4), size: 24),
+              ],
+            ),
           ),
         ),
-        subtitle: Text(
-          'Games: ${player.gamesPlayed} | Wins: ${player.gamesWon}',
-          style: const TextStyle(fontSize: 12),
-        ),
-        trailing: isSelected && onRemove != null
-            ? IconButton(
-                icon: const Icon(Icons.remove_circle, color: Colors.red),
-                onPressed: onRemove,
-              )
-            : isSelected
-                ? const Icon(Icons.check_circle, color: Colors.green)
-                : null,
-        onTap: onTap,
       ),
     );
   }
 
   Widget _buildCompactCard() {
-    return Card(
-      color: Colors.amber[50],
-      elevation: 4,
+    return Container(
       margin: const EdgeInsets.all(0),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: PlayerAvatarWidget(
-                      player: player,
-                      size: 16.0,
-                    ),
-                  ),
-                  if (onRemove != null)
-                    GestureDetector(
-                      onTap: onRemove,
-                      child: const Icon(
-                        Icons.remove_circle,
-                        color: Colors.red,
-                        size: 20,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFD700).withOpacity(0.2), // Canary Yellow tint
+        border: Border.all(
+          color: const Color(0xFFFFD700), // Canary Yellow
+          width: 3,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: PlayerAvatarWidget(
+                        player: player,
+                        size: 16.0,
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                player.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                    if (onRemove != null)
+                      GestureDetector(
+                        onTap: onRemove,
+                        child: const Icon(
+                          Icons.remove_circle,
+                          color: Color(0xFFE63946), // Lava Red
+                          size: 20,
+                        ),
+                      ),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'G: ${player.gamesPlayed}',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-              Text(
-                'W: ${player.gamesWon}',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  player.name,
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    color: const Color(0xFFF1FAEE), // Cloud Dancer
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'G: ${player.gamesPlayed}',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFFF1FAEE).withOpacity(0.8),
+                  ),
+                ),
+                Text(
+                  'W: ${player.gamesWon}',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFFF1FAEE).withOpacity(0.8),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

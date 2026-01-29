@@ -14,6 +14,8 @@ import '../../../widgets/horse_race/race_track_widget.dart';
 import '../../../widgets/horse_race/player_avatar_widget.dart';
 import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
+import '../../../widgets/carnival_string_lights.dart';
+import '../../../widgets/carnival_target_logo.dart';
 import 'horse_race_results_screen.dart';
 
 class HorseRaceGameScreen extends StatefulWidget {
@@ -296,85 +298,108 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
-      appBar: AppBar(
-        title: Text(
-          'Carnival Derby Race',
-          style: GoogleFonts.rye(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: const Color(0xFFF1FAEE), // Cloud Dancer
-            shadows: [
-              const Shadow(
-                color: Color(0xFFFFD700), // Canary Yellow glow
-                blurRadius: 10,
-              ),
-              const Shadow(
-                color: Color(0xFFFFD700),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-        ),
-        backgroundColor: const Color(0xFFE63946), // Lava Red
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: CompactDartboardInfo(provider: dartboardProvider),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: DartboardStatusIndicator(),
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          // Warm Cedar / Honey Oak wood plank texture with vertical grain
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFFA67C52), // Lighter honey oak
-              const Color(0xFF8B5E3C), // Warm cedar base
-              const Color(0xFF9A6D47), // Medium tone
-              const Color(0xFF8B5E3C), // Warm cedar base
-            ],
-            stops: const [0.0, 0.3, 0.6, 1.0],
-          ),
-        ),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Container(
-          // Soft-light blending overlay for texture depth
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                Colors.white.withOpacity(0.15), // Brightness boost
-                Colors.white.withOpacity(0.05),
-                Colors.white.withOpacity(0.15),
+                Color(0xFFE63946), // Lava Red (left)
+                Color(0xFFFFD700), // Canary Yellow (center)
+                Color(0xFF48CAE4), // Electric Teal (right)
               ],
+              stops: [0.0, 0.66, 1.0], // Red lasts twice as long
             ),
           ),
-          child: Container(
-            // Radial vignette with warm amber glow in center
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.center,
-                radius: 1.2,
-                colors: [
-                  const Color(0xFFFFD700).withOpacity(0.1), // Warm amber glow center
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.5), // Darker edges (reduced from 60%)
+          child: AppBar(
+            title: Text(
+              'Carnival Derby Race',
+              style: GoogleFonts.rye(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                color: const Color(0xFFF1FAEE), // Cloud Dancer
+                shadows: [
+                  const Shadow(
+                    color: Color(0xFFFFD700), // Canary Yellow glow
+                    blurRadius: 10,
+                  ),
+                  const Shadow(
+                    color: Color(0xFFFFD700),
+                    blurRadius: 20,
+                  ),
                 ],
-                stops: const [0.0, 0.4, 1.0],
               ),
             ),
-            child: Container(
-              // Subtle grunge texture overlay at 8% opacity (reduced for brightness)
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.08),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: CompactDartboardInfo(provider: dartboardProvider),
               ),
-            child: Consumer2<HorseRaceProvider, PlayerProvider>(
+              const Padding(
+                padding: EdgeInsets.only(right: 16.0),
+                child: DartboardStatusIndicator(),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: Stack(
+        children: [
+          // Rotated wood plank background
+          Positioned.fill(
+            child: Transform.scale(
+              scale: 2.0, // Scale up to ensure coverage
+              child: Transform.rotate(
+                angle: 1.5708, // 90 degrees in radians (π/2)
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5E3C), // Warm Cedar base color
+                    image: DecorationImage(
+                      image: AssetImage('assets/images/CarnivalDerby-WoodPlanks.jpg'),
+                      fit: BoxFit.cover,
+                      repeat: ImageRepeat.repeat,
+                      colorFilter: ColorFilter.mode(
+                        const Color(0xFF8B5E3C).withOpacity(0.7), // Lighter tint with reduced opacity
+                        BlendMode.multiply,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Radial gradient spotlight overlay - warm overhead lamp effect
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0, -0.6), // Top-middle (50% 20%)
+                    radius: 1.2,
+                    colors: [
+                      const Color.fromRGBO(255, 230, 150, 0.4), // Warm soft amber center glow
+                      const Color.fromRGBO(255, 230, 150, 0.1), // Transparent warm wash
+                      const Color.fromRGBO(13, 27, 42, 0.8), // Deep moody navy-black edges
+                    ],
+                    stops: const [0.0, 0.4, 1.0], // Center → Mid-falloff → Outer shadows
+                  ),
+                  backgroundBlendMode: BlendMode.overlay, // Interact with wood grain
+                ),
+              ),
+            ),
+          ),
+          // Carnival target logo (centered, in front of background, behind string lights)
+          const Center(
+            child: CarnivalTargetLogo(size: 700.0),
+          ),
+          // Carnival string lights (behind content, in front of background)
+          const CarnivalStringLights(),
+          // Content
+          Consumer2<HorseRaceProvider, PlayerProvider>(
               builder: (context, horseRaceProvider, playerProvider, child) {
                 final currentGame = horseRaceProvider.currentGame;
                 if (currentGame == null) {
@@ -404,7 +429,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               _buildCurrentPlayerSection(
                 currentPlayer,
                 dartsThrown,
-                currentGame.targetScore,
+                currentGame,
                 horseRaceProvider,
               ),
 
@@ -430,8 +455,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           );
         },
       ),
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -439,12 +463,15 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   Widget _buildCurrentPlayerSection(
     Player? currentPlayer,
     int dartsThrown,
-    int targetScore,
+    dynamic currentGame,
     HorseRaceProvider provider,
   ) {
     if (currentPlayer == null) return const SizedBox.shrink();
 
     final score = provider.getPlayerScore(currentPlayer.id);
+    final targetScore = currentGame.targetScore;
+    final exactScoreMode = currentGame.exactScoreMode;
+    final dartScores = provider.getCurrentTurnDartScores(currentPlayer.id);
 
     return Container(
       width: double.infinity,
@@ -457,58 +484,100 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       ),
       child: Row(
         children: [
-          PlayerAvatarWidget(
-            player: currentPlayer,
-            size: 30.0,
-            showName: true,
-            isHighlighted: true,
-          ),
-          const SizedBox(width: 16),
+          // Left side: Game settings
           Expanded(
+            flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Score: $score / $targetScore',
+                  'Race to $targetScore points',
                   style: GoogleFonts.luckiestGuy(
-                    fontSize: 16,
+                    fontSize: 18,
                     color: const Color(0xFFFFD700), // Canary Yellow
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      'Darts: ',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFFF1FAEE), // Cloud Dancer
+                Text(
+                  exactScoreMode ? 'Perfect Finish Required' : 'Perfect Finish Not Required',
+                  style: GoogleFonts.luckiestGuy(
+                    fontSize: 18,
+                    color: const Color(0xFFF1FAEE), // Cloud Dancer
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          // Right side: Current player info
+          Expanded(
+            flex: 3,
+            child: Row(
+              children: [
+                PlayerAvatarWidget(
+                  player: currentPlayer,
+                  size: 30.0,
+                  showName: false,
+                  isHighlighted: true,
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 200, // Fixed width to prevent layout shift
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        currentPlayer.name,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFFF1FAEE), // Cloud Dancer (white)
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    ...List.generate(
-                      3,
-                      (index) => Padding(
-                        padding: const EdgeInsets.only(right: 4.0),
-                        child: Icon(
-                          index < dartsThrown
-                              ? Icons.circle
-                              : Icons.circle_outlined,
-                          size: 16,
-                          color: index < dartsThrown
-                              ? const Color(0xFFFFD700) // Canary Yellow
-                              : Colors.grey,
+                      const SizedBox(height: 4),
+                      Text(
+                        'Score: $score / $targetScore',
+                        style: GoogleFonts.luckiestGuy(
+                          fontSize: 18,
+                          color: const Color(0xFFFFD700), // Canary Yellow
                         ),
                       ),
-                    ),
-                    Text(
-                      '($dartsThrown/3)',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w300,
-                        color: const Color(0xFFF1FAEE), // Cloud Dancer
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 45),
+                // Dart scores moved right
+                Row(
+                  children: [
+                    for (int i = 0; i < 3; i++) ...[
+                      SizedBox(
+                        width: 40, // Fixed width to prevent layout shift
+                        child: Column(
+                          children: [
+                            Text(
+                              'D${i + 1}',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFFF1FAEE), // Cloud Dancer
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              i < dartScores.length ? '${dartScores[i]}' : '-',
+                              style: GoogleFonts.luckiestGuy(
+                                fontSize: 20,
+                                color: i < dartScores.length
+                                    ? const Color(0xFFFFD700) // Canary Yellow
+                                    : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      if (i < 2) const SizedBox(width: 8),
+                    ],
                   ],
                 ),
               ],
@@ -654,34 +723,31 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Transform.rotate(
-                          angle: -0.087, // 5-degree tilt
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Simulate takeout finished
-                              _mockApi?.simulateTakeoutFinished();
-                              // Also clear the dartboard visually
-                              _dartboardKey.currentState?.removeDarts();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE63946), // Lava Red
-                              foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                              side: const BorderSide(
-                                color: Color(0xFFFFD700), // Canary Yellow border
-                                width: 4,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Simulate takeout finished
+                            _mockApi?.simulateTakeoutFinished();
+                            // Also clear the dartboard visually
+                            _dartboardKey.currentState?.removeDarts();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE63946), // Lava Red
+                            foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            side: const BorderSide(
+                              color: Color(0xFFFFD700), // Canary Yellow border
+                              width: 4,
                             ),
-                            child: Text(
-                              'DARTS REMOVED',
-                              style: GoogleFonts.bangers(
-                                fontSize: 16,
-                                letterSpacing: 1.0,
-                                color: const Color(0xFFF1FAEE),
-                              ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            'DARTS REMOVED',
+                            style: GoogleFonts.bangers(
+                              fontSize: 16,
+                              letterSpacing: 1.0,
+                              color: const Color(0xFFF1FAEE),
                             ),
                           ),
                         ),

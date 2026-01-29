@@ -12,6 +12,8 @@ import '../../../providers/dartboard_provider.dart';
 import '../../../widgets/horse_race/player_avatar_widget.dart';
 import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
+import '../../../widgets/carnival_string_lights.dart';
+import '../../../widgets/carnival_target_logo.dart';
 import '../../../services/dart_announcer_service.dart';
 import '../../../services/victory_music_service.dart';
 import 'horse_race_menu_screen.dart';
@@ -151,8 +153,8 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
       // Announce game completion first
       _announcer?.speak('The game is complete');
 
-      // Then announce the winner after a delay
-      Future.delayed(const Duration(milliseconds: 1500), () {
+      // Then announce the winner after a delay (longer to ensure first announcement finishes)
+      Future.delayed(const Duration(milliseconds: 3000), () {
         _announcer?.speak('${winner.name} is the winner');
       });
     }
@@ -200,219 +202,112 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
 
     return Scaffold(
       backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
-      appBar: AppBar(
-        title: Text(
-          'Race Results',
-          style: GoogleFonts.rye(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: const Color(0xFFF1FAEE), // Cloud Dancer
-            shadows: [
-              const Shadow(
-                color: Color(0xFFFFD700), // Canary Yellow glow
-                blurRadius: 10,
-              ),
-              const Shadow(
-                color: Color(0xFFFFD700),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-        ),
-        backgroundColor: const Color(0xFFE63946), // Lava Red
-        automaticallyImplyLeading: false,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: CompactDartboardInfo(provider: dartboardProvider),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: DartboardStatusIndicator(),
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          // Warm Cedar / Honey Oak wood plank texture with vertical grain
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFFA67C52), // Lighter honey oak
-              const Color(0xFF8B5E3C), // Warm cedar base
-              const Color(0xFF9A6D47), // Medium tone
-              const Color(0xFF8B5E3C), // Warm cedar base
-            ],
-            stops: const [0.0, 0.3, 0.6, 1.0],
-          ),
-        ),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Container(
-          // Soft-light blending overlay for texture depth
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                Colors.white.withOpacity(0.15), // Brightness boost
-                Colors.white.withOpacity(0.05),
-                Colors.white.withOpacity(0.15),
+                Color(0xFFE63946), // Lava Red (left)
+                Color(0xFFFFD700), // Canary Yellow (center)
+                Color(0xFF48CAE4), // Electric Teal (right)
               ],
+              stops: [0.0, 0.66, 1.0], // Red lasts twice as long
             ),
           ),
-          child: Container(
-            // Radial vignette with warm amber glow in center
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.center,
-                radius: 1.2,
-                colors: [
-                  const Color(0xFFFFD700).withOpacity(0.1), // Warm amber glow center
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.5), // Darker edges (reduced from 60%)
+          child: AppBar(
+            title: Text(
+              'Carnival Derby Race Results',
+              style: GoogleFonts.rye(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                color: const Color(0xFFF1FAEE), // Cloud Dancer
+                shadows: [
+                  const Shadow(
+                    color: Color(0xFFFFD700), // Canary Yellow glow
+                    blurRadius: 10,
+                  ),
+                  const Shadow(
+                    color: Color(0xFFFFD700),
+                    blurRadius: 20,
+                  ),
                 ],
-                stops: const [0.0, 0.4, 1.0],
               ),
             ),
-            child: Container(
-              // Subtle grunge texture overlay at 8% opacity (reduced for brightness)
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.08),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: CompactDartboardInfo(provider: dartboardProvider),
               ),
-            child: Stack(
-              children: [
-                Consumer2<HorseRaceProvider, PlayerProvider>(
-                  builder: (context, horseRaceProvider, playerProvider, child) {
-                    final currentGame = horseRaceProvider.currentGame;
-                    if (currentGame == null) {
-                      return Center(
-                        child: Text(
-                          'No game data',
-                          style: GoogleFonts.montserrat(
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFFF1FAEE), // Cloud Dancer for visibility
-                          ),
-                        ),
-                      );
-                    }
-
-                    final players = currentGame.playerIds
-                        .map((id) => playerProvider.getPlayerById(id))
-                        .whereType<Player>()
-                        .toList();
-
-                    final winner = horseRaceProvider.getWinner(players);
-                    final standings = horseRaceProvider.getFinalStandings();
-
-                    return SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 32),
-
-                    // Trophy icon
-                    const Icon(
-                      Icons.emoji_events,
-                      size: 80,
-                      color: Color(0xFFFFD700), // Canary Yellow
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Winner announcement
-                    Text(
-                      'Winner!',
-                      style: GoogleFonts.rye(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFFFD700), // Canary Yellow
-                        shadows: [
-                          const Shadow(
-                            color: Color(0xFFFFD700),
-                            blurRadius: 15,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Winner avatar and name
-                    if (winner != null)
-                      ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: Column(
-                          children: [
-                            PlayerAvatarWidget(
-                              player: winner,
-                              size: 60.0,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              winner.name,
-                              style: GoogleFonts.luckiestGuy(
-                                fontSize: 28,
-                                color: const Color(0xFFE63946), // Lava Red
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Final Score: ${currentGame.getPlayerScore(winner.id)}',
-                              style: GoogleFonts.luckiestGuy(
-                                fontSize: 20,
-                                color: const Color(0xFFFFD700), // Canary Yellow
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    const SizedBox(height: 32),
-
-                    // Congratulations message
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 32),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1D3557).withOpacity(0.9), // Midnight Navy
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFFFD700), // Canary Yellow
-                          width: 4,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '🏆 Congratulations! 🏆',
-                            style: GoogleFonts.bangers(
-                              fontSize: 20,
-                              letterSpacing: 1.0,
-                              color: const Color(0xFFF1FAEE), // Cloud Dancer
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Final Standings
-                    _buildFinalStandings(standings, players),
-
-                    const SizedBox(height: 32),
-
-                    // Action buttons
-                    _buildActionButtons(context, horseRaceProvider),
-
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              );
-            },
+              const Padding(
+                padding: EdgeInsets.only(right: 16.0),
+                child: DartboardStatusIndicator(),
+              ),
+            ],
           ),
-                // Confetti widgets - positioned at different locations
-                Align(
+        ),
+      ),
+      body: Stack(
+        children: [
+          // Rotated wood plank background
+          Positioned.fill(
+            child: Transform.scale(
+              scale: 2.0, // Scale up to ensure coverage
+              child: Transform.rotate(
+                angle: 1.5708, // 90 degrees in radians (π/2)
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5E3C), // Warm Cedar base color
+                    image: DecorationImage(
+                      image: AssetImage('assets/images/CarnivalDerby-WoodPlanks.jpg'),
+                      fit: BoxFit.cover,
+                      repeat: ImageRepeat.repeat,
+                      colorFilter: ColorFilter.mode(
+                        const Color(0xFF8B5E3C).withOpacity(0.7), // Lighter tint with reduced opacity
+                        BlendMode.multiply,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Radial gradient spotlight overlay - warm overhead lamp effect
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0, -0.6), // Top-middle (50% 20%)
+                    radius: 1.2,
+                    colors: [
+                      const Color.fromRGBO(255, 230, 150, 0.4), // Warm soft amber center glow
+                      const Color.fromRGBO(255, 230, 150, 0.1), // Transparent warm wash
+                      const Color.fromRGBO(13, 27, 42, 0.8), // Deep moody navy-black edges
+                    ],
+                    stops: const [0.0, 0.4, 1.0], // Center → Mid-falloff → Outer shadows
+                  ),
+                  backgroundBlendMode: BlendMode.overlay, // Interact with wood grain
+                ),
+              ),
+            ),
+          ),
+          // Carnival target logo (centered, in front of background, behind string lights)
+          const Center(
+            child: CarnivalTargetLogo(size: 700.0),
+          ),
+          // Carnival string lights (behind content, in front of background)
+          const CarnivalStringLights(),
+          // Content
+          Stack(
+                children: [
+                  // Confetti widgets - positioned at different locations (behind content)
+                  Align(
             alignment: Alignment.topLeft,
             child: ConfettiWidget(
               confettiController: _confettiController,
@@ -469,10 +364,115 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
               ],
             ),
           ),
-              ],
-            ),
+                  Consumer2<HorseRaceProvider, PlayerProvider>(
+                  builder: (context, horseRaceProvider, playerProvider, child) {
+                    final currentGame = horseRaceProvider.currentGame;
+                    if (currentGame == null) {
+                      return Center(
+                        child: Text(
+                          'No game data',
+                          style: GoogleFonts.montserrat(
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFFF1FAEE), // Cloud Dancer for visibility
+                          ),
+                        ),
+                      );
+                    }
+
+                    final players = currentGame.playerIds
+                        .map((id) => playerProvider.getPlayerById(id))
+                        .whereType<Player>()
+                        .toList();
+
+                    final winner = horseRaceProvider.getWinner(players);
+                    final standings = horseRaceProvider.getFinalStandings();
+
+                    return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 32),
+
+                    // Winner announcement - large and prominent
+                    Text(
+                      'Winner!',
+                      style: GoogleFonts.rye(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF48CAE4), // Electric Teal
+                        shadows: [
+                          const Shadow(
+                            color: Color(0xFFFFD700), // Canary Yellow glow
+                            blurRadius: 10,
+                          ),
+                          const Shadow(
+                            color: Color(0xFFFFD700),
+                            blurRadius: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Winner avatar and name
+                    if (winner != null)
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: Column(
+                          children: [
+                            PlayerAvatarWidget(
+                              player: winner,
+                              size: 60.0,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              winner.name,
+                              style: GoogleFonts.luckiestGuy(
+                                fontSize: 48,
+                                color: const Color(0xFFF1FAEE), // Cloud Dancer white
+                                shadows: [
+                                  const Shadow(
+                                    color: Color(0xFFFFD700), // Yellow glow
+                                    blurRadius: 10,
+                                  ),
+                                  const Shadow(
+                                    color: Color(0xFFFFD700),
+                                    blurRadius: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Final Score: ${currentGame.getPlayerScore(winner.id)}',
+                              style: GoogleFonts.luckiestGuy(
+                                fontSize: 24,
+                                color: const Color(0xFFFFD700), // Canary Yellow
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 32),
+
+                    // Final Standings
+                    _buildFinalStandings(standings, players),
+
+                    const SizedBox(height: 32),
+
+                    // Action buttons
+                    _buildActionButtons(context, horseRaceProvider),
+
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              );
+            },
           ),
-        ),
+                ],
+              ),
+        ],
       ),
     );
   }
@@ -602,10 +602,8 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
           // Play Again button (full width)
           SizedBox(
             width: double.infinity,
-            child: Transform.rotate(
-              angle: -0.087, // 5-degree tilt
-              child: ElevatedButton.icon(
-                onPressed: () {
+            child: ElevatedButton.icon(
+              onPressed: () {
                 // Start new game with same players and settings
                 final currentGame = horseRaceProvider.currentGame;
                 if (currentGame != null) {
@@ -633,11 +631,11 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                   );
                 }
               },
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh, size: 28),
               label: Text(
                 'Play Again',
                 style: GoogleFonts.bangers(
-                  fontSize: 16,
+                  fontSize: 22,
                   letterSpacing: 1.0,
                   color: const Color(0xFFF1FAEE),
                 ),
@@ -645,7 +643,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE63946), // Lava Red
                 foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
                 side: const BorderSide(
                   color: Color(0xFFFFD700), // Canary Yellow border
                   width: 4,
@@ -653,7 +651,6 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-              ),
               ),
             ),
           ),
@@ -683,17 +680,18 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                       (route) => route.isFirst,
                     );
                   },
-                  icon: const Icon(Icons.settings),
+                  icon: const Icon(Icons.settings, size: 24),
                   label: Text(
                     'Change game players and settings',
                     style: GoogleFonts.bangers(
-                      fontSize: 14,
+                      fontSize: 18,
                       letterSpacing: 1.0,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D3557).withOpacity(0.95), // Navy background
                     foregroundColor: const Color(0xFF48CAE4), // Electric Teal
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                     side: const BorderSide(
                       color: Color(0xFF48CAE4), // Electric Teal
                       width: 3,
@@ -712,17 +710,18 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
                     horseRaceProvider.clearGame();
                     Navigator.popUntil(context, (route) => route.isFirst);
                   },
-                  icon: const Icon(Icons.home),
+                  icon: const Icon(Icons.home, size: 24),
                   label: Text(
                     'Select a different game',
                     style: GoogleFonts.bangers(
-                      fontSize: 14,
+                      fontSize: 18,
                       letterSpacing: 1.0,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D3557).withOpacity(0.95), // Navy background
                     foregroundColor: const Color(0xFF48CAE4), // Electric Teal
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                     side: const BorderSide(
                       color: Color(0xFF48CAE4), // Electric Teal
                       width: 3,

@@ -19,6 +19,7 @@ class HorseRaceGame {
   int currentPlayerIndex;
   Map<String, int> scores;
   Map<String, int> dartsThrown;
+  Map<String, List<int>> currentTurnDartScores;
   String? winnerId;
   bool currentPlayerBusted;
 
@@ -32,14 +33,17 @@ class HorseRaceGame {
     this.currentPlayerIndex = 0,
     Map<String, int>? scores,
     Map<String, int>? dartsThrown,
+    Map<String, List<int>>? currentTurnDartScores,
     this.winnerId,
     this.currentPlayerBusted = false,
   })  : scores = scores ?? {},
-        dartsThrown = dartsThrown ?? {} {
+        dartsThrown = dartsThrown ?? {},
+        currentTurnDartScores = currentTurnDartScores ?? {} {
     // Initialize scores and darts thrown for each player
     for (var playerId in playerIds) {
       this.scores[playerId] ??= 0;
       this.dartsThrown[playerId] ??= 0;
+      this.currentTurnDartScores[playerId] ??= [];
     }
   }
 
@@ -67,6 +71,10 @@ class HorseRaceGame {
 
     final currentScore = scores[playerId] ?? 0;
     final newScore = currentScore + score;
+
+    // Store the dart score in current turn
+    currentTurnDartScores[playerId] ??= [];
+    currentTurnDartScores[playerId]!.add(score);
 
     // Handle exact score mode
     if (exactScoreMode) {
@@ -130,6 +138,9 @@ class HorseRaceGame {
     final currentPlayerId = getCurrentPlayerId();
     dartsThrown[currentPlayerId] = 0;
 
+    // Clear current turn dart scores
+    currentTurnDartScores[currentPlayerId] = [];
+
     // Reset bust flag
     currentPlayerBusted = false;
 
@@ -146,6 +157,11 @@ class HorseRaceGame {
   // Get score for a specific player
   int getPlayerScore(String playerId) {
     return scores[playerId] ?? 0;
+  }
+
+  // Get current turn dart scores for a specific player
+  List<int> getCurrentTurnDartScores(String playerId) {
+    return currentTurnDartScores[playerId] ?? [];
   }
 
   // Get sorted list of players by score (for final standings)
