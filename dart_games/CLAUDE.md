@@ -42,7 +42,7 @@ dart_games/
 │               ├── horse_race_menu_screen.dart     # Game setup
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
-├── test/                            # Test suite (139 tests)
+├── test/                            # Test suite (180 tests)
 └── assets/                          # Images, icons, fonts
 ```
 
@@ -132,6 +132,116 @@ Files that require explicit permission before modification:
 
 If a bug is suspected in the dartboard emulator, ask the user to verify the issue before making changes.
 
+### Dartboard Emulator Integration in Games
+
+**When integrating InteractiveDartboard widget into game screens, follow this exact structure pattern:**
+
+The dartboard emulator must be structured correctly to ensure clickable areas align with visual elements. Based on successful implementations in Carnival Derby and Target Tag, use this pattern:
+
+```dart
+Widget _buildDartboardSection(bool disabled) {
+  return Container(
+    padding: const EdgeInsets.all(16.0),
+    decoration: BoxDecoration(
+      color: YourGameBackgroundColor,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Stack(
+      alignment: Alignment.center,  // CRITICAL: Centers dartboard and modal
+      children: [
+        // Dartboard with optional disable state
+        AbsorbPointer(
+          absorbing: disabled,
+          child: Opacity(
+            opacity: disabled ? 0.5 : 1.0,
+            child: InteractiveDartboard(
+              key: _dartboardKey,
+              size: 250,  // MUST match widgetSize parameter
+              onDartThrow: (score, multiplier, baseScore, position) {
+                if (_mockApi != null) {
+                  _mockApi!.simulateDartThrow(
+                    score: score,
+                    multiplier: multiplier,
+                    playerName: 'Player',
+                    baseScore: baseScore,
+                    widgetX: position.dx,
+                    widgetY: position.dy,
+                    widgetSize: 250,  // MUST match size parameter
+                  );
+                }
+              },
+              onRemoveDarts: () {
+                // Called when dartboard is cleared
+              },
+            ),
+          ),
+        ),
+        // Modal overlay (if needed)
+        if (disabled)
+          Container(
+            width: 250,  // MUST match dartboard size
+            height: 250,
+            decoration: BoxDecoration(
+              color: YourGameColor.withOpacity(0.9),
+              shape: BoxShape.circle,  // Circular overlay
+              border: Border.all(
+                color: YourGameBorderColor,
+                width: 3,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Your modal content here
+                ],
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+```
+
+**Critical Requirements:**
+
+1. **Stack Alignment** - MUST use `alignment: Alignment.center` on Stack
+   - Without this, clickable areas will NOT align with visual dartboard
+   - Symptoms: Clicks register wrong segments (e.g., clicking 20 registers as 5)
+
+2. **Direct Stack Children** - Dartboard and modal are direct children of Stack
+   - NO Positioned wrappers
+   - NO nested Container/SizedBox wrappers
+   - This ensures proper coordinate mapping
+
+3. **Consistent Sizing** - All sizes MUST match exactly:
+   - InteractiveDartboard `size` parameter
+   - simulateDartThrow `widgetSize` parameter
+   - Modal overlay width/height
+   - All should be 250 (or same value if different)
+
+4. **Simplified Structure** - Avoid over-nesting:
+   - Container (padding + decoration) → Stack → Children
+   - NO extra layers between Stack and dartboard
+   - NO SizedBox wrappers that change dimensions
+
+5. **Modal Shape** - If using circular modal overlay:
+   - Use `BoxShape.circle` decoration
+   - Match dartboard dimensions exactly (250x250)
+   - Center content with Column + MainAxisAlignment.center
+
+**Reference Implementations:**
+- Carnival Derby: `lib/screens/games/carnival_horse_race/horse_race_game_screen.dart` (lines 647-760)
+- Target Tag: `lib/screens/games/target_tag/target_tag_game_screen.dart` (dartboard section)
+
+**Common Mistakes to Avoid:**
+- ❌ Wrapping Stack in SizedBox with different dimensions
+- ❌ Using Positioned.fill for modal (breaks alignment)
+- ❌ Forgetting `alignment: Alignment.center` on Stack
+- ❌ Mismatched size values between dartboard and widgetSize
+- ❌ Over-nesting with multiple Containers
+
 ### Mandatory Testing Before Any Build
 
 **ALL TESTS MUST PASS BEFORE ANY BUILD OR DEPLOYMENT.**
@@ -144,16 +254,38 @@ flutter test
 ```
 
 **CRITICAL REQUIREMENTS:**
-- All 139 tests must pass (100% pass rate required)
+- All 180 tests must pass (100% pass rate required)
 - If ANY test fails, DO NOT proceed with build
 - Fix all failing tests first, then re-run test suite
 - Only build after confirming all tests pass
 
+**Target Tag Regression Testing:**
+
+ALL 41 Target Tag tests MUST pass before any build to prevent regressions:
+
+```bash
+flutter test test/screens/games/target_tag/
+```
+
+These tests validate:
+- **Game logic AND announcements** (32 tests in `target_tag_game_with_announcements_test.dart`)
+  - Solo mode (Tests 1-8): Shield building, tagged-in status, successful tags, low shields, losing tagged-in, victory
+  - Team mode (Tests 9-14): Team setup, team tagged-in, team elimination, last team standing
+  - Hero bonus (Tests 15-17): Fill to max, attacks while tagged-in, team hero attacks
+  - Turn management (Tests 18-19): Skip turns, multiple skips in sequence
+  - Edit score (Tests 20-24): Add/remove shields, undo, team adjustments
+  - Edge cases (Tests 25-32): Simultaneous events, regaining tagged-in, all bullseyes, 10 players, 5 teams, multiple hero attacks
+- **User management integration** (9 tests in `target_tag_user_management_test.dart`)
+  - Win tracking for both winners and losers with game duration
+  - Stats persistence across app restarts
+  - Total play time and average duration calculations
+
 This is NON-NEGOTIABLE. Tests validate critical functionality including:
-- User management system (62 tests)
-- Victory music management (46 tests)
+- User management system (39 tests - Player: 30, Carnival Derby: 8, Target Tag: 9)
+- Victory music management (22 tests)
 - Announcer settings (20 tests)
 - Dartboard emulator accuracy (23 tests)
+- Target Tag game logic, announcements, and user management (41 tests)
 - Data persistence and serialization
 - Cross-platform compatibility
 - Game logic and scoring
@@ -232,7 +364,13 @@ Common cross-platform considerations:
 
 **ALL games in the dart games app MUST integrate with the global systems.**
 
-Every game (such as Carnival Derby and any future games) must follow these integration requirements:
+Every game (such as Target Tag, Carnival Derby, and any future games) must follow these integration requirements:
+
+**IMPORTANT - Game Duration Tracking:**
+- **ALL new games MUST track game duration for BOTH winners AND losers**
+- This is the current standard pattern (as implemented in Target Tag)
+- Older games like Carnival Derby only track winners' duration (legacy behavior)
+- When implementing new games, follow the Target Tag pattern shown below
 
 #### 1. Global User Management
 - **Use the global user list** (`PlayerProvider`) for available players
@@ -249,14 +387,22 @@ Every game (such as Carnival Derby and any future games) must follow these integ
 - Respect the user's voice enabled/disabled setting
 - Use `AppSettings` to retrieve and save announcer preferences
 
-#### 3. User Win Tracking
-- **Track user wins to the global user management system**
-- When a player wins a game, call `PlayerProvider.updatePlayerStats()` with:
-  - `playerId` - the ID of the winning player
-  - `won: true` - to increment games won
-  - `gameName` - the name of the game (e.g., "Carnival Derby")
-  - `gameDuration` - the duration of the game
-- Losers should also have stats updated with `won: false` (increments games played only)
+#### 3. User Win Tracking and Game Duration
+- **Track user wins and game duration for ALL players**
+- **CRITICAL**: ALL players (both winners AND losers) MUST receive game duration tracking
+- Call `PlayerProvider.updatePlayerStats()` for EVERY player in the game:
+  - **For winners:**
+    - `playerId` - the ID of the winning player
+    - `won: true` - to increment games won
+    - `gameName` - the name of the game (e.g., "Target Tag", "Carnival Derby")
+    - `gameDuration` - the full game duration from start to finish
+  - **For losers:**
+    - `playerId` - the ID of the losing player
+    - `won: false` - increments games played only
+    - `gameName` - the name of the game
+    - `gameDuration` - the SAME full game duration as winners
+- **Important**: Both winners and losers receive identical `gameDuration` values representing the complete game time
+- This enables accurate play time tracking and statistics for all participants
 
 #### 4. Game Timer
 - **Every game MUST implement a game timer**
@@ -273,7 +419,7 @@ Every game (such as Carnival Derby and any future games) must follow these integ
 - Handle both web (data URLs) and native (file paths) music sources
 - Provide fallback behavior if no custom music is configured
 
-#### Implementation Example (Carnival Derby Pattern)
+#### Implementation Example (Target Tag Pattern - REQUIRED for all new games)
 
 ```dart
 class GameScreen extends StatefulWidget {
@@ -292,14 +438,19 @@ class GameScreen extends StatefulWidget {
     final game = gameProvider.currentGame!;
     final gameDuration = DateTime.now().difference(game.startedAt);
 
-    // Update stats for all players
+    // Get list of winners (may be multiple in team games)
+    final winners = gameProvider.getWinners(playerProvider.allPlayers);
+    final winnerIds = winners.map((p) => p.id).toSet();
+
+    // CRITICAL: Update stats for ALL players (winners AND losers)
+    // ALL players receive the same game duration
     for (final playerId in game.playerIds) {
-      final isWinner = playerId == game.winnerId;
+      final isWinner = winnerIds.contains(playerId);
       await playerProvider.updatePlayerStats(
         playerId,
         won: isWinner,
         gameName: 'Your Game Name',
-        gameDuration: isWinner ? gameDuration : null,
+        gameDuration: gameDuration,  // ← SAME duration for winners AND losers
       );
     }
 
@@ -327,13 +478,22 @@ Games must import and use:
 When adding a new game:
 1. Create integration tests that verify global system integration
 2. Test that players added in the game appear in the global player list
-3. Test that wins are tracked with duration to the global system
-4. Test that game timer calculates duration correctly
-5. Follow the pattern established in `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart`
+3. **Test that ALL players (winners AND losers) receive game duration tracking**
+4. Test that winners have `gamesWon` incremented correctly
+5. Test that losers have `gamesPlayed` incremented but `gamesWon` unchanged
+6. Test that game timer calculates duration correctly
+7. Test that all players in the same game receive identical duration values
+8. Test that stats persist across app restarts (SharedPreferences)
+9. Follow the pattern established in `test/screens/games/target_tag/target_tag_user_management_test.dart`
+
+**Reference Implementation:**
+- See `target_tag_user_management_test.dart` for the complete pattern (9 tests)
+- Tests validate both solo and team modes
+- Tests verify that losers receive game history with duration (not just winners)
 
 ## Testing Requirements
 
-### Complete Test Suite (139 Tests)
+### Complete Test Suite (180 Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
@@ -385,7 +545,7 @@ The dart games app has a comprehensive test suite covering all critical function
   - Error handling and data persistence
   - Cross-platform file handling
 
-#### Integration Tests (8 tests)
+#### Integration Tests (49 tests)
 - `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (8 tests)
   - Winner recording with game duration
   - Multiple games accumulation
@@ -393,6 +553,26 @@ The dart games app has a comprehensive test suite covering all critical function
   - Multi-player game stats (winner vs. losers)
   - Exact score mode duration tracking
   - Stats persistence across app restarts
+
+- `test/screens/games/target_tag/target_tag_game_with_announcements_test.dart` (32 tests)
+  - Solo mode game logic and announcements (Tests 1-8)
+  - Team mode mechanics and announcements (Tests 9-14)
+  - Hero bonus behavior and announcements (Tests 15-17)
+  - Turn management and announcements (Tests 18-19)
+  - Edit score functionality (Tests 20-24)
+  - Edge cases and complex scenarios (Tests 25-32)
+  - Validates BOTH game logic (shields, tagged-in status, eliminations) AND announcement text/timing
+  - Covers 2-10 players and 2-5 teams
+
+- `test/screens/games/target_tag/target_tag_user_management_test.dart` (9 tests)
+  - Solo mode winner/loser stats with duration tracking (Tests 4-7)
+  - Team mode stats for all players with duration (Test 8)
+  - Mixed team compositions across games (Test 9)
+  - 3-team game statistics (Test 10)
+  - Total play time calculations (Test 11)
+  - Average game duration by game name (Test 12)
+  - Both winners AND losers receive game history entries with duration
+  - Stats persistence and data integrity validation
 
 #### Widget Tests (23 tests)
 - `test/widgets/interactive_dartboard_test.dart` (23 tests)
@@ -428,11 +608,12 @@ flutter test test/widgets/
 
 ### Test Expectations
 
-- **100% pass rate required** - All 139 tests must pass
-- Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, and data persistence
+- **100% pass rate required** - All 180 tests must pass
+- Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
 - No build or deployment without all tests passing
 - Tests cover both web and native platform scenarios
 - Backward compatibility is validated for data migrations
+- Target Tag tests (41 tests total) validate game logic, announcement system integrity, and user management integration
 
 ### Maintaining Tests When Features Change
 
@@ -477,11 +658,11 @@ Claude:
 User: "yes"
 Claude:
 1. Adds tests for GIF file handling to test/providers/player_provider_test.dart
-2. Runs flutter test - now 142 tests (was 139)
+2. Runs flutter test - now 183 tests (was 180)
 3. Updates CLAUDE.md:
-   - Line 31: "All 142 tests must pass"
+   - Line 45: "Test suite (183 tests)"
    - Provider Tests section: "player_provider_test.dart (33 tests)" (was 30)
-   - Test Expectations: "All 142 tests must pass"
+   - Test Expectations: "All 183 tests must pass"
 4. Commits changes with updated CLAUDE.md
 ```
 
@@ -511,7 +692,7 @@ This applies to all git operations that modify the remote repository, including:
    cd dart_games
    flutter test
    ```
-3. **Verify ALL 139 tests pass (100% pass rate required)**
+3. **Verify ALL 180 tests pass (100% pass rate required)**
 4. If ANY tests fail:
    - DO NOT proceed
    - Investigate and fix the failing tests
@@ -528,7 +709,7 @@ This applies to all git operations that modify the remote repository, including:
 
 Before any `flutter run` or `flutter build` command:
 1. Run `flutter test`
-2. Confirm all 85 tests pass
+2. Confirm all 180 tests pass
 3. Only then run the build command
 
 ### Quick Reference

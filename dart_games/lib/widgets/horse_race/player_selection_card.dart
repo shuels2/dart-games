@@ -9,6 +9,8 @@ class PlayerSelectionCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onRemove;
   final bool compact;
+  final Color? selectedColor;
+  final Color? selectedBorderColor;
 
   const PlayerSelectionCard({
     super.key,
@@ -17,10 +19,15 @@ class PlayerSelectionCard extends StatelessWidget {
     required this.onTap,
     this.onRemove,
     this.compact = false,
+    this.selectedColor,
+    this.selectedBorderColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final defaultSelectedColor = selectedColor ?? const Color(0xFFFFD700); // Canary Yellow
+    final defaultSelectedBorderColor = selectedBorderColor ?? const Color(0xFFFFD700); // Canary Yellow
+
     if (compact) {
       return _buildCompactCard();
     }
@@ -29,11 +36,11 @@ class PlayerSelectionCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       decoration: BoxDecoration(
         color: isSelected
-            ? const Color(0xFFFFD700).withOpacity(0.2)  // Canary Yellow tint
+            ? defaultSelectedColor.withOpacity(0.2)  // Selected tint
             : const Color(0xFF1D3557).withOpacity(0.6), // Navy
         border: Border.all(
           color: isSelected
-              ? const Color(0xFFFFD700)  // Canary Yellow
+              ? defaultSelectedBorderColor  // Selected border
               : const Color(0xFF48CAE4),  // Electric Teal
           width: isSelected ? 3 : 2,
         ),
@@ -94,12 +101,15 @@ class PlayerSelectionCard extends StatelessWidget {
   }
 
   Widget _buildCompactCard() {
+    final defaultSelectedColor = selectedColor ?? const Color(0xFFFFD700); // Canary Yellow
+    final defaultSelectedBorderColor = selectedBorderColor ?? const Color(0xFFFFD700); // Canary Yellow
+
     return Container(
       margin: const EdgeInsets.all(0),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFD700).withOpacity(0.2), // Canary Yellow tint
+        color: defaultSelectedColor.withOpacity(0.2), // Selected tint
         border: Border.all(
-          color: const Color(0xFFFFD700), // Canary Yellow
+          color: defaultSelectedBorderColor, // Selected border
           width: 3,
         ),
         borderRadius: BorderRadius.circular(8),

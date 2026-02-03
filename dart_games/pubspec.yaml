@@ -114,6 +114,32 @@ flutter:
     - assets/images/logo.png
     - assets/images/connect_dartboard_icon.png
     - assets/images/CarnivalDerby-WoodPlanks.jpg
+    - assets/icon/TargetTag-Icon.png
+    - assets/icon/TargetTag-TeamIcon-01.png
+    - assets/icon/TargetTag-TeamIcon-02.png
+    - assets/icon/TargetTag-TeamIcon-03.png
+    - assets/icon/TargetTag-TeamIcon-04.png
+    - assets/icon/TargetTag-TeamIcon-05.png
+    - assets/icon/TargetTag-TeamIcon-06.png
+    - assets/icon/TargetTag-TeamIcon-07.png
+    - assets/icon/TargetTag-TeamIcon-08.png
+    - assets/icon/TargetTag-TeamIcon-09.png
+    - assets/icon/TargetTag-TeamIcon-10.png
+    - assets/sounds/target_tag/TargetTag-Fanfare.mp3
+    - assets/sounds/target_tag/TargetTag-Swipe.mp3
+    - assets/sounds/target_tag/TargetTag-Spring.mp3
+    - assets/sounds/target_tag/TargetTag-Blink.mp3
+    - assets/sounds/target_tag/TargetTag-Dream.mp3
+    - assets/sounds/target_tag/TargetTag-Choir.mp3
+    - assets/sounds/target_tag/TargetTag-Whistle.mp3
+    - assets/sounds/target_tag/TargetTag-Teasing.mp3
+    - assets/sounds/target_tag/TargetTag-WindUp.mp3
+    - assets/sounds/target_tag/TargetTag-Launch.mp3
+    - assets/sounds/target_tag/TargetTag-Villain.mp3
+    - assets/sounds/target_tag/TargetTag-Magical.mp3
+    - assets/sounds/target_tag/TargetTag-PianoRoll.mp3
+    - assets/sounds/target_tag/TargetTag-Ominous.mp3
+    - assets/sounds/target_tag/TargetTag-BananaSlip.mp3
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

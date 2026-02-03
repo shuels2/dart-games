@@ -192,7 +192,7 @@ void main() {
       expect(updated.gameHistory.first.duration.inMinutes, 5);
     });
 
-    test('updatePlayerStats does not add history for losses', () async {
+    test('updatePlayerStats adds history for losses with duration', () async {
       final player = Player.create(name: 'Loser');
       await provider.savePlayer(player);
 
@@ -204,7 +204,9 @@ void main() {
       );
 
       final updated = provider.getPlayerById(player.id);
-      expect(updated!.gameHistory, isEmpty);
+      expect(updated!.gameHistory.length, 1);
+      expect(updated.gameHistory.first.gameName, 'Carnival Derby');
+      expect(updated.gameHistory.first.duration.inMinutes, 5);
       expect(updated.gamesPlayed, 1);
       expect(updated.gamesWon, 0);
     });

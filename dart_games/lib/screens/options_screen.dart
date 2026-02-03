@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +9,7 @@ import '../services/dart_announcer_service.dart';
 import '../services/app_settings.dart';
 import '../services/victory_music_service.dart';
 import '../services/photo_service.dart';
+import '../services/test_data_service.dart';
 import '../models/victory_music_file.dart';
 import '../models/player.dart';
 import '../providers/player_provider.dart';
@@ -1219,6 +1220,147 @@ class _OptionsScreenState extends State<OptionsScreen> {
     );
   }
 
+  /// Load test players with game history
+  Future<void> _loadTestData() async {
+    final playerProvider = context.read<PlayerProvider>();
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Load Test Data'),
+          content: const Text(
+            'This will add:\n'
+            '• 20 sample players with varied game history\n'
+            '• 2 sample victory music files\n\n'
+            'These will be added to your existing data.',
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Load test data'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    // Generate and save test players
+    final testPlayers = TestDataService.generateTestPlayers();
+    for (final player in testPlayers) {
+      await playerProvider.savePlayer(player);
+    }
+
+    // Generate and save test victory music files (embedded as data URLs)
+    final musicService = VictoryMusicService();
+    final testMusicDataUrls = TestDataService.getTestVictoryMusicDataUrls();
+
+    int filesAdded = 0;
+    for (final musicData in testMusicDataUrls) {
+      try {
+        await musicService.addMusicFile(
+          fileName: musicData['name']!,
+          dataUrl: musicData['dataUrl']!,
+        );
+        filesAdded++;
+      } catch (e) {
+        debugPrint('Error loading test music file ${musicData['name']}: $e');
+      }
+    }
+
+    // Reload victory music in UI
+    final files = await musicService.getMusicFiles();
+    setState(() {
+      _victoryMusicFiles = files;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Loaded ${testPlayers.length} players and $filesAdded music files'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  /// Clear all players, game history, and victory music
+  Future<void> _clearAllData() async {
+    final playerProvider = context.read<PlayerProvider>();
+
+    // Show warning dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.red, size: 32),
+              SizedBox(width: 12),
+              Text('Clear All Data'),
+            ],
+          ),
+          content: Text(TestDataService.getClearAllDataWarning()),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete all'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    // Delete all players
+    final allPlayers = playerProvider.allPlayers;
+    for (final player in allPlayers) {
+      await playerProvider.deletePlayer(player.id);
+    }
+
+    // Delete all victory music files
+    final musicService = VictoryMusicService();
+    final allMusicFiles = await musicService.getMusicFiles();
+    for (final musicFile in allMusicFiles) {
+      await musicService.removeMusicFile(musicFile.id);
+    }
+
+    // Reload victory music in UI
+    final files = await musicService.getMusicFiles();
+    setState(() {
+      _victoryMusicFiles = files;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🗑️ All data deleted'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1775,6 +1917,26 @@ class _OptionsScreenState extends State<OptionsScreen> {
                                 ),
                               );
                             },
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.science, color: Colors.blue),
+                            title: const Text('Load Test Data'),
+                            subtitle: const Text('Add 20 sample players and 2 victory music files for testing'),
+                            trailing: const Icon(Icons.add_circle_outline, color: Colors.blue),
+                            onTap: _loadTestData,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.delete_forever, color: Colors.red),
+                            title: const Text('Clear All Data'),
+                            subtitle: const Text('Delete all players, game history, and victory music'),
+                            trailing: const Icon(Icons.warning_amber, color: Colors.red),
+                            onTap: _clearAllData,
                           ),
                         ),
                       ],

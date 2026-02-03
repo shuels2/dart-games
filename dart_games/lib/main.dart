@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'providers/dartboard_provider.dart';
 import 'providers/player_provider.dart';
 import 'providers/horse_race_provider.dart';
+import 'providers/target_tag_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
@@ -35,6 +36,11 @@ Future<void> _preloadFonts() async {
   GoogleFonts.montserrat(fontWeight: FontWeight.w900);
   GoogleFonts.robotoCondensed(fontWeight: FontWeight.w300);
 
+  // Preload Target Tag fonts
+  GoogleFonts.fredoka(fontWeight: FontWeight.w400);
+  GoogleFonts.fredoka(fontWeight: FontWeight.w500);
+  GoogleFonts.fredoka(fontWeight: FontWeight.w700);
+
   // Wait for all fonts to load
   await GoogleFonts.pendingFonts([
     GoogleFonts.nunito(),
@@ -43,6 +49,7 @@ Future<void> _preloadFonts() async {
     GoogleFonts.luckiestGuy(),
     GoogleFonts.montserrat(),
     GoogleFonts.robotoCondensed(),
+    GoogleFonts.fredoka(),
   ]);
 }
 
@@ -56,6 +63,7 @@ class DartGamesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DartboardProvider()),
         ChangeNotifierProvider(create: (_) => PlayerProvider()),
         ChangeNotifierProvider(create: (_) => HorseRaceProvider()),
+        ChangeNotifierProvider(create: (_) => TargetTagProvider()),
       ],
       child: MaterialApp(
         title: 'Dart Games',

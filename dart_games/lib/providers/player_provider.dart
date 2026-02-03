@@ -149,8 +149,8 @@ class PlayerProvider extends ChangeNotifier {
         // Create new game history list
         final updatedHistory = List<GameHistoryEntry>.from(player.gameHistory);
 
-        // If won and we have game details, add to history
-        if (won && gameName != null && gameDuration != null) {
+        // If we have game details, add to history (for both winners and losers)
+        if (gameName != null && gameDuration != null) {
           updatedHistory.add(GameHistoryEntry.create(
             gameName: gameName,
             duration: gameDuration,

@@ -8,6 +8,7 @@ import '../widgets/compact_dartboard_info.dart';
 import 'test_dartboard_screen.dart';
 import 'options_screen.dart';
 import 'games/carnival_horse_race/horse_race_menu_screen.dart';
+import 'games/target_tag/target_tag_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -56,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: title == 'Target Tag' ? 10 : 8),
               Text(
                 title,
                 style: title == 'Carnival Derby'
@@ -65,10 +66,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                         fontWeight: FontWeight.bold,
                       )
-                    : theme.textTheme.titleMedium?.copyWith(
-                        color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    : title == 'Target Tag'
+                        ? GoogleFonts.luckiestGuy(
+                            fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
+                            color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                            letterSpacing: 1.2,
+                          )
+                        : theme.textTheme.titleMedium?.copyWith(
+                            color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -272,10 +279,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 350,
                   child: _buildGameCard(
                     context: context,
-                    icon: Icons.casino,
-                    title: 'More Games\nComing Soon',
-                    color: Colors.grey,
-                    onTap: null,
+                    imageAssetPath: 'assets/icon/TargetTag-Icon.png',
+                    title: 'Target Tag',
+                    color: const Color(0xFFFF007A),
+                    onTap: dartboardProvider.canPlayGames
+                        ? () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const TargetTagMenuScreen(),
+                              ),
+                            );
+                          }
+                        : null,
                   ),
                 ),
               ],

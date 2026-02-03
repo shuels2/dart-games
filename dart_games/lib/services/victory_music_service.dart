@@ -128,13 +128,17 @@ class VictoryMusicService {
     required String fileName,
     String? filePath,
     Uint8List? fileBytes,
+    String? dataUrl,
   }) async {
     await initialize();
 
     final id = const Uuid().v4();
     final String source;
 
-    if (kIsWeb && fileBytes != null) {
+    if (dataUrl != null) {
+      // Use pre-made data URL directly (for test data)
+      source = dataUrl;
+    } else if (kIsWeb && fileBytes != null) {
       // Convert to data URL (existing logic)
       final mimeType = _getMimeType(fileName);
       final base64Data = base64Encode(fileBytes);
