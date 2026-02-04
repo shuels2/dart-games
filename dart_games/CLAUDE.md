@@ -42,7 +42,8 @@ dart_games/
 │               ├── horse_race_menu_screen.dart     # Game setup
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
-├── test/                            # Test suite (180 tests)
+├── test/                            # Non-UI test suite (180 tests)
+├── integration_test/                # UI automation tests (6 tests)
 └── assets/                          # Images, icons, fonts
 ```
 
@@ -244,7 +245,7 @@ Widget _buildDartboardSection(bool disabled) {
 
 ### Mandatory Testing Before Any Build
 
-**ALL TESTS MUST PASS BEFORE ANY BUILD OR DEPLOYMENT.**
+**ALL NON-UI TESTS MUST PASS BEFORE ANY BUILD OR DEPLOYMENT.**
 
 Before any build, commit, or deployment:
 
@@ -254,10 +255,34 @@ flutter test
 ```
 
 **CRITICAL REQUIREMENTS:**
-- All 180 tests must pass (100% pass rate required)
+- All 180 non-UI tests must pass (100% pass rate required)
 - If ANY test fails, DO NOT proceed with build
 - Fix all failing tests first, then re-run test suite
 - Only build after confirming all tests pass
+
+**UI Automation Tests (Optional):**
+
+The 6 UI automation tests in `integration_test/` take longer to run (2+ minutes) and require chromedriver.
+
+**Before running a build, ASK the user:**
+- "Would you like me to run the UI automation tests before this build?"
+
+**If the user says yes:**
+```bash
+# Terminal 1 - Start chromedriver
+cd dart_games/chromedriver/chromedriver-win64
+./chromedriver.exe --port=4444
+
+# Terminal 2 - Run UI tests
+cd dart_games
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/target_tag_add_player_test.dart \
+  -d chrome
+```
+
+**If the user says no:**
+- Proceed with build after non-UI tests pass
+- UI automation tests are supplementary and not required for every build
 
 **Target Tag Regression Testing:**
 
@@ -493,9 +518,19 @@ When adding a new game:
 
 ## Testing Requirements
 
-### Complete Test Suite (180 Tests)
+### Complete Test Suite (180 Tests + 6 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
+
+**Non-UI Tests (180 tests in `test/` directory):**
+- Run with `flutter test`
+- Execute in seconds
+- Required to pass before every build
+
+**UI Automation Tests (6 tests in `integration_test/` directory):**
+- Run with `flutter drive` and chromedriver
+- Execute in ~2 minutes
+- Optional for builds (ask user before running)
 
 #### Model Tests (36 tests)
 - `test/models/game_history_entry_test.dart` (8 tests)
@@ -583,15 +618,27 @@ The dart games app has a comprehensive test suite covering all critical function
   - Dart position persistence across window resize
   - Dart management (add/remove functionality)
 
+#### UI Automation Tests (6 tests)
+- `integration_test/target_tag_add_player_test.dart` (6 tests)
+  - Setup: Navigate to Target Tag and add 2 initial players
+  - Test 1: Add Player with Name Only
+  - Test 2: Add Player with Name and Photo - UI Elements
+  - Test 3: Add Player Validation - Empty Name
+  - Test 3b: Add Player Validation - Whitespace Only Name
+  - Test 3c: Cancel Button Closes Dialog Without Saving
+  - **Run separately with chromedriver:** See UI Automation Testing Guidelines section
+  - **Execution time:** ~2 minutes
+  - **Required setup:** ChromeDriver running on port 4444
+
 ### Running Tests
 
-Run all tests:
+**Run all non-UI tests (180 tests):**
 ```bash
 cd dart_games
 flutter test
 ```
 
-Run specific test suites:
+**Run specific test suites:**
 ```bash
 # Model tests
 flutter test test/models/
@@ -606,14 +653,33 @@ flutter test test/screens/games/carnival_horse_race/
 flutter test test/widgets/
 ```
 
+**Run UI automation tests (6 tests):**
+```bash
+# Terminal 1: Start chromedriver
+cd dart_games/chromedriver
+chromedriver --port=4444
+
+# Terminal 2: Run UI automation tests
+cd dart_games
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_add_player_test.dart -d chrome
+```
+
 ### Test Expectations
 
-- **100% pass rate required** - All 180 tests must pass
+**Non-UI Tests (180 tests):**
+- **100% pass rate required** - All 180 non-UI tests must pass before every build
 - Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
-- No build or deployment without all tests passing
+- No build or deployment without all non-UI tests passing
 - Tests cover both web and native platform scenarios
 - Backward compatibility is validated for data migrations
 - Target Tag tests (41 tests total) validate game logic, announcement system integrity, and user management integration
+
+**UI Automation Tests (6 tests):**
+- Optional for builds - ask user if they want to run UI automation tests
+- Execution time: ~2 minutes
+- Tests validate Target Tag Add Player dialog functionality end-to-end in Chrome
+- Require chromedriver setup on port 4444
+- When run, must achieve 100% pass rate
 
 ### Maintaining Tests When Features Change
 
@@ -631,10 +697,11 @@ Whenever you update a feature of the dart games app or modify one of the games:
    - Run `flutter test` to verify 100% pass rate
 
 3. **Update CLAUDE.md with the new test count and requirements:**
-   - Update the total test count in the "CRITICAL REQUIREMENTS" section (line 31)
+   - Update the "Complete Test Suite" section header with new test counts
    - Update the test breakdown in the "Complete Test Suite" section
    - Add documentation for any new test files created
-   - Update the "Test Expectations" section with the new total
+   - Update the "Test Expectations" section with the new totals
+   - Update "Mandatory Testing Before Any Build" section if needed
 
 4. **Commit the test updates:**
    - Include test updates in the same commit as the feature changes, OR
@@ -666,6 +733,443 @@ Claude:
 4. Commits changes with updated CLAUDE.md
 ```
 
+## UI Automation Testing Guidelines (integration_test/ Directory)
+
+**IMPORTANT: These rules ONLY apply to UI automation tests in the `integration_test/` directory that use `flutter drive` with chromedriver.**
+
+**These rules DO NOT apply to:**
+- Unit tests in `test/models/`
+- Provider tests in `test/providers/`
+- Service tests in `test/services/`
+- Widget tests in `test/widgets/`
+- Game logic integration tests in `test/screens/games/`
+
+Those tests run with `flutter test` and can use `pumpAndSettle()` normally without issues.
+
+---
+
+### Test Directory Structure
+
+```
+dart_games/
+├── test/                           # Regular tests - use flutter test
+│   ├── models/                     # ✅ pumpAndSettle() safe
+│   ├── providers/                  # ✅ pumpAndSettle() safe
+│   ├── services/                   # ✅ pumpAndSettle() safe
+│   ├── widgets/                    # ✅ pumpAndSettle() safe
+│   └── screens/games/              # ✅ pumpAndSettle() safe
+│
+├── integration_test/               # UI automation tests - use flutter drive
+│   └── target_tag_add_player_test.dart  # ⚠️ Follow continuous animation rules
+│
+└── test_driver/
+    └── integration_test.dart       # Required driver for flutter drive
+```
+
+---
+
+### Running UI Automation Tests (integration_test/)
+
+UI automation tests require **chromedriver** and **flutter drive** (not `flutter test`).
+
+#### Step 1: Install ChromeDriver
+
+ChromeDriver should be installed at:
+```
+dart_games/chromedriver/chromedriver-win64/chromedriver.exe
+```
+
+If not present, download the matching version for your Chrome browser from [ChromeDriver Downloads](https://chromedriver.chromium.org/downloads).
+
+#### Step 2: Start ChromeDriver
+
+**CRITICAL: ChromeDriver must be running BEFORE you run the tests.**
+
+```bash
+# Navigate to chromedriver directory
+cd dart_games/chromedriver/chromedriver-win64
+
+# Start chromedriver on port 4444 (leave this running)
+./chromedriver.exe --port=4444
+```
+
+You should see:
+```
+ChromeDriver was started successfully on port 4444.
+```
+
+**Leave this terminal window open** - chromedriver must continue running while tests execute.
+
+#### Step 3: Run UI Automation Tests
+
+In a **separate terminal**:
+
+```bash
+cd dart_games
+
+# Run a specific UI automation test
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/target_tag_add_player_test.dart \
+  -d chrome
+```
+
+**Important flags:**
+- `--driver=test_driver/integration_test.dart` - Points to the test driver
+- `--target=integration_test/your_test.dart` - The UI test file to run
+- `-d chrome` - Run in Chrome browser (requires chromedriver on port 4444)
+
+#### Step 4: Stop ChromeDriver
+
+After tests complete:
+
+```bash
+# Windows
+taskkill /F /IM chromedriver.exe
+
+# Linux/Mac
+killall chromedriver
+```
+
+#### Common Launch Issues
+
+**"Unable to start a WebDriver session"**
+- ChromeDriver is not running on port 4444
+- Start chromedriver first (see Step 2)
+
+**"Connection refused" or "Invalid session"**
+- ChromeDriver version doesn't match Chrome browser version
+- Download the correct chromedriver version for your Chrome
+
+**Tests hang immediately**
+- Using `pumpAndSettle()` on a screen with continuous animations
+- See "Continuous Animation Rules" below
+
+---
+
+### Test Driver Setup (Required)
+
+All UI automation tests require a test driver file at `test_driver/integration_test.dart`:
+
+```dart
+import 'package:integration_test/integration_test_driver.dart';
+
+Future<void> main() => integrationDriver();
+```
+
+This file should already exist. **Do not modify it.**
+
+---
+
+### Critical Rules for Screens with Continuous Animations
+
+**NEVER use `pumpAndSettle()` on screens with infinite/repeating animations.**
+
+This is the #1 cause of UI automation test hangs.
+
+#### Identifying Continuous Animations
+
+Screens with continuous animations will cause `pumpAndSettle()` to hang forever waiting for animations to complete.
+
+**Look for this pattern in screen code:**
+```dart
+// This creates an infinite animation:
+_pulseController = AnimationController(
+  vsync: this,
+  duration: const Duration(milliseconds: 1500),
+)..repeat(reverse: true);  // ← INFINITE - never settles
+```
+
+**Example screens with continuous animations:**
+- Target Tag menu screen (pulse animation)
+- Any screen with repeating/looping animations
+- Screens with animated backgrounds or continuously moving elements
+
+#### The Problem
+
+```dart
+// ❌ WRONG - Will hang forever on screens with continuous animations
+await tester.tap(find.text('Target Tag'));
+await tester.pumpAndSettle(); // ← HANGS FOREVER waiting for pulse animation to stop
+```
+
+The test will appear to freeze after navigating to the screen. No error message, just infinite waiting.
+
+#### The Solution
+
+Use explicit `pump()` sequences instead of `pumpAndSettle()`:
+
+```dart
+// ✅ CORRECT - Use explicit pump() calls
+await tester.tap(find.text('Target Tag'));
+await tester.pump(); // Process the tap
+await tester.pump(const Duration(seconds: 1)); // Let navigation complete
+await tester.pump(); // Process navigation
+await tester.pump(const Duration(seconds: 5)); // Wait for async loading
+await tester.pump(); // Process data loaded
+await tester.pump(); // Rebuild widget tree
+await tester.pump(); // Layout widgets
+await tester.pump(); // Paint widgets
+```
+
+---
+
+### Frame Pumping Patterns for UI Automation Tests
+
+**Pattern 1: After navigation to a new screen**
+```dart
+await tester.tap(find.text('Screen Name'));
+// Don't use pumpAndSettle() if screen has continuous animations
+await tester.pump(); // Process the tap
+await tester.pump(const Duration(seconds: 1)); // Let navigation complete
+await tester.pump(); // Process navigation
+await tester.pump(); // Build widget tree
+```
+
+**Pattern 2: After async operations (like loading data from SharedPreferences)**
+```dart
+// Wait for async data to load, then rebuild UI
+await tester.pump(const Duration(seconds: 5)); // Wait for async operation (e.g., PlayerProvider.loadPlayers())
+await tester.pump(); // Process data loaded
+await tester.pump(); // Rebuild widget tree with new data
+await tester.pump(); // Layout the new widgets
+await tester.pump(); // Paint the widgets
+```
+
+**Pattern 3: After tapping a button that opens a dialog**
+```dart
+await tester.tap(buttonFinder);
+await tester.pump(); // Process tap
+await tester.pump(const Duration(milliseconds: 500)); // Let dialog open
+await tester.pump(); // Build dialog
+await tester.pump(); // Layout dialog
+await tester.pump(); // Paint dialog
+```
+
+**Pattern 4: After entering text in a field**
+```dart
+await tester.enterText(textFieldFinder, 'Text');
+await tester.pump(); // Process text entry
+await tester.pump(); // Update text field
+```
+
+**Pattern 5: After tapping a button that closes a dialog**
+```dart
+await tester.tap(buttonFinder);
+await tester.pump(); // Process tap
+await tester.pump(const Duration(milliseconds: 500)); // Wait for dialog to close
+await tester.pump(); // Process dialog closing
+```
+
+---
+
+### When pumpAndSettle() is Safe in UI Automation Tests
+
+**Only use `pumpAndSettle()` when you're certain there are no continuous animations:**
+
+```dart
+// ✅ Safe - On splash screen or home screen before navigating
+app.main();
+await tester.pumpAndSettle();
+await tester.pumpAndSettle(const Duration(seconds: 3)); // Wait for splash
+
+// ❌ UNSAFE - After navigating to screen with continuous animations
+await tester.tap(find.text('Target Tag'));
+await tester.pumpAndSettle(); // ← WILL HANG if Target Tag has pulse animation
+```
+
+**General rule:** Once you navigate to any game screen, assume it might have continuous animations and **stop using `pumpAndSettle()`**. Use explicit `pump()` sequences instead.
+
+---
+
+### Widget Finder Best Practices for UI Automation Tests
+
+**If a specific widget type isn't found, try finding by text:**
+
+```dart
+// If this fails (widget type doesn't match in integration test environment):
+final button = find.widgetWithText(ElevatedButton, 'BUTTON TEXT');
+
+// Try this instead (more reliable in UI automation tests):
+final button = find.text('BUTTON TEXT');
+```
+
+The widget tree may render widgets differently in UI automation tests vs. regular widget tests, so finding by visible text is often more reliable.
+
+**Use ensureVisible() for scrollable content:**
+```dart
+final button = find.text('BUTTON TEXT');
+await tester.ensureVisible(button.first);
+await tester.pump(); // Process ensureVisible
+await tester.tap(button.first);
+await tester.pump(); // Process tap
+```
+
+---
+
+### Debugging UI Automation Tests
+
+**Add temporary debug output to understand widget state:**
+
+```dart
+print('=== DEBUG ===');
+print('Button found: ${find.text('BUTTON').evaluate().length}');
+print('Dialogs found: ${find.byType(AlertDialog).evaluate().length}');
+print('ListView found: ${find.byType(ListView).evaluate().length}');
+```
+
+**IMPORTANT: Remove all debug output before committing.**
+
+**Common debug checks:**
+- Check if expected widgets are rendered
+- Verify dialog opened/closed
+- Confirm list items loaded
+- Check button enabled/disabled state
+
+---
+
+### Complete UI Automation Test Pattern
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dart_games/main.dart' as app;
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  group('Game Screen UI Tests', () {
+    setUp(() async {
+      // Clear SharedPreferences before each test
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // Pre-configure any required settings
+      await prefs.setBool('use_emulator', true);
+    });
+
+    testWidgets('Test description', (WidgetTester tester) async {
+      // 1. Launch app
+      app.main();
+      await tester.pumpAndSettle(); // ✅ Safe - on splash/home screen
+      await tester.pumpAndSettle(const Duration(seconds: 3)); // Wait for splash
+
+      // 2. Navigate to screen (assume it has continuous animations)
+      await tester.tap(find.text('Screen Name'));
+      // ⚠️ NO MORE pumpAndSettle() from here on
+      await tester.pump(); // Process tap
+      await tester.pump(const Duration(seconds: 1)); // Let navigation complete
+      await tester.pump(); // Process navigation
+      await tester.pump(const Duration(seconds: 5)); // Wait for async loading
+      await tester.pump(); // Process data loaded
+      await tester.pump(); // Rebuild widget tree
+      await tester.pump(); // Layout widgets
+      await tester.pump(); // Paint widgets
+
+      // 3. Verify screen loaded
+      expect(find.text('Expected Screen Element'), findsOneWidget);
+
+      // 4. Interact with UI - open dialog
+      await tester.tap(find.text('Button'));
+      await tester.pump(); // Process tap
+      await tester.pump(const Duration(milliseconds: 500)); // Let dialog open
+      await tester.pump(); // Build dialog
+      await tester.pump(); // Layout dialog
+      await tester.pump(); // Paint dialog
+
+      // 5. Enter text
+      await tester.enterText(find.byType(TextField), 'Test Input');
+      await tester.pump(); // Process text entry
+      await tester.pump(); // Update text field
+
+      // 6. Submit dialog
+      await tester.tap(find.text('Submit'));
+      await tester.pump(); // Process tap
+      await tester.pump(const Duration(milliseconds: 500)); // Wait for dialog close
+      await tester.pump(); // Process dialog closing
+
+      // 7. Verify results
+      expect(find.text('Test Input'), findsOneWidget);
+    });
+  });
+}
+```
+
+---
+
+### Common UI Automation Test Pitfalls
+
+1. **Using `pumpAndSettle()` on screens with continuous animations**
+   - Symptom: Test hangs forever after navigating to screen
+   - Solution: Use explicit `pump()` sequences
+
+2. **ChromeDriver not running**
+   - Symptom: "Unable to start a WebDriver session"
+   - Solution: Start chromedriver on port 4444 before running tests
+
+3. **Not pumping enough frames after async operations**
+   - Symptom: Widgets not found, "Expected 1 but found 0"
+   - Solution: Add more `pump()` calls after async waits
+
+4. **Assuming widget types match exactly**
+   - Symptom: `find.widgetWithText(ElevatedButton, 'TEXT')` finds nothing
+   - Solution: Use `find.text('TEXT')` instead
+
+5. **Forgetting to wait for async data loading**
+   - Symptom: Buttons/content not available, empty lists
+   - Solution: Add `pump(Duration(seconds: 5))` followed by rebuild pumps
+
+6. **Not using `ensureVisible()`**
+   - Symptom: Tap fails or taps wrong element
+   - Solution: Use `ensureVisible()` before tapping scrollable content
+
+7. **Wrong test runner**
+   - Symptom: Test doesn't connect to browser
+   - Solution: Use `flutter drive`, NOT `flutter test`, for integration_test/ files
+
+---
+
+### UI Automation Test Checklist
+
+Before committing UI automation tests:
+
+- [ ] Tests run with `flutter drive` (not `flutter test`)
+- [ ] ChromeDriver setup documented/working
+- [ ] Tests pass consistently when run multiple times
+- [ ] No `pumpAndSettle()` calls on screens with continuous animations
+- [ ] All debug output removed
+- [ ] Proper frame pumping sequences used throughout
+- [ ] Tests complete in reasonable time (< 5 minutes)
+- [ ] Test descriptions are clear and specific
+- [ ] setUp() clears SharedPreferences for test isolation
+- [ ] Temporary test files deleted
+
+---
+
+### Quick Reference
+
+**Run regular tests (test/ directory):**
+```bash
+flutter test                                    # All tests
+flutter test test/models/                       # Model tests
+flutter test test/providers/                    # Provider tests
+```
+
+**Run UI automation tests (integration_test/ directory):**
+```bash
+# Terminal 1 - Start chromedriver
+cd dart_games/chromedriver/chromedriver-win64
+./chromedriver.exe --port=4444
+
+# Terminal 2 - Run UI tests
+cd dart_games
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/target_tag_add_player_test.dart \
+  -d chrome
+```
+
 ## Git Workflow
 
 ### Push Permission Required
@@ -687,30 +1191,32 @@ This applies to all git operations that modify the remote repository, including:
 ### Standard Development Process
 
 1. Make code changes (excluding protected dartboard emulator code)
-2. **MANDATORY: Run full test suite**
+2. **MANDATORY: Run full non-UI test suite**
    ```bash
    cd dart_games
    flutter test
    ```
-3. **Verify ALL 180 tests pass (100% pass rate required)**
-4. If ANY tests fail:
+3. **Verify ALL 180 non-UI tests pass (100% pass rate required)**
+4. **OPTIONAL: Ask user if they want to run UI automation tests (6 tests, ~2 minutes)**
+5. If ANY tests fail:
    - DO NOT proceed
    - Investigate and fix the failing tests
    - Re-run the test suite
    - Only continue after all tests pass
-5. Commit changes locally (if appropriate)
-6. **Ask user for permission before pushing to remote**
-7. Wait for explicit user approval
-8. Only then proceed with build/deployment
+6. Commit changes locally (if appropriate)
+7. **Ask user for permission before pushing to remote**
+8. Wait for explicit user approval
+9. Only then proceed with build/deployment
 
 ### Build Process
 
-**NEVER build without running tests first.**
+**NEVER build without running non-UI tests first.**
 
 Before any `flutter run` or `flutter build` command:
-1. Run `flutter test`
-2. Confirm all 180 tests pass
-3. Only then run the build command
+1. Run `flutter test` (180 non-UI tests)
+2. Confirm all 180 non-UI tests pass
+3. Ask user if they want to run UI automation tests (6 tests, ~2 minutes)
+4. Only then run the build command
 
 ### Quick Reference
 
