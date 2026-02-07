@@ -96,7 +96,7 @@ void main() {
     await tester.pump();
 
     // Verify we're on the game screen
-    expect(find.text("Let's Play Tag!"), findsOneWidget);
+    expect(find.text('Target Tag Game On!'), findsOneWidget);
   }
 
   // Helper function to enable Hero Bonus
@@ -288,7 +288,7 @@ void main() {
       await startGame(tester);
 
       // Verify we're on the game screen
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
 
       // Verify active player panel shows "Target number:" (not tagged in)
       expect(find.textContaining('Target number:'), findsWidgets);
@@ -352,7 +352,7 @@ void main() {
       await startGame(tester);
 
       // Verify game started
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
 
       // Verify initial state: "Target number:" shown (not tagged in)
       expect(find.textContaining('Target number:'), findsWidgets);
@@ -396,7 +396,7 @@ void main() {
       await startGame(tester);
 
       // Verify game started with 3 players
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
 
       // Verify initial state: "Target number:" shown (not tagged in yet)
       expect(find.textContaining('Target number:'), findsWidgets);
@@ -461,7 +461,7 @@ void main() {
       await startGame(tester);
 
       // Verify game started
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
 
       // Verify "Target number:" shown (not tagged in yet)
       expect(find.textContaining('Target number:'), findsWidgets);
@@ -498,7 +498,7 @@ void main() {
       await startGame(tester);
 
       // Verify game started
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
 
       // Verify game info panel shows Solo mode settings
       expect(find.textContaining('Game Settings'), findsWidgets);
@@ -542,7 +542,7 @@ void main() {
       await startGame(tester);
 
       // Verify game started in Team mode
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
 
       // Verify game info panel shows Team mode and Random assignment
       expect(find.textContaining('Game Settings'), findsWidgets);
@@ -610,7 +610,7 @@ void main() {
       await startGame(tester);
 
       // Verify game started in solo mode
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
       expect(find.text('Winner Player'), findsWidgets); // Player names appear in multiple places
       expect(find.text('Loser Player'), findsWidgets);
 
@@ -665,7 +665,7 @@ void main() {
       await startGame(tester);
 
       // Verify game started successfully
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
       expect(find.text('Game Player 1'), findsWidgets); // Player names appear in multiple places
       expect(find.text('Game Player 2'), findsWidgets);
 
@@ -687,7 +687,7 @@ void main() {
       await startGame(tester);
 
       // Verify 3-player game started
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
       expect(find.text('Player Alpha'), findsOneWidget);
       expect(find.text('Player Beta'), findsOneWidget);
       expect(find.text('Player Gamma'), findsOneWidget);
@@ -721,7 +721,7 @@ void main() {
       await startGame(tester);
 
       // Verify game started with hero bonus
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
       expect(find.textContaining('ON'), findsWidgets); // Hero Bonus ON in settings panel
 
       // ===== Step 4: Team Mode with Random Assignment =====
@@ -749,7 +749,7 @@ void main() {
       await startGame(tester);
 
       // Verify game started in team mode
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
       expect(find.textContaining('Team'), findsWidgets);
 
       // ===== Step 5: Return to test another Team Mode variation =====
@@ -770,7 +770,7 @@ void main() {
       await startGame(tester);
 
       // Verify team game started
-      expect(find.text("Let's Play Tag!"), findsOneWidget);
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
       expect(find.textContaining('Team'), findsWidgets);
 
       // ===== Step 6: Team Mode Manual Assignment Setup =====
