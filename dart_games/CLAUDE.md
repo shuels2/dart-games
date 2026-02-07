@@ -43,7 +43,7 @@ dart_games/
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
 ├── test/                            # Non-UI test suite (180 tests)
-├── integration_test/                # UI automation tests (6 tests)
+├── integration_test/                # UI automation tests (40 tests)
 └── assets/                          # Images, icons, fonts
 ```
 
@@ -262,7 +262,7 @@ flutter test
 
 **UI Automation Tests (Optional):**
 
-The 6 UI automation tests in `integration_test/` take longer to run (2+ minutes) and require chromedriver.
+The 40 UI automation tests in `integration_test/` take longer to run (~10 minutes) and require chromedriver.
 
 **Before running a build, ASK the user:**
 - "Would you like me to run the UI automation tests before this build?"
@@ -273,8 +273,14 @@ The 6 UI automation tests in `integration_test/` take longer to run (2+ minutes)
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2 - Run UI tests
+# Terminal 2 - Run UI tests (40 tests across 3 files)
 cd dart_games
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/target_tag_menu_and_mechanics_test.dart \
+  -d chrome
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/target_tag_gameplay_test.dart \
+  -d chrome
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_add_player_test.dart \
   -d chrome
@@ -518,7 +524,7 @@ When adding a new game:
 
 ## Testing Requirements
 
-### Complete Test Suite (180 Tests + 6 UI Automation Tests)
+### Complete Test Suite (180 Tests + 40 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
@@ -527,9 +533,9 @@ The dart games app has a comprehensive test suite covering all critical function
 - Execute in seconds
 - Required to pass before every build
 
-**UI Automation Tests (6 tests in `integration_test/` directory):**
+**UI Automation Tests (40 tests in `integration_test/` directory):**
 - Run with `flutter drive` and chromedriver
-- Execute in ~2 minutes
+- Execute in ~10 minutes
 - Optional for builds (ask user before running)
 
 #### Model Tests (36 tests)
@@ -618,17 +624,32 @@ The dart games app has a comprehensive test suite covering all critical function
   - Dart position persistence across window resize
   - Dart management (add/remove functionality)
 
-#### UI Automation Tests (6 tests)
-- `integration_test/target_tag_add_player_test.dart` (6 tests)
+#### UI Automation Tests (40 tests)
+- `integration_test/target_tag_menu_and_mechanics_test.dart` (28 tests)
+  - Menu settings and validations (6 tests)
+  - Team mode - max 5 teams (3 tests)
+  - Add player button states (2 tests)
+  - Hero bonus toggle (1 test)
+  - Edit score behavior (4 tests)
+  - Settings panel behavior (16 tests)
+  - **Execution time:** ~13 minutes
+
+- `integration_test/target_tag_gameplay_test.dart` (8 tests)
+  - Hero buff & opponent targets tests (5 tests)
+  - Game settings panel tests (1 test)
+  - Victory screen tests (2 tests)
+  - **Execution time:** ~4 minutes
+
+- `integration_test/target_tag_add_player_test.dart` (4 tests)
   - Setup: Navigate to Target Tag and add 2 initial players
   - Test 1: Add Player with Name Only
   - Test 2: Add Player with Name and Photo - UI Elements
-  - Test 3: Add Player Validation - Empty Name
-  - Test 3b: Add Player Validation - Whitespace Only Name
-  - Test 3c: Cancel Button Closes Dialog Without Saving
-  - **Run separately with chromedriver:** See UI Automation Testing Guidelines section
-  - **Execution time:** ~2 minutes
-  - **Required setup:** ChromeDriver running on port 4444
+  - Test 3: Add Player Dialog - Complete Validation Flow
+  - **Execution time:** ~1.5 minutes
+
+**Total UI Automation Test Execution Time:** ~10 minutes (varies based on system performance)
+**Required setup:** ChromeDriver running on port 4444
+**Run separately with chromedriver:** See UI Automation Testing Guidelines section
 
 ### Running Tests
 
@@ -653,14 +674,16 @@ flutter test test/screens/games/carnival_horse_race/
 flutter test test/widgets/
 ```
 
-**Run UI automation tests (6 tests):**
+**Run UI automation tests (40 tests):**
 ```bash
 # Terminal 1: Start chromedriver
-cd dart_games/chromedriver
-chromedriver --port=4444
+cd dart_games/chromedriver/chromedriver-win64
+./chromedriver.exe --port=4444
 
-# Terminal 2: Run UI automation tests
+# Terminal 2: Run UI automation tests (3 test files)
 cd dart_games
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_menu_and_mechanics_test.dart -d chrome
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_gameplay_test.dart -d chrome
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_add_player_test.dart -d chrome
 ```
 
@@ -674,10 +697,11 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 - Backward compatibility is validated for data migrations
 - Target Tag tests (41 tests total) validate game logic, announcement system integrity, and user management integration
 
-**UI Automation Tests (6 tests):**
+**UI Automation Tests (40 tests):**
 - Optional for builds - ask user if they want to run UI automation tests
-- Execution time: ~2 minutes
-- Tests validate Target Tag Add Player dialog functionality end-to-end in Chrome
+- Execution time: ~10 minutes
+- Tests validate Target Tag menu settings, gameplay mechanics, and user interactions end-to-end in Chrome
+- Covers all game modes (solo, team), settings persistence, edit score, skip turn, player highlighting, hero bonuses, and victory conditions
 - Require chromedriver setup on port 4444
 - When run, must achieve 100% pass rate
 
@@ -817,6 +841,32 @@ flutter drive --driver=test_driver/integration_test.dart \
 - `--driver=test_driver/integration_test.dart` - Points to the test driver
 - `--target=integration_test/your_test.dart` - The UI test file to run
 - `-d chrome` - Run in Chrome browser (requires chromedriver on port 4444)
+
+#### Recommended: Launch Interactive UI Tests in Claude Code
+
+When running UI tests interactively in Claude Code, use these commands in sequence:
+
+**Command 1: Start ChromeDriver**
+```bash
+cd dart_games/chromedriver/chromedriver-win64 && ./chromedriver.exe --port=4444
+```
+Set to run in background: Yes
+
+**Command 2: Wait for ChromeDriver to initialize**
+```bash
+sleep 5
+```
+
+**Command 3: Run the UI test**
+```bash
+cd dart_games && flutter drive --driver=test_driver/integration_test.dart --target=integration_test/YOUR_TEST_FILE.dart -d chrome
+```
+Replace `YOUR_TEST_FILE.dart` with the actual test file you want to run (e.g., `target_tag_add_player_test.dart`, `temp_edit_score_test.dart`, etc.)
+
+**Why this approach:**
+- Running chromedriver in background allows the test to run in the same session
+- The 5-second sleep ensures chromedriver is fully initialized before tests start
+- All commands execute in the same Claude Code session without manual terminal switching
 
 #### Step 4: Stop ChromeDriver
 
@@ -1197,7 +1247,7 @@ This applies to all git operations that modify the remote repository, including:
    flutter test
    ```
 3. **Verify ALL 180 non-UI tests pass (100% pass rate required)**
-4. **OPTIONAL: Ask user if they want to run UI automation tests (6 tests, ~2 minutes)**
+4. **OPTIONAL: Ask user if they want to run UI automation tests (40 tests, ~10 minutes)**
 5. If ANY tests fail:
    - DO NOT proceed
    - Investigate and fix the failing tests
@@ -1215,7 +1265,7 @@ This applies to all git operations that modify the remote repository, including:
 Before any `flutter run` or `flutter build` command:
 1. Run `flutter test` (180 non-UI tests)
 2. Confirm all 180 non-UI tests pass
-3. Ask user if they want to run UI automation tests (6 tests, ~2 minutes)
+3. Ask user if they want to run UI automation tests (40 tests, ~10 minutes)
 4. Only then run the build command
 
 ### Quick Reference
