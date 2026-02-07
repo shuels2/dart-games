@@ -42,6 +42,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
   Map<String, List<Player>> _manualTeams = {};
   final Map<String, String> _playerTeamAssignments = {}; // playerId -> teamId
   late AnimationController _pulseController;
+  final ScrollController _scrollController = ScrollController();
 
   // Team icon paths
   final List<String> _teamIconPaths = [
@@ -95,6 +96,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
   @override
   void dispose() {
     _pulseController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -724,6 +726,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         ),
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         itemCount: allPlayers.length,
                         itemBuilder: (context, index) {
                           final player = allPlayers[index];
@@ -838,6 +841,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         ),
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         itemCount: allPlayers.length,
                         itemBuilder: (context, index) {
                           final player = allPlayers[index];
@@ -1557,8 +1561,12 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
 
                       // Scroll to show the new player after dialog closes
                       Future.delayed(const Duration(milliseconds: 300), () {
-                        if (mounted) {
-                          setState(() {});
+                        if (mounted && _scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            _scrollController.position.maxScrollExtent,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
                         }
                       });
                     },
