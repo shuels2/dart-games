@@ -1537,7 +1537,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (nameController.text.trim().isEmpty) {
                         setDialogState(() {
                           showError = true;
