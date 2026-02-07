@@ -84,7 +84,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
           final player = playerProvider.getPlayerById(playerId);
           if (player != null) {
             _selectedPlayerIds.add(playerId);
-            playerProvider.selectPlayer(player);
+            playerProvider.selectPlayer(player, maxPlayers: 10);
           }
         }
         setState(() {});
@@ -738,7 +738,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                               if (isSelected) {
                                 playerProvider.deselectPlayer(player.id);
                               } else {
-                                playerProvider.selectPlayer(player);
+                                playerProvider.selectPlayer(player, maxPlayers: 10);
                               }
                             },
                           );
@@ -857,7 +857,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                                   _playerTeamAssignments.remove(player.id);
                                 });
                               } else {
-                                playerProvider.selectPlayer(player);
+                                playerProvider.selectPlayer(player, maxPlayers: 10);
                               }
                             },
                           );
@@ -1546,12 +1546,21 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         name: nameController.text.trim(),
                         photoPath: photoPath,
                       );
-                      playerProvider.savePlayer(newPlayer);
+                      await playerProvider.savePlayer(newPlayer);
 
-                      // Auto-select the newly added player
-                      playerProvider.selectPlayer(newPlayer);
+                      // Auto-select the newly added player only if max not reached
+                      if (playerProvider.selectedPlayers.length < 10) {
+                        playerProvider.selectPlayer(newPlayer, maxPlayers: 10);
+                      }
 
                       Navigator.of(dialogContext).pop();
+
+                      // Scroll to show the new player after dialog closes
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (mounted) {
+                          setState(() {});
+                        }
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF007A),

@@ -53,7 +53,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
         for (final playerId in widget.preselectedPlayerIds!) {
           final player = playerProvider.getPlayerById(playerId);
           if (player != null) {
-            playerProvider.selectPlayer(player);
+            playerProvider.selectPlayer(player, maxPlayers: 8);
           }
         }
       }
@@ -821,7 +821,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                         if (isSelected) {
                           playerProvider.deselectPlayer(player.id);
                         } else {
-                          playerProvider.selectPlayer(player);
+                          playerProvider.selectPlayer(player, maxPlayers: 8);
                         }
                       },
                     );
@@ -1139,7 +1139,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                       playerProvider.savePlayer(player);
 
                       // Automatically select the newly added player
-                      playerProvider.selectPlayer(player);
+                      playerProvider.selectPlayer(player, maxPlayers: 8);
 
                       Navigator.pop(dialogContext);
                     },
