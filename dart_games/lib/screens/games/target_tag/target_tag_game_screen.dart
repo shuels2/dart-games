@@ -455,7 +455,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         title: Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Text(
-            "Let's Play Tag!",
+            'Target Tag Game On!',
             style: GoogleFonts.luckiestGuy(
               fontSize: 36,
               letterSpacing: 1.5,
