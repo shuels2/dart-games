@@ -43,7 +43,7 @@ dart_games/
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
 ├── test/                            # Non-UI test suite (180 tests)
-├── integration_test/                # UI automation tests (40 tests)
+├── integration_test/                # UI automation tests (50 tests)
 └── assets/                          # Images, icons, fonts
 ```
 
@@ -262,7 +262,7 @@ flutter test
 
 **UI Automation Tests (Optional):**
 
-The 40 UI automation tests in `integration_test/` take longer to run (~10 minutes) and require chromedriver.
+The 50 UI automation tests in `integration_test/` take longer to run (~8 minutes) and require chromedriver.
 
 **Before running a build, ASK the user:**
 - "Would you like me to run the UI automation tests before this build?"
@@ -273,7 +273,7 @@ The 40 UI automation tests in `integration_test/` take longer to run (~10 minute
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2 - Run UI tests (40 tests across 3 files)
+# Terminal 2 - Run UI tests (50 tests across 3 files, ~8 minutes total)
 cd dart_games
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_menu_and_mechanics_test.dart \
@@ -524,7 +524,7 @@ When adding a new game:
 
 ## Testing Requirements
 
-### Complete Test Suite (180 Tests + 40 UI Automation Tests)
+### Complete Test Suite (180 Tests + 50 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
@@ -533,9 +533,9 @@ The dart games app has a comprehensive test suite covering all critical function
 - Execute in seconds
 - Required to pass before every build
 
-**UI Automation Tests (40 tests in `integration_test/` directory):**
+**UI Automation Tests (50 tests in `integration_test/` directory):**
 - Run with `flutter drive` and chromedriver
-- Execute in ~10 minutes
+- Execute in ~8 minutes
 - Optional for builds (ask user before running)
 
 #### Model Tests (36 tests)
@@ -624,30 +624,36 @@ The dart games app has a comprehensive test suite covering all critical function
   - Dart position persistence across window resize
   - Dart management (add/remove functionality)
 
-#### UI Automation Tests (40 tests)
-- `integration_test/target_tag_menu_and_mechanics_test.dart` (28 tests)
+#### UI Automation Tests (50 tests)
+- `integration_test/target_tag_menu_and_mechanics_test.dart` (29 tests)
+  - Player selection and auto-selection (1 test)
   - Menu settings and validations (6 tests)
   - Team mode - max 5 teams (3 tests)
   - Add player button states (2 tests)
   - Hero bonus toggle (1 test)
   - Edit score behavior (4 tests)
-  - Settings panel behavior (16 tests)
-  - **Execution time:** ~13 minutes
-
-- `integration_test/target_tag_gameplay_test.dart` (8 tests)
-  - Hero buff & opponent targets tests (5 tests)
-  - Game settings panel tests (1 test)
-  - Victory screen tests (2 tests)
+  - Player tile highlighting (6 tests)
+  - Settings panel behavior (6 tests)
   - **Execution time:** ~4 minutes
 
-- `integration_test/target_tag_add_player_test.dart` (4 tests)
-  - Setup: Navigate to Target Tag and add 2 initial players
+- `integration_test/target_tag_gameplay_test.dart` (14 tests)
+  - Hero buff & opponent targets tests (8 tests)
+  - D1/D2/D3 dart highlighting tests (2 tests)
+  - Game settings panel tests (1 test)
+  - Skip turn tests (1 test)
+  - Victory screen tests (2 tests)
+  - **Execution time:** ~2 minutes
+
+- `integration_test/target_tag_add_player_test.dart` (7 tests)
+  - Setup: Navigate to Target Tag and add 2 initial players (1 test)
   - Test 1: Add Player with Name Only
   - Test 2: Add Player with Name and Photo - UI Elements
-  - Test 3: Add Player Dialog - Complete Validation Flow
-  - **Execution time:** ~1.5 minutes
+  - Test 3: Add Player Validation - Empty Name
+  - Test 3b: Add Player Validation - Whitespace Only Name
+  - Test 3c: Cancel Button Closes Dialog Without Saving
+  - **Execution time:** ~2 minutes
 
-**Total UI Automation Test Execution Time:** ~10 minutes (varies based on system performance)
+**Total UI Automation Test Execution Time:** ~8 minutes (varies based on system performance)
 **Required setup:** ChromeDriver running on port 4444
 **Run separately with chromedriver:** See UI Automation Testing Guidelines section
 
@@ -674,7 +680,7 @@ flutter test test/screens/games/carnival_horse_race/
 flutter test test/widgets/
 ```
 
-**Run UI automation tests (40 tests):**
+**Run UI automation tests (50 tests, ~8 minutes total):**
 ```bash
 # Terminal 1: Start chromedriver
 cd dart_games/chromedriver/chromedriver-win64
@@ -697,9 +703,9 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 - Backward compatibility is validated for data migrations
 - Target Tag tests (41 tests total) validate game logic, announcement system integrity, and user management integration
 
-**UI Automation Tests (40 tests):**
+**UI Automation Tests (50 tests):**
 - Optional for builds - ask user if they want to run UI automation tests
-- Execution time: ~10 minutes
+- Execution time: ~8 minutes
 - Tests validate Target Tag menu settings, gameplay mechanics, and user interactions end-to-end in Chrome
 - Covers all game modes (solo, team), settings persistence, edit score, skip turn, player highlighting, hero bonuses, and victory conditions
 - Require chromedriver setup on port 4444
@@ -1247,7 +1253,7 @@ This applies to all git operations that modify the remote repository, including:
    flutter test
    ```
 3. **Verify ALL 180 non-UI tests pass (100% pass rate required)**
-4. **OPTIONAL: Ask user if they want to run UI automation tests (40 tests, ~10 minutes)**
+4. **OPTIONAL: Ask user if they want to run UI automation tests (50 tests, ~8 minutes)**
 5. If ANY tests fail:
    - DO NOT proceed
    - Investigate and fix the failing tests
@@ -1265,7 +1271,7 @@ This applies to all git operations that modify the remote repository, including:
 Before any `flutter run` or `flutter build` command:
 1. Run `flutter test` (180 non-UI tests)
 2. Confirm all 180 non-UI tests pass
-3. Ask user if they want to run UI automation tests (40 tests, ~10 minutes)
+3. Ask user if they want to run UI automation tests (50 tests, ~8 minutes)
 4. Only then run the build command
 
 ### Quick Reference
