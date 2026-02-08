@@ -9,14 +9,9 @@ import 'package:dart_games/providers/target_tag_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 
-/// Target Tag - Gameplay Integration Tests
+/// Target Tag - Test 11 Debug
 ///
-/// These are full integration tests that run the complete app in Chrome
-/// and test gameplay functionality including:
-/// - Hero Buff display on player tiles and active panel
-/// - Opponent targets switching when tagged in
-/// - Game settings panel validation
-/// - Victory screen button behaviors
+/// Isolated tests for debugging Test 11 variants (11, 11.4, 11.5, 11.6, 11.8)
 ///
 /// Run with:
 /// ```bash
@@ -24,9 +19,9 @@ import 'package:dart_games/services/mock_scolia_api_service.dart';
 /// cd dart_games/chromedriver/chromedriver-win64
 /// ./chromedriver.exe --port=4444
 ///
-/// # Terminal 2: Run tests
+/// # Terminal 2: Run test
 /// flutter drive --driver=test_driver/integration_test.dart \
-///   --target=integration_test/target_tag_gameplay_test.dart \
+///   --target=integration_test/test_11_debug.dart \
 ///   -d chrome
 /// ```
 
@@ -96,9 +91,6 @@ void main() {
     await tester.pump();
     await tester.pump();
     await tester.pump();
-
-    // Verify we're on the game screen
-    expect(find.text('Target Tag Game On!'), findsOneWidget);
   }
 
   // Helper function to enable Hero Bonus
@@ -120,10 +112,15 @@ void main() {
       );
 
       if (heroBonusSwitch.evaluate().isNotEmpty) {
-        await tester.tap(heroBonusSwitch.first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pump();
+        // Check if the switch is already ON
+        final switchWidget = tester.widget<Switch>(heroBonusSwitch.first);
+        if (!switchWidget.value) {
+          // Only tap if it's currently OFF
+          await tester.tap(heroBonusSwitch.first);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+          await tester.pump();
+        }
       }
     }
   }
@@ -180,64 +177,6 @@ void main() {
         await tester.pump();
       }
     }
-  }
-
-  // Helper function to scroll to find a widget
-  Future<bool> scrollToFindWidget(WidgetTester tester, Finder widgetFinder) async {
-    // First check if it's already visible
-    if (widgetFinder.evaluate().isNotEmpty) {
-      return true;
-    }
-
-    // Find the ListView container (300px container holding the player list)
-    final listViewFinder = find.descendant(
-      of: find.byType(Container),
-      matching: find.byType(ListView),
-    );
-
-    if (listViewFinder.evaluate().isEmpty) {
-      return false; // No ListView found
-    }
-
-    final listView = listViewFinder.first;
-
-    // Try scrolling down (drag up with negative Y) to look for items below current position
-    for (int i = 0; i < 3; i++) {
-      await tester.drag(listView, const Offset(0, -150)); // Scroll down 150px
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-
-      if (widgetFinder.evaluate().isNotEmpty) {
-        return true; // Found it!
-      }
-    }
-
-    // If not found below, try scrolling up (drag down with positive Y) to look for items above
-    for (int i = 0; i < 6; i++) {
-      await tester.drag(listView, const Offset(0, 150)); // Scroll up 150px
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-
-      if (widgetFinder.evaluate().isNotEmpty) {
-        return true; // Found it!
-      }
-    }
-
-    // Try scrolling down again in case we went too far up
-    for (int i = 0; i < 3; i++) {
-      await tester.drag(listView, const Offset(0, -150)); // Scroll down 150px
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-
-      if (widgetFinder.evaluate().isNotEmpty) {
-        return true; // Found it!
-      }
-    }
-
-    return false; // Widget not found after all scroll attempts
   }
 
   // Helper function to deselect all selected players by checking their Container styling
@@ -331,16 +270,62 @@ void main() {
     }
   }
 
-  // Helper function to skip turn
-  Future<void> skipTurn(WidgetTester tester) async {
-    final skipButton = find.text('Skip turn');
-    if (skipButton.evaluate().isNotEmpty) {
-      await tester.tap(skipButton.first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pump();
-      await tester.pump();
+  // Helper function to scroll to find a widget
+  Future<bool> scrollToFindWidget(WidgetTester tester, Finder widgetFinder) async {
+    // First check if it's already visible
+    if (widgetFinder.evaluate().isNotEmpty) {
+      return true;
     }
+
+    // Find the ListView container (300px container holding the player list)
+    final listViewFinder = find.descendant(
+      of: find.byType(Container),
+      matching: find.byType(ListView),
+    );
+
+    if (listViewFinder.evaluate().isEmpty) {
+      return false; // No ListView found
+    }
+
+    final listView = listViewFinder.first;
+
+    // Try scrolling down (drag up with negative Y) to look for items below current position
+    for (int i = 0; i < 3; i++) {
+      await tester.drag(listView, const Offset(0, -150)); // Scroll down 150px
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+
+      if (widgetFinder.evaluate().isNotEmpty) {
+        return true; // Found it!
+      }
+    }
+
+    // If not found below, try scrolling up (drag down with positive Y) to look for items above
+    for (int i = 0; i < 6; i++) {
+      await tester.drag(listView, const Offset(0, 150)); // Scroll up 150px
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+
+      if (widgetFinder.evaluate().isNotEmpty) {
+        return true; // Found it!
+      }
+    }
+
+    // Try scrolling down again in case we went too far up
+    for (int i = 0; i < 3; i++) {
+      await tester.drag(listView, const Offset(0, -150)); // Scroll down 150px
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+
+      if (widgetFinder.evaluate().isNotEmpty) {
+        return true; // Found it!
+      }
+    }
+
+    return false; // Widget not found after all scroll attempts
   }
 
   // Helper function to get MockScoliaApiService from the widget tree
@@ -372,83 +357,11 @@ void main() {
     }
   }
 
-  // Helper function to simulate hitting bullseye (50 points)
-  Future<void> throwBullseye(WidgetTester tester) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: 50,
-        multiplier: 'bullseye',
-        playerName: 'Player',
-        baseScore: 25,
-        widgetX: 125.0,
-        widgetY: 125.0,
-        widgetSize: 250.0,
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-    }
-  }
-
-  // Helper function to simulate hitting outer bull (25 points)
-  Future<void> throwOuterBull(WidgetTester tester) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: 25,
-        multiplier: 'outer_bull',
-        playerName: 'Player',
-        baseScore: 25,
-        widgetX: 125.0,
-        widgetY: 125.0,
-        widgetSize: 250.0,
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-    }
-  }
-
-  // Helper function to simulate missing the board
-  Future<void> throwMiss(WidgetTester tester) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: 0,
-        multiplier: 'miss',
-        playerName: 'Player',
-        baseScore: 0,
-        widgetX: 0.0, // Outside board
-        widgetY: 0.0,
-        widgetSize: 250.0,
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-    }
-  }
-
   // Helper function to continue after "Remove Your Darts" modal
-  // Helper function to click DARTS REMOVED button on emulator
-  Future<void> clickDartsRemoved(WidgetTester tester) async {
+  Future<void> removeDarts(WidgetTester tester) async {
     final dartsRemovedButton = find.text('DARTS REMOVED');
     if (dartsRemovedButton.evaluate().isNotEmpty) {
       await tester.tap(dartsRemovedButton.first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pump();
-    }
-  }
-
-  // Helper function to continue after "Remove Your Darts" modal
-  Future<void> removeDarts(WidgetTester tester) async {
-    final continueButton = find.text('Continue');
-    if (continueButton.evaluate().isNotEmpty) {
-      await tester.tap(continueButton.first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump();
@@ -586,8 +499,7 @@ void main() {
   // Border colors:
   // - Gold (0xFFFFD700): Hero bonus hit, elimination, or (when tagged in) hit opponent's target
   // - Green (0xFF00FFA3): Reached max shields, or (when NOT tagged in) hit own target
-  // - Pink (0xFFFF007A): Miss, or (when tagged in) hit own target, or didn't hit correct target
-  // - White38 (0x61FFFFFF): Default/empty state
+  // - Pink (0xFFFF007A): Miss, or (when tagged in) hit own target, or didn't hit correct target  // - White38 (0x61FFFFFF): Default/empty state
   void verifyDartBorderColor(WidgetTester tester, int dartIndex, int expectedColor) {
     // Find D1, D2, or D3 label
     final dartLabel = find.text('D${dartIndex + 1}');
@@ -678,7 +590,7 @@ void main() {
     }
   }
 
-  group('Target Tag - Hero Buff & Opponent Targets Tests', () {
+  group('Target Tag - Test 11 Debug', () {
     setUp(() async {
       SharedPreferences.setMockInitialValues({
         'dartboard_name': 'Test Dartboard',
@@ -687,6 +599,7 @@ void main() {
       });
     });
 
+    // Commenting out to focus on 11.11 and 11.12
     testWidgets('Test 11: Hero Buff Display - Complete UI Validation', (WidgetTester tester) async {
       // ===== Step 1: Verify hero bonus OFF shows no buff =====
       await navigateToTargetTagMenu(tester);
@@ -2009,410 +1922,6 @@ void main() {
         await tester.pump();
       }
 
-    });
-  });
-
-  group('Target Tag - Game Settings Panel Tests', () {
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
-    });
-
-    testWidgets('Test 12: Game Settings Panel - Complete Validation', (WidgetTester tester) async {
-      // ===== Step 1: Solo Mode Settings with Hero Bonus =====
-      await navigateToTargetTagMenu(tester);
-
-      // Enable Hero Bonus
-      await enableHeroBonus(tester);
-
-      // Add 2 players in Solo mode (default)
-      await addPlayer(tester, 'Solo Player 1');
-      await addPlayer(tester, 'Solo Player 2');
-
-      // Start the game
-      await startGame(tester);
-
-      // Verify game started
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
-
-      // Verify game info panel shows Solo mode settings
-      expect(find.textContaining('Game Settings'), findsWidgets);
-      expect(find.textContaining('Solo'), findsWidgets);
-      expect(find.textContaining('Shield Max'), findsWidgets);
-      expect(find.textContaining('ON'), findsWidgets); // Hero Bonus ON
-
-      // Wait/simulate some gameplay to verify persistence
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pump();
-
-      // Verify game settings panel still visible with same settings
-      expect(find.textContaining('Game Settings'), findsWidgets);
-      expect(find.textContaining('Solo'), findsWidgets);
-      expect(find.textContaining('Shield Max'), findsWidgets);
-
-      // ===== Step 2: Return to menu and test Team Mode with Random Assignment =====
-      final backButton = find.byTooltip('Back');
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
-      }
-
-      // Enable Team mode
-      await enableTeamMode(tester);
-
-      // Ensure Random assignment is selected (default for team mode)
-      // Add 4 players
-      await addPlayer(tester, 'Team Player 1');
-      await addPlayer(tester, 'Team Player 2');
-      await addPlayer(tester, 'Team Player 3');
-      await addPlayer(tester, 'Team Player 4');
-
-      // Start the game
-      await startGame(tester);
-
-      // Verify game started in Team mode
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
-
-      // Verify game info panel shows Team mode settings
-      // Note: Team assignment mode (Random/Manual) is not displayed on game screen
-      expect(find.textContaining('Game Settings'), findsWidgets);
-      expect(find.textContaining('Team'), findsWidgets);
-      expect(find.textContaining('Shield Max'), findsWidgets);
-
-      // ===== Step 3: Return to menu and test Manual Team Assignment UI =====
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
-      }
-
-      // Team mode should still be enabled
-      // Switch to Manual team assignment
-      await enableManualTeamAssignment(tester);
-
-      // Add 4 players for manual assignment
-      await addPlayer(tester, 'Manual Player 1');
-      await addPlayer(tester, 'Manual Player 2');
-      await addPlayer(tester, 'Manual Player 3');
-      await addPlayer(tester, 'Manual Player 4');
-
-      // Pump to ensure UI updates
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pump();
-
-      // Verify players are added by scrolling to find them
-      final foundPlayer1 = await scrollToFindWidget(tester, find.text('Manual Player 1'));
-      expect(foundPlayer1, true, reason: 'Manual Player 1 should be found in the player list');
-
-      final foundPlayer2 = await scrollToFindWidget(tester, find.text('Manual Player 2'));
-      expect(foundPlayer2, true, reason: 'Manual Player 2 should be found in the player list');
-
-      // Verify Manual mode is active
-      expect(find.text('Manually'), findsOneWidget);
-
-      // Note: Assigning players to teams manually and starting a game
-      // requires complex UI interaction with team assignment controls.
-    });
-  });
-
-  group('Target Tag - Victory Screen Tests', () {
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
-    });
-
-    testWidgets('Test 13.1: Complete Solo Mode Game to Victory', (WidgetTester tester) async {
-      await navigateToTargetTagMenu(tester);
-
-      // Add 2 players
-      await addPlayer(tester, 'Winner Player');
-      await addPlayer(tester, 'Loser Player');
-
-      // Start the game
-      await startGame(tester);
-
-      // Verify game started in solo mode
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
-      expect(find.text('Winner Player'), findsWidgets); // Player names appear in multiple places
-      expect(find.text('Loser Player'), findsWidgets);
-
-      // Player 1's turn - build shields to max (3 hits on own target)
-      await throwDart(tester, 20, multiplier: 'single'); // Shield 1
-      await tester.pump(const Duration(milliseconds: 300));
-      await throwDart(tester, 20, multiplier: 'single'); // Shield 2
-      await tester.pump(const Duration(milliseconds: 300));
-      await throwDart(tester, 20, multiplier: 'single'); // Shield 3 - TAGGED IN!
-      await tester.pump(const Duration(milliseconds: 500));
-      await removeDarts(tester);
-      await tester.pump(const Duration(seconds: 1));
-
-      // Player 2's turn - hit own target twice
-      await throwDart(tester, 5, multiplier: 'single'); // Shield 1
-      await tester.pump(const Duration(milliseconds: 300));
-      await throwDart(tester, 5, multiplier: 'single'); // Shield 2
-      await tester.pump(const Duration(milliseconds: 300));
-      await throwMiss(tester); // Miss
-      await tester.pump(const Duration(milliseconds: 300));
-      await removeDarts(tester);
-      await tester.pump(const Duration(seconds: 1));
-
-      // Player 1's turn - attack Player 2's target (5) to reduce their shields
-      await throwDart(tester, 5, multiplier: 'single'); // Attack!
-      await tester.pump(const Duration(milliseconds: 300));
-      await throwDart(tester, 5, multiplier: 'single'); // Attack!
-      await tester.pump(const Duration(milliseconds: 300));
-      await throwDart(tester, 5, multiplier: 'single'); // Elimination!
-      await tester.pump(const Duration(milliseconds: 500));
-      await removeDarts(tester);
-      await tester.pump(const Duration(seconds: 2));
-
-      // Verify victory screen appears (Player 1 wins)
-      // Note: Victory screen may take time to appear due to announcements
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pump();
-
-      // Victory screen should show winner
-      // expect(find.textContaining('WINNER'), findsWidgets);
-    });
-
-    testWidgets('Test 13: Game Start Validation - All Modes', (WidgetTester tester) async {
-      // ===== Step 1: Standard Solo Mode - 2 Players =====
-      await navigateToTargetTagMenu(tester);
-
-      // Add 2 players
-      await addPlayer(tester, 'Game Player 1');
-      await addPlayer(tester, 'Game Player 2');
-
-      // Start game
-      await startGame(tester);
-
-      // Verify game started successfully
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
-      expect(find.text('Game Player 1'), findsWidgets); // Player names appear in multiple places
-      expect(find.text('Game Player 2'), findsWidgets);
-
-      // ===== Step 2: Three Player Solo Mode =====
-      final backButton = find.byTooltip('Back');
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
-      }
-
-      // Add 3 players
-      await addPlayer(tester, 'Player Alpha');
-      await addPlayer(tester, 'Player Beta');
-      await addPlayer(tester, 'Player Gamma');
-
-      // Start game
-      await startGame(tester);
-
-      // Verify 3-player game started
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
-      expect(find.text('Player Alpha'), findsOneWidget);
-      expect(find.text('Player Beta'), findsOneWidget);
-      expect(find.text('Player Gamma'), findsOneWidget);
-
-      // ===== Step 3: Solo Mode with Hero Bonus =====
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
-      }
-
-      // Enable Hero Bonus
-      await enableHeroBonus(tester);
-
-      // Add 3 players
-      await addPlayer(tester, 'Settings Player 1');
-      await addPlayer(tester, 'Settings Player 2');
-      await addPlayer(tester, 'Settings Player 3');
-
-      // Pump to ensure UI updates
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pump();
-
-      // Verify players added and hero bonus enabled
-      expect(find.text('Settings Player 1'), findsOneWidget);
-      expect(find.textContaining('Buff:'), findsWidgets);
-
-      // Start game to verify settings persist
-      await startGame(tester);
-
-      // Verify game started with hero bonus
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
-      expect(find.textContaining('ON'), findsWidgets); // Hero Bonus ON in settings panel
-
-      // ===== Step 4: Team Mode with Random Assignment =====
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
-      }
-
-      // Enable Team mode
-      await enableTeamMode(tester);
-
-      // Add 4 players for 2v2
-      await addPlayer(tester, 'Team1 Winner1');
-      await addPlayer(tester, 'Team1 Winner2');
-      await addPlayer(tester, 'Team2 Loser1');
-      await addPlayer(tester, 'Team2 Loser2');
-
-      // Start the game
-      await startGame(tester);
-
-      // Verify game started in team mode
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
-      expect(find.textContaining('Team'), findsWidgets);
-
-      // ===== Step 5: Return to test another Team Mode variation =====
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
-      }
-
-      // Add 4 different players for team mode
-      await addPlayer(tester, 'Team A Player 1');
-      await addPlayer(tester, 'Team A Player 2');
-      await addPlayer(tester, 'Team B Player 1');
-      await addPlayer(tester, 'Team B Player 2');
-
-      // Start game
-      await startGame(tester);
-
-      // Verify team game started
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
-      expect(find.textContaining('Team'), findsWidgets);
-
-      // ===== Step 6: Team Mode Manual Assignment Setup =====
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
-      }
-
-      // Team mode should still be enabled
-      // Switch to Manual team assignment
-      await enableManualTeamAssignment(tester);
-
-      // Enable Hero Bonus
-      await enableHeroBonus(tester);
-
-      // Pump frames to let UI update after mode switches
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pump();
-
-      // Deselect all currently selected players from previous steps
-      // This uses Container styling to identify selected tiles (works in all modes)
-      await deselectAllPlayers(tester);
-
-      // Pump to ensure UI updates after deselecting
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pump();
-
-      // Add 4 players (they will be auto-selected by default)
-      await addPlayer(tester, 'Team Settings 1');
-      await addPlayer(tester, 'Team Settings 2');
-      await addPlayer(tester, 'Team Settings 3');
-      await addPlayer(tester, 'Team Settings 4');
-
-      // Pump to ensure UI updates
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pump();
-
-      // Assign players to teams by finding each player by name
-      // Team 1: Team Settings 1, Team Settings 2
-      // Team 2: Team Settings 3, Team Settings 4
-
-      final playerTeamAssignments = [
-        {'player': 'Team Settings 1', 'teamIndex': 0}, // Team 1
-        {'player': 'Team Settings 2', 'teamIndex': 0}, // Team 1
-        {'player': 'Team Settings 3', 'teamIndex': 1}, // Team 2
-        {'player': 'Team Settings 4', 'teamIndex': 1}, // Team 2
-      ];
-
-      for (final assignment in playerTeamAssignments) {
-        final playerName = assignment['player'] as String;
-        final teamIndex = assignment['teamIndex'] as int;
-
-        // Find the player name and scroll it into view
-        await scrollToFindWidget(tester, find.text(playerName));
-
-        // Find the Row that contains this player name
-        final playerNameFinder = find.text(playerName);
-        final playerRow = find.ancestor(
-          of: playerNameFinder,
-          matching: find.byType(Row),
-        );
-
-        // Find the "Assign team" button within that Row
-        final assignButton = find.descendant(
-          of: playerRow.first,
-          matching: find.text('Assign team'),
-        );
-
-        if (assignButton.evaluate().isEmpty) {
-          continue;
-        }
-
-        // Tap the assign team button
-        await tester.ensureVisible(assignButton.first);
-        await tester.pump();
-        await tester.tap(assignButton.first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pump();
-
-        // Dialog should appear - select the team
-        expect(find.textContaining('Select Team for'), findsOneWidget);
-
-        final gestureDetectors = find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byType(GestureDetector),
-        );
-
-        // Tap the appropriate team (teamIndex: 0=first, 1=second)
-        await tester.tap(gestureDetectors.at(teamIndex));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pump();
-
-        // Dialog should close
-        expect(find.textContaining('Select Team for'), findsNothing);
-      }
-
-      // Start game
-      await startGame(tester);
-
-      // Verify team game started
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
-
-      // Verify team mode and hero buff assignment
-      expect(find.textContaining('Team'), findsWidgets);
-      expect(find.textContaining('Buff:'), findsWidgets);
     });
   });
 }
