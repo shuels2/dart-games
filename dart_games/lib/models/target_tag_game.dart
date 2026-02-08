@@ -447,22 +447,25 @@ class TargetTagGame {
         }
 
         if (targetEntityId != null && targetEntityId != entityId) {
-          // Mark this dart as hitting an opponent's target number
-          hitOpponentTarget = true;
+          // Only process attack if opponent is NOT already eliminated
+          if (!eliminated[targetEntityId]!) {
+            // Mark this dart as hitting an opponent's target number
+            hitOpponentTarget = true;
 
-          // Subtract shields from opponent
-          final opponentShields = shields[targetEntityId]!;
-          shields[targetEntityId] = max(0, opponentShields - shieldValue);
+            // Subtract shields from opponent
+            final opponentShields = shields[targetEntityId]!;
+            shields[targetEntityId] = max(0, opponentShields - shieldValue);
 
-          // Check if opponent lost Tagged In status
-          if (shields[targetEntityId]! < shieldMax) {
-            taggedIn[targetEntityId] = false;
-          }
+            // Check if opponent lost Tagged In status
+            if (shields[targetEntityId]! < shieldMax) {
+              taggedIn[targetEntityId] = false;
+            }
 
-          // Check for elimination
-          if (shields[targetEntityId]! == 0) {
-            _eliminateEntity(targetEntityId);
-            causedElimination = true;
+            // Check for elimination
+            if (shields[targetEntityId]! == 0) {
+              _eliminateEntity(targetEntityId);
+              causedElimination = true;
+            }
           }
         }
       }

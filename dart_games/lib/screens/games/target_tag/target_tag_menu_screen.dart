@@ -42,6 +42,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
   Map<String, List<Player>> _manualTeams = {};
   final Map<String, String> _playerTeamAssignments = {}; // playerId -> teamId
   late AnimationController _pulseController;
+  final ScrollController _scrollController = ScrollController();
 
   // Team icon paths
   final List<String> _teamIconPaths = [
@@ -84,7 +85,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
           final player = playerProvider.getPlayerById(playerId);
           if (player != null) {
             _selectedPlayerIds.add(playerId);
-            playerProvider.selectPlayer(player);
+            playerProvider.selectPlayer(player, maxPlayers: 10);
           }
         }
         setState(() {});
@@ -95,6 +96,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
   @override
   void dispose() {
     _pulseController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -724,6 +726,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         ),
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         itemCount: allPlayers.length,
                         itemBuilder: (context, index) {
                           final player = allPlayers[index];
@@ -738,7 +741,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                               if (isSelected) {
                                 playerProvider.deselectPlayer(player.id);
                               } else {
-                                playerProvider.selectPlayer(player);
+                                playerProvider.selectPlayer(player, maxPlayers: 10);
                               }
                             },
                           );
@@ -838,6 +841,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         ),
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         itemCount: allPlayers.length,
                         itemBuilder: (context, index) {
                           final player = allPlayers[index];
@@ -857,7 +861,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                                   _playerTeamAssignments.remove(player.id);
                                 });
                               } else {
-                                playerProvider.selectPlayer(player);
+                                playerProvider.selectPlayer(player, maxPlayers: 10);
                               }
                             },
                           );
@@ -1533,7 +1537,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (nameController.text.trim().isEmpty) {
                         setDialogState(() {
                           showError = true;
@@ -1546,12 +1550,25 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         name: nameController.text.trim(),
                         photoPath: photoPath,
                       );
-                      playerProvider.savePlayer(newPlayer);
+                      await playerProvider.savePlayer(newPlayer);
 
-                      // Auto-select the newly added player
-                      playerProvider.selectPlayer(newPlayer);
+                      // Auto-select the newly added player only if max not reached
+                      if (playerProvider.selectedPlayers.length < 10) {
+                        playerProvider.selectPlayer(newPlayer, maxPlayers: 10);
+                      }
 
                       Navigator.of(dialogContext).pop();
+
+                      // Scroll to show the new player after dialog closes
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (mounted && _scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            _scrollController.position.maxScrollExtent,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                        }
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF007A),

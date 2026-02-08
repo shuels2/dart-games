@@ -109,9 +109,9 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   // Select a player for the current game
-  void selectPlayer(Player player) {
-    if (_selectedPlayers.length >= 8) {
-      _error = 'Maximum 8 players allowed';
+  void selectPlayer(Player player, {int maxPlayers = 8}) {
+    if (_selectedPlayers.length >= maxPlayers) {
+      _error = 'Maximum $maxPlayers players allowed';
       notifyListeners();
       return;
     }
