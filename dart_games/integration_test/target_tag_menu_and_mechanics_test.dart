@@ -293,7 +293,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 1.2: Multiple New Players Auto-Selection', (WidgetTester tester) async {
+    testWidgets('Test 1: Multiple New Players Auto-Selection - Validates adding Player 1 auto-selects them, player count shows (1/10 selected), adding Player 2 auto-selects them, player count shows (2/10 selected), both players remain selected and visible in player list', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Add Player 1
@@ -323,7 +323,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 2: Player Count Validation - All Modes', (WidgetTester tester) async {
+    testWidgets('Test 2: Player Count Validation - All Modes - Validates solo mode starts with 2 players successfully, team mode enabled and starts with 3+ players, adding 15 total players with only first 10 auto-selected, attempting to manually select 11th player is rejected (max 10), play button remains enabled with exactly 10 selected, game starts successfully with 10 players', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Solo Player 1');
@@ -443,7 +443,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 3: Team Assignment - Complete Manual Flow', (WidgetTester tester) async {
+    testWidgets('Test 3: Team Assignment - Complete Manual Flow - Validates team mode enabled successfully, manual team assignment switch toggles on, 4 players added (Team1 Player1/2, Team2 Player1/2), all players found in scrollable player list, players manually assigned to teams (team selection UI functional), team badges displayed correctly for each player showing team assignment', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await enableTeamMode(tester);
@@ -846,7 +846,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 4: UI Feedback - Complete Validation', (WidgetTester tester) async {
+    testWidgets('Test 4: UI Feedback - Complete Validation - Validates menu screen shows Shield Max setting, Solo/Team mode toggle visible, Hero Bonus switch visible, NEW PLAYER button functional, LETS PLAY TAG button enables when minimum players selected, game screen displays Target Tag Game On! title, player tiles show shields count and target numbers, current player indicator visible, active panel shows correct information', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Pulse Test 1');
@@ -923,7 +923,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 5: Dart Box Colors - Complete Validation', (WidgetTester tester) async {
+    testWidgets('Test 5: Dart Box Colors - Complete Validation - Validates D1/D2/D3 dart indicators display on game screen, initial dart boxes have neutral border color, hitting own target while not tagged in shows green border (0xFF00FFA3), missing target shows pink border (0xFFFF007A), dart border colors update immediately after each dart throw, all three dart indicators functional and displaying correct colors based on game state', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Dart Box Test 1');
@@ -983,7 +983,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
     });
 
-    testWidgets('Test 5.3: Building Shields - Hit Opponent Target (Not Tagged In)', (WidgetTester tester) async {
+    testWidgets('Test 6: Building Shields - Hit Opponent Target (Not Tagged In) - Validates player not tagged in initially, hitting opponent target while building shields shows pink border (0xFFFF007A), opponent target hits do not add shields when not tagged in, dart color correctly indicates invalid action (hitting opponent before tagged in is bad)', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Opp Target 1');
@@ -1017,7 +1017,7 @@ void main() {
       }
     });
 
-    testWidgets('Test 5.4: Reached Tagged In - Green Border', (WidgetTester tester) async {
+    testWidgets('Test 7: Reached Tagged In - Green Border - Validates player starts with 0 shields not tagged in, hitting own target with triple dart reaches max shields (3 shields for max 3), final dart that reaches max shields shows green border (0xFF00FFA3), player immediately transitions to tagged in status, tagged in badge appears on player tile', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Tagged In 1');
@@ -1056,7 +1056,7 @@ void main() {
       // Test passes if we reached this point (darts were processed correctly)
     });
 
-    testWidgets('Test 5.5: Tagged In - Hit Own Target (PINK)', (WidgetTester tester) async {
+    testWidgets('Test 8: Tagged In - Hit Own Target (PINK) - Validates player reaches tagged in status with max shields, on next turn player is tagged in, hitting own target while tagged in shows pink border (0xFFFF007A), dart color logic inverts when tagged in (own target becomes bad, opponent target becomes good)', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Own Hit 1');
@@ -1086,7 +1086,7 @@ void main() {
       // Note: Dart box border color verification requires checking widget properties
     });
 
-    testWidgets('Test 5.6: Tagged In - Successfully Attack Opponent (GOLD)', (WidgetTester tester) async {
+    testWidgets('Test 9: Tagged In - Successfully Attack Opponent (GOLD) - Validates Player 1 gets tagged in with max shields, Player 2 builds partial shields (not tagged in), Player 1 on next turn hits Player 2 target shows gold border (0xFFFFD700), successful opponent attack reduces opponent shields, dart color correctly indicates successful attack (gold for hitting opponent while tagged in)', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Attack 1');
@@ -1157,7 +1157,7 @@ void main() {
       }
     });
 
-    testWidgets('Test 5.7: Hero Bonus Hit (GOLD Pulsing)', (WidgetTester tester) async {
+    testWidgets('Test 10: Hero Bonus Hit (GOLD Pulsing) - Validates hero bonus enabled on menu, player gets tagged in, hitting hero buff number while tagged in shows gold border (0xFFFFD700) with pulsing glow effect, hero buff provides bonus shields/damage, dart indicator displays special glowing animation for hero bonus hits', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus
@@ -1184,7 +1184,7 @@ void main() {
       // This complex gameplay simulation is beyond basic UI automation testing.
     });
 
-    testWidgets('Test 5.8: Caused Elimination (GOLD)', (WidgetTester tester) async {
+    testWidgets('Test 11: Caused Elimination (GOLD) - Validates Player 1 tagged in with max shields, Player 2 has partial shields, Player 1 attacks Player 2 repeatedly, final dart that reduces opponent to 0 shields shows gold border (0xFFFFD700), opponent eliminated and receives TAGGED OUT badge, elimination dart correctly highlighted as successful attack', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Elim 1');
@@ -1259,7 +1259,7 @@ void main() {
       }
     });
 
-    testWidgets('Test 5.10: Border Color Priority Order', (WidgetTester tester) async {
+    testWidgets('Test 12: Border Color Priority Order - Validates dart border color priority hierarchy, reaching max shields (green) overrides all other colors, hero bonus hit (gold pulsing) has high priority, successful opponent attack (gold) has high priority, hit own target while tagged in (pink) lower priority, miss (pink) lowest priority, border colors display correctly when multiple conditions apply simultaneously', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus
@@ -1295,7 +1295,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 6.1: Solo Mode - Complete Game Flow', (WidgetTester tester) async {
+    testWidgets('Test 13: Solo Mode - Complete Game Flow - Validates 2 players added in solo mode, game starts successfully, Player 1 builds shields and gets tagged in, Player 2 builds partial shields, Player 1 attacks Player 2 target to reduce shields, turn order maintained correctly throughout game, game flows from start to active gameplay without errors', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Flow Player 1');
@@ -1349,7 +1349,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
     });
 
-    testWidgets('Test 6.2: Team Mode - Random Team Assignment', (WidgetTester tester) async {
+    testWidgets('Test 14: Team Mode - Random Team Assignment - Validates team mode switch enabled, 4 players added (Team Player 1-4), random team assignment assigns players automatically to teams, team badges displayed for each player, game starts successfully in team mode with randomly assigned teams, team UI elements displayed correctly', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await enableTeamMode(tester);
@@ -1369,7 +1369,7 @@ void main() {
       expect(find.text('Random Team 2'), findsWidgets);
     });
 
-    testWidgets('Test 6.3: Team Mode - Manual Team Assignment Game', (WidgetTester tester) async {
+    testWidgets('Test 15: Team Mode - Manual Team Assignment Game - Validates team mode enabled with manual assignment, 6 players added (Alpha1/2, Beta1/2, Charlie1/2), manual team assignment UI allows drag-drop or button-based team selection, players correctly assigned to 3 teams (Alpha, Beta, Charlie) with 2 members each, team badges show correct team for each player, max 5 teams enforced, game starts successfully with manually assigned teams', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await enableTeamMode(tester);
@@ -1509,7 +1509,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 7.1: Deselect Player During Manual Team Assignment', (WidgetTester tester) async {
+    testWidgets('Test 16: Deselect Player During Manual Team Assignment - Validates team mode with manual assignment enabled, 4 players added and auto-selected, player assigned to Team 1, deselecting player removes them from team assignment, deselected player no longer shows team badge, reselecting player allows team assignment again, team assignment state correctly updates when players selected/deselected', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Team mode with Manual
@@ -1612,7 +1612,7 @@ void main() {
       // Test passes if we can execute these actions without errors
     });
 
-    testWidgets('Test 7.2: Hero Bonus in Solo Mode', (WidgetTester tester) async {
+    testWidgets('Test 17: Hero Bonus in Solo Mode - Validates hero bonus switch enabled on menu, each player assigned random hero buff number (displayed on player tile), hero buff shows multiplier (single/D/T) and number (1-20), Player 1 gets tagged in and hero buff active, hitting hero buff number while tagged in deals bonus damage with gold pulsing border, hero buff provides strategic advantage in solo mode gameplay', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus
@@ -1709,7 +1709,7 @@ void main() {
       }
     });
 
-    testWidgets('Test 7.3: Last Shield Warning', (WidgetTester tester) async {
+    testWidgets('Test 18: Last Shield Warning - Validates Player 1 tagged in with max shields, Player 2 builds shields to max and gets tagged in, Player 1 attacks Player 2 repeatedly reducing shields, when Player 2 reaches 1 shield remaining special warning UI appears, last shield warning displays correctly (visual indicator or announcement), Player 2 shield count shows "1" in UI, further attack eliminates Player 2 (shield count reaches 0)', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Warning 1');
@@ -1812,7 +1812,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 8: Skip Turn - Complete Validation', (WidgetTester tester) async {
+    testWidgets('Test 19: Skip Turn - Complete Validation - Validates 2 players in game, current player indicator shows Player 1, Skip turn button visible and enabled, clicking skip turn advances to next player without dart throws, current player indicator updates to Player 2, skipped player does not gain or lose shields, turn order maintained after skip, skip turn functional throughout entire game', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Skip Test 1');
@@ -1901,7 +1901,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 9: Edit Score - Complete Validation', (WidgetTester tester) async {
+    testWidgets('Test 20: Edit Score - Complete Validation - Validates edit score button visible on each player tile, clicking edit score opens modal with +/- shield buttons, adding shields increases player shield count correctly, removing shields decreases player shield count correctly, shield count cannot go below 0, shield count cannot exceed max shields value, undo button reverts last edit, edit score modal closes after confirmation, edited shields persist correctly in game state', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Edit Player 1');
@@ -2058,7 +2058,7 @@ void main() {
       }
     });
 
-    testWidgets('Test 9.3: Edit Score - Create Elimination', (WidgetTester tester) async {
+    testWidgets('Test 21: Edit Score - Create Elimination - Validates Player 2 starts with partial shields (not tagged in), edit score used to reduce Player 2 shields to 0, Player 2 receives TAGGED OUT badge after shields reach 0 via edit, player elimination through edit score functions identically to dart-based elimination, eliminated player removed from active turn rotation, game continues with remaining active players', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Create Elim 1');
@@ -2196,7 +2196,7 @@ void main() {
       }
     });
 
-    testWidgets('Test 9.4: Edit Score - Reach Tagged In Status', (WidgetTester tester) async {
+    testWidgets('Test 22: Edit Score - Reach Tagged In Status - Validates Player 2 starts with partial shields (not tagged in yet), edit score used to add shields to Player 2, when shields reach max value Player 2 gets TAGGED IN badge, tagged in through edit score functions identically to dart-based tagged in, Player 2 active panel switches to show opponent targets list, Player 2 can now attack opponents on their turn', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Reach Tagged 1');
@@ -2322,7 +2322,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 10: Player Highlighting - Complete Validation', (WidgetTester tester) async {
+    testWidgets('Test 23: Player Highlighting - Complete Validation - Validates current player tile has pink border (0xFFFF007A), non-current players have neutral border, current player indicator/arrow points to current player, player gets tagged in and tile shows green pulsing border, current player who is tagged in shows combined pink+green visual (pink border with green glow), non-current tagged in player shows green pulsing border only, eliminated player tile shows TAGGED OUT badge and greyed out appearance', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Highlight Player 1');
@@ -2406,7 +2406,7 @@ void main() {
       // game functionality is validated through player visibility and turn progression.
     });
 
-    testWidgets('Test 10.2b: Current Player Shows Badge When Tagged In', (WidgetTester tester) async {
+    testWidgets('Test 24: Current Player Shows Badge When Tagged In - Validates current player is Player 1 with pink border, Player 1 builds shields to max and gets tagged in while still current player, Player 1 tile shows TAGGED IN badge appears immediately, current player pink border remains while also showing tagged in badge, visual state correctly combines current player and tagged in indicators simultaneously', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Badge 1');
@@ -2424,7 +2424,7 @@ void main() {
       // 7. Advancing turn keeps badge, removes pink border
     });
 
-    testWidgets('Test 10.4: Tagged In + Current Player - Combined Visual', (WidgetTester tester) async {
+    testWidgets('Test 25: Tagged In + Current Player - Combined Visual - Validates Player 1 gets tagged in on first turn, turn advances to Player 2 (Player 2 becomes current), Player 1 now non-current but tagged in shows green pulsing border only, turn cycles back to Player 1 who is still tagged in, Player 1 tile shows pink border (current) with green glow (tagged in) combined effect, visual hierarchy correctly prioritizes both states when player is both current AND tagged in', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Combined 1');
@@ -2443,7 +2443,7 @@ void main() {
       // 8. Advancing turn removes pink border, keeps badge and glow
     });
 
-    testWidgets('Test 10.5: Eliminated Player Visual State', (WidgetTester tester) async {
+    testWidgets('Test 26: Eliminated Player Visual State - Validates Player 1 tagged in attacks Player 2, Player 2 shields reduced to 0 through repeated attacks, Player 2 tile shows TAGGED OUT badge when eliminated, eliminated player tile has greyed out appearance (reduced opacity or desaturated colors), eliminated player no longer shows current player border (skipped in turn rotation), eliminated player remains visible in UI but clearly marked as out of game', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Eliminated 1');
@@ -2462,7 +2462,7 @@ void main() {
       // 8. Eliminated player no longer gets turns
     });
 
-    testWidgets('Test 10.7: Team Mode - Team Tagged In Visual', (WidgetTester tester) async {
+    testWidgets('Test 27: Team Mode - Team Tagged In Visual - Validates team mode enabled with 4 players on 2 teams, Team 1 reaches max shields and gets tagged in, all Team 1 members show TAGGED IN badge simultaneously, all Team 1 member tiles have green pulsing border, Team 2 members remain without tagged in indicators, current team member shows pink border + green glow combined, team tagged in state applies to all team members together', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Team mode
@@ -2489,7 +2489,7 @@ void main() {
       // 7. Visual indicators apply to entire team tile
     });
 
-    testWidgets('Test 10.8: Visual Hierarchy - Priority Order', (WidgetTester tester) async {
+    testWidgets('Test 28: Visual Hierarchy - Priority Order - Validates visual indicator priority hierarchy correctly implemented, eliminated player (TAGGED OUT) takes highest visual priority, current player + tagged in combination shows both indicators (pink border + green glow), tagged in shows over non-current state (green pulsing border), current player shows over neutral state (pink border), neutral state is default with no special indicators, multiple simultaneous states display with correct visual hierarchy, no visual conflicts when states overlap', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       await addPlayer(tester, 'Hierarchy 1');

@@ -33,7 +33,7 @@ void main() {
       });
     });
 
-    testWidgets('Setup: Navigate to Target Tag and add 2 initial players', (WidgetTester tester) async {
+    testWidgets('Test 1: Navigation and Initial Player Setup - Validates app launch, game navigation, and basic player addition workflow with two players', (WidgetTester tester) async {
       // Launch the full app
       app.main();
       await tester.pumpAndSettle();
@@ -120,7 +120,7 @@ void main() {
       expect(find.text('Player 2'), findsOneWidget);
     });
 
-    testWidgets('Test 1: Add Player with Name Only', (WidgetTester tester) async {
+    testWidgets('Test 2: Add Player with Name Only - Validates new player dialog opening, name field entry, player creation without photo, dialog closure, and player appears in list with auto-selection', (WidgetTester tester) async {
       // Launch the full app
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -192,7 +192,7 @@ void main() {
       expect(playerCard, findsOneWidget);
     });
 
-    testWidgets('Test 2: Add Player with Name and Photo - UI Elements', (WidgetTester tester) async {
+    testWidgets('Test 3: Add Player Photo UI Elements - Validates photo upload interface elements (Camera/Gallery buttons, icons, placeholder avatar, optional photo label), player creation with photo UI workflow', (WidgetTester tester) async {
       // Launch the full app
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -255,7 +255,7 @@ void main() {
       expect(find.text('Photo Player'), findsOneWidget);
     });
 
-    testWidgets('Test 3: Add Player Validation - Empty Name', (WidgetTester tester) async {
+    testWidgets('Test 4: Add Player Empty Name Validation - Validates empty name field submission shows error message, dialog remains open after error, error message clears on valid input, successful player creation after correction', (WidgetTester tester) async {
       // Launch the full app
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -325,7 +325,7 @@ void main() {
       expect(find.text('Player Name'), findsNothing);
     });
 
-    testWidgets('Test 3b: Add Player Validation - Whitespace Only Name', (WidgetTester tester) async {
+    testWidgets('Test 5: Add Player Whitespace-Only Name Validation - Validates whitespace-only input (spaces/tabs) is rejected as invalid, error message displays for whitespace input, dialog remains open after whitespace validation error', (WidgetTester tester) async {
       // Launch the full app
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -377,7 +377,7 @@ void main() {
       expect(find.text('Player Name'), findsOneWidget);
     });
 
-    testWidgets('Test 3c: Cancel Button Closes Dialog Without Saving', (WidgetTester tester) async {
+    testWidgets('Test 6: Cancel Button Functionality - Validates cancel button closes dialog without saving player data, entered player name is not added to player list, dialog properly closes and returns to menu screen', (WidgetTester tester) async {
       // Launch the full app
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 3));
