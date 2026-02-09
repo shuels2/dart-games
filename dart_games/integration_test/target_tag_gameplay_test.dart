@@ -708,7 +708,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 11: Hero Buff Display - Complete UI Validation', (WidgetTester tester) async {
+    testWidgets('Test 1: Hero Bonus Toggle and Display - Validates hero bonus OFF shows no buff label, hero bonus ON displays buff label and value in solo mode, hero bonus displays correctly in team mode with random assignment, buff numbers and multipliers shown correctly', (WidgetTester tester) async {
       // ===== Step 1: Verify hero bonus OFF shows no buff =====
       await navigateToTargetTagMenu(tester);
 
@@ -824,7 +824,7 @@ void main() {
       expect(team1Buff, isNotNull, reason: 'Team1 Player1 should have a buff value');
     });
 
-    testWidgets('Test 11.4: Active Panel Switches to Opponent Targets When Tagged In', (WidgetTester tester) async {
+    testWidgets('Test 2: Active Panel Opponent Targets Display - Validates active panel shows target number when not tagged in, panel switches to show opponent targets list when player gets tagged in, opponent targets displayed correctly with player names and target numbers', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus
@@ -917,7 +917,7 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('Test 11.5: Multi-Player Game with Tagged In/Out States', (WidgetTester tester) async {
+    testWidgets('Test 3: Multi-Player Game with Tagged In/Out States - Validates 3-player game initialization with all players not tagged in initially, first player gets tagged in by reaching max shields (single+double+triple), tagged in badge appears correctly, second player builds partial shields without getting tagged in, turn progression and state transitions work correctly', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus
@@ -991,7 +991,7 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('Test 11.6: Solo Mode and Team Mode with Hero Buff', (WidgetTester tester) async {
+    testWidgets('Test 4: Solo Mode and Team Mode with Hero Buff - Validates hero buff displays correctly in solo mode with 4 players (each player has individual buff value), game transitions from solo mode back to menu, team mode enabled with random team assignment, hero buffs displayed for teams (shared buff per team), team target numbers assigned correctly', (WidgetTester tester) async {
       // Part 1: Solo Mode with 4 players
       await navigateToTargetTagMenu(tester);
 
@@ -1066,7 +1066,7 @@ void main() {
       expect(teamBuff, isNotNull, reason: 'Team Player 1 should have a buff');
     });
 
-    testWidgets('Test 11.8: Two Player Game with Tagged In and Tagged Out', (WidgetTester tester) async {
+    testWidgets('Test 5: Two Player Game with Tagged In and Tagged Out - Validates 2-player game initialization, neither player tagged in initially, target numbers displayed correctly, Player 1 reaches max shields and gets tagged in (single+double+triple), tagged in badge appears for Player 1, active panel switches to show opponent targets list, Player 1 remains tagged in after turn ends', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus
@@ -1132,7 +1132,7 @@ void main() {
       verifyTaggedInBadge(tester, 'Player 2', shouldExist: false);
     });
 
-    testWidgets('Test 11.9: D1/D2/D3 Highlighting - Solo Mode Not Tagged In', (WidgetTester tester) async {
+    testWidgets('Test 6: D1/D2/D3 Highlighting - Solo Mode Not Tagged In - Validates dart highlighting colors when player is not tagged in, D1 hits own target shows green border (0xFF00FFA3), D2 misses own target shows pink border (0xFFFF007A), D3 hits own target with double multiplier shows green border, all three dart indicators display correct border colors based on hit/miss', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus
@@ -1172,7 +1172,7 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('Test 11.10: D1/D2/D3 Highlighting - Solo Mode Tagged In', (WidgetTester tester) async {
+    testWidgets('Test 7: D1/D2/D3 Highlighting - Solo Mode Tagged In - Validates dart highlighting colors when player is tagged in, Player A reaches max shields and gets tagged in, D3 shows green when max shields reached, Player A on second turn (now tagged in) hits own target shows pink border (0xFFFF007A), hits opponent target shows gold border (0xFFFFD700), misses show pink border, dart color logic correctly inverts when tagged in (own target bad, opponent target good)', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus
@@ -1246,7 +1246,7 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('Test 11.11: Multi-Team Game (3 Teams) - Tagged In and D1/D2/D3 Validation', (WidgetTester tester) async {
+    testWidgets('Test 8: Multi-Team Game (3 Teams) - Tagged In and D1/D2/D3 Validation - Validates 3-team game (2v2v2) with random assignment, all teams have hero buffs, current team reaches max shields with double+triple gets tagged in, all team members show tagged in badge when team tagged in, D1/D2 show green before tagged in, D3 hits opponent while tagged in shows gold, hitting hero buff while tagged in shows gold with glowing outline, hitting own target while tagged in shows pink, attacking opponent until elimination, hitting eliminated opponent target shows pink (not gold), hero buff still works after opponent eliminated', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus and Team mode (use random team assignment)
@@ -1557,7 +1557,7 @@ void main() {
 
     });
 
-    testWidgets('Test 11.12: Player Tile Highlighting - Current vs Non-Current vs Tagged In', (WidgetTester tester) async {
+    testWidgets('Test 9: Player Tile Highlighting - Current vs Non-Current vs Tagged In - Validates player tile border colors and badges in different states, current player has pink border (0xFFFF007A), non-current players have no special border, Player A gets tagged in shows tagged in badge, current player AND tagged in shows pink border with green glow, non-current but tagged in player shows green pulsing border, multiple players tagged in simultaneously show correct badges, hitting eliminated player target shows pink, hitting active opponent shows gold', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus
@@ -1789,7 +1789,7 @@ void main() {
 
     });
 
-    testWidgets('Test 11.13: Multi-Team Game (Manual Assignment) - Tagged In/Out and D1/D2/D3 Validation', (WidgetTester tester) async {
+    testWidgets('Test 10: Multi-Team Game (Manual Assignment) - Tagged In/Out and D1/D2/D3 Validation - Validates team mode with manual team assignment enabled, players manually assigned to teams, current team reaches max shields and gets tagged in, all team members share tagged in state, D1 hits opponent target while tagged in shows gold, D2 hits own target while tagged in shows pink, D3 hits opponent shows gold, eliminating opponent team shows tagged out badge for all team members, hitting eliminated team target shows pink (not gold), hero buff still functional after elimination', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Enable Hero Bonus and Team mode
@@ -2119,7 +2119,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 12: Game Settings Panel - Complete Validation', (WidgetTester tester) async {
+    testWidgets('Test 11: Game Settings Panel - Complete Validation - Validates game settings panel displays correctly in solo mode with hero bonus ON, shows "Solo" mode label and "Shield Max" value, hero bonus ON/OFF indicator displayed, settings panel persists during gameplay, return to menu and switch to team mode with random assignment, game settings panel shows "Team" mode label and shield max, manual team assignment mode enabled and verified (UI shows "Manually" label)', (WidgetTester tester) async {
       // ===== Step 1: Solo Mode Settings with Hero Bonus =====
       await navigateToTargetTagMenu(tester);
 
@@ -2229,7 +2229,7 @@ void main() {
       });
     });
 
-    testWidgets('Test 13.1: Complete Solo Mode Game to Victory', (WidgetTester tester) async {
+    testWidgets('Test 12: Complete Solo Mode Game to Victory - Validates complete game flow from start to victory screen, 2-player solo mode game starts correctly, Player 1 builds shields to max and gets tagged in, Player 2 builds partial shields, Player 1 attacks Player 2 target repeatedly until elimination, victory screen appears after opponent elimination, winner displayed correctly on victory screen', (WidgetTester tester) async {
       await navigateToTargetTagMenu(tester);
 
       // Add 2 players
@@ -2283,7 +2283,7 @@ void main() {
       // expect(find.textContaining('WINNER'), findsWidgets);
     });
 
-    testWidgets('Test 13: Game Start Validation - All Modes', (WidgetTester tester) async {
+    testWidgets('Test 13: Game Start Validation - All Modes - Validates game successfully starts in standard solo mode with 2 players, game screen displays correctly with "Target Tag Game On!" title, player names appear in UI, turn order established, game state initialized properly for solo mode gameplay', (WidgetTester tester) async {
       // ===== Step 1: Standard Solo Mode - 2 Players =====
       await navigateToTargetTagMenu(tester);
 

@@ -30,7 +30,8 @@
       "Bash(flutter drive:*)",
       "Bash(taskkill:*)",
       "Bash(start /B chromedriver.exe --port=4444)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(chromedriver.exe:*)"
     ]
   }
 }
