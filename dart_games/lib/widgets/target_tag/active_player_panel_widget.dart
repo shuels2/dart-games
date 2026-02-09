@@ -174,6 +174,7 @@ class ActivePlayerPanelWidget extends StatelessWidget {
                         color: Colors.white70,
                       ),
                     ),
+                    const SizedBox(width: 8), // Padding between label and number
                     Transform.translate(
                       offset: const Offset(0, 5), // Move down 5px
                       child: Text(

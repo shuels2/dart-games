@@ -576,7 +576,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                     ),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         'Hero Bonus',
@@ -588,7 +588,6 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                               : Colors.white38,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -682,7 +681,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
               ),
               const SizedBox(height: 8),
               Container(
-                height: 300,
+                height: 475,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
@@ -797,7 +796,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
               ),
               const SizedBox(height: 8),
               Container(
-                height: 200,
+                height: 300,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
