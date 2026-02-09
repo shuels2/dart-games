@@ -1164,8 +1164,10 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                       final playerProvider = context.read<PlayerProvider>();
                       playerProvider.savePlayer(player);
 
-                      // Automatically select the newly added player
-                      playerProvider.selectPlayer(player, maxPlayers: 8);
+                      // Auto-select the newly added player only if max not reached
+                      if (playerProvider.selectedPlayers.length < 8) {
+                        playerProvider.selectPlayer(player, maxPlayers: 8);
+                      }
 
                       Navigator.pop(dialogContext);
 

@@ -42,7 +42,7 @@ dart_games/
 │               ├── horse_race_menu_screen.dart     # Game setup
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
-├── test/                            # Non-UI test suite (180 tests)
+├── test/                            # Non-UI test suite (182 tests)
 ├── integration_test/                # UI automation tests (47 tests)
 └── assets/                          # Images, icons, fonts
 ```
@@ -255,7 +255,7 @@ flutter test
 ```
 
 **CRITICAL REQUIREMENTS:**
-- All 180 non-UI tests must pass (100% pass rate required)
+- All 182 non-UI tests must pass (100% pass rate required)
 - If ANY test fails, DO NOT proceed with build
 - Fix all failing tests first, then re-run test suite
 - Only build after confirming all tests pass
@@ -306,17 +306,18 @@ These tests validate:
   - Turn management (Tests 18-19): Skip turns, multiple skips in sequence
   - Edit score (Tests 20-24): Add/remove shields, undo, team adjustments
   - Edge cases (Tests 25-32): Simultaneous events, regaining tagged-in, all bullseyes, 10 players, 5 teams, multiple hero attacks
-- **User management integration** (9 tests in `target_tag_user_management_test.dart`)
+- **User management integration** (10 tests in `target_tag_user_management_test.dart`)
   - Win tracking for both winners and losers with game duration
   - Stats persistence across app restarts
   - Total play time and average duration calculations
+  - Max 10 players selection enforcement
 
 This is NON-NEGOTIABLE. Tests validate critical functionality including:
-- User management system (39 tests - Player: 30, Carnival Derby: 8, Target Tag: 9)
+- User management system (41 tests - Player: 30, Carnival Derby: 9, Target Tag: 10)
 - Victory music management (22 tests)
 - Announcer settings (20 tests)
 - Dartboard emulator accuracy (23 tests)
-- Target Tag game logic, announcements, and user management (41 tests)
+- Target Tag game logic, announcements, and user management (42 tests)
 - Data persistence and serialization
 - Cross-platform compatibility
 - Game logic and scoring
@@ -518,7 +519,7 @@ When adding a new game:
 9. Follow the pattern established in `test/screens/games/target_tag/target_tag_user_management_test.dart`
 
 **Reference Implementation:**
-- See `target_tag_user_management_test.dart` for the complete pattern (9 tests)
+- See `target_tag_user_management_test.dart` for the complete pattern (10 tests)
 - Tests validate both solo and team modes
 - Tests verify that losers receive game history with duration (not just winners)
 
@@ -528,7 +529,7 @@ When adding a new game:
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
-**Non-UI Tests (180 tests in `test/` directory):**
+**Non-UI Tests (182 tests in `test/` directory):**
 - Run with `flutter test`
 - Execute in seconds
 - Required to pass before every build
@@ -586,14 +587,15 @@ The dart games app has a comprehensive test suite covering all critical function
   - Error handling and data persistence
   - Cross-platform file handling
 
-#### Integration Tests (49 tests)
-- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (8 tests)
+#### Integration Tests (51 tests)
+- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (9 tests)
   - Winner recording with game duration
   - Multiple games accumulation
   - Duration calculation accuracy
   - Multi-player game stats (winner vs. losers)
   - Exact score mode duration tracking
   - Stats persistence across app restarts
+  - Max 8 players selection enforcement
 
 - `test/screens/games/target_tag/target_tag_game_with_announcements_test.dart` (32 tests)
   - Solo mode game logic and announcements (Tests 1-8)
@@ -605,13 +607,14 @@ The dart games app has a comprehensive test suite covering all critical function
   - Validates BOTH game logic (shields, tagged-in status, eliminations) AND announcement text/timing
   - Covers 2-10 players and 2-5 teams
 
-- `test/screens/games/target_tag/target_tag_user_management_test.dart` (9 tests)
+- `test/screens/games/target_tag/target_tag_user_management_test.dart` (10 tests)
   - Solo mode winner/loser stats with duration tracking (Tests 4-7)
   - Team mode stats for all players with duration (Test 8)
   - Mixed team compositions across games (Test 9)
   - 3-team game statistics (Test 10)
   - Total play time calculations (Test 11)
   - Average game duration by game name (Test 12)
+  - Max 10 players selection enforcement (Test 13)
   - Both winners AND losers receive game history entries with duration
   - Stats persistence and data integrity validation
 
@@ -658,7 +661,7 @@ The dart games app has a comprehensive test suite covering all critical function
 
 ### Running Tests
 
-**Run all non-UI tests (180 tests):**
+**Run all non-UI tests (182 tests):**
 ```bash
 cd dart_games
 flutter test
@@ -694,8 +697,8 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 
 ### Test Expectations
 
-**Non-UI Tests (180 tests):**
-- **100% pass rate required** - All 180 non-UI tests must pass before every build
+**Non-UI Tests (182 tests):**
+- **100% pass rate required** - All 182 non-UI tests must pass before every build
 - Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
 - No build or deployment without all non-UI tests passing
 - Tests cover both web and native platform scenarios
@@ -1251,7 +1254,7 @@ This applies to all git operations that modify the remote repository, including:
    cd dart_games
    flutter test
    ```
-3. **Verify ALL 180 non-UI tests pass (100% pass rate required)**
+3. **Verify ALL 182 non-UI tests pass (100% pass rate required)**
 4. **OPTIONAL: Ask user if they want to run UI automation tests (47 tests, ~26 minutes)**
 5. If ANY tests fail:
    - DO NOT proceed
@@ -1268,8 +1271,8 @@ This applies to all git operations that modify the remote repository, including:
 **NEVER build without running non-UI tests first.**
 
 Before any `flutter run` or `flutter build` command:
-1. Run `flutter test` (180 non-UI tests)
-2. Confirm all 180 non-UI tests pass
+1. Run `flutter test` (182 non-UI tests)
+2. Confirm all 182 non-UI tests pass
 3. Ask user if they want to run UI automation tests (47 tests, ~26 minutes)
 4. Only then run the build command
 

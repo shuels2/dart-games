@@ -354,5 +354,46 @@ void main() {
       );
       expect(derbyHistory.length, 3);
     });
+
+    test('max 8 players can be selected for Carnival Derby', () async {
+      // Create 10 players
+      final players = <Player>[];
+      for (int i = 1; i <= 10; i++) {
+        final player = Player.create(name: 'Player $i');
+        await playerProvider.savePlayer(player);
+        players.add(player);
+      }
+
+      // Select first 7 players (under max of 8)
+      for (int i = 0; i < 7; i++) {
+        playerProvider.selectPlayer(players[i], maxPlayers: 8);
+      }
+
+      expect(playerProvider.selectedPlayers.length, 7);
+
+      // Select 8th player - should succeed
+      playerProvider.selectPlayer(players[7], maxPlayers: 8);
+      expect(playerProvider.selectedPlayers.length, 8);
+
+      // Attempt to select 9th player - should fail (max reached)
+      playerProvider.selectPlayer(players[8], maxPlayers: 8);
+      expect(playerProvider.selectedPlayers.length, 8);
+      expect(
+        playerProvider.selectedPlayers.any((p) => p.id == players[8].id),
+        isFalse,
+      );
+
+      // Deselect one player
+      playerProvider.deselectPlayer(players[7].id);
+      expect(playerProvider.selectedPlayers.length, 7);
+
+      // Now selecting 9th player should succeed (under max again)
+      playerProvider.selectPlayer(players[8], maxPlayers: 8);
+      expect(playerProvider.selectedPlayers.length, 8);
+      expect(
+        playerProvider.selectedPlayers.any((p) => p.id == players[8].id),
+        isTrue,
+      );
+    });
   });
 }
