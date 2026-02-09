@@ -681,7 +681,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
               ),
               const SizedBox(height: 8),
               Container(
-                height: 475,
+                height: 485,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
