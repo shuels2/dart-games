@@ -28,7 +28,7 @@ class HorseRaceProvider extends ChangeNotifier {
     return _currentGame?.getPlayerScore(playerId) ?? 0;
   }
 
-  List<int> getCurrentTurnDartScores(String playerId) {
+  List<String> getCurrentTurnDartScores(String playerId) {
     return _currentGame?.getCurrentTurnDartScores(playerId) ?? [];
   }
 
@@ -64,12 +64,12 @@ class HorseRaceProvider extends ChangeNotifier {
   }
 
   // Process a dart throw
-  void processDartThrow(int score) {
+  void processDartThrow(int score, {String? dartDisplay}) {
     if (_currentGame == null || !isGameActive) return;
     if (_waitingForTakeout) return; // Don't accept throws while waiting for takeout
 
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
-    _currentGame!.recordDartThrow(currentPlayerId, score);
+    _currentGame!.recordDartThrow(currentPlayerId, score, dartDisplay: dartDisplay);
 
     // Check if player busted (in exact score mode)
     if (_currentGame!.currentPlayerBusted) {

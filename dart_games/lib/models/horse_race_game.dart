@@ -19,7 +19,7 @@ class HorseRaceGame {
   int currentPlayerIndex;
   Map<String, int> scores;
   Map<String, int> dartsThrown;
-  Map<String, List<int>> currentTurnDartScores;
+  Map<String, List<String>> currentTurnDartScores;
   String? winnerId;
   bool currentPlayerBusted;
 
@@ -33,7 +33,7 @@ class HorseRaceGame {
     this.currentPlayerIndex = 0,
     Map<String, int>? scores,
     Map<String, int>? dartsThrown,
-    Map<String, List<int>>? currentTurnDartScores,
+    Map<String, List<String>>? currentTurnDartScores,
     this.winnerId,
     this.currentPlayerBusted = false,
   })  : scores = scores ?? {},
@@ -65,16 +65,16 @@ class HorseRaceGame {
   }
 
   // Record a dart throw for the current player
-  void recordDartThrow(String playerId, int score) {
+  void recordDartThrow(String playerId, int score, {String? dartDisplay}) {
     if (state != GameState.playing) return;
     if (playerId != playerIds[currentPlayerIndex]) return;
 
     final currentScore = scores[playerId] ?? 0;
     final newScore = currentScore + score;
 
-    // Store the dart score in current turn
+    // Store the dart score display in current turn (e.g., "20", "Miss", "50")
     currentTurnDartScores[playerId] ??= [];
-    currentTurnDartScores[playerId]!.add(score);
+    currentTurnDartScores[playerId]!.add(dartDisplay ?? score.toString());
 
     // Handle exact score mode
     if (exactScoreMode) {
@@ -160,7 +160,7 @@ class HorseRaceGame {
   }
 
   // Get current turn dart scores for a specific player
-  List<int> getCurrentTurnDartScores(String playerId) {
+  List<String> getCurrentTurnDartScores(String playerId) {
     return currentTurnDartScores[playerId] ?? [];
   }
 

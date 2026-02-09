@@ -123,7 +123,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
     if (type == 'throw_detected') {
       final throwData = event['data']['payload'];
-      final score = _calculateScore(throwData['sector']);
+      final sector = throwData['sector'];
+      final score = _calculateScore(sector);
+      final isMiss = sector == 'None';
 
       // Get player info before processing throw
       final playerProvider = context.read<PlayerProvider>();
@@ -133,18 +135,25 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           .toList();
       final currentPlayer = horseRaceProvider.getCurrentPlayer(players);
 
-      // Process the dart throw
-      horseRaceProvider.processDartThrow(score);
+      // Process the dart throw with display value
+      horseRaceProvider.processDartThrow(
+        score,
+        dartDisplay: isMiss ? 'Miss' : null,
+      );
 
       // Check if player busted
       if (horseRaceProvider.currentPlayerBusted) {
         // Player busted - announce score first, then bust, then remove darts
         if (currentPlayer != null) {
           // First announce the dart score
-          _announcer?.announceDart(
-            score,
-            _getMultiplierFromSector(throwData['sector']),
-          );
+          if (isMiss) {
+            _announcer?.speak('Miss');
+          } else {
+            _announcer?.announceDart(
+              score,
+              _getMultiplierFromSector(sector),
+            );
+          }
 
           // Wait for score announcement to complete (~1.5s)
           Future.delayed(const Duration(milliseconds: 1500), () {
@@ -172,10 +181,14 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       }
 
       // Announce the score
-      _announcer?.announceDart(
-        score,
-        _getMultiplierFromSector(throwData['sector']),
-      );
+      if (isMiss) {
+        _announcer?.speak('Miss');
+      } else {
+        _announcer?.announceDart(
+          score,
+          _getMultiplierFromSector(sector),
+        );
+      }
 
       // Check if game is won
       if (horseRaceProvider.hasWinner) {
