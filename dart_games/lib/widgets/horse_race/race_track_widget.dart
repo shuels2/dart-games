@@ -8,11 +8,13 @@ import 'player_avatar_widget.dart';
 class RaceTrackWidget extends StatelessWidget {
   final List<Player> players;
   final int targetScore;
+  final ScrollController? scrollController;
 
   const RaceTrackWidget({
     super.key,
     required this.players,
     required this.targetScore,
+    this.scrollController,
   });
 
   @override
@@ -26,6 +28,7 @@ class RaceTrackWidget extends StatelessWidget {
             // Race tracks
             Expanded(
               child: ListView.builder(
+                controller: scrollController,
                 itemCount: players.length,
                 itemBuilder: (context, index) {
                   final player = players[index];

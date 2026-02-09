@@ -32,6 +32,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
   MockScoliaApiService? _mockApi;
   DartAnnouncerService? _announcer;
+  bool _showDartboard = true; // Controls dartboard emulator visibility
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -75,6 +77,48 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     });
   }
 
+  void _scrollToCurrentPlayer() {
+    final horseRaceProvider = context.read<HorseRaceProvider>();
+    final playerProvider = context.read<PlayerProvider>();
+    final currentGame = horseRaceProvider.currentGame;
+
+    if (currentGame == null || !_scrollController.hasClients) return;
+
+    final allPlayers = playerProvider.allPlayers;
+    final currentPlayer = horseRaceProvider.getCurrentPlayer(allPlayers);
+    if (currentPlayer == null) return;
+
+    // Find current player's index in the player list
+    final currentPlayerIndex = currentGame.playerIds.indexOf(currentPlayer.id);
+    if (currentPlayerIndex == -1) return;
+
+    // Calculate scroll position
+    // Each race lane has approximately 80px height (margins + padding + content)
+    const estimatedTileHeight = 80.0;
+
+    // Scroll to show the current player's tile
+    // If it's the first player (index 0), scroll to top
+    // Otherwise, scroll to show the tile with some buffer above it
+    if (currentPlayerIndex == 0) {
+      // First player - scroll to top
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      // Calculate scroll offset: position the current player's tile near the top
+      // with one tile visible above it for context
+      final scrollOffset = (currentPlayerIndex - 1) * estimatedTileHeight;
+
+      _scrollController.animateTo(
+        scrollOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   Future<void> _loadAnnouncerSettings() async {
     if (_announcer == null) return;
 
@@ -114,6 +158,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   @override
   void dispose() {
     _dartboardSubscription?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -226,6 +271,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     if (type == 'takeout_finished') {
       horseRaceProvider.handleTakeoutFinished();
 
+      // Scroll to current player's track tile
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _scrollToCurrentPlayer();
+        }
+      });
+
       // Check if game is won after takeout
       if (horseRaceProvider.hasWinner) {
         _handleGameWon();
@@ -327,6 +379,27 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
             ),
           ),
           child: AppBar(
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: const Color(0xFFF1FAEE), // Cloud Dancer white
+                size: 32, // Bigger size
+                shadows: [
+                  const Shadow(
+                    color: Color(0xFFFFD700), // Canary Yellow glow
+                    blurRadius: 10,
+                  ),
+                  const Shadow(
+                    color: Color(0xFFFFD700),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
+            ),
             title: Text(
               'Carnival Derby Race',
               style: GoogleFonts.rye(
@@ -453,6 +526,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     RaceTrackWidget(
                       players: players,
                       targetScore: currentGame.targetScore,
+                      scrollController: _scrollController,
                     ),
                     // Modal overlay for remove darts prompt
                     if (shouldPromptTakeout && !dartboardProvider.isConnected)
@@ -461,8 +535,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                 ),
               ),
 
-              // Dartboard emulator (only show when not connected to real dartboard)
-              if (!dartboardProvider.isConnected)
+              // Dartboard emulator (only show when not connected to real dartboard and visible)
+              if (!dartboardProvider.isConnected && _showDartboard)
                 _buildDartboardSection(shouldPromptTakeout),
             ],
           );
@@ -470,6 +544,28 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       ),
         ],
       ),
+      // Floating button to toggle dartboard visibility (only show when not connected)
+      floatingActionButton: !dartboardProvider.isConnected
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                setState(() {
+                  _showDartboard = !_showDartboard;
+                });
+              },
+              backgroundColor: const Color(0xFFFFD700), // Canary Yellow
+              icon: Icon(
+                _showDartboard ? Icons.visibility_off : Icons.visibility,
+                color: const Color(0xFF8B5E3C), // Warm Cedar
+              ),
+              label: Text(
+                _showDartboard ? 'Hide Dartboard' : 'Show Dartboard',
+                style: GoogleFonts.rye(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF8B5E3C), // Warm Cedar
+                ),
+              ),
+            )
+          : null,
     );
   }
 

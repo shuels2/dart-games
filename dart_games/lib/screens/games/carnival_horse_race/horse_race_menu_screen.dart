@@ -91,6 +91,27 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             ),
           ),
           child: AppBar(
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: const Color(0xFFF1FAEE), // Cloud Dancer white
+                size: 32, // Bigger size
+                shadows: [
+                  const Shadow(
+                    color: Color(0xFFFFD700), // Canary Yellow glow
+                    blurRadius: 10,
+                  ),
+                  const Shadow(
+                    color: Color(0xFFFFD700),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
+            ),
             title: Text(
               'Carnival Derby Game Setup',
               style: GoogleFonts.rye(
