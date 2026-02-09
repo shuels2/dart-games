@@ -35,6 +35,8 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
   final PhotoService _photoService = PhotoService();
   late double _targetScore;
   bool _exactScoreMode = false;
+  final ScrollController _availablePlayersScrollController = ScrollController();
+  final ScrollController _selectedPlayersScrollController = ScrollController();
 
   @override
   void initState() {
@@ -58,6 +60,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
         }
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _availablePlayersScrollController.dispose();
+    _selectedPlayersScrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -682,6 +691,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           else
             Expanded(
               child: ListView.builder(
+                controller: _selectedPlayersScrollController,
                 itemCount: selectedPlayers.length,
                 itemBuilder: (context, index) {
                   final player = selectedPlayers[index];
@@ -808,6 +818,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   ),
                 )
               : ListView.builder(
+                  controller: _availablePlayersScrollController,
                   itemCount: allPlayers.length,
                   itemBuilder: (context, index) {
                     final player = allPlayers[index];
@@ -822,6 +833,21 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                           playerProvider.deselectPlayer(player.id);
                         } else {
                           playerProvider.selectPlayer(player, maxPlayers: 8);
+                          // Scroll selected players list to show newly selected player
+                          Future.delayed(const Duration(milliseconds: 100), () {
+                            if (mounted) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted && _selectedPlayersScrollController.hasClients) {
+                                  final targetPosition = _selectedPlayersScrollController.position.maxScrollExtent + 150;
+                                  _selectedPlayersScrollController.animateTo(
+                                    targetPosition,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOut,
+                                  );
+                                }
+                              });
+                            }
+                          });
                         }
                       },
                     );
@@ -1142,6 +1168,35 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                       playerProvider.selectPlayer(player, maxPlayers: 8);
 
                       Navigator.pop(dialogContext);
+
+                      // Scroll to show the new player after dialog closes in both lists
+                      Future.delayed(const Duration(milliseconds: 100), () {
+                        if (mounted) {
+                          // Use post-frame callback to ensure layout is complete
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              // Scroll available players list to show full tile with buffer
+                              if (_availablePlayersScrollController.hasClients) {
+                                final targetPosition = _availablePlayersScrollController.position.maxScrollExtent + 150;
+                                _availablePlayersScrollController.animateTo(
+                                  targetPosition,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOut,
+                                );
+                              }
+                              // Scroll selected players list to show full tile with buffer
+                              if (_selectedPlayersScrollController.hasClients) {
+                                final targetPosition = _selectedPlayersScrollController.position.maxScrollExtent + 150;
+                                _selectedPlayersScrollController.animateTo(
+                                  targetPosition,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOut,
+                                );
+                              }
+                            }
+                          });
+                        }
+                      });
                     },
                     child: Text(
                       'ADD PLAYER',

@@ -40,6 +40,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
   // Navigation and scrolling
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _playersListScrollController = ScrollController();
   final GlobalKey _announcerKey = GlobalKey();
   final GlobalKey _musicKey = GlobalKey();
   final GlobalKey _userManagementKey = GlobalKey();
@@ -58,6 +59,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _playersListScrollController.dispose();
     super.dispose();
   }
 
@@ -576,6 +578,24 @@ class _OptionsScreenState extends State<OptionsScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
+
+                  // Scroll to show the new player after dialog closes
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    if (mounted) {
+                      // Use post-frame callback to ensure layout is complete
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && _playersListScrollController.hasClients) {
+                          // Add buffer to ensure full tile is visible
+                          final targetPosition = _playersListScrollController.position.maxScrollExtent + 150;
+                          _playersListScrollController.animateTo(
+                            targetPosition,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                        }
+                      });
+                    }
+                  });
                 }
               },
               child: const Text('Add Player'),
@@ -858,6 +878,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: ListView.separated(
+                      controller: _playersListScrollController,
                       shrinkWrap: true,
                       itemCount: players.length,
                       separatorBuilder: (context, index) =>

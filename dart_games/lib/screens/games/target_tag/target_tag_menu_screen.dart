@@ -1559,13 +1559,19 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                       Navigator.of(dialogContext).pop();
 
                       // Scroll to show the new player after dialog closes
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        if (mounted && _scrollController.hasClients) {
-                          _scrollController.animateTo(
-                            _scrollController.position.maxScrollExtent,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOut,
-                          );
+                      Future.delayed(const Duration(milliseconds: 100), () {
+                        if (mounted) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted && _scrollController.hasClients) {
+                              // Add buffer to ensure full tile is visible
+                              final targetPosition = _scrollController.position.maxScrollExtent + 150;
+                              _scrollController.animateTo(
+                                targetPosition,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOut,
+                              );
+                            }
+                          });
                         }
                       });
                     },
