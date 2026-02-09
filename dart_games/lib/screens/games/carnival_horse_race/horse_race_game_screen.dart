@@ -497,9 +497,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       ),
       child: Row(
         children: [
-          // Left side: Game settings
-          Expanded(
-            flex: 2,
+          // Game settings - fixed width
+          SizedBox(
+            width: 350,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -521,10 +521,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 24),
-          // Right side: Current player info
+          const SizedBox(width: 16),
+          // Current player info and dart scores - flexible width
           Expanded(
-            flex: 3,
             child: Row(
               children: [
                 PlayerAvatarWidget(
@@ -534,8 +533,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   isHighlighted: true,
                 ),
                 const SizedBox(width: 12),
-                SizedBox(
-                  width: 200, // Fixed width to prevent layout shift
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -559,13 +557,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 45),
-                // Dart scores moved right
+                const SizedBox(width: 16),
+                // Dart scores on the right
                 Row(
                   children: [
                     for (int i = 0; i < 3; i++) ...[
                       SizedBox(
-                        width: 40, // Fixed width to prevent layout shift
+                        width: 52, // 30% wider to fit "Miss" without wrapping
                         child: Column(
                           children: [
                             Text(
