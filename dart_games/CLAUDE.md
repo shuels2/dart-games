@@ -42,7 +42,7 @@ dart_games/
 │               ├── horse_race_menu_screen.dart     # Game setup
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
-├── test/                            # Non-UI test suite (184 tests)
+├── test/                            # Non-UI test suite (208 tests)
 ├── integration_test/                # UI automation tests (47 tests)
 └── assets/                          # Images, icons, fonts
 ```
