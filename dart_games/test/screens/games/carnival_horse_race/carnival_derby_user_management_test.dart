@@ -413,5 +413,119 @@ void main() {
         isTrue,
       );
     });
+
+    test('skip turn records misses and advances turn', () async {
+      // Create players
+      final player1 = Player.create(name: 'Player 1');
+      final player2 = Player.create(name: 'Player 2');
+      final player3 = Player.create(name: 'Player 3');
+      await playerProvider.savePlayer(player1);
+      await playerProvider.savePlayer(player2);
+      await playerProvider.savePlayer(player3);
+
+      // Start game
+      horseRaceProvider.startGame([player1, player2, player3], 50, exactScoreMode: false);
+
+      // Player 1 skips turn (no darts thrown)
+      expect(horseRaceProvider.getCurrentPlayerId(), player1.id);
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 0);
+
+      horseRaceProvider.skipTurn();
+
+      // Verify 3 misses recorded
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      final dartScores = horseRaceProvider.getCurrentTurnDartScores(player1.id);
+      expect(dartScores.length, 3);
+      expect(dartScores[0], 'Miss');
+      expect(dartScores[1], 'Miss');
+      expect(dartScores[2], 'Miss');
+
+      // Verify score is still 0
+      expect(horseRaceProvider.getPlayerScore(player1.id), 0);
+
+      // Verify waiting for takeout
+      expect(horseRaceProvider.shouldPromptTakeout, true);
+
+      // Finish takeout
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Verify turn advanced to player 2
+      expect(horseRaceProvider.getCurrentPlayerId(), player2.id);
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 0);
+      expect(horseRaceProvider.shouldPromptTakeout, false);
+
+      // Player 2 throws 1 dart then skips
+      horseRaceProvider.processDartThrow(20);
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 1);
+
+      horseRaceProvider.skipTurn();
+
+      // Verify 2 more misses recorded (total 3)
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      final dartScores2 = horseRaceProvider.getCurrentTurnDartScores(player2.id);
+      expect(dartScores2.length, 3);
+      expect(dartScores2[0], '20');
+      expect(dartScores2[1], 'Miss');
+      expect(dartScores2[2], 'Miss');
+
+      // Verify score is 20
+      expect(horseRaceProvider.getPlayerScore(player2.id), 20);
+
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Verify turn advanced to player 3
+      expect(horseRaceProvider.getCurrentPlayerId(), player3.id);
+    });
+
+    test('skip multiple turns in sequence', () async {
+      // Create players
+      final player1 = Player.create(name: 'Player 1');
+      final player2 = Player.create(name: 'Player 2');
+      final player3 = Player.create(name: 'Player 3');
+      final player4 = Player.create(name: 'Player 4');
+      await playerProvider.savePlayer(player1);
+      await playerProvider.savePlayer(player2);
+      await playerProvider.savePlayer(player3);
+      await playerProvider.savePlayer(player4);
+
+      // Start game
+      horseRaceProvider.startGame([player1, player2, player3, player4], 50, exactScoreMode: false);
+
+      // Player 1 skips
+      expect(horseRaceProvider.getCurrentPlayerId(), player1.id);
+      horseRaceProvider.skipTurn();
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      expect(horseRaceProvider.getPlayerScore(player1.id), 0);
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Player 2 skips
+      expect(horseRaceProvider.getCurrentPlayerId(), player2.id);
+      horseRaceProvider.skipTurn();
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      expect(horseRaceProvider.getPlayerScore(player2.id), 0);
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Player 3 throws some darts
+      expect(horseRaceProvider.getCurrentPlayerId(), player3.id);
+      horseRaceProvider.processDartThrow(15);
+      horseRaceProvider.processDartThrow(10);
+      horseRaceProvider.processDartThrow(5);
+      expect(horseRaceProvider.getPlayerScore(player3.id), 30);
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Player 4 skips
+      expect(horseRaceProvider.getCurrentPlayerId(), player4.id);
+      horseRaceProvider.skipTurn();
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      expect(horseRaceProvider.getPlayerScore(player4.id), 0);
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Back to player 1 - verify scores
+      expect(horseRaceProvider.getCurrentPlayerId(), player1.id);
+      expect(horseRaceProvider.getPlayerScore(player1.id), 0);
+      expect(horseRaceProvider.getPlayerScore(player2.id), 0);
+      expect(horseRaceProvider.getPlayerScore(player3.id), 30);
+      expect(horseRaceProvider.getPlayerScore(player4.id), 0);
+    });
   });
 }

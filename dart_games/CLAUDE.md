@@ -42,7 +42,7 @@ dart_games/
 │               ├── horse_race_menu_screen.dart     # Game setup
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
-├── test/                            # Non-UI test suite (182 tests)
+├── test/                            # Non-UI test suite (184 tests)
 ├── integration_test/                # UI automation tests (47 tests)
 └── assets/                          # Images, icons, fonts
 ```
@@ -313,7 +313,7 @@ These tests validate:
   - Max 10 players selection enforcement
 
 This is NON-NEGOTIABLE. Tests validate critical functionality including:
-- User management system (41 tests - Player: 30, Carnival Derby: 9, Target Tag: 10)
+- User management system (43 tests - Player: 30, Carnival Derby: 11, Target Tag: 10)
 - Victory music management (22 tests)
 - Announcer settings (20 tests)
 - Dartboard emulator accuracy (23 tests)
@@ -528,7 +528,7 @@ When adding a new game:
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
-**Non-UI Tests (182 tests in `test/` directory):**
+**Non-UI Tests (184 tests in `test/` directory):**
 - Run with `flutter test`
 - Execute in seconds
 - Required to pass before every build
@@ -586,8 +586,8 @@ The dart games app has a comprehensive test suite covering all critical function
   - Error handling and data persistence
   - Cross-platform file handling
 
-#### Integration Tests (51 tests)
-- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (9 tests)
+#### Integration Tests (53 tests)
+- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (11 tests)
   - Winner recording with game duration
   - Multiple games accumulation
   - Duration calculation accuracy
@@ -595,6 +595,8 @@ The dart games app has a comprehensive test suite covering all critical function
   - Exact score mode duration tracking
   - Stats persistence across app restarts
   - Max 8 players selection enforcement
+  - Skip turn records misses and advances turn
+  - Skip multiple turns in sequence
 
 - `test/screens/games/target_tag/target_tag_game_with_announcements_test.dart` (32 tests)
   - Solo mode game logic and announcements (Tests 1-8)
@@ -660,7 +662,7 @@ The dart games app has a comprehensive test suite covering all critical function
 
 ### Running Tests
 
-**Run all non-UI tests (182 tests):**
+**Run all non-UI tests (184 tests):**
 ```bash
 cd dart_games
 flutter test
@@ -696,8 +698,8 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 
 ### Test Expectations
 
-**Non-UI Tests (182 tests):**
-- **100% pass rate required** - All 182 non-UI tests must pass before every build
+**Non-UI Tests (184 tests):**
+- **100% pass rate required** - All 184 non-UI tests must pass before every build
 - Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
 - No build or deployment without all non-UI tests passing
 - Tests cover both web and native platform scenarios
