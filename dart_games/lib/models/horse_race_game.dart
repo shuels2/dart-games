@@ -23,6 +23,12 @@ class HorseRaceGame {
   String? winnerId;
   bool currentPlayerBusted;
 
+  // Turn start state (for edit score functionality)
+  Map<String, int> turnStartScores = {};
+  String? turnStartWinnerId;
+  GameState turnStartState = GameState.setup;
+  bool turnStartCurrentPlayerBusted = false;
+
   HorseRaceGame({
     required this.id,
     required this.playerIds,
@@ -53,7 +59,7 @@ class HorseRaceGame {
     required int targetScore,
     bool exactScoreMode = false,
   }) {
-    return HorseRaceGame(
+    final game = HorseRaceGame(
       id: const Uuid().v4(),
       playerIds: playerIds,
       targetScore: targetScore,
@@ -62,6 +68,9 @@ class HorseRaceGame {
       state: GameState.playing,
       currentPlayerIndex: 0,
     );
+    // Save initial state for first turn (needed for edit score functionality)
+    game._saveTurnStartState();
+    return game;
   }
 
   // Record a dart throw for the current player
@@ -146,6 +155,26 @@ class HorseRaceGame {
 
     // Move to next player
     currentPlayerIndex = (currentPlayerIndex + 1) % playerIds.length;
+
+    // Save state at start of new turn (for score editing)
+    _saveTurnStartState();
+  }
+
+  // Save game state at the start of a turn
+  void _saveTurnStartState() {
+    turnStartScores = Map.from(scores);
+    turnStartWinnerId = winnerId;
+    turnStartState = state;
+    turnStartCurrentPlayerBusted = currentPlayerBusted;
+  }
+
+  // Reset to the state at the start of the current turn
+  void resetToStartOfTurn(String playerId) {
+    // Restore scores, winnerId, state, and bust status
+    scores = Map.from(turnStartScores);
+    winnerId = turnStartWinnerId;
+    state = turnStartState;
+    currentPlayerBusted = turnStartCurrentPlayerBusted;
   }
 
   // Get current turn darts thrown

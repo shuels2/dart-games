@@ -255,7 +255,7 @@ flutter test
 ```
 
 **CRITICAL REQUIREMENTS:**
-- All 182 non-UI tests must pass (100% pass rate required)
+- All 195 non-UI tests must pass (100% pass rate required)
 - If ANY test fails, DO NOT proceed with build
 - Fix all failing tests first, then re-run test suite
 - Only build after confirming all tests pass
@@ -524,7 +524,7 @@ When adding a new game:
 
 ## Testing Requirements
 
-### Complete Test Suite (180 Tests + 47 UI Automation Tests)
+### Complete Test Suite (195 Tests + 47 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
@@ -586,8 +586,8 @@ The dart games app has a comprehensive test suite covering all critical function
   - Error handling and data persistence
   - Cross-platform file handling
 
-#### Integration Tests (53 tests)
-- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (11 tests)
+#### Integration Tests (64 tests)
+- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (22 tests)
   - Winner recording with game duration
   - Multiple games accumulation
   - Duration calculation accuracy
@@ -597,6 +597,17 @@ The dart games app has a comprehensive test suite covering all critical function
   - Max 8 players selection enforcement
   - Skip turn records misses and advances turn
   - Skip multiple turns in sequence
+  - Edit score on first turn preserves score correctly
+  - Edit score preserves inner vs outer single distinction
+  - Edit score increases player total score
+  - Edit score decreases player total score
+  - Edit score to add misses
+  - Edit score to remove misses
+  - Edit score with bulls (bullseye and outer bull)
+  - Edit score maintains waiting for takeout state
+  - Edit score does not affect other players
+  - Edit score in exact mode handles bust correctly
+  - Edit score can trigger win in exact mode
 
 - `test/screens/games/target_tag/target_tag_game_with_announcements_test.dart` (32 tests)
   - Solo mode game logic and announcements (Tests 1-8)
@@ -698,7 +709,7 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 
 ### Test Expectations
 
-**Non-UI Tests (184 tests):**
+**Non-UI Tests (195 tests):**
 - **100% pass rate required** - All 184 non-UI tests must pass before every build
 - Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
 - No build or deployment without all non-UI tests passing

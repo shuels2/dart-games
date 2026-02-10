@@ -527,5 +527,287 @@ void main() {
       expect(horseRaceProvider.getPlayerScore(player3.id), 30);
       expect(horseRaceProvider.getPlayerScore(player4.id), 0);
     });
+
+    test('edit score on first turn preserves score correctly', () async {
+      // Test that edit score works on the very first turn
+      final player = Player.create(name: 'First Turn Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 100, exactScoreMode: false);
+
+      // Throw darts (S20, D13, T19)
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      horseRaceProvider.processDartThrow(26, dartDisplay: 'D13');
+      horseRaceProvider.processDartThrow(57, dartDisplay: 'T19');
+
+      // Verify initial score
+      expect(horseRaceProvider.getPlayerScore(player.id), 103);
+      final initialDarts = horseRaceProvider.getCurrentTurnDartScores(player.id);
+      expect(initialDarts, ['S20', 'D13', 'T19']);
+
+      // Edit scores: Change to S15, S10, S5
+      horseRaceProvider.updateAllDartScores(player.id, ['S15', 'S10', 'S5']);
+
+      // Verify edited score
+      expect(horseRaceProvider.getPlayerScore(player.id), 30);
+      final editedDarts = horseRaceProvider.getCurrentTurnDartScores(player.id);
+      expect(editedDarts, ['S15', 'S10', 'S5']);
+    });
+
+    test('edit score preserves inner vs outer single distinction', () async {
+      final player = Player.create(name: 'Singles Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 100, exactScoreMode: false);
+
+      // Throw inner singles (lowercase s)
+      horseRaceProvider.processDartThrow(20, dartDisplay: 's20');
+      horseRaceProvider.processDartThrow(15, dartDisplay: 's15');
+      horseRaceProvider.processDartThrow(10, dartDisplay: 's10');
+
+      expect(horseRaceProvider.getPlayerScore(player.id), 45);
+      final initialDarts = horseRaceProvider.getCurrentTurnDartScores(player.id);
+      expect(initialDarts, ['s20', 's15', 's10']);
+
+      // Edit to outer singles (uppercase S)
+      horseRaceProvider.updateAllDartScores(player.id, ['S20', 'S15', 'S10']);
+
+      // Score should be same but sector format should change
+      expect(horseRaceProvider.getPlayerScore(player.id), 45);
+      final editedDarts = horseRaceProvider.getCurrentTurnDartScores(player.id);
+      expect(editedDarts, ['S20', 'S15', 'S10']);
+
+      // Edit back to inner singles
+      horseRaceProvider.updateAllDartScores(player.id, ['s18', 's14', 's12']);
+
+      expect(horseRaceProvider.getPlayerScore(player.id), 44);
+      final finalDarts = horseRaceProvider.getCurrentTurnDartScores(player.id);
+      expect(finalDarts, ['s18', 's14', 's12']);
+    });
+
+    test('edit score increases player total score', () async {
+      final player1 = Player.create(name: 'Player 1');
+      final player2 = Player.create(name: 'Player 2');
+      await playerProvider.savePlayer(player1);
+      await playerProvider.savePlayer(player2);
+
+      horseRaceProvider.startGame([player1, player2], 200, exactScoreMode: false); // High target to avoid early win
+
+      // Player 1 throws low scores
+      horseRaceProvider.processDartThrow(5, dartDisplay: 'S5');
+      horseRaceProvider.processDartThrow(3, dartDisplay: 'S3');
+      horseRaceProvider.processDartThrow(2, dartDisplay: 'S2');
+
+      expect(horseRaceProvider.getPlayerScore(player1.id), 10);
+
+      // Edit to higher scores (Double 20, Double 15, Double 10)
+      horseRaceProvider.updateAllDartScores(player1.id, ['D20', 'D15', 'D10']);
+
+      // Verify increased score
+      expect(horseRaceProvider.getPlayerScore(player1.id), 90); // 40 + 30 + 20
+      final darts = horseRaceProvider.getCurrentTurnDartScores(player1.id);
+      expect(darts, ['D20', 'D15', 'D10']);
+    });
+
+    test('edit score decreases player total score', () async {
+      final player = Player.create(name: 'Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 200, exactScoreMode: false); // High target
+
+      // Throw high scores
+      horseRaceProvider.processDartThrow(60, dartDisplay: 'T20');
+      horseRaceProvider.processDartThrow(57, dartDisplay: 'T19');
+      horseRaceProvider.processDartThrow(54, dartDisplay: 'T18');
+
+      expect(horseRaceProvider.getPlayerScore(player.id), 171);
+
+      // Edit to lower scores
+      horseRaceProvider.updateAllDartScores(player.id, ['S10', 'S5', 'Miss']);
+
+      // Verify decreased score
+      expect(horseRaceProvider.getPlayerScore(player.id), 15);
+      final darts = horseRaceProvider.getCurrentTurnDartScores(player.id);
+      expect(darts, ['S10', 'S5', 'Miss']);
+    });
+
+    test('edit score to add misses', () async {
+      final player = Player.create(name: 'Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 100, exactScoreMode: false);
+
+      // Throw all hits
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      horseRaceProvider.processDartThrow(19, dartDisplay: 'S19');
+      horseRaceProvider.processDartThrow(18, dartDisplay: 'S18');
+
+      expect(horseRaceProvider.getPlayerScore(player.id), 57);
+
+      // Edit to include misses
+      horseRaceProvider.updateAllDartScores(player.id, ['Miss', 'S10', 'Miss']);
+
+      // Verify score with misses
+      expect(horseRaceProvider.getPlayerScore(player.id), 10);
+      final darts = horseRaceProvider.getCurrentTurnDartScores(player.id);
+      expect(darts, ['Miss', 'S10', 'Miss']);
+    });
+
+    test('edit score to remove misses', () async {
+      final player = Player.create(name: 'Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 100, exactScoreMode: false);
+
+      // Throw with misses
+      horseRaceProvider.processDartThrow(0, dartDisplay: 'Miss');
+      horseRaceProvider.processDartThrow(10, dartDisplay: 'S10');
+      horseRaceProvider.processDartThrow(0, dartDisplay: 'Miss');
+
+      expect(horseRaceProvider.getPlayerScore(player.id), 10);
+
+      // Edit to remove misses
+      horseRaceProvider.updateAllDartScores(player.id, ['S20', 'D15', 'T10']);
+
+      // Verify score without misses
+      expect(horseRaceProvider.getPlayerScore(player.id), 80); // 20 + 30 + 30
+      final darts = horseRaceProvider.getCurrentTurnDartScores(player.id);
+      expect(darts, ['S20', 'D15', 'T10']);
+    });
+
+    test('edit score with bulls (bullseye and outer bull)', () async {
+      final player = Player.create(name: 'Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 100, exactScoreMode: false);
+
+      // Throw regular scores
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+
+      expect(horseRaceProvider.getPlayerScore(player.id), 60);
+
+      // Edit to bulls
+      horseRaceProvider.updateAllDartScores(player.id, ['Bull', '25', 'S10']);
+
+      // Verify score with bulls
+      expect(horseRaceProvider.getPlayerScore(player.id), 85); // 50 + 25 + 10
+      final darts = horseRaceProvider.getCurrentTurnDartScores(player.id);
+      expect(darts, ['Bull', '25', 'S10']);
+    });
+
+    test('edit score maintains waiting for takeout state', () async {
+      final player = Player.create(name: 'Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 200, exactScoreMode: false); // High target
+
+      // Throw 3 darts (turn complete)
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+
+      // Should be waiting for takeout
+      expect(horseRaceProvider.shouldPromptTakeout, true);
+      expect(horseRaceProvider.getPlayerScore(player.id), 60);
+
+      // Edit scores
+      horseRaceProvider.updateAllDartScores(player.id, ['D20', 'D20', 'D20']);
+
+      // Should still be waiting for takeout
+      expect(horseRaceProvider.shouldPromptTakeout, true);
+      expect(horseRaceProvider.getPlayerScore(player.id), 120); // 40 + 40 + 40
+    });
+
+    test('edit score does not affect other players', () async {
+      final player1 = Player.create(name: 'Player 1');
+      final player2 = Player.create(name: 'Player 2');
+      await playerProvider.savePlayer(player1);
+      await playerProvider.savePlayer(player2);
+
+      horseRaceProvider.startGame([player1, player2], 200, exactScoreMode: false); // High target
+
+      // Player 1 throws
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      expect(horseRaceProvider.getPlayerScore(player1.id), 60);
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Player 2 throws
+      horseRaceProvider.processDartThrow(15, dartDisplay: 'S15');
+      horseRaceProvider.processDartThrow(15, dartDisplay: 'S15');
+      horseRaceProvider.processDartThrow(15, dartDisplay: 'S15');
+      expect(horseRaceProvider.getPlayerScore(player2.id), 45);
+
+      // Edit Player 2's score to higher values
+      horseRaceProvider.updateAllDartScores(player2.id, ['D19', 'D18', 'D17']);
+
+      // Verify Player 2's score changed
+      expect(horseRaceProvider.getPlayerScore(player2.id), 108); // 38 + 36 + 34
+
+      // Verify Player 1's score unchanged
+      expect(horseRaceProvider.getPlayerScore(player1.id), 60);
+    });
+
+    test('edit score in exact mode handles bust correctly', () async {
+      final player = Player.create(name: 'Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 50, exactScoreMode: true);
+
+      // Throw to get close to target (40 points)
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      horseRaceProvider.processDartThrow(10, dartDisplay: 'S10');
+      horseRaceProvider.processDartThrow(10, dartDisplay: 'S10');
+      expect(horseRaceProvider.getPlayerScore(player.id), 40);
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Next turn: throw safe throws (45 total)
+      horseRaceProvider.processDartThrow(3, dartDisplay: 'S3');
+      horseRaceProvider.processDartThrow(1, dartDisplay: 'S1');
+      horseRaceProvider.processDartThrow(1, dartDisplay: 'S1');
+      expect(horseRaceProvider.getPlayerScore(player.id), 45);
+      expect(horseRaceProvider.currentPlayerBusted, false);
+
+      // Edit to cause a bust (20 would make 60, over 50)
+      horseRaceProvider.updateAllDartScores(player.id, ['S20', 'Miss', 'Miss']);
+
+      // In exact mode, bust means first dart that goes over doesn't count
+      // S20 would make score 60 (40 + 20), which is over 50, so it busts
+      // Score stays at 40 (start of turn), bust flag is set
+      expect(horseRaceProvider.getPlayerScore(player.id), 40);
+      expect(horseRaceProvider.currentPlayerBusted, true);
+    });
+
+    test('edit score can trigger win in exact mode', () async {
+      final player = Player.create(name: 'Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 50, exactScoreMode: true);
+
+      // Get to 40
+      horseRaceProvider.processDartThrow(40, dartDisplay: 'D20');
+      horseRaceProvider.processDartThrow(0, dartDisplay: 'Miss');
+      horseRaceProvider.processDartThrow(0, dartDisplay: 'Miss');
+      expect(horseRaceProvider.getPlayerScore(player.id), 40);
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Next turn: throw that doesn't win
+      horseRaceProvider.processDartThrow(5, dartDisplay: 'S5');
+      horseRaceProvider.processDartThrow(3, dartDisplay: 'S3');
+      horseRaceProvider.processDartThrow(1, dartDisplay: 'S1');
+      expect(horseRaceProvider.getPlayerScore(player.id), 49);
+      expect(horseRaceProvider.hasWinner, false);
+
+      // Edit to hit exact score
+      horseRaceProvider.updateAllDartScores(player.id, ['S10', 'Miss', 'Miss']);
+
+      // Should win with exact 50
+      expect(horseRaceProvider.getPlayerScore(player.id), 50);
+      expect(horseRaceProvider.hasWinner, true);
+      expect(horseRaceProvider.currentGame!.winnerId, player.id);
+    });
   });
 }
