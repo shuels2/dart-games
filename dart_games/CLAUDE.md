@@ -73,6 +73,15 @@ dart_games/
 - Plays when a player wins any game
 - Cross-platform support (web data URLs, native file paths)
 
+**5. Game Announcement Queue (`GameAnnouncementQueueService`)**
+- Global priority-based announcement queue used by ALL games
+- Manages voice announcements with optional sound effects
+- Prevents announcement overlap with intelligent queuing
+- Priority levels: turnTransition(1), hitConfirm(2), shieldStatus(3), statusChange(4), victory(5)
+- Each game creates a helper that wraps this service with game-specific convenience methods
+- Sound effects play simultaneously with announcements
+- Uses the global `DartAnnouncerService` for voice output
+
 ### Design System
 
 **Dart Games Container App Design:**
@@ -112,10 +121,82 @@ When adding a new game to the dart games app:
 1. **Create game screens** in `lib/screens/games/[game_name]/`
 2. **Design unique visual identity** - Each game should have its own color palette, typography, and theme to feel distinct
 3. **Integrate with global systems** (see Game Integration Requirements section)
-4. **Use shared services** (DartboardProvider, PlayerProvider, DartAnnouncerService, VictoryMusicService)
+4. **Use shared services:**
+   - `DartboardProvider` - Dartboard connection and events
+   - `PlayerProvider` - Global user management
+   - `GameAnnouncementQueueService` - Voice announcements with sound effects (see Announcement System Integration below)
+   - `VictoryMusicService` - Victory music playback
 5. **Add game card** to `home_screen.dart` for navigation
 6. **Create tests** following existing patterns
 7. **Update CLAUDE.md** with new test counts and game-specific notes
+
+#### Announcement System Integration
+
+**ALL games MUST use the global `GameAnnouncementQueueService` for announcements.**
+
+Follow this pattern when adding a new game:
+
+1. **Create a game-specific announcement helper** in `lib/services/[game_name]_announcement_helper.dart`:
+```dart
+import 'game_announcement_queue_service.dart';
+import '[game_name]_sound_effects.dart'; // Optional, for sound effects
+
+class YourGameAnnouncementHelper {
+  final GameAnnouncementQueueService _queue;
+
+  YourGameAnnouncementHelper(this._queue);
+
+  // Add game-specific convenience methods
+  void announcePlayerTurn(String playerName) {
+    _queue.announce(
+      '$playerName, your turn',
+      AudioPriority.turnTransition,
+      soundEffect: YourGameSoundEffects.turnStart, // Optional
+    );
+  }
+
+  void dispose() {
+    _queue.dispose();
+  }
+}
+```
+
+2. **In your game screen, initialize the helper**:
+```dart
+class YourGameScreen extends StatefulWidget {
+  // ...
+}
+
+class _YourGameScreenState extends State<YourGameScreen> {
+  YourGameAnnouncementHelper? _audioQueue;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Initialize global queue with game-specific helper
+      final globalQueue = GameAnnouncementQueueService();
+      await globalQueue.loadSettings();
+      _audioQueue = YourGameAnnouncementHelper(globalQueue);
+    });
+  }
+
+  @override
+  void dispose() {
+    _audioQueue?.dispose();
+    super.dispose();
+  }
+}
+```
+
+3. **Use the helper throughout your game**:
+```dart
+_audioQueue?.announcePlayerTurn(player.name);
+```
+
+**Reference implementations:**
+- Target Tag: `lib/services/target_tag_announcement_helper.dart`
+- Carnival Derby: `lib/services/carnival_derby_announcement_helper.dart`
 
 ## Critical Rules
 
@@ -318,6 +399,7 @@ This is NON-NEGOTIABLE. Tests validate critical functionality including:
 - Announcer settings (20 tests)
 - Dartboard emulator accuracy (23 tests)
 - Target Tag game logic, announcements, and user management (42 tests)
+- Carnival Derby game logic, announcements, and user management (33 tests)
 - Data persistence and serialization
 - Cross-platform compatibility
 - Game logic and scoring
@@ -411,12 +493,17 @@ Every game (such as Target Tag, Carnival Derby, and any future games) must follo
 - Use `PlayerProvider.allPlayers` to get the list of available players
 
 #### 2. Announcer Integration
-- **Use announcer settings from the global dart games announcer settings**
-- Use `DartAnnouncerService` singleton for all game announcements
-- Respect the user's voice engine selection (Browser Voices or ResponsiveVoice)
-- Respect the user's selected announcer personality (Professional, Excited, Calm, Funny, Drill Sergeant)
-- Respect the user's voice enabled/disabled setting
-- Use `AppSettings` to retrieve and save announcer preferences
+- **Use the global `GameAnnouncementQueueService` for ALL announcements**
+- **DO NOT use `DartAnnouncerService` directly** - the queue service manages it automatically
+- Create a game-specific announcement helper that wraps the global queue service
+- The queue service automatically respects user's announcer settings:
+  - Voice engine selection (Browser Voices or ResponsiveVoice)
+  - Announcer personality (Professional, Excited, Calm, Funny, Drill Sergeant)
+  - Voice enabled/disabled setting
+- See the "Announcement System Integration" section above for complete implementation guide
+- **Reference implementations:**
+  - Target Tag: `lib/services/target_tag_announcement_helper.dart`
+  - Carnival Derby: `lib/services/carnival_derby_announcement_helper.dart`
 
 #### 3. User Win Tracking and Game Duration
 - **Track user wins and game duration for ALL players**
@@ -459,10 +546,27 @@ class GameScreen extends StatefulWidget {
   final PlayerProvider playerProvider = PlayerProvider();
   final VictoryMusicService musicService = VictoryMusicService();
 
+  // Announcement helper
+  YourGameAnnouncementHelper? _audioQueue;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Initialize global announcement queue with game-specific helper
+      final globalQueue = GameAnnouncementQueueService();
+      await globalQueue.loadSettings();
+      _audioQueue = YourGameAnnouncementHelper(globalQueue);
+    });
+  }
+
   void _startGame() {
     // Start game with timer
     gameProvider.startGame(selectedPlayers, targetScore);
     // gameProvider.currentGame.startedAt is set to DateTime.now()
+
+    // Announce game start
+    _audioQueue?.announceGameStart();
   }
 
   void _onGameComplete() async {
@@ -485,6 +589,12 @@ class GameScreen extends StatefulWidget {
       );
     }
 
+    // Announce game complete and winner
+    _audioQueue?.announceGameComplete();
+    if (winners.isNotEmpty) {
+      _audioQueue?.announceWinner(winners.first.name);
+    }
+
     // Play victory music
     if (await musicService.hasCustomMusic()) {
       final musicSource = await musicService.getRandomMusicSource();
@@ -493,6 +603,12 @@ class GameScreen extends StatefulWidget {
       }
     }
   }
+
+  @override
+  void dispose() {
+    _audioQueue?.dispose();
+    super.dispose();
+  }
 }
 ```
 
@@ -500,9 +616,11 @@ class GameScreen extends StatefulWidget {
 
 Games must import and use:
 - `package:dart_games/providers/player_provider.dart` - Global user management
-- `package:dart_games/services/dart_announcer_service.dart` - Announcer functionality
+- `package:dart_games/services/game_announcement_queue_service.dart` - Global announcement queue
 - `package:dart_games/services/victory_music_service.dart` - Victory music
-- `package:dart_games/services/app_settings.dart` - Settings persistence
+- `package:dart_games/services/app_settings.dart` - Settings persistence (used internally by queue service)
+
+**NOTE:** Do NOT import `dart_announcer_service.dart` directly - the `GameAnnouncementQueueService` manages it internally.
 
 #### Testing Requirements
 
@@ -524,11 +642,11 @@ When adding a new game:
 
 ## Testing Requirements
 
-### Complete Test Suite (195 Tests + 47 UI Automation Tests)
+### Complete Test Suite (219 Tests + 47 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
-**Non-UI Tests (184 tests in `test/` directory):**
+**Non-UI Tests (219 tests in `test/` directory):**
 - Run with `flutter test`
 - Execute in seconds
 - Required to pass before every build
@@ -586,7 +704,7 @@ The dart games app has a comprehensive test suite covering all critical function
   - Error handling and data persistence
   - Cross-platform file handling
 
-#### Integration Tests (64 tests)
+#### Integration Tests (75 tests)
 - `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (22 tests)
   - Winner recording with game duration
   - Multiple games accumulation
@@ -608,6 +726,17 @@ The dart games app has a comprehensive test suite covering all critical function
   - Edit score does not affect other players
   - Edit score in exact mode handles bust correctly
   - Edit score can trigger win in exact mode
+
+- `test/screens/games/carnival_horse_race/carnival_derby_game_with_announcements_test.dart` (11 tests)
+  - Normal mode game logic and announcements (Tests 1-4)
+  - Perfect Finish mode with busts and exact wins (Tests 5-10)
+  - Results screen announcements (Test 11)
+  - Validates BOTH game logic (scoring, busts, wins) AND announcement text with sound effects
+  - Covers all dart types: single, double, triple, bullseye, outer bull, miss
+  - Tests skip turn functionality with announcements
+  - Tests bust behavior (score preservation) in exact score mode
+  - Tests progressive scoring and close calls
+  - Covers 1-3 players in various scenarios
 
 - `test/screens/games/target_tag/target_tag_game_with_announcements_test.dart` (32 tests)
   - Solo mode game logic and announcements (Tests 1-8)
@@ -673,7 +802,7 @@ The dart games app has a comprehensive test suite covering all critical function
 
 ### Running Tests
 
-**Run all non-UI tests (184 tests):**
+**Run all non-UI tests (219 tests):**
 ```bash
 cd dart_games
 flutter test
@@ -709,8 +838,8 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 
 ### Test Expectations
 
-**Non-UI Tests (195 tests):**
-- **100% pass rate required** - All 184 non-UI tests must pass before every build
+**Non-UI Tests (219 tests):**
+- **100% pass rate required** - All 219 non-UI tests must pass before every build
 - Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
 - No build or deployment without all non-UI tests passing
 - Tests cover both web and native platform scenarios
@@ -1266,7 +1395,7 @@ This applies to all git operations that modify the remote repository, including:
    cd dart_games
    flutter test
    ```
-3. **Verify ALL 182 non-UI tests pass (100% pass rate required)**
+3. **Verify ALL 219 non-UI tests pass (100% pass rate required)**
 4. **OPTIONAL: Ask user if they want to run UI automation tests (47 tests, ~26 minutes)**
 5. If ANY tests fail:
    - DO NOT proceed
@@ -1283,8 +1412,8 @@ This applies to all git operations that modify the remote repository, including:
 **NEVER build without running non-UI tests first.**
 
 Before any `flutter run` or `flutter build` command:
-1. Run `flutter test` (182 non-UI tests)
-2. Confirm all 182 non-UI tests pass
+1. Run `flutter test` (219 non-UI tests)
+2. Confirm all 219 non-UI tests pass
 3. Ask user if they want to run UI automation tests (47 tests, ~26 minutes)
 4. Only then run the build command
 

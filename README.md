@@ -11,6 +11,7 @@ Dart Games is a cross-platform (web and tablet) application that provides a fram
 ### Current Games
 
 - **Carnival Derby** - A horse race-style game where players advance by scoring points with darts
+- **Target Tag** - A strategic elimination game where players build shields and tag opponents to win
 
 ## Features
 
@@ -19,6 +20,7 @@ Dart Games is a cross-platform (web and tablet) application that provides a fram
 - **Dartboard Integration** - Seamless connection to Scolia 2 physical dartboards via API
 - **Emulator Mode** - Test games without physical hardware using the built-in dartboard emulator
 - **Global User Management** - Shared player profiles, statistics, and game history across all games
+- **Global Announcement Queue** - Priority-based announcement system with sound effects for consistent audio experience
 - **Voice Announcer** - Customizable text-to-speech announcements with multiple voice engines and personalities
 - **Victory Music** - Custom victory music management with random selection
 - **Responsive Design** - Works on web browsers (Chrome, Safari, Firefox, Edge) and tablets (iOS, Android)
@@ -77,16 +79,16 @@ await playerProvider.updatePlayerStats(
 - Multiple voice engines (Browser Voices, ResponsiveVoice)
 - Customizable personalities (Professional, Excited, Calm, Funny, Drill Sergeant)
 
+**NOTE:** Games should NOT use `DartAnnouncerService` directly. Instead, use the `GameAnnouncementQueueService` (see section 5 below) which manages the announcer automatically with sound effects and queuing.
+
 ```dart
-// Create announcer instance
+// ❌ DON'T use DartAnnouncerService directly in games
 final announcer = DartAnnouncerService();
 
-// Load settings
-await _loadAnnouncerSettings();
-
-// Announce game events
-announcer.speak('Player turn');
-announcer.speak('Bullseye! 50 points!');
+// ✅ DO use GameAnnouncementQueueService with game-specific helper
+final globalQueue = GameAnnouncementQueueService();
+await globalQueue.loadSettings();
+final audioQueue = YourGameAnnouncementHelper(globalQueue);
 ```
 
 #### 4. Victory Music Service (`VictoryMusicService`)
@@ -104,6 +106,49 @@ if (await musicService.hasCustomMusic()) {
   // Play music using appropriate player
 }
 ```
+
+#### 5. Game Announcement Queue (`GameAnnouncementQueueService`)
+- Global priority-based announcement queue used by ALL games
+- Manages voice announcements with optional sound effects
+- Prevents announcement overlap with intelligent queuing
+- Games create helpers that wrap this service with game-specific methods
+
+```dart
+// Create game-specific announcement helper
+import 'package:dart_games/services/game_announcement_queue_service.dart';
+import 'your_game_sound_effects.dart';
+
+class YourGameAnnouncementHelper {
+  final GameAnnouncementQueueService _queue;
+
+  YourGameAnnouncementHelper(this._queue);
+
+  void announcePlayerTurn(String playerName) {
+    _queue.announce(
+      '$playerName, your turn',
+      AudioPriority.turnTransition,
+      soundEffect: YourGameSoundEffects.turnStart,
+    );
+  }
+}
+
+// Initialize in your game screen
+final globalQueue = GameAnnouncementQueueService();
+await globalQueue.loadSettings();
+final audioQueue = YourGameAnnouncementHelper(globalQueue);
+
+// Use throughout your game
+audioQueue.announcePlayerTurn(player.name);
+```
+
+**Priority Levels:**
+- `turnTransition` (1) - Turn changes, remove darts
+- `hitConfirm` (2) - Dart hit/miss announcements
+- `shieldStatus` (3) - Status updates (Target Tag specific)
+- `statusChange` (4) - Game status changes
+- `victory` (5) - Game completion, winners
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
 ## Architecture
 
@@ -126,7 +171,7 @@ dart_games/
 │       ├── options_screen.dart      # System settings
 │       └── games/
 │           └── carnival_horse_race/ # Individual game
-├── test/                            # Test suite (139 tests)
+├── test/                            # Test suite (219 tests)
 └── assets/                          # Images, fonts, etc.
 ```
 
@@ -164,17 +209,22 @@ Each game should have its own:
 // Import shared systems
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
-import 'package:dart_games/services/dart_announcer_service.dart';
+import 'package:dart_games/services/game_announcement_queue_service.dart';
 import 'package:dart_games/services/victory_music_service.dart';
 
 // Use global user list
 final playerProvider = context.read<PlayerProvider>();
 final availablePlayers = playerProvider.allPlayers;
 
+// Create game-specific announcement helper
+final globalQueue = GameAnnouncementQueueService();
+await globalQueue.loadSettings();
+final audioQueue = YourGameAnnouncementHelper(globalQueue);
+
 // Track game start time
 final startTime = DateTime.now();
 
-// On game completion, update stats for all players
+// On game completion, update stats for ALL players (winners AND losers)
 final gameDuration = DateTime.now().difference(startTime);
 for (final playerId in game.playerIds) {
   final isWinner = playerId == game.winnerId;
@@ -182,7 +232,7 @@ for (final playerId in game.playerIds) {
     playerId,
     won: isWinner,
     gameName: 'Your Game Name',
-    gameDuration: isWinner ? gameDuration : null,
+    gameDuration: gameDuration,  // SAME duration for all players
   );
 }
 
@@ -224,7 +274,7 @@ cd dart_games
 # Install dependencies
 flutter pub get
 
-# Run tests (all 139 tests must pass)
+# Run tests (all 219 tests must pass)
 flutter test
 
 # Launch in Chrome (web)
@@ -236,7 +286,7 @@ flutter run
 
 ### Testing Requirements
 
-**All 139 tests must pass before any build or deployment.**
+**All 219 tests must pass before any build or deployment.**
 
 ```bash
 flutter test
@@ -246,8 +296,10 @@ Test coverage includes:
 - Model serialization (36 tests)
 - Provider functionality (30 tests)
 - Service integration (42 tests)
-- Game integration (8 tests)
+- Game integration - Carnival Derby (33 tests: 22 user management, 11 announcements)
+- Game integration - Target Tag (42 tests: 32 announcements, 10 user management)
 - Dartboard accuracy (23 tests)
+- Widget tests (13 tests)
 
 ### Cross-Platform Compatibility
 
@@ -263,12 +315,14 @@ Use platform-specific code only when necessary with proper conditional imports.
 Every game in Dart Games **must** integrate with:
 
 1. **Global User Management** - Use `PlayerProvider` for player list and stats
-2. **Announcer System** - Use `DartAnnouncerService` for voice announcements
-3. **User Win Tracking** - Call `updatePlayerStats()` when games complete
+2. **Global Announcement Queue** - Use `GameAnnouncementQueueService` with game-specific helper for all announcements
+3. **User Win Tracking** - Call `updatePlayerStats()` for ALL players (winners AND losers) when games complete
 4. **Game Timer** - Track duration from start to completion
 5. **Victory Music** - Use `VictoryMusicService` for victory celebrations
 
-See the [CLAUDE.md](CLAUDE.md) file for detailed integration requirements.
+**IMPORTANT:** All games must use the global `GameAnnouncementQueueService` (not direct `DartAnnouncerService` calls). Create a game-specific announcement helper that wraps the global queue service.
+
+See the [CLAUDE.md](CLAUDE.md) file for detailed integration requirements and code examples.
 
 ## Settings
 

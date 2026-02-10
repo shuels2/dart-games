@@ -1,21 +1,32 @@
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart_announcer_service.dart';
-import 'target_tag_sound_effects.dart';
 
 // Priority levels for announcements (higher = more important)
 enum AudioPriority {
   turnTransition(1), // Lowest - turn changes
   hitConfirm(2),     // Hit/miss announcements
-  shieldStatus(3),   // Shield milestones
-  statusChange(4),   // Tagged In, Tagged Out, Eliminated
+  shieldStatus(3),   // Shield milestones (Target Tag specific)
+  statusChange(4),   // Status changes (tagged in/out, busts, eliminations)
   victory(5);        // Highest - game completion
 
   final int value;
   const AudioPriority(this.value);
+}
+
+// Sound effect configuration (asset path + start/end times)
+class SoundEffectConfig {
+  final String assetPath;
+  final double startSeconds;
+  final double? endSeconds; // null = play to end of file
+
+  const SoundEffectConfig({
+    required this.assetPath,
+    this.startSeconds = 0.0,
+    this.endSeconds,
+  });
 }
 
 // Queued announcement with priority, timestamp, and optional sound effect
@@ -33,7 +44,24 @@ class QueuedAnnouncement {
   }) : queuedAt = queuedAt ?? DateTime.now();
 }
 
-class TargetTagAudioQueueService {
+/// Global announcement queue service used by all games
+///
+/// This service manages a priority-based queue of announcements with optional
+/// sound effects. All games (Target Tag, Carnival Derby, etc.) use this service
+/// to ensure announcements don't overlap and play in the correct order.
+///
+/// Usage:
+/// ```dart
+/// final queue = GameAnnouncementQueueService();
+/// await queue.loadSettings();
+///
+/// queue.announce(
+///   'Player name, your turn',
+///   AudioPriority.turnTransition,
+///   soundEffect: GameSoundEffects.turnStart,
+/// );
+/// ```
+class GameAnnouncementQueueService {
   final DartAnnouncerService _announcer = DartAnnouncerService();
   final Queue<QueuedAnnouncement> _queue = Queue<QueuedAnnouncement>();
   final AudioPlayer _soundEffectPlayer = AudioPlayer();
@@ -74,7 +102,7 @@ class TargetTagAudioQueueService {
         }
       }
 
-      debugPrint('Target Tag audio queue loaded settings: engine=$voiceEngine, style=$announcerVoice');
+      debugPrint('Game announcement queue loaded settings: engine=$voiceEngine, style=$announcerVoice');
     } catch (e) {
       debugPrint('Error loading announcer settings: $e');
     }
@@ -176,6 +204,10 @@ class TargetTagAudioQueueService {
     debugPrint('Audio queue cleared');
   }
 
+  // Get access to underlying announcer for direct dart announcements
+  // (Carnival Derby uses this for announceDart method)
+  DartAnnouncerService get announcer => _announcer;
+
   // Dispose resources
   void dispose() {
     _queue.clear();
@@ -183,149 +215,5 @@ class TargetTagAudioQueueService {
     _isProcessing = false;
     _soundEffectPlayer.dispose();
     _announcer.dispose();
-  }
-
-  // === Game-Specific Announcement Methods ===
-  // Sound effects are automatically applied based on announcement type
-
-  // Announce dart hit
-  void announceHit(int number, String multiplier, {bool isMiss = false}) {
-    SoundEffectConfig? sfx;
-
-    if (isMiss) {
-      sfx = TargetTagSoundEffects.miss;
-      announce('Miss', AudioPriority.hitConfirm, soundEffect: sfx);
-      return;
-    }
-
-    String text = '';
-    if (number == 50) {
-      text = 'Bullseye!';
-      sfx = TargetTagSoundEffects.bullseye;
-    } else if (number == 25) {
-      text = 'Outer bull';
-      sfx = TargetTagSoundEffects.outerBull;
-    } else {
-      final mult = multiplier == 'double' ? 'Double' : (multiplier == 'triple' ? 'Triple' : 'Single');
-      text = '$mult $number';
-
-      // Select sound effect based on multiplier
-      if (multiplier == 'double') {
-        sfx = TargetTagSoundEffects.doubleHit;
-      } else if (multiplier == 'triple') {
-        sfx = TargetTagSoundEffects.tripleHit;
-      } else {
-        sfx = TargetTagSoundEffects.singleHit;
-      }
-    }
-
-    announce(text, AudioPriority.hitConfirm, soundEffect: sfx);
-  }
-
-  // Announce shield gained
-  void announceShieldGained(String playerName, int shields, int shieldMax) {
-    announce('$shields shields', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.shieldGained);
-  }
-
-  // Announce player(s) reached Tagged In status
-  void announceTaggedIn(List<String> playerNames) {
-    String names;
-    if (playerNames.length == 1) {
-      names = '${playerNames[0]} is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]} are';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last} are';
-    }
-    announce('JACKPOT! $names TAGGED IN!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedIn);
-  }
-
-  // Announce player(s) lost Tagged In status
-  void announceTaggedOut(List<String> playerNames) {
-    String names;
-    String verb;
-    if (playerNames.length == 1) {
-      names = playerNames[0];
-      verb = 'is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]}';
-      verb = 'are';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}';
-      verb = 'are';
-    }
-    announce('Shield compromised! $names $verb back on the hunt.', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedOut);
-  }
-
-  // Announce low shields warning
-  void announceLowShields(List<String> playerNames) {
-    String names;
-    String verb;
-    if (playerNames.length == 1) {
-      names = '${playerNames[0]}\'s';
-      verb = 'are';  // Changed from 'is' to 'are' for grammatical correctness
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]}\'s';
-      verb = 'are';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}\'s';
-      verb = 'are';
-    }
-    announce('Warning! $names shields $verb almost gone!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
-  }
-
-  // Announce player(s) eliminated
-  void announceEliminated(List<String> playerNames) {
-    String names;
-    if (playerNames.length == 1) {
-      names = '${playerNames[0]} is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]} are';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last} are';
-    }
-    announce('$names Tagged Out! Better luck next time!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.eliminated);
-  }
-
-  // Announce successful tag on opponent
-  void announceSuccessfulTag() {
-    announce('Tag! Got \'em!', AudioPriority.hitConfirm, soundEffect: TargetTagSoundEffects.successfulTag);
-  }
-
-  // Announce turn change
-  void announceTurn(String playerName) {
-    announce('$playerName, your turn', AudioPriority.turnTransition, soundEffect: TargetTagSoundEffects.turnStart);
-  }
-
-  // Announce game start
-  void announceGameStart() {
-    announce('Welcome to Target Tag! Fill those shields!', AudioPriority.victory, soundEffect: TargetTagSoundEffects.gameStart);
-  }
-
-  // Announce winner(s)
-  void announceWinner(List<String> playerNames) {
-    String names;
-    String verb;
-    if (playerNames.length == 1) {
-      names = playerNames[0];
-      verb = 'is the Target Tag Champion';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]}';
-      verb = 'are the Target Tag Champions';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}';
-      verb = 'are the Target Tag Champions';
-    }
-    announce('GAME OVER! $names $verb!', AudioPriority.victory);
-  }
-
-  // Announce remove darts
-  void announceRemoveDarts() {
-    announce('Remove your darts', AudioPriority.turnTransition, soundEffect: TargetTagSoundEffects.removeDarts);
   }
 }

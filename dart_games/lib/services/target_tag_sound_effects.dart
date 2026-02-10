@@ -1,17 +1,4 @@
-/// Sound effect configuration for Target Tag game
-/// Each sound effect has an asset path, start time, and optional end time
-
-class SoundEffectConfig {
-  final String assetPath;
-  final double startSeconds;
-  final double? endSeconds; // null means play until end
-
-  const SoundEffectConfig({
-    required this.assetPath,
-    this.startSeconds = 0.0,
-    this.endSeconds,
-  });
-}
+import 'game_announcement_queue_service.dart';
 
 /// Target Tag sound effects library
 class TargetTagSoundEffects {

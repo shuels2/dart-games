@@ -14,7 +14,8 @@ import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
-import '../../../services/dart_announcer_service.dart';
+import '../../../services/game_announcement_queue_service.dart';
+import '../../../services/carnival_derby_announcement_helper.dart';
 import '../../../services/victory_music_service.dart';
 import 'horse_race_menu_screen.dart';
 import 'horse_race_game_screen.dart';
@@ -32,7 +33,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   late Animation<double> _scaleAnimation;
   late ConfettiController _confettiController;
   final AudioPlayer _audioPlayer = AudioPlayer();
-  DartAnnouncerService? _announcer;
+  CarnivalDerbyAnnouncementHelper? _audioQueue;
   bool _statsUpdated = false;
 
   @override
@@ -104,6 +105,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
     _animationController.dispose();
     _confettiController.dispose();
     _audioPlayer.dispose();
+    _audioQueue?.dispose();
     super.dispose();
   }
 
@@ -134,10 +136,10 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   }
 
   void _announceGameCompletion() async {
-    _announcer = DartAnnouncerService();
-
-    // Load and apply saved announcer settings
-    await _loadAnnouncerSettings();
+    // Initialize global announcement queue with Carnival Derby helper
+    final globalQueue = GameAnnouncementQueueService();
+    await globalQueue.loadSettings();
+    _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
 
     final horseRaceProvider = context.read<HorseRaceProvider>();
     final playerProvider = context.read<PlayerProvider>();
@@ -151,48 +153,12 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
 
     if (winner != null) {
       // Announce game completion first
-      _announcer?.speak('The game is complete');
+      _audioQueue?.announceGameComplete();
 
       // Then announce the winner after a delay (longer to ensure first announcement finishes)
       Future.delayed(const Duration(milliseconds: 3000), () {
-        _announcer?.speak('${winner.name} is the winner');
+        _audioQueue?.announceWinner(winner.name);
       });
-    }
-  }
-
-  Future<void> _loadAnnouncerSettings() async {
-    if (_announcer == null) return;
-
-    final prefs = await SharedPreferences.getInstance();
-
-    // Load voice engine
-    final engineStr = prefs.getString('voice_engine') ?? 'responsiveVoice';
-    final voiceEngine = VoiceEngine.values.firstWhere(
-      (e) => e.name == engineStr,
-      orElse: () => VoiceEngine.responsiveVoice,
-    );
-
-    // Load announcer style
-    final styleStr = prefs.getString('announcer_style') ?? 'professional';
-    final announcerVoice = AnnouncerVoice.values.firstWhere(
-      (v) => v.name == styleStr,
-      orElse: () => AnnouncerVoice.professional,
-    );
-
-    // Apply voice style
-    _announcer!.setVoice(announcerVoice);
-
-    // Apply voice engine settings
-    if (voiceEngine == VoiceEngine.responsiveVoice) {
-      _announcer!.useResponsiveVoice();
-      final responsiveVoice = prefs.getString('responsive_voice') ?? 'Australian Female';
-      _announcer!.setResponsiveVoice(responsiveVoice);
-    } else {
-      _announcer!.useBrowserVoices();
-      final systemVoice = prefs.getString('system_voice') ?? '';
-      if (systemVoice.isNotEmpty) {
-        await _announcer!.setSystemVoice(systemVoice);
-      }
     }
   }
 

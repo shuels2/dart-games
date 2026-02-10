@@ -8,7 +8,8 @@ import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
 import '../../../providers/dartboard_provider.dart';
 import '../../../services/mock_scolia_api_service.dart';
-import '../../../services/dart_announcer_service.dart';
+import '../../../services/game_announcement_queue_service.dart';
+import '../../../services/carnival_derby_announcement_helper.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/horse_race/race_track_widget.dart';
 import '../../../widgets/horse_race/player_avatar_widget.dart';
@@ -31,7 +32,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       GlobalKey<InteractiveDartboardState>();
 
   MockScoliaApiService? _mockApi;
-  DartAnnouncerService? _announcer;
+  CarnivalDerbyAnnouncementHelper? _audioQueue;
   bool _showDartboard = true; // Controls dartboard emulator visibility
   final ScrollController _scrollController = ScrollController();
 
@@ -40,13 +41,14 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     super.initState();
 
     // Get services after frame is built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final dartboardProvider = context.read<DartboardProvider>();
       _mockApi = dartboardProvider.apiService;
-      _announcer = DartAnnouncerService();
 
-      // Load and apply saved announcer settings
-      _loadAnnouncerSettings();
+      // Initialize global announcement queue with Carnival Derby helper
+      final globalQueue = GameAnnouncementQueueService();
+      await globalQueue.loadSettings();
+      _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
 
       // Listen to dartboard events if API service is available
       if (_mockApi != null) {
@@ -72,7 +74,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
       final firstPlayer = horseRaceProvider.getCurrentPlayer(players);
       if (firstPlayer != null) {
-        _announcer?.speak('${firstPlayer.name}, it\'s your turn');
+        _audioQueue?.announceTurn(firstPlayer.name);
       }
     });
   }
@@ -119,45 +121,10 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     }
   }
 
-  Future<void> _loadAnnouncerSettings() async {
-    if (_announcer == null) return;
-
-    final prefs = await SharedPreferences.getInstance();
-
-    // Load voice engine
-    final engineStr = prefs.getString('voice_engine') ?? 'responsiveVoice';
-    final voiceEngine = VoiceEngine.values.firstWhere(
-      (e) => e.name == engineStr,
-      orElse: () => VoiceEngine.responsiveVoice,
-    );
-
-    // Load announcer style
-    final styleStr = prefs.getString('announcer_style') ?? 'professional';
-    final announcerVoice = AnnouncerVoice.values.firstWhere(
-      (v) => v.name == styleStr,
-      orElse: () => AnnouncerVoice.professional,
-    );
-
-    // Apply voice style
-    _announcer!.setVoice(announcerVoice);
-
-    // Apply voice engine settings
-    if (voiceEngine == VoiceEngine.responsiveVoice) {
-      _announcer!.useResponsiveVoice();
-      final responsiveVoice = prefs.getString('responsive_voice') ?? 'Australian Female';
-      _announcer!.setResponsiveVoice(responsiveVoice);
-    } else {
-      _announcer!.useBrowserVoices();
-      final systemVoice = prefs.getString('system_voice') ?? '';
-      if (systemVoice.isNotEmpty) {
-        await _announcer!.setSystemVoice(systemVoice);
-      }
-    }
-  }
-
   @override
   void dispose() {
     _dartboardSubscription?.cancel();
+    _audioQueue?.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -195,9 +162,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         if (currentPlayer != null) {
           // First announce the dart score
           if (isMiss) {
-            _announcer?.speak('Miss');
+            _audioQueue?.announceMiss();
           } else {
-            _announcer?.announceDart(
+            _audioQueue?.announceDart(
               score,
               _getMultiplierFromSector(sector),
             );
@@ -206,12 +173,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           // Wait for score announcement to complete (~1.5s)
           Future.delayed(const Duration(milliseconds: 1500), () {
             // Then announce the bust
-            _announcer?.speak('${currentPlayer.name}, you busted and your turn is over');
+            _audioQueue?.announceBust(currentPlayer.name);
 
             // Wait for bust announcement to complete (~3s)
             Future.delayed(const Duration(milliseconds: 3000), () {
               // Tell them to remove darts
-              _announcer?.speak('${currentPlayer.name}, remove your darts');
+              _audioQueue?.announceRemoveDarts(currentPlayer.name);
 
               // Wait for remove darts announcement (~2s) then initiate takeout
               Future.delayed(const Duration(milliseconds: 2000), () {
@@ -230,9 +197,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
       // Announce the score
       if (isMiss) {
-        _announcer?.speak('Miss');
+        _audioQueue?.announceMiss();
       } else {
-        _announcer?.announceDart(
+        _audioQueue?.announceDart(
           score,
           _getMultiplierFromSector(sector),
         );
@@ -244,7 +211,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         if (currentPlayer != null) {
           // Wait for score announcement to complete (~1.5s) + 1 second
           Future.delayed(const Duration(milliseconds: 2500), () {
-            _announcer?.speak('${currentPlayer.name}, remove your darts');
+            _audioQueue?.announceRemoveDarts(currentPlayer.name);
 
             // Trigger takeout events
             Future.delayed(const Duration(milliseconds: 2000), () {
@@ -264,7 +231,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           if (currentPlayer != null) {
             // Wait for score announcement to complete (~1.5s) + 1 second
             Future.delayed(const Duration(milliseconds: 2500), () {
-              _announcer?.speak('${currentPlayer.name}, remove your darts');
+              _audioQueue?.announceRemoveDarts(currentPlayer.name);
             });
           }
         }
@@ -294,7 +261,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         final nextPlayer = horseRaceProvider.getCurrentPlayer(players);
         if (nextPlayer != null) {
           Future.delayed(const Duration(milliseconds: 500), () {
-            _announcer?.speak('${nextPlayer.name}, it\'s your turn');
+            _audioQueue?.announceTurn(nextPlayer.name);
           });
         }
       }
@@ -680,7 +647,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     if (dartsThrown > 0) {
                       Future.delayed(const Duration(milliseconds: 1500), () {
                         if (mounted) {
-                          _announcer?.speak('${currentPlayer.name}, remove your darts');
+                          _audioQueue?.announceRemoveDarts(currentPlayer.name);
                         }
                       });
                       Future.delayed(const Duration(milliseconds: 3500), () {

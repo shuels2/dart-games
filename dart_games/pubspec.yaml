@@ -144,6 +144,8 @@ flutter:
     - assets/sounds/target_tag/TargetTag-PianoRoll.mp3
     - assets/sounds/target_tag/TargetTag-Ominous.mp3
     - assets/sounds/target_tag/TargetTag-BananaSlip.mp3
+    - assets/sounds/carnival_derby/CarnivalDerby-HorseRace-Start.mp3
+    - assets/sounds/carnival_derby/CarnivalDerby-Horse-Gallop.mp3
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
