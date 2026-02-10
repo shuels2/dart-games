@@ -44,17 +44,19 @@ void main() {
       // Calculate duration
       final gameDuration = DateTime.now().difference(game.startedAt);
 
-      // Update stats for winner
-      await playerProvider.updatePlayerStats(
-        game.winnerId!,
-        won: true,
-        gameName: 'Carnival Derby',
-        gameDuration: gameDuration,
-      );
+      // Update stats for all players (both winners and losers get duration)
+      for (final playerId in game.playerIds) {
+        final isWinner = playerId == game.winnerId;
+        await playerProvider.updatePlayerStats(
+          playerId,
+          won: isWinner,
+          gameName: 'Carnival Derby',
+          gameDuration: gameDuration,
+        );
+      }
 
-      // Update stats for loser
-      final loserId = game.playerIds.firstWhere((id) => id != game.winnerId);
-      await playerProvider.updatePlayerStats(loserId, won: false);
+      // Reload players from storage
+      await playerProvider.loadPlayers();
 
       // Verify winner has game history
       final winner = playerProvider.getPlayerById(game.winnerId!);
@@ -64,11 +66,17 @@ void main() {
       expect(winner.gameHistory.first.gameName, 'Carnival Derby');
       expect(winner.gameHistory.first.duration, isNotNull);
 
-      // Verify loser has no game history but stats updated
+      // Verify loser also has game history with duration
+      final loserId = game.playerIds.firstWhere((id) => id != game.winnerId);
       final loser = playerProvider.getPlayerById(loserId);
       expect(loser!.gamesPlayed, 1);
       expect(loser.gamesWon, 0);
-      expect(loser.gameHistory, isEmpty);
+      expect(loser.gameHistory.length, 1);
+      expect(loser.gameHistory.first.gameName, 'Carnival Derby');
+      expect(loser.gameHistory.first.duration, isNotNull);
+
+      // Verify both have same duration
+      expect(winner.gameHistory.first.duration, loser.gameHistory.first.duration);
     });
 
     test('multiple games accumulate history correctly', () async {
@@ -204,30 +212,40 @@ void main() {
       final game = horseRaceProvider.currentGame!;
       final duration = DateTime.now().difference(game.startedAt);
 
-      // Update all player stats
+      // Update all player stats (both winners and losers get duration)
       for (final playerId in game.playerIds) {
         final isWinner = playerId == game.winnerId;
         await playerProvider.updatePlayerStats(
           playerId,
           won: isWinner,
-          gameName: isWinner ? 'Carnival Derby' : null,
-          gameDuration: isWinner ? duration : null,
+          gameName: 'Carnival Derby',
+          gameDuration: duration,
         );
       }
+
+      // Reload players from storage
+      await playerProvider.loadPlayers();
 
       // Verify winner
       final winner = playerProvider.getPlayerById(game.winnerId!);
       expect(winner!.gamesPlayed, 1);
       expect(winner.gamesWon, 1);
       expect(winner.gameHistory.length, 1);
+      expect(winner.gameHistory.first.gameName, 'Carnival Derby');
+      expect(winner.gameHistory.first.duration, isNotNull);
 
-      // Verify losers
+      // Verify losers also have game history with duration
       for (final playerId in game.playerIds) {
         if (playerId != game.winnerId) {
           final loser = playerProvider.getPlayerById(playerId);
           expect(loser!.gamesPlayed, 1);
           expect(loser.gamesWon, 0);
-          expect(loser.gameHistory, isEmpty);
+          expect(loser.gameHistory.length, 1);
+          expect(loser.gameHistory.first.gameName, 'Carnival Derby');
+          expect(loser.gameHistory.first.duration, isNotNull);
+
+          // Verify loser has same duration as winner
+          expect(loser.gameHistory.first.duration, winner.gameHistory.first.duration);
         }
       }
     });

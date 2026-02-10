@@ -399,10 +399,9 @@ Common cross-platform considerations:
 Every game (such as Target Tag, Carnival Derby, and any future games) must follow these integration requirements:
 
 **IMPORTANT - Game Duration Tracking:**
-- **ALL new games MUST track game duration for BOTH winners AND losers**
-- This is the current standard pattern (as implemented in Target Tag)
-- Older games like Carnival Derby only track winners' duration (legacy behavior)
-- When implementing new games, follow the Target Tag pattern shown below
+- **ALL games MUST track game duration for BOTH winners AND losers**
+- This is the current standard pattern (implemented in Target Tag and Carnival Derby)
+- When implementing new games, follow this pattern shown below
 
 #### 1. Global User Management
 - **Use the global user list** (`PlayerProvider`) for available players
@@ -592,7 +591,7 @@ The dart games app has a comprehensive test suite covering all critical function
   - Winner recording with game duration
   - Multiple games accumulation
   - Duration calculation accuracy
-  - Multi-player game stats (winner vs. losers)
+  - Multi-player game stats (both winners and losers receive duration)
   - Exact score mode duration tracking
   - Stats persistence across app restarts
   - Max 8 players selection enforcement
