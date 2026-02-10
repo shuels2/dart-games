@@ -87,6 +87,29 @@ class HorseRaceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Skip remaining darts in current turn
+  void skipTurn() {
+    if (_currentGame == null || !isGameActive) return;
+    if (_waitingForTakeout) return;
+
+    final currentPlayerId = _currentGame!.getCurrentPlayerId();
+    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
+    final remainingDarts = 3 - dartsThrown;
+
+    if (remainingDarts <= 0) return; // No darts to skip
+
+    // Add misses for remaining darts
+    for (int i = 0; i < remainingDarts; i++) {
+      // Record "Miss" for display (score = 0)
+      _currentGame!.recordDartThrow(currentPlayerId, 0, dartDisplay: 'Miss');
+    }
+
+    // Set waiting for takeout
+    _waitingForTakeout = true;
+
+    notifyListeners();
+  }
+
   // Handle takeout finished event
   void handleTakeoutFinished() {
     if (_currentGame == null || !isGameActive) return;

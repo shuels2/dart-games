@@ -654,6 +654,57 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
+                // Skip turn button
+                ElevatedButton(
+                  onPressed: () {
+                    final dartsThrown = provider.getCurrentPlayerDartsThrown();
+
+                    // Skip the turn
+                    provider.skipTurn();
+
+                    // If darts were thrown, show "remove darts" sequence
+                    if (dartsThrown > 0) {
+                      Future.delayed(const Duration(milliseconds: 1500), () {
+                        if (mounted) {
+                          _announcer?.speak('${currentPlayer.name}, remove your darts');
+                        }
+                      });
+                      Future.delayed(const Duration(milliseconds: 3500), () {
+                        if (mounted) {
+                          _mockApi?.simulateTakeoutStarted();
+                        }
+                      });
+                    } else {
+                      // No darts thrown, advance directly without showing modals
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        if (mounted) {
+                          _mockApi?.simulateTakeoutFinished();
+                        }
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE63946), // Lava Red
+                    foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    side: const BorderSide(
+                      color: Color(0xFFFFD700), // Canary Yellow border
+                      width: 3,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'SKIP TURN',
+                    style: GoogleFonts.bangers(
+                      fontSize: 16,
+                      letterSpacing: 1.0,
+                      color: const Color(0xFFF1FAEE), // Cloud Dancer
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
                 // Dart scores on the right
                 Row(
                   children: [

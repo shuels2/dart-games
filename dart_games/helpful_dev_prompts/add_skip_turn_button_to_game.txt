@@ -1,0 +1,70 @@
+  Add a "Skip turn" button to the Carnival Derby game that works the same way as the Target Tag implementation. Here are
+   the requirements:
+
+  Button placement:
+  - Add the button to the active player panel/display (wherever the current player's info is shown during their turn)
+  - Position it to the left the d1,d2,d3 labels in the player information part of layout (so it would be right aligned if you put it in the same container as the player name section)
+
+  Button styling:
+  - Use ElevatedButton with:
+    - Match the game style for buttons
+    - Button text: "Skip turn"
+
+  Functionality:
+
+  1. Add skipTurn() method to the Carnival Derby provider:
+    - Calculate remaining darts (3 minus darts already thrown)
+    - For each remaining dart:
+        - Record as "Miss" for display
+      - Call the game's miss processing method (similar to processMiss() in Target Tag)
+    - Set waiting for takeout/turn transition state
+  2. Skip turn logic based on darts thrown:
+    - If 0 darts thrown:
+        - Skip directly to next player
+      - Do NOT show "remove darts" announcement
+      - Do NOT show any modals on player tiles or dartboard
+      - Call simulateTakeoutFinished() after 500ms delay
+    - If 1-2 darts thrown:
+        - Show full "remove darts" sequence
+      - Announce "Remove your darts"
+      - Show modals on player tiles and dartboard
+      - Call simulateTakeoutStarted() to trigger normal sequence
+  3. Button callback implementation:
+  onSkipTurn: () {
+    final dartsThrown = carnivalDerbyProvider.getCurrentPlayerDartsThrown();
+
+    // Skip the turn
+    carnivalDerbyProvider.skipTurn();
+
+    // If darts were thrown, show "remove darts" sequence
+    if (dartsThrown > 0) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          _audioQueue!.announceRemoveDarts();
+        }
+      });
+      Future.delayed(const Duration(milliseconds: 3500), () {
+        if (mounted) {
+          _mockApi?.simulateTakeoutStarted();
+        }
+      });
+    } else {
+      // No darts thrown, advance directly without showing modals
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _mockApi?.simulateTakeoutFinished();
+        }
+      });
+    }
+  }
+
+  Files to modify:
+  1. Carnival Derby provider (add skipTurn() method)
+  2. Carnival Derby game model (add processMiss() if it doesn't exist)
+  3. Active player widget/panel (add button with onSkipTurn callback parameter)
+  4. Carnival Derby game screen (wire up the button callback with the logic above)
+
+  Test requirements:
+  - All tests must pass after implementation
+  - Test both scenarios: skipping with 0 darts and skipping with 1-2 darts thrown
+
