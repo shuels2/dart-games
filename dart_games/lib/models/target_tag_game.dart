@@ -406,16 +406,16 @@ class TargetTagGame {
       final allEntityIds = _getEntityIds();
       for (final otherEntityId in allEntityIds) {
         if (otherEntityId != entityId) {
-          final currentShields = shields[otherEntityId]!;
-          shields[otherEntityId] = max(0, currentShields - 1);
+          final shieldsBeforeHit = shields[otherEntityId]!;
+          shields[otherEntityId] = max(0, shieldsBeforeHit - 1);
 
           // Check if opponent lost Tagged In status
           if (shields[otherEntityId]! < shieldMax) {
             taggedIn[otherEntityId] = false;
           }
 
-          // Check for elimination
-          if (shields[otherEntityId]! == 0) {
+          // Check for elimination: was at 0 AND still at 0 after hit
+          if (shieldsBeforeHit == 0 && shields[otherEntityId]! == 0) {
             _eliminateEntity(otherEntityId);
             causedElimination = true;
           }
@@ -453,16 +453,16 @@ class TargetTagGame {
             hitOpponentTarget = true;
 
             // Subtract shields from opponent
-            final opponentShields = shields[targetEntityId]!;
-            shields[targetEntityId] = max(0, opponentShields - shieldValue);
+            final shieldsBeforeHit = shields[targetEntityId]!;
+            shields[targetEntityId] = max(0, shieldsBeforeHit - shieldValue);
 
             // Check if opponent lost Tagged In status
             if (shields[targetEntityId]! < shieldMax) {
               taggedIn[targetEntityId] = false;
             }
 
-            // Check for elimination
-            if (shields[targetEntityId]! == 0) {
+            // Check for elimination: was at 0 AND still at 0 after hit
+            if (shieldsBeforeHit == 0 && shields[targetEntityId]! == 0) {
               _eliminateEntity(targetEntityId);
               causedElimination = true;
             }

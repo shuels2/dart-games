@@ -97,6 +97,24 @@ class TargetTagAnnouncementHelper {
     _queue.announce('Warning! $names shields $verb almost gone!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
   }
 
+  // Announce player(s) vulnerable (at 0 shields)
+  void announceVulnerable(List<String> playerNames) {
+    String names;
+    String verb;
+    if (playerNames.length == 1) {
+      names = playerNames[0];
+      verb = 'is';
+    } else if (playerNames.length == 2) {
+      names = '${playerNames[0]} and ${playerNames[1]}';
+      verb = 'are';
+    } else {
+      // Handle 3+ names with commas and "and"
+      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}';
+      verb = 'are';
+    }
+    _queue.announce('DANGER! $names $verb vulnerable! One more hit and you\'re out!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
+  }
+
   // Announce player(s) eliminated
   void announceEliminated(List<String> playerNames) {
     String names;

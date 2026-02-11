@@ -249,6 +249,50 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       }
     }
 
+    // 5.5. "Vulnerable!" - shields reached 0 but not eliminated
+    if (anyoneTaggedIn && wasTaggedIn && (didHitOpponentTarget || didHitHeroBonus)) {
+      if (currentGame.mode == GameMode.team) {
+        // Team mode: group vulnerable teams
+        final vulnerableTeams = <String, List<String>>{};
+        for (final playerId in currentGame.playerIds) {
+          if (playerId == currentPlayer.id) continue; // Skip current player
+
+          final shieldsBeforeThis = allShieldsBefore[playerId] ?? 0;
+          final shieldsAfterThis = targetTagProvider.getShields(playerId);
+          final isEliminatedNow = targetTagProvider.isEliminated(playerId);
+
+          // Check if this opponent dropped to exactly 0 shields but is NOT eliminated
+          if (shieldsBeforeThis > 0 && shieldsAfterThis == 0 && !isEliminatedNow) {
+            final teamId = currentGame.playerToTeam![playerId]!;
+            if (!vulnerableTeams.containsKey(teamId)) {
+              vulnerableTeams[teamId] = [];
+            }
+            final player = allPlayers.firstWhere((p) => p.id == playerId);
+            vulnerableTeams[teamId]!.add(player.name);
+          }
+        }
+        // Announce each vulnerable team
+        for (final playerNames in vulnerableTeams.values) {
+          _audioQueue!.announceVulnerable(playerNames);
+        }
+      } else {
+        // Solo mode: announce each vulnerable player individually
+        for (final playerId in currentGame.playerIds) {
+          if (playerId == currentPlayer.id) continue; // Skip current player
+
+          final shieldsBeforeThis = allShieldsBefore[playerId] ?? 0;
+          final shieldsAfterThis = targetTagProvider.getShields(playerId);
+          final isEliminatedNow = targetTagProvider.isEliminated(playerId);
+
+          // Check if this opponent dropped to exactly 0 shields but is NOT eliminated
+          if (shieldsBeforeThis > 0 && shieldsAfterThis == 0 && !isEliminatedNow) {
+            final player = allPlayers.firstWhere((p) => p.id == playerId);
+            _audioQueue!.announceVulnerable([player.name]);
+          }
+        }
+      }
+    }
+
     // 6. "Tagged Out!" - eliminations
     final newlyEliminated = eliminatedAfter.difference(eliminatedBefore);
     if (newlyEliminated.isNotEmpty) {
