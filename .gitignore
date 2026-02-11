@@ -1,0 +1,5 @@
+# Claude Code CLI folder
+.claude/
+
+# Zip files
+*.zip

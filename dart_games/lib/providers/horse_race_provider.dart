@@ -28,7 +28,7 @@ class HorseRaceProvider extends ChangeNotifier {
     return _currentGame?.getPlayerScore(playerId) ?? 0;
   }
 
-  List<int> getCurrentTurnDartScores(String playerId) {
+  List<String> getCurrentTurnDartScores(String playerId) {
     return _currentGame?.getCurrentTurnDartScores(playerId) ?? [];
   }
 
@@ -64,12 +64,12 @@ class HorseRaceProvider extends ChangeNotifier {
   }
 
   // Process a dart throw
-  void processDartThrow(int score) {
+  void processDartThrow(int score, {String? dartDisplay}) {
     if (_currentGame == null || !isGameActive) return;
     if (_waitingForTakeout) return; // Don't accept throws while waiting for takeout
 
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
-    _currentGame!.recordDartThrow(currentPlayerId, score);
+    _currentGame!.recordDartThrow(currentPlayerId, score, dartDisplay: dartDisplay);
 
     // Check if player busted (in exact score mode)
     if (_currentGame!.currentPlayerBusted) {
@@ -85,6 +85,102 @@ class HorseRaceProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  // Skip remaining darts in current turn
+  void skipTurn() {
+    if (_currentGame == null || !isGameActive) return;
+    if (_waitingForTakeout) return;
+
+    final currentPlayerId = _currentGame!.getCurrentPlayerId();
+    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
+    final remainingDarts = 3 - dartsThrown;
+
+    if (remainingDarts <= 0) return; // No darts to skip
+
+    // Add misses for remaining darts
+    for (int i = 0; i < remainingDarts; i++) {
+      // Record "Miss" for display (score = 0)
+      _currentGame!.recordDartThrow(currentPlayerId, 0, dartDisplay: 'Miss');
+    }
+
+    // Set waiting for takeout
+    _waitingForTakeout = true;
+
+    notifyListeners();
+  }
+
+  // Update all three dart scores at once and recalculate turn
+  void updateAllDartScores(String playerId, List<String> newDartSegments) {
+    if (_currentGame == null) return;
+    if (playerId != _currentGame!.getCurrentPlayerId()) return;
+    if (newDartSegments.length != 3) return;
+
+    // Store current game state to restore player index after recalculation
+    final currentPlayerIndex = _currentGame!.currentPlayerIndex;
+
+    // Clear the current turn data for this player
+    _currentGame!.currentTurnDartScores[playerId] = [];
+    _currentGame!.dartsThrown[playerId] = 0;
+
+    // Reset game state to start of turn
+    _currentGame!.resetToStartOfTurn(playerId);
+
+    // Replay all three darts with the new values in order
+    // This ensures each dart is processed with the correct game state
+    for (int i = 0; i < 3; i++) {
+      final segment = newDartSegments[i];
+
+      // Parse the segment to get score and display
+      final parsed = _parseSegment(segment);
+      if (parsed == null) {
+        // Miss
+        _currentGame!.recordDartThrow(playerId, 0, dartDisplay: 'Miss');
+      } else {
+        final score = parsed['score'] as int;
+        _currentGame!.recordDartThrow(playerId, score, dartDisplay: segment);
+      }
+    }
+
+    // Restore player index
+    _currentGame!.currentPlayerIndex = currentPlayerIndex;
+
+    // Check if turn should end
+    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
+    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
+      _waitingForTakeout = true;
+    }
+
+    notifyListeners();
+  }
+
+  // Parse dartboard segment string (e.g., "S20", "D15", "T19", "Bull", "25", "Miss")
+  Map<String, dynamic>? _parseSegment(String segment) {
+    // Handle bulls
+    if (segment == 'Bull') {
+      return {'score': 50};
+    }
+    if (segment == '25') {
+      return {'score': 25};
+    }
+    if (segment == 'Miss' || segment == 'None' || segment.isEmpty) {
+      return null; // Treat as miss
+    }
+
+    // Parse regular segments (S20, D15, T19, etc.)
+    final match = RegExp(r'[A-Za-z](\d+)').firstMatch(segment);
+    if (match == null) return null;
+
+    final baseNumber = int.parse(match.group(1)!);
+    int multiplier = 1;
+
+    if (segment.startsWith('D') || segment.startsWith('d')) {
+      multiplier = 2;
+    } else if (segment.startsWith('T') || segment.startsWith('t')) {
+      multiplier = 3;
+    }
+
+    return {'score': baseNumber * multiplier};
   }
 
   // Handle takeout finished event

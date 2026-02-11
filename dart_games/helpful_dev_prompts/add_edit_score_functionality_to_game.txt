@@ -1,0 +1,98 @@
+  I need to add an edit score feature to the Carnival Derby game, similar to what we implemented for Target Tag. Here's
+   what I need:
+
+  Context to provide:
+  1. Read the Carnival Derby game model file to understand:
+    - What game state changes during a turn (horse positions, scores, etc.)
+    - How many darts does each player throw per turn?
+    - What happens when a dart hits (which horses move, by how much)?
+    - Is there turn-by-turn state that needs to be preserved?
+  2. Read the Carnival Derby provider to understand:
+    - How are dart throws currently processed?
+    - Where does a turn end and trigger the "remove darts" modal?
+    - What state tracking already exists?
+  3. Read the Carnival Derby game screen to see:
+    - Where is the "remove darts" modal displayed?
+    - What UI patterns are already in place?
+
+  Implementation requirements:
+
+  Based on Target Tag's pattern, implement:
+
+  1. Turn State Tracking in the game model:
+    - Add fields to save game state at start of turn (horse positions, scores, winner status, etc.)
+    - Add _saveTurnStartState() method to capture state
+    - Add resetToStartOfTurn() method to restore to that saved state
+    - Call save method when advancing to next player
+  2. Provider Method for score editing:
+    - Create updateAllDartScores() method that takes all dart segments at once
+    - Reset to turn start once (not multiple times)
+    - Process darts sequentially in order (D1 → D2 → D3)
+    - Each dart's effects are calculated with correct game state at that moment
+    - Check for winner/game end after all darts processed
+  3. UI Modal for editing:
+    - Add "Edit player score" button to the "Remove your darts" modal
+    - Create edit score modal with sections for each dart
+    - Pre-select current dart scores when modal opens
+    - Show ring buttons (Single, Double, Triple) and number buttons (1-20, Bull, Outer Bull, Miss)
+    - Validate all darts have complete scores before allowing update
+    - Update all darts at once when "Update score" clicked
+    - Style the buttons to use the carnival derby style
+
+  CRITICAL DATA STORAGE REQUIREMENTS:
+  - Carnival Derby MUST store the full dartboard sector format (D20, T19, s18, S15, Bull, 25, Miss)
+    for each dart throw, NOT just the numeric score
+  - Use the 'dartDisplay' parameter in processDartThrow() to store the complete sector string
+  - The sector format from the dartboard emulator is:
+    * Bull (bullseye = 50 points)
+    * 25 (outer bull = 25 points)
+    * D{number} (double, e.g., D20 = 40 points)
+    * T{number} (triple, e.g., T19 = 57 points)
+    * S{number} (outer single, e.g., S18 = 18 points)
+    * s{number} (inner single, lowercase s, e.g., s15 = 15 points)
+    * Miss (0 points)
+  - Verify that the game screen is passing the sector (not null) when calling processDartThrow()
+
+  DISPLAY VS STORAGE FORMAT: (THIS IS GOING TO VARY PER GAME - SO UPDATE THIS BEFORE SUBMITTING)
+  - D1, D2, D3 labels MUST show the CALCULATED SCORE (e.g., "26" for D13, "60" for T20)
+  - Edit score modal D1, D2, D3 boxes MUST show the CALCULATED SCORE (e.g., "26" for D13)
+  - Internally store the SECTOR STRING (e.g., "D13", "T20") to enable editing
+  - Horse movement is based on the CALCULATED SCORE
+  - Create a helper method to convert sector strings to score displays (e.g., _getScoreDisplayFromSegment)
+
+  INNER VS OUTER SINGLE DISTINCTION:
+  - The dartboard emulator distinguishes inner (lowercase 's') vs outer (uppercase 'S') singles
+  - When parsing sectors: 's20' → "Single (inner)", 'S20' → "Single (outer)"
+  - When building sectors from selections: "Single (inner)" → 's', "Single (outer)" → 'S'
+  - This distinction MUST be preserved throughout the edit flow
+
+  TURN STATE INITIALIZATION:
+  - Call _saveTurnStartState() in the HorseRaceGame.create() factory constructor
+  - This ensures edit score works correctly on the FIRST TURN (not just subsequent turns)
+  - The turn start state must capture: scores, winnerId, state, currentPlayerBusted
+
+  SCORE RECALCULATION LOGIC:
+  - When building new segments from modal selections, use the correct case for singles:
+    * "Single (inner)" + number → "s{number}" (lowercase s)
+    * "Single (outer)" + number → "S{number}" (uppercase S)
+    * "Double" + number → "D{number}"
+    * "Triple" + number → "T{number}"
+  - The _parseSegment() method in the provider must:
+    * Calculate the score from the sector (D13 → 26, T20 → 60)
+    * Handle both uppercase and lowercase single prefixes
+    * Return null for Miss, which gets converted to 0 score
+
+  TESTING REQUIREMENTS:
+  - Test edit score on the FIRST TURN of the game (common bug: turn state not initialized)
+  - Test with inner singles (s15) and outer singles (S15) to verify distinction is preserved
+  - Test that D1/D2/D3 labels show scores (26) not sectors (D13)
+  - Test that horse position updates correctly after editing scores
+  - Test editing Miss to a score and vice versa
+
+  Key questions to answer:
+  - Does Carnival Derby have 3 darts per turn like Target Tag? Yes - same number of darts per turn just like Target Tag
+  - What specific game state needs to be saved/restored (horse positions, current scores, race completion status)? You have listed the right ones here
+  - Are there any special game events that happen during a turn that need recalculation (like bonuses, position changes,
+   photo finishes)? No
+  - Should the edit only work for the current turn, or should it allow editing previous turns? It should only work for the current turn just like Target Tag.
+

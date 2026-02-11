@@ -91,6 +91,27 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             ),
           ),
           child: AppBar(
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: const Color(0xFFF1FAEE), // Cloud Dancer white
+                size: 32, // Bigger size
+                shadows: [
+                  const Shadow(
+                    color: Color(0xFFFFD700), // Canary Yellow glow
+                    blurRadius: 10,
+                  ),
+                  const Shadow(
+                    color: Color(0xFFFFD700),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
+            ),
             title: Text(
               'Carnival Derby Game Setup',
               style: GoogleFonts.rye(
@@ -191,8 +212,6 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                 child: _buildGameDescription(),
               ),
 
-              const VerticalDivider(width: 1),
-
               // Right side: Game Settings
               Expanded(
                 flex: 1,
@@ -200,7 +219,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   children: [
                     // Target Score Slider
                     _buildTargetScoreSection(),
-                    const Divider(),
+                    const SizedBox(height: 4),
 
                     // Player Selection (Available and Selected side-by-side)
                     Expanded(
@@ -1164,8 +1183,10 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                       final playerProvider = context.read<PlayerProvider>();
                       playerProvider.savePlayer(player);
 
-                      // Automatically select the newly added player
-                      playerProvider.selectPlayer(player, maxPlayers: 8);
+                      // Auto-select the newly added player only if max not reached
+                      if (playerProvider.selectedPlayers.length < 8) {
+                        playerProvider.selectPlayer(player, maxPlayers: 8);
+                      }
 
                       Navigator.pop(dialogContext);
 

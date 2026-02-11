@@ -8,7 +8,8 @@ import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
 import '../../../providers/dartboard_provider.dart';
 import '../../../services/mock_scolia_api_service.dart';
-import '../../../services/dart_announcer_service.dart';
+import '../../../services/game_announcement_queue_service.dart';
+import '../../../services/carnival_derby_announcement_helper.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/horse_race/race_track_widget.dart';
 import '../../../widgets/horse_race/player_avatar_widget.dart';
@@ -31,20 +32,23 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       GlobalKey<InteractiveDartboardState>();
 
   MockScoliaApiService? _mockApi;
-  DartAnnouncerService? _announcer;
+  CarnivalDerbyAnnouncementHelper? _audioQueue;
+  bool _showDartboard = true; // Controls dartboard emulator visibility
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
 
     // Get services after frame is built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final dartboardProvider = context.read<DartboardProvider>();
       _mockApi = dartboardProvider.apiService;
-      _announcer = DartAnnouncerService();
 
-      // Load and apply saved announcer settings
-      _loadAnnouncerSettings();
+      // Initialize global announcement queue with Carnival Derby helper
+      final globalQueue = GameAnnouncementQueueService();
+      await globalQueue.loadSettings();
+      _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
 
       // Listen to dartboard events if API service is available
       if (_mockApi != null) {
@@ -70,50 +74,58 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
       final firstPlayer = horseRaceProvider.getCurrentPlayer(players);
       if (firstPlayer != null) {
-        _announcer?.speak('${firstPlayer.name}, it\'s your turn');
+        _audioQueue?.announceTurn(firstPlayer.name);
       }
     });
   }
 
-  Future<void> _loadAnnouncerSettings() async {
-    if (_announcer == null) return;
+  void _scrollToCurrentPlayer() {
+    final horseRaceProvider = context.read<HorseRaceProvider>();
+    final playerProvider = context.read<PlayerProvider>();
+    final currentGame = horseRaceProvider.currentGame;
 
-    final prefs = await SharedPreferences.getInstance();
+    if (currentGame == null || !_scrollController.hasClients) return;
 
-    // Load voice engine
-    final engineStr = prefs.getString('voice_engine') ?? 'responsiveVoice';
-    final voiceEngine = VoiceEngine.values.firstWhere(
-      (e) => e.name == engineStr,
-      orElse: () => VoiceEngine.responsiveVoice,
-    );
+    final allPlayers = playerProvider.allPlayers;
+    final currentPlayer = horseRaceProvider.getCurrentPlayer(allPlayers);
+    if (currentPlayer == null) return;
 
-    // Load announcer style
-    final styleStr = prefs.getString('announcer_style') ?? 'professional';
-    final announcerVoice = AnnouncerVoice.values.firstWhere(
-      (v) => v.name == styleStr,
-      orElse: () => AnnouncerVoice.professional,
-    );
+    // Find current player's index in the player list
+    final currentPlayerIndex = currentGame.playerIds.indexOf(currentPlayer.id);
+    if (currentPlayerIndex == -1) return;
 
-    // Apply voice style
-    _announcer!.setVoice(announcerVoice);
+    // Calculate scroll position
+    // Each race lane has approximately 80px height (margins + padding + content)
+    const estimatedTileHeight = 80.0;
 
-    // Apply voice engine settings
-    if (voiceEngine == VoiceEngine.responsiveVoice) {
-      _announcer!.useResponsiveVoice();
-      final responsiveVoice = prefs.getString('responsive_voice') ?? 'Australian Female';
-      _announcer!.setResponsiveVoice(responsiveVoice);
+    // Scroll to show the current player's tile
+    // If it's the first player (index 0), scroll to top
+    // Otherwise, scroll to show the tile with some buffer above it
+    if (currentPlayerIndex == 0) {
+      // First player - scroll to top
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
     } else {
-      _announcer!.useBrowserVoices();
-      final systemVoice = prefs.getString('system_voice') ?? '';
-      if (systemVoice.isNotEmpty) {
-        await _announcer!.setSystemVoice(systemVoice);
-      }
+      // Calculate scroll offset: position the current player's tile near the top
+      // with one tile visible above it for context
+      final scrollOffset = (currentPlayerIndex - 1) * estimatedTileHeight;
+
+      _scrollController.animateTo(
+        scrollOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
   @override
   void dispose() {
     _dartboardSubscription?.cancel();
+    _audioQueue?.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -123,7 +135,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
     if (type == 'throw_detected') {
       final throwData = event['data']['payload'];
-      final score = _calculateScore(throwData['sector']);
+      final sector = throwData['sector'];
+      final score = _calculateScore(sector);
+      final isMiss = sector == 'None';
 
       // Get player info before processing throw
       final playerProvider = context.read<PlayerProvider>();
@@ -133,28 +147,38 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           .toList();
       final currentPlayer = horseRaceProvider.getCurrentPlayer(players);
 
-      // Process the dart throw
-      horseRaceProvider.processDartThrow(score);
+      // Convert sector to display format for storage
+      final dartDisplay = isMiss ? 'Miss' : sector;
+
+      // Process the dart throw with display value
+      horseRaceProvider.processDartThrow(
+        score,
+        dartDisplay: dartDisplay,
+      );
 
       // Check if player busted
       if (horseRaceProvider.currentPlayerBusted) {
         // Player busted - announce score first, then bust, then remove darts
         if (currentPlayer != null) {
           // First announce the dart score
-          _announcer?.announceDart(
-            score,
-            _getMultiplierFromSector(throwData['sector']),
-          );
+          if (isMiss) {
+            _audioQueue?.announceMiss();
+          } else {
+            _audioQueue?.announceDart(
+              score,
+              _getMultiplierFromSector(sector),
+            );
+          }
 
           // Wait for score announcement to complete (~1.5s)
           Future.delayed(const Duration(milliseconds: 1500), () {
             // Then announce the bust
-            _announcer?.speak('${currentPlayer.name}, you busted and your turn is over');
+            _audioQueue?.announceBust(currentPlayer.name);
 
             // Wait for bust announcement to complete (~3s)
             Future.delayed(const Duration(milliseconds: 3000), () {
               // Tell them to remove darts
-              _announcer?.speak('${currentPlayer.name}, remove your darts');
+              _audioQueue?.announceRemoveDarts(currentPlayer.name);
 
               // Wait for remove darts announcement (~2s) then initiate takeout
               Future.delayed(const Duration(milliseconds: 2000), () {
@@ -172,10 +196,14 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       }
 
       // Announce the score
-      _announcer?.announceDart(
-        score,
-        _getMultiplierFromSector(throwData['sector']),
-      );
+      if (isMiss) {
+        _audioQueue?.announceMiss();
+      } else {
+        _audioQueue?.announceDart(
+          score,
+          _getMultiplierFromSector(sector),
+        );
+      }
 
       // Check if game is won
       if (horseRaceProvider.hasWinner) {
@@ -183,7 +211,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         if (currentPlayer != null) {
           // Wait for score announcement to complete (~1.5s) + 1 second
           Future.delayed(const Duration(milliseconds: 2500), () {
-            _announcer?.speak('${currentPlayer.name}, remove your darts');
+            _audioQueue?.announceRemoveDarts(currentPlayer.name);
 
             // Trigger takeout events
             Future.delayed(const Duration(milliseconds: 2000), () {
@@ -203,7 +231,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           if (currentPlayer != null) {
             // Wait for score announcement to complete (~1.5s) + 1 second
             Future.delayed(const Duration(milliseconds: 2500), () {
-              _announcer?.speak('${currentPlayer.name}, remove your darts');
+              _audioQueue?.announceRemoveDarts(currentPlayer.name);
             });
           }
         }
@@ -212,6 +240,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
     if (type == 'takeout_finished') {
       horseRaceProvider.handleTakeoutFinished();
+
+      // Scroll to current player's track tile
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _scrollToCurrentPlayer();
+        }
+      });
 
       // Check if game is won after takeout
       if (horseRaceProvider.hasWinner) {
@@ -226,7 +261,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         final nextPlayer = horseRaceProvider.getCurrentPlayer(players);
         if (nextPlayer != null) {
           Future.delayed(const Duration(milliseconds: 500), () {
-            _announcer?.speak('${nextPlayer.name}, it\'s your turn');
+            _audioQueue?.announceTurn(nextPlayer.name);
           });
         }
       }
@@ -249,6 +284,17 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     if (sector.startsWith('S') || sector.startsWith('s')) return baseScore;
 
     return 0;
+  }
+
+  /// Calculate score from dart display string for UI display
+  String _getScoreDisplayFromSegment(String segment) {
+    if (segment == 'Miss' || segment.isEmpty) return 'Miss';
+    if (segment == 'Bull') return '50';
+    if (segment == '25') return '25';
+
+    // Calculate score from segment (D13 -> 26, T20 -> 60, etc.)
+    final score = _calculateScore(segment);
+    return score.toString();
   }
 
   String _getMultiplierFromSector(String sector) {
@@ -314,6 +360,27 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
             ),
           ),
           child: AppBar(
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: const Color(0xFFF1FAEE), // Cloud Dancer white
+                size: 32, // Bigger size
+                shadows: [
+                  const Shadow(
+                    color: Color(0xFFFFD700), // Canary Yellow glow
+                    blurRadius: 10,
+                  ),
+                  const Shadow(
+                    color: Color(0xFFFFD700),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
+            ),
             title: Text(
               'Carnival Derby Race',
               style: GoogleFonts.rye(
@@ -440,6 +507,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     RaceTrackWidget(
                       players: players,
                       targetScore: currentGame.targetScore,
+                      scrollController: _scrollController,
                     ),
                     // Modal overlay for remove darts prompt
                     if (shouldPromptTakeout && !dartboardProvider.isConnected)
@@ -448,8 +516,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                 ),
               ),
 
-              // Dartboard emulator (only show when not connected to real dartboard)
-              if (!dartboardProvider.isConnected)
+              // Dartboard emulator (only show when not connected to real dartboard and visible)
+              if (!dartboardProvider.isConnected && _showDartboard)
                 _buildDartboardSection(shouldPromptTakeout),
             ],
           );
@@ -457,6 +525,28 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       ),
         ],
       ),
+      // Floating button to toggle dartboard visibility (only show when not connected)
+      floatingActionButton: !dartboardProvider.isConnected
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                setState(() {
+                  _showDartboard = !_showDartboard;
+                });
+              },
+              backgroundColor: const Color(0xFFFFD700), // Canary Yellow
+              icon: Icon(
+                _showDartboard ? Icons.visibility_off : Icons.visibility,
+                color: const Color(0xFF8B5E3C), // Warm Cedar
+              ),
+              label: Text(
+                _showDartboard ? 'Hide Dartboard' : 'Show Dartboard',
+                style: GoogleFonts.rye(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF8B5E3C), // Warm Cedar
+                ),
+              ),
+            )
+          : null,
     );
   }
 
@@ -484,9 +574,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       ),
       child: Row(
         children: [
-          // Left side: Game settings
-          Expanded(
-            flex: 2,
+          // Game settings - fixed width
+          SizedBox(
+            width: 350,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -508,10 +598,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 24),
-          // Right side: Current player info
+          const SizedBox(width: 16),
+          // Current player info and dart scores - flexible width
           Expanded(
-            flex: 3,
             child: Row(
               children: [
                 PlayerAvatarWidget(
@@ -521,8 +610,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   isHighlighted: true,
                 ),
                 const SizedBox(width: 12),
-                SizedBox(
-                  width: 200, // Fixed width to prevent layout shift
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -546,13 +634,64 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 45),
-                // Dart scores moved right
+                const SizedBox(width: 16),
+                // Skip turn button
+                ElevatedButton(
+                  onPressed: () {
+                    final dartsThrown = provider.getCurrentPlayerDartsThrown();
+
+                    // Skip the turn
+                    provider.skipTurn();
+
+                    // If darts were thrown, show "remove darts" sequence
+                    if (dartsThrown > 0) {
+                      Future.delayed(const Duration(milliseconds: 1500), () {
+                        if (mounted) {
+                          _audioQueue?.announceRemoveDarts(currentPlayer.name);
+                        }
+                      });
+                      Future.delayed(const Duration(milliseconds: 3500), () {
+                        if (mounted) {
+                          _mockApi?.simulateTakeoutStarted();
+                        }
+                      });
+                    } else {
+                      // No darts thrown, advance directly without showing modals
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        if (mounted) {
+                          _mockApi?.simulateTakeoutFinished();
+                        }
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE63946), // Lava Red
+                    foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    side: const BorderSide(
+                      color: Color(0xFFFFD700), // Canary Yellow border
+                      width: 3,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'SKIP TURN',
+                    style: GoogleFonts.bangers(
+                      fontSize: 16,
+                      letterSpacing: 1.0,
+                      color: const Color(0xFFF1FAEE), // Cloud Dancer
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Dart scores on the right
                 Row(
                   children: [
                     for (int i = 0; i < 3; i++) ...[
                       SizedBox(
-                        width: 40, // Fixed width to prevent layout shift
+                        width: 52, // 30% wider to fit "Miss" without wrapping
                         child: Column(
                           children: [
                             Text(
@@ -565,7 +704,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              i < dartScores.length ? '${dartScores[i]}' : '-',
+                              i < dartScores.length
+                                  ? _getScoreDisplayFromSegment(dartScores[i])
+                                  : '-',
                               style: GoogleFonts.luckiestGuy(
                                 fontSize: 20,
                                 color: i < dartScores.length
@@ -637,7 +778,457 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   letterSpacing: 1.0,
                 ),
               ),
+              const SizedBox(height: 24),
+              // Edit player score button
+              ElevatedButton(
+                onPressed: () {
+                  _showEditScoreModal(currentPlayer);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFD700), // Canary Yellow
+                  foregroundColor: const Color(0xFF1D3557), // Midnight Navy
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  side: const BorderSide(
+                    color: Color(0xFFF1FAEE), // Cloud Dancer border
+                    width: 2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Edit player score',
+                  style: GoogleFonts.bangers(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditScoreModal(Player? currentPlayer) {
+    if (currentPlayer == null) return;
+
+    final horseRaceProvider = Provider.of<HorseRaceProvider>(context, listen: false);
+    final dartSegments = horseRaceProvider.getCurrentTurnDartScores(currentPlayer.id);
+
+    // Parse current scores for each dart
+    final dart1Score = _parseScore(0 < dartSegments.length ? dartSegments[0] : '');
+    final dart2Score = _parseScore(1 < dartSegments.length ? dartSegments[1] : '');
+    final dart3Score = _parseScore(2 < dartSegments.length ? dartSegments[2] : '');
+
+    Map<int, String?> selectedRings = {
+      0: dart1Score['ring'],
+      1: dart2Score['ring'],
+      2: dart3Score['ring'],
+    };
+
+    Map<int, int?> selectedNumbers = {
+      0: dart1Score['number'],
+      1: dart2Score['number'],
+      2: dart3Score['number'],
+    };
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            // Check if all darts have valid selections
+            bool isValidSelection = true;
+            for (int i = 0; i < 3; i++) {
+              final ring = selectedRings[i];
+              final number = selectedNumbers[i];
+
+              if (ring == null) {
+                isValidSelection = false;
+                break;
+              }
+
+              // If ring requires a number, check that number is selected
+              if (ring == 'Single (inner)' || ring == 'Single (outer)' ||
+                  ring == 'Double' || ring == 'Triple') {
+                if (number == null) {
+                  isValidSelection = false;
+                  break;
+                }
+              }
+            }
+
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1D3557).withOpacity(0.95), // Midnight Navy
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700), // Canary Yellow
+                    width: 4,
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Title
+                      Text(
+                        'Edit ${currentPlayer.name}\'s score',
+                        style: GoogleFonts.luckiestGuy(
+                          fontSize: 24,
+                          color: const Color(0xFFFFD700), // Canary Yellow
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Three columns - one for each dart
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: List.generate(3, (dartIndex) {
+                          return Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                left: dartIndex == 0 ? 0 : 8,
+                                right: dartIndex == 2 ? 0 : 8,
+                              ),
+                              child: _buildDartScoreSection(
+                                dartIndex,
+                                dartSegments,
+                                selectedRings,
+                                selectedNumbers,
+                                setState,
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+
+                      const SizedBox(height: 24),
+                      // Action buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(dialogContext).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.withOpacity(0.85),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.bangers(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: isValidSelection
+                                ? () {
+                                    // Build all three dart segments
+                                    final newDartSegments = <String>[];
+                                    for (int i = 0; i < 3; i++) {
+                                      final ring = selectedRings[i]!;
+                                      final number = selectedNumbers[i];
+
+                                      String sector;
+                                      if (ring == 'Bullseye') {
+                                        sector = 'Bull';
+                                      } else if (ring == 'Outer Bull') {
+                                        sector = '25';
+                                      } else if (ring == 'Miss') {
+                                        sector = 'Miss';
+                                      } else {
+                                        // Single (inner), Single (outer), Double, Triple
+                                        String prefix;
+                                        if (ring == 'Double') {
+                                          prefix = 'D';
+                                        } else if (ring == 'Triple') {
+                                          prefix = 'T';
+                                        } else if (ring == 'Single (inner)') {
+                                          prefix = 's'; // lowercase s for inner single
+                                        } else {
+                                          prefix = 'S'; // uppercase S for outer single
+                                        }
+                                        sector = '$prefix$number';
+                                      }
+                                      newDartSegments.add(sector);
+                                    }
+
+                                    // Update all three darts at once (processes in order)
+                                    horseRaceProvider.updateAllDartScores(
+                                      currentPlayer.id,
+                                      newDartSegments,
+                                    );
+                                    Navigator.of(dialogContext).pop();
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFD700).withOpacity(0.85), // Canary Yellow
+                              foregroundColor: const Color(0xFF1D3557), // Midnight Navy
+                              disabledBackgroundColor: Colors.grey.withOpacity(0.3),
+                              disabledForegroundColor: Colors.white38,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              'Update score',
+                              style: GoogleFonts.bangers(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Map<String, dynamic> _parseScore(String segment) {
+    if (segment.isEmpty || segment == '-') {
+      return {'ring': null, 'number': null};
+    } else if (segment == 'Miss') {
+      return {'ring': 'Miss', 'number': null};
+    } else if (segment == 'Bull') {
+      return {'ring': 'Bullseye', 'number': null};
+    } else if (segment == '25') {
+      return {'ring': 'Outer Bull', 'number': null};
+    } else {
+      // Parse D20, T19, S18, s18 format
+      final match = RegExp(r'([SDTsdt])(\d+)').firstMatch(segment);
+      if (match != null) {
+        final prefix = match.group(1)!; // Keep original case
+        final number = int.parse(match.group(2)!);
+
+        String ring;
+        if (prefix == 'D' || prefix == 'd') {
+          ring = 'Double';
+        } else if (prefix == 'T' || prefix == 't') {
+          ring = 'Triple';
+        } else if (prefix == 's') {
+          // lowercase s = inner single
+          ring = 'Single (inner)';
+        } else {
+          // uppercase S = outer single
+          ring = 'Single (outer)';
+        }
+        return {'ring': ring, 'number': number};
+      }
+    }
+    return {'ring': null, 'number': null};
+  }
+
+  Widget _buildDartScoreSection(
+    int dartIndex,
+    List<String> dartSegments,
+    Map<int, String?> selectedRings,
+    Map<int, int?> selectedNumbers,
+    StateSetter setState,
+  ) {
+    final segment = dartIndex < dartSegments.length ? dartSegments[dartIndex] : '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Dart label and score box
+        Text(
+          'D${dartIndex + 1}',
+          style: GoogleFonts.bangers(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFFF1FAEE), // Cloud Dancer
+            letterSpacing: 1.0,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 50,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1D3557), // Midnight Navy
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: const Color(0xFFFFD700), // Canary Yellow
+              width: 3,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              segment.isEmpty ? '-' : _getScoreDisplayFromSegment(segment),
+              style: GoogleFonts.luckiestGuy(
+                fontSize: 18,
+                color: segment.isEmpty
+                    ? Colors.white38
+                    : const Color(0xFFF1FAEE), // Cloud Dancer
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Ring buttons
+        _buildSmallRingButton('Single (inner)', selectedRings[dartIndex], (ring) {
+          setState(() {
+            selectedRings[dartIndex] = ring;
+          });
+        }),
+        const SizedBox(height: 6),
+        _buildSmallRingButton('Single (outer)', selectedRings[dartIndex], (ring) {
+          setState(() {
+            selectedRings[dartIndex] = ring;
+          });
+        }),
+        const SizedBox(height: 6),
+        _buildSmallRingButton('Double', selectedRings[dartIndex], (ring) {
+          setState(() {
+            selectedRings[dartIndex] = ring;
+          });
+        }),
+        const SizedBox(height: 6),
+        _buildSmallRingButton('Triple', selectedRings[dartIndex], (ring) {
+          setState(() {
+            selectedRings[dartIndex] = ring;
+          });
+        }),
+        const SizedBox(height: 12),
+
+        // Number grid - 4 rows x 5 columns
+        ...List.generate(4, (rowIndex) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(5, (colIndex) {
+                final num = rowIndex * 5 + colIndex + 1;
+                final isSelected = selectedNumbers[dartIndex] == num;
+                final isDisabled = selectedRings[dartIndex] == 'Outer Bull' ||
+                                  selectedRings[dartIndex] == 'Bullseye' ||
+                                  selectedRings[dartIndex] == 'Miss';
+
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: colIndex == 0 ? 0 : 3,
+                      right: colIndex == 4 ? 0 : 3,
+                    ),
+                    child: SizedBox(
+                      height: 32,
+                      child: ElevatedButton(
+                        onPressed: isDisabled ? null : () {
+                          setState(() {
+                            selectedNumbers[dartIndex] = num;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isSelected
+                              ? const Color(0xFFFFD700) // Canary Yellow
+                              : const Color(0xFF8B5E3C), // Warm Cedar
+                          foregroundColor: isSelected
+                              ? const Color(0xFF1D3557) // Midnight Navy
+                              : const Color(0xFFF1FAEE), // Cloud Dancer
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        child: Text(
+                          '$num',
+                          style: GoogleFonts.bangers(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          );
+        }),
+
+        const SizedBox(height: 12),
+
+        // Outer Bull, Bullseye, Miss buttons
+        _buildSmallRingButton('Outer Bull', selectedRings[dartIndex], (ring) {
+          setState(() {
+            selectedRings[dartIndex] = ring;
+            selectedNumbers[dartIndex] = null;
+          });
+        }),
+        const SizedBox(height: 6),
+        _buildSmallRingButton('Bullseye', selectedRings[dartIndex], (ring) {
+          setState(() {
+            selectedRings[dartIndex] = ring;
+            selectedNumbers[dartIndex] = null;
+          });
+        }),
+        const SizedBox(height: 6),
+        _buildSmallRingButton('Miss', selectedRings[dartIndex], (ring) {
+          setState(() {
+            selectedRings[dartIndex] = ring;
+            selectedNumbers[dartIndex] = null;
+          });
+        }),
+      ],
+    );
+  }
+
+  Widget _buildSmallRingButton(String ring, String? currentRing, Function(String) onSelect) {
+    final isSelected = currentRing == ring;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          onSelect(ring);
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSelected
+              ? const Color(0xFFFFD700) // Canary Yellow
+              : const Color(0xFF8B5E3C), // Warm Cedar
+          foregroundColor: isSelected
+              ? const Color(0xFF1D3557) // Midnight Navy
+              : const Color(0xFFF1FAEE), // Cloud Dancer
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        child: Text(
+          ring,
+          style: GoogleFonts.bangers(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
           ),
         ),
       ),

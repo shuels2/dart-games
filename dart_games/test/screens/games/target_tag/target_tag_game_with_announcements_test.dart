@@ -11,8 +11,7 @@ import '../../../helpers/target_tag_test_helper.dart';
 /// based on TARGET_TAG_TEST_PLAN.md
 ///
 /// Note: This test suite covers Tests 1-8 (Solo Mode), 9-14 (Team Mode),
-/// 15-17 (Hero Bonus), 18-19 (Turn Management), and 25-32 (Edge Cases).
-/// Edit Score tests (20-24) are in a separate file as they require different test structure.
+/// 15-17 (Hero Bonus), 18-19 (Turn Management), 20-24 (Edit Score), and 25-32 (Edge Cases).
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1885,6 +1884,392 @@ void main() {
       expect(provider.isEliminated(frank.id), true);
       expect(provider.isEliminated(grace.id), true);
       expect(provider.isEliminated(hank.id), true);
+    });
+  });
+
+  group('Target Tag - Edit Score Tests', () {
+    late TargetTagProvider provider;
+    late List<Player> players;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      provider = TargetTagProvider();
+    });
+
+    test('Test 20: Edit score adds shields correctly', () {
+      // Setup
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      // Set Alice to 2 shields (simulate previous turns)
+      provider.currentGame!.shields[alice.id] = 2;
+
+      // Add 3 initial dart throws (misses) to current turn
+      provider.currentGame!.currentTurnDarts[alice.id] = ['Miss', 'Miss', 'Miss'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      expect(provider.getShields(alice.id), 2);
+      expect(provider.isTaggedIn(alice.id), false);
+
+      // Edit to add shields: Single 14, Double 14, Triple 14
+      provider.updateAllDartScores(alice.id, ['S14', 'D14', 'T14']);
+
+      // Verify shields increased (2 + 1 + 2 + 3 = 8, capped at 5)
+      expect(provider.getShields(alice.id), 5);
+      expect(provider.isTaggedIn(alice.id), true); // Tagged in at max shields
+      expect(provider.getShields(bob.id), 0);
+
+      // Verify dart segments stored correctly
+      final darts = provider.getCurrentTurnDarts(alice.id);
+      expect(darts, ['S14', 'D14', 'T14']);
+    });
+
+    test('Test 21: Edit score adds opponent attacks', () {
+      // Setup
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      players = [alice, bob, carol];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+
+      // Set turn start state (state at beginning of turn before any darts)
+      provider.currentGame!.turnStartShields[alice.id] = 5;
+      provider.currentGame!.turnStartShields[bob.id] = 4;
+      provider.currentGame!.turnStartShields[carol.id] = 3;
+      provider.currentGame!.turnStartTaggedIn[alice.id] = true;
+
+      // Add 3 initial dart throws (misses) to current turn
+      provider.currentGame!.currentTurnDarts[alice.id] = ['Miss', 'Miss', 'Miss'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit to add opponent attacks: Single 20, Double 17, Miss
+      provider.updateAllDartScores(alice.id, ['S20', 'D17', 'Miss']);
+
+      // Verify shields decreased
+      expect(provider.getShields(alice.id), 5); // Alice unchanged
+      expect(provider.getShields(bob.id), 3); // Bob hit once (4 - 1 = 3)
+      expect(provider.getShields(carol.id), 1); // Carol hit twice (3 - 2 = 1)
+      expect(provider.isTaggedIn(alice.id), true);
+    });
+
+    test('Test 22: Edit score triggers elimination', () {
+      // Setup
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      players = [alice, bob, carol];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+
+      // Set turn start state - Bob is tagged in
+      provider.currentGame!.turnStartShields[alice.id] = 4;
+      provider.currentGame!.turnStartShields[bob.id] = 5;
+      provider.currentGame!.turnStartShields[carol.id] = 2;
+      provider.currentGame!.turnStartTaggedIn[bob.id] = true;
+
+      // Set current player to Bob (index 1)
+      provider.currentGame!.currentPlayerIndex = 1;
+
+      // Add 3 initial dart throws (misses) to current turn
+      provider.currentGame!.currentTurnDarts[bob.id] = ['Miss', 'Miss', 'Miss'];
+      provider.currentGame!.dartsThrown[bob.id] = 3;
+
+      // Edit to cause elimination: Single 17, Single 14, Single 17
+      provider.updateAllDartScores(bob.id, ['S17', 'S14', 'S17']);
+
+      // Verify shields and elimination
+      expect(provider.getShields(alice.id), 3); // Hit once (4 - 1 = 3)
+      expect(provider.getShields(bob.id), 5); // Bob unchanged
+      expect(provider.getShields(carol.id), 0); // Hit twice (2 - 2 = 0)
+      expect(provider.isEliminated(carol.id), true);
+      expect(provider.isEliminated(alice.id), false);
+      expect(provider.isEliminated(bob.id), false);
+    });
+
+    test('Test 23: Edit score removes shields (undo)', () {
+      // Setup
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      // Set turn start state - Alice starts with 0 shields
+      provider.currentGame!.turnStartShields[alice.id] = 0;
+
+      // Add darts that give 5 shields to current turn (will be replaced by edit)
+      provider.currentGame!.currentTurnDarts[alice.id] = ['S14', 'T14', 'S14'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit to remove shields: Miss, Double 14, Miss
+      provider.updateAllDartScores(alice.id, ['Miss', 'D14', 'Miss']);
+
+      // Verify shields decreased (0 + 0 + 2 + 0 = 2)
+      expect(provider.getShields(alice.id), 2);
+      expect(provider.isTaggedIn(alice.id), false); // Lost tagged-in status
+    });
+
+    test('Test 24: Edit score in team mode adjusts team shields', () {
+      // Setup
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      final dave = Player.create(name: 'Dave');
+      players = [alice, bob, carol, dave];
+
+      final teams = {
+        'team1': [alice.id, bob.id],
+        'team2': [carol.id, dave.id],
+      };
+      provider.startTeamGame(teams, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 14;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+      provider.currentGame!.targetNumbers[dave.id] = 17;
+
+      // Set turn start state - in team mode, shields are per team
+      provider.currentGame!.turnStartShields['team1'] = 4;
+      provider.currentGame!.turnStartShields['team2'] = 3;
+
+      // Add 3 initial dart throws (misses) to current turn
+      provider.currentGame!.currentTurnDarts[alice.id] = ['Miss', 'Miss', 'Miss'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit to add team shields: Single 14, Single 14, Miss
+      provider.updateAllDartScores(alice.id, ['S14', 'S14', 'Miss']);
+
+      // Verify team1 got shields (4 + 1 + 1 = 6, capped at 5)
+      // In team mode, getShields(playerId) returns the team's shields
+      expect(provider.getShields(alice.id), 5);
+      expect(provider.getShields(bob.id), 5);
+      expect(provider.isTaggedIn(alice.id), true);
+      expect(provider.isTaggedIn(bob.id), true);
+
+      // Other team unchanged
+      expect(provider.getShields(carol.id), 3);
+      expect(provider.getShields(dave.id), 3);
+    });
+
+    test('Edit score on first turn preserves shields correctly', () {
+      // Test that edit score works on the very first turn
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      expect(provider.getShields(alice.id), 0);
+      expect(provider.getShields(bob.id), 0);
+
+      // Turn start state defaults to 0 shields on first turn (no need to set explicitly)
+      // Add darts on first turn
+      provider.currentGame!.currentTurnDarts[alice.id] = ['S14', 'D14', 'Miss'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit scores
+      provider.updateAllDartScores(alice.id, ['T14', 'T14', 'Miss']);
+
+      // Verify shields recalculated (0 + 3 + 3 + 0 = 6, capped at 5)
+      expect(provider.getShields(alice.id), 5);
+      expect(provider.isTaggedIn(alice.id), true);
+    });
+
+    test('Edit score preserves inner vs outer single distinction', () {
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      // Add inner singles to current turn
+      provider.currentGame!.currentTurnDarts[alice.id] = ['s14', 's14', 's14'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      final initialDarts = provider.getCurrentTurnDarts(alice.id);
+      expect(initialDarts, ['s14', 's14', 's14']);
+
+      // Edit to outer singles (uppercase S)
+      provider.updateAllDartScores(alice.id, ['S14', 'S14', 'S14']);
+
+      // Shields should be same but sector format should change
+      expect(provider.getShields(alice.id), 3);
+      final editedDarts = provider.getCurrentTurnDarts(alice.id);
+      expect(editedDarts, ['S14', 'S14', 'S14']);
+    });
+
+    test('Edit score with hero bonus', () {
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, true); // Hero bonus ON
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      // Set turn start state - Alice tagged-in with 5 shields, Bob with 3 shields
+      provider.currentGame!.turnStartShields[alice.id] = 5;
+      provider.currentGame!.turnStartShields[bob.id] = 3;
+      provider.currentGame!.turnStartTaggedIn[alice.id] = true;
+
+      // Add misses to current turn
+      provider.currentGame!.currentTurnDarts[alice.id] = ['Miss', 'Miss', 'Miss'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit to attack Bob: Single 20, Single 20, Single 20
+      provider.updateAllDartScores(alice.id, ['S20', 'S20', 'S20']);
+
+      // With hero bonus, Bob should lose shields faster
+      // Each hit causes 2 damage (1 normal + 1 hero bonus)
+      expect(provider.getShields(bob.id), 0); // 3 - (3 * 2) would be -3, so 0
+      expect(provider.isEliminated(bob.id), true);
+    });
+
+    test('Edit score maintains waiting for takeout state', () {
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      // Add 3 darts to current turn (turn complete)
+      provider.currentGame!.currentTurnDarts[alice.id] = ['S14', 'S14', 'S14'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit scores
+      provider.updateAllDartScores(alice.id, ['D14', 'D14', 'D14']);
+
+      // Should still be waiting for takeout
+      expect(provider.shouldPromptTakeout, true);
+      expect(provider.getShields(alice.id), 5); // 0 + 2 + 2 + 2 = 6, capped at 5
+      expect(provider.isTaggedIn(alice.id), true);
+    });
+
+    test('Edit score does not affect other players shields', () {
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      players = [alice, bob, carol];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+
+      // Set turn start state
+      provider.currentGame!.turnStartShields[alice.id] = 2;
+      provider.currentGame!.turnStartShields[bob.id] = 3;
+      provider.currentGame!.turnStartShields[carol.id] = 4;
+
+      // Alice's turn - add darts
+      provider.currentGame!.currentTurnDarts[alice.id] = ['S14', 'S14', 'Miss'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit Alice's score to hit her target more
+      provider.updateAllDartScores(alice.id, ['T14', 'Miss', 'Miss']);
+
+      // Verify Alice's shields changed
+      expect(provider.getShields(alice.id), 5); // 2 + 3 = 5
+
+      // Verify other players unchanged (Alice was not tagged-in, so no attacks)
+      expect(provider.getShields(bob.id), 3);
+      expect(provider.getShields(carol.id), 4);
+    });
+
+    test('Edit score with bulls (bullseye and outer bull)', () {
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      // Add regular scores to current turn
+      provider.currentGame!.currentTurnDarts[alice.id] = ['S14', 'S14', 'Miss'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit to include bulls
+      provider.updateAllDartScores(alice.id, ['Bull', '25', 'Miss']);
+
+      // Bulls don't add shields (not hitting target number)
+      expect(provider.getShields(alice.id), 0);
+      final darts = provider.getCurrentTurnDarts(alice.id);
+      expect(darts, ['Bull', '25', 'Miss']);
+    });
+
+    test('Edit score can change elimination status', () {
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      // Set turn start state - Alice tagged-in, Bob with 1 shield
+      provider.currentGame!.turnStartShields[alice.id] = 5;
+      provider.currentGame!.turnStartShields[bob.id] = 1;
+      provider.currentGame!.turnStartTaggedIn[alice.id] = true;
+
+      // Alice throws and eliminates Bob
+      provider.currentGame!.currentTurnDarts[alice.id] = ['S20', 'Miss', 'Miss'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit to not hit Bob
+      provider.updateAllDartScores(alice.id, ['Miss', 'Miss', 'Miss']);
+
+      // Bob should no longer be eliminated
+      expect(provider.isEliminated(bob.id), false);
+      expect(provider.getShields(bob.id), 1);
+    });
+
+    test('Edit score with multiple targets hit in one turn', () {
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      players = [alice, bob, carol];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+
+      // Set turn start state - Alice tagged-in
+      provider.currentGame!.turnStartShields[alice.id] = 5;
+      provider.currentGame!.turnStartShields[bob.id] = 4;
+      provider.currentGame!.turnStartShields[carol.id] = 3;
+      provider.currentGame!.turnStartTaggedIn[alice.id] = true;
+
+      // Add misses to current turn
+      provider.currentGame!.currentTurnDarts[alice.id] = ['Miss', 'Miss', 'Miss'];
+      provider.currentGame!.dartsThrown[alice.id] = 3;
+
+      // Edit to hit multiple targets: Single 20, Double 17, Single 20
+      provider.updateAllDartScores(alice.id, ['S20', 'D17', 'S20']);
+
+      // Verify multiple targets hit
+      expect(provider.getShields(bob.id), 2); // Hit twice (4 - 2 = 2)
+      expect(provider.getShields(carol.id), 1); // Hit twice (3 - 2 = 1)
     });
   });
 }

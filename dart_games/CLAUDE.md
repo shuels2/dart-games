@@ -42,8 +42,8 @@ dart_games/
 │               ├── horse_race_menu_screen.dart     # Game setup
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
-├── test/                            # Non-UI test suite (180 tests)
-├── integration_test/                # UI automation tests (47 tests)
+├── test/                            # Non-UI test suite (219 tests)
+├── integration_test/                # UI automation tests (71 tests)
 └── assets/                          # Images, icons, fonts
 ```
 
@@ -72,6 +72,15 @@ dart_games/
 - Random selection from user's music library
 - Plays when a player wins any game
 - Cross-platform support (web data URLs, native file paths)
+
+**5. Game Announcement Queue (`GameAnnouncementQueueService`)**
+- Global priority-based announcement queue used by ALL games
+- Manages voice announcements with optional sound effects
+- Prevents announcement overlap with intelligent queuing
+- Priority levels: turnTransition(1), hitConfirm(2), shieldStatus(3), statusChange(4), victory(5)
+- Each game creates a helper that wraps this service with game-specific convenience methods
+- Sound effects play simultaneously with announcements
+- Uses the global `DartAnnouncerService` for voice output
 
 ### Design System
 
@@ -112,10 +121,82 @@ When adding a new game to the dart games app:
 1. **Create game screens** in `lib/screens/games/[game_name]/`
 2. **Design unique visual identity** - Each game should have its own color palette, typography, and theme to feel distinct
 3. **Integrate with global systems** (see Game Integration Requirements section)
-4. **Use shared services** (DartboardProvider, PlayerProvider, DartAnnouncerService, VictoryMusicService)
+4. **Use shared services:**
+   - `DartboardProvider` - Dartboard connection and events
+   - `PlayerProvider` - Global user management
+   - `GameAnnouncementQueueService` - Voice announcements with sound effects (see Announcement System Integration below)
+   - `VictoryMusicService` - Victory music playback
 5. **Add game card** to `home_screen.dart` for navigation
 6. **Create tests** following existing patterns
 7. **Update CLAUDE.md** with new test counts and game-specific notes
+
+#### Announcement System Integration
+
+**ALL games MUST use the global `GameAnnouncementQueueService` for announcements.**
+
+Follow this pattern when adding a new game:
+
+1. **Create a game-specific announcement helper** in `lib/services/[game_name]_announcement_helper.dart`:
+```dart
+import 'game_announcement_queue_service.dart';
+import '[game_name]_sound_effects.dart'; // Optional, for sound effects
+
+class YourGameAnnouncementHelper {
+  final GameAnnouncementQueueService _queue;
+
+  YourGameAnnouncementHelper(this._queue);
+
+  // Add game-specific convenience methods
+  void announcePlayerTurn(String playerName) {
+    _queue.announce(
+      '$playerName, your turn',
+      AudioPriority.turnTransition,
+      soundEffect: YourGameSoundEffects.turnStart, // Optional
+    );
+  }
+
+  void dispose() {
+    _queue.dispose();
+  }
+}
+```
+
+2. **In your game screen, initialize the helper**:
+```dart
+class YourGameScreen extends StatefulWidget {
+  // ...
+}
+
+class _YourGameScreenState extends State<YourGameScreen> {
+  YourGameAnnouncementHelper? _audioQueue;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Initialize global queue with game-specific helper
+      final globalQueue = GameAnnouncementQueueService();
+      await globalQueue.loadSettings();
+      _audioQueue = YourGameAnnouncementHelper(globalQueue);
+    });
+  }
+
+  @override
+  void dispose() {
+    _audioQueue?.dispose();
+    super.dispose();
+  }
+}
+```
+
+3. **Use the helper throughout your game**:
+```dart
+_audioQueue?.announcePlayerTurn(player.name);
+```
+
+**Reference implementations:**
+- Target Tag: `lib/services/target_tag_announcement_helper.dart`
+- Carnival Derby: `lib/services/carnival_derby_announcement_helper.dart`
 
 ## Critical Rules
 
@@ -255,14 +336,14 @@ flutter test
 ```
 
 **CRITICAL REQUIREMENTS:**
-- All 180 non-UI tests must pass (100% pass rate required)
+- All 195 non-UI tests must pass (100% pass rate required)
 - If ANY test fails, DO NOT proceed with build
 - Fix all failing tests first, then re-run test suite
 - Only build after confirming all tests pass
 
 **UI Automation Tests (Optional):**
 
-The 47 UI automation tests in `integration_test/` take longer to run (~26 minutes) and require chromedriver.
+The 71 UI automation tests in `integration_test/` take longer to run (~38 minutes) and require chromedriver.
 
 **Before running a build, ASK the user:**
 - "Would you like me to run the UI automation tests before this build?"
@@ -273,8 +354,9 @@ The 47 UI automation tests in `integration_test/` take longer to run (~26 minute
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2 - Run UI tests (47 tests across 3 files, ~26 minutes total)
+# Terminal 2 - Run UI tests (71 tests across 4 files, ~38 minutes total)
 cd dart_games
+# Target Tag tests (47 tests, ~26 minutes)
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_menu_and_mechanics_test.dart \
   -d chrome
@@ -283,6 +365,10 @@ flutter drive --driver=test_driver/integration_test.dart \
   -d chrome
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_add_player_test.dart \
+  -d chrome
+# Carnival Derby tests (24 tests, ~12 minutes)
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/carnival_derby_ui_test.dart \
   -d chrome
 ```
 
@@ -306,17 +392,19 @@ These tests validate:
   - Turn management (Tests 18-19): Skip turns, multiple skips in sequence
   - Edit score (Tests 20-24): Add/remove shields, undo, team adjustments
   - Edge cases (Tests 25-32): Simultaneous events, regaining tagged-in, all bullseyes, 10 players, 5 teams, multiple hero attacks
-- **User management integration** (9 tests in `target_tag_user_management_test.dart`)
+- **User management integration** (10 tests in `target_tag_user_management_test.dart`)
   - Win tracking for both winners and losers with game duration
   - Stats persistence across app restarts
   - Total play time and average duration calculations
+  - Max 10 players selection enforcement
 
 This is NON-NEGOTIABLE. Tests validate critical functionality including:
-- User management system (39 tests - Player: 30, Carnival Derby: 8, Target Tag: 9)
+- User management system (43 tests - Player: 30, Carnival Derby: 11, Target Tag: 10)
 - Victory music management (22 tests)
 - Announcer settings (20 tests)
 - Dartboard emulator accuracy (23 tests)
-- Target Tag game logic, announcements, and user management (41 tests)
+- Target Tag game logic, announcements, and user management (42 tests)
+- Carnival Derby game logic, announcements, and user management (33 tests)
 - Data persistence and serialization
 - Cross-platform compatibility
 - Game logic and scoring
@@ -398,10 +486,9 @@ Common cross-platform considerations:
 Every game (such as Target Tag, Carnival Derby, and any future games) must follow these integration requirements:
 
 **IMPORTANT - Game Duration Tracking:**
-- **ALL new games MUST track game duration for BOTH winners AND losers**
-- This is the current standard pattern (as implemented in Target Tag)
-- Older games like Carnival Derby only track winners' duration (legacy behavior)
-- When implementing new games, follow the Target Tag pattern shown below
+- **ALL games MUST track game duration for BOTH winners AND losers**
+- This is the current standard pattern (implemented in Target Tag and Carnival Derby)
+- When implementing new games, follow this pattern shown below
 
 #### 1. Global User Management
 - **Use the global user list** (`PlayerProvider`) for available players
@@ -411,12 +498,17 @@ Every game (such as Target Tag, Carnival Derby, and any future games) must follo
 - Use `PlayerProvider.allPlayers` to get the list of available players
 
 #### 2. Announcer Integration
-- **Use announcer settings from the global dart games announcer settings**
-- Use `DartAnnouncerService` singleton for all game announcements
-- Respect the user's voice engine selection (Browser Voices or ResponsiveVoice)
-- Respect the user's selected announcer personality (Professional, Excited, Calm, Funny, Drill Sergeant)
-- Respect the user's voice enabled/disabled setting
-- Use `AppSettings` to retrieve and save announcer preferences
+- **Use the global `GameAnnouncementQueueService` for ALL announcements**
+- **DO NOT use `DartAnnouncerService` directly** - the queue service manages it automatically
+- Create a game-specific announcement helper that wraps the global queue service
+- The queue service automatically respects user's announcer settings:
+  - Voice engine selection (Browser Voices or ResponsiveVoice)
+  - Announcer personality (Professional, Excited, Calm, Funny, Drill Sergeant)
+  - Voice enabled/disabled setting
+- See the "Announcement System Integration" section above for complete implementation guide
+- **Reference implementations:**
+  - Target Tag: `lib/services/target_tag_announcement_helper.dart`
+  - Carnival Derby: `lib/services/carnival_derby_announcement_helper.dart`
 
 #### 3. User Win Tracking and Game Duration
 - **Track user wins and game duration for ALL players**
@@ -459,10 +551,27 @@ class GameScreen extends StatefulWidget {
   final PlayerProvider playerProvider = PlayerProvider();
   final VictoryMusicService musicService = VictoryMusicService();
 
+  // Announcement helper
+  YourGameAnnouncementHelper? _audioQueue;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Initialize global announcement queue with game-specific helper
+      final globalQueue = GameAnnouncementQueueService();
+      await globalQueue.loadSettings();
+      _audioQueue = YourGameAnnouncementHelper(globalQueue);
+    });
+  }
+
   void _startGame() {
     // Start game with timer
     gameProvider.startGame(selectedPlayers, targetScore);
     // gameProvider.currentGame.startedAt is set to DateTime.now()
+
+    // Announce game start
+    _audioQueue?.announceGameStart();
   }
 
   void _onGameComplete() async {
@@ -485,6 +594,12 @@ class GameScreen extends StatefulWidget {
       );
     }
 
+    // Announce game complete and winner
+    _audioQueue?.announceGameComplete();
+    if (winners.isNotEmpty) {
+      _audioQueue?.announceWinner(winners.first.name);
+    }
+
     // Play victory music
     if (await musicService.hasCustomMusic()) {
       final musicSource = await musicService.getRandomMusicSource();
@@ -493,6 +608,12 @@ class GameScreen extends StatefulWidget {
       }
     }
   }
+
+  @override
+  void dispose() {
+    _audioQueue?.dispose();
+    super.dispose();
+  }
 }
 ```
 
@@ -500,9 +621,11 @@ class GameScreen extends StatefulWidget {
 
 Games must import and use:
 - `package:dart_games/providers/player_provider.dart` - Global user management
-- `package:dart_games/services/dart_announcer_service.dart` - Announcer functionality
+- `package:dart_games/services/game_announcement_queue_service.dart` - Global announcement queue
 - `package:dart_games/services/victory_music_service.dart` - Victory music
-- `package:dart_games/services/app_settings.dart` - Settings persistence
+- `package:dart_games/services/app_settings.dart` - Settings persistence (used internally by queue service)
+
+**NOTE:** Do NOT import `dart_announcer_service.dart` directly - the `GameAnnouncementQueueService` manages it internally.
 
 #### Testing Requirements
 
@@ -518,24 +641,24 @@ When adding a new game:
 9. Follow the pattern established in `test/screens/games/target_tag/target_tag_user_management_test.dart`
 
 **Reference Implementation:**
-- See `target_tag_user_management_test.dart` for the complete pattern (9 tests)
+- See `target_tag_user_management_test.dart` for the complete pattern (10 tests)
 - Tests validate both solo and team modes
 - Tests verify that losers receive game history with duration (not just winners)
 
 ## Testing Requirements
 
-### Complete Test Suite (180 Tests + 47 UI Automation Tests)
+### Complete Test Suite (219 Tests + 71 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
-**Non-UI Tests (180 tests in `test/` directory):**
+**Non-UI Tests (219 tests in `test/` directory):**
 - Run with `flutter test`
 - Execute in seconds
 - Required to pass before every build
 
-**UI Automation Tests (47 tests in `integration_test/` directory):**
+**UI Automation Tests (71 tests in `integration_test/` directory):**
 - Run with `flutter drive` and chromedriver
-- Execute in ~26 minutes
+- Execute in ~38 minutes
 - Optional for builds (ask user before running)
 
 #### Model Tests (36 tests)
@@ -586,14 +709,39 @@ The dart games app has a comprehensive test suite covering all critical function
   - Error handling and data persistence
   - Cross-platform file handling
 
-#### Integration Tests (49 tests)
-- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (8 tests)
+#### Integration Tests (75 tests)
+- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (22 tests)
   - Winner recording with game duration
   - Multiple games accumulation
   - Duration calculation accuracy
-  - Multi-player game stats (winner vs. losers)
+  - Multi-player game stats (both winners and losers receive duration)
   - Exact score mode duration tracking
   - Stats persistence across app restarts
+  - Max 8 players selection enforcement
+  - Skip turn records misses and advances turn
+  - Skip multiple turns in sequence
+  - Edit score on first turn preserves score correctly
+  - Edit score preserves inner vs outer single distinction
+  - Edit score increases player total score
+  - Edit score decreases player total score
+  - Edit score to add misses
+  - Edit score to remove misses
+  - Edit score with bulls (bullseye and outer bull)
+  - Edit score maintains waiting for takeout state
+  - Edit score does not affect other players
+  - Edit score in exact mode handles bust correctly
+  - Edit score can trigger win in exact mode
+
+- `test/screens/games/carnival_horse_race/carnival_derby_game_with_announcements_test.dart` (11 tests)
+  - Normal mode game logic and announcements (Tests 1-4)
+  - Perfect Finish mode with busts and exact wins (Tests 5-10)
+  - Results screen announcements (Test 11)
+  - Validates BOTH game logic (scoring, busts, wins) AND announcement text with sound effects
+  - Covers all dart types: single, double, triple, bullseye, outer bull, miss
+  - Tests skip turn functionality with announcements
+  - Tests bust behavior (score preservation) in exact score mode
+  - Tests progressive scoring and close calls
+  - Covers 1-3 players in various scenarios
 
 - `test/screens/games/target_tag/target_tag_game_with_announcements_test.dart` (32 tests)
   - Solo mode game logic and announcements (Tests 1-8)
@@ -605,13 +753,14 @@ The dart games app has a comprehensive test suite covering all critical function
   - Validates BOTH game logic (shields, tagged-in status, eliminations) AND announcement text/timing
   - Covers 2-10 players and 2-5 teams
 
-- `test/screens/games/target_tag/target_tag_user_management_test.dart` (9 tests)
+- `test/screens/games/target_tag/target_tag_user_management_test.dart` (10 tests)
   - Solo mode winner/loser stats with duration tracking (Tests 4-7)
   - Team mode stats for all players with duration (Test 8)
   - Mixed team compositions across games (Test 9)
   - 3-team game statistics (Test 10)
   - Total play time calculations (Test 11)
   - Average game duration by game name (Test 12)
+  - Max 10 players selection enforcement (Test 13)
   - Both winners AND losers receive game history entries with duration
   - Stats persistence and data integrity validation
 
@@ -624,7 +773,7 @@ The dart games app has a comprehensive test suite covering all critical function
   - Dart position persistence across window resize
   - Dart management (add/remove functionality)
 
-#### UI Automation Tests (47 tests)
+#### UI Automation Tests (71 tests)
 - `integration_test/target_tag_menu_and_mechanics_test.dart` (28 tests)
   - Player selection and auto-selection (1 test)
   - Menu settings and validations (6 tests)
@@ -652,13 +801,25 @@ The dart games app has a comprehensive test suite covering all critical function
   - Test 6: Cancel Button Functionality
   - **Execution time:** ~2 minutes
 
-**Total UI Automation Test Execution Time:** ~8 minutes (varies based on system performance)
+- `integration_test/carnival_derby_ui_test.dart` (24 tests)
+  - Test 1-2: Menu - Player Selection (2 tests)
+  - Test 3-4: Menu - Target Score Settings (2 tests)
+  - Test 5-7: Game - Basic Race Mechanics - Normal Mode (3 tests)
+  - Test 8-11: Game - Perfect Finish Mode - Bust Mechanics (4 tests)
+  - Test 12-14: Game - Skip Turn Functionality (3 tests)
+  - Test 15-16: Game - Edit Score Functionality (2 tests)
+  - Test 17-18: Game - Multi-Player Race (2 tests)
+  - Test 19-21: Edge Cases (3 tests)
+  - Test 22-24: Results Screen (3 tests)
+  - **Execution time:** ~12 minutes
+
+**Total UI Automation Test Execution Time:** ~38 minutes (varies based on system performance)
 **Required setup:** ChromeDriver running on port 4444
 **Run separately with chromedriver:** See UI Automation Testing Guidelines section
 
 ### Running Tests
 
-**Run all non-UI tests (180 tests):**
+**Run all non-UI tests (219 tests):**
 ```bash
 cd dart_games
 flutter test
@@ -679,34 +840,38 @@ flutter test test/screens/games/carnival_horse_race/
 flutter test test/widgets/
 ```
 
-**Run UI automation tests (47 tests, ~26 minutes total):**
+**Run UI automation tests (71 tests, ~38 minutes total):**
 ```bash
 # Terminal 1: Start chromedriver
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2: Run UI automation tests (3 test files)
+# Terminal 2: Run UI automation tests (4 test files)
 cd dart_games
+# Target Tag tests (47 tests, ~26 minutes)
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_menu_and_mechanics_test.dart -d chrome
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_gameplay_test.dart -d chrome
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_add_player_test.dart -d chrome
+# Carnival Derby tests (24 tests, ~12 minutes)
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/carnival_derby_ui_test.dart -d chrome
 ```
 
 ### Test Expectations
 
-**Non-UI Tests (180 tests):**
-- **100% pass rate required** - All 180 non-UI tests must pass before every build
+**Non-UI Tests (219 tests):**
+- **100% pass rate required** - All 219 non-UI tests must pass before every build
 - Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
 - No build or deployment without all non-UI tests passing
 - Tests cover both web and native platform scenarios
 - Backward compatibility is validated for data migrations
 - Target Tag tests (41 tests total) validate game logic, announcement system integrity, and user management integration
 
-**UI Automation Tests (47 tests):**
+**UI Automation Tests (71 tests):**
 - Optional for builds - ask user if they want to run UI automation tests
-- Execution time: ~26 minutes
-- Tests validate Target Tag menu settings, gameplay mechanics, and user interactions end-to-end in Chrome
-- Covers all game modes (solo, team), settings persistence, edit score, skip turn, player highlighting, hero bonuses, and victory conditions
+- Execution time: ~38 minutes
+- Tests validate Target Tag and Carnival Derby menu settings, gameplay mechanics, and user interactions end-to-end in Chrome
+- Target Tag (47 tests): Covers all game modes (solo, team), settings persistence, edit score, skip turn, player highlighting, hero bonuses, and victory conditions
+- Carnival Derby (24 tests): Covers player selection, target score settings, Normal/Perfect Finish modes, bust mechanics, skip turn, edit score, multi-player races, edge cases, and results screen
 - Require chromedriver setup on port 4444
 - When run, must achieve 100% pass rate
 
@@ -1220,8 +1385,14 @@ cd dart_games/chromedriver/chromedriver-win64
 
 # Terminal 2 - Run UI tests
 cd dart_games
+# Example: Run a specific test file
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_add_player_test.dart \
+  -d chrome
+
+# Or run Carnival Derby UI tests
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/carnival_derby_ui_test.dart \
   -d chrome
 ```
 
@@ -1251,7 +1422,7 @@ This applies to all git operations that modify the remote repository, including:
    cd dart_games
    flutter test
    ```
-3. **Verify ALL 180 non-UI tests pass (100% pass rate required)**
+3. **Verify ALL 219 non-UI tests pass (100% pass rate required)**
 4. **OPTIONAL: Ask user if they want to run UI automation tests (47 tests, ~26 minutes)**
 5. If ANY tests fail:
    - DO NOT proceed
@@ -1268,8 +1439,8 @@ This applies to all git operations that modify the remote repository, including:
 **NEVER build without running non-UI tests first.**
 
 Before any `flutter run` or `flutter build` command:
-1. Run `flutter test` (180 non-UI tests)
-2. Confirm all 180 non-UI tests pass
+1. Run `flutter test` (219 non-UI tests)
+2. Confirm all 219 non-UI tests pass
 3. Ask user if they want to run UI automation tests (47 tests, ~26 minutes)
 4. Only then run the build command
 

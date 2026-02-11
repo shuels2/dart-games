@@ -8,7 +8,8 @@ import '../../../providers/player_provider.dart';
 import '../../../providers/target_tag_provider.dart';
 import '../../../providers/dartboard_provider.dart';
 import '../../../services/mock_scolia_api_service.dart';
-import '../../../services/target_tag_audio_queue_service.dart';
+import '../../../services/game_announcement_queue_service.dart';
+import '../../../services/target_tag_announcement_helper.dart';
 import '../../../widgets/target_tag/active_player_panel_widget.dart';
 import '../../../widgets/target_tag/game_info_panel_widget.dart';
 import '../../../widgets/target_tag/player_card_widget.dart';
@@ -27,7 +28,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   StreamSubscription? _dartboardSubscription;
   final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();
   MockScoliaApiService? _mockApi;
-  TargetTagAudioQueueService? _audioQueue;
+  TargetTagAnnouncementHelper? _audioQueue;
   final ScrollController _scrollController = ScrollController();
 
   bool _hasAnnouncedSuddenDeath = false;
@@ -46,9 +47,10 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
 
-    // Initialize audio queue
-    _audioQueue = TargetTagAudioQueueService();
-    await _audioQueue!.loadSettings();
+    // Initialize global announcement queue with Target Tag helper
+    final globalQueue = GameAnnouncementQueueService();
+    await globalQueue.loadSettings();
+    _audioQueue = TargetTagAnnouncementHelper(globalQueue);
 
     // Subscribe to dartboard events
     if (_mockApi != null) {

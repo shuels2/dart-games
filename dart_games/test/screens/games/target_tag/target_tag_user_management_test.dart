@@ -689,5 +689,48 @@ void main() {
         expect(allHistory.where((e) => e.gameName == 'Carnival Derby').length, 1);
       });
     });
+
+    group('Player Selection', () {
+      test('Test 13: Max 10 players can be selected for Target Tag', () async {
+        // Create 12 players
+        final players = <Player>[];
+        for (int i = 1; i <= 12; i++) {
+          final player = Player.create(name: 'Player $i');
+          await playerProvider.savePlayer(player);
+          players.add(player);
+        }
+
+        // Select first 9 players (under max of 10)
+        for (int i = 0; i < 9; i++) {
+          playerProvider.selectPlayer(players[i], maxPlayers: 10);
+        }
+
+        expect(playerProvider.selectedPlayers.length, 9);
+
+        // Select 10th player - should succeed
+        playerProvider.selectPlayer(players[9], maxPlayers: 10);
+        expect(playerProvider.selectedPlayers.length, 10);
+
+        // Attempt to select 11th player - should fail (max reached)
+        playerProvider.selectPlayer(players[10], maxPlayers: 10);
+        expect(playerProvider.selectedPlayers.length, 10);
+        expect(
+          playerProvider.selectedPlayers.any((p) => p.id == players[10].id),
+          isFalse,
+        );
+
+        // Deselect one player
+        playerProvider.deselectPlayer(players[9].id);
+        expect(playerProvider.selectedPlayers.length, 9);
+
+        // Now selecting 11th player should succeed (under max again)
+        playerProvider.selectPlayer(players[10], maxPlayers: 10);
+        expect(playerProvider.selectedPlayers.length, 10);
+        expect(
+          playerProvider.selectedPlayers.any((p) => p.id == players[10].id),
+          isTrue,
+        );
+      });
+    });
   });
 }
