@@ -62,11 +62,15 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
       _announceGameCompletion();
       // Start confetti after a short delay
       Future.delayed(const Duration(milliseconds: 500), () {
-        _confettiController.play();
+        if (mounted) {
+          _confettiController.play();
+        }
       });
       // Play victory music when winner is announced (same timing as voice)
       Future.delayed(const Duration(milliseconds: 1500), () {
-        _playVictoryMusic();
+        if (mounted) {
+          _playVictoryMusic();
+        }
       });
     });
   }

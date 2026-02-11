@@ -42,8 +42,8 @@ dart_games/
 │               ├── horse_race_menu_screen.dart     # Game setup
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
-├── test/                            # Non-UI test suite (208 tests)
-├── integration_test/                # UI automation tests (47 tests)
+├── test/                            # Non-UI test suite (219 tests)
+├── integration_test/                # UI automation tests (71 tests)
 └── assets/                          # Images, icons, fonts
 ```
 
@@ -343,7 +343,7 @@ flutter test
 
 **UI Automation Tests (Optional):**
 
-The 47 UI automation tests in `integration_test/` take longer to run (~26 minutes) and require chromedriver.
+The 71 UI automation tests in `integration_test/` take longer to run (~38 minutes) and require chromedriver.
 
 **Before running a build, ASK the user:**
 - "Would you like me to run the UI automation tests before this build?"
@@ -354,8 +354,9 @@ The 47 UI automation tests in `integration_test/` take longer to run (~26 minute
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2 - Run UI tests (47 tests across 3 files, ~26 minutes total)
+# Terminal 2 - Run UI tests (71 tests across 4 files, ~38 minutes total)
 cd dart_games
+# Target Tag tests (47 tests, ~26 minutes)
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_menu_and_mechanics_test.dart \
   -d chrome
@@ -364,6 +365,10 @@ flutter drive --driver=test_driver/integration_test.dart \
   -d chrome
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_add_player_test.dart \
+  -d chrome
+# Carnival Derby tests (24 tests, ~12 minutes)
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/carnival_derby_ui_test.dart \
   -d chrome
 ```
 
@@ -642,7 +647,7 @@ When adding a new game:
 
 ## Testing Requirements
 
-### Complete Test Suite (219 Tests + 47 UI Automation Tests)
+### Complete Test Suite (219 Tests + 71 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
@@ -651,9 +656,9 @@ The dart games app has a comprehensive test suite covering all critical function
 - Execute in seconds
 - Required to pass before every build
 
-**UI Automation Tests (47 tests in `integration_test/` directory):**
+**UI Automation Tests (71 tests in `integration_test/` directory):**
 - Run with `flutter drive` and chromedriver
-- Execute in ~26 minutes
+- Execute in ~38 minutes
 - Optional for builds (ask user before running)
 
 #### Model Tests (36 tests)
@@ -768,7 +773,7 @@ The dart games app has a comprehensive test suite covering all critical function
   - Dart position persistence across window resize
   - Dart management (add/remove functionality)
 
-#### UI Automation Tests (47 tests)
+#### UI Automation Tests (71 tests)
 - `integration_test/target_tag_menu_and_mechanics_test.dart` (28 tests)
   - Player selection and auto-selection (1 test)
   - Menu settings and validations (6 tests)
@@ -796,7 +801,19 @@ The dart games app has a comprehensive test suite covering all critical function
   - Test 6: Cancel Button Functionality
   - **Execution time:** ~2 minutes
 
-**Total UI Automation Test Execution Time:** ~8 minutes (varies based on system performance)
+- `integration_test/carnival_derby_ui_test.dart` (24 tests)
+  - Test 1-2: Menu - Player Selection (2 tests)
+  - Test 3-4: Menu - Target Score Settings (2 tests)
+  - Test 5-7: Game - Basic Race Mechanics - Normal Mode (3 tests)
+  - Test 8-11: Game - Perfect Finish Mode - Bust Mechanics (4 tests)
+  - Test 12-14: Game - Skip Turn Functionality (3 tests)
+  - Test 15-16: Game - Edit Score Functionality (2 tests)
+  - Test 17-18: Game - Multi-Player Race (2 tests)
+  - Test 19-21: Edge Cases (3 tests)
+  - Test 22-24: Results Screen (3 tests)
+  - **Execution time:** ~12 minutes
+
+**Total UI Automation Test Execution Time:** ~38 minutes (varies based on system performance)
 **Required setup:** ChromeDriver running on port 4444
 **Run separately with chromedriver:** See UI Automation Testing Guidelines section
 
@@ -823,17 +840,20 @@ flutter test test/screens/games/carnival_horse_race/
 flutter test test/widgets/
 ```
 
-**Run UI automation tests (47 tests, ~26 minutes total):**
+**Run UI automation tests (71 tests, ~38 minutes total):**
 ```bash
 # Terminal 1: Start chromedriver
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2: Run UI automation tests (3 test files)
+# Terminal 2: Run UI automation tests (4 test files)
 cd dart_games
+# Target Tag tests (47 tests, ~26 minutes)
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_menu_and_mechanics_test.dart -d chrome
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_gameplay_test.dart -d chrome
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_add_player_test.dart -d chrome
+# Carnival Derby tests (24 tests, ~12 minutes)
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/carnival_derby_ui_test.dart -d chrome
 ```
 
 ### Test Expectations
@@ -846,11 +866,12 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 - Backward compatibility is validated for data migrations
 - Target Tag tests (41 tests total) validate game logic, announcement system integrity, and user management integration
 
-**UI Automation Tests (47 tests):**
+**UI Automation Tests (71 tests):**
 - Optional for builds - ask user if they want to run UI automation tests
-- Execution time: ~26 minutes
-- Tests validate Target Tag menu settings, gameplay mechanics, and user interactions end-to-end in Chrome
-- Covers all game modes (solo, team), settings persistence, edit score, skip turn, player highlighting, hero bonuses, and victory conditions
+- Execution time: ~38 minutes
+- Tests validate Target Tag and Carnival Derby menu settings, gameplay mechanics, and user interactions end-to-end in Chrome
+- Target Tag (47 tests): Covers all game modes (solo, team), settings persistence, edit score, skip turn, player highlighting, hero bonuses, and victory conditions
+- Carnival Derby (24 tests): Covers player selection, target score settings, Normal/Perfect Finish modes, bust mechanics, skip turn, edit score, multi-player races, edge cases, and results screen
 - Require chromedriver setup on port 4444
 - When run, must achieve 100% pass rate
 
@@ -1364,8 +1385,14 @@ cd dart_games/chromedriver/chromedriver-win64
 
 # Terminal 2 - Run UI tests
 cd dart_games
+# Example: Run a specific test file
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_add_player_test.dart \
+  -d chrome
+
+# Or run Carnival Derby UI tests
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/carnival_derby_ui_test.dart \
   -d chrome
 ```
 

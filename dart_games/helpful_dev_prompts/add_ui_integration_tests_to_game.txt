@@ -1,0 +1,34 @@
+  Create comprehensive interactive UI tests for Carnival Derby with game play, screen state updates, and announcement validation. Follow these steps:
+
+  1. Create a test plan for Carnival Derby for interactive UI tests based on the game mechanics.
+  2. Read and analyze the actual game screen code to understand the gameplay, screen updates, scoring, player turns, and announcement logic:
+    - lib/screens/games/carnival_horse_race/horse_race_game_screen.dart - Active gameplay and announcements
+    - lib/screens/games/carnival_horse_race/horse_race_menu_screen.dart - Game setup
+    - lib/screens/games/carnival_horse_race/horse_race_results_screen.dart - Winner announcements
+    - lib/providers/carnival_derby_provider.dart (if exists) - Game state management
+
+  Understand:
+    - Exact announcement logic and order
+    - When each announcement type triggers (horse movement, lead changes, finish)
+    - How state changes are detected (before/after comparisons)
+    - Edge cases and special conditions (ties, exact score mode, etc.)
+    - How screens components are updated based on game progression
+    - Max player settings
+    - Score ranges
+  3. Create a test plan for tests to validate all scenarios
+  4. Define test infrastructure needed to complete the tests:
+    - Mock audio service matching the real service's announcement text exactly
+    - Test helper that replicates the game screen's announcement logic precisely
+    - Include all announcement methods from the real service
+    - Mock any game-specific services (horse movement, scoring, etc.)
+    - Mock dartboard throws (look at Target Tag UI implementation for how dartboard throws and turns are managed)
+  5. Test plan should cover all scenarios including:
+    - Basic race mechanics and announcements
+    - Lead changes and position announcements
+    - Exact score mode vs. first-to-finish mode
+    - Tie scenarios
+    - Turn management
+    - Edge cases and complex race scenarios
+    - Multiple users (adding and removing users from selection, trying to add more selected users than the game allows)
+  6. Verify announcements, scores, results and screen state match test plan exactly - compare test announcements and order to the test plan document line by line
+  7. Share the test plan and ask for validation before creating the tests.
