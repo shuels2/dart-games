@@ -219,7 +219,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   children: [
                     // Target Score Slider
                     _buildTargetScoreSection(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 4),
 
                     // Player Selection (Available and Selected side-by-side)
                     Expanded(
