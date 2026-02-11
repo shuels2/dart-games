@@ -212,8 +212,6 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                 child: _buildGameDescription(),
               ),
 
-              const VerticalDivider(width: 1),
-
               // Right side: Game Settings
               Expanded(
                 flex: 1,
@@ -221,7 +219,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   children: [
                     // Target Score Slider
                     _buildTargetScoreSection(),
-                    const Divider(),
+                    const SizedBox(height: 16),
 
                     // Player Selection (Available and Selected side-by-side)
                     Expanded(
