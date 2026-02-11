@@ -588,10 +588,12 @@ void main() {
         game.targetNumbers[dave.id] = 19;
         game.targetNumbers[eve.id] = 18;
         game.targetNumbers[frank.id] = 17;
-        // Team 2 has 3 shields and is tagged in, Teams 1 and 3 have only 1 shield each
+        // Team 2 has 3 shields and is tagged in
+        // Team 1 has 1 shield (needs 2 hits to eliminate: 1→0, then 0→eliminated)
+        // Team 3 starts at 0 shields (needs 1 hit to eliminate)
         game.shields['team1'] = 1;
         game.shields['team2'] = 3;
-        game.shields['team3'] = 1;
+        game.shields['team3'] = 0;
         game.taggedIn['team2'] = true;
 
         // Set current player to someone on the tagged-in team (Charlie is on team2)
@@ -599,14 +601,10 @@ void main() {
 
         helper = TargetTagTestHelper(provider: provider, audioQueue: audioQueue, players: [alice, bob, charlie, dave, eve, frank]);
 
-        // Team 2 eliminates Team 1 with 1 dart (hit Alice's target - 14)
-        helper.processDartThrowWithAnnouncements('S14');
-
-        // Team 2 eliminates Team 3 with 1 dart (hit Eve's target - 18)
-        if (!provider.hasWinner) helper.processDartThrowWithAnnouncements('S18');
-
-        // If still not over, try one more
-        if (!provider.hasWinner) helper.processDartThrowWithAnnouncements('S18');
+        // Charlie's turn (3 darts): eliminate both teams
+        helper.processDartThrowWithAnnouncements('S18'); // Team 3: 0→eliminated (hit while at 0)
+        helper.processDartThrowWithAnnouncements('S14'); // Team 1: 1→0 shields (not eliminated)
+        helper.processDartThrowWithAnnouncements('S14'); // Team 1: 0→eliminated
 
         expect(provider.hasWinner, true);
 

@@ -87,6 +87,22 @@ class MockTargetTagAudioQueueService {
     announce('Warning! $names shields $verb almost gone!');
   }
 
+  void announceVulnerable(List<String> playerNames) {
+    String names;
+    String verb;
+    if (playerNames.length == 1) {
+      names = playerNames[0];
+      verb = 'is';
+    } else if (playerNames.length == 2) {
+      names = '${playerNames[0]} and ${playerNames[1]}';
+      verb = 'are';
+    } else {
+      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}';
+      verb = 'are';
+    }
+    announce('DANGER! $names $verb vulnerable! One more hit and you\'re out!');
+  }
+
   void announceEliminated(List<String> playerNames) {
     String names;
     if (playerNames.length == 1) {

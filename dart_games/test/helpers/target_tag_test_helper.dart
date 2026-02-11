@@ -241,6 +241,46 @@ class TargetTagTestHelper {
       }
     }
 
+    // 6.5. Vulnerable warning (check all non-eliminated players at exactly 0 shields)
+    final vulnerablePlayers = <String>[];
+    for (final playerId in game.playerIds) {
+      if (provider.isEliminated(playerId)) continue;
+      if (playerId == currentPlayer.id) continue; // Don't warn about current player
+
+      final shieldsBefore = _shieldsBefore[playerId] ?? 0;
+      final shieldsNow = provider.getShields(playerId);
+
+      // Warn if they just dropped to 0 shields (vulnerable state)
+      if (shieldsBefore > 0 && shieldsNow == 0) {
+        vulnerablePlayers.add(playerId);
+      }
+    }
+
+    if (vulnerablePlayers.isNotEmpty) {
+      if (game.mode == GameMode.team) {
+        // Group by team
+        final vulnerableByTeam = <String, List<String>>{};
+        for (final playerId in vulnerablePlayers) {
+          final teamId = game.playerToTeam![playerId]!;
+          vulnerableByTeam[teamId] ??= [];
+        }
+
+        // Announce each vulnerable team
+        for (final teamId in vulnerableByTeam.keys) {
+          final teamPlayerIds = game.teamPlayers![teamId]!;
+          final teamNames = teamPlayerIds
+              .map((id) => players.firstWhere((p) => p.id == id).name)
+              .toList();
+          audioQueue.announceVulnerable(teamNames);
+        }
+      } else {
+        final vulnerableNames = vulnerablePlayers
+            .map((id) => players.firstWhere((p) => p.id == id).name)
+            .toList();
+        audioQueue.announceVulnerable(vulnerableNames);
+      }
+    }
+
     // 7. Remove darts announcement (if turn is over)
     if (provider.shouldPromptTakeout) {
       audioQueue.announceRemoveDarts();

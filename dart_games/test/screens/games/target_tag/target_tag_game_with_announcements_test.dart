@@ -179,10 +179,22 @@ void main() {
 
       helper.processDartThrowWithAnnouncements('D20');
       expect(provider.getShields(bob.id), 0);
+      expect(provider.isEliminated(bob.id), false); // Still alive at 0 shields!
+      expect(provider.hasWinner, false); // Game not over yet
+      helper.verifyAnnouncements([
+        'Double 20',
+        'Tag! Got \'em!',
+        'DANGER! Bob is vulnerable! One more hit and you\'re out!',
+      ]);
+      helper.clearAnnouncements();
+
+      // Need one more hit to eliminate Bob at 0 shields
+      helper.processDartThrowWithAnnouncements('S20');
+      expect(provider.getShields(bob.id), 0);
       expect(provider.isEliminated(bob.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Double 20',
+        'Single 20',
         'Tag! Got \'em!',
         'Bob is Tagged Out! Better luck next time!',
         'Remove your darts',
@@ -407,10 +419,22 @@ void main() {
 
       helper.processDartThrowWithAnnouncements('S20');
       expect(provider.getShields(bob.id), 0);
+      expect(provider.isEliminated(bob.id), false); // At 0 shields, not eliminated yet
+      expect(provider.hasWinner, false);
+      helper.verifyAnnouncements([
+        'Alice, your turn',
+        'Single 20',
+        'Tag! Got \'em!',
+        'DANGER! Bob is vulnerable! One more hit and you\'re out!',
+      ]);
+      helper.clearAnnouncements();
+
+      // Need one more hit to eliminate Bob at 0 shields
+      helper.processDartThrowWithAnnouncements('S20');
+      expect(provider.getShields(bob.id), 0);
       expect(provider.isEliminated(bob.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Alice, your turn',
         'Single 20',
         'Tag! Got \'em!',
         'Bob is Tagged Out! Better luck next time!',
@@ -711,7 +735,22 @@ void main() {
       helper.clearAnnouncements();
       helper.handleTakeoutFinished();
 
-      // Bob's turn (eliminates team)
+      // Bob's turn (brings Team 2 to 0 shields)
+      helper.processDartThrowWithAnnouncements('S17');
+      expect(provider.getShields(carol.id), 0);
+      expect(provider.getShields(dave.id), 0);
+      expect(provider.isEliminated(carol.id), false);
+      expect(provider.isEliminated(dave.id), false);
+      expect(provider.hasWinner, false);
+      helper.verifyAnnouncements([
+        'Bob, your turn',
+        'Single 17',
+        'Tag! Got \'em!',
+        'DANGER! Carol and Dave are vulnerable! One more hit and you\'re out!',
+      ]);
+      helper.clearAnnouncements();
+
+      // Second dart in Bob's turn (eliminates Team 2 at 0 shields)
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 0);
       expect(provider.getShields(dave.id), 0);
@@ -719,7 +758,6 @@ void main() {
       expect(provider.isEliminated(dave.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Bob, your turn',
         'Single 17',
         'Tag! Got \'em!',
         'Carol and Dave are Tagged Out! Better luck next time!',
@@ -813,12 +851,26 @@ void main() {
       helper.processDartThrowWithAnnouncements('D17');
       expect(provider.getShields(carol.id), 0);
       expect(provider.getShields(dave.id), 0);
+      expect(provider.isEliminated(carol.id), false);
+      expect(provider.isEliminated(dave.id), false);
+      expect(provider.hasWinner, false);
+      helper.verifyAnnouncements([
+        'Alice, your turn',
+        'Double 17',
+        'Tag! Got \'em!',
+        'DANGER! Carol and Dave are vulnerable! One more hit and you\'re out!',
+      ]);
+      helper.clearAnnouncements();
+
+      // Second dart in Alice's turn (eliminates Team 2 at 0 shields)
+      helper.processDartThrowWithAnnouncements('S17');
+      expect(provider.getShields(carol.id), 0);
+      expect(provider.getShields(dave.id), 0);
       expect(provider.isEliminated(carol.id), true);
       expect(provider.isEliminated(dave.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Alice, your turn',
-        'Double 17',
+        'Single 17',
         'Tag! Got \'em!',
         'Carol and Dave are Tagged Out! Better luck next time!',
         'Remove your darts',
@@ -1258,15 +1310,17 @@ void main() {
       helper.verifyAnnouncements(['Single 17', 'Tag! Got \'em!', 'Warning! Carol\'s shields are almost gone!']);
       helper.clearAnnouncements();
 
-      // Step 3: Edit dart 1 to Single 14
-      provider.updateDartScore(bob.id, 1, 'S14');
-      audioQueue.announceHit(14, 'single');
+      // Step 3: Edit dart 1 to Single 17 (brings Carol to 0 shields, not eliminated)
+      provider.updateDartScore(bob.id, 1, 'S17');
+      audioQueue.announceHit(17, 'single');
       audioQueue.announceSuccessfulTag();
-      expect(provider.getShields(alice.id), 3);
-      helper.verifyAnnouncements(['Single 14', 'Tag! Got \'em!']);
+      audioQueue.announceVulnerable([carol.name]);
+      expect(provider.getShields(carol.id), 0);
+      expect(provider.isEliminated(carol.id), false);
+      helper.verifyAnnouncements(['Single 17', 'Tag! Got \'em!', 'DANGER! Carol is vulnerable! One more hit and you\'re out!']);
       helper.clearAnnouncements();
 
-      // Step 4: Edit dart 2 to Single 17 (elimination)
+      // Step 4: Edit dart 2 to Single 17 (eliminates Carol at 0 shields)
       provider.updateDartScore(bob.id, 2, 'S17');
       audioQueue.announceHit(17, 'single');
       audioQueue.announceSuccessfulTag();
@@ -1275,7 +1329,7 @@ void main() {
       expect(provider.isEliminated(carol.id), true);
       helper.verifyAnnouncements(['Single 17', 'Tag! Got \'em!', 'Carol is Tagged Out! Better luck next time!']);
 
-      expect(provider.getShields(alice.id), 3);
+      expect(provider.getShields(alice.id), 4); // Alice not hit, still at starting shields
       expect(provider.getShields(bob.id), 5);
       expect(provider.isEliminated(carol.id), true);
     });
@@ -1496,12 +1550,26 @@ void main() {
       helper.processDartThrowWithAnnouncements('T7');
       expect(provider.getShields(carol.id), 0);
       expect(provider.getShields(dave.id), 0);
+      expect(provider.isEliminated(carol.id), false);
+      expect(provider.isEliminated(dave.id), false);
+      expect(provider.hasWinner, false);
+      helper.verifyAnnouncements([
+        'Alice, your turn',
+        'Triple 7',
+        'Tag! Got \'em!',
+        'DANGER! Carol and Dave are vulnerable! One more hit and you\'re out!',
+      ]);
+      helper.clearAnnouncements();
+
+      // Second dart in Alice's turn (eliminates Team 2 at 0 shields)
+      helper.processDartThrowWithAnnouncements('S17');
+      expect(provider.getShields(carol.id), 0);
+      expect(provider.getShields(dave.id), 0);
       expect(provider.isEliminated(carol.id), true);
       expect(provider.isEliminated(dave.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Alice, your turn',
-        'Triple 7',
+        'Single 17',
         'Tag! Got \'em!',
         'Carol and Dave are Tagged Out! Better luck next time!',
         'Remove your darts',
@@ -1738,8 +1806,8 @@ void main() {
 
       provider.currentGame!.shields[alice.id] = 5;
       provider.currentGame!.shields[bob.id] = 4;
-      provider.currentGame!.shields[carol.id] = 3;
-      provider.currentGame!.shields[dave.id] = 2;
+      provider.currentGame!.shields[carol.id] = 2;
+      provider.currentGame!.shields[dave.id] = 1;
       provider.currentGame!.taggedIn[alice.id] = true;
 
       helper = TargetTagTestHelper(
@@ -1750,33 +1818,38 @@ void main() {
 
       helper.processDartThrowWithAnnouncements('T13');
       expect(provider.getShields(bob.id), 3);
-      expect(provider.getShields(carol.id), 2);
-      expect(provider.getShields(dave.id), 1);
+      expect(provider.getShields(carol.id), 1);
+      expect(provider.getShields(dave.id), 0);
+      expect(provider.isEliminated(dave.id), false); // Dave at 0 shields, not eliminated yet
       helper.verifyAnnouncements([
         'Alice, your turn',
         'Triple 13',
         'Tag! Got \'em!',
-        'Warning! Dave\'s shields are almost gone!',
+        'Warning! Carol\'s shields are almost gone!',
+        'DANGER! Dave is vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('T13');
       expect(provider.getShields(bob.id), 2);
-      expect(provider.getShields(carol.id), 1);
+      expect(provider.getShields(carol.id), 0);
       expect(provider.getShields(dave.id), 0);
-      expect(provider.isEliminated(dave.id), true);
+      expect(provider.isEliminated(carol.id), false); // Carol at 0 shields, not eliminated yet
+      expect(provider.isEliminated(dave.id), true); // Dave eliminated (was at 0, hit again)
       helper.verifyAnnouncements([
         'Triple 13',
         'Tag! Got \'em!',
         'Dave is Tagged Out! Better luck next time!',
-        'Warning! Carol\'s shields are almost gone!',
+        'DANGER! Carol is vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('T13');
       expect(provider.getShields(bob.id), 1);
       expect(provider.getShields(carol.id), 0);
-      expect(provider.isEliminated(carol.id), true);
+      expect(provider.getShields(dave.id), 0);
+      expect(provider.isEliminated(carol.id), true); // Carol eliminated (was at 0, hit again)
+      expect(provider.isEliminated(dave.id), true);
       helper.verifyAnnouncements([
         'Triple 13',
         'Tag! Got \'em!',
@@ -1827,8 +1900,8 @@ void main() {
 
       provider.currentGame!.shields['team1'] = 5;
       provider.currentGame!.shields['team2'] = 4;
-      provider.currentGame!.shields['team3'] = 3;
-      provider.currentGame!.shields['team4'] = 2;
+      provider.currentGame!.shields['team3'] = 2;
+      provider.currentGame!.shields['team4'] = 1;
       provider.currentGame!.taggedIn['team1'] = true;
 
       helper = TargetTagTestHelper(
@@ -1840,35 +1913,44 @@ void main() {
       helper.processDartThrowWithAnnouncements('T13');
       expect(provider.getShields(carol.id), 3);
       expect(provider.getShields(dave.id), 3);
-      expect(provider.getShields(eve.id), 2);
-      expect(provider.getShields(frank.id), 2);
-      expect(provider.getShields(grace.id), 1);
-      expect(provider.getShields(hank.id), 1);
+      expect(provider.getShields(eve.id), 1);
+      expect(provider.getShields(frank.id), 1);
+      expect(provider.getShields(grace.id), 0);
+      expect(provider.getShields(hank.id), 0);
+      expect(provider.isEliminated(grace.id), false); // Team4 at 0 shields, not eliminated yet
+      expect(provider.isEliminated(hank.id), false);
       helper.verifyAnnouncements([
         'Alice, your turn',
         'Triple 13',
         'Tag! Got \'em!',
-        'Warning! Grace and Hank\'s shields are almost gone!',
-      ]);
-      helper.clearAnnouncements();
-
-      helper.processDartThrowWithAnnouncements('T13');
-      expect(provider.getShields(grace.id), 0);
-      expect(provider.getShields(hank.id), 0);
-      expect(provider.isEliminated(grace.id), true);
-      expect(provider.isEliminated(hank.id), true);
-      helper.verifyAnnouncements([
-        'Triple 13',
-        'Tag! Got \'em!',
-        'Grace and Hank are Tagged Out! Better luck next time!',
         'Warning! Eve and Frank\'s shields are almost gone!',
+        'DANGER! Grace and Hank are vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('T13');
       expect(provider.getShields(eve.id), 0);
       expect(provider.getShields(frank.id), 0);
-      expect(provider.isEliminated(eve.id), true);
+      expect(provider.getShields(grace.id), 0);
+      expect(provider.getShields(hank.id), 0);
+      expect(provider.isEliminated(grace.id), true); // Team4 eliminated (was at 0, hit again)
+      expect(provider.isEliminated(hank.id), true);
+      expect(provider.isEliminated(eve.id), false); // Team3 at 0 shields, not eliminated yet
+      expect(provider.isEliminated(frank.id), false);
+      helper.verifyAnnouncements([
+        'Triple 13',
+        'Tag! Got \'em!',
+        'Grace and Hank are Tagged Out! Better luck next time!',
+        'DANGER! Eve and Frank are vulnerable! One more hit and you\'re out!',
+      ]);
+      helper.clearAnnouncements();
+
+      helper.processDartThrowWithAnnouncements('T13');
+      expect(provider.getShields(carol.id), 1);
+      expect(provider.getShields(dave.id), 1);
+      expect(provider.getShields(eve.id), 0);
+      expect(provider.getShields(frank.id), 0);
+      expect(provider.isEliminated(eve.id), true); // Team3 eliminated (was at 0, hit again)
       expect(provider.isEliminated(frank.id), true);
       helper.verifyAnnouncements([
         'Triple 13',
@@ -1986,13 +2068,13 @@ void main() {
       provider.currentGame!.currentTurnDarts[bob.id] = ['Miss', 'Miss', 'Miss'];
       provider.currentGame!.dartsThrown[bob.id] = 3;
 
-      // Edit to cause elimination: Single 17, Single 14, Single 17
-      provider.updateAllDartScores(bob.id, ['S17', 'S14', 'S17']);
+      // Edit to cause elimination: Three hits on Carol's target (17)
+      provider.updateAllDartScores(bob.id, ['S17', 'S17', 'S17']);
 
       // Verify shields and elimination
-      expect(provider.getShields(alice.id), 3); // Hit once (4 - 1 = 3)
+      expect(provider.getShields(alice.id), 4); // Alice not hit, unchanged
       expect(provider.getShields(bob.id), 5); // Bob unchanged
-      expect(provider.getShields(carol.id), 0); // Hit twice (2 - 2 = 0)
+      expect(provider.getShields(carol.id), 0); // Hit three times (2 → 1 → 0 → eliminated)
       expect(provider.isEliminated(carol.id), true);
       expect(provider.isEliminated(alice.id), false);
       expect(provider.isEliminated(bob.id), false);
@@ -2124,9 +2206,10 @@ void main() {
       provider.currentGame!.targetNumbers[alice.id] = 14;
       provider.currentGame!.targetNumbers[bob.id] = 20;
 
-      // Set turn start state - Alice tagged-in with 5 shields, Bob with 3 shields
+      // Set turn start state - Alice tagged-in with 5 shields, Bob with 2 shields
+      // With new elimination logic, Bob needs 3 hits to eliminate (2→1→0→eliminated)
       provider.currentGame!.turnStartShields[alice.id] = 5;
-      provider.currentGame!.turnStartShields[bob.id] = 3;
+      provider.currentGame!.turnStartShields[bob.id] = 2;
       provider.currentGame!.turnStartTaggedIn[alice.id] = true;
 
       // Add misses to current turn
@@ -2136,9 +2219,8 @@ void main() {
       // Edit to attack Bob: Single 20, Single 20, Single 20
       provider.updateAllDartScores(alice.id, ['S20', 'S20', 'S20']);
 
-      // With hero bonus, Bob should lose shields faster
-      // Each hit causes 2 damage (1 normal + 1 hero bonus)
-      expect(provider.getShields(bob.id), 0); // 3 - (3 * 2) would be -3, so 0
+      // Bob should be eliminated (2→1→0→eliminated)
+      expect(provider.getShields(bob.id), 0);
       expect(provider.isEliminated(bob.id), true);
     });
 

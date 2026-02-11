@@ -316,11 +316,27 @@ void main() {
     await removeDarts(tester);
     await tester.pump(const Duration(seconds: 1));
 
-    // Turn 3: Player 1 attacks Player 2's target to eliminate (3 hits removes 2 shields + elimination)
+    // Turn 3: Player 1 attacks Player 2's target (3 hits: 2->1->0, Player 2 vulnerable)
     await throwDart(tester, target2, multiplier: 'single'); // Attack! (shields 2->1)
     await tester.pump(const Duration(milliseconds: 300));
-    await throwDart(tester, target2, multiplier: 'single'); // Attack! (shields 1->0)
+    await throwDart(tester, target2, multiplier: 'single'); // Attack! (shields 1->0, vulnerable)
     await tester.pump(const Duration(milliseconds: 300));
+    await throwDart(tester, target2, multiplier: 'single'); // Miss to end turn
+    await tester.pump(const Duration(milliseconds: 500));
+    await removeDarts(tester);
+    await tester.pump(const Duration(seconds: 1));
+
+    // Turn 4: Player 2 misses (still vulnerable at 0 shields)
+    await throwDart(tester, 1, multiplier: 'single'); // Miss
+    await tester.pump(const Duration(milliseconds: 300));
+    await throwDart(tester, 1, multiplier: 'single'); // Miss
+    await tester.pump(const Duration(milliseconds: 300));
+    await throwDart(tester, 1, multiplier: 'single'); // Miss
+    await tester.pump(const Duration(milliseconds: 300));
+    await removeDarts(tester);
+    await tester.pump(const Duration(seconds: 1));
+
+    // Turn 5: Player 1 eliminates Player 2 with hit at 0 shields
     await throwDart(tester, target2, multiplier: 'single'); // Elimination!
     await tester.pump(const Duration(milliseconds: 500));
     await removeDarts(tester);
@@ -385,49 +401,11 @@ void main() {
     await removeDarts(tester);
     await tester.pump(const Duration(seconds: 1));
 
-    // Turn 3 (Team1 Player2): Attack opponent 3 times
-    await throwDart(tester, opponentTargetNum, multiplier: 'single');
-    await tester.pump(const Duration(milliseconds: 500));
-    await throwDart(tester, opponentTargetNum, multiplier: 'single');
-    await tester.pump(const Duration(milliseconds: 500));
-    await throwDart(tester, opponentTargetNum, multiplier: 'single');
+    // Turn 3 (Team1 Player2): Attack opponent (Team 2 at 0 shields, eliminate with 1 hit)
+    await throwDart(tester, opponentTargetNum, multiplier: 'single'); // Elimination!
     await tester.pump(const Duration(milliseconds: 500));
     await removeDarts(tester);
     await tester.pump(const Duration(seconds: 1));
-
-    // Turn 4 (Team2 Player2): Miss all 3 throws
-    await throwDart(tester, 1, multiplier: 'single'); // Miss
-    await tester.pump(const Duration(milliseconds: 500));
-    await throwDart(tester, 1, multiplier: 'single'); // Miss
-    await tester.pump(const Duration(milliseconds: 500));
-    await throwDart(tester, 1, multiplier: 'single'); // Miss
-    await tester.pump(const Duration(milliseconds: 500));
-    await removeDarts(tester);
-    await tester.pump(const Duration(seconds: 1));
-
-    // Turns 5-6: Continue attacking until Team 2 is eliminated
-    // Attack for 2 more rounds (6 more hits total = 9 hits at 0 shields should eliminate)
-    for (int i = 0; i < 2; i++) {
-      // Team1 attacks
-      await throwDart(tester, opponentTargetNum, multiplier: 'single');
-      await tester.pump(const Duration(milliseconds: 500));
-      await throwDart(tester, opponentTargetNum, multiplier: 'single');
-      await tester.pump(const Duration(milliseconds: 500));
-      await throwDart(tester, opponentTargetNum, multiplier: 'single');
-      await tester.pump(const Duration(milliseconds: 500));
-      await removeDarts(tester);
-      await tester.pump(const Duration(seconds: 1));
-
-      // Team2 misses (if still alive)
-      await throwDart(tester, 1, multiplier: 'single'); // Miss
-      await tester.pump(const Duration(milliseconds: 500));
-      await throwDart(tester, 1, multiplier: 'single'); // Miss
-      await tester.pump(const Duration(milliseconds: 500));
-      await throwDart(tester, 1, multiplier: 'single'); // Miss
-      await tester.pump(const Duration(milliseconds: 500));
-      await removeDarts(tester);
-      await tester.pump(const Duration(seconds: 1));
-    }
 
     // Extended wait for team mode victory processing and results screen
     await tester.pump(const Duration(seconds: 5)); // Victory announcements

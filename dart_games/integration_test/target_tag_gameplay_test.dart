@@ -2264,11 +2264,27 @@ void main() {
       await removeDarts(tester);
       await tester.pump(const Duration(seconds: 1));
 
-      // Player 1's turn - attack Player 2's target (5) to reduce their shields
-      await throwDart(tester, 5, multiplier: 'single'); // Attack!
+      // Player 1's turn - attack Player 2's target (5) to reduce their shields (2->1->0)
+      await throwDart(tester, 5, multiplier: 'single'); // Attack! (2->1)
       await tester.pump(const Duration(milliseconds: 300));
-      await throwDart(tester, 5, multiplier: 'single'); // Attack!
+      await throwDart(tester, 5, multiplier: 'single'); // Attack! (1->0, vulnerable)
       await tester.pump(const Duration(milliseconds: 300));
+      await throwDart(tester, 5, multiplier: 'single'); // Miss to end turn
+      await tester.pump(const Duration(milliseconds: 500));
+      await removeDarts(tester);
+      await tester.pump(const Duration(seconds: 1));
+
+      // Player 2's turn - miss all darts (still vulnerable at 0 shields)
+      await throwMiss(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+      await throwMiss(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+      await throwMiss(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+      await removeDarts(tester);
+      await tester.pump(const Duration(seconds: 1));
+
+      // Player 1's turn - eliminate Player 2 with hit at 0 shields
       await throwDart(tester, 5, multiplier: 'single'); // Elimination!
       await tester.pump(const Duration(milliseconds: 500));
       await removeDarts(tester);

@@ -1231,8 +1231,46 @@ void main() {
         await tester.pump();
       }
 
-      // Player 1 turn: Attack Player 2 (eliminate them)
+      // Player 1 turn: Attack Player 2 (bring to 0 shields, vulnerable)
       // Assume Player 2's target is 5
+      await throwDart(tester, 5);  // Attack! (1->0, vulnerable)
+      await throwMiss(tester);
+      await throwMiss(tester);
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
+      // Click DARTS REMOVED and continue
+      await clickDartsRemoved(tester);
+
+      if (skipButton.evaluate().isNotEmpty) {
+        await tester.tap(skipButton.first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+      }
+
+      // Player 2 turn: Miss all darts (still vulnerable at 0 shields)
+      await throwMiss(tester);
+      await throwMiss(tester);
+      await throwMiss(tester);
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
+      // Click DARTS REMOVED and continue
+      await clickDartsRemoved(tester);
+
+      if (skipButton.evaluate().isNotEmpty) {
+        await tester.tap(skipButton.first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+      }
+
+      // Player 1 turn: Eliminate Player 2 with hit at 0 shields
       await throwDart(tester, 5);  // Eliminate! Should show GOLD border
       await throwMiss(tester);
       await throwMiss(tester);
@@ -1780,7 +1818,33 @@ void main() {
         await tester.pump();
       }
 
-      // Player 1 turn: Attack again to eliminate (1→0)
+      // Player 1 turn: Attack again to bring to 0 (1→0, vulnerable)
+      await throwDart(tester, 5);  // Attack! (1->0, vulnerable)
+      await throwMiss(tester);
+      await throwMiss(tester);
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
+      await clickDartsRemoved(tester);
+
+      if (skipButton.evaluate().isNotEmpty) {
+        await tester.tap(skipButton.first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+      }
+
+      // Player 2 turn: Skip (still vulnerable at 0 shields)
+      if (skipButton.evaluate().isNotEmpty) {
+        await tester.tap(skipButton.first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+      }
+
+      // Player 1 turn: Eliminate Player 2 with hit at 0 shields
       await throwDart(tester, 5);  // Eliminate!
       await throwMiss(tester);
       await throwMiss(tester);
