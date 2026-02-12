@@ -2,8 +2,8 @@ import 'game_announcement_queue_service.dart';
 
 /// Target Tag sound effects library
 class TargetTagSoundEffects {
-  // Base path for all Target Tag sound effects
-  static const String _basePath = 'assets/games/target_tag/sounds/';
+  // Base path for all Target Tag sound effects (without 'assets/' prefix for AssetSource)
+  static const String _basePath = 'games/target_tag/sounds/';
 
   // PRIORITY 1: Turn Transitions
   static const SoundEffectConfig turnStart = SoundEffectConfig(

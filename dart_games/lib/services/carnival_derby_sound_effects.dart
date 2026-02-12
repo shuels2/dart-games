@@ -3,9 +3,9 @@ import 'game_announcement_queue_service.dart';
 /// Carnival Derby sound effects library
 /// Reuses some Target Tag sound effects where appropriate
 class CarnivalDerbySoundEffects {
-  // Base path for Carnival Derby-specific sound effects
-  static const String _basePath = 'assets/games/carnival_derby/sounds/';
-  static const String _targetTagPath = 'assets/games/target_tag/sounds/';
+  // Base path for Carnival Derby-specific sound effects (without 'assets/' prefix for AssetSource)
+  static const String _basePath = 'games/carnival_derby/sounds/';
+  static const String _targetTagPath = 'games/target_tag/sounds/';
 
   // PRIORITY 1: Turn Transitions
   static const SoundEffectConfig horseraceStart = SoundEffectConfig(
