@@ -124,7 +124,7 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
         title: Row(
           children: [
             Image.asset(
-              'assets/images/logo.png',
+              'assets/common/images/logo.png',
               height: 40,
               width: 40,
             ),
@@ -137,7 +137,7 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
       body: Column(
         children: [
           Image.asset(
-            'assets/images/connect_dartboard_icon.png',
+            'assets/common/images/connect_dartboard_icon.png',
             width: double.infinity,
             height: 540,
             fit: BoxFit.cover,

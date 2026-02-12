@@ -108,7 +108,7 @@ class _TeamSetupWidgetState extends State<TeamSetupWidget> {
 
   Widget _buildTeamBucket(String teamId, int teamIndex) {
     final teamPlayers = teams[teamId]!;
-    final iconPath = 'assets/icon/TargetTag-TeamIcon-${teamIndex.toString().padLeft(2, '0')}.png';
+    final iconPath = 'assets/games/target_tag/icons/TargetTag-TeamIcon-${teamIndex.toString().padLeft(2, '0')}.png';
 
     return Container(
       width: 140,
@@ -237,7 +237,7 @@ class _TeamSetupWidgetState extends State<TeamSetupWidget> {
                   child: Row(
                     children: [
                       Image.asset(
-                        'assets/icon/TargetTag-TeamIcon-${teamIndex.toString().padLeft(2, '0')}.png',
+                        'assets/games/target_tag/icons/TargetTag-TeamIcon-${teamIndex.toString().padLeft(2, '0')}.png',
                         width: 20,
                         height: 20,
                       ),

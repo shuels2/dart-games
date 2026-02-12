@@ -428,7 +428,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF8B5E3C), // Warm Cedar base color
                     image: DecorationImage(
-                      image: AssetImage('assets/images/CarnivalDerby-WoodPlanks.jpg'),
+                      image: AssetImage('assets/games/carnival_derby/images/CarnivalDerby-WoodPlanks.jpg'),
                       fit: BoxFit.cover,
                       repeat: ImageRepeat.repeat,
                       colorFilter: ColorFilter.mode(

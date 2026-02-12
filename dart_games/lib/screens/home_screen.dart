@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final games = [
       {
         'title': 'Carnival Derby',
-        'imageAssetPath': 'assets/icon/icon.png',
+        'imageAssetPath': 'assets/common/icons/icon.png',
         'color': Colors.amber,
         'onTap': dartboardProvider.canPlayGames
             ? () => Navigator.push(
@@ -176,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       {
         'title': 'Target Tag',
-        'imageAssetPath': 'assets/icon/TargetTag-Icon.png',
+        'imageAssetPath': 'assets/games/target_tag/icons/TargetTag-Icon.png',
         'color': const Color(0xFFFF007A),
         'onTap': dartboardProvider.canPlayGames
             ? () => Navigator.push(
@@ -218,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Row(
           children: [
             Image.asset(
-              'assets/images/logo.png',
+              'assets/common/images/logo.png',
               height: 40,
               width: 40,
             ),

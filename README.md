@@ -281,10 +281,29 @@ dart_games/
 │       ├── home_screen.dart         # Game selection
 │       ├── options_screen.dart      # System settings
 │       └── games/
-│           └── carnival_horse_race/ # Individual game
+│           ├── carnival_horse_race/ # Carnival Derby game
+│           └── target_tag/          # Target Tag game
 ├── test/                            # Test suite (219 tests)
-└── assets/                          # Images, fonts, etc.
+└── assets/
+    ├── common/                      # Shared assets (logo, app icon)
+    │   ├── icons/
+    │   └── images/
+    └── games/                       # Game-specific assets
+        ├── carnival_derby/          # Carnival Derby assets
+        │   ├── icons/
+        │   ├── images/
+        │   └── sounds/
+        └── target_tag/              # Target Tag assets
+            ├── icons/
+            └── sounds/
 ```
+
+**Asset Organization:**
+- All game assets (images, sounds, icons) are organized in game-specific folders under `assets/games/[game_name]/`
+- Shared assets (app logo, app icon) are placed in `assets/common/`
+- This prevents file name conflicts between games and creates clear ownership of assets
+- When adding a new game, create `assets/games/your_game/` and organize all game assets there
+- See [CLAUDE.md](CLAUDE.md) Asset Organization section for complete guidelines
 
 ### Design Philosophy
 
@@ -371,11 +390,52 @@ if (await musicService.hasCustomMusic()) {
 }
 ```
 
-### 4. Add Game Card to Home Screen
+### 4. Organize Game Assets
+
+Create a dedicated asset folder for your game following the standard structure:
+
+```bash
+# Create asset folders
+mkdir -p assets/games/your_game/icons
+mkdir -p assets/games/your_game/images
+mkdir -p assets/games/your_game/sounds
+
+# Place all game-specific assets in these folders
+# - Game icons → assets/games/your_game/icons/
+# - Game images → assets/games/your_game/images/
+# - Game sounds → assets/games/your_game/sounds/
+```
+
+**Update pubspec.yaml:**
+```yaml
+assets:
+  # Shared/common assets
+  - assets/common/icons/
+  - assets/common/images/
+
+  # Game-specific assets
+  - assets/games/carnival_derby/
+  - assets/games/target_tag/
+  - assets/games/your_game/        # ← Add your game folder
+```
+
+**Reference assets in code:**
+```dart
+// Use full paths to game assets
+Image.asset('assets/games/your_game/icons/your_icon.png')
+AssetImage('assets/games/your_game/images/background.jpg')
+
+// In sound effects service
+static const String _basePath = 'assets/games/your_game/sounds/';
+```
+
+See [CLAUDE.md](CLAUDE.md) Asset Organization section for complete guidelines.
+
+### 5. Add Game Card to Home Screen
 
 Update `lib/screens/home_screen.dart` to include navigation to your game.
 
-### 5. Create Configuration Factories
+### 6. Create Configuration Factories
 
 Add factory methods to:
 - `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` for dartboard styling
@@ -383,7 +443,7 @@ Add factory methods to:
 
 See existing examples for Carnival Derby and Target Tag.
 
-### 6. Create Tests
+### 7. Create Tests
 
 Follow existing patterns in `test/screens/games/` to create integration tests:
 - User management tests (player selection, stats tracking)
@@ -392,7 +452,7 @@ Follow existing patterns in `test/screens/games/` to create integration tests:
 
 All tests must pass before deployment (`flutter test`).
 
-### 7. Update Documentation
+### 8. Update Documentation
 
 Update `CLAUDE.md` with new test counts and game-specific notes.
 
