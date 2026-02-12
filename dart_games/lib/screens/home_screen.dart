@@ -5,7 +5,6 @@ import '../providers/dartboard_provider.dart';
 import '../services/dart_announcer_service.dart';
 import '../widgets/dartboard_status_indicator.dart';
 import '../widgets/compact_dartboard_info.dart';
-import 'test_dartboard_screen.dart';
 import 'options_screen.dart';
 import 'games/carnival_horse_race/horse_race_menu_screen.dart';
 import 'games/target_tag/target_tag_menu_screen.dart';
@@ -159,10 +158,48 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  List<Map<String, dynamic>> _getAvailableGames(DartboardProvider dartboardProvider) {
+    // Define all available games here
+    final games = [
+      {
+        'title': 'Carnival Derby',
+        'imageAssetPath': 'assets/icon/icon.png',
+        'color': Colors.amber,
+        'onTap': dartboardProvider.canPlayGames
+            ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HorseRaceMenuScreen(),
+                  ),
+                )
+            : null,
+      },
+      {
+        'title': 'Target Tag',
+        'imageAssetPath': 'assets/icon/TargetTag-Icon.png',
+        'color': const Color(0xFFFF007A),
+        'onTap': dartboardProvider.canPlayGames
+            ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TargetTagMenuScreen(),
+                  ),
+                )
+            : null,
+      },
+      // Add new games here - they will automatically be sorted alphabetically
+    ];
+
+    // Sort games alphabetically by title
+    games.sort((a, b) => (a['title'] as String).compareTo(b['title'] as String));
+
+    return games;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final dartboardProvider = context.watch<DartboardProvider>();
+    final games = _getAvailableGames(dartboardProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -186,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 40,
             ),
             const SizedBox(width: 12),
-            const Text('Dart Games'),
+            const Text('Let\'s play some Dart Games'),
           ],
         ),
         actions: [
@@ -217,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 value: 'options',
                 child: Row(
                   children: [
-                    Icon(Icons.settings),
+                    Icon(Icons.settings, color: Colors.grey),
                     SizedBox(width: 12),
                     Text('System Settings'),
                   ],
@@ -237,66 +274,26 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ],
+        foregroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Games',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+        child: Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: games.map((game) {
+            return SizedBox(
+              width: 315,
+              height: 350,
+              child: _buildGameCard(
+                context: context,
+                imageAssetPath: game['imageAssetPath'] as String?,
+                title: game['title'] as String,
+                color: game['color'] as Color,
+                onTap: game['onTap'] as VoidCallback?,
               ),
-            ),
-            const SizedBox(height: 24),
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                SizedBox(
-                  width: 315,
-                  height: 350,
-                  child: _buildGameCard(
-                    context: context,
-                    imageAssetPath: 'assets/icon/icon.png',
-                    title: 'Carnival Derby',
-                    color: Colors.amber,
-                    onTap: dartboardProvider.canPlayGames
-                        ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const HorseRaceMenuScreen(),
-                              ),
-                            );
-                          }
-                        : null,
-                  ),
-                ),
-                SizedBox(
-                  width: 315,
-                  height: 350,
-                  child: _buildGameCard(
-                    context: context,
-                    imageAssetPath: 'assets/icon/TargetTag-Icon.png',
-                    title: 'Target Tag',
-                    color: const Color(0xFFFF007A),
-                    onTap: dartboardProvider.canPlayGames
-                        ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const TargetTagMenuScreen(),
-                              ),
-                            );
-                          }
-                        : null,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            );
+          }).toList(),
         ),
       ),
     );
