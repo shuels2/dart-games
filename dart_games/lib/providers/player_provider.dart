@@ -61,7 +61,7 @@ class PlayerProvider extends ChangeNotifier {
   void _sortPlayers() {
     if (_allPlayers.isEmpty) return;
 
-    final sortedAt = _lastSortedAt ?? DateTime(1970); // Epoch if never sorted
+    final sortedAt = _lastSortedAt ?? DateTime.now(); // Default to now if never sorted
 
     // Separate into "old" (sorted) and "new" (unsorted) players
     final oldPlayers = _allPlayers

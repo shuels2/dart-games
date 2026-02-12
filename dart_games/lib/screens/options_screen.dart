@@ -54,6 +54,11 @@ class _OptionsScreenState extends State<OptionsScreen> {
     _loadVoices();
     _loadSettings();
     _scrollController.addListener(_onScroll);
+
+    // Load players when screen opens (ensures alphabetical sorting)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PlayerProvider>().loadPlayers();
+    });
   }
 
   @override
