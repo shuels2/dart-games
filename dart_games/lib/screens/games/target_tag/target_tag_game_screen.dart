@@ -15,6 +15,7 @@ import '../../../widgets/target_tag/game_info_panel_widget.dart';
 import '../../../widgets/target_tag/player_card_widget.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../widgets/interactive_dartboard.dart';
+import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import 'target_tag_results_screen.dart';
 
 class TargetTagGameScreen extends StatefulWidget {
@@ -30,9 +31,9 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   MockScoliaApiService? _mockApi;
   TargetTagAnnouncementHelper? _audioQueue;
   final ScrollController _scrollController = ScrollController();
+  final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
 
   bool _hasAnnouncedSuddenDeath = false;
-  bool _showDartboard = true; // Controls dartboard emulator visibility
 
   @override
   void initState() {
@@ -74,6 +75,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   void dispose() {
     _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
+    _dartboardEmulatorController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -707,30 +709,40 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           ),
 
           // Dartboard emulator (if not connected and visible)
-          if (!dartboardProvider.isConnected && _showDartboard)
-            _buildDartboardSection(shouldPromptTakeout, currentPlayer),
+          DartboardEmulatorSection(
+            controller: _dartboardEmulatorController,
+            isConnected: dartboardProvider.isConnected,
+            shouldPromptTakeout: shouldPromptTakeout,
+            dartboardKey: _dartboardKey,
+            onDartThrow: (score, multiplier, baseScore, position) {
+              if (_mockApi != null) {
+                _mockApi!.simulateDartThrow(
+                  score: score,
+                  multiplier: multiplier,
+                  playerName: 'Player',
+                  baseScore: baseScore,
+                  widgetX: position.dx,
+                  widgetY: position.dy,
+                  widgetSize: 250,
+                );
+              }
+            },
+            onRemoveDarts: () {
+              _mockApi?.simulateTakeoutFinished();
+              _dartboardKey.currentState?.removeDarts();
+            },
+            config: DartboardSectionConfig.targetTag(),
+          ),
             ],
           ),
         ],
       ),
       // Floating button to toggle dartboard visibility (only show when not connected)
-      floatingActionButton: !dartboardProvider.isConnected
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                setState(() {
-                  _showDartboard = !_showDartboard;
-                });
-              },
-              backgroundColor: const Color(0xFFFF007A),
-              icon: Icon(_showDartboard ? Icons.visibility_off : Icons.visibility),
-              label: Text(
-                _showDartboard ? 'Hide Dartboard' : 'Show Dartboard',
-                style: GoogleFonts.fredoka(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
-          : null,
+      floatingActionButton: DartboardEmulatorFAB(
+        controller: _dartboardEmulatorController,
+        isConnected: dartboardProvider.isConnected,
+        config: DartboardFABConfig.targetTag(),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
@@ -1359,114 +1371,4 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     return int.tryParse(numberStr);
   }
 
-  Widget _buildDartboardSection(bool disabled, Player? currentPlayer) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A2A3E),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AbsorbPointer(
-            absorbing: disabled,
-            child: Opacity(
-              opacity: disabled ? 0.5 : 1.0,
-              child: InteractiveDartboard(
-                key: _dartboardKey,
-                size: 250,
-                onDartThrow: (score, multiplier, baseScore, position) {
-                  if (_mockApi != null) {
-                    _mockApi!.simulateDartThrow(
-                      score: score,
-                      multiplier: multiplier,
-                      playerName: 'Player',
-                      baseScore: baseScore,
-                      widgetX: position.dx,
-                      widgetY: position.dy,
-                      widgetSize: 250,
-                    );
-                  }
-                },
-                onRemoveDarts: () {
-                  // This is called when dartboard is cleared
-                },
-              ),
-            ),
-          ),
-          // Button modal over dartboard for removing darts
-          if (disabled)
-            _buildDartboardButtonModal(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDartboardButtonModal() {
-    return Container(
-      width: 250,
-      height: 250,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E).withOpacity(0.9), // Dark navy
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFFFF007A), // Hot pink border
-          width: 3,
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.pan_tool,
-              color: Colors.white,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Remove Your Darts',
-              style: GoogleFonts.fredoka(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.0,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                // Simulate takeout finished
-                _mockApi?.simulateTakeoutFinished();
-                // Also clear the dartboard visually
-                _dartboardKey.currentState?.removeDarts();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF007A), // Hot pink
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                side: const BorderSide(
-                  color: Color(0xFF00FFA3), // Neon green border
-                  width: 4,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                'DARTS REMOVED',
-                style: GoogleFonts.fredoka(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

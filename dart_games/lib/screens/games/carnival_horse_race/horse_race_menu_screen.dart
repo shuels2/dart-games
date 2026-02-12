@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,7 +5,7 @@ import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
 import '../../../providers/dartboard_provider.dart';
-import '../../../services/photo_service.dart';
+import '../../../widgets/add_player/add_player.dart';
 import '../../../widgets/horse_race/player_selection_card.dart';
 import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
@@ -32,7 +30,6 @@ class HorseRaceMenuScreen extends StatefulWidget {
 }
 
 class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
-  final PhotoService _photoService = PhotoService();
   late double _targetScore;
   bool _exactScoreMode = false;
   final ScrollController _availablePlayersScrollController = ScrollController();
@@ -762,7 +759,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
               ),
               if (allPlayers.isNotEmpty)
                 ElevatedButton.icon(
-                  onPressed: () => _showAddPlayerDialog(context),
+                  onPressed: _handleAddPlayer,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE63946), // Lava Red
                     foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
@@ -807,7 +804,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
-                        onPressed: () => _showAddPlayerDialog(context),
+                        onPressed: _handleAddPlayer,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE63946), // Lava Red
                           foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
@@ -933,307 +930,53 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
     );
   }
 
-  void _showAddPlayerDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    String? photoPath;
-    bool showError = false;
-
-    showDialog(
+  void _handleAddPlayer() async {
+    final player = await showAddPlayerDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1D3557).withOpacity(0.95), // Midnight Navy
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Text(
-            'Add New Player',
-            style: GoogleFonts.montserrat(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFFF1FAEE), // Cloud Dancer
-              shadows: [
-                const Shadow(
-                  color: Color(0xFFFFD700), // Canary Yellow glow
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Photo preview section
-                if (photoPath != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Stack(
-                      alignment: Alignment.topRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: kIsWeb
-                              ? NetworkImage(photoPath!)
-                              : FileImage(File(photoPath!)) as ImageProvider,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () {
-                              setDialogState(() {
-                                photoPath = null;
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey[300],
-                      child: Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                TextField(
-                  controller: nameController,
-                  style: const TextStyle(color: Color(0xFFF1FAEE)), // Cloud Dancer
-                  decoration: InputDecoration(
-                    labelText: 'Player Name',
-                    labelStyle: const TextStyle(color: Color(0xFFF1FAEE)),
-                    border: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF48CAE4)),
-                    ),
-                    enabledBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF48CAE4)),
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFFFD700), width: 2),
-                    ),
-                    errorText: showError ? 'Please enter a player name' : null,
-                    errorBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red, width: 2),
-                    ),
-                    focusedErrorBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red, width: 2),
-                    ),
-                  ),
-                  autofocus: true,
-                  onChanged: (value) {
-                    // Clear error when user starts typing
-                    if (showError && value.trim().isNotEmpty) {
-                      setDialogState(() {
-                        showError = false;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Photo (Optional)',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFFF1FAEE), // Cloud Dancer
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 130,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final path = await _photoService.takePhoto(context: context);
-                          if (path != null) {
-                            setDialogState(() {
-                              photoPath = path;
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF48CAE4), // Electric Teal
-                          foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-                          side: const BorderSide(
-                            color: Color(0xFFFFD700), // Canary Yellow border
-                            width: 2,
-                          ),
-                        ),
-                        icon: const Icon(Icons.camera_alt),
-                        label: Text(
-                          'CAMERA',
-                          style: GoogleFonts.bangers(
-                            fontSize: 14,
-                            letterSpacing: 1.0,
-                            color: const Color(0xFFF1FAEE),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    SizedBox(
-                      width: 130,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final path = await _photoService.selectFromGallery();
-                          if (path != null) {
-                            setDialogState(() {
-                              photoPath = path;
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF48CAE4), // Electric Teal
-                          foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-                          side: const BorderSide(
-                            color: Color(0xFFFFD700), // Canary Yellow border
-                            width: 2,
-                          ),
-                        ),
-                        icon: const Icon(Icons.photo_library),
-                        label: Text(
-                          'GALLERY',
-                          style: GoogleFonts.bangers(
-                            fontSize: 14,
-                            letterSpacing: 1.0,
-                            color: const Color(0xFFF1FAEE),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 130,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1D3557), // Midnight Navy
-                      foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-                      side: const BorderSide(
-                        color: Color(0xFF48CAE4), // Electric Teal border
-                        width: 3,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'CANCEL',
-                      style: GoogleFonts.bangers(
-                        fontSize: 14,
-                        letterSpacing: 1.0,
-                        color: const Color(0xFFF1FAEE), // Cloud Dancer
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 130,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE63946), // Lava Red
-                      foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-                      side: const BorderSide(
-                        color: Color(0xFFFFD700), // Canary Yellow border
-                        width: 3,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {
-                      if (nameController.text.trim().isEmpty) {
-                        setDialogState(() {
-                          showError = true;
-                        });
-                        return;
-                      }
-
-                      final player = Player.create(
-                        name: nameController.text.trim(),
-                        photoPath: photoPath,
-                      );
-
-                      final playerProvider = context.read<PlayerProvider>();
-                      playerProvider.savePlayer(player);
-
-                      // Auto-select the newly added player only if max not reached
-                      if (playerProvider.selectedPlayers.length < 8) {
-                        playerProvider.selectPlayer(player, maxPlayers: 8);
-                      }
-
-                      Navigator.pop(dialogContext);
-
-                      // Scroll to show the new player after dialog closes in both lists
-                      Future.delayed(const Duration(milliseconds: 100), () {
-                        if (mounted) {
-                          // Use post-frame callback to ensure layout is complete
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              // Scroll available players list to show full tile with buffer
-                              if (_availablePlayersScrollController.hasClients) {
-                                final targetPosition = _availablePlayersScrollController.position.maxScrollExtent + 150;
-                                _availablePlayersScrollController.animateTo(
-                                  targetPosition,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOut,
-                                );
-                              }
-                              // Scroll selected players list to show full tile with buffer
-                              if (_selectedPlayersScrollController.hasClients) {
-                                final targetPosition = _selectedPlayersScrollController.position.maxScrollExtent + 150;
-                                _selectedPlayersScrollController.animateTo(
-                                  targetPosition,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOut,
-                                );
-                              }
-                            }
-                          });
-                        }
-                      });
-                    },
-                    child: Text(
-                      'ADD PLAYER',
-                      style: GoogleFonts.bangers(
-                        fontSize: 14,
-                        letterSpacing: 1.0,
-                        color: const Color(0xFFF1FAEE),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+      config: AddPlayerDialogConfig.carnivalDerby(),
     );
+
+    if (player != null && mounted) {
+      final playerProvider = context.read<PlayerProvider>();
+      await playerProvider.savePlayer(player);
+
+      // Auto-select the newly added player only if max not reached
+      if (playerProvider.selectedPlayers.length < 8) {
+        playerProvider.selectPlayer(player, maxPlayers: 8);
+      }
+
+      // Scroll to show the new player after dialog closes in both lists
+      _scrollToNewPlayer();
+    }
+  }
+
+  void _scrollToNewPlayer() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        // Use post-frame callback to ensure layout is complete
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            // Scroll available players list to show full tile with buffer
+            if (_availablePlayersScrollController.hasClients) {
+              final targetPosition = _availablePlayersScrollController.position.maxScrollExtent + 150;
+              _availablePlayersScrollController.animateTo(
+                targetPosition,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+            // Scroll selected players list to show full tile with buffer
+            if (_selectedPlayersScrollController.hasClients) {
+              final targetPosition = _selectedPlayersScrollController.position.maxScrollExtent + 150;
+              _selectedPlayersScrollController.animateTo(
+                targetPosition,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          }
+        });
+      }
+    });
   }
 }

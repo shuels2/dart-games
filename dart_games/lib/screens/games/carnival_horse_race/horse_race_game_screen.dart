@@ -17,6 +17,7 @@ import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
+import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import 'horse_race_results_screen.dart';
 
 class HorseRaceGameScreen extends StatefulWidget {
@@ -33,7 +34,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
   MockScoliaApiService? _mockApi;
   CarnivalDerbyAnnouncementHelper? _audioQueue;
-  bool _showDartboard = true; // Controls dartboard emulator visibility
+  final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -125,6 +126,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   void dispose() {
     _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
+    _dartboardEmulatorController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -517,8 +519,30 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               ),
 
               // Dartboard emulator (only show when not connected to real dartboard and visible)
-              if (!dartboardProvider.isConnected && _showDartboard)
-                _buildDartboardSection(shouldPromptTakeout),
+              DartboardEmulatorSection(
+                controller: _dartboardEmulatorController,
+                isConnected: dartboardProvider.isConnected,
+                shouldPromptTakeout: shouldPromptTakeout,
+                dartboardKey: _dartboardKey,
+                onDartThrow: (score, multiplier, baseScore, position) {
+                  if (_mockApi != null) {
+                    _mockApi!.simulateDartThrow(
+                      score: score,
+                      multiplier: multiplier,
+                      playerName: 'Player',
+                      baseScore: baseScore,
+                      widgetX: position.dx,
+                      widgetY: position.dy,
+                      widgetSize: 250,
+                    );
+                  }
+                },
+                onRemoveDarts: () {
+                  _mockApi?.simulateTakeoutFinished();
+                  _dartboardKey.currentState?.removeDarts();
+                },
+                config: DartboardSectionConfig.carnivalDerby(),
+              ),
             ],
           );
         },
@@ -526,27 +550,11 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         ],
       ),
       // Floating button to toggle dartboard visibility (only show when not connected)
-      floatingActionButton: !dartboardProvider.isConnected
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                setState(() {
-                  _showDartboard = !_showDartboard;
-                });
-              },
-              backgroundColor: const Color(0xFFFFD700), // Canary Yellow
-              icon: Icon(
-                _showDartboard ? Icons.visibility_off : Icons.visibility,
-                color: const Color(0xFF8B5E3C), // Warm Cedar
-              ),
-              label: Text(
-                _showDartboard ? 'Hide Dartboard' : 'Show Dartboard',
-                style: GoogleFonts.rye(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF8B5E3C), // Warm Cedar
-                ),
-              ),
-            )
-          : null,
+      floatingActionButton: DartboardEmulatorFAB(
+        controller: _dartboardEmulatorController,
+        isConnected: dartboardProvider.isConnected,
+        config: DartboardFABConfig.carnivalDerby(),
+      ),
     );
   }
 
@@ -1235,121 +1243,4 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     );
   }
 
-  Widget _buildDartboardSection(bool disabled) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        border: const Border(
-          top: BorderSide(color: Colors.grey, width: 1),
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            'Click dartboard to throw',
-            style: GoogleFonts.montserrat(
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              AbsorbPointer(
-                absorbing: disabled,
-                child: Opacity(
-                  opacity: disabled ? 0.5 : 1.0,
-                  child: InteractiveDartboard(
-                    key: _dartboardKey,
-                    size: 250,
-                    onDartThrow: (score, multiplier, baseScore, position) {
-                      if (_mockApi != null) {
-                        _mockApi!.simulateDartThrow(
-                          score: score,
-                          multiplier: multiplier,
-                          playerName: 'Player',
-                          baseScore: baseScore,
-                          widgetX: position.dx,
-                          widgetY: position.dy,
-                          widgetSize: 250,
-                        );
-                      }
-                    },
-                    onRemoveDarts: () {
-                      // This is called when dartboard is cleared
-                    },
-                  ),
-                ),
-              ),
-              if (disabled)
-                Container(
-                  width: 250,
-                  height: 250,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1D3557).withOpacity(0.9), // Midnight Navy
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFFFD700), // Canary Yellow
-                      width: 3,
-                    ),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.pan_tool,
-                          color: Colors.white,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Remove Your Darts',
-                          style: GoogleFonts.bangers(
-                            color: const Color(0xFFF1FAEE), // Cloud Dancer
-                            fontSize: 18,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () {
-                            // Simulate takeout finished
-                            _mockApi?.simulateTakeoutFinished();
-                            // Also clear the dartboard visually
-                            _dartboardKey.currentState?.removeDarts();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE63946), // Lava Red
-                            foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                            side: const BorderSide(
-                              color: Color(0xFFFFD700), // Canary Yellow border
-                              width: 4,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            'DARTS REMOVED',
-                            style: GoogleFonts.bangers(
-                              fontSize: 16,
-                              letterSpacing: 1.0,
-                              color: const Color(0xFFF1FAEE),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }

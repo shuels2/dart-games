@@ -132,6 +132,7 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
             const Text('Dartboard Setup'),
           ],
         ),
+        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [

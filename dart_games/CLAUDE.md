@@ -82,6 +82,41 @@ dart_games/
 - Sound effects play simultaneously with announcements
 - Uses the global `DartAnnouncerService` for voice output
 
+**6. In-Game Dartboard Emulator Components (`lib/widgets/dartboard_emulator/`)**
+- **Purpose**: Allows offline development and testing when a physical Scolia dartboard is NOT connected
+- **When shown**: ONLY when `!dartboardProvider.isConnected` (emulator mode)
+- **When hidden**: Automatically hidden when connected to a real Scolia dartboard
+- Shared, reusable dartboard emulator UI components for all games
+- Ensures consistent dartboard behavior across games while allowing game-specific styling
+- **DartboardEmulatorController** - Manages show/hide state (ChangeNotifier pattern)
+- **DartboardEmulatorSection** - Renders dartboard container with disabled overlay
+- **DartboardEmulatorFAB** - Floating action button for show/hide toggle (only visible in emulator mode)
+- **Configuration classes** - Game-specific styling via factory methods
+  - `DartboardSectionConfig.carnivalDerby()` - Carnival Derby styling
+  - `DartboardSectionConfig.targetTag()` - Target Tag styling
+  - `DartboardFABConfig.carnivalDerby()` - Carnival Derby FAB styling
+  - `DartboardFABConfig.targetTag()` - Target Tag FAB styling
+- All games use identical dartboard logic from `InteractiveDartboard` widget
+- See "Dartboard Emulator Component Integration" section for implementation guide
+
+**7. Add Player Dialog Component (`lib/widgets/add_player/`)**
+- **Purpose**: Shared modal for adding new players across all games and System Settings
+- Ensures consistent player creation logic while allowing screen-specific styling
+- **AddPlayerDialog** - Function that shows dialog and returns `Player?` or `null`
+- **AddPlayerDialogConfig** - Configuration class for styling (colors, fonts, buttons)
+- **Factory methods** - Pre-configured styling for each game/screen
+  - `AddPlayerDialogConfig.carnivalDerby()` - Carnival theme (red/yellow/teal, Montserrat/Bangers fonts)
+  - `AddPlayerDialogConfig.targetTag()` - Tech/neon theme (pink/green, Fredoka font)
+  - `AddPlayerDialogConfig.optionsScreen(context)` - Material Design defaults
+- Features:
+  - Photo upload via camera or gallery (using PhotoService)
+  - Name validation (empty check)
+  - Photo preview with remove button
+  - Returns Player object if created, null if cancelled
+- Caller handles: `PlayerProvider.savePlayer()`, auto-selection, success feedback, scroll behavior
+- Eliminates ~750 lines of duplicated code across 3 locations
+- See "Add Player Dialog Integration" section for implementation guide
+
 ### Design System
 
 **Dart Games Container App Design:**
@@ -197,6 +232,123 @@ _audioQueue?.announcePlayerTurn(player.name);
 **Reference implementations:**
 - Target Tag: `lib/services/target_tag_announcement_helper.dart`
 - Carnival Derby: `lib/services/carnival_derby_announcement_helper.dart`
+
+#### Dartboard Emulator Component Integration
+
+**ALL games MUST use the shared dartboard emulator components.**
+
+**IMPORTANT: The in-game dartboard emulator is ONLY for offline development and testing.**
+- The dartboard emulator appears when you cannot connect to a physical Scolia dartboard
+- It allows testing game logic without physical hardware
+- It is automatically hidden when connected to a real dartboard (`dartboardProvider.isConnected`)
+- The FAB button only appears in emulator mode to allow hiding/showing the on-screen dartboard
+
+The dartboard emulator components provide a consistent UI and behavior across all games while allowing each game to customize the visual styling (colors, fonts, borders).
+
+**Integration Pattern:**
+
+1. **Import the dartboard emulator package**:
+```dart
+import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
+```
+
+2. **In your game screen state, create a controller and dartboard key**:
+```dart
+class _YourGameScreenState extends State<YourGameScreen> {
+  final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
+  final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();
+  MockScoliaApiService? _mockApi;
+
+  @override
+  void dispose() {
+    _dartboardEmulatorController.dispose();
+    // ... other dispose calls
+    super.dispose();
+  }
+}
+```
+
+3. **Add the FAB (Floating Action Button) to your Scaffold**:
+```dart
+Scaffold(
+  // ... appBar, body, etc.
+  floatingActionButton: DartboardEmulatorFAB(
+    controller: _dartboardEmulatorController,
+    isConnected: dartboardProvider.isConnected,
+    config: DartboardFABConfig.yourGame(), // Create factory for your game
+  ),
+)
+```
+
+4. **Add the dartboard section to your game UI**:
+```dart
+DartboardEmulatorSection(
+  controller: _dartboardEmulatorController,
+  isConnected: dartboardProvider.isConnected,
+  shouldPromptTakeout: shouldPromptTakeout,
+  dartboardKey: _dartboardKey,
+  onDartThrow: (score, multiplier, baseScore, position) {
+    if (_mockApi != null) {
+      _mockApi!.simulateDartThrow(
+        score: score,
+        multiplier: multiplier,
+        playerName: 'Player',
+        baseScore: baseScore,
+        widgetX: position.dx,
+        widgetY: position.dy,
+        widgetSize: 250,
+      );
+    }
+  },
+  onRemoveDarts: () {
+    _mockApi?.simulateTakeoutFinished();
+    _dartboardKey.currentState?.removeDarts();
+  },
+  config: DartboardSectionConfig.yourGame(), // Create factory for your game
+),
+```
+
+5. **Create configuration factory methods for your game** in `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart`:
+```dart
+// Add to DartboardSectionConfig class
+factory DartboardSectionConfig.yourGame() {
+  return DartboardSectionConfig(
+    backgroundColor: const Color(0xYOURCOLOR),
+    borderRadius: BorderRadius.circular(12), // Optional
+    disabledOverlayBackgroundColor: const Color(0xYOURCOLOR).withOpacity(0.9),
+    disabledOverlayBorderColor: const Color(0xYOURBORDER),
+    removeButtonBackgroundColor: const Color(0xYOURBUTTON),
+    removeButtonBorderColor: const Color(0xYOURBORDER),
+    removeButtonTextStyle: GoogleFonts.yourFont(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  );
+}
+
+// Add to DartboardFABConfig class
+factory DartboardFABConfig.yourGame() {
+  return DartboardFABConfig(
+    backgroundColor: const Color(0xYOURCOLOR),
+    iconColor: Colors.white,
+    textColor: Colors.white,
+    textStyle: GoogleFonts.yourFont(fontWeight: FontWeight.bold),
+  );
+}
+```
+
+**Benefits:**
+- ~200 lines of code eliminated per game
+- Consistent dartboard behavior across all games
+- Bug fixes in shared component benefit all games
+- Game-specific visual identity maintained through configuration
+- Future games only need config objects
+
+**Reference Implementations:**
+- Carnival Derby: `lib/screens/games/carnival_horse_race/horse_race_game_screen.dart`
+- Target Tag: `lib/screens/games/target_tag/target_tag_game_screen.dart`
+- Component source: `lib/widgets/dartboard_emulator/`
 
 ## Critical Rules
 
@@ -323,6 +475,195 @@ Widget _buildDartboardSection(bool disabled) {
 - ❌ Forgetting `alignment: Alignment.center` on Stack
 - ❌ Mismatched size values between dartboard and widgetSize
 - ❌ Over-nesting with multiple Containers
+
+#### Add Player Dialog Integration
+
+**ALL games and System Settings MUST use the shared Add Player dialog component.**
+
+The Add Player dialog provides consistent player creation logic across all games and screens while allowing each to customize the visual styling (colors, fonts, buttons).
+
+**Integration Pattern:**
+
+1. **Import the Add Player package**:
+```dart
+import '../../../widgets/add_player/add_player.dart';
+```
+
+2. **Create a handler method in your screen**:
+```dart
+void _handleAddPlayer() async {
+  final player = await showAddPlayerDialog(
+    context: context,
+    config: AddPlayerDialogConfig.yourGame(), // Use appropriate factory
+  );
+
+  if (player != null && mounted) {
+    final playerProvider = context.read<PlayerProvider>();
+    await playerProvider.savePlayer(player);
+
+    // Optional: Auto-select player (games only, not System Settings)
+    if (playerProvider.selectedPlayers.length < maxPlayers) {
+      playerProvider.selectPlayer(player, maxPlayers: maxPlayers);
+    }
+
+    // Optional: Show success feedback (System Settings only)
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Player "${player.name}" added'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // Optional: Scroll to show new player
+    _scrollToNewPlayer();
+  }
+}
+```
+
+3. **Call the handler from your Add Player button**:
+```dart
+ElevatedButton(
+  onPressed: _handleAddPlayer,
+  child: Text('Add Player'),
+)
+```
+
+**Configuration Factory Methods:**
+
+Create game-specific factory methods in `lib/widgets/add_player/add_player_dialog_config.dart`:
+
+```dart
+factory AddPlayerDialogConfig.yourGame() {
+  return AddPlayerDialogConfig(
+    backgroundColor: const Color(0xYOURCOLOR).withOpacity(0.95),
+    textColor: Colors.white,
+    titleStyle: GoogleFonts.yourFont(
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+    inputLabelStyle: GoogleFonts.yourFont(
+      fontSize: 14,
+      color: Colors.white70,
+    ),
+    inputBorderColor: const Color(0xYOURBORDER),
+    inputFocusedBorderColor: const Color(0xYOURACCENT),
+    inputErrorBorderColor: Colors.red,
+    photoLabelStyle: GoogleFonts.yourFont(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+    photoButtonColor: const Color(0xYOURBUTTON),
+    photoButtonForegroundColor: Colors.white,
+    photoButtonBorderColor: const Color(0xYOURBORDER),
+    photoButtonTextStyle: GoogleFonts.yourFont(
+      fontSize: 14,
+      fontWeight: FontWeight.bold,
+    ),
+    photoButtonWidth: 130.0, // Fixed width, or null for Expanded
+    addButtonColor: const Color(0xYOURPRIMARY),
+    addButtonForegroundColor: Colors.white,
+    addButtonBorderColor: const Color(0xYOURPRIMARY),
+    addButtonTextStyle: GoogleFonts.yourFont(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+    ),
+    cancelButtonColor: const Color(0xYOURSECONDARY),
+    cancelButtonForegroundColor: Colors.white,
+    cancelButtonBorderColor: const Color(0xYOURBORDER),
+    cancelButtonTextStyle: GoogleFonts.yourFont(
+      fontSize: 16,
+    ),
+    errorTextColor: Colors.red,
+  );
+}
+```
+
+**Usage Examples:**
+
+**Carnival Derby (with auto-selection):**
+```dart
+void _handleAddPlayer() async {
+  final player = await showAddPlayerDialog(
+    context: context,
+    config: AddPlayerDialogConfig.carnivalDerby(),
+  );
+
+  if (player != null && mounted) {
+    final playerProvider = context.read<PlayerProvider>();
+    await playerProvider.savePlayer(player);
+
+    // Auto-select if room available
+    if (playerProvider.selectedPlayers.length < 8) {
+      playerProvider.selectPlayer(player, maxPlayers: 8);
+    }
+
+    _scrollToNewPlayer();
+  }
+}
+```
+
+**Target Tag (with auto-selection):**
+```dart
+void _handleAddPlayer() async {
+  final player = await showAddPlayerDialog(
+    context: context,
+    config: AddPlayerDialogConfig.targetTag(),
+  );
+
+  if (player != null && mounted) {
+    final playerProvider = context.read<PlayerProvider>();
+    await playerProvider.savePlayer(player);
+
+    // Auto-select if room available
+    if (playerProvider.selectedPlayers.length < 10) {
+      playerProvider.selectPlayer(player, maxPlayers: 10);
+    }
+
+    _scrollToNewPlayer();
+  }
+}
+```
+
+**System Settings (with snackbar, no auto-selection):**
+```dart
+void _handleAddPlayer() async {
+  final player = await showAddPlayerDialog(
+    context: context,
+    config: AddPlayerDialogConfig.optionsScreen(context),
+  );
+
+  if (player != null && mounted) {
+    final playerProvider = context.read<PlayerProvider>();
+    await playerProvider.savePlayer(player);
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Player "${player.name}" added'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    _scrollToNewPlayer();
+  }
+}
+```
+
+**Benefits:**
+- ~750 lines of duplicated code eliminated across 3 locations
+- Consistent player creation and validation logic
+- Game-specific visual identity maintained through configuration
+- Centralized photo upload functionality
+- Bug fixes in shared component benefit all games and screens
+- Future games only need config objects
+
+**Reference Implementations:**
+- Carnival Derby: `lib/screens/games/carnival_horse_race/horse_race_menu_screen.dart`
+- Target Tag: `lib/screens/games/target_tag/target_tag_menu_screen.dart`
+- System Settings: `lib/screens/options_screen.dart`
+- Component source: `lib/widgets/add_player/`
 
 ### Mandatory Testing Before Any Build
 
