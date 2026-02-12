@@ -34,6 +34,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
 
   bool _hasAnnouncedSuddenDeath = false;
+  bool _gameCompleted = false; // Prevent multiple navigations to results screen
 
   @override
   void initState() {
@@ -458,6 +459,10 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   }
 
   void _handleGameWon() {
+    // Prevent multiple navigations to results screen
+    if (_gameCompleted) return;
+    _gameCompleted = true;
+
     final playerProvider = context.read<PlayerProvider>();
     final targetTagProvider = context.read<TargetTagProvider>();
     final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
