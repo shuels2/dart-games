@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/target_tag_provider.dart';
-import '../../../services/photo_service.dart';
+import '../../../widgets/add_player/add_player.dart';
 import '../../../widgets/target_tag/team_setup_widget.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../widgets/horse_race/player_selection_card.dart';
@@ -33,7 +31,6 @@ class TargetTagMenuScreen extends StatefulWidget {
 }
 
 class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTickerProviderStateMixin {
-  final PhotoService _photoService = PhotoService();
   double _shieldMax = 5.0;
   bool _isTeamMode = false;
   bool _isRandomTeams = true;
@@ -658,7 +655,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                   const Spacer(),
                   if (allPlayers.isNotEmpty)
                     ElevatedButton.icon(
-                      onPressed: () => _showAddPlayerDialog(context),
+                      onPressed: _handleAddPlayer,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF007A),
                         foregroundColor: Colors.white,
@@ -707,7 +704,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
-                              onPressed: () => _showAddPlayerDialog(context),
+                              onPressed: _handleAddPlayer,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFFF007A),
                                 foregroundColor: Colors.white,
@@ -773,7 +770,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                   const Spacer(),
                   if (allPlayers.isNotEmpty)
                     ElevatedButton.icon(
-                      onPressed: () => _showAddPlayerDialog(context),
+                      onPressed: _handleAddPlayer,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF007A),
                         foregroundColor: Colors.white,
@@ -822,7 +819,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
-                              onPressed: () => _showAddPlayerDialog(context),
+                              onPressed: _handleAddPlayer,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFFF007A),
                                 foregroundColor: Colors.white,
@@ -1328,273 +1325,42 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     );
   }
 
-  void _showAddPlayerDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    String? photoPath;
-    bool showError = false;
-
-    showDialog(
+  void _handleAddPlayer() async {
+    final player = await showAddPlayerDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E).withOpacity(0.95),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-          title: Text(
-            'Add New Player',
-            style: GoogleFonts.fredoka(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600, minWidth: 500),
-            child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Photo preview section
-                if (photoPath != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Stack(
-                      alignment: Alignment.topRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: kIsWeb
-                              ? NetworkImage(photoPath!)
-                              : FileImage(File(photoPath!)) as ImageProvider,
-                        ),
-                        Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () {
-                              setDialogState(() {
-                                photoPath = null;
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey[300],
-                      child: Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                TextField(
-                  controller: nameController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Player Name',
-                    labelStyle: const TextStyle(color: Colors.white70),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.white24),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Color(0xFFFF007A)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    errorText: showError ? 'Please enter a name' : null,
-                  ),
-                  onChanged: (_) {
-                    if (showError) {
-                      setDialogState(() {
-                        showError = false;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Photo (Optional)',
-                  style: GoogleFonts.fredoka(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final path = await _photoService.takePhoto(context: context);
-                          if (path != null) {
-                            setDialogState(() {
-                              photoPath = path;
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00FFA3),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                          side: const BorderSide(
-                            color: Color(0xFFFF007A),
-                            width: 2,
-                          ),
-                        ),
-                        icon: const Icon(Icons.camera_alt),
-                        label: Text(
-                          'CAMERA',
-                          style: GoogleFonts.fredoka(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final path = await _photoService.selectFromGallery();
-                          if (path != null) {
-                            setDialogState(() {
-                              photoPath = path;
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00FFA3),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                          side: const BorderSide(
-                            color: Color(0xFFFF007A),
-                            width: 2,
-                          ),
-                        ),
-                        icon: const Icon(Icons.photo_library),
-                        label: Text(
-                          'GALLERY',
-                          style: GoogleFonts.fredoka(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            ),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actionsPadding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2A2A3E),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.fromLTRB(0, 14, 0, 17),
-                      side: const BorderSide(
-                        color: Colors.white38,
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.fredoka(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (nameController.text.trim().isEmpty) {
-                        setDialogState(() {
-                          showError = true;
-                        });
-                        return;
-                      }
-
-                      final playerProvider = context.read<PlayerProvider>();
-                      final newPlayer = Player.create(
-                        name: nameController.text.trim(),
-                        photoPath: photoPath,
-                      );
-                      await playerProvider.savePlayer(newPlayer);
-
-                      // Auto-select the newly added player only if max not reached
-                      if (playerProvider.selectedPlayers.length < 10) {
-                        playerProvider.selectPlayer(newPlayer, maxPlayers: 10);
-                      }
-
-                      Navigator.of(dialogContext).pop();
-
-                      // Scroll to show the new player after dialog closes
-                      Future.delayed(const Duration(milliseconds: 100), () {
-                        if (mounted) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted && _scrollController.hasClients) {
-                              // Add buffer to ensure full tile is visible
-                              final targetPosition = _scrollController.position.maxScrollExtent + 150;
-                              _scrollController.animateTo(
-                                targetPosition,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
-                              );
-                            }
-                          });
-                        }
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF007A),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.fromLTRB(0, 14, 0, 17),
-                    ),
-                    child: Text(
-                      'Add Player',
-                      style: GoogleFonts.fredoka(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+      config: AddPlayerDialogConfig.targetTag(),
     );
+
+    if (player != null && mounted) {
+      final playerProvider = context.read<PlayerProvider>();
+      await playerProvider.savePlayer(player);
+
+      // Auto-select the newly added player only if max not reached
+      if (playerProvider.selectedPlayers.length < 10) {
+        playerProvider.selectPlayer(player, maxPlayers: 10);
+      }
+
+      // Scroll to show the new player after dialog closes
+      _scrollToNewPlayer();
+    }
+  }
+
+  void _scrollToNewPlayer() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _scrollController.hasClients) {
+            // Add buffer to ensure full tile is visible
+            final targetPosition = _scrollController.position.maxScrollExtent + 150;
+            _scrollController.animateTo(
+              targetPosition,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+    });
   }
 
   void _startGame(List<Player> selectedPlayers) {

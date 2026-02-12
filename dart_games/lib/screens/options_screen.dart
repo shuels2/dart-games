@@ -11,6 +11,7 @@ import '../services/victory_music_service.dart';
 import '../services/photo_service.dart';
 import '../services/test_data_service.dart';
 import '../models/victory_music_file.dart';
+import '../widgets/add_player/add_player.dart';
 import '../models/player.dart';
 import '../providers/player_provider.dart';
 import 'test_dartboard_screen.dart';
@@ -425,185 +426,48 @@ class _OptionsScreenState extends State<OptionsScreen> {
     return '${date.month}/${date.day}/${date.year}';
   }
 
-  void _showAddPlayerDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    String? photoPath;
-    bool showError = false;
-
-    showDialog(
+  void _handleAddPlayer() async {
+    final player = await showAddPlayerDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add New Player'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Photo preview section
-                if (photoPath != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Stack(
-                      alignment: Alignment.topRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: kIsWeb
-                              ? NetworkImage(photoPath!)
-                              : FileImage(File(photoPath!)) as ImageProvider,
-                        ),
-                        Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.close,
-                                color: Colors.white, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () {
-                              setDialogState(() {
-                                photoPath = null;
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey[300],
-                      child: Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Player Name',
-                    border: const OutlineInputBorder(),
-                    errorText: showError ? 'Please enter a player name' : null,
-                    errorBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red, width: 2),
-                    ),
-                    focusedErrorBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red, width: 2),
-                    ),
-                  ),
-                  autofocus: true,
-                  onChanged: (value) {
-                    // Clear error when user starts typing
-                    if (showError && value.trim().isNotEmpty) {
-                      setDialogState(() {
-                        showError = false;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Photo (Optional)',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        final path =
-                            await _photoService.takePhoto(context: context);
-                        if (path != null) {
-                          setDialogState(() {
-                            photoPath = path;
-                          });
-                        }
-                      },
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Camera'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        final path = await _photoService.selectFromGallery();
-                        if (path != null) {
-                          setDialogState(() {
-                            photoPath = path;
-                          });
-                        }
-                      },
-                      icon: const Icon(Icons.photo_library),
-                      label: const Text('Gallery'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.trim().isEmpty) {
-                  setDialogState(() {
-                    showError = true;
-                  });
-                  return;
-                }
-
-                final player = Player.create(
-                  name: nameController.text.trim(),
-                  photoPath: photoPath,
-                );
-
-                final playerProvider = context.read<PlayerProvider>();
-                await playerProvider.savePlayer(player);
-
-                if (context.mounted) {
-                  Navigator.pop(dialogContext);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Player "${player.name}" added'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-
-                  // Scroll to show the new player after dialog closes
-                  Future.delayed(const Duration(milliseconds: 100), () {
-                    if (mounted) {
-                      // Use post-frame callback to ensure layout is complete
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted && _playersListScrollController.hasClients) {
-                          // Add buffer to ensure full tile is visible
-                          final targetPosition = _playersListScrollController.position.maxScrollExtent + 150;
-                          _playersListScrollController.animateTo(
-                            targetPosition,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOut,
-                          );
-                        }
-                      });
-                    }
-                  });
-                }
-              },
-              child: const Text('Add Player'),
-            ),
-          ],
-        ),
-      ),
+      config: AddPlayerDialogConfig.optionsScreen(context),
     );
+
+    if (player != null && mounted) {
+      final playerProvider = context.read<PlayerProvider>();
+      await playerProvider.savePlayer(player);
+
+      // Show success snackbar (Options screen only)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Player "${player.name}" added'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      // Scroll to show the new player after dialog closes
+      _scrollToNewPlayer();
+    }
+  }
+
+  void _scrollToNewPlayer() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        // Use post-frame callback to ensure layout is complete
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _playersListScrollController.hasClients) {
+            // Add buffer to ensure full tile is visible
+            final targetPosition = _playersListScrollController.position.maxScrollExtent + 150;
+            _playersListScrollController.animateTo(
+              targetPosition,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+    });
   }
 
   void _showEditPlayerDialog(BuildContext context, Player player) {
@@ -894,7 +758,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () => _showAddPlayerDialog(context),
+                    onPressed: _handleAddPlayer,
                     icon: const Icon(Icons.person_add),
                     label: const Text('Add Player'),
                     style: ElevatedButton.styleFrom(

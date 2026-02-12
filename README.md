@@ -150,6 +150,117 @@ audioQueue.announcePlayerTurn(player.name);
 
 See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
+#### 6. Add Player Dialog (`lib/widgets/add_player/`)
+- Shared modal for adding new players across all games and System Settings
+- Ensures consistent player creation logic while allowing screen-specific styling
+- Returns `Player?` object if created, `null` if cancelled
+
+```dart
+// Import the shared component
+import 'package:dart_games/widgets/add_player/add_player.dart';
+
+// Show Add Player dialog
+final player = await showAddPlayerDialog(
+  context: context,
+  config: AddPlayerDialogConfig.yourGame(), // Use appropriate factory
+);
+
+if (player != null && mounted) {
+  final playerProvider = context.read<PlayerProvider>();
+  await playerProvider.savePlayer(player);
+
+  // Optional: Auto-select player (games only)
+  if (playerProvider.selectedPlayers.length < maxPlayers) {
+    playerProvider.selectPlayer(player, maxPlayers: maxPlayers);
+  }
+
+  // Optional: Show success feedback (System Settings only)
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('Player "${player.name}" added')),
+  );
+}
+```
+
+**Features:**
+- Photo upload via camera or gallery
+- Name validation
+- Photo preview with remove button
+- Game-specific styling via configuration factories
+- Eliminates ~750 lines of duplicated code
+
+**Available Configurations:**
+- `AddPlayerDialogConfig.carnivalDerby()` - Carnival theme (red/yellow/teal)
+- `AddPlayerDialogConfig.targetTag()` - Tech/neon theme (pink/green)
+- `AddPlayerDialogConfig.optionsScreen(context)` - Material Design defaults
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide and custom configuration examples.
+
+#### 7. In-Game Dartboard Emulator Components (`lib/widgets/dartboard_emulator/`)
+- Shared UI components for offline development and testing when a physical Scolia dartboard is NOT connected
+- ONLY shown when `dartboardProvider.isConnected` is `false` (emulator mode)
+- Automatically hidden when connected to a real Scolia dartboard
+- Allows developers to test game logic without physical hardware
+
+```dart
+// Import dartboard emulator components
+import 'package:dart_games/widgets/dartboard_emulator/dartboard_emulator.dart';
+
+class _YourGameScreenState extends State<YourGameScreen> {
+  final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
+  final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();
+
+  @override
+  Widget build(BuildContext context) {
+    final dartboardProvider = context.watch<DartboardProvider>();
+
+    return Scaffold(
+      // FAB only appears when NOT connected to real dartboard
+      floatingActionButton: DartboardEmulatorFAB(
+        controller: _dartboardEmulatorController,
+        isConnected: dartboardProvider.isConnected,
+        config: DartboardFABConfig.yourGame(),
+      ),
+      body: Column(
+        children: [
+          // Your game UI
+
+          // Dartboard emulator only appears when NOT connected to real dartboard
+          DartboardEmulatorSection(
+            controller: _dartboardEmulatorController,
+            isConnected: dartboardProvider.isConnected,
+            shouldPromptTakeout: shouldPromptTakeout,
+            dartboardKey: _dartboardKey,
+            onDartThrow: (score, multiplier, baseScore, position) {
+              // Handle dart throw (simulates physical dartboard input)
+            },
+            onRemoveDarts: () {
+              // Handle darts removed
+            },
+            config: DartboardSectionConfig.yourGame(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+**Components:**
+- **DartboardEmulatorController** - Manages show/hide state using ChangeNotifier pattern
+- **DartboardEmulatorSection** - Dartboard container widget with disabled overlay
+- **DartboardEmulatorFAB** - Floating action button for toggling dartboard visibility
+- **Configuration Classes** - Game-specific styling via factory methods
+
+**Benefits:**
+- Ensures consistent dartboard behavior across all games during offline testing
+- Reduces code duplication (~200 lines eliminated per game)
+- Allows game-specific visual styling (colors, fonts, backgrounds)
+- Bug fixes in shared component benefit all games automatically
+- New games only need to provide configuration objects
+- Seamlessly hidden when playing with real dartboard
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide.
+
 ## Architecture
 
 ### Container App Structure
@@ -211,10 +322,26 @@ import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/services/game_announcement_queue_service.dart';
 import 'package:dart_games/services/victory_music_service.dart';
+import 'package:dart_games/widgets/add_player/add_player.dart';
+import 'package:dart_games/widgets/dartboard_emulator/dartboard_emulator.dart';
 
 // Use global user list
 final playerProvider = context.read<PlayerProvider>();
 final availablePlayers = playerProvider.allPlayers;
+
+// Use shared Add Player dialog
+final player = await showAddPlayerDialog(
+  context: context,
+  config: AddPlayerDialogConfig.yourGame(),
+);
+if (player != null) {
+  await playerProvider.savePlayer(player);
+}
+
+// Use shared Dartboard Emulator components
+// (Only appears when NOT connected to physical dartboard)
+final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
+final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();
 
 // Create game-specific announcement helper
 final globalQueue = GameAnnouncementQueueService();
@@ -248,11 +375,24 @@ if (await musicService.hasCustomMusic()) {
 
 Update `lib/screens/home_screen.dart` to include navigation to your game.
 
-### 5. Create Tests
+### 5. Create Configuration Factories
 
-Follow existing patterns in `test/screens/games/` to create integration tests.
+Add factory methods to:
+- `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` for dartboard styling
+- `lib/widgets/add_player/add_player_dialog_config.dart` for Add Player dialog styling
 
-### 6. Update Documentation
+See existing examples for Carnival Derby and Target Tag.
+
+### 6. Create Tests
+
+Follow existing patterns in `test/screens/games/` to create integration tests:
+- User management tests (player selection, stats tracking)
+- Game logic tests (scoring, win conditions)
+- Announcement tests (game events, audio queue)
+
+All tests must pass before deployment (`flutter test`).
+
+### 7. Update Documentation
 
 Update `CLAUDE.md` with new test counts and game-specific notes.
 
@@ -341,9 +481,10 @@ The app supports two modes:
 
 ## Contributing
 
-We welcome contributions! Please follow these guidelines:
+This is a private project. Contributions and pull requests are not accepted at this time.
 
-1. **Run all tests** before submitting changes (`flutter test`)
+**For internal development:**
+1. **Run all tests** before committing changes (`flutter test`)
 2. **Maintain cross-platform compatibility** (web and tablet)
 3. **Follow integration requirements** when adding games
 4. **Update documentation** for new features
@@ -353,7 +494,11 @@ See [CLAUDE.md](CLAUDE.md) for detailed development guidelines.
 
 ## License
 
-[Add your license information here]
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For questions or issues related to this project, please contact the project maintainer directly.
 
 ## Contact
 

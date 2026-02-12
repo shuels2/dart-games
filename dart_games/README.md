@@ -118,6 +118,38 @@ factory DartboardFABConfig.yourGame() {
 
 For complete details, see `CLAUDE.md` - Dartboard Emulator Component Integration section.
 
+#### Add Player Dialog Component
+
+**Purpose:** Shared modal for adding new players across all games and System Settings.
+
+All games and the Options screen use a shared Add Player dialog located in `lib/widgets/add_player/`:
+
+- **AddPlayerDialog** - Function that displays the modal and returns created Player or null
+- **AddPlayerDialogConfig** - Configuration class for screen-specific styling
+- **Factory methods** - Pre-configured styling for each game/screen
+
+**Benefits:**
+- Eliminates ~750 lines of duplicated code across 3 locations
+- Ensures consistent player creation and validation logic
+- Allows screen-specific visual styling (colors, fonts, buttons)
+- Centralized photo upload functionality
+- Bug fixes benefit all screens automatically
+
+**Usage Example:**
+```dart
+final player = await showAddPlayerDialog(
+  context: context,
+  config: AddPlayerDialogConfig.yourGame(),
+);
+
+if (player != null) {
+  await playerProvider.savePlayer(player);
+  // Handle auto-selection, scroll, etc.
+}
+```
+
+For complete details, see `CLAUDE.md` - Add Player Dialog Integration section.
+
 ## Testing
 
 ### Non-UI Tests (219 tests)
