@@ -138,8 +138,8 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final targetTagProvider = context.watch<TargetTagProvider>();
-    final playerProvider = context.watch<PlayerProvider>();
+    final targetTagProvider = context.read<TargetTagProvider>();
+    final playerProvider = context.read<PlayerProvider>();
 
     final currentGame = targetTagProvider.currentGame;
     if (currentGame == null) {

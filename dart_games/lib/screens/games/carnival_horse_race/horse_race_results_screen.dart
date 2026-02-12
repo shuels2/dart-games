@@ -168,7 +168,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final dartboardProvider = context.watch<DartboardProvider>();
+    final dartboardProvider = context.read<DartboardProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
