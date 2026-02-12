@@ -203,6 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false, // No back arrow on home screen
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(

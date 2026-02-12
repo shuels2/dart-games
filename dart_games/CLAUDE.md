@@ -42,7 +42,7 @@ dart_games/
 │               ├── horse_race_menu_screen.dart     # Game setup
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
-├── test/                            # Non-UI test suite (219 tests)
+├── test/                            # Non-UI test suite (226 tests)
 ├── integration_test/                # UI automation tests (76 tests)
 └── assets/                          # Images, icons, fonts
 ```
@@ -776,7 +776,7 @@ flutter test
 ```
 
 **CRITICAL REQUIREMENTS:**
-- All 195 non-UI tests must pass (100% pass rate required)
+- All 226 non-UI tests must pass (100% pass rate required)
 - If ANY test fails, DO NOT proceed with build
 - Fix all failing tests first, then re-run test suite
 - Only build after confirming all tests pass
@@ -1093,11 +1093,11 @@ When adding a new game:
 
 ## Testing Requirements
 
-### Complete Test Suite (219 Tests + 77 UI Automation Tests)
+### Complete Test Suite (226 Tests + 76 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
-**Non-UI Tests (219 tests in `test/` directory):**
+**Non-UI Tests (226 tests in `test/` directory):**
 - Run with `flutter test`
 - Execute in seconds
 - Required to pass before every build
@@ -1130,14 +1130,20 @@ The dart games app has a comprehensive test suite covering all critical function
   - Data URL sources (web) and file paths (native)
   - Special characters and long file names
 
-#### Provider Tests (30 tests)
-- `test/providers/player_provider_test.dart` (30 tests)
+#### Provider Tests (37 tests)
+- `test/providers/player_provider_test.dart` (37 tests)
   - Player CRUD operations (save, update, delete)
   - Player selection (up to 8 players)
   - Game stats tracking (games played/won)
   - Game history methods (getPlayerHistory, getPlayerHistoryForGame, etc.)
   - Total play time and average duration calculations
   - Data persistence across provider instances
+  - Alphabetical sorting (7 tests):
+    - Sorts players alphabetically on load (case-insensitive)
+    - New players appear at bottom during session
+    - markPlayersSorted() updates timestamp
+    - Returning to screen sorts all players
+    - Handles empty lists and single players
 
 #### Service Tests (42 tests)
 - `test/services/app_settings_test.dart` (20 tests)
@@ -1280,7 +1286,7 @@ The dart games app has a comprehensive test suite covering all critical function
 
 ### Running Tests
 
-**Run all non-UI tests (219 tests):**
+**Run all non-UI tests (226 tests):**
 ```bash
 cd dart_games
 flutter test
@@ -1321,8 +1327,8 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 
 ### Test Expectations
 
-**Non-UI Tests (219 tests):**
-- **100% pass rate required** - All 219 non-UI tests must pass before every build
+**Non-UI Tests (226 tests):**
+- **100% pass rate required** - All 226 non-UI tests must pass before every build
 - Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
 - No build or deployment without all non-UI tests passing
 - Tests cover both web and native platform scenarios
@@ -1885,7 +1891,7 @@ This applies to all git operations that modify the remote repository, including:
    cd dart_games
    flutter test
    ```
-3. **Verify ALL 219 non-UI tests pass (100% pass rate required)**
+3. **Verify ALL 226 non-UI tests pass (100% pass rate required)**
 4. **OPTIONAL: Ask user if they want to run UI automation tests (76 tests, ~43 minutes)**
 5. If ANY tests fail:
    - DO NOT proceed
@@ -1902,8 +1908,8 @@ This applies to all git operations that modify the remote repository, including:
 **NEVER build without running non-UI tests first.**
 
 Before any `flutter run` or `flutter build` command:
-1. Run `flutter test` (219 non-UI tests)
-2. Confirm all 219 non-UI tests pass
+1. Run `flutter test` (226 non-UI tests)
+2. Confirm all 226 non-UI tests pass
 3. Ask user if they want to run UI automation tests (76 tests, ~43 minutes)
 4. Only then run the build command
 

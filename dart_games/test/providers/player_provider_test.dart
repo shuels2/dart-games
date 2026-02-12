@@ -465,5 +465,158 @@ void main() {
       expect(() => provider.selectedPlayers.add(Player.create(name: 'Test')),
           throwsUnsupportedError);
     });
+
+    group('Alphabetical Sorting', () {
+      test('sorts players alphabetically on load', () async {
+        // Create players in non-alphabetical order
+        final playerC = Player.create(name: 'Charlie');
+        final playerA = Player.create(name: 'Alice');
+        final playerB = Player.create(name: 'Bob');
+
+        await provider.savePlayer(playerC);
+        await provider.savePlayer(playerA);
+        await provider.savePlayer(playerB);
+
+        // Mark as sorted and reload
+        await provider.markPlayersSorted();
+
+        final newProvider = PlayerProvider();
+        await newProvider.loadPlayers();
+
+        // Players should be alphabetically sorted
+        expect(newProvider.allPlayers.length, 3);
+        expect(newProvider.allPlayers[0].name, 'Alice');
+        expect(newProvider.allPlayers[1].name, 'Bob');
+        expect(newProvider.allPlayers[2].name, 'Charlie');
+      });
+
+      test('new players appear at bottom (not inserted alphabetically)', () async {
+        // Create and sort initial players
+        final playerA = Player.create(name: 'Alice');
+        final playerC = Player.create(name: 'Charlie');
+        await provider.savePlayer(playerA);
+        await provider.savePlayer(playerC);
+        await provider.markPlayersSorted();
+
+        // Reload to get sorted state
+        final newProvider = PlayerProvider();
+        await newProvider.loadPlayers();
+
+        // Add new player that would alphabetically go in the middle
+        final playerB = Player.create(name: 'Bob');
+        await newProvider.savePlayer(playerB);
+
+        // Bob should be at the END, not inserted between Alice and Charlie
+        expect(newProvider.allPlayers.length, 3);
+        expect(newProvider.allPlayers[0].name, 'Alice');
+        expect(newProvider.allPlayers[1].name, 'Charlie');
+        expect(newProvider.allPlayers[2].name, 'Bob'); // At bottom, not middle
+      });
+
+      test('markPlayersSorted updates timestamp', () async {
+        // Add a player
+        final player = Player.create(name: 'Test');
+        await provider.savePlayer(player);
+
+        // Mark as sorted
+        await provider.markPlayersSorted();
+
+        // Verify timestamp was saved by checking it loads in new provider
+        final newProvider = PlayerProvider();
+        await newProvider.loadPlayers();
+
+        // Add another player after marking sorted
+        final newPlayer = Player.create(name: 'Zara');
+        await newProvider.savePlayer(newPlayer);
+
+        // Zara should be at bottom (new player)
+        expect(newProvider.allPlayers.length, 2);
+        expect(newProvider.allPlayers[1].name, 'Zara');
+      });
+
+      test('returning to screen sorts all players', () async {
+        // Initial setup: add players
+        final playerC = Player.create(name: 'Charlie');
+        final playerA = Player.create(name: 'Alice');
+        await provider.savePlayer(playerC);
+        await provider.savePlayer(playerA);
+        await provider.markPlayersSorted();
+
+        // Load sorted players
+        final provider2 = PlayerProvider();
+        await provider2.loadPlayers();
+        expect(provider2.allPlayers[0].name, 'Alice');
+        expect(provider2.allPlayers[1].name, 'Charlie');
+
+        // Add new player (appears at bottom)
+        final playerB = Player.create(name: 'Bob');
+        await provider2.savePlayer(playerB);
+        expect(provider2.allPlayers[2].name, 'Bob'); // At bottom
+
+        // Mark sorted (simulating leaving screen)
+        await provider2.markPlayersSorted();
+
+        // Reload (simulating returning to screen)
+        final provider3 = PlayerProvider();
+        await provider3.loadPlayers();
+
+        // Now Bob should be alphabetically sorted
+        expect(provider3.allPlayers.length, 3);
+        expect(provider3.allPlayers[0].name, 'Alice');
+        expect(provider3.allPlayers[1].name, 'Bob'); // Now sorted!
+        expect(provider3.allPlayers[2].name, 'Charlie');
+      });
+
+      test('sorts case-insensitively', () async {
+        // Create players with mixed case
+        final playerLowerA = Player.create(name: 'alice');
+        final playerUpperB = Player.create(name: 'Bob');
+        final playerLowerC = Player.create(name: 'charlie');
+        final playerUpperD = Player.create(name: 'DELTA');
+
+        await provider.savePlayer(playerUpperD);
+        await provider.savePlayer(playerLowerC);
+        await provider.savePlayer(playerUpperB);
+        await provider.savePlayer(playerLowerA);
+
+        await provider.markPlayersSorted();
+
+        final newProvider = PlayerProvider();
+        await newProvider.loadPlayers();
+
+        // Should be sorted alphabetically regardless of case
+        expect(newProvider.allPlayers[0].name, 'alice');
+        expect(newProvider.allPlayers[1].name, 'Bob');
+        expect(newProvider.allPlayers[2].name, 'charlie');
+        expect(newProvider.allPlayers[3].name, 'DELTA');
+      });
+
+      test('sorting empty list does not crash', () async {
+        // Load empty list
+        await provider.loadPlayers();
+
+        // Should not crash
+        expect(provider.allPlayers, isEmpty);
+
+        // Mark sorted on empty list
+        await provider.markPlayersSorted();
+
+        // Should still be empty
+        expect(provider.allPlayers, isEmpty);
+      });
+
+      test('sorting single player works correctly', () async {
+        final player = Player.create(name: 'Only Player');
+        await provider.savePlayer(player);
+        await provider.markPlayersSorted();
+
+        final newProvider = PlayerProvider();
+        await newProvider.loadPlayers();
+
+        // Single player should remain
+        expect(newProvider.allPlayers.length, 1);
+        expect(newProvider.allPlayers.first.name, 'Only Player');
+      });
+    });
   });
 }

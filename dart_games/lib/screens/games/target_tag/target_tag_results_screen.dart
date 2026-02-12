@@ -27,6 +27,7 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
   late Animation<double> _pulseAnimation;
   late ConfettiController _confettiController;
   final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _statsUpdated = false; // Prevent duplicate stats updates
 
   @override
   void initState() {
@@ -81,6 +82,10 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
   }
 
   void _updatePlayerStats() async {
+    // Prevent duplicate stats updates
+    if (_statsUpdated) return;
+    _statsUpdated = true;
+
     final targetTagProvider = context.read<TargetTagProvider>();
     final playerProvider = context.read<PlayerProvider>();
     final currentGame = targetTagProvider.currentGame;
@@ -133,8 +138,8 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final targetTagProvider = context.watch<TargetTagProvider>();
-    final playerProvider = context.watch<PlayerProvider>();
+    final targetTagProvider = context.read<TargetTagProvider>();
+    final playerProvider = context.read<PlayerProvider>();
 
     final currentGame = targetTagProvider.currentGame;
     if (currentGame == null) {

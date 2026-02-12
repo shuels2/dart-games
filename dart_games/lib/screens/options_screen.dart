@@ -54,10 +54,18 @@ class _OptionsScreenState extends State<OptionsScreen> {
     _loadVoices();
     _loadSettings();
     _scrollController.addListener(_onScroll);
+
+    // Load players when screen opens (ensures alphabetical sorting)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PlayerProvider>().loadPlayers();
+    });
   }
 
   @override
   void dispose() {
+    // Mark players as sorted when leaving screen
+    context.read<PlayerProvider>().markPlayersSorted();
+
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _playersListScrollController.dispose();

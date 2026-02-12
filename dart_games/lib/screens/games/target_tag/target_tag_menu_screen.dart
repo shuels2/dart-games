@@ -97,6 +97,9 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
 
   @override
   void dispose() {
+    // Mark players as sorted when leaving screen
+    context.read<PlayerProvider>().markPlayersSorted();
+
     _pulseController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -107,6 +110,17 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+            size: 32, // Bigger size
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          splashColor: Colors.transparent,
+        ),
         title: Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Text(

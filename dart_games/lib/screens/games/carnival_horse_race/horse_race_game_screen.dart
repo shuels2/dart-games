@@ -36,6 +36,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   CarnivalDerbyAnnouncementHelper? _audioQueue;
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   final ScrollController _scrollController = ScrollController();
+  bool _gameCompleted = false; // Prevent multiple navigations to results screen
 
   @override
   void initState() {
@@ -320,6 +321,10 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   }
 
   void _handleGameWon() {
+    // Prevent multiple navigations to results screen
+    if (_gameCompleted) return;
+    _gameCompleted = true;
+
     // Wait for final score announcement to complete before transitioning
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (!mounted) return;

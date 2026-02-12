@@ -115,9 +115,28 @@ flutter:
     - assets/common/icons/
     - assets/common/images/
 
-    # Game-specific assets
-    - assets/games/carnival_derby/
-    - assets/games/target_tag/
+    # Carnival Derby game assets
+    - assets/games/carnival_derby/icons/
+    - assets/games/carnival_derby/images/
+    - assets/games/carnival_derby/sounds/
+
+    # Target Tag game assets
+    - assets/games/target_tag/icons/
+    - assets/games/target_tag/sounds/TargetTag-BananaSlip.mp3
+    - assets/games/target_tag/sounds/TargetTag-Blink.mp3
+    - assets/games/target_tag/sounds/TargetTag-Choir.mp3
+    - assets/games/target_tag/sounds/TargetTag-Dream.mp3
+    - assets/games/target_tag/sounds/TargetTag-Fanfare.mp3
+    - assets/games/target_tag/sounds/TargetTag-Launch.mp3
+    - assets/games/target_tag/sounds/TargetTag-Magical.mp3
+    - assets/games/target_tag/sounds/TargetTag-Ominous.mp3
+    - assets/games/target_tag/sounds/TargetTag-PianoRoll.mp3
+    - assets/games/target_tag/sounds/TargetTag-Spring.mp3
+    - assets/games/target_tag/sounds/TargetTag-Swipe.mp3
+    - assets/games/target_tag/sounds/TargetTag-Teasing.mp3
+    - assets/games/target_tag/sounds/TargetTag-Villain.mp3
+    - assets/games/target_tag/sounds/TargetTag-Whistle.mp3
+    - assets/games/target_tag/sounds/TargetTag-WindUp.mp3
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
