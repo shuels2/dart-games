@@ -134,7 +134,7 @@ class RaceTrackWidget extends StatelessWidget {
                       child: Container(
                         decoration: BoxDecoration(
                           image: const DecorationImage(
-                            image: AssetImage('assets/icon/track.png'),
+                            image: AssetImage('assets/games/carnival_derby/icons/track.png'),
                             repeat: ImageRepeat.repeatX,
                             fit: BoxFit.fitHeight,
                           ),
@@ -162,7 +162,7 @@ class RaceTrackWidget extends StatelessWidget {
                       top: 0,
                       bottom: 0,
                       child: Image.asset(
-                        'assets/icon/finish_line.png',
+                        'assets/games/carnival_derby/icons/finish_line.png',
                         fit: BoxFit.contain,
                       ),
                     ),
@@ -174,7 +174,7 @@ class RaceTrackWidget extends StatelessWidget {
                       left: horsePosition,
                       top: 5,
                       child: Image.asset(
-                        'assets/icon/horse.png',
+                        'assets/games/carnival_derby/icons/horse.png',
                         width: 90,
                         height: 90,
                       ),

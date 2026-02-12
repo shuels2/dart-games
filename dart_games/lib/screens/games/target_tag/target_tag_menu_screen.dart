@@ -43,11 +43,16 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
 
   // Team icon paths
   final List<String> _teamIconPaths = [
-    'assets/icon/TargetTag-TeamIcon-01.png',
-    'assets/icon/TargetTag-TeamIcon-02.png',
-    'assets/icon/TargetTag-TeamIcon-03.png',
-    'assets/icon/TargetTag-TeamIcon-04.png',
-    'assets/icon/TargetTag-TeamIcon-05.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-01.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-02.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-03.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-04.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-05.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-06.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-07.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-08.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-09.png',
+    'assets/games/target_tag/icons/TargetTag-TeamIcon-10.png',
   ];
 
   @override

@@ -197,7 +197,7 @@ class TargetTagGame {
       final players = entry.value;
 
       // Assign team icon
-      teamIconPaths[teamId] = 'assets/icon/TargetTag-TeamIcon-${iconIndices[iconIndex].toString().padLeft(2, '0')}.png';
+      teamIconPaths[teamId] = 'assets/games/target_tag/icons/TargetTag-TeamIcon-${iconIndices[iconIndex].toString().padLeft(2, '0')}.png';
       iconIndex++;
 
       for (final playerId in players) {

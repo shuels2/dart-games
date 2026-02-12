@@ -161,9 +161,108 @@ When adding a new game to the dart games app:
    - `PlayerProvider` - Global user management
    - `GameAnnouncementQueueService` - Voice announcements with sound effects (see Announcement System Integration below)
    - `VictoryMusicService` - Victory music playback
-5. **Add game card** to `home_screen.dart` for navigation
-6. **Create tests** following existing patterns
-7. **Update CLAUDE.md** with new test counts and game-specific notes
+5. **Organize game assets** following the asset structure pattern (see Asset Organization below)
+6. **Add game card** to `home_screen.dart` for navigation
+7. **Create tests** following existing patterns
+8. **Update CLAUDE.md** with new test counts and game-specific notes
+
+#### Asset Organization
+
+**ALL game assets (images, sounds, icons) MUST be organized in game-specific folders.**
+
+This prevents file name conflicts between games and creates a clear separation of concerns.
+
+**Asset Structure:**
+```
+assets/
+├── common/                          # Shared assets used across all games
+│   ├── icons/
+│   │   └── icon.png                # App icon
+│   └── images/
+│       ├── logo.png                # Dart Games logo
+│       └── connect_dartboard_icon.png
+│
+└── games/
+    ├── carnival_derby/             # Carnival Derby game assets
+    │   ├── icons/
+    │   │   ├── horse.png
+    │   │   ├── track.png
+    │   │   └── finish_line.png
+    │   ├── images/
+    │   │   └── CarnivalDerby-WoodPlanks.jpg
+    │   └── sounds/
+    │       ├── CarnivalDerby-HorseRace-Start.mp3
+    │       └── CarnivalDerby-Horse-Gallop.mp3
+    │
+    ├── target_tag/                 # Target Tag game assets
+    │   ├── icons/
+    │   │   ├── TargetTag-Icon.png
+    │   │   └── TargetTag-TeamIcon-01.png through TargetTag-TeamIcon-10.png
+    │   └── sounds/
+    │       └── (15 sound effect files)
+    │
+    └── your_game/                  # ← New game assets go here
+        ├── icons/
+        ├── images/
+        └── sounds/
+```
+
+**When adding a new game:**
+
+1. **Create game-specific asset folders:**
+   ```bash
+   mkdir -p assets/games/your_game/icons
+   mkdir -p assets/games/your_game/images
+   mkdir -p assets/games/your_game/sounds
+   ```
+
+2. **Place ALL game assets in the game folder:**
+   - Game-specific icons → `assets/games/your_game/icons/`
+   - Game-specific images → `assets/games/your_game/images/`
+   - Game-specific sounds → `assets/games/your_game/sounds/`
+   - DO NOT mix game assets with other games' folders
+   - DO NOT place game-specific assets in `assets/common/`
+
+3. **Update pubspec.yaml with directory declaration:**
+   ```yaml
+   assets:
+     # Shared/common assets
+     - assets/common/icons/
+     - assets/common/images/
+
+     # Game-specific assets
+     - assets/games/carnival_derby/
+     - assets/games/target_tag/
+     - assets/games/your_game/        # ← Add your game folder
+   ```
+
+4. **Reference assets using full paths in code:**
+   ```dart
+   // Game icon
+   Image.asset('assets/games/your_game/icons/your_icon.png')
+
+   // Background image
+   AssetImage('assets/games/your_game/images/background.jpg')
+
+   // Sound effects (in sound effects service)
+   static const String _basePath = 'assets/games/your_game/sounds/';
+   static const SoundEffectConfig yourSound = SoundEffectConfig(
+     assetPath: '${_basePath}YourSound.mp3',
+     startSeconds: 0.0,
+     endSeconds: null,
+   );
+   ```
+
+**Benefits:**
+- No file name conflicts between games
+- Clear ownership of assets
+- Easy to add/remove entire games
+- Consistent with code organization (`lib/screens/games/`, `lib/widgets/`)
+- Simplified pubspec.yaml (directory-based vs individual file entries)
+
+**Reference Implementations:**
+- Carnival Derby: `assets/games/carnival_derby/` (6 assets: 3 icons, 1 image, 2 sounds)
+- Target Tag: `assets/games/target_tag/` (26 assets: 11 icons, 15 sounds)
 
 #### Announcement System Integration
 
