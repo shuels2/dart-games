@@ -7,11 +7,13 @@ import '../services/photo_service.dart';
 
 class PlayerProvider extends ChangeNotifier {
   static const String _storageKey = 'players_roster';
+  static const String _lastSortedKey = 'players_last_sorted_at';
 
   List<Player> _allPlayers = [];
   List<Player> _selectedPlayers = [];
   bool _isLoading = false;
   String? _error;
+  DateTime? _lastSortedAt;
 
   final PhotoService _photoService = PhotoService();
 
@@ -37,6 +39,15 @@ class PlayerProvider extends ChangeNotifier {
       } else {
         _allPlayers = [];
       }
+
+      // Load last sorted timestamp
+      final String? lastSortedJson = prefs.getString(_lastSortedKey);
+      if (lastSortedJson != null) {
+        _lastSortedAt = DateTime.parse(lastSortedJson);
+      }
+
+      // Sort players (alphabetically, with new players at bottom)
+      _sortPlayers();
     } catch (e) {
       _error = 'Failed to load players: $e';
       print(_error);
@@ -44,6 +55,29 @@ class PlayerProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // Sort players alphabetically, keeping newly added players at the bottom
+  void _sortPlayers() {
+    if (_allPlayers.isEmpty) return;
+
+    final sortedAt = _lastSortedAt ?? DateTime(1970); // Epoch if never sorted
+
+    // Separate into "old" (sorted) and "new" (unsorted) players
+    final oldPlayers = _allPlayers
+        .where((p) =>
+            p.createdAt.isBefore(sortedAt) ||
+            p.createdAt.isAtSameMomentAs(sortedAt))
+        .toList();
+    final newPlayers =
+        _allPlayers.where((p) => p.createdAt.isAfter(sortedAt)).toList();
+
+    // Sort old players alphabetically (case-insensitive)
+    oldPlayers.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    // Rebuild list: sorted old players + unsorted new players
+    _allPlayers = [...oldPlayers, ...newPlayers];
   }
 
   // Save all players to SharedPreferences
@@ -132,6 +166,17 @@ class PlayerProvider extends ChangeNotifier {
   void clearSelection() {
     _selectedPlayers.clear();
     notifyListeners();
+  }
+
+  // Mark players as sorted (called when leaving a screen)
+  Future<void> markPlayersSorted() async {
+    try {
+      _lastSortedAt = DateTime.now();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_lastSortedKey, _lastSortedAt!.toIso8601String());
+    } catch (e) {
+      print('Failed to save last sorted timestamp: $e');
+    }
   }
 
   // Update player stats after a game

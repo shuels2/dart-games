@@ -61,6 +61,9 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
 
   @override
   void dispose() {
+    // Mark players as sorted when leaving screen
+    context.read<PlayerProvider>().markPlayersSorted();
+
     _availablePlayersScrollController.dispose();
     _selectedPlayersScrollController.dispose();
     super.dispose();

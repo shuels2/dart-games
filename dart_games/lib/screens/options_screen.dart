@@ -58,6 +58,9 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
   @override
   void dispose() {
+    // Mark players as sorted when leaving screen
+    context.read<PlayerProvider>().markPlayersSorted();
+
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _playersListScrollController.dispose();

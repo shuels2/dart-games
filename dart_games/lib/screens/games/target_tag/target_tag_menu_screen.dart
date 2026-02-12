@@ -97,6 +97,9 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
 
   @override
   void dispose() {
+    // Mark players as sorted when leaving screen
+    context.read<PlayerProvider>().markPlayersSorted();
+
     _pulseController.dispose();
     _scrollController.dispose();
     super.dispose();
