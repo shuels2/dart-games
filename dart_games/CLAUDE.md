@@ -82,6 +82,23 @@ dart_games/
 - Sound effects play simultaneously with announcements
 - Uses the global `DartAnnouncerService` for voice output
 
+**6. In-Game Dartboard Emulator Components (`lib/widgets/dartboard_emulator/`)**
+- **Purpose**: Allows offline development and testing when a physical Scolia dartboard is NOT connected
+- **When shown**: ONLY when `!dartboardProvider.isConnected` (emulator mode)
+- **When hidden**: Automatically hidden when connected to a real Scolia dartboard
+- Shared, reusable dartboard emulator UI components for all games
+- Ensures consistent dartboard behavior across games while allowing game-specific styling
+- **DartboardEmulatorController** - Manages show/hide state (ChangeNotifier pattern)
+- **DartboardEmulatorSection** - Renders dartboard container with disabled overlay
+- **DartboardEmulatorFAB** - Floating action button for show/hide toggle (only visible in emulator mode)
+- **Configuration classes** - Game-specific styling via factory methods
+  - `DartboardSectionConfig.carnivalDerby()` - Carnival Derby styling
+  - `DartboardSectionConfig.targetTag()` - Target Tag styling
+  - `DartboardFABConfig.carnivalDerby()` - Carnival Derby FAB styling
+  - `DartboardFABConfig.targetTag()` - Target Tag FAB styling
+- All games use identical dartboard logic from `InteractiveDartboard` widget
+- See "Dartboard Emulator Component Integration" section for implementation guide
+
 ### Design System
 
 **Dart Games Container App Design:**
@@ -197,6 +214,123 @@ _audioQueue?.announcePlayerTurn(player.name);
 **Reference implementations:**
 - Target Tag: `lib/services/target_tag_announcement_helper.dart`
 - Carnival Derby: `lib/services/carnival_derby_announcement_helper.dart`
+
+#### Dartboard Emulator Component Integration
+
+**ALL games MUST use the shared dartboard emulator components.**
+
+**IMPORTANT: The in-game dartboard emulator is ONLY for offline development and testing.**
+- The dartboard emulator appears when you cannot connect to a physical Scolia dartboard
+- It allows testing game logic without physical hardware
+- It is automatically hidden when connected to a real dartboard (`dartboardProvider.isConnected`)
+- The FAB button only appears in emulator mode to allow hiding/showing the on-screen dartboard
+
+The dartboard emulator components provide a consistent UI and behavior across all games while allowing each game to customize the visual styling (colors, fonts, borders).
+
+**Integration Pattern:**
+
+1. **Import the dartboard emulator package**:
+```dart
+import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
+```
+
+2. **In your game screen state, create a controller and dartboard key**:
+```dart
+class _YourGameScreenState extends State<YourGameScreen> {
+  final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
+  final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();
+  MockScoliaApiService? _mockApi;
+
+  @override
+  void dispose() {
+    _dartboardEmulatorController.dispose();
+    // ... other dispose calls
+    super.dispose();
+  }
+}
+```
+
+3. **Add the FAB (Floating Action Button) to your Scaffold**:
+```dart
+Scaffold(
+  // ... appBar, body, etc.
+  floatingActionButton: DartboardEmulatorFAB(
+    controller: _dartboardEmulatorController,
+    isConnected: dartboardProvider.isConnected,
+    config: DartboardFABConfig.yourGame(), // Create factory for your game
+  ),
+)
+```
+
+4. **Add the dartboard section to your game UI**:
+```dart
+DartboardEmulatorSection(
+  controller: _dartboardEmulatorController,
+  isConnected: dartboardProvider.isConnected,
+  shouldPromptTakeout: shouldPromptTakeout,
+  dartboardKey: _dartboardKey,
+  onDartThrow: (score, multiplier, baseScore, position) {
+    if (_mockApi != null) {
+      _mockApi!.simulateDartThrow(
+        score: score,
+        multiplier: multiplier,
+        playerName: 'Player',
+        baseScore: baseScore,
+        widgetX: position.dx,
+        widgetY: position.dy,
+        widgetSize: 250,
+      );
+    }
+  },
+  onRemoveDarts: () {
+    _mockApi?.simulateTakeoutFinished();
+    _dartboardKey.currentState?.removeDarts();
+  },
+  config: DartboardSectionConfig.yourGame(), // Create factory for your game
+),
+```
+
+5. **Create configuration factory methods for your game** in `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart`:
+```dart
+// Add to DartboardSectionConfig class
+factory DartboardSectionConfig.yourGame() {
+  return DartboardSectionConfig(
+    backgroundColor: const Color(0xYOURCOLOR),
+    borderRadius: BorderRadius.circular(12), // Optional
+    disabledOverlayBackgroundColor: const Color(0xYOURCOLOR).withOpacity(0.9),
+    disabledOverlayBorderColor: const Color(0xYOURBORDER),
+    removeButtonBackgroundColor: const Color(0xYOURBUTTON),
+    removeButtonBorderColor: const Color(0xYOURBORDER),
+    removeButtonTextStyle: GoogleFonts.yourFont(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  );
+}
+
+// Add to DartboardFABConfig class
+factory DartboardFABConfig.yourGame() {
+  return DartboardFABConfig(
+    backgroundColor: const Color(0xYOURCOLOR),
+    iconColor: Colors.white,
+    textColor: Colors.white,
+    textStyle: GoogleFonts.yourFont(fontWeight: FontWeight.bold),
+  );
+}
+```
+
+**Benefits:**
+- ~200 lines of code eliminated per game
+- Consistent dartboard behavior across all games
+- Bug fixes in shared component benefit all games
+- Game-specific visual identity maintained through configuration
+- Future games only need config objects
+
+**Reference Implementations:**
+- Carnival Derby: `lib/screens/games/carnival_horse_race/horse_race_game_screen.dart`
+- Target Tag: `lib/screens/games/target_tag/target_tag_game_screen.dart`
+- Component source: `lib/widgets/dartboard_emulator/`
 
 ## Critical Rules
 
