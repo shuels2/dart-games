@@ -117,7 +117,12 @@ flutter:
 
     # Game-specific assets
     - assets/games/carnival_derby/
+    - assets/games/carnival_derby/icons/
+    - assets/games/carnival_derby/images/
+    - assets/games/carnival_derby/sounds/
     - assets/games/target_tag/
+    - assets/games/target_tag/icons/
+    - assets/games/target_tag/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
