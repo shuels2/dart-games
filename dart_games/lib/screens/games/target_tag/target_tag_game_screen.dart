@@ -902,6 +902,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
+                    if (currentPlayer == null) return;
                     final targetTagProvider =
                         Provider.of<TargetTagProvider>(context, listen: false);
                     showEditScoreDialog(

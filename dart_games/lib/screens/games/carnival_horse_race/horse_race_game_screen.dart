@@ -795,6 +795,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               // Edit player score button
               ElevatedButton(
                 onPressed: () {
+                  if (currentPlayer == null) return;
                   final horseRaceProvider =
                       Provider.of<HorseRaceProvider>(context, listen: false);
                   showEditScoreDialog(
