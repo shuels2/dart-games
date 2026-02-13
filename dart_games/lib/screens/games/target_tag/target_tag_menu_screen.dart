@@ -42,23 +42,26 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
   final ScrollController _scrollController = ScrollController();
   PlayerProvider? _playerProvider;
 
-  // Team icon paths
-  final List<String> _teamIconPaths = [
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-01.png',
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-02.png',
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-03.png',
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-04.png',
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-05.png',
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-06.png',
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-07.png',
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-08.png',
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-09.png',
-    'assets/games/target_tag/icons/TargetTag-TeamIcon-10.png',
-  ];
+  // Team icon paths — shuffled once at init so icons vary game to game
+  List<String> _teamIconPaths = [];
 
   @override
   void initState() {
     super.initState();
+
+    // Shuffle team icons once per menu load so each game session looks different
+    _teamIconPaths = [
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-01.png',
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-02.png',
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-03.png',
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-04.png',
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-05.png',
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-06.png',
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-07.png',
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-08.png',
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-09.png',
+      'assets/games/target_tag/icons/TargetTag-TeamIcon-10.png',
+    ]..shuffle();
 
     // Initialize pulse animation
     _pulseController = AnimationController(
@@ -1406,10 +1409,20 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
         }
       }
 
+      // Map each team ID to the icon shown on the menu so the game screen
+      // displays the same icons players saw when they picked their team.
+      final teamIconMap = <String, String>{
+        'team1': _teamIconPaths[0],
+        'team2': _teamIconPaths[1],
+        'team3': _teamIconPaths[2],
+        'team4': _teamIconPaths[3],
+        'team5': _teamIconPaths[4],
+      };
       targetTagProvider.startTeamGame(
         teams,
         _shieldMax.toInt(),
         _soloHeroBonus,
+        teamIconMap,
       );
     } else {
       // Solo mode

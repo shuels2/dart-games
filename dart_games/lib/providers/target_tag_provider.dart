@@ -145,8 +145,9 @@ class TargetTagProvider extends ChangeNotifier {
   void startTeamGame(
     Map<String, List<String>> teams,
     int shieldMax,
-    bool soloHeroBonus,
-  ) {
+    bool soloHeroBonus, [
+    Map<String, String>? teamIconOverrides,
+  ]) {
     final totalPlayers = teams.values.fold<int>(0, (sum, team) => sum + team.length);
 
     if (totalPlayers < 3) {
@@ -163,6 +164,7 @@ class TargetTagProvider extends ChangeNotifier {
       teams: teams,
       shieldMax: shieldMax,
       soloHeroBonus: soloHeroBonus,
+      teamIconOverrides: teamIconOverrides,
     );
     _waitingForTakeout = false;
 
