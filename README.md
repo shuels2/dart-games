@@ -150,7 +150,41 @@ audioQueue.announcePlayerTurn(player.name);
 
 See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
-#### 6. Add Player Dialog (`lib/widgets/add_player/`)
+#### 6. Edit Score Dialog (`lib/widgets/edit_score/`)
+- Shared modal for editing three dart scores (ring + number picker) during a turn
+- Ensures consistent dart-picker logic while allowing game-specific styling
+- Supports optional per-dart border color overrides for result-based coloring (Target Tag)
+- Supports optional score display transform (Carnival Derby shows calculated points, Target Tag shows raw segment)
+
+```dart
+// Import the shared component
+import 'package:dart_games/widgets/edit_score/edit_score.dart';
+
+// Show Edit Score dialog
+showEditScoreDialog(
+  context: context,
+  playerName: currentPlayer.name,
+  initialSegments: yourProvider.getCurrentTurnDartScores(currentPlayer.id),
+  onSubmit: (newSegments) =>
+      yourProvider.updateAllDartScores(currentPlayer.id, newSegments),
+  config: EditScoreDialogConfig.yourGame(), // Use appropriate factory
+  // dartBorderColors: _computeDartBorderColors(currentPlayer.id), // optional
+);
+```
+
+**Features:**
+- Ring/number picker for all 3 darts (Single inner/outer, Double, Triple, Outer Bull, Bullseye, Miss)
+- Submit disabled until all 3 darts have valid selections
+- Game-specific styling via configuration factories
+- Eliminates ~860 lines of duplicated code
+
+**Available Configurations:**
+- `EditScoreDialogConfig.carnivalDerby()` - Midnight Navy bg, Canary Yellow accents, calculated score display
+- `EditScoreDialogConfig.targetTag()` - Dark Navy bg, Hot Pink border, Neon Green selected, raw segment display
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide and custom configuration examples.
+
+#### 7. Add Player Dialog (`lib/widgets/add_player/`)
 - Shared modal for adding new players across all games and System Settings
 - Ensures consistent player creation logic while allowing screen-specific styling
 - Returns `Player?` object if created, `null` if cancelled
@@ -195,7 +229,7 @@ if (player != null && mounted) {
 
 See [CLAUDE.md](CLAUDE.md) for complete integration guide and custom configuration examples.
 
-#### 7. In-Game Dartboard Emulator Components (`lib/widgets/dartboard_emulator/`)
+#### 8. In-Game Dartboard Emulator Components (`lib/widgets/dartboard_emulator/`)
 - Shared UI components for offline development and testing when a physical Scolia dartboard is NOT connected
 - ONLY shown when `dartboardProvider.isConnected` is `false` (emulator mode)
 - Automatically hidden when connected to a real Scolia dartboard
@@ -283,7 +317,7 @@ dart_games/
 │       └── games/
 │           ├── carnival_horse_race/ # Carnival Derby game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Test suite (219 tests)
+├── test/                            # Test suite (226 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
     │   ├── icons/
@@ -342,6 +376,7 @@ import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/services/game_announcement_queue_service.dart';
 import 'package:dart_games/services/victory_music_service.dart';
 import 'package:dart_games/widgets/add_player/add_player.dart';
+import 'package:dart_games/widgets/edit_score/edit_score.dart';
 import 'package:dart_games/widgets/dartboard_emulator/dartboard_emulator.dart';
 
 // Use global user list
@@ -440,6 +475,7 @@ Update `lib/screens/home_screen.dart` to include navigation to your game.
 Add factory methods to:
 - `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` for dartboard styling
 - `lib/widgets/add_player/add_player_dialog_config.dart` for Add Player dialog styling
+- `lib/widgets/edit_score/edit_score_dialog_config.dart` for Edit Score dialog styling (if your game supports dart score editing)
 
 See existing examples for Carnival Derby and Target Tag.
 
@@ -474,7 +510,7 @@ cd dart_games
 # Install dependencies
 flutter pub get
 
-# Run tests (all 219 tests must pass)
+# Run tests (all 226 tests must pass)
 flutter test
 
 # Launch in Chrome (web)
@@ -486,7 +522,7 @@ flutter run
 
 ### Testing Requirements
 
-**All 219 tests must pass before any build or deployment.**
+**All 226 tests must pass before any build or deployment.**
 
 ```bash
 flutter test

@@ -16,6 +16,7 @@ import '../../../widgets/target_tag/player_card_widget.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
+import '../../../widgets/edit_score/edit_score.dart';
 import 'target_tag_results_screen.dart';
 
 class TargetTagGameScreen extends StatefulWidget {
@@ -901,7 +902,19 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
-                    _showEditScoreModal(currentPlayer);
+                    final targetTagProvider =
+                        Provider.of<TargetTagProvider>(context, listen: false);
+                    showEditScoreDialog(
+                      context: context,
+                      playerName: currentPlayer.name,
+                      initialSegments:
+                          targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
+                      onSubmit: (newSegments) => targetTagProvider
+                          .updateAllDartScores(currentPlayer.id, newSegments),
+                      config: EditScoreDialogConfig.targetTag(),
+                      dartBorderColors:
+                          _computeDartBorderColors(currentPlayer.id),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF007A).withOpacity(0.85),
@@ -927,446 +940,63 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     );
   }
 
-  void _showEditScoreModal(Player? currentPlayer) {
-    if (currentPlayer == null) return;
-
-    final targetTagProvider = Provider.of<TargetTagProvider>(context, listen: false);
-    final dartSegments = targetTagProvider.getCurrentTurnDarts(currentPlayer.id);
-
-    // Parse current scores for each dart
-    final dart1Score = _parseScore(0 < dartSegments.length ? dartSegments[0] : '');
-    final dart2Score = _parseScore(1 < dartSegments.length ? dartSegments[1] : '');
-    final dart3Score = _parseScore(2 < dartSegments.length ? dartSegments[2] : '');
-
-    Map<int, String?> selectedRings = {
-      0: dart1Score['ring'],
-      1: dart2Score['ring'],
-      2: dart3Score['ring'],
-    };
-
-    Map<int, int?> selectedNumbers = {
-      0: dart1Score['number'],
-      1: dart2Score['number'],
-      2: dart3Score['number'],
-    };
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            // Check if all darts have valid selections
-            bool isValidSelection = true;
-            for (int i = 0; i < 3; i++) {
-              final ring = selectedRings[i];
-              final number = selectedNumbers[i];
-
-              if (ring == null) {
-                isValidSelection = false;
-                break;
-              }
-
-              // If ring requires a number, check that number is selected
-              if (ring == 'Single (inner)' || ring == 'Single (outer)' ||
-                  ring == 'Double' || ring == 'Triple') {
-                if (number == null) {
-                  isValidSelection = false;
-                  break;
-                }
-              }
-            }
-
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 1000),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A2E).withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFFF007A),
-                    width: 4,
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Title
-                      Text(
-                        'Edit ${currentPlayer.name}\'s score',
-                        style: GoogleFonts.fredoka(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Three columns - one for each dart
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: List.generate(3, (dartIndex) {
-                          return Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(
-                                left: dartIndex == 0 ? 0 : 8,
-                                right: dartIndex == 2 ? 0 : 8,
-                              ),
-                              child: _buildDartScoreSection(
-                                dartIndex,
-                                dartSegments,
-                                selectedRings,
-                                selectedNumbers,
-                                setState,
-                                targetTagProvider,
-                                currentPlayer.id,
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-
-                      const SizedBox(height: 24),
-                      // Action buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(dialogContext).pop();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey.withOpacity(0.85),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: Text(
-                              'Cancel',
-                              style: GoogleFonts.fredoka(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: isValidSelection
-                                ? () {
-                                    // Build all three dart segments
-                                    final newDartSegments = <String>[];
-                                    for (int i = 0; i < 3; i++) {
-                                      final ring = selectedRings[i]!;
-                                      final number = selectedNumbers[i];
-
-                                      String sector;
-                                      if (ring == 'Bullseye') {
-                                        sector = 'Bull';
-                                      } else if (ring == 'Outer Bull') {
-                                        sector = '25';
-                                      } else if (ring == 'Miss') {
-                                        sector = 'Miss';
-                                      } else {
-                                        // Single (outer), Single (inner), Double, Triple
-                                        final prefix = ring == 'Double' ? 'D' : ring == 'Triple' ? 'T' : 'S';
-                                        sector = '$prefix$number';
-                                      }
-                                      newDartSegments.add(sector);
-                                    }
-
-                                    // Update all three darts at once (processes in order)
-                                    targetTagProvider.updateAllDartScores(
-                                      currentPlayer.id,
-                                      newDartSegments,
-                                    );
-                                    Navigator.of(dialogContext).pop();
-                                  }
-                                : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF007A).withOpacity(0.85),
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor: Colors.grey.withOpacity(0.3),
-                              disabledForegroundColor: Colors.white38,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: Text(
-                              'Update score',
-                              style: GoogleFonts.fredoka(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Map<String, dynamic> _parseScore(String segment) {
-    if (segment.isEmpty || segment == '-') {
-      return {'ring': null, 'number': null};
-    } else if (segment == 'Miss') {
-      return {'ring': 'Miss', 'number': null};
-    } else if (segment == 'Bull') {
-      return {'ring': 'Bullseye', 'number': null};
-    } else if (segment == '25') {
-      return {'ring': 'Outer Bull', 'number': null};
-    } else {
-      // Parse D20, T19, S18 format
-      final match = RegExp(r'([SDTsdt])(\d+)').firstMatch(segment);
-      if (match != null) {
-        final prefix = match.group(1)!.toUpperCase();
-        final number = int.parse(match.group(2)!);
-
-        String ring;
-        if (prefix == 'D') {
-          ring = 'Double';
-        } else if (prefix == 'T') {
-          ring = 'Triple';
-        } else {
-          // S - default to outer
-          ring = 'Single (outer)';
-        }
-        return {'ring': ring, 'number': number};
-      }
-    }
-    return {'ring': null, 'number': null};
-  }
-
-  Widget _buildDartScoreSection(
-    int dartIndex,
-    List<String> dartSegments,
-    Map<int, String?> selectedRings,
-    Map<int, int?> selectedNumbers,
-    StateSetter setState,
-    TargetTagProvider targetTagProvider,
-    String playerId,
-  ) {
-    final segment = dartIndex < dartSegments.length ? dartSegments[dartIndex] : '';
-    final dartTaggedInStatus = targetTagProvider.getDartThrowTaggedInStatus(playerId);
-    final dartHeroBonusHit = targetTagProvider.getDartThrowHeroBonusHit(playerId);
-    final dartReachedMax = targetTagProvider.getDartThrowReachedMax(playerId);
-    final dartCausedElimination = targetTagProvider.getDartThrowCausedElimination(playerId);
-    final dartHitOpponentTarget = targetTagProvider.getDartThrowHitOpponentTarget(playerId);
+  /// Computes per-dart score box border colors for the edit score dialog.
+  /// Returns a list of 3 colors (one per dart), where null means use the
+  /// config default (shown for unthrown darts).
+  List<Color?> _computeDartBorderColors(String playerId) {
+    final targetTagProvider =
+        Provider.of<TargetTagProvider>(context, listen: false);
+    final dartSegments = targetTagProvider.getCurrentTurnDarts(playerId);
+    final dartHeroBonusHit =
+        targetTagProvider.getDartThrowHeroBonusHit(playerId);
+    final dartReachedMax =
+        targetTagProvider.getDartThrowReachedMax(playerId);
+    final dartCausedElimination =
+        targetTagProvider.getDartThrowCausedElimination(playerId);
+    final dartTaggedInStatus =
+        targetTagProvider.getDartThrowTaggedInStatus(playerId);
+    final dartHitOpponentTarget =
+        targetTagProvider.getDartThrowHitOpponentTarget(playerId);
     final targetNumber = targetTagProvider.getTargetNumber(playerId) ?? 0;
 
-    Color borderColor = Colors.white38;
-    if (dartIndex < dartSegments.length && segment.isNotEmpty) {
-      // Use same logic as active player panel for highlighting
+    return List.generate(3, (dartIndex) {
+      final segment =
+          dartIndex < dartSegments.length ? dartSegments[dartIndex] : '';
+      if (segment.isEmpty) return null;
+
       if (dartIndex < dartHeroBonusHit.length && dartHeroBonusHit[dartIndex]) {
-        borderColor = const Color(0xFFFFD700); // Gold for hero bonus
-      } else if (dartIndex < dartReachedMax.length && dartReachedMax[dartIndex]) {
-        borderColor = const Color(0xFF00FFA3); // Green for reaching max
-      } else if (dartIndex < dartCausedElimination.length && dartCausedElimination[dartIndex]) {
-        borderColor = const Color(0xFFFFD700); // Gold for elimination
+        return const Color(0xFFFFD700); // Gold for hero bonus
+      } else if (dartIndex < dartReachedMax.length &&
+          dartReachedMax[dartIndex]) {
+        return const Color(0xFF00FFA3); // Green for reaching max
+      } else if (dartIndex < dartCausedElimination.length &&
+          dartCausedElimination[dartIndex]) {
+        return const Color(0xFFFFD700); // Gold for elimination
       } else {
         final hitNumber = _parseSegmentNumber(segment);
         if (hitNumber == null) {
-          borderColor = const Color(0xFFFF007A); // Pink for miss
+          return const Color(0xFFFF007A); // Pink for miss
         } else {
-          final wasTaggedIn = dartIndex < dartTaggedInStatus.length ? dartTaggedInStatus[dartIndex] : false;
+          final wasTaggedIn = dartIndex < dartTaggedInStatus.length
+              ? dartTaggedInStatus[dartIndex]
+              : false;
           if (!wasTaggedIn) {
-            borderColor = hitNumber == targetNumber ? const Color(0xFF00FFA3) : const Color(0xFFFF007A);
+            return hitNumber == targetNumber
+                ? const Color(0xFF00FFA3)
+                : const Color(0xFFFF007A);
           } else {
             if (hitNumber == targetNumber) {
-              borderColor = const Color(0xFFFF007A);
-            } else if (dartIndex < dartHitOpponentTarget.length && dartHitOpponentTarget[dartIndex]) {
-              borderColor = const Color(0xFFFFD700);
+              return const Color(0xFFFF007A);
+            } else if (dartIndex < dartHitOpponentTarget.length &&
+                dartHitOpponentTarget[dartIndex]) {
+              return const Color(0xFFFFD700);
             } else {
-              borderColor = const Color(0xFFFF007A);
+              return const Color(0xFFFF007A);
             }
           }
         }
       }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Dart label and score box
-        Text(
-          'D${dartIndex + 1}',
-          style: GoogleFonts.fredoka(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.white70,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A2E),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: borderColor,
-              width: 3,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              segment.isEmpty ? '-' : segment,
-              style: GoogleFonts.fredoka(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: segment.isEmpty ? Colors.white38 : Colors.white,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Ring buttons
-        _buildSmallRingButton('Single (inner)', selectedRings[dartIndex], (ring) {
-          setState(() {
-            selectedRings[dartIndex] = ring;
-          });
-        }),
-        const SizedBox(height: 6),
-        _buildSmallRingButton('Single (outer)', selectedRings[dartIndex], (ring) {
-          setState(() {
-            selectedRings[dartIndex] = ring;
-          });
-        }),
-        const SizedBox(height: 6),
-        _buildSmallRingButton('Double', selectedRings[dartIndex], (ring) {
-          setState(() {
-            selectedRings[dartIndex] = ring;
-          });
-        }),
-        const SizedBox(height: 6),
-        _buildSmallRingButton('Triple', selectedRings[dartIndex], (ring) {
-          setState(() {
-            selectedRings[dartIndex] = ring;
-          });
-        }),
-        const SizedBox(height: 12),
-
-        // Number grid - 4 rows x 5 columns
-        ...List.generate(4, (rowIndex) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(5, (colIndex) {
-                final num = rowIndex * 5 + colIndex + 1;
-                final isSelected = selectedNumbers[dartIndex] == num;
-                final isDisabled = selectedRings[dartIndex] == 'Outer Bull' ||
-                                  selectedRings[dartIndex] == 'Bullseye' ||
-                                  selectedRings[dartIndex] == 'Miss';
-
-                return Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      left: colIndex == 0 ? 0 : 3,
-                      right: colIndex == 4 ? 0 : 3,
-                    ),
-                    child: SizedBox(
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: isDisabled ? null : () {
-                          setState(() {
-                            selectedNumbers[dartIndex] = num;
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isSelected
-                              ? const Color(0xFF00FFA3)
-                              : const Color(0xFF2A2A3E),
-                          foregroundColor: isSelected ? Colors.black : Colors.white,
-                          padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        child: Text(
-                          '$num',
-                          style: GoogleFonts.fredoka(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          );
-        }),
-
-        const SizedBox(height: 12),
-
-        // Outer Bull, Bullseye, Miss buttons
-        _buildSmallRingButton('Outer Bull', selectedRings[dartIndex], (ring) {
-          setState(() {
-            selectedRings[dartIndex] = ring;
-            selectedNumbers[dartIndex] = null;
-          });
-        }),
-        const SizedBox(height: 6),
-        _buildSmallRingButton('Bullseye', selectedRings[dartIndex], (ring) {
-          setState(() {
-            selectedRings[dartIndex] = ring;
-            selectedNumbers[dartIndex] = null;
-          });
-        }),
-        const SizedBox(height: 6),
-        _buildSmallRingButton('Miss', selectedRings[dartIndex], (ring) {
-          setState(() {
-            selectedRings[dartIndex] = ring;
-            selectedNumbers[dartIndex] = null;
-          });
-        }),
-      ],
-    );
-  }
-
-  Widget _buildSmallRingButton(String ring, String? currentRing, Function(String) onSelect) {
-    final isSelected = currentRing == ring;
-
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          onSelect(ring);
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected
-              ? const Color(0xFF00FFA3)
-              : const Color(0xFF2A2A3E),
-          foregroundColor: isSelected ? Colors.black : Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ),
-        child: Text(
-          ring,
-          style: GoogleFonts.fredoka(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
+    });
   }
 
   int? _parseSegmentNumber(String segment) {

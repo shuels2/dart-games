@@ -117,6 +117,22 @@ dart_games/
 - Eliminates ~750 lines of duplicated code across 3 locations
 - See "Add Player Dialog Integration" section for implementation guide
 
+**8. Edit Score Dialog Component (`lib/widgets/edit_score/`)**
+- **Purpose**: Shared modal for editing three dart scores during a turn across all games
+- Ensures consistent dart-picker logic (ring + number selection) while allowing game-specific styling
+- **showEditScoreDialog()** - Function that shows the modal; calls `onSubmit` with new segments on confirm
+- **EditScoreDialogConfig** - Configuration class for styling (colors, fonts, borders)
+- **Factory methods** - Pre-configured styling for each game
+  - `EditScoreDialogConfig.carnivalDerby()` - Midnight Navy bg, Canary Yellow accents, LuckiestGuy/Bangers fonts; shows calculated point values
+  - `EditScoreDialogConfig.targetTag()` - Dark Navy bg, Hot Pink border, Neon Green selected, Fredoka font; shows raw segment strings
+- Features:
+  - Ring/number picker for all 3 darts (Single inner/outer, Double, Triple, Outer Bull, Bullseye, Miss)
+  - Per-dart score box border color overrides (`dartBorderColors`) for result-based coloring (Target Tag)
+  - Optional score display transform (Carnival Derby shows calculated score, Target Tag shows raw segment)
+  - Submit disabled until all 3 darts have valid ring+number selections
+- Eliminates ~860 lines of duplicated code across 2 game screens
+- See "Edit Score Dialog Integration" section for implementation guide
+
 ### Design System
 
 **Dart Games Container App Design:**
@@ -766,6 +782,134 @@ void _handleAddPlayer() async {
 - Target Tag: `lib/screens/games/target_tag/target_tag_menu_screen.dart`
 - System Settings: `lib/screens/options_screen.dart`
 - Component source: `lib/widgets/add_player/`
+
+#### Edit Score Dialog Integration
+
+**ALL games MUST use the shared Edit Score dialog component when editing dart scores.**
+
+The Edit Score dialog provides consistent dart-picker logic (ring + number selection for 3 darts) while allowing each game to customize styling (colors, fonts, borders).
+
+**Integration Pattern:**
+
+1. **Import the Edit Score package**:
+```dart
+import '../../../widgets/edit_score/edit_score.dart';
+```
+
+2. **Call the shared dialog directly from the button's `onPressed`**:
+```dart
+ElevatedButton(
+  onPressed: () {
+    final yourProvider = Provider.of<YourProvider>(context, listen: false);
+    showEditScoreDialog(
+      context: context,
+      playerName: currentPlayer.name,
+      initialSegments: yourProvider.getCurrentTurnDartScores(currentPlayer.id),
+      onSubmit: (newSegments) =>
+          yourProvider.updateAllDartScores(currentPlayer.id, newSegments),
+      config: EditScoreDialogConfig.yourGame(),
+      // dartBorderColors: _computeDartBorderColors(currentPlayer.id), // optional
+    );
+  },
+  child: Text('Edit player score'),
+)
+```
+
+3. **If your game needs color-coded score box borders** (like Target Tag), add a `_computeDartBorderColors(String playerId)` method to your game screen that returns `List<Color?>` (3 colors, null = use config default). Pass this list as `dartBorderColors`.
+
+**Configuration Factory Methods:**
+
+Create a game-specific factory method in `lib/widgets/edit_score/edit_score_dialog_config.dart`:
+
+```dart
+factory EditScoreDialogConfig.yourGame() {
+  return EditScoreDialogConfig(
+    backgroundColor: const Color(0xYOURCOLOR).withOpacity(0.95),
+    borderColor: const Color(0xYOURBORDER),
+    borderWidth: 4,
+    titleStyle: GoogleFonts.yourFont(
+      fontSize: 24,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+    dartLabelStyle: GoogleFonts.yourFont(
+      fontSize: 14,
+      fontWeight: FontWeight.bold,
+      color: Colors.white70,
+    ),
+    scoreBoxBackgroundColor: const Color(0xYOURBG),
+    scoreBoxDefaultBorderColor: Colors.white38,
+    scoreTextStyle: GoogleFonts.yourFont(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+    buttonUnselectedColor: const Color(0xYOURUNSEL),
+    buttonUnselectedForeground: Colors.white,
+    buttonSelectedColor: const Color(0xYOURSEL),
+    buttonSelectedForeground: Colors.black,
+    buttonTextStyle: GoogleFonts.yourFont(fontSize: 12, fontWeight: FontWeight.bold),
+    cancelButtonColor: Colors.grey.withOpacity(0.85),
+    cancelButtonForeground: Colors.white,
+    cancelButtonTextStyle: GoogleFonts.yourFont(fontSize: 16, fontWeight: FontWeight.bold),
+    submitButtonColor: const Color(0xYOURACCENT).withOpacity(0.85),
+    submitButtonForeground: Colors.white,
+    submitButtonTextStyle: GoogleFonts.yourFont(fontSize: 16, fontWeight: FontWeight.bold),
+    // Optional: provide a score display transform if you want to show
+    // calculated values (e.g. D13 → 26) instead of raw segment strings
+    // scoreDisplayTransform: (segment) { ... },
+  );
+}
+```
+
+**Segment encoding used by the dialog:**
+- `S$num` — outer single (e.g. `S20`)
+- `s$num` — inner single (e.g. `s20`, Carnival Derby only)
+- `D$num` — double (e.g. `D16`)
+- `T$num` — triple (e.g. `T19`)
+- `Bull` — bullseye (50)
+- `25` — outer bull
+- `Miss` — miss
+
+**Usage Examples:**
+
+**Carnival Derby (uniform borders, calculated score display):**
+```dart
+showEditScoreDialog(
+  context: context,
+  playerName: currentPlayer.name,
+  initialSegments: horseRaceProvider.getCurrentTurnDartScores(currentPlayer.id),
+  onSubmit: (newSegments) =>
+      horseRaceProvider.updateAllDartScores(currentPlayer.id, newSegments),
+  config: EditScoreDialogConfig.carnivalDerby(),
+  // no dartBorderColors — uniform Canary Yellow borders
+);
+```
+
+**Target Tag (color-coded borders based on dart results):**
+```dart
+showEditScoreDialog(
+  context: context,
+  playerName: currentPlayer.name,
+  initialSegments: targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
+  onSubmit: (newSegments) =>
+      targetTagProvider.updateAllDartScores(currentPlayer.id, newSegments),
+  config: EditScoreDialogConfig.targetTag(),
+  dartBorderColors: _computeDartBorderColors(currentPlayer.id),
+);
+```
+
+**Benefits:**
+- ~860 lines of duplicated code eliminated across 2 game screens
+- Consistent ring/number picker logic and validation
+- Game-specific visual identity maintained through configuration
+- Bug fixes in shared component benefit all games
+- Future games only need a config factory method
+
+**Reference Implementations:**
+- Carnival Derby: `lib/screens/games/carnival_horse_race/horse_race_game_screen.dart`
+- Target Tag: `lib/screens/games/target_tag/target_tag_game_screen.dart`
+- Component source: `lib/widgets/edit_score/`
 
 ### Mandatory Testing Before Any Build
 
