@@ -2469,3 +2469,7 @@ void main() {
       // verified in UI automation tests without widget property access, but the
       // game functionality is validated through player visibility and turn progression.
     });
+
+  });
+
+}
