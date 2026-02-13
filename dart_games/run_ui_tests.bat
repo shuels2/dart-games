@@ -73,9 +73,11 @@ REM ============================================================
 REM WHY BACKGROUND + CHROME KILL:
 REM   flutter drive -d chrome hangs after tests complete because
 REM   Chrome background threads (GCM registration) prevent clean
-REM   exit. Fix: run flutter drive in background, monitor the log
-REM   file until output stabilises, kill Chrome to unblock, then
-REM   check log content for "All tests passed" vs failure.
+REM   exit. Each test runs flutter drive in the background, a
+REM   PowerShell monitor watches the log file size until output
+REM   stabilises (tests done), then kills Chrome to unblock.
+REM   Pass/fail is determined by reading the log content inside
+REM   PowerShell with retry logic (handles file-locking races).
 REM ============================================================
 
 REM ----------------------------------------------------------
@@ -89,18 +91,17 @@ echo Running: !_TARGET! > !_LOG!
 echo Started at %time% >> !_LOG!
 echo. >> !_LOG!
 start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
-powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log -ErrorAction Stop).Length}catch{$curr=0};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 5"
-findstr /C:"All tests passed" !_LOG! >nul
+powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log).Length}catch{$curr=$prev};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 15;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 if !errorlevel! equ 0 (
-    echo PASSED >> !_LOG!
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> !_LOG!
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> !_LOG!
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
 
 REM ----------------------------------------------------------
@@ -114,18 +115,17 @@ echo Running: !_TARGET! > !_LOG!
 echo Started at %time% >> !_LOG!
 echo. >> !_LOG!
 start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
-powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log -ErrorAction Stop).Length}catch{$curr=0};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 5"
-findstr /C:"All tests passed" !_LOG! >nul
+powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log).Length}catch{$curr=$prev};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 15;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 if !errorlevel! equ 0 (
-    echo PASSED >> !_LOG!
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> !_LOG!
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> !_LOG!
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
 
 REM ----------------------------------------------------------
@@ -139,18 +139,17 @@ echo Running: !_TARGET! > !_LOG!
 echo Started at %time% >> !_LOG!
 echo. >> !_LOG!
 start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
-powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log -ErrorAction Stop).Length}catch{$curr=0};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 5"
-findstr /C:"All tests passed" !_LOG! >nul
+powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log).Length}catch{$curr=$prev};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 15;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 if !errorlevel! equ 0 (
-    echo PASSED >> !_LOG!
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> !_LOG!
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> !_LOG!
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
 
 REM ----------------------------------------------------------
@@ -164,18 +163,17 @@ echo Running: !_TARGET! > !_LOG!
 echo Started at %time% >> !_LOG!
 echo. >> !_LOG!
 start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
-powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log -ErrorAction Stop).Length}catch{$curr=0};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 5"
-findstr /C:"All tests passed" !_LOG! >nul
+powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log).Length}catch{$curr=$prev};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 15;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 if !errorlevel! equ 0 (
-    echo PASSED >> !_LOG!
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> !_LOG!
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> !_LOG!
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
 
 REM ----------------------------------------------------------
@@ -189,18 +187,17 @@ echo Running: !_TARGET! > !_LOG!
 echo Started at %time% >> !_LOG!
 echo. >> !_LOG!
 start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
-powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log -ErrorAction Stop).Length}catch{$curr=0};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 5"
-findstr /C:"All tests passed" !_LOG! >nul
+powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log).Length}catch{$curr=$prev};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 15;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 if !errorlevel! equ 0 (
-    echo PASSED >> !_LOG!
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> !_LOG!
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> !_LOG!
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
 
 REM ----------------------------------------------------------
@@ -214,18 +211,17 @@ echo Running: !_TARGET! > !_LOG!
 echo Started at %time% >> !_LOG!
 echo. >> !_LOG!
 start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
-powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log -ErrorAction Stop).Length}catch{$curr=0};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 5"
-findstr /C:"All tests passed" !_LOG! >nul
+powershell -NoProfile -Command "$log='!_LOG!';$prev=0;$stable=0;$elapsed=0;while($stable -lt 8 -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$curr=(Get-Item $log).Length}catch{$curr=$prev};if($curr -eq $prev){$stable++}else{$stable=0;$prev=$curr}};Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 15;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 if !errorlevel! equ 0 (
-    echo PASSED >> !_LOG!
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> !_LOG!
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> !_LOG!
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
 
 REM Generate summary
