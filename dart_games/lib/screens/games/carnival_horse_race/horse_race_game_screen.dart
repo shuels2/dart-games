@@ -544,7 +544,6 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                 },
                 onRemoveDarts: () {
                   _mockApi?.simulateTakeoutFinished();
-                  _dartboardKey.currentState?.removeDarts();
                 },
                 config: DartboardSectionConfig.carnivalDerby(),
               ),

@@ -734,7 +734,6 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             },
             onRemoveDarts: () {
               _mockApi?.simulateTakeoutFinished();
-              _dartboardKey.currentState?.removeDarts();
             },
             config: DartboardSectionConfig.targetTag(),
           ),

@@ -401,7 +401,10 @@ DartboardEmulatorSection(
   },
   onRemoveDarts: () {
     _mockApi?.simulateTakeoutFinished();
-    _dartboardKey.currentState?.removeDarts();
+    // Do NOT call _dartboardKey.currentState?.removeDarts() here.
+    // removeDarts() calls onRemoveDarts when it finishes, which would
+    // create infinite recursion. The button calls removeDarts() directly,
+    // which then fires this callback automatically.
   },
   config: DartboardSectionConfig.yourGame(), // Create factory for your game
 ),
