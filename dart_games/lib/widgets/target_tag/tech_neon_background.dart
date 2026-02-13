@@ -36,6 +36,7 @@ class _TechNeonBackgroundState extends State<TechNeonBackground>
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
+          clipBehavior: Clip.none,
           children: [
             // Base background color
             Container(

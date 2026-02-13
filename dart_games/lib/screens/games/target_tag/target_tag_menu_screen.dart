@@ -151,10 +151,10 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
               if (constraints.maxWidth > 800) {
                 // Desktop/tablet: 2-column layout
                 return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(child: _buildLeftPanel()),
-                    Expanded(child: _buildRightPanel()),
+                    Expanded(child: _buildRightPanel(scrollable: false)),
                   ],
                 );
               } else {
@@ -358,7 +358,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     );
   }
 
-  Widget _buildRightPanel() {
+  Widget _buildRightPanel({bool scrollable = true}) {
     final playerProvider = context.watch<PlayerProvider>();
     final allPlayers = playerProvider.allPlayers;
     final selectedPlayers = playerProvider.selectedPlayers;
@@ -390,530 +390,694 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     // Hero Bonus is now available for all games
     final bool soloHeroBonusEnabled = true;
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final column = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Row 1: Game Mode and Shield Max
+        Row(
           children: [
-            // Row 1: Game Mode and Shield Max
-            Row(
-              children: [
-                // Game Mode setting
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2A2A3E).withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _isTeamMode ? const Color(0xFF00FFA3) : Colors.white24,
-                        width: 2,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Team mode',
-                          style: GoogleFonts.fredoka(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Solo',
-                              style: GoogleFonts.fredoka(
-                                fontSize: 13,
-                                fontWeight: _isTeamMode ? FontWeight.normal : FontWeight.bold,
-                                color: _isTeamMode ? Colors.white60 : Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Transform.scale(
-                              scale: 0.8,
-                              child: Switch(
-                                value: _isTeamMode,
-                                activeColor: const Color(0xFF00FFA3),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _isTeamMode = value;
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Team',
-                              style: GoogleFonts.fredoka(
-                                fontSize: 13,
-                                fontWeight: _isTeamMode ? FontWeight.bold : FontWeight.normal,
-                                color: _isTeamMode ? Colors.white : Colors.white60,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+            // Game Mode setting
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2A2A3E).withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _isTeamMode ? const Color(0xFF00FFA3) : Colors.white24,
+                    width: 2,
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Shield Max slider in box
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2A2A3E).withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.white24,
-                        width: 2,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Team mode',
+                      style: GoogleFonts.fredoka(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                    child: Row(
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Shield Max: ${_shieldMax.toInt()}',
+                          'Solo',
                           style: GoogleFonts.fredoka(
                             fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            fontWeight: _isTeamMode ? FontWeight.normal : FontWeight.bold,
+                            color: _isTeamMode ? Colors.white60 : Colors.white,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Slider(
-                            value: _shieldMax,
-                            min: 1,
-                            max: 10,
-                            divisions: 9,
-                            label: _shieldMax.toInt().toString(),
-                            activeColor: const Color(0xFFFF007A),
+                        const SizedBox(width: 4),
+                        Transform.scale(
+                          scale: 0.8,
+                          child: Switch(
+                            value: _isTeamMode,
+                            activeColor: const Color(0xFF00FFA3),
                             onChanged: (value) {
                               setState(() {
-                                _shieldMax = value;
+                                _isTeamMode = value;
                               });
                             },
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Row 2: Team Assignment and Hero Bonus
-            Row(
-              children: [
-                // Team Assignment setting (always visible, disabled when not in team mode)
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _isTeamMode ? const Color(0xFF2A2A3E).withOpacity(0.85) : const Color(0xFF1A1A2E).withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _isTeamMode
-                          ? (!_isRandomTeams ? const Color(0xFFFF007A) : Colors.white24)
-                          : Colors.white12,
-                        width: 2,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
+                        const SizedBox(width: 4),
                         Text(
-                          'Assign teams',
+                          'Team',
                           style: GoogleFonts.fredoka(
                             fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: _isTeamMode ? Colors.white : Colors.white38,
+                            fontWeight: _isTeamMode ? FontWeight.bold : FontWeight.normal,
+                            color: _isTeamMode ? Colors.white : Colors.white60,
                           ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Random',
-                              style: GoogleFonts.fredoka(
-                                fontSize: 13,
-                                fontWeight: _isRandomTeams ? FontWeight.bold : FontWeight.normal,
-                                color: _isTeamMode
-                                  ? (_isRandomTeams ? Colors.white : Colors.white60)
-                                  : Colors.white38,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Transform.scale(
-                              scale: 0.8,
-                              child: Switch(
-                                value: !_isRandomTeams,
-                                activeColor: const Color(0xFFFF007A),
-                                onChanged: _isTeamMode ? (value) {
-                                  setState(() {
-                                    _isRandomTeams = !value;
-                                  });
-                                } : null,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Manually',
-                              style: GoogleFonts.fredoka(
-                                fontSize: 13,
-                                fontWeight: !_isRandomTeams ? FontWeight.bold : FontWeight.normal,
-                                color: _isTeamMode
-                                  ? (!_isRandomTeams ? Colors.white : Colors.white60)
-                                  : Colors.white38,
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Shield Max slider in box
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2A2A3E).withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white24,
+                    width: 2,
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Hero Bonus
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                    color: soloHeroBonusEnabled
-                        ? const Color(0xFF2A2A3E).withOpacity(0.85)
-                        : const Color(0xFF1A1A2E).withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
+                child: Row(
+                  children: [
+                    Text(
+                      'Shield Max: ${_shieldMax.toInt()}',
+                      style: GoogleFonts.fredoka(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Slider(
+                        value: _shieldMax,
+                        min: 1,
+                        max: 10,
+                        divisions: 9,
+                        label: _shieldMax.toInt().toString(),
+                        activeColor: const Color(0xFFFF007A),
+                        onChanged: (value) {
+                          setState(() {
+                            _shieldMax = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Row 2: Team Assignment and Hero Bonus
+        Row(
+          children: [
+            // Team Assignment setting (always visible, disabled when not in team mode)
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _isTeamMode ? const Color(0xFF2A2A3E).withOpacity(0.85) : const Color(0xFF1A1A2E).withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _isTeamMode
+                      ? (!_isRandomTeams ? const Color(0xFFFF007A) : Colors.white24)
+                      : Colors.white12,
+                    width: 2,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Assign teams',
+                      style: GoogleFonts.fredoka(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: _isTeamMode ? Colors.white : Colors.white38,
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Random',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 13,
+                            fontWeight: _isRandomTeams ? FontWeight.bold : FontWeight.normal,
+                            color: _isTeamMode
+                              ? (_isRandomTeams ? Colors.white : Colors.white60)
+                              : Colors.white38,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Transform.scale(
+                          scale: 0.8,
+                          child: Switch(
+                            value: !_isRandomTeams,
+                            activeColor: const Color(0xFFFF007A),
+                            onChanged: _isTeamMode ? (value) {
+                              setState(() {
+                                _isRandomTeams = !value;
+                              });
+                            } : null,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Manually',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 13,
+                            fontWeight: !_isRandomTeams ? FontWeight.bold : FontWeight.normal,
+                            color: _isTeamMode
+                              ? (!_isRandomTeams ? Colors.white : Colors.white60)
+                              : Colors.white38,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Hero Bonus
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                color: soloHeroBonusEnabled
+                    ? const Color(0xFF2A2A3E).withOpacity(0.85)
+                    : const Color(0xFF1A1A2E).withOpacity(0.85),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: soloHeroBonusEnabled
+                      ? (_soloHeroBonus ? const Color(0xFF00FFA3) : Colors.white24)
+                      : Colors.white12,
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Hero Bonus',
+                    style: GoogleFonts.fredoka(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
                       color: soloHeroBonusEnabled
-                          ? (_soloHeroBonus ? const Color(0xFF00FFA3) : Colors.white24)
-                          : Colors.white12,
-                      width: 2,
+                          ? Colors.white
+                          : Colors.white38,
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Hero Bonus',
+                        'Off',
                         style: GoogleFonts.fredoka(
                           fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: soloHeroBonusEnabled
-                              ? Colors.white
-                              : Colors.white38,
+                          fontWeight: !_soloHeroBonus ? FontWeight.bold : FontWeight.normal,
+                          color: !_soloHeroBonus ? Colors.white : Colors.white60,
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      const SizedBox(width: 4),
+                      Transform.scale(
+                        scale: 0.8,
+                        child: Switch(
+                          value: _soloHeroBonus,
+                          activeColor: const Color(0xFF00FFA3),
+                          onChanged: (value) {
+                            setState(() {
+                              _soloHeroBonus = value;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'On',
+                        style: GoogleFonts.fredoka(
+                          fontSize: 13,
+                          fontWeight: _soloHeroBonus ? FontWeight.bold : FontWeight.normal,
+                          color: _soloHeroBonus ? Colors.white : Colors.white60,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Player selection - different for scrollable (fixed heights) vs expanded
+        if (scrollable) ...[
+          if (!_isTeamMode || _isRandomTeams) ...[
+            // === SOLO / RANDOM TEAM: fixed height 485 ===
+            Row(
+              children: [
+                Text(
+                  'Available Players',
+                  style: GoogleFonts.fredoka(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '(${selectedPlayers.length}/$maxPlayers selected)',
+                  style: GoogleFonts.fredoka(
+                    fontSize: 14,
+                    color: selectedPlayers.length >= minPlayers
+                        ? const Color(0xFF00FFA3)
+                        : Colors.white60,
+                  ),
+                ),
+                const Spacer(),
+                if (allPlayers.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: _handleAddPlayer,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF007A),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(
+                      'NEW PLAYER',
+                      style: GoogleFonts.fredoka(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 485,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2A2A3E).withOpacity(0.85),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: selectedPlayers.length >= minPlayers
+                      ? const Color(0xFFFF007A) // Pink border
+                      : Colors.white24,
+                  width: 2,
+                ),
+              ),
+              child: allPlayers.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Off',
+                            'No players yet. Add your first player!',
                             style: GoogleFonts.fredoka(
-                              fontSize: 13,
-                              fontWeight: !_soloHeroBonus ? FontWeight.bold : FontWeight.normal,
-                              color: !_soloHeroBonus ? Colors.white : Colors.white60,
+                              color: Colors.white70,
+                              fontSize: 14,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Transform.scale(
-                            scale: 0.8,
-                            child: Switch(
-                              value: _soloHeroBonus,
-                              activeColor: const Color(0xFF00FFA3),
-                              onChanged: (value) {
-                                setState(() {
-                                  _soloHeroBonus = value;
-                                });
-                              },
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _handleAddPlayer,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF007A),
+                              foregroundColor: Colors.white,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'On',
-                            style: GoogleFonts.fredoka(
-                              fontSize: 13,
-                              fontWeight: _soloHeroBonus ? FontWeight.bold : FontWeight.normal,
-                              color: _soloHeroBonus ? Colors.white : Colors.white60,
+                            icon: const Icon(Icons.add),
+                            label: Text(
+                              'NEW PLAYER',
+                              style: GoogleFonts.fredoka(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  ),
-                ),
-              ],
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      itemCount: allPlayers.length,
+                      itemBuilder: (context, index) {
+                        final player = allPlayers[index];
+                        final isSelected = selectedPlayers.any((p) => p.id == player.id);
+
+                        return PlayerSelectionCard(
+                          player: player,
+                          isSelected: isSelected,
+                          selectedColor: const Color(0xFFFF007A), // Hot pink for Target Tag
+                          selectedBorderColor: const Color(0xFFFF007A), // Hot pink border
+                          onTap: () {
+                            if (isSelected) {
+                              playerProvider.deselectPlayer(player.id);
+                            } else {
+                              playerProvider.selectPlayer(player, maxPlayers: 10);
+                            }
+                          },
+                        );
+                      },
+                    ),
             ),
             const SizedBox(height: 24),
-
-
-            // Player selection
-            if (!_isTeamMode || _isRandomTeams) ...[
-              // Available Players - Full width
-              Row(
-                children: [
-                  Text(
-                    'Available Players',
-                    style: GoogleFonts.fredoka(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+          ] else ...[
+            // === MANUAL TEAM: fixed height 300 + team boxes ===
+            Row(
+              children: [
+                Text(
+                  'Available Players',
+                  style: GoogleFonts.fredoka(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '(${selectedPlayers.length}/$maxPlayers selected)',
-                    style: GoogleFonts.fredoka(
-                      fontSize: 14,
-                      color: selectedPlayers.length >= minPlayers
-                          ? const Color(0xFF00FFA3)
-                          : Colors.white60,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (allPlayers.isNotEmpty)
-                    ElevatedButton.icon(
-                      onPressed: _handleAddPlayer,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF007A),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: Text(
-                        'NEW PLAYER',
-                        style: GoogleFonts.fredoka(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 485,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A3E).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '(${selectedPlayers.length}/$maxPlayers selected)',
+                  style: GoogleFonts.fredoka(
+                    fontSize: 14,
                     color: selectedPlayers.length >= minPlayers
-                        ? const Color(0xFFFF007A) // Pink border
-                        : Colors.white24,
-                    width: 2,
+                        ? const Color(0xFF00FFA3)
+                        : Colors.white60,
                   ),
                 ),
-                child: allPlayers.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'No players yet. Add your first player!',
-                              style: GoogleFonts.fredoka(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: _handleAddPlayer,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF007A),
-                                foregroundColor: Colors.white,
-                              ),
-                              icon: const Icon(Icons.add),
-                              label: Text(
-                                'NEW PLAYER',
-                                style: GoogleFonts.fredoka(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        itemCount: allPlayers.length,
-                        itemBuilder: (context, index) {
-                          final player = allPlayers[index];
-                          final isSelected = selectedPlayers.any((p) => p.id == player.id);
-
-                          return PlayerSelectionCard(
-                            player: player,
-                            isSelected: isSelected,
-                            selectedColor: const Color(0xFFFF007A), // Hot pink for Target Tag
-                            selectedBorderColor: const Color(0xFFFF007A), // Hot pink border
-                            onTap: () {
-                              if (isSelected) {
-                                playerProvider.deselectPlayer(player.id);
-                              } else {
-                                playerProvider.selectPlayer(player, maxPlayers: 10);
-                              }
-                            },
-                          );
-                        },
-                      ),
-              ),
-              const SizedBox(height: 24),
-            ] else ...[
-              // Manual team assignment - Player selection section
-              Row(
-                children: [
-                  Text(
-                    'Available Players',
-                    style: GoogleFonts.fredoka(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '(${selectedPlayers.length}/$maxPlayers selected)',
-                    style: GoogleFonts.fredoka(
-                      fontSize: 14,
-                      color: selectedPlayers.length >= minPlayers
-                          ? const Color(0xFF00FFA3)
-                          : Colors.white60,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (allPlayers.isNotEmpty)
-                    ElevatedButton.icon(
-                      onPressed: _handleAddPlayer,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF007A),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: Text(
-                        'NEW PLAYER',
-                        style: GoogleFonts.fredoka(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                        ),
+                const Spacer(),
+                if (allPlayers.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: _handleAddPlayer,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF007A),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 300,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A3E).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: selectedPlayers.length >= minPlayers
-                        ? const Color(0xFFFF007A) // Pink border
-                        : Colors.white24,
-                    width: 2,
-                  ),
-                ),
-                child: allPlayers.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'No players yet. Add your first player!',
-                              style: GoogleFonts.fredoka(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: _handleAddPlayer,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF007A),
-                                foregroundColor: Colors.white,
-                              ),
-                              icon: const Icon(Icons.add),
-                              label: Text(
-                                'NEW PLAYER',
-                                style: GoogleFonts.fredoka(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        itemCount: allPlayers.length,
-                        itemBuilder: (context, index) {
-                          final player = allPlayers[index];
-                          final isSelected = selectedPlayers.any((p) => p.id == player.id);
-                          final assignedTeamId = _playerTeamAssignments[player.id];
-
-                          return _buildPlayerCardWithTeamIcon(
-                            player,
-                            isSelected,
-                            assignedTeamId,
-                            onTap: () {
-                              // Toggle selection - clicking tile selects/deselects
-                              if (isSelected) {
-                                playerProvider.deselectPlayer(player.id);
-                                // Remove team assignment when deselecting
-                                setState(() {
-                                  _playerTeamAssignments.remove(player.id);
-                                });
-                              } else {
-                                playerProvider.selectPlayer(player, maxPlayers: 10);
-                              }
-                            },
-                          );
-                        },
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(
+                      'NEW PLAYER',
+                      style: GoogleFonts.fredoka(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
                       ),
-              ),
-              const SizedBox(height: 16),
-
-              // Team boxes - Full width
-              Text(
-                'Team Assignment',
-                style: GoogleFonts.fredoka(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
-              _buildTeamAssignmentBoxes(selectedPlayers),
-            ],
-
-            const SizedBox(height: 32),
-
-            // Start button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: _buildStartButton(canStart, selectedPlayers),
+                    ),
+                  ),
+              ],
             ),
+            const SizedBox(height: 8),
+            Container(
+              height: 300,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2A2A3E).withOpacity(0.85),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: selectedPlayers.length >= minPlayers
+                      ? const Color(0xFFFF007A) // Pink border
+                      : Colors.white24,
+                  width: 2,
+                ),
+              ),
+              child: allPlayers.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'No players yet. Add your first player!',
+                            style: GoogleFonts.fredoka(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _handleAddPlayer,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF007A),
+                              foregroundColor: Colors.white,
+                            ),
+                            icon: const Icon(Icons.add),
+                            label: Text(
+                              'NEW PLAYER',
+                              style: GoogleFonts.fredoka(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      itemCount: allPlayers.length,
+                      itemBuilder: (context, index) {
+                        final player = allPlayers[index];
+                        final isSelected = selectedPlayers.any((p) => p.id == player.id);
+                        final assignedTeamId = _playerTeamAssignments[player.id];
+
+                        return _buildPlayerCardWithTeamIcon(
+                          player,
+                          isSelected,
+                          assignedTeamId,
+                          onTap: () {
+                            // Toggle selection - clicking tile selects/deselects
+                            if (isSelected) {
+                              playerProvider.deselectPlayer(player.id);
+                              // Remove team assignment when deselecting
+                              setState(() {
+                                _playerTeamAssignments.remove(player.id);
+                              });
+                            } else {
+                              playerProvider.selectPlayer(player, maxPlayers: 10);
+                            }
+                          },
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 16),
+
+            // Team boxes - Full width
+            Text(
+              'Team Assignment',
+              style: GoogleFonts.fredoka(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildTeamAssignmentBoxes(selectedPlayers),
           ],
+        ] else ...[
+          // === DESKTOP EXPANDED: player list fills available space ===
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row - same for both solo/random and manual
+                Row(
+                  children: [
+                    Text(
+                      'Available Players',
+                      style: GoogleFonts.fredoka(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '(${selectedPlayers.length}/10 selected)',
+                      style: GoogleFonts.fredoka(
+                        fontSize: 14,
+                        color: selectedPlayers.length >= minPlayers
+                            ? const Color(0xFF00FFA3)
+                            : Colors.white60,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (allPlayers.isNotEmpty)
+                      ElevatedButton.icon(
+                        onPressed: _handleAddPlayer,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF007A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(
+                          'NEW PLAYER',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Expanded player list (fills remaining space)
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A2A3E).withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: selectedPlayers.length >= minPlayers
+                            ? const Color(0xFFFF007A)
+                            : Colors.white24,
+                        width: 2,
+                      ),
+                    ),
+                    child: allPlayers.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'No players yet. Add your first player!',
+                                  style: GoogleFonts.fredoka(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: _handleAddPlayer,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFF007A),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  icon: const Icon(Icons.add),
+                                  label: Text(
+                                    'NEW PLAYER',
+                                    style: GoogleFonts.fredoka(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : (!_isTeamMode || _isRandomTeams)
+                            ? ListView.builder(
+                                controller: _scrollController,
+                                itemCount: allPlayers.length,
+                                itemBuilder: (context, index) {
+                                  final player = allPlayers[index];
+                                  final isSelected = selectedPlayers.any((p) => p.id == player.id);
+                                  return PlayerSelectionCard(
+                                    player: player,
+                                    isSelected: isSelected,
+                                    selectedColor: const Color(0xFFFF007A),
+                                    selectedBorderColor: const Color(0xFFFF007A),
+                                    onTap: () {
+                                      if (isSelected) {
+                                        playerProvider.deselectPlayer(player.id);
+                                      } else {
+                                        playerProvider.selectPlayer(player, maxPlayers: 10);
+                                      }
+                                    },
+                                  );
+                                },
+                              )
+                            : ListView.builder(
+                                controller: _scrollController,
+                                itemCount: allPlayers.length,
+                                itemBuilder: (context, index) {
+                                  final player = allPlayers[index];
+                                  final isSelected = selectedPlayers.any((p) => p.id == player.id);
+                                  final assignedTeamId = _playerTeamAssignments[player.id];
+                                  return _buildPlayerCardWithTeamIcon(
+                                    player,
+                                    isSelected,
+                                    assignedTeamId,
+                                    onTap: () {
+                                      if (isSelected) {
+                                        playerProvider.deselectPlayer(player.id);
+                                        setState(() {
+                                          _playerTeamAssignments.remove(player.id);
+                                        });
+                                      } else {
+                                        playerProvider.selectPlayer(player, maxPlayers: 10);
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                  ),
+                ),
+                // Team assignment boxes (manual mode only, fixed below the list)
+                if (_isTeamMode && !_isRandomTeams) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Team Assignment',
+                    style: GoogleFonts.fredoka(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildTeamAssignmentBoxes(selectedPlayers),
+                ],
+              ],
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 32),
+        // Start button
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: _buildStartButton(canStart, selectedPlayers),
         ),
-      ),
+      ],
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: scrollable
+          ? SingleChildScrollView(child: column)
+          : column,
     );
   }
 
