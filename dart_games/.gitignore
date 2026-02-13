@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# UI automation test results
+integration_test_output/*.log
+integration_test_output/*.txt
