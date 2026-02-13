@@ -2073,10 +2073,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump();
 
-      // Set D1 to Single 20 (tap "Single (inner)" then number 20)
-      final singleInnerButtons = find.text('Single (inner)');
-      if (singleInnerButtons.evaluate().isNotEmpty) {
-        await tester.tap(singleInnerButtons.first);
+      // Set D1 to Single 20 (tap "Single (outer)" then number 20)
+      // Target Tag uses outer singles (S prefix); inner single would produce lowercase s prefix
+      final singleOuterButtons = find.text('Single (outer)');
+      if (singleOuterButtons.evaluate().isNotEmpty) {
+        await tester.tap(singleOuterButtons.first);
         await tester.pump(const Duration(milliseconds: 200));
       }
 
