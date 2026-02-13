@@ -98,7 +98,7 @@ class DartboardEmulatorSection extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: onRemoveDarts,
+            onPressed: () => dartboardKey?.currentState?.removeDarts(),
             style: ElevatedButton.styleFrom(
               backgroundColor: config.removeButtonBackgroundColor,
               side: BorderSide(

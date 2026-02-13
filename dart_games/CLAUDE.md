@@ -401,7 +401,10 @@ DartboardEmulatorSection(
   },
   onRemoveDarts: () {
     _mockApi?.simulateTakeoutFinished();
-    _dartboardKey.currentState?.removeDarts();
+    // Do NOT call _dartboardKey.currentState?.removeDarts() here.
+    // removeDarts() calls onRemoveDarts when it finishes, which would
+    // create infinite recursion. The button calls removeDarts() directly,
+    // which then fires this callback automatically.
   },
   config: DartboardSectionConfig.yourGame(), // Create factory for your game
 ),
@@ -783,7 +786,7 @@ flutter test
 
 **UI Automation Tests (Optional):**
 
-The 76 UI automation tests in `integration_test/` take longer to run (~43 minutes) and require chromedriver.
+The 76 UI automation tests in `integration_test/` take longer to run (~51 minutes) and require chromedriver.
 
 **Before running a build, ASK the user:**
 - "Would you like me to run the UI automation tests before this build?"
@@ -794,7 +797,7 @@ The 76 UI automation tests in `integration_test/` take longer to run (~43 minute
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2 - Run UI tests (76 tests across 6 files, ~43 minutes total)
+# Terminal 2 - Run UI tests (76 tests across 6 files, ~51 minutes total)
 cd dart_games
 # Target Tag tests (52 tests, ~31.5 minutes)
 flutter drive --driver=test_driver/integration_test.dart \
@@ -812,7 +815,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_results_screen_test.dart \
   -d chrome
-# Carnival Derby tests (24 tests, ~12 minutes)
+# Carnival Derby tests (24 tests, ~11 minutes)
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/carnival_derby_ui_test.dart \
   -d chrome
@@ -1104,7 +1107,7 @@ The dart games app has a comprehensive test suite covering all critical function
 
 **UI Automation Tests (76 tests in `integration_test/` directory):**
 - Run with `flutter drive` and chromedriver
-- Execute in ~43 minutes
+- Execute in ~51 minutes
 - Optional for builds (ask user before running)
 
 #### Model Tests (36 tests)
@@ -1234,21 +1237,21 @@ The dart games app has a comprehensive test suite covering all critical function
   - Hero bonus toggle (1 test)
   - Edit score behavior (4 tests)
   - Player tile highlighting (6 tests)
-  - **Execution time:** ~12 minutes
+  - **Execution time:** ~15 minutes
 
 - `integration_test/target_tag_visual_validation_test.dart` (4 tests)
   - Test 1: Current Player Shows Badge When Tagged In
   - Test 2: Tagged In + Current Player - Combined Visual
   - Test 3: Eliminated Player Visual State
   - Test 4: Team Mode - Team Tagged In Visual
-  - **Execution time:** ~2 minutes
+  - **Execution time:** ~3.5 minutes
 
 - `integration_test/target_tag_gameplay_test.dart` (13 tests)
   - Hero buff & opponent targets tests (8 tests)
   - D1/D2/D3 dart highlighting tests (2 tests)
   - Game settings panel tests (1 test)
   - Victory screen tests (2 tests)
-  - **Execution time:** ~10 minutes
+  - **Execution time:** ~12 minutes
 
 - `integration_test/target_tag_add_player_test.dart` (6 tests)
   - Test 1: Navigation and Initial Player Setup
@@ -1257,7 +1260,7 @@ The dart games app has a comprehensive test suite covering all critical function
   - Test 4: Add Player Empty Name Validation
   - Test 5: Add Player Whitespace-Only Name Validation
   - Test 6: Cancel Button Functionality
-  - **Execution time:** ~2 minutes
+  - **Execution time:** ~3 minutes
 
 - `integration_test/target_tag_results_screen_test.dart` (6 tests)
   - Test 1: Results Screen Content - Solo Mode Victory Display
@@ -1266,7 +1269,7 @@ The dart games app has a comprehensive test suite covering all critical function
   - Test 4: Results Screen Content - Team Mode Victory Display
   - Test 5: Play Again - Team Mode Settings and Team Assignment Preserved
   - Test 6: Play Again - Hero Bonus Setting Preserved
-  - **Execution time:** ~5.5 minutes
+  - **Execution time:** ~6 minutes
 
 - `integration_test/carnival_derby_ui_test.dart` (24 tests)
   - Test 1-2: Menu - Player Selection (2 tests)
@@ -1278,9 +1281,9 @@ The dart games app has a comprehensive test suite covering all critical function
   - Test 17-18: Game - Multi-Player Race (2 tests)
   - Test 19-21: Edge Cases (3 tests)
   - Test 22-24: Results Screen (3 tests)
-  - **Execution time:** ~12 minutes
+  - **Execution time:** ~11 minutes
 
-**Total UI Automation Test Execution Time:** ~43 minutes (varies based on system performance)
+**Total UI Automation Test Execution Time:** ~51 minutes (varies based on system performance)
 **Required setup:** ChromeDriver running on port 4444
 **Run separately with chromedriver:** See UI Automation Testing Guidelines section
 
@@ -1307,7 +1310,7 @@ flutter test test/screens/games/carnival_horse_race/
 flutter test test/widgets/
 ```
 
-**Run UI automation tests (76 tests, ~43 minutes total):**
+**Run UI automation tests (76 tests, ~51 minutes total):**
 ```bash
 # Terminal 1: Start chromedriver
 cd dart_games/chromedriver/chromedriver-win64
@@ -1321,7 +1324,7 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_gameplay_test.dart -d chrome
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_add_player_test.dart -d chrome
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_results_screen_test.dart -d chrome
-# Carnival Derby tests (24 tests, ~12 minutes)
+# Carnival Derby tests (24 tests, ~11 minutes)
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/carnival_derby_ui_test.dart -d chrome
 ```
 
@@ -1337,7 +1340,8 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 
 **UI Automation Tests (76 tests):**
 - Optional for builds - ask user if they want to run UI automation tests
-- Execution time: ~43 minutes
+- Execution time: ~51 minutes
+- When reviewing `.bat` run logs, the `+N` counter in each log will show 1 higher than the documented test count for each suite — this is normal; Flutter's `+N` counter includes the integration test runner wrapper as an additional count (e.g., a suite documented as 23 tests will show `+24: All tests passed!`)
 - Tests validate Target Tag and Carnival Derby menu settings, gameplay mechanics, and user interactions end-to-end in Chrome
 - Target Tag (52 tests): Covers all game modes (solo, team), settings persistence, edit score, skip turn, player highlighting, hero bonuses, victory conditions, results screen functionality, and visual validation (player tiles, badges, borders, opacity, glow effects)
 - Carnival Derby (24 tests): Covers player selection, target score settings, Normal/Perfect Finish modes, bust mechanics, skip turn, edit score, multi-player races, edge cases, and results screen
@@ -1892,7 +1896,7 @@ This applies to all git operations that modify the remote repository, including:
    flutter test
    ```
 3. **Verify ALL 226 non-UI tests pass (100% pass rate required)**
-4. **OPTIONAL: Ask user if they want to run UI automation tests (76 tests, ~43 minutes)**
+4. **OPTIONAL: Ask user if they want to run UI automation tests (76 tests, ~51 minutes)**
 5. If ANY tests fail:
    - DO NOT proceed
    - Investigate and fix the failing tests
@@ -1910,7 +1914,7 @@ This applies to all git operations that modify the remote repository, including:
 Before any `flutter run` or `flutter build` command:
 1. Run `flutter test` (226 non-UI tests)
 2. Confirm all 226 non-UI tests pass
-3. Ask user if they want to run UI automation tests (76 tests, ~43 minutes)
+3. Ask user if they want to run UI automation tests (76 tests, ~51 minutes)
 4. Only then run the build command
 
 ### Quick Reference

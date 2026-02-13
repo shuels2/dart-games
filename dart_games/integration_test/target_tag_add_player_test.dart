@@ -41,6 +41,8 @@ void main() {
       // Wait for splash screen to complete
       // The app should navigate to HomeScreen (since dartboard is pre-configured)
       await tester.pumpAndSettle(const Duration(seconds: 3));
+      await tester.pump(const Duration(seconds: 3)); // Extra time for home screen to fully render
+      await tester.pump(); // Process home screen render
 
       // Find and tap the Target Tag game card
       final targetTagCard = find.text('Target Tag');
@@ -298,7 +300,7 @@ void main() {
       await tester.pump(); // Process completion
 
       // Verify error message appears
-      expect(find.text('Please enter a name'), findsOneWidget);
+      expect(find.text('Please enter a player name'), findsOneWidget);
 
       // Verify dialog remains open
       expect(find.text('Player Name'), findsOneWidget);
@@ -310,7 +312,7 @@ void main() {
       await tester.pump(); // Update text field
 
       // Verify error message disappears when typing
-      expect(find.text('Please enter a name'), findsNothing);
+      expect(find.text('Please enter a player name'), findsNothing);
 
       // Tap "Add Player" button again
       await tester.tap(buttonWidget.first);
@@ -371,7 +373,7 @@ void main() {
       await tester.pump(); // Process completion
 
       // Verify error message appears
-      expect(find.text('Please enter a name'), findsOneWidget);
+      expect(find.text('Please enter a player name'), findsOneWidget);
 
       // Verify dialog remains open
       expect(find.text('Player Name'), findsOneWidget);

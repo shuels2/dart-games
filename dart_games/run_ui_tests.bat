@@ -17,15 +17,13 @@ echo Cleaning previous test results...
 del /Q integration_test_output\*.txt 2>nul
 del /Q integration_test_output\*.log 2>nul
 
-REM Kill any existing chromedriver processes
-echo Stopping any existing ChromeDriver instances...
+REM Kill any existing chromedriver/chrome processes
+echo Stopping any existing ChromeDriver and Chrome instances...
 taskkill /F /IM chromedriver.exe >nul 2>&1
-
-REM Wait a moment for processes to terminate
+taskkill /F /IM chrome.exe >nul 2>&1
 timeout /t 2 /nobreak >nul
 
-REM Start ChromeDriver in the background
-echo Starting ChromeDriver on port 4444...
+REM Verify chromedriver exists
 if not exist "chromedriver\chromedriver-win64\chromedriver.exe" (
     echo ERROR: ChromeDriver not found at chromedriver\chromedriver-win64\chromedriver.exe
     echo Please ensure ChromeDriver is installed in the correct location.
@@ -33,29 +31,10 @@ if not exist "chromedriver\chromedriver-win64\chromedriver.exe" (
     exit /b 1
 )
 
-start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-
-REM Wait for ChromeDriver to initialize
-echo Waiting for ChromeDriver to initialize...
-timeout /t 5 /nobreak >nul
-
-REM Verify ChromeDriver is running
-netstat -ano | findstr ":4444" >nul
-if %errorlevel% neq 0 (
-    echo ERROR: ChromeDriver failed to start on port 4444
-    echo Check if Chrome browser is installed or if port 4444 is blocked.
-    pause
-    exit /b 1
-)
-
-echo ChromeDriver started successfully on port 4444
-echo.
-
 REM Record start time
 echo Test suite started at %date% %time% > integration_test_output\summary.txt
 echo. >> integration_test_output\summary.txt
 
-REM Define test files array
 set test_count=0
 set pass_count=0
 set fail_count=0
@@ -64,119 +43,199 @@ echo ========================================
 echo Running UI Automation Tests (76 tests, ~43 minutes)
 echo ========================================
 echo.
+echo NOTE: ChromeDriver is restarted between each test suite for a
+echo       clean session. Chrome is killed after each suite to unblock
+echo       flutter drive which hangs due to GCM background threads.
+echo.
 
+REM ============================================================
+REM APPROACH:
+REM   Each test runs flutter drive in the background. A PowerShell
+REM   monitor reads the log every 3 seconds looking for the terminal
+REM   markers "All tests passed", "Some tests failed", or
+REM   "Application finished" - much more reliable than watching
+REM   file size which gave false positives during quiet test phases.
+REM   After completion is detected, Chrome is killed (to handle the
+REM   GCM hang), then the log is re-read to determine pass/fail.
+REM   ChromeDriver is restarted between tests so each suite gets a
+REM   clean WebDriver session.
+REM ============================================================
+
+REM ----------------------------------------------------------
 REM Test 1: Target Tag Menu and Mechanics
+REM ----------------------------------------------------------
 set /a test_count+=1
-echo [%test_count%/6] Running Target Tag Menu and Mechanics Test (23 tests, ~12 min)...
-echo Running: target_tag_menu_and_mechanics_test.dart > integration_test_output\01_target_tag_menu_and_mechanics.log
-echo Started at %time% >> integration_test_output\01_target_tag_menu_and_mechanics.log
-echo. >> integration_test_output\01_target_tag_menu_and_mechanics.log
-flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_menu_and_mechanics_test.dart -d chrome >> integration_test_output\01_target_tag_menu_and_mechanics.log 2>&1
-if %errorlevel% equ 0 (
-    echo PASSED >> integration_test_output\01_target_tag_menu_and_mechanics.log
+echo [!test_count!/6] Running Target Tag Menu and Mechanics Test (23 tests, ~12 min)...
+echo Starting ChromeDriver...
+start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+timeout /t 5 /nobreak >nul
+set _LOG=integration_test_output\01_target_tag_menu_and_mechanics.log
+set _TARGET=integration_test/target_tag_menu_and_mechanics_test.dart
+echo Running: !_TARGET! > !_LOG!
+echo Started at %time% >> !_LOG!
+echo. >> !_LOG!
+start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+powershell -NoProfile -Command "$log='%_LOG%';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+if !errorlevel! equ 0 (
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> integration_test_output\01_target_tag_menu_and_mechanics.log
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> integration_test_output\01_target_tag_menu_and_mechanics.log
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
+echo Restarting ChromeDriver for next test...
+taskkill /F /IM chromedriver.exe >nul 2>&1
+timeout /t 3 /nobreak >nul
 
+REM ----------------------------------------------------------
 REM Test 2: Target Tag Visual Validation
+REM ----------------------------------------------------------
 set /a test_count+=1
-echo [%test_count%/6] Running Target Tag Visual Validation Test (4 tests, ~2 min)...
-echo Running: target_tag_visual_validation_test.dart > integration_test_output\02_target_tag_visual_validation.log
-echo Started at %time% >> integration_test_output\02_target_tag_visual_validation.log
-echo. >> integration_test_output\02_target_tag_visual_validation.log
-flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_visual_validation_test.dart -d chrome >> integration_test_output\02_target_tag_visual_validation.log 2>&1
-if %errorlevel% equ 0 (
-    echo PASSED >> integration_test_output\02_target_tag_visual_validation.log
+echo [!test_count!/6] Running Target Tag Visual Validation Test (4 tests, ~2 min)...
+echo Starting ChromeDriver...
+start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+timeout /t 5 /nobreak >nul
+set _LOG=integration_test_output\02_target_tag_visual_validation.log
+set _TARGET=integration_test/target_tag_visual_validation_test.dart
+echo Running: !_TARGET! > !_LOG!
+echo Started at %time% >> !_LOG!
+echo. >> !_LOG!
+start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+powershell -NoProfile -Command "$log='%_LOG%';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+if !errorlevel! equ 0 (
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> integration_test_output\02_target_tag_visual_validation.log
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> integration_test_output\02_target_tag_visual_validation.log
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
+echo Restarting ChromeDriver for next test...
+taskkill /F /IM chromedriver.exe >nul 2>&1
+timeout /t 3 /nobreak >nul
 
+REM ----------------------------------------------------------
 REM Test 3: Target Tag Gameplay
+REM ----------------------------------------------------------
 set /a test_count+=1
-echo [%test_count%/6] Running Target Tag Gameplay Test (13 tests, ~10 min)...
-echo Running: target_tag_gameplay_test.dart > integration_test_output\03_target_tag_gameplay.log
-echo Started at %time% >> integration_test_output\03_target_tag_gameplay.log
-echo. >> integration_test_output\03_target_tag_gameplay.log
-flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_gameplay_test.dart -d chrome >> integration_test_output\03_target_tag_gameplay.log 2>&1
-if %errorlevel% equ 0 (
-    echo PASSED >> integration_test_output\03_target_tag_gameplay.log
+echo [!test_count!/6] Running Target Tag Gameplay Test (13 tests, ~10 min)...
+echo Starting ChromeDriver...
+start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+timeout /t 5 /nobreak >nul
+set _LOG=integration_test_output\03_target_tag_gameplay.log
+set _TARGET=integration_test/target_tag_gameplay_test.dart
+echo Running: !_TARGET! > !_LOG!
+echo Started at %time% >> !_LOG!
+echo. >> !_LOG!
+start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+powershell -NoProfile -Command "$log='%_LOG%';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+if !errorlevel! equ 0 (
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> integration_test_output\03_target_tag_gameplay.log
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> integration_test_output\03_target_tag_gameplay.log
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
+echo Restarting ChromeDriver for next test...
+taskkill /F /IM chromedriver.exe >nul 2>&1
+timeout /t 3 /nobreak >nul
 
+REM ----------------------------------------------------------
 REM Test 4: Target Tag Add Player
+REM ----------------------------------------------------------
 set /a test_count+=1
-echo [%test_count%/6] Running Target Tag Add Player Test (6 tests, ~2 min)...
-echo Running: target_tag_add_player_test.dart > integration_test_output\04_target_tag_add_player.log
-echo Started at %time% >> integration_test_output\04_target_tag_add_player.log
-echo. >> integration_test_output\04_target_tag_add_player.log
-flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_add_player_test.dart -d chrome >> integration_test_output\04_target_tag_add_player.log 2>&1
-if %errorlevel% equ 0 (
-    echo PASSED >> integration_test_output\04_target_tag_add_player.log
+echo [!test_count!/6] Running Target Tag Add Player Test (6 tests, ~2 min)...
+echo Starting ChromeDriver...
+start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+timeout /t 5 /nobreak >nul
+set _LOG=integration_test_output\04_target_tag_add_player.log
+set _TARGET=integration_test/target_tag_add_player_test.dart
+echo Running: !_TARGET! > !_LOG!
+echo Started at %time% >> !_LOG!
+echo. >> !_LOG!
+start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+powershell -NoProfile -Command "$log='%_LOG%';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+if !errorlevel! equ 0 (
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> integration_test_output\04_target_tag_add_player.log
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> integration_test_output\04_target_tag_add_player.log
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
+echo Restarting ChromeDriver for next test...
+taskkill /F /IM chromedriver.exe >nul 2>&1
+timeout /t 3 /nobreak >nul
 
+REM ----------------------------------------------------------
 REM Test 5: Target Tag Results Screen
+REM ----------------------------------------------------------
 set /a test_count+=1
-echo [%test_count%/6] Running Target Tag Results Screen Test (6 tests, ~5.5 min)...
-echo Running: target_tag_results_screen_test.dart > integration_test_output\05_target_tag_results_screen.log
-echo Started at %time% >> integration_test_output\05_target_tag_results_screen.log
-echo. >> integration_test_output\05_target_tag_results_screen.log
-flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_results_screen_test.dart -d chrome >> integration_test_output\05_target_tag_results_screen.log 2>&1
-if %errorlevel% equ 0 (
-    echo PASSED >> integration_test_output\05_target_tag_results_screen.log
+echo [!test_count!/6] Running Target Tag Results Screen Test (6 tests, ~5.5 min)...
+echo Starting ChromeDriver...
+start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+timeout /t 5 /nobreak >nul
+set _LOG=integration_test_output\05_target_tag_results_screen.log
+set _TARGET=integration_test/target_tag_results_screen_test.dart
+echo Running: !_TARGET! > !_LOG!
+echo Started at %time% >> !_LOG!
+echo. >> !_LOG!
+start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+powershell -NoProfile -Command "$log='%_LOG%';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+if !errorlevel! equ 0 (
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> integration_test_output\05_target_tag_results_screen.log
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> integration_test_output\05_target_tag_results_screen.log
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
+echo Restarting ChromeDriver for next test...
+taskkill /F /IM chromedriver.exe >nul 2>&1
+timeout /t 3 /nobreak >nul
 
+REM ----------------------------------------------------------
 REM Test 6: Carnival Derby UI
+REM ----------------------------------------------------------
 set /a test_count+=1
-echo [%test_count%/6] Running Carnival Derby UI Test (24 tests, ~12 min)...
-echo Running: carnival_derby_ui_test.dart > integration_test_output\06_carnival_derby_ui.log
-echo Started at %time% >> integration_test_output\06_carnival_derby_ui.log
-echo. >> integration_test_output\06_carnival_derby_ui.log
-flutter drive --driver=test_driver/integration_test.dart --target=integration_test/carnival_derby_ui_test.dart -d chrome >> integration_test_output\06_carnival_derby_ui.log 2>&1
-if %errorlevel% equ 0 (
-    echo PASSED >> integration_test_output\06_carnival_derby_ui.log
+echo [!test_count!/6] Running Carnival Derby UI Test (24 tests, ~12 min)...
+echo Starting ChromeDriver...
+start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+timeout /t 5 /nobreak >nul
+set _LOG=integration_test_output\06_carnival_derby_ui.log
+set _TARGET=integration_test/carnival_derby_ui_test.dart
+echo Running: !_TARGET! > !_LOG!
+echo Started at %time% >> !_LOG!
+echo. >> !_LOG!
+start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+powershell -NoProfile -Command "$log='%_LOG%';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+if !errorlevel! equ 0 (
+    echo PASSED >> !_LOG! 2>nul
     echo   [PASSED]
     set /a pass_count+=1
 ) else (
-    echo FAILED >> integration_test_output\06_carnival_derby_ui.log
+    echo FAILED >> !_LOG! 2>nul
     echo   [FAILED] - Check log file for details
     set /a fail_count+=1
 )
-echo Completed at %time% >> integration_test_output\06_carnival_derby_ui.log
+echo Completed at %time% >> !_LOG! 2>nul
 echo.
 
 REM Generate summary
@@ -185,19 +244,18 @@ echo Test Suite Complete
 echo ========================================
 echo.
 echo Total Tests: 6
-echo Passed: %pass_count%
-echo Failed: %fail_count%
+echo Passed: !pass_count!
+echo Failed: !fail_count!
 echo.
 
-REM Write summary to file
 echo ======================================== >> integration_test_output\summary.txt
 echo Test Suite Summary >> integration_test_output\summary.txt
 echo ======================================== >> integration_test_output\summary.txt
 echo Completed at %date% %time% >> integration_test_output\summary.txt
 echo. >> integration_test_output\summary.txt
 echo Total Test Files: 6 >> integration_test_output\summary.txt
-echo Passed: %pass_count% >> integration_test_output\summary.txt
-echo Failed: %fail_count% >> integration_test_output\summary.txt
+echo Passed: !pass_count! >> integration_test_output\summary.txt
+echo Failed: !fail_count! >> integration_test_output\summary.txt
 echo. >> integration_test_output\summary.txt
 echo Test Results: >> integration_test_output\summary.txt
 echo   1. Target Tag Menu and Mechanics (23 tests) >> integration_test_output\summary.txt
@@ -215,14 +273,13 @@ echo Results saved to integration_test_output folder
 echo Summary: integration_test_output\summary.txt
 echo.
 
-REM Stop ChromeDriver
 echo Stopping ChromeDriver...
 taskkill /F /IM chromedriver.exe >nul 2>&1
 echo ChromeDriver stopped
 echo.
 
-if %fail_count% gtr 0 (
-    echo WARNING: %fail_count% test file(s) failed. Check log files for details.
+if !fail_count! gtr 0 (
+    echo WARNING: !fail_count! test file(s) failed. Check log files for details.
     exit /b 1
 ) else (
     echo SUCCESS: All test files passed!
