@@ -47,6 +47,13 @@ class _OptionsScreenState extends State<OptionsScreen> {
   final GlobalKey _userManagementKey = GlobalKey();
   final GlobalKey _adminKey = GlobalKey();
   String _activeSection = 'announcer';
+  PlayerProvider? _playerProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _playerProvider = context.read<PlayerProvider>();
+  }
 
   @override
   void initState() {
@@ -64,7 +71,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
   @override
   void dispose() {
     // Mark players as sorted when leaving screen
-    context.read<PlayerProvider>().markPlayersSorted();
+    _playerProvider?.markPlayersSorted();
 
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
