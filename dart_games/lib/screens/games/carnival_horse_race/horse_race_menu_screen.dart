@@ -34,6 +34,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
   bool _exactScoreMode = false;
   final ScrollController _availablePlayersScrollController = ScrollController();
   final ScrollController _selectedPlayersScrollController = ScrollController();
+  PlayerProvider? _playerProvider;
 
   @override
   void initState() {
@@ -43,8 +44,9 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
 
     // Load players when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PlayerProvider>().loadPlayers();
-      context.read<PlayerProvider>().clearSelection();
+      _playerProvider = context.read<PlayerProvider>();
+      _playerProvider!.loadPlayers();
+      _playerProvider!.clearSelection();
 
       // Preselect players if provided
       if (widget.preselectedPlayerIds != null && widget.preselectedPlayerIds!.isNotEmpty) {
@@ -62,7 +64,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
   @override
   void dispose() {
     // Mark players as sorted when leaving screen
-    context.read<PlayerProvider>().markPlayersSorted();
+    _playerProvider?.markPlayersSorted();
 
     _availablePlayersScrollController.dispose();
     _selectedPlayersScrollController.dispose();

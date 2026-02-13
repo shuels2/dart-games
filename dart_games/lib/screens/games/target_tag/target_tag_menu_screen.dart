@@ -40,6 +40,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
   final Map<String, String> _playerTeamAssignments = {}; // playerId -> teamId
   late AnimationController _pulseController;
   final ScrollController _scrollController = ScrollController();
+  PlayerProvider? _playerProvider;
 
   // Team icon paths
   final List<String> _teamIconPaths = [
@@ -79,6 +80,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     // Load players and preselect if needed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final playerProvider = context.read<PlayerProvider>();
+      _playerProvider = playerProvider;
       playerProvider.loadPlayers();
       playerProvider.clearSelection();
 
@@ -98,7 +100,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
   @override
   void dispose() {
     // Mark players as sorted when leaving screen
-    context.read<PlayerProvider>().markPlayersSorted();
+    _playerProvider?.markPlayersSorted();
 
     _pulseController.dispose();
     _scrollController.dispose();
