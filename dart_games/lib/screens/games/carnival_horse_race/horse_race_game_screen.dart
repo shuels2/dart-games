@@ -293,6 +293,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   /// Calculate score from dart display string for UI display
   String _getScoreDisplayFromSegment(String segment) {
     if (segment == 'Miss' || segment.isEmpty) return 'Miss';
+    if (segment == 'Skip') return 'Skip';
     if (segment == 'Bull') return '50';
     if (segment == '25') return '25';
 

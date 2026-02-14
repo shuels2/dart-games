@@ -17,6 +17,7 @@ class PlayerCardWidget extends StatelessWidget {
   final bool isTeamMode;
   final String? teamIconPath;
   final List<Player>? teamMembers;
+  final List<String>? dartSegments;
 
   const PlayerCardWidget({
     super.key,
@@ -32,6 +33,7 @@ class PlayerCardWidget extends StatelessWidget {
     this.isTeamMode = false,
     this.teamIconPath,
     this.teamMembers,
+    this.dartSegments,
   });
 
   @override
@@ -290,6 +292,34 @@ class PlayerCardWidget extends StatelessWidget {
                   ),
                 ),
               ),
+
+            // Dart segment display (shows last turn results when available)
+            if (dartSegments != null && dartSegments!.any((s) => s.isNotEmpty)) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(3, (i) {
+                  final seg = i < dartSegments!.length ? dartSegments![i] : '';
+                  final display = seg.isEmpty ? '-' : seg;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: Text(
+                      display,
+                      style: GoogleFonts.fredoka(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: display == 'Skip'
+                            ? const Color(0xFFFFD700)
+                            : display == 'Miss'
+                                ? const Color(0xFFFF007A)
+                                : Colors.white70,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
           ],
         ),
       ),

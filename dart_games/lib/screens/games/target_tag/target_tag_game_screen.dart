@@ -800,6 +800,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         isEliminated: targetTagProvider.isEliminated(playerId),
         isCurrentPlayer: isCurrentPlayer,
         isTeamMode: false,
+        dartSegments: targetTagProvider.getCurrentTurnDarts(playerId),
       );
     } else {
       // Team mode: one card per team

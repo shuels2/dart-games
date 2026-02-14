@@ -189,6 +189,11 @@ class TargetTagProvider extends ChangeNotifier {
 
     // Record the dart segment for display (track misses and "None" as "Miss")
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
+
+    // Clear previous turn's dart display on first dart of new turn
+    if ((_currentGame!.dartsThrown[currentPlayerId] ?? 0) == 0) {
+      _currentGame!.currentTurnDarts[currentPlayerId] = [];
+    }
     _currentGame!.currentTurnDarts[currentPlayerId] ??= [];
 
     // Convert "None" or null to "Miss" for display
