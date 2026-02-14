@@ -746,7 +746,7 @@ void main() {
         // Alice throws 1 dart
         helper.processDartThrowWithAnnouncements('S14');
         expect(game.getTotalDartsThrown(alice.id), 1);
-        expect(game.getTotalTurns(alice.id), 0); // Turn not complete yet
+        expect(game.getTotalTurns(alice.id), 1); // Turn started with first dart
 
         // Skip remaining darts
         provider.skipTurn();

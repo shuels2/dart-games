@@ -822,7 +822,7 @@ void main() {
       // Player 1 throws 1 dart
       horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
       expect(game.getTotalDartsThrown(player1.id), 1);
-      expect(game.getTotalTurns(player1.id), 0); // Turn not complete yet
+      expect(game.getTotalTurns(player1.id), 1); // Turn started with first dart
 
       // Skip remaining darts
       horseRaceProvider.skipTurn();
