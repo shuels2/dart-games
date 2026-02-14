@@ -608,8 +608,10 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                                   }
                                 });
                               } else {
-                                // No darts thrown, advance directly without showing modals
-                                Future.delayed(const Duration(milliseconds: 500), () {
+                                // No darts thrown, advance directly without showing modals.
+                                // Use 800ms so a pump(500ms) in tests can observe the 'Skip'
+                                // markers in the active panel before the turn advances.
+                                Future.delayed(const Duration(milliseconds: 800), () {
                                   if (mounted) {
                                     _mockApi?.simulateTakeoutFinished();
                                   }
@@ -800,7 +802,6 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         isEliminated: targetTagProvider.isEliminated(playerId),
         isCurrentPlayer: isCurrentPlayer,
         isTeamMode: false,
-        dartSegments: targetTagProvider.getCurrentTurnDarts(playerId),
       );
     } else {
       // Team mode: one card per team

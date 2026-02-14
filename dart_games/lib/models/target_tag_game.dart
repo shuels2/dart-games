@@ -608,9 +608,8 @@ class TargetTagGame {
     if (state != GameState.playing && state != GameState.suddenDeath) return;
 
     // Reset current player's dart tracking
-    // Note: currentTurnDarts is kept so player tiles can show last turn's results.
-    // It is cleared at the start of the player's next dart throw (in processDartThrow).
     dartsThrown[currentPlayerId] = 0;
+    currentTurnDarts[currentPlayerId] = [];
     dartThrowTaggedInStatus[currentPlayerId] = [];
     dartThrowHeroBonusHit[currentPlayerId] = [];
     dartThrowReachedMax[currentPlayerId] = [];
