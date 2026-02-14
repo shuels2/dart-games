@@ -99,14 +99,23 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
     final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
     final winnerIds = winners.map((p) => p.id).toSet();
 
+    // Get player count
+    final playerCount = currentGame.getPlayerCount();
+
     // Update stats for all players (both winners and losers get duration)
     for (final playerId in currentGame.playerIds) {
       final isWinner = winnerIds.contains(playerId);
+      final dartThrows = currentGame.getTotalDartsThrown(playerId);
+      final turns = currentGame.getTotalTurns(playerId);
+
       await playerProvider.updatePlayerStats(
         playerId,
         won: isWinner,
         gameName: 'Target Tag',
         gameDuration: gameDuration,
+        dartThrows: dartThrows,
+        turns: turns,
+        playerCount: playerCount,
       );
     }
   }

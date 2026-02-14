@@ -432,13 +432,13 @@ void main() {
 
       horseRaceProvider.skipTurn();
 
-      // Verify 3 misses recorded
-      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      // Verify skip markers added but darts NOT incremented
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 0);
       final dartScores = horseRaceProvider.getCurrentTurnDartScores(player1.id);
       expect(dartScores.length, 3);
-      expect(dartScores[0], 'Miss');
-      expect(dartScores[1], 'Miss');
-      expect(dartScores[2], 'Miss');
+      expect(dartScores[0], 'Skip');
+      expect(dartScores[1], 'Skip');
+      expect(dartScores[2], 'Skip');
 
       // Verify score is still 0
       expect(horseRaceProvider.getPlayerScore(player1.id), 0);
@@ -460,13 +460,13 @@ void main() {
 
       horseRaceProvider.skipTurn();
 
-      // Verify 2 more misses recorded (total 3)
-      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      // Verify skip markers added but darts still at 1 (not incremented)
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 1);
       final dartScores2 = horseRaceProvider.getCurrentTurnDartScores(player2.id);
       expect(dartScores2.length, 3);
       expect(dartScores2[0], '20');
-      expect(dartScores2[1], 'Miss');
-      expect(dartScores2[2], 'Miss');
+      expect(dartScores2[1], 'Skip');
+      expect(dartScores2[2], 'Skip');
 
       // Verify score is 20
       expect(horseRaceProvider.getPlayerScore(player2.id), 20);
@@ -494,14 +494,14 @@ void main() {
       // Player 1 skips
       expect(horseRaceProvider.getCurrentPlayerId(), player1.id);
       horseRaceProvider.skipTurn();
-      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 0);
       expect(horseRaceProvider.getPlayerScore(player1.id), 0);
       horseRaceProvider.handleTakeoutFinished();
 
       // Player 2 skips
       expect(horseRaceProvider.getCurrentPlayerId(), player2.id);
       horseRaceProvider.skipTurn();
-      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 0);
       expect(horseRaceProvider.getPlayerScore(player2.id), 0);
       horseRaceProvider.handleTakeoutFinished();
 
@@ -516,7 +516,7 @@ void main() {
       // Player 4 skips
       expect(horseRaceProvider.getCurrentPlayerId(), player4.id);
       horseRaceProvider.skipTurn();
-      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 3);
+      expect(horseRaceProvider.getCurrentPlayerDartsThrown(), 0);
       expect(horseRaceProvider.getPlayerScore(player4.id), 0);
       horseRaceProvider.handleTakeoutFinished();
 
@@ -808,6 +808,111 @@ void main() {
       expect(horseRaceProvider.getPlayerScore(player.id), 50);
       expect(horseRaceProvider.hasWinner, true);
       expect(horseRaceProvider.currentGame!.winnerId, player.id);
+    });
+
+    test('Test 24: Skip Turn Does Not Count as Throws or Turns', () async {
+      final player1 = Player.create(name: 'Player 1');
+      final player2 = Player.create(name: 'Player 2');
+      await playerProvider.savePlayer(player1);
+      await playerProvider.savePlayer(player2);
+
+      horseRaceProvider.startGame([player1, player2], 100, exactScoreMode: false);
+      final game = horseRaceProvider.currentGame!;
+
+      // Player 1 throws 1 dart
+      horseRaceProvider.processDartThrow(20, dartDisplay: 'S20');
+      expect(game.getTotalDartsThrown(player1.id), 1);
+      expect(game.getTotalTurns(player1.id), 0); // Turn not complete yet
+
+      // Skip remaining darts
+      horseRaceProvider.skipTurn();
+
+      // Verify: Skip does NOT increment dart count
+      expect(game.getTotalDartsThrown(player1.id), 1); // Still 1, not 3
+
+      // Advance to next player
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Verify: Turn incremented (because Player 1 threw 1 dart)
+      expect(game.getTotalTurns(player1.id), 1);
+    });
+
+    test('Test 25: Win on First Dart Counts as 1 Turn', () async {
+      final player = Player.create(name: 'Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 100, exactScoreMode: false);
+      final game = horseRaceProvider.currentGame!;
+
+      // Directly set score to 98 (avoiding dart throw count)
+      game.scores[player.id] = 98;
+      expect(game.getPlayerScore(player.id), 98);
+      expect(game.getTotalDartsThrown(player.id), 0); // No darts thrown yet
+
+      // Win with 1 dart (double 1 = 2 points, total 100)
+      horseRaceProvider.processDartThrow(2, dartDisplay: 'D1');
+
+      // Verify: Game over after 1 dart
+      expect(horseRaceProvider.hasWinner, true);
+      expect(game.getTotalDartsThrown(player.id), 1);
+
+      // Manually increment turn count
+      game.advanceToNextPlayer();
+
+      // Verify: Turn counted even though only 1 dart thrown
+      expect(game.getTotalTurns(player.id), 1);
+    });
+
+    test('Test 26: Win on Second Dart Counts as 1 Turn', () async {
+      final player = Player.create(name: 'Player');
+      await playerProvider.savePlayer(player);
+
+      horseRaceProvider.startGame([player], 100, exactScoreMode: false);
+      final game = horseRaceProvider.currentGame!;
+
+      // Directly set score to 98 (avoiding dart throw count)
+      game.scores[player.id] = 98;
+      expect(game.getPlayerScore(player.id), 98);
+      expect(game.getTotalDartsThrown(player.id), 0); // No darts thrown yet
+
+      // Throw 1 dart (single 1 = 1 point, total 99)
+      horseRaceProvider.processDartThrow(1, dartDisplay: 'S1');
+      expect(game.getTotalDartsThrown(player.id), 1);
+      expect(game.getPlayerScore(player.id), 99);
+
+      // Throw 2nd dart (single 1 = 1 point, total 100, wins)
+      horseRaceProvider.processDartThrow(1, dartDisplay: 'S1');
+
+      // Verify: Game over after 2 darts
+      expect(horseRaceProvider.hasWinner, true);
+      expect(game.getTotalDartsThrown(player.id), 2);
+
+      // Manually increment turn count
+      game.advanceToNextPlayer();
+
+      // Verify: Turn counted with 2 darts
+      expect(game.getTotalTurns(player.id), 1);
+    });
+
+    test('Test 27: Skip Entire Turn Does Not Count as Turn', () async {
+      final player1 = Player.create(name: 'Player 1');
+      final player2 = Player.create(name: 'Player 2');
+      await playerProvider.savePlayer(player1);
+      await playerProvider.savePlayer(player2);
+
+      horseRaceProvider.startGame([player1, player2], 100, exactScoreMode: false);
+      final game = horseRaceProvider.currentGame!;
+
+      // Skip entire turn without throwing any darts
+      horseRaceProvider.skipTurn();
+
+      // Verify: No darts thrown
+      expect(game.getTotalDartsThrown(player1.id), 0);
+
+      horseRaceProvider.handleTakeoutFinished();
+
+      // Verify: Turn NOT counted (player threw 0 darts)
+      expect(game.getTotalTurns(player1.id), 0);
     });
   });
 }

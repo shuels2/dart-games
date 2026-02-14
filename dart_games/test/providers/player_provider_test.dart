@@ -190,6 +190,7 @@ void main() {
       expect(updated!.gameHistory.length, 1);
       expect(updated.gameHistory.first.gameName, 'Carnival Derby');
       expect(updated.gameHistory.first.duration.inMinutes, 5);
+      expect(updated.gameHistory.first.metadata?['won'], true);
     });
 
     test('updatePlayerStats adds history for losses with duration', () async {
@@ -207,6 +208,7 @@ void main() {
       expect(updated!.gameHistory.length, 1);
       expect(updated.gameHistory.first.gameName, 'Carnival Derby');
       expect(updated.gameHistory.first.duration.inMinutes, 5);
+      expect(updated.gameHistory.first.metadata?['won'], false);
       expect(updated.gamesPlayed, 1);
       expect(updated.gamesWon, 0);
     });
@@ -616,6 +618,304 @@ void main() {
         // Single player should remain
         expect(newProvider.allPlayers.length, 1);
         expect(newProvider.allPlayers.first.name, 'Only Player');
+      });
+    });
+
+    group('New Stats Tracking', () {
+      test('updatePlayerStats stores new fields', () async {
+        final player = Player.create(name: 'Stats Player');
+        await provider.savePlayer(player);
+
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Target Tag',
+          gameDuration: const Duration(minutes: 8),
+          dartThrows: 42,
+          turns: 14,
+          playerCount: 4,
+        );
+
+        final updated = provider.getPlayerById(player.id);
+        expect(updated, isNotNull);
+        expect(updated!.gameHistory.length, 1);
+        expect(updated.gameHistory.first.dartThrows, 42);
+        expect(updated.gameHistory.first.turns, 14);
+        expect(updated.gameHistory.first.playerCount, 4);
+      });
+
+      test('getPlayerTotalDartsThrown sums correctly', () async {
+        final player = Player.create(name: 'Dart Counter');
+        await provider.savePlayer(player);
+
+        // Add multiple games with dart throws
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Game 1',
+          gameDuration: const Duration(minutes: 5),
+          dartThrows: 30,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: false,
+          gameName: 'Game 2',
+          gameDuration: const Duration(minutes: 6),
+          dartThrows: 45,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Game 3',
+          gameDuration: const Duration(minutes: 4),
+          dartThrows: 25,
+        );
+
+        final totalDarts = provider.getPlayerTotalDartsThrown(player.id);
+        expect(totalDarts, 100); // 30 + 45 + 25
+      });
+
+      test('getPlayerTotalTurns sums correctly', () async {
+        final player = Player.create(name: 'Turn Counter');
+        await provider.savePlayer(player);
+
+        // Add games with turns
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Game 1',
+          gameDuration: const Duration(minutes: 5),
+          turns: 10,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: false,
+          gameName: 'Game 2',
+          gameDuration: const Duration(minutes: 6),
+          turns: 15,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Game 3',
+          gameDuration: const Duration(minutes: 4),
+          turns: 8,
+        );
+
+        final totalTurns = provider.getPlayerTotalTurns(player.id);
+        expect(totalTurns, 33); // 10 + 15 + 8
+      });
+
+      test('getPlayerTotalPlayersEncountered sums correctly', () async {
+        final player = Player.create(name: 'Social Player');
+        await provider.savePlayer(player);
+
+        // Add games with different player counts
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Game 1',
+          gameDuration: const Duration(minutes: 5),
+          playerCount: 2,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: false,
+          gameName: 'Game 2',
+          gameDuration: const Duration(minutes: 6),
+          playerCount: 4,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Game 3',
+          gameDuration: const Duration(minutes: 4),
+          playerCount: 3,
+        );
+
+        final totalPlayers = provider.getPlayerTotalPlayersEncountered(player.id);
+        expect(totalPlayers, 9); // 2 + 4 + 3
+      });
+
+      test('getPlayerAverageDartsPerGame calculates correctly', () async {
+        final player = Player.create(name: 'Average Dart Player');
+        await provider.savePlayer(player);
+
+        // Add Target Tag games
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Target Tag',
+          gameDuration: const Duration(minutes: 5),
+          dartThrows: 30,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: false,
+          gameName: 'Target Tag',
+          gameDuration: const Duration(minutes: 6),
+          dartThrows: 42,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Target Tag',
+          gameDuration: const Duration(minutes: 4),
+          dartThrows: 36,
+        );
+
+        // Add Carnival Derby game (should not affect Target Tag average)
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Carnival Derby',
+          gameDuration: const Duration(minutes: 3),
+          dartThrows: 15,
+        );
+
+        final avgDarts = provider.getPlayerAverageDartsPerGame(player.id, 'Target Tag');
+        expect(avgDarts, 36.0); // (30 + 42 + 36) / 3 = 36
+      });
+
+      test('getPlayerAverageTurnsPerGame calculates correctly', () async {
+        final player = Player.create(name: 'Average Turn Player');
+        await provider.savePlayer(player);
+
+        // Add Carnival Derby games
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Carnival Derby',
+          gameDuration: const Duration(minutes: 5),
+          turns: 10,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: false,
+          gameName: 'Carnival Derby',
+          gameDuration: const Duration(minutes: 6),
+          turns: 14,
+        );
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Carnival Derby',
+          gameDuration: const Duration(minutes: 4),
+          turns: 12,
+        );
+
+        final avgTurns = provider.getPlayerAverageTurnsPerGame(player.id, 'Carnival Derby');
+        expect(avgTurns, 12.0); // (10 + 14 + 12) / 3 = 12
+      });
+
+      test('handles null values in old entries', () async {
+        final player = Player.create(name: 'Legacy Player');
+        await provider.savePlayer(player);
+
+        // Add old entry without new stats (simulates backward compatibility)
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Old Game',
+          gameDuration: const Duration(minutes: 5),
+          // dartThrows, turns, playerCount not provided (null)
+        );
+
+        // Add new entry with stats
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'New Game',
+          gameDuration: const Duration(minutes: 6),
+          dartThrows: 30,
+          turns: 10,
+          playerCount: 4,
+        );
+
+        // Should sum only non-null values
+        expect(provider.getPlayerTotalDartsThrown(player.id), 30);
+        expect(provider.getPlayerTotalTurns(player.id), 10);
+        expect(provider.getPlayerTotalPlayersEncountered(player.id), 4);
+
+        // Averages should handle null values correctly
+        final avgDarts = provider.getPlayerAverageDartsPerGame(player.id, 'New Game');
+        expect(avgDarts, 30.0);
+      });
+
+      test('stores won metadata correctly for wins', () async {
+        final player = Player.create(name: 'Winner');
+        await provider.savePlayer(player);
+
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Target Tag',
+          gameDuration: const Duration(minutes: 5),
+        );
+
+        final updated = provider.getPlayerById(player.id);
+        expect(updated, isNotNull);
+        expect(updated!.gameHistory.length, 1);
+        expect(updated.gameHistory.first.metadata?['won'], true);
+      });
+
+      test('stores won metadata correctly for losses', () async {
+        final player = Player.create(name: 'Loser');
+        await provider.savePlayer(player);
+
+        await provider.updatePlayerStats(
+          player.id,
+          won: false,
+          gameName: 'Carnival Derby',
+          gameDuration: const Duration(minutes: 8),
+        );
+
+        final updated = provider.getPlayerById(player.id);
+        expect(updated, isNotNull);
+        expect(updated!.gameHistory.length, 1);
+        expect(updated.gameHistory.first.metadata?['won'], false);
+      });
+
+      test('correctly tracks wins and losses in metadata', () async {
+        final player = Player.create(name: 'Mixed Results');
+        await provider.savePlayer(player);
+
+        // Win a game
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Game 1',
+          gameDuration: const Duration(minutes: 5),
+        );
+
+        // Lose a game
+        await provider.updatePlayerStats(
+          player.id,
+          won: false,
+          gameName: 'Game 2',
+          gameDuration: const Duration(minutes: 6),
+        );
+
+        // Win another game
+        await provider.updatePlayerStats(
+          player.id,
+          won: true,
+          gameName: 'Game 3',
+          gameDuration: const Duration(minutes: 4),
+        );
+
+        final updated = provider.getPlayerById(player.id);
+        expect(updated, isNotNull);
+        expect(updated!.gameHistory.length, 3);
+
+        // Check metadata for each game
+        expect(updated.gameHistory[0].metadata?['won'], true);  // First game - win
+        expect(updated.gameHistory[1].metadata?['won'], false); // Second game - loss
+        expect(updated.gameHistory[2].metadata?['won'], true);  // Third game - win
+
+        // Verify stats still correct
+        expect(updated.gamesPlayed, 3);
+        expect(updated.gamesWon, 2);
       });
     });
   });

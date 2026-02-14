@@ -42,7 +42,7 @@ dart_games/
 │               ├── horse_race_menu_screen.dart     # Game setup
 │               ├── horse_race_game_screen.dart     # Active gameplay
 │               └── horse_race_results_screen.dart  # Winner announcement
-├── test/                            # Non-UI test suite (226 tests)
+├── test/                            # Non-UI test suite (245 tests)
 ├── integration_test/                # UI automation tests (76 tests)
 └── assets/                          # Images, icons, fonts
 ```
@@ -923,7 +923,7 @@ flutter test
 ```
 
 **CRITICAL REQUIREMENTS:**
-- All 226 non-UI tests must pass (100% pass rate required)
+- All 245 non-UI tests must pass (100% pass rate required)
 - If ANY test fails, DO NOT proceed with build
 - Fix all failing tests first, then re-run test suite
 - Only build after confirming all tests pass
@@ -985,11 +985,12 @@ These tests validate:
   - Turn management (Tests 18-19): Skip turns, multiple skips in sequence
   - Edit score (Tests 20-24): Add/remove shields, undo, team adjustments
   - Edge cases (Tests 25-32): Simultaneous events, regaining tagged-in, all bullseyes, 10 players, 5 teams, multiple hero attacks
-- **User management integration** (10 tests in `target_tag_user_management_test.dart`)
+- **User management integration** (14 tests in `target_tag_user_management_test.dart`)
   - Win tracking for both winners and losers with game duration
   - Stats persistence across app restarts
   - Total play time and average duration calculations
   - Max 10 players selection enforcement
+  - Skip turn and partial turn stat tracking
 
 This is NON-NEGOTIABLE. Tests validate critical functionality including:
 - User management system (43 tests - Player: 30, Carnival Derby: 11, Target Tag: 10)
@@ -1234,17 +1235,18 @@ When adding a new game:
 9. Follow the pattern established in `test/screens/games/target_tag/target_tag_user_management_test.dart`
 
 **Reference Implementation:**
-- See `target_tag_user_management_test.dart` for the complete pattern (10 tests)
+- See `target_tag_user_management_test.dart` for the complete pattern (14 tests)
 - Tests validate both solo and team modes
 - Tests verify that losers receive game history with duration (not just winners)
+- Tests verify skip turn and partial turn stat tracking
 
 ## Testing Requirements
 
-### Complete Test Suite (226 Tests + 76 UI Automation Tests)
+### Complete Test Suite (245 Tests + 76 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
-**Non-UI Tests (226 tests in `test/` directory):**
+**Non-UI Tests (245 tests in `test/` directory):**
 - Run with `flutter test`
 - Execute in seconds
 - Required to pass before every build
@@ -1254,13 +1256,15 @@ The dart games app has a comprehensive test suite covering all critical function
 - Execute in ~51 minutes
 - Optional for builds (ask user before running)
 
-#### Model Tests (36 tests)
-- `test/models/game_history_entry_test.dart` (8 tests)
+#### Model Tests (40 tests)
+- `test/models/game_history_entry_test.dart` (12 tests)
   - Factory constructor creation
   - JSON serialization/deserialization
   - Round-trip serialization
   - Duration format handling
   - Timestamp validation
+  - New stats fields (dartThrows, turns, playerCount)
+  - Backward compatibility
 
 - `test/models/player_test.dart` (16 tests)
   - Player creation with/without photos
@@ -1277,13 +1281,16 @@ The dart games app has a comprehensive test suite covering all critical function
   - Data URL sources (web) and file paths (native)
   - Special characters and long file names
 
-#### Provider Tests (37 tests)
-- `test/providers/player_provider_test.dart` (37 tests)
+#### Provider Tests (44 tests)
+- `test/providers/player_provider_test.dart` (44 tests)
   - Player CRUD operations (save, update, delete)
   - Player selection (up to 8 players)
   - Game stats tracking (games played/won)
   - Game history methods (getPlayerHistory, getPlayerHistoryForGame, etc.)
   - Total play time and average duration calculations
+  - New stat tracking (dartThrows, turns, playerCount)
+  - New getter methods (getPlayerTotalDartsThrown, getPlayerTotalTurns, etc.)
+  - Null handling for old entries
   - Data persistence across provider instances
   - Alphabetical sorting (7 tests):
     - Sorts players alphabetically on load (case-insensitive)
@@ -1308,8 +1315,8 @@ The dart games app has a comprehensive test suite covering all critical function
   - Error handling and data persistence
   - Cross-platform file handling
 
-#### Integration Tests (75 tests)
-- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (22 tests)
+#### Integration Tests (83 tests)
+- `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart` (26 tests)
   - Winner recording with game duration
   - Multiple games accumulation
   - Duration calculation accuracy
@@ -1317,6 +1324,10 @@ The dart games app has a comprehensive test suite covering all critical function
   - Exact score mode duration tracking
   - Stats persistence across app restarts
   - Max 8 players selection enforcement
+  - Skip turn does NOT count as throws or turns (Test 24)
+  - Win on first dart counts as 1 turn (Test 25)
+  - Win on second dart counts as 1 turn (Test 26)
+  - Skip entire turn (0 darts) does NOT count as turn (Test 27)
   - Skip turn records misses and advances turn
   - Skip multiple turns in sequence
   - Edit score on first turn preserves score correctly
@@ -1352,7 +1363,7 @@ The dart games app has a comprehensive test suite covering all critical function
   - Validates BOTH game logic (shields, tagged-in status, eliminations) AND announcement text/timing
   - Covers 2-10 players and 2-5 teams
 
-- `test/screens/games/target_tag/target_tag_user_management_test.dart` (10 tests)
+- `test/screens/games/target_tag/target_tag_user_management_test.dart` (14 tests)
   - Solo mode winner/loser stats with duration tracking (Tests 4-7)
   - Team mode stats for all players with duration (Test 8)
   - Mixed team compositions across games (Test 9)
@@ -1360,6 +1371,10 @@ The dart games app has a comprehensive test suite covering all critical function
   - Total play time calculations (Test 11)
   - Average game duration by game name (Test 12)
   - Max 10 players selection enforcement (Test 13)
+  - Skip turn does NOT count as throws or turns (Test 14)
+  - Win on first dart counts as 1 turn (Test 15)
+  - Win on second dart counts as 1 turn (Test 16)
+  - Skip entire turn (0 darts) does NOT count as turn (Test 17)
   - Both winners AND losers receive game history entries with duration
   - Stats persistence and data integrity validation
 
@@ -1433,7 +1448,7 @@ The dart games app has a comprehensive test suite covering all critical function
 
 ### Running Tests
 
-**Run all non-UI tests (226 tests):**
+**Run all non-UI tests (245 tests):**
 ```bash
 cd dart_games
 flutter test
@@ -1474,13 +1489,13 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 
 ### Test Expectations
 
-**Non-UI Tests (226 tests):**
-- **100% pass rate required** - All 226 non-UI tests must pass before every build
+**Non-UI Tests (245 tests):**
+- **100% pass rate required** - All 245 non-UI tests must pass before every build
 - Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
 - No build or deployment without all non-UI tests passing
 - Tests cover both web and native platform scenarios
 - Backward compatibility is validated for data migrations
-- Target Tag tests (41 tests total) validate game logic, announcement system integrity, and user management integration
+- Target Tag tests (46 tests total: 32 game logic + 14 user management) validate game logic, announcement system integrity, user management integration, and skip turn/partial turn stat tracking
 
 **UI Automation Tests (76 tests):**
 - Optional for builds - ask user if they want to run UI automation tests

@@ -136,5 +136,77 @@ void main() {
       expect(entry.timestamp.isAfter(before) || entry.timestamp.isAtSameMomentAs(before), isTrue);
       expect(entry.timestamp.isBefore(after) || entry.timestamp.isAtSameMomentAs(after), isTrue);
     });
+
+    test('creates entry with new stats fields', () {
+      final entry = GameHistoryEntry.create(
+        gameName: 'Target Tag',
+        duration: const Duration(minutes: 8, seconds: 30),
+        dartThrows: 42,
+        turns: 14,
+        playerCount: 4,
+      );
+
+      expect(entry.gameName, 'Target Tag');
+      expect(entry.duration, const Duration(minutes: 8, seconds: 30));
+      expect(entry.dartThrows, 42);
+      expect(entry.turns, 14);
+      expect(entry.playerCount, 4);
+    });
+
+    test('serializes new stats to JSON', () {
+      final entry = GameHistoryEntry(
+        id: 'stats-test-id',
+        gameName: 'Carnival Derby',
+        timestamp: DateTime(2024, 2, 1, 12, 0),
+        duration: const Duration(minutes: 5),
+        dartThrows: 36,
+        turns: 12,
+        playerCount: 3,
+      );
+
+      final json = entry.toJson();
+
+      expect(json['dartThrows'], 36);
+      expect(json['turns'], 12);
+      expect(json['playerCount'], 3);
+    });
+
+    test('deserializes new stats from JSON', () {
+      final json = {
+        'id': 'new-stats-id',
+        'gameName': 'Target Tag',
+        'timestamp': '2024-02-01T12:00:00.000Z',
+        'durationMs': 300000,
+        'dartThrows': 48,
+        'turns': 16,
+        'playerCount': 6,
+      };
+
+      final entry = GameHistoryEntry.fromJson(json);
+
+      expect(entry.dartThrows, 48);
+      expect(entry.turns, 16);
+      expect(entry.playerCount, 6);
+    });
+
+    test('backward compatibility - old entries without new fields', () {
+      // Old JSON format without new stats fields
+      final json = {
+        'id': 'old-entry-id',
+        'gameName': 'Carnival Derby',
+        'timestamp': '2024-01-01T10:00:00.000Z',
+        'durationMs': 180000,
+      };
+
+      final entry = GameHistoryEntry.fromJson(json);
+
+      expect(entry.id, 'old-entry-id');
+      expect(entry.gameName, 'Carnival Derby');
+      expect(entry.duration.inMilliseconds, 180000);
+      // New fields should be null for old entries
+      expect(entry.dartThrows, isNull);
+      expect(entry.turns, isNull);
+      expect(entry.playerCount, isNull);
+    });
   });
 }

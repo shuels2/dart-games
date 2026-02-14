@@ -185,6 +185,9 @@ class PlayerProvider extends ChangeNotifier {
     bool won = false,
     String? gameName,
     Duration? gameDuration,
+    int? dartThrows,
+    int? turns,
+    int? playerCount,
   }) async {
     try {
       final index = _allPlayers.indexWhere((p) => p.id == playerId);
@@ -199,6 +202,10 @@ class PlayerProvider extends ChangeNotifier {
           updatedHistory.add(GameHistoryEntry.create(
             gameName: gameName,
             duration: gameDuration,
+            dartThrows: dartThrows,
+            turns: turns,
+            playerCount: playerCount,
+            metadata: {'won': won}, // Track whether this was a win
           ));
         }
 
@@ -259,6 +266,42 @@ class PlayerProvider extends ChangeNotifier {
       (sum, entry) => sum + entry.duration.inMilliseconds,
     );
     return Duration(milliseconds: totalMs ~/ gameHistory.length);
+  }
+
+  // Get total darts thrown across all games
+  int getPlayerTotalDartsThrown(String playerId) {
+    final history = getPlayerHistory(playerId);
+    return history.fold(0, (total, entry) => total + (entry.dartThrows ?? 0));
+  }
+
+  // Get total turns (legs) across all games
+  int getPlayerTotalTurns(String playerId) {
+    final history = getPlayerHistory(playerId);
+    return history.fold(0, (total, entry) => total + (entry.turns ?? 0));
+  }
+
+  // Get total players encountered across all games
+  int getPlayerTotalPlayersEncountered(String playerId) {
+    final history = getPlayerHistory(playerId);
+    return history.fold(0, (total, entry) => total + (entry.playerCount ?? 0));
+  }
+
+  // Get average darts per game (for specific game)
+  double? getPlayerAverageDartsPerGame(String playerId, String gameName) {
+    final gameHistory = getPlayerHistoryForGame(playerId, gameName);
+    if (gameHistory.isEmpty) return null;
+
+    final totalDarts = gameHistory.fold(0, (sum, entry) => sum + (entry.dartThrows ?? 0));
+    return totalDarts / gameHistory.length;
+  }
+
+  // Get average turns per game (for specific game)
+  double? getPlayerAverageTurnsPerGame(String playerId, String gameName) {
+    final gameHistory = getPlayerHistoryForGame(playerId, gameName);
+    if (gameHistory.isEmpty) return null;
+
+    final totalTurns = gameHistory.fold(0, (sum, entry) => sum + (entry.turns ?? 0));
+    return totalTurns / gameHistory.length;
   }
 
   // Clear error message

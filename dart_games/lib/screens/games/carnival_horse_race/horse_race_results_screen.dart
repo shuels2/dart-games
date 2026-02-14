@@ -127,14 +127,23 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
     // Calculate game duration
     final gameDuration = DateTime.now().difference(currentGame.startedAt);
 
+    // Get player count
+    final playerCount = currentGame.getPlayerCount();
+
     // Update stats for all players (both winners and losers get duration)
     for (final playerId in currentGame.playerIds) {
       final isWinner = playerId == currentGame.winnerId;
+      final dartThrows = currentGame.getTotalDartsThrown(playerId);
+      final turns = currentGame.getTotalTurns(playerId);
+
       await playerProvider.updatePlayerStats(
         playerId,
         won: isWinner,
         gameName: 'Carnival Derby',
         gameDuration: gameDuration,
+        dartThrows: dartThrows,
+        turns: turns,
+        playerCount: playerCount,
       );
     }
   }

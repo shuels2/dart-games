@@ -852,43 +852,52 @@ class _OptionsScreenState extends State<OptionsScreen> {
   Widget _buildPlayerDetails(Player player, PlayerProvider playerProvider) {
     final history = player.gameHistory;
     final totalPlayTime = playerProvider.getPlayerTotalPlayTime(player.id);
-    final carnivalDerbyWins = playerProvider.getPlayerHistoryForGame(
-      player.id,
-      'Carnival Derby',
-    );
-    final avgDuration = playerProvider.getPlayerAverageGameDuration(
-      player.id,
-      'Carnival Derby',
-    );
 
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stats summary
+          // All stats in a single row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatCard(
                 icon: Icons.emoji_events,
-                label: 'Total Wins',
+                label: 'Wins',
                 value: player.gamesWon.toString(),
                 color: Colors.amber,
               ),
               _buildStatCard(
-                icon: Icons.timer,
-                label: 'Total Time',
-                value: _formatDuration(totalPlayTime),
+                icon: Icons.games,
+                label: 'Games played',
+                value: player.gamesPlayed.toString(),
                 color: Colors.blue,
               ),
-              if (avgDuration != null)
-                _buildStatCard(
-                  icon: Icons.speed,
-                  label: 'Avg Game',
-                  value: _formatDuration(avgDuration),
-                  color: Colors.green,
-                ),
+              _buildStatCard(
+                icon: Icons.groups,
+                label: 'Total players',
+                value: playerProvider.getPlayerTotalPlayersEncountered(player.id).toString(),
+                color: Colors.teal,
+              ),
+              _buildStatCard(
+                icon: Icons.loop,
+                label: 'Turns (legs)',
+                value: playerProvider.getPlayerTotalTurns(player.id).toString(),
+                color: Colors.purple,
+              ),
+              _buildStatCard(
+                icon: Icons.adjust,
+                label: 'Darts thrown',
+                value: playerProvider.getPlayerTotalDartsThrown(player.id).toString(),
+                color: Colors.orange,
+              ),
+              _buildStatCard(
+                icon: Icons.timer,
+                label: 'Total time',
+                value: _formatDuration(totalPlayTime),
+                color: Colors.green,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -896,7 +905,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
           const SizedBox(height: 8),
           // Game history
           Text(
-            'Recent Wins (${history.length})',
+            'Recent Games (${history.length})',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -907,7 +916,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'No wins yet',
+                'No games yet',
                 style: TextStyle(
                   color: Colors.grey,
                   fontSize: 12,
@@ -917,24 +926,34 @@ class _OptionsScreenState extends State<OptionsScreen> {
             )
           else
             ...history.reversed.take(5).map((entry) {
+              final isWin = entry.metadata?['won'] == true;
               return ListTile(
                 dense: true,
-                leading:
-                    const Icon(Icons.emoji_events, size: 16, color: Colors.amber),
-                title: Text(
-                  entry.gameName,
-                  style: const TextStyle(fontSize: 12),
+                leading: isWin
+                    ? const Icon(Icons.emoji_events, size: 16, color: Colors.amber)
+                    : const Icon(Icons.sports_esports, size: 16, color: Colors.grey),
+                title: Row(
+                  children: [
+                    Text(
+                      entry.gameName,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Total players: ${entry.playerCount ?? 0} • Turns (legs): ${entry.turns ?? 0} • Darts thrown: ${entry.dartThrows ?? 0} • Total time: ${_formatDuration(entry.duration)}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 subtitle: Text(
                   _formatHistoryDate(entry.timestamp),
-                  style: const TextStyle(fontSize: 11),
-                ),
-                trailing: Text(
-                  'This game lasted ${_formatDuration(entry.duration)}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontSize: 10),
                 ),
               );
             }).toList(),
