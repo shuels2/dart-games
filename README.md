@@ -65,12 +65,15 @@ await playerProvider.savePlayer(Player(
   photoPath: photoPath,
 ));
 
-// Update player stats when game ends
+// Update player stats when game ends (for ALL players - winners AND losers)
 await playerProvider.updatePlayerStats(
   playerId,
-  won: true,
+  won: true,  // or false for losers
   gameName: 'Your Game Name',
   gameDuration: gameDuration,
+  dartThrows: game.getTotalDartsThrown(playerId),    // Total darts thrown by player
+  turns: game.getTotalTurns(playerId),                // Total turns taken by player
+  playerCount: game.getPlayerCount(),                 // Total players in the game
 );
 ```
 
@@ -295,6 +298,65 @@ class _YourGameScreenState extends State<YourGameScreen> {
 
 See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
+#### 9. Skip Turn Helper (`GameSkipTurnHelper`)
+- Global utility for consistent skip turn behavior across ALL games
+- Ensures skip turn does NOT increment dart throw or turn counters
+- Provides validation and visual marker management
+- **ALL games MUST use this helper for skip turn functionality**
+
+```dart
+// Import the skip turn helper
+import 'package:dart_games/services/game_skip_turn_helper.dart';
+
+// In your game provider's skipTurn() method
+void skipTurn() {
+  if (_currentGame == null) return;
+
+  final currentPlayerId = _currentGame!.getCurrentPlayerId();
+  final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
+
+  // Validate using global helper
+  if (!GameSkipTurnHelper.canSkipTurn(
+    gameActive: isGameActive,
+    waitingForTakeout: _waitingForTakeout,
+    currentDartCount: dartsThrown,
+    maxDartsPerTurn: 3,
+  )) {
+    return;
+  }
+
+  // Execute skip using global helper
+  GameSkipTurnHelper.skipRemainingDarts(
+    currentDartCount: dartsThrown,
+    maxDartsPerTurn: 3,
+    addVisualMarker: (marker) {
+      // Add "Skip" to your game's display list
+      _currentGame!.currentTurnDarts[currentPlayerId]!.add(marker);
+    },
+  );
+
+  _waitingForTakeout = true;
+  notifyListeners();
+}
+```
+
+**Key Behavior:**
+- Skip turn adds visual "Skip" markers but does NOT call dart processing methods
+- Dart throw counters are NOT incremented
+- Turn counters are NOT incremented if player threw 0 darts
+- If player threw 1+ darts before skipping, turn IS counted (turn increments on first dart)
+
+**Benefits:**
+- Ensures all games (current and future) have identical skip turn behavior
+- Centralized logic - bug fixes benefit all games
+- Clear documentation of skip turn requirements
+- Easier to test (unit test the helper directly)
+
+**Reference Implementations:**
+- Target Tag: `lib/providers/target_tag_provider.dart`
+- Carnival Derby: `lib/providers/horse_race_provider.dart`
+- Helper source: `lib/services/game_skip_turn_helper.dart`
+
 ## Architecture
 
 ### Container App Structure
@@ -414,6 +476,9 @@ for (final playerId in game.playerIds) {
     won: isWinner,
     gameName: 'Your Game Name',
     gameDuration: gameDuration,  // SAME duration for all players
+    dartThrows: game.getTotalDartsThrown(playerId),    // Total darts thrown
+    turns: game.getTotalTurns(playerId),                // Total turns taken
+    playerCount: game.getPlayerCount(),                 // Total players in game
   );
 }
 
