@@ -19,6 +19,8 @@ class HorseRaceGame {
   int currentPlayerIndex;
   Map<String, int> scores;
   Map<String, int> dartsThrown;
+  Map<String, int> totalDartsThrown;
+  Map<String, int> totalTurns;
   Map<String, List<String>> currentTurnDartScores;
   String? winnerId;
   bool currentPlayerBusted;
@@ -39,16 +41,22 @@ class HorseRaceGame {
     this.currentPlayerIndex = 0,
     Map<String, int>? scores,
     Map<String, int>? dartsThrown,
+    Map<String, int>? totalDartsThrown,
+    Map<String, int>? totalTurns,
     Map<String, List<String>>? currentTurnDartScores,
     this.winnerId,
     this.currentPlayerBusted = false,
   })  : scores = scores ?? {},
         dartsThrown = dartsThrown ?? {},
+        totalDartsThrown = totalDartsThrown ?? {},
+        totalTurns = totalTurns ?? {},
         currentTurnDartScores = currentTurnDartScores ?? {} {
     // Initialize scores and darts thrown for each player
     for (var playerId in playerIds) {
       this.scores[playerId] ??= 0;
       this.dartsThrown[playerId] ??= 0;
+      this.totalDartsThrown[playerId] ??= 0;
+      this.totalTurns[playerId] ??= 0;
       this.currentTurnDartScores[playerId] ??= [];
     }
   }
@@ -65,6 +73,8 @@ class HorseRaceGame {
       targetScore: targetScore,
       exactScoreMode: exactScoreMode,
       startedAt: DateTime.now(),
+      totalDartsThrown: {},
+      totalTurns: {},
       state: GameState.playing,
       currentPlayerIndex: 0,
     );
@@ -91,11 +101,24 @@ class HorseRaceGame {
         // Player busted - don't update score, mark as busted
         currentPlayerBusted = true;
         dartsThrown[playerId] = (dartsThrown[playerId] ?? 0) + 1;
+        totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
+
+        // Increment turn counter on FIRST dart only
+        if (dartsThrown[playerId] == 1) {
+          totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
+        }
         return;
       } else if (newScore == targetScore) {
         // Player hit exact score - they win!
         scores[playerId] = newScore;
         dartsThrown[playerId] = (dartsThrown[playerId] ?? 0) + 1;
+        totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
+
+        // Increment turn counter on FIRST dart only
+        if (dartsThrown[playerId] == 1) {
+          totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
+        }
+
         winnerId = playerId;
         state = GameState.finished;
         return;
@@ -105,6 +128,12 @@ class HorseRaceGame {
     // Normal mode or exact mode without bust/win
     scores[playerId] = newScore;
     dartsThrown[playerId] = (dartsThrown[playerId] ?? 0) + 1;
+    totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
+
+    // Increment turn counter on FIRST dart only
+    if (dartsThrown[playerId] == 1) {
+      totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
+    }
 
     // Check if player has won (greater or equal mode)
     if (!exactScoreMode && scores[playerId]! >= targetScore) {
@@ -191,6 +220,21 @@ class HorseRaceGame {
   // Get current turn dart scores for a specific player
   List<String> getCurrentTurnDartScores(String playerId) {
     return currentTurnDartScores[playerId] ?? [];
+  }
+
+  // Get total darts thrown across all turns for a player
+  int getTotalDartsThrown(String playerId) {
+    return totalDartsThrown[playerId] ?? 0;
+  }
+
+  // Get total turns taken for a player
+  int getTotalTurns(String playerId) {
+    return totalTurns[playerId] ?? 0;
+  }
+
+  // Get total number of players in the game
+  int getPlayerCount() {
+    return playerIds.length;
   }
 
   // Get sorted list of players by score (for final standings)

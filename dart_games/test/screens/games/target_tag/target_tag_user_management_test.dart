@@ -730,5 +730,126 @@ void main() {
         );
       });
     });
+
+    group('Dart and Turn Tracking', () {
+      test('Test 14: Skip Turn Does Not Count as Throws or Turns', () async {
+        final alice = Player.create(name: 'Alice');
+        final bob = Player.create(name: 'Bob');
+        await playerProvider.savePlayer(alice);
+        await playerProvider.savePlayer(bob);
+
+        provider.startSoloGame([alice, bob], 3, false);
+        final game = provider.currentGame!;
+
+        helper = TargetTagTestHelper(provider: provider, audioQueue: audioQueue, players: [alice, bob]);
+
+        // Alice throws 1 dart
+        helper.processDartThrowWithAnnouncements('S14');
+        expect(game.getTotalDartsThrown(alice.id), 1);
+        expect(game.getTotalTurns(alice.id), 0); // Turn not complete yet
+
+        // Skip remaining darts
+        provider.skipTurn();
+
+        // Verify: Skip does NOT increment dart count
+        expect(game.getTotalDartsThrown(alice.id), 1); // Still 1, not 3
+
+        // Advance to next player
+        provider.handleTakeoutFinished();
+
+        // Verify: Turn incremented (because Alice threw 1 dart)
+        expect(game.getTotalTurns(alice.id), 1);
+      });
+
+      test('Test 15: Win on First Dart Counts as 1 Turn', () async {
+        final alice = Player.create(name: 'Alice');
+        final bob = Player.create(name: 'Bob');
+        await playerProvider.savePlayer(alice);
+        await playerProvider.savePlayer(bob);
+
+        provider.startSoloGame([alice, bob], 3, false);
+        final game = provider.currentGame!;
+
+        // Set up game state: Alice tagged in, Bob with 0 shields (vulnerable)
+        game.shields[alice.id] = 3;
+        game.shields[bob.id] = 0;
+        game.taggedIn[alice.id] = true;
+        game.targetNumbers[alice.id] = 14;
+        game.targetNumbers[bob.id] = 20;
+
+        helper = TargetTagTestHelper(provider: provider, audioQueue: audioQueue, players: [alice, bob]);
+
+        // Alice eliminates Bob with 1 dart (single 20 = 1 hit, Bob at 0 shields)
+        helper.processDartThrowWithAnnouncements('S20');
+
+        // Verify: Game over after 1 dart
+        expect(provider.hasWinner, true);
+        expect(game.getTotalDartsThrown(alice.id), 1);  // Total darts thrown (cumulative)
+
+        // Manually increment turn count (since game ended, advanceToNextPlayer may not have been called)
+        game.advanceToNextPlayer();
+
+        // Verify: Turn counted even though only 1 dart thrown
+        expect(game.getTotalTurns(alice.id), 1);
+      });
+
+      test('Test 16: Win on Second Dart Counts as 1 Turn', () async {
+        final alice = Player.create(name: 'Alice');
+        final bob = Player.create(name: 'Bob');
+        await playerProvider.savePlayer(alice);
+        await playerProvider.savePlayer(bob);
+
+        provider.startSoloGame([alice, bob], 3, false);
+        final game = provider.currentGame!;
+
+        // Set up: Alice tagged in, Bob with 1 shield
+        game.shields[alice.id] = 3;
+        game.shields[bob.id] = 1;
+        game.taggedIn[alice.id] = true;
+        game.targetNumbers[alice.id] = 14;
+        game.targetNumbers[bob.id] = 20;
+
+        helper = TargetTagTestHelper(provider: provider, audioQueue: audioQueue, players: [alice, bob]);
+
+        // Alice throws 1 dart (single 20 = 1 hit, reduces Bob to 0 shields)
+        helper.processDartThrowWithAnnouncements('S20');
+        expect(game.getTotalDartsThrown(alice.id), 1);
+        expect(game.shields[bob.id], 0); // Bob now vulnerable
+
+        // Alice throws 2nd dart (single 20 = 1 hit, eliminates Bob at 0 shields)
+        helper.processDartThrowWithAnnouncements('S20');
+
+        // Verify: Game over after 2 darts
+        expect(provider.hasWinner, true);
+        expect(game.getTotalDartsThrown(alice.id), 2);  // Total darts thrown (cumulative)
+
+        // Manually increment turn count (since game ended, advanceToNextPlayer may not have been called)
+        game.advanceToNextPlayer();
+
+        // Verify: Turn counted with 2 darts
+        expect(game.getTotalTurns(alice.id), 1);
+      });
+
+      test('Test 17: Skip Entire Turn (0 Darts) Does Not Count as Turn', () async {
+        final alice = Player.create(name: 'Alice');
+        final bob = Player.create(name: 'Bob');
+        await playerProvider.savePlayer(alice);
+        await playerProvider.savePlayer(bob);
+
+        provider.startSoloGame([alice, bob], 3, false);
+        final game = provider.currentGame!;
+
+        // Skip entire turn without throwing any darts
+        provider.skipTurn();
+
+        // Verify: No darts thrown
+        expect(game.getTotalDartsThrown(alice.id), 0);
+
+        provider.handleTakeoutFinished();
+
+        // Verify: Turn NOT counted (player threw 0 darts)
+        expect(game.getTotalTurns(alice.id), 0);
+      });
+    });
   });
 }

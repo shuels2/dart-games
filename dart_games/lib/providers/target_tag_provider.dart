@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/target_tag_game.dart';
 import '../models/player.dart';
+import '../services/game_skip_turn_helper.dart';
 
 class TargetTagProvider extends ChangeNotifier {
   TargetTagGame? _currentGame;
@@ -254,28 +255,32 @@ class TargetTagProvider extends ChangeNotifier {
 
   // Skip remaining darts in current turn
   void skipTurn() {
-    if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (_currentGame == null) return;
 
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
     final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    final remainingDarts = 3 - dartsThrown;
 
-    if (remainingDarts <= 0) return; // No darts to skip
-
-    // Add misses for remaining darts
-    for (int i = 0; i < remainingDarts; i++) {
-      // Record "Miss" for display
-      _currentGame!.currentTurnDarts[currentPlayerId] ??= [];
-      _currentGame!.currentTurnDarts[currentPlayerId]!.add('Miss');
-
-      // Process the miss (increments dart counter, adds tracking arrays)
-      _currentGame!.processMiss(currentPlayerId);
+    // Validate using global helper
+    if (!GameSkipTurnHelper.canSkipTurn(
+      gameActive: isGameActive,
+      waitingForTakeout: _waitingForTakeout,
+      currentDartCount: dartsThrown,
+      maxDartsPerTurn: 3,
+    )) {
+      return;
     }
 
-    // Set waiting for takeout
-    _waitingForTakeout = true;
+    // Execute skip using global helper
+    GameSkipTurnHelper.skipRemainingDarts(
+      currentDartCount: dartsThrown,
+      maxDartsPerTurn: 3,
+      addVisualMarker: (marker) {
+        _currentGame!.currentTurnDarts[currentPlayerId] ??= [];
+        _currentGame!.currentTurnDarts[currentPlayerId]!.add(marker);
+      },
+    );
 
+    _waitingForTakeout = true;
     notifyListeners();
   }
 

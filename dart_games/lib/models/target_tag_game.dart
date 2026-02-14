@@ -39,6 +39,8 @@ class TargetTagGame {
   Map<String, bool> taggedIn; // entityId -> tagged in status
   Map<String, bool> eliminated; // entityId -> eliminated status
   Map<String, int> dartsThrown; // playerId -> darts thrown this turn
+  Map<String, int> totalDartsThrown; // playerId -> cumulative darts across all turns
+  Map<String, int> totalTurns; // playerId -> total turns taken
   Map<String, List<String>> currentTurnDarts; // playerId -> dart segments
   Map<String, List<bool>> dartThrowTaggedInStatus; // playerId -> was tagged in when each dart was thrown
   Map<String, List<bool>> dartThrowHeroBonusHit; // playerId -> was each dart a hero bonus hit
@@ -74,6 +76,8 @@ class TargetTagGame {
     Map<String, bool>? taggedIn,
     Map<String, bool>? eliminated,
     Map<String, int>? dartsThrown,
+    Map<String, int>? totalDartsThrown,
+    Map<String, int>? totalTurns,
     Map<String, List<String>>? currentTurnDarts,
     Map<String, List<bool>>? dartThrowTaggedInStatus,
     Map<String, List<bool>>? dartThrowHeroBonusHit,
@@ -92,6 +96,8 @@ class TargetTagGame {
         taggedIn = taggedIn ?? {},
         eliminated = eliminated ?? {},
         dartsThrown = dartsThrown ?? {},
+        totalDartsThrown = totalDartsThrown ?? {},
+        totalTurns = totalTurns ?? {},
         currentTurnDarts = currentTurnDarts ?? {},
         dartThrowTaggedInStatus = dartThrowTaggedInStatus ?? {},
         dartThrowHeroBonusHit = dartThrowHeroBonusHit ?? {},
@@ -114,6 +120,8 @@ class TargetTagGame {
     // Initialize per-player tracking
     for (var playerId in playerIds) {
       this.dartsThrown[playerId] ??= 0;
+      this.totalDartsThrown[playerId] ??= 0;
+      this.totalTurns[playerId] ??= 0;
       this.currentTurnDarts[playerId] ??= [];
       this.dartThrowTaggedInStatus[playerId] ??= [];
       this.dartThrowHeroBonusHit[playerId] ??= [];
@@ -172,6 +180,8 @@ class TargetTagGame {
       targetNumbers: playerTargets,
       soloHeroBuffNumbers: heroBuffNumbers,
       soloHeroBuffMultipliers: heroBuffMultipliers,
+      totalDartsThrown: {},
+      totalTurns: {},
       state: GameState.playing,
       currentPlayerIndex: 0,
     );
@@ -277,6 +287,8 @@ class TargetTagGame {
       teamIcons: teamIconPaths,
       soloHeroBuffNumbers: soloHeroBuffs,
       soloHeroBuffMultipliers: soloHeroMultipliers,
+      totalDartsThrown: {},
+      totalTurns: {},
       state: GameState.playing,
       currentPlayerIndex: 0,
     );
@@ -354,6 +366,12 @@ class TargetTagGame {
 
     // Increment dart counter
     dartsThrown[playerId] = (dartsThrown[playerId] ?? 0) + 1;
+    totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
+
+    // Increment turn counter on FIRST dart only
+    if (dartsThrown[playerId] == 1) {
+      totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
+    }
   }
 
   // Process dart hit (core game logic)
@@ -389,6 +407,12 @@ class TargetTagGame {
     // Store dart segment
     currentTurnDarts[playerId] ??= [];
     dartsThrown[playerId] = (dartsThrown[playerId] ?? 0) + 1;
+    totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
+
+    // Increment turn counter on FIRST dart only
+    if (dartsThrown[playerId] == 1) {
+      totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
+    }
 
     // Track if this is a hero bonus hit
     final bool isHeroBonusHit = isHeroBuff;
@@ -579,10 +603,11 @@ class TargetTagGame {
 
   // Advance to next player
   void advanceToNextPlayer() {
+    final currentPlayerId = getCurrentPlayerId();
+
     if (state != GameState.playing && state != GameState.suddenDeath) return;
 
     // Reset current player's dart tracking
-    final currentPlayerId = getCurrentPlayerId();
     dartsThrown[currentPlayerId] = 0;
     currentTurnDarts[currentPlayerId] = [];
     dartThrowTaggedInStatus[currentPlayerId] = [];
@@ -663,6 +688,21 @@ class TargetTagGame {
   int getCurrentPlayerDartsThrown() {
     final currentPlayerId = getCurrentPlayerId();
     return dartsThrown[currentPlayerId] ?? 0;
+  }
+
+  // Get total darts thrown across all turns for a player
+  int getTotalDartsThrown(String playerId) {
+    return totalDartsThrown[playerId] ?? 0;
+  }
+
+  // Get total turns taken for a player
+  int getTotalTurns(String playerId) {
+    return totalTurns[playerId] ?? 0;
+  }
+
+  // Get total number of players in the game
+  int getPlayerCount() {
+    return playerIds.length;
   }
 
   // Check if game has winner

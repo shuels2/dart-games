@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/horse_race_game.dart';
 import '../models/player.dart';
+import '../services/game_skip_turn_helper.dart';
 
 class HorseRaceProvider extends ChangeNotifier {
   HorseRaceGame? _currentGame;
@@ -89,24 +90,32 @@ class HorseRaceProvider extends ChangeNotifier {
 
   // Skip remaining darts in current turn
   void skipTurn() {
-    if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (_currentGame == null) return;
 
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
     final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    final remainingDarts = 3 - dartsThrown;
 
-    if (remainingDarts <= 0) return; // No darts to skip
-
-    // Add misses for remaining darts
-    for (int i = 0; i < remainingDarts; i++) {
-      // Record "Miss" for display (score = 0)
-      _currentGame!.recordDartThrow(currentPlayerId, 0, dartDisplay: 'Miss');
+    // Validate using global helper
+    if (!GameSkipTurnHelper.canSkipTurn(
+      gameActive: isGameActive,
+      waitingForTakeout: _waitingForTakeout,
+      currentDartCount: dartsThrown,
+      maxDartsPerTurn: 3,
+    )) {
+      return;
     }
 
-    // Set waiting for takeout
-    _waitingForTakeout = true;
+    // Execute skip using global helper
+    GameSkipTurnHelper.skipRemainingDarts(
+      currentDartCount: dartsThrown,
+      maxDartsPerTurn: 3,
+      addVisualMarker: (marker) {
+        _currentGame!.currentTurnDartScores[currentPlayerId] ??= [];
+        _currentGame!.currentTurnDartScores[currentPlayerId]!.add(marker);
+      },
+    );
 
+    _waitingForTakeout = true;
     notifyListeners();
   }
 

@@ -930,9 +930,9 @@ void main() {
     });
 
     // Test 13: Game - Skip Turn After Throwing Darts
-    // Features: Skip turn with partial darts thrown, miss auto-fill
+    // Features: Skip turn with partial darts thrown, skip markers
     // UI Elements: SKIP TURN button, dart display, remove darts modal
-    // Validates: S20 + SKIP = remaining darts marked as Miss, remove darts modal appears
+    // Validates: S20 + SKIP = remaining darts marked as Skip, remove darts modal appears
     testWidgets('Test 13: Skip Turn with Darts Thrown', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
@@ -952,10 +952,10 @@ void main() {
       // Click SKIP TURN
       await clickSkipTurn(tester);
 
-      // Verify dart display: D1=20, D2=Miss, D3=Miss (remaining darts marked as Miss)
-      verifyDartDisplay(tester, '20', 'Miss', 'Miss');
+      // Verify dart display: D1=20, D2=Skip, D3=Skip (remaining darts marked as Skip)
+      verifyDartDisplay(tester, '20', 'Skip', 'Skip');
 
-      // Remaining darts marked as Miss, score stays 20
+      // Remaining darts marked as Skip, score stays 20
       verifyCurrentPlayerScoreDisplay(tester, 20, 60); // Score still 20/60 after skip
       verifyRaceTrackScore(tester, 20, 60); // Race track still 20/60
 
@@ -969,10 +969,10 @@ void main() {
       expect(hasWinner(tester), true);
     });
 
-    // Test 14: Game - Skip Turn After 1 Dart (Remaining Marked as Miss)
-    // Features: Skip with 1 dart thrown, verify miss markers on D2/D3
-    // UI Elements: Dart display showing "Miss" text, remove darts modal
-    // Validates: D1=10, D2=Miss, D3=Miss displayed correctly, modal appears
+    // Test 14: Game - Skip Turn After 1 Dart (Remaining Marked as Skip)
+    // Features: Skip with 1 dart thrown, verify skip markers on D2/D3
+    // UI Elements: Dart display showing "Skip" text, remove darts modal
+    // Validates: D1=10, D2=Skip, D3=Skip displayed correctly, modal appears
     testWidgets('Test 14: Skip Turn After 1 Dart (Remaining Marked as Miss)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
@@ -989,11 +989,11 @@ void main() {
 
       await clickSkipTurn(tester);
 
-      // D2 and D3 should be marked as Miss, score stays 10
+      // D2 and D3 should be marked as Skip, score stays 10
       expect(getCurrentPlayerScore(tester), 10);
 
-      // Verify dart display: D1=10, D2=Miss, D3=Miss (remaining darts marked as Miss)
-      verifyDartDisplay(tester, '10', 'Miss', 'Miss');
+      // Verify dart display: D1=10, D2=Skip, D3=Skip (remaining darts marked as Skip)
+      verifyDartDisplay(tester, '10', 'Skip', 'Skip');
 
       // Remove darts modal should appear (we threw 1 dart)
       await clickDartsRemoved(tester);
