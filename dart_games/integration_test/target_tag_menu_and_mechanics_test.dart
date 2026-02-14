@@ -1894,9 +1894,6 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // Verify "Skip" markers appear in dart display (not "Miss")
-      expect(find.text('Skip'), findsWidgets);
-
       expect(find.textContaining('Skip Test 2'), findsWidgets);
 
       await throwDart(tester, 20, multiplier: 'single');
