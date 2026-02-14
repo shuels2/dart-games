@@ -290,6 +290,7 @@ class PlayerCardWidget extends StatelessWidget {
                   ),
                 ),
               ),
+
           ],
         ),
       ),

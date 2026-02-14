@@ -608,7 +608,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                                   }
                                 });
                               } else {
-                                // No darts thrown, advance directly without showing modals
+                                // No darts thrown, advance directly without showing modals.
                                 Future.delayed(const Duration(milliseconds: 500), () {
                                   if (mounted) {
                                     _mockApi?.simulateTakeoutFinished();
