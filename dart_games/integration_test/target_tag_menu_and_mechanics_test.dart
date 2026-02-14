@@ -2084,8 +2084,12 @@ void main() {
         await tester.pump(const Duration(milliseconds: 200));
       }
 
-      // Find number 20 button in the first column
-      final number20 = find.text('20');
+      // Find number 20 button in the first column, scoped to the dialog to
+      // avoid matching the target number display in the underlying game screen.
+      final number20 = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text('20'),
+      );
       if (number20.evaluate().isNotEmpty) {
         await tester.tap(number20.first);
         await tester.pump(const Duration(milliseconds: 200));
@@ -2191,7 +2195,11 @@ void main() {
       // Change all darts to hit opponent's target (assume Player 2's target is 5)
       // The Edit Score dialog shows buttons for each dart sequentially
       final singleInnerButtons = find.text('Single (inner)');
-      final number5 = find.text('5');
+      // Scope to the dialog to avoid matching the target number display in the game screen.
+      final number5 = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text('5'),
+      );
 
       // Set D1 to Single 5
       if (singleInnerButtons.evaluate().isNotEmpty) {
@@ -2305,9 +2313,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump();
 
-      // Change all 3 darts to hit own target (using looked-up target number)
+      // Change all 3 darts to hit own target (using looked-up target number).
+      // Scope to the dialog to avoid matching the target number display in the
+      // active player panel (which shows the same number as plain text).
       final singleInnerButtons = find.text('Single (inner)');
-      final targetNumberButton = find.text(targetNumberText);
+      final targetNumberButton = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text(targetNumberText),
+      );
 
       // D1: Single (own target)
       if (singleInnerButtons.evaluate().isNotEmpty) {

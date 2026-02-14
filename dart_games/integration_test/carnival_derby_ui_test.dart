@@ -282,14 +282,18 @@ void main() {
       await tester.pump();
     }
 
-    // If number is needed, tap the number
+    // If number is needed, tap the number.
+    // Scope to the dialog and use dartIndex to target the correct column,
+    // avoiding spurious matches on score displays in the underlying game screen.
     if (number != null && ring != 'Bullseye' && ring != 'Outer bull (25)' && ring != 'Miss') {
-      final numberButton = find.text(number.toString());
-      if (numberButton.evaluate().isNotEmpty) {
-        // Ensure the button is visible and scrolled into view
-        await tester.ensureVisible(numberButton.last); // Use .last to get the one in the dialog
+      final numberButton = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text(number.toString()),
+      );
+      if (numberButton.evaluate().length > dartIndex) {
+        await tester.ensureVisible(numberButton.at(dartIndex));
         await tester.pump();
-        await tester.tap(numberButton.last, warnIfMissed: false);
+        await tester.tap(numberButton.at(dartIndex), warnIfMissed: false);
         await tester.pump(const Duration(milliseconds: 200));
         await tester.pump();
       }
