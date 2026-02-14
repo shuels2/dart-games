@@ -255,7 +255,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       // Check if game is won after takeout
       if (horseRaceProvider.hasWinner) {
         _handleGameWon();
-      } else {
+      } else if (mounted && horseRaceProvider.currentGame != null) {
         // Announce next player's turn (before they throw)
         final playerProvider = context.read<PlayerProvider>();
         final players = horseRaceProvider.currentGame!.playerIds
