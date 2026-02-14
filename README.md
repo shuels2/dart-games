@@ -317,7 +317,7 @@ dart_games/
 │       └── games/
 │           ├── carnival_horse_race/ # Carnival Derby game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Test suite (226 tests)
+├── test/                            # Test suite (245 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
     │   ├── icons/
@@ -510,7 +510,7 @@ cd dart_games
 # Install dependencies
 flutter pub get
 
-# Run tests (all 226 tests must pass)
+# Run tests (all 245 tests must pass)
 flutter test
 
 # Launch in Chrome (web)
@@ -522,18 +522,18 @@ flutter run
 
 ### Testing Requirements
 
-**All 226 tests must pass before any build or deployment.**
+**All 245 tests must pass before any build or deployment.**
 
 ```bash
 flutter test
 ```
 
 Test coverage includes:
-- Model serialization (36 tests)
-- Provider functionality (30 tests)
+- Model serialization (40 tests)
+- Provider functionality (44 tests)
 - Service integration (42 tests)
-- Game integration - Carnival Derby (33 tests: 22 user management, 11 announcements)
-- Game integration - Target Tag (42 tests: 32 announcements, 10 user management)
+- Game integration - Carnival Derby (37 tests: 26 user management, 11 announcements)
+- Game integration - Target Tag (46 tests: 32 announcements, 14 user management)
 - Dartboard accuracy (23 tests)
 - Widget tests (13 tests)
 
