@@ -182,14 +182,18 @@ class TargetTagGame {
     required Map<String, List<String>> teams, // teamId -> playerIds
     required int shieldMax,
     required bool soloHeroBonus,
+    Map<String, String>? teamIconOverrides,
   }) {
     // Build player lists and mappings
     final playerToTeam = <String, String>{};
     final allPlayers = <String>[];
     final teamIconPaths = <String, String>{};
 
-    // Assign random team icons
-    final iconIndices = List.generate(10, (i) => i + 1)..shuffle();
+    // Use provided icon assignments if available (menu pre-selects shuffled
+    // icons so the game screen matches what players saw), otherwise random.
+    final iconIndices = teamIconOverrides == null
+        ? (List.generate(10, (i) => i + 1)..shuffle())
+        : null;
     int iconIndex = 0;
 
     for (final entry in teams.entries) {
@@ -197,7 +201,8 @@ class TargetTagGame {
       final players = entry.value;
 
       // Assign team icon
-      teamIconPaths[teamId] = 'assets/games/target_tag/icons/TargetTag-TeamIcon-${iconIndices[iconIndex].toString().padLeft(2, '0')}.png';
+      teamIconPaths[teamId] = teamIconOverrides?[teamId] ??
+          'assets/games/target_tag/icons/TargetTag-TeamIcon-${iconIndices![iconIndex].toString().padLeft(2, '0')}.png';
       iconIndex++;
 
       for (final playerId in players) {
