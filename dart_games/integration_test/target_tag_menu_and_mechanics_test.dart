@@ -42,6 +42,10 @@ void main() {
     app.main();
     await tester.pumpAndSettle();
     await tester.pumpAndSettle(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 2)); // Extra wait for home screen to fully render on cold start
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
 
     final targetTagCard = find.text('Target Tag');
     expect(targetTagCard, findsOneWidget);
