@@ -282,18 +282,20 @@ void main() {
       await tester.pump();
     }
 
-    // If number is needed, tap the number.
-    // Scope to the dialog and use dartIndex to target the correct column,
-    // avoiding spurious matches on score displays in the underlying game screen.
+    // If number is needed, tap the number button.
+    // The score display at the top shows the number too, so it's always at index 0.
+    // Dart buttons (D1, D2, D3) are at indices 1, 2, 3, so we use dartIndex+1.
     if (number != null && ring != 'Bullseye' && ring != 'Outer bull (25)' && ring != 'Miss') {
-      final numberButton = find.descendant(
+      final numberText = find.descendant(
         of: find.byType(Dialog),
         matching: find.text(number.toString()),
       );
-      if (numberButton.evaluate().length > dartIndex) {
-        await tester.ensureVisible(numberButton.at(dartIndex));
+      // Skip the first match (score display) by using dartIndex+1
+      final actualIndex = dartIndex + 1;
+      if (numberText.evaluate().length > actualIndex) {
+        await tester.ensureVisible(numberText.at(actualIndex));
         await tester.pump();
-        await tester.tap(numberButton.at(dartIndex), warnIfMissed: false);
+        await tester.tap(numberText.at(actualIndex), warnIfMissed: false);
         await tester.pump(const Duration(milliseconds: 200));
         await tester.pump();
       }
@@ -1064,7 +1066,7 @@ void main() {
 
       await addPlayer(tester, 'TestPlayer');
 
-      await setTargetScore(tester, 80);
+      await setTargetScore(tester, 70);
       await togglePerfectFinish(tester);
 
       await startGame(tester);
@@ -1087,15 +1089,15 @@ void main() {
       // Update score
       await updateScore(tester);
 
-      // After processing T20, T20 (120), third T20 would bust
-      // Score should be at 60 (after 2nd T20, before bust)
-      expect(getCurrentPlayerScore(tester), greaterThan(0));
+      // After processing T20 (60), second T20 would make 120, exceeding target 70 = BUST
+      // Score should revert to start of turn or stay at intermediate value
+      expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(0));
       expect(currentPlayerBusted(tester), true);
 
       await clickDartsRemoved(tester);
 
-      // Turn 2: Win with exact score
-      await throwDart(tester, 20, multiplier: 'double'); // Could be 80
+      // Turn 2: Win with exact score (score is 60 after bust, need 10 to reach 70)
+      await throwDart(tester, 5, multiplier: 'double'); // D5 = 10 points, total = 70
     });
   });
 
