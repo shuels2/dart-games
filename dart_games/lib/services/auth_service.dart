@@ -1,10 +1,19 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:js' as js;
-import 'dart:js_util' as js_util;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:js_interop';
 import 'scolia_api_service.dart';
 import 'storage_service.dart';
 import '../config/google_oauth_config.dart';
+
+// JS interop definitions for Google Sign-In helper
+@JS('googleSignInHelper.getIdToken')
+external JSPromise<JSString> _getIdToken(JSString clientId);
+
+@JS()
+extension type JSWindow(JSObject _) implements JSObject {
+  external JSObject get googleSignInHelper;
+}
 
 class AuthService {
   final ScoliaApiService _apiService = ScoliaApiService();
@@ -104,14 +113,12 @@ class AuthService {
         print('Using Google Identity Services for web...');
 
         try {
-          // Call the JavaScript helper to get ID token
-          final promise = js_util.callMethod(
-            js.context['googleSignInHelper'],
-            'getIdToken',
-            [GoogleOAuthConfig.webClientId],
-          );
+          // Call the JavaScript helper to get ID token using dart:js_interop
+          final clientId = GoogleOAuthConfig.webClientId!.toJS;
+          final promise = _getIdToken(clientId);
 
-          idToken = await js_util.promiseToFuture<String>(promise);
+          final jsIdToken = await promise.toDart;
+          idToken = jsIdToken.toDart;
 
           print('Got ID Token from Google Identity Services');
         } catch (e) {
