@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:dart_games/constants/test_keys.dart';
 import '../../models/player.dart';
 import '../../services/photo_service.dart';
 import 'add_player_dialog_config.dart';
@@ -46,6 +47,7 @@ Future<Player?> showAddPlayerDialog({
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
+        key: AddPlayerDialogKeys.dialogContainer,
         backgroundColor: config.backgroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -66,6 +68,7 @@ Future<Player?> showAddPlayerDialog({
                     alignment: Alignment.topRight,
                     children: [
                       CircleAvatar(
+                        key: AddPlayerDialogKeys.photoPreview,
                         radius: 60,
                         backgroundColor: Colors.grey[300],
                         backgroundImage: kIsWeb
@@ -78,6 +81,7 @@ Future<Player?> showAddPlayerDialog({
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
+                          key: AddPlayerDialogKeys.removePhotoButton,
                           icon: const Icon(Icons.close, color: Colors.white, size: 20),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -105,6 +109,7 @@ Future<Player?> showAddPlayerDialog({
                   ),
                 ),
               TextField(
+                key: AddPlayerDialogKeys.nameTextField,
                 controller: nameController,
                 style: TextStyle(color: config.textColor),
                 decoration: InputDecoration(
@@ -150,6 +155,7 @@ Future<Player?> showAddPlayerDialog({
                     SizedBox(
                       width: config.photoButtonWidth,
                       child: _buildPhotoButton(
+                        key: AddPlayerDialogKeys.cameraButton,
                         context: context,
                         config: config,
                         icon: Icons.camera_alt,
@@ -167,6 +173,7 @@ Future<Player?> showAddPlayerDialog({
                   else
                     Expanded(
                       child: _buildPhotoButton(
+                        key: AddPlayerDialogKeys.cameraButton,
                         context: context,
                         config: config,
                         icon: Icons.camera_alt,
@@ -186,6 +193,7 @@ Future<Player?> showAddPlayerDialog({
                     SizedBox(
                       width: config.photoButtonWidth,
                       child: _buildPhotoButton(
+                        key: AddPlayerDialogKeys.galleryButton,
                         context: context,
                         config: config,
                         icon: Icons.photo_library,
@@ -203,6 +211,7 @@ Future<Player?> showAddPlayerDialog({
                   else
                     Expanded(
                       child: _buildPhotoButton(
+                        key: AddPlayerDialogKeys.galleryButton,
                         context: context,
                         config: config,
                         icon: Icons.photo_library,
@@ -231,6 +240,7 @@ Future<Player?> showAddPlayerDialog({
                 SizedBox(
                   width: config.photoButtonWidth,
                   child: ElevatedButton(
+                    key: AddPlayerDialogKeys.cancelButton,
                     onPressed: () => Navigator.pop(dialogContext, null),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: config.cancelButtonColor,
@@ -249,6 +259,7 @@ Future<Player?> showAddPlayerDialog({
               else
                 Expanded(
                   child: ElevatedButton(
+                    key: AddPlayerDialogKeys.cancelButton,
                     onPressed: () => Navigator.pop(dialogContext, null),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: config.cancelButtonColor,
@@ -269,6 +280,7 @@ Future<Player?> showAddPlayerDialog({
                 SizedBox(
                   width: config.photoButtonWidth,
                   child: ElevatedButton(
+                    key: AddPlayerDialogKeys.addButton,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: config.addButtonColor,
                       foregroundColor: config.addButtonForegroundColor,
@@ -301,6 +313,7 @@ Future<Player?> showAddPlayerDialog({
               else
                 Expanded(
                   child: ElevatedButton(
+                    key: AddPlayerDialogKeys.addButton,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: config.addButtonColor,
                       foregroundColor: config.addButtonForegroundColor,
@@ -345,8 +358,10 @@ Widget _buildPhotoButton({
   required IconData icon,
   required String label,
   required VoidCallback onPressed,
+  Key? key,
 }) {
   return ElevatedButton.icon(
+    key: key,
     onPressed: onPressed,
     style: ElevatedButton.styleFrom(
       backgroundColor: config.photoButtonColor,

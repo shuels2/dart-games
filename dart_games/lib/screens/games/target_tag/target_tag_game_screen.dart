@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../../constants/test_keys.dart';
 import '../../../models/player.dart';
 import '../../../models/target_tag_game.dart';
 import '../../../providers/player_provider.dart';
@@ -901,6 +902,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
+                  key: TargetTagGameKeys.editScoreButton,
                   onPressed: () {
                     if (currentPlayer == null) return;
                     final targetTagProvider =

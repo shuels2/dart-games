@@ -17,6 +17,7 @@ import '../../../widgets/carnival_target_logo.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/carnival_derby_announcement_helper.dart';
 import '../../../services/victory_music_service.dart';
+import '../../../constants/test_keys.dart';
 import 'horse_race_menu_screen.dart';
 import 'horse_race_game_screen.dart';
 
@@ -582,6 +583,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
+              key: CarnivalDerbyResultsKeys.playAgainButton,
               onPressed: () {
                 // Start new game with same players and settings
                 final currentGame = horseRaceProvider.currentGame;
@@ -638,6 +640,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
             children: [
               Expanded(
                 child: OutlinedButton.icon(
+                  key: CarnivalDerbyResultsKeys.changeSettingsButton,
                   onPressed: () {
                     // Get current game info before clearing
                     final currentGame = horseRaceProvider.currentGame;
@@ -684,6 +687,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
+                  key: CarnivalDerbyResultsKeys.backToMenuButton,
                   onPressed: () {
                     // Clear game and go back to home
                     horseRaceProvider.clearGame();

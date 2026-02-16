@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dart_games/constants/test_keys.dart';
 import 'edit_score_dialog_config.dart';
 
 /// Shows a modal dialog for editing three dart scores.
@@ -61,6 +62,7 @@ Future<void> showEditScoreDialog({
           }
 
           return Dialog(
+            key: EditScoreDialogKeys.dialogContainer,
             backgroundColor: Colors.transparent,
             child: Container(
               constraints: const BoxConstraints(maxWidth: 1000),
@@ -110,6 +112,7 @@ Future<void> showEditScoreDialog({
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
+                          key: EditScoreDialogKeys.cancelButton,
                           onPressed: () => Navigator.of(dialogContext).pop(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: config.cancelButtonColor,
@@ -123,6 +126,7 @@ Future<void> showEditScoreDialog({
                           child: Text('Cancel', style: config.cancelButtonTextStyle),
                         ),
                         ElevatedButton(
+                          key: EditScoreDialogKeys.saveButton,
                           onPressed: isValidSelection
                               ? () {
                                   final newSegments = <String>[];
@@ -237,7 +241,15 @@ Widget _buildDartScoreSection(
           ? config.scoreDisplayTransform!(segment)
           : segment);
 
+  // Determine the key based on dart index
+  final Key? dartKey = dartIndex == 0
+      ? EditScoreDialogKeys.dart1Dropdown
+      : dartIndex == 1
+          ? EditScoreDialogKeys.dart2Dropdown
+          : EditScoreDialogKeys.dart3Dropdown;
+
   return Column(
+    key: dartKey,
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       // Dart label (D1, D2, D3)

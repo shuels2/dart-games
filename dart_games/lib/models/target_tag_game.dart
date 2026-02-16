@@ -20,6 +20,7 @@ class TargetTagGame {
   final int shieldMax;
   final bool soloHeroBonus;
   final DateTime startedAt;
+  final int maxDartsPerTurn;  // Max darts allowed per turn
 
   // Player management
   final List<String> playerIds; // All players in turn order
@@ -65,6 +66,7 @@ class TargetTagGame {
     required this.shieldMax,
     required this.soloHeroBonus,
     required this.startedAt,
+    this.maxDartsPerTurn = 3,  // Default to standard 3 darts
     required this.playerIds,
     required this.targetNumbers,
     this.playerToTeam,
@@ -176,6 +178,7 @@ class TargetTagGame {
       shieldMax: shieldMax,
       soloHeroBonus: heroBonus,
       startedAt: DateTime.now(),
+      maxDartsPerTurn: 3,  // Explicit for Target Tag
       playerIds: playerIds,
       targetNumbers: playerTargets,
       soloHeroBuffNumbers: heroBuffNumbers,
@@ -280,6 +283,7 @@ class TargetTagGame {
       shieldMax: shieldMax,
       soloHeroBonus: soloHeroBonus,
       startedAt: DateTime.now(),
+      maxDartsPerTurn: 3,  // Explicit for Target Tag
       playerIds: turnOrder,
       targetNumbers: playerTargets,
       playerToTeam: playerToTeam,
@@ -340,10 +344,20 @@ class TargetTagGame {
     }
   }
 
+  // Increment turn counter if this is the first dart thrown
+  void _incrementTurnIfFirst(String playerId) {
+    if (dartsThrown[playerId] == 1) {
+      totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
+    }
+  }
+
   // Process a miss (dart that doesn't score)
   void processMiss(String playerId) {
     if (state != GameState.playing && state != GameState.suddenDeath) return;
     if (playerId != playerIds[currentPlayerIndex]) return;
+
+    // Prevent processing more darts than allowed per turn
+    if (dartsThrown[playerId]! >= maxDartsPerTurn) return;
 
     final entityId = _getEntityId(playerId);
 
@@ -369,15 +383,16 @@ class TargetTagGame {
     totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
 
     // Increment turn counter on FIRST dart only
-    if (dartsThrown[playerId] == 1) {
-      totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
-    }
+    _incrementTurnIfFirst(playerId);
   }
 
   // Process dart hit (core game logic)
   void processDartHit(String playerId, int hitNumber, String multiplier) {
     if (state != GameState.playing && state != GameState.suddenDeath) return;
     if (playerId != playerIds[currentPlayerIndex]) return;
+
+    // Prevent processing more darts than allowed per turn
+    if (dartsThrown[playerId]! >= maxDartsPerTurn) return;
 
     final entityId = _getEntityId(playerId);
     final playerTarget = targetNumbers[playerId]!;
@@ -410,9 +425,7 @@ class TargetTagGame {
     totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
 
     // Increment turn counter on FIRST dart only
-    if (dartsThrown[playerId] == 1) {
-      totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
-    }
+    _incrementTurnIfFirst(playerId);
 
     // Track if this is a hero bonus hit
     final bool isHeroBonusHit = isHeroBuff;
@@ -558,6 +571,9 @@ class TargetTagGame {
   String getCurrentPlayerId() {
     return playerIds[currentPlayerIndex];
   }
+
+  // Get max darts per turn
+  int getMaxDartsPerTurn() => maxDartsPerTurn;
 
   // Get current player object
   Player getCurrentPlayer(List<Player> players) {

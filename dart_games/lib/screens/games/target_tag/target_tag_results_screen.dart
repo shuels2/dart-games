@@ -9,6 +9,7 @@ import '../../../providers/player_provider.dart';
 import '../../../providers/target_tag_provider.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
+import '../../../constants/test_keys.dart';
 import 'target_tag_menu_screen.dart';
 import 'target_tag_game_screen.dart';
 
@@ -372,6 +373,7 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
                     Icons.refresh,
                     const Color(0xFF00FFA3),
                     _playAgain,
+                    key: TargetTagResultsKeys.playAgainButton,
                   ),
                   const SizedBox(height: 16),
                   _buildActionButton(
@@ -379,6 +381,7 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
                     Icons.settings,
                     const Color(0xFFFF007A),
                     _changeSettings,
+                    key: TargetTagResultsKeys.changeSettingsButton,
                   ),
                   const SizedBox(height: 16),
                   _buildActionButton(
@@ -386,6 +389,7 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
                     Icons.home,
                     const Color(0xFF2A2A3E),
                     _goHome,
+                    key: TargetTagResultsKeys.backToMenuButton,
                   ),
                 ],
               ),
@@ -400,12 +404,14 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
     String label,
     IconData icon,
     Color color,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    Key? key,
+  }) {
     return SizedBox(
       width: 300,
       height: 60,
       child: ElevatedButton.icon(
+        key: key,
         onPressed: onTap,
         icon: Icon(icon, color: Colors.white),
         label: Text(

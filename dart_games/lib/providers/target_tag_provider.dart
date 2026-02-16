@@ -265,7 +265,7 @@ class TargetTagProvider extends ChangeNotifier {
       gameActive: isGameActive,
       waitingForTakeout: _waitingForTakeout,
       currentDartCount: dartsThrown,
-      maxDartsPerTurn: 3,
+      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
     )) {
       return;
     }
@@ -273,7 +273,7 @@ class TargetTagProvider extends ChangeNotifier {
     // Execute skip using global helper
     GameSkipTurnHelper.skipRemainingDarts(
       currentDartCount: dartsThrown,
-      maxDartsPerTurn: 3,
+      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
       addVisualMarker: (marker) {
         _currentGame!.currentTurnDarts[currentPlayerId] ??= [];
         _currentGame!.currentTurnDarts[currentPlayerId]!.add(marker);

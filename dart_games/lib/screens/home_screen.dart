@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../constants/test_keys.dart';
 import '../providers/dartboard_provider.dart';
 import '../services/dart_announcer_service.dart';
 import '../widgets/dartboard_status_indicator.dart';
@@ -28,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildGameCard({
     required BuildContext context,
+    Key? key,
     IconData? icon,
     String? imageAssetPath,
     required String title,
@@ -39,45 +41,48 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // If image asset is provided, use simple icon layout
     if (imageAssetPath != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Opacity(
-                  opacity: isDisabled ? 0.5 : 1.0,
-                  child: Image.asset(
-                    imageAssetPath,
-                    fit: BoxFit.contain,
+      return Container(
+        key: key,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Opacity(
+                    opacity: isDisabled ? 0.5 : 1.0,
+                    child: Image.asset(
+                      imageAssetPath,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(height: title == 'Target Tag' ? 10 : 8),
-              Text(
-                title,
-                style: title == 'Carnival Derby'
-                    ? GoogleFonts.rye(
-                        fontSize: theme.textTheme.titleMedium?.fontSize,
-                        color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
-                      )
-                    : title == 'Target Tag'
-                        ? GoogleFonts.luckiestGuy(
-                            fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
-                            color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                            letterSpacing: 1.2,
-                          )
-                        : theme.textTheme.titleMedium?.copyWith(
-                            color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.bold,
-                          ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                SizedBox(height: title == 'Target Tag' ? 10 : 8),
+                Text(
+                  title,
+                  style: title == 'Carnival Derby'
+                      ? GoogleFonts.rye(
+                          fontSize: theme.textTheme.titleMedium?.fontSize,
+                          color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                        )
+                      : title == 'Target Tag'
+                          ? GoogleFonts.luckiestGuy(
+                              fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
+                              color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                              letterSpacing: 1.2,
+                            )
+                          : theme.textTheme.titleMedium?.copyWith(
+                              color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                            ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -85,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Default card layout for icon-based games
     return Card(
+      key: key,
       elevation: isDisabled ? 1 : 4,
       child: InkWell(
         onTap: onTap,
@@ -163,6 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final games = [
       {
         'title': 'Carnival Derby',
+        'key': HomeKeys.carnivalDerbyCard,
         'imageAssetPath': 'assets/common/icons/icon.png',
         'color': Colors.amber,
         'onTap': dartboardProvider.canPlayGames
@@ -176,6 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       {
         'title': 'Target Tag',
+        'key': HomeKeys.targetTagCard,
         'imageAssetPath': 'assets/games/target_tag/icons/TargetTag-Icon.png',
         'color': const Color(0xFFFF007A),
         'onTap': dartboardProvider.canPlayGames
@@ -288,6 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 350,
               child: _buildGameCard(
                 context: context,
+                key: game['key'] as Key?,
                 imageAssetPath: game['imageAssetPath'] as String?,
                 title: game['title'] as String,
                 color: game['color'] as Color,

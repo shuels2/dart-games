@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../constants/test_keys.dart';
 import '../../models/player.dart';
 
 class ActivePlayerPanelWidget extends StatelessWidget {
@@ -102,6 +103,7 @@ class ActivePlayerPanelWidget extends StatelessWidget {
               if (onSkipTurn != null) ...[
                 const SizedBox(height: 12),
                 ElevatedButton(
+                  key: TargetTagGameKeys.skipTurnButton,
                   onPressed: onSkipTurn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF007A).withOpacity(0.85),

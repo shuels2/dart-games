@@ -923,7 +923,7 @@ flutter test
 ```
 
 **CRITICAL REQUIREMENTS:**
-- All 245 non-UI tests must pass (100% pass rate required)
+- All 272 non-UI tests must pass (100% pass rate required)
 - If ANY test fails, DO NOT proceed with build
 - Fix all failing tests first, then re-run test suite
 - Only build after confirming all tests pass
@@ -959,7 +959,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag_results_screen_test.dart \
   -d chrome
-# Carnival Derby tests (24 tests, ~11 minutes)
+# Carnival Derby tests (24 tests, ~12 minutes)
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/carnival_derby_ui_test.dart \
   -d chrome
@@ -1242,18 +1242,18 @@ When adding a new game:
 
 ## Testing Requirements
 
-### Complete Test Suite (245 Tests + 76 UI Automation Tests)
+### Complete Test Suite (272 Tests + 76 UI Automation Tests)
 
 The dart games app has a comprehensive test suite covering all critical functionality:
 
-**Non-UI Tests (245 tests in `test/` directory):**
+**Non-UI Tests (272 tests in `test/` directory):**
 - Run with `flutter test`
 - Execute in seconds
 - Required to pass before every build
 
 **UI Automation Tests (76 tests in `integration_test/` directory):**
 - Run with `flutter drive` and chromedriver
-- Execute in ~51 minutes
+- Execute in ~43 minutes
 - Optional for builds (ask user before running)
 
 #### Model Tests (40 tests)
@@ -1378,6 +1378,21 @@ The dart games app has a comprehensive test suite covering all critical function
   - Both winners AND losers receive game history entries with duration
   - Stats persistence and data integrity validation
 
+#### Shared Test Component Tests (24 tests)
+- `test/shared/sector_parser_test.dart` (14 tests)
+  - Parse dart notation (S20, D15, T19, Bull, Miss)
+  - Calculate total score
+  - Convert to game-specific formats (Carnival Derby)
+  - Handle invalid notation
+  - Edge cases (bullseye, outer bull, miss)
+
+- `test/shared/player_test_utils.dart` (10 tests)
+  - Create test players
+  - Save players to provider
+  - Verify player stats
+  - Batch player creation
+  - Player stat validation helpers
+
 #### Widget Tests (23 tests)
 - `test/widgets/interactive_dartboard_test.dart` (23 tests)
   - Dartboard rendering and scaling
@@ -1448,7 +1463,7 @@ The dart games app has a comprehensive test suite covering all critical function
 
 ### Running Tests
 
-**Run all non-UI tests (245 tests):**
+**Run all non-UI tests (272 tests):**
 ```bash
 cd dart_games
 flutter test
@@ -1465,11 +1480,14 @@ flutter test test/providers/
 # Integration tests
 flutter test test/screens/games/carnival_horse_race/
 
+# Shared component tests
+flutter test test/shared/
+
 # Widget tests
 flutter test test/widgets/
 ```
 
-**Run UI automation tests (76 tests, ~51 minutes total):**
+**Run UI automation tests (76 tests, ~43 minutes total):**
 ```bash
 # Terminal 1: Start chromedriver
 cd dart_games/chromedriver/chromedriver-win64
@@ -1483,23 +1501,24 @@ flutter drive --driver=test_driver/integration_test.dart --target=integration_te
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_gameplay_test.dart -d chrome
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_add_player_test.dart -d chrome
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/target_tag_results_screen_test.dart -d chrome
-# Carnival Derby tests (24 tests, ~11 minutes)
+# Carnival Derby tests (24 tests, ~12 minutes)
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/carnival_derby_ui_test.dart -d chrome
 ```
 
 ### Test Expectations
 
-**Non-UI Tests (245 tests):**
-- **100% pass rate required** - All 245 non-UI tests must pass before every build
-- Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, and data persistence
+**Non-UI Tests (272 tests):**
+- **100% pass rate required** - All 272 non-UI tests must pass before every build
+- Tests validate user management, victory music, announcer settings, dartboard accuracy, game logic, announcements, data persistence, and shared test components
 - No build or deployment without all non-UI tests passing
 - Tests cover both web and native platform scenarios
 - Backward compatibility is validated for data migrations
 - Target Tag tests (46 tests total: 32 game logic + 14 user management) validate game logic, announcement system integrity, user management integration, and skip turn/partial turn stat tracking
+- Shared component tests (24 tests) validate dart notation parsing, player utilities, and test helper functions
 
 **UI Automation Tests (76 tests):**
 - Optional for builds - ask user if they want to run UI automation tests
-- Execution time: ~51 minutes
+- Execution time: ~43 minutes
 - When reviewing `.bat` run logs, the `+N` counter in each log will show 1 higher than the documented test count for each suite — this is normal; Flutter's `+N` counter includes the integration test runner wrapper as an additional count (e.g., a suite documented as 23 tests will show `+24: All tests passed!`)
 - Tests validate Target Tag and Carnival Derby menu settings, gameplay mechanics, and user interactions end-to-end in Chrome
 - Target Tag (52 tests): Covers all game modes (solo, team), settings persistence, edit score, skip turn, player highlighting, hero bonuses, victory conditions, results screen functionality, and visual validation (player tiles, badges, borders, opacity, glow effects)
@@ -2054,8 +2073,8 @@ This applies to all git operations that modify the remote repository, including:
    cd dart_games
    flutter test
    ```
-3. **Verify ALL 226 non-UI tests pass (100% pass rate required)**
-4. **OPTIONAL: Ask user if they want to run UI automation tests (76 tests, ~51 minutes)**
+3. **Verify ALL 272 non-UI tests pass (100% pass rate required)**
+4. **OPTIONAL: Ask user if they want to run UI automation tests (76 tests, ~43 minutes)**
 5. If ANY tests fail:
    - DO NOT proceed
    - Investigate and fix the failing tests
@@ -2071,9 +2090,9 @@ This applies to all git operations that modify the remote repository, including:
 **NEVER build without running non-UI tests first.**
 
 Before any `flutter run` or `flutter build` command:
-1. Run `flutter test` (226 non-UI tests)
-2. Confirm all 226 non-UI tests pass
-3. Ask user if they want to run UI automation tests (76 tests, ~51 minutes)
+1. Run `flutter test` (272 non-UI tests)
+2. Confirm all 272 non-UI tests pass
+3. Ask user if they want to run UI automation tests (76 tests, ~43 minutes)
 4. Only then run the build command
 
 ### Quick Reference
@@ -2090,6 +2109,143 @@ Before any `flutter run` or `flutter build` command:
 - Commit with failing tests
 - Push to remote without user permission
 - Modify dartboard emulator without permission
+
+## Widget Keys for Testing
+
+**ALL games MUST implement widget keys for testable elements.**
+
+Widget keys enable reliable, maintainable UI testing by providing stable identifiers that don't break when text changes or UI is reordered.
+
+### Why Widget Keys Are Required
+
+**Problems with text/type/index-based finding:**
+- ❌ Breaks when text changes (e.g., "Start Game" → "Begin Game")
+- ❌ Breaks when UI is reordered (e.g., moving buttons)
+- ❌ Breaks when widget types change (e.g., ElevatedButton → TextButton)
+- ❌ Flaky tests that fail randomly based on timing
+- ❌ Hard to maintain (magic indices, duplicated text)
+
+**Benefits of key-based finding:**
+- ✅ Stable across text changes
+- ✅ Stable across UI refactoring
+- ✅ Stable across widget type changes
+- ✅ Clear intent (key name describes element)
+- ✅ Easy to maintain (centralized in one file)
+
+### What Needs Keys
+
+Add `Key` to ALL interactive elements:
+- ✅ Buttons (start, skip, edit, back, etc.)
+- ✅ Player tiles (selectable, draggable)
+- ✅ Menu cards (game selection)
+- ✅ Input fields (text fields, dropdowns, sliders, switches)
+- ✅ Dialogs (add player, edit score, settings)
+- ✅ Dart score buttons (S20, D20, T20, Bull, Miss - all 60+)
+- ✅ Navigation elements (tabs, drawers)
+- ✅ Results screen elements (play again, change settings)
+
+### Key Naming Convention
+
+**Format:** `Key('screen_game_element_descriptor')`
+
+**Components:**
+- `screen` - Where the element appears (menu, game, results, dialog)
+- `game` - Game abbreviation (cd = Carnival Derby, tt = Target Tag, etc.)
+- `element` - Element type (button, tile, field, card)
+- `descriptor` - Specific identifier (start, player, dart_single_20)
+
+**Examples:**
+
+```dart
+// Menu screen keys
+class YourGameMenuKeys {
+  static const startButton = Key('menu_yg_start_button');
+  static const addPlayerButton = Key('menu_yg_add_player_button');
+  static playerTile(String playerId) => Key('menu_yg_player_tile_$playerId');
+}
+
+// Game screen keys
+class YourGameGameKeys {
+  static const dartSingle20 = Key('game_yg_dart_single_20_button');
+  static const dartDouble20 = Key('game_yg_dart_double_20_button');
+  static const skipTurnButton = Key('game_yg_skip_turn_button');
+  static const dartsRemovedButton = Key('game_yg_darts_removed_button');
+}
+
+// Dialog keys
+class YourGameDialogKeys {
+  static const editScoreDialog = Key('dialog_yg_edit_score');
+  static const confirmButton = Key('dialog_yg_confirm_button');
+  static const cancelButton = Key('dialog_yg_cancel_button');
+}
+```
+
+### Key Organization
+
+**File:** `lib/constants/test_keys.dart`
+
+Organize keys by screen/component:
+
+```dart
+// Home screen keys (shared across all games)
+class HomeKeys {
+  static const carnivalDerbyCard = Key('home_carnival_derby_card');
+  static const targetTagCard = Key('home_target_tag_card');
+}
+
+// Your game keys (game-specific)
+class YourGameMenuKeys { /* ... */ }
+class YourGameGameKeys { /* ... */ }
+class YourGameDialogKeys { /* ... */ }
+class YourGameResultsKeys { /* ... */ }
+```
+
+### Implementation Example
+
+**In your widget file:**
+
+```dart
+import 'package:dart_games/constants/test_keys.dart';
+
+// Add keys to widgets
+ElevatedButton(
+  key: YourGameMenuKeys.startButton,  // ← Add key here
+  onPressed: _startGame,
+  child: Text('Start Game'),
+)
+
+// Dynamic keys (e.g., player tiles)
+PlayerTile(
+  key: YourGameMenuKeys.playerTile(player.id),  // ← Dynamic key
+  player: player,
+  onTap: () => _selectPlayer(player),
+)
+```
+
+**In your tests:**
+
+```dart
+import 'package:dart_games/constants/test_keys.dart';
+
+// Find elements by key (NOT by text or type)
+final startButton = find.byKey(YourGameMenuKeys.startButton);
+await tester.tap(startButton);
+
+final aliceTile = find.byKey(YourGameMenuKeys.playerTile('alice-id'));
+await tester.tap(aliceTile);
+
+// NO MORE:
+// ❌ find.text('Start Game')  // Breaks when text changes
+// ❌ find.byType(ElevatedButton).at(2)  // Breaks when UI reorders
+// ❌ find.widgetWithText(ElevatedButton, 'Start')  // Brittle and verbose
+```
+
+### Reference Implementations
+
+See existing games for complete examples:
+- Target Tag keys: `lib/constants/test_keys.dart` (TargetTagMenuKeys, TargetTagGameKeys, etc.)
+- Carnival Derby keys: `lib/constants/test_keys.dart` (CarnivalDerbyMenuKeys, CarnivalDerbyGameKeys, etc.)
+- Example tests using keys: `integration_test/target_tag_menu_and_mechanics_test.dart`
 
 ## Notes
 
