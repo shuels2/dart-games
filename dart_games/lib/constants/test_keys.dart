@@ -41,15 +41,22 @@ class CarnivalDerbyMenuKeys {
   static const playerListView = Key('carnival_menu_player_list_view');
   static Key playerTile(String playerId) =>
       Key('carnival_menu_player_${playerId}_tile');
+  static Key removePlayerButton(String playerId) =>
+      Key('carnival_menu_remove_player_${playerId}_button');
 
   // Game settings
   static const targetScoreDropdown =
       Key('carnival_menu_target_score_dropdown');
+  static const targetScoreSlider = Key('carnival_menu_target_score_slider');
   static const perfectFinishToggle =
       Key('carnival_menu_perfect_finish_toggle');
+  static const perfectFinishSwitch =
+      Key('carnival_menu_perfect_finish_switch');
 
   // Navigation
   static const startGameButton = Key('carnival_menu_start_game_button');
+  static const startButton = Key('carnival_menu_start_button');
+  static const backButton = Key('carnival_menu_back_button');
 }
 
 class CarnivalDerbyGameKeys {
@@ -173,15 +180,24 @@ class TargetTagMenuKeys {
   static const playerListView = Key('target_menu_player_list_view');
   static Key playerTile(String playerId) =>
       Key('target_menu_player_${playerId}_tile');
+  static Key removePlayerButton(String playerId) =>
+      Key('target_menu_remove_player_${playerId}_button');
 
   // Game settings
   static const targetScoreDropdown = Key('target_menu_target_score_dropdown');
+  static const shieldMaxSlider = Key('target_menu_shield_max_slider');
   static const teamModeToggle = Key('target_menu_team_mode_toggle');
+  static const teamModeSwitch = Key('target_menu_team_mode_switch');
+  static const manualTeamAssignmentSwitch =
+      Key('target_menu_manual_team_assignment_switch');
   static const heroBonusToggle = Key('target_menu_hero_bonus_toggle');
+  static const heroBonusSwitch = Key('target_menu_hero_bonus_switch');
   static const assignTeamsButton = Key('target_menu_assign_teams_button');
 
   // Navigation
   static const startGameButton = Key('target_menu_start_game_button');
+  static const startButton = Key('target_menu_start_button');
+  static const backButton = Key('target_menu_back_button');
 }
 
 class TargetTagGameKeys {
