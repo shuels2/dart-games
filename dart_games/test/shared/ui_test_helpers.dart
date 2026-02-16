@@ -34,6 +34,10 @@ class UITestHelpers {
     app.main();
     await tester.pumpAndSettle();
     await tester.pumpAndSettle(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 2)); // Extra wait for home screen to fully render on cold start
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
 
     // Tap game card
     final gameCard = config.getGameCard();
