@@ -3,11 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 // Shared component imports
-import '../test/shared/ui_test_helpers.dart';
-import '../test/shared/element_finders.dart';
-import '../test/shared/pump_sequences.dart';
-import '../test/shared/settings_helpers.dart';
-import '../test/shared/game_ui_config.dart';
+import 'shared/ui_test_helpers.dart';
+import 'shared/element_finders.dart';
+import 'shared/pump_sequences.dart';
+import 'shared/settings_helpers.dart';
+import 'shared/game_ui_config.dart';
 
 /// Target Tag - Add Player Dialog Integration Tests
 ///
