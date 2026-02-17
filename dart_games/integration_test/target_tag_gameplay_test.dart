@@ -156,7 +156,7 @@ void main() {
     expect(decoration.border, isNotNull);
 
     final border = decoration.border as Border;
-    final actualColor = border.top.color.toARGB32;
+    final actualColor = border.top.color.value;
     print('[DEBUG] verifyDartIndicatorColor: Expected color: 0x${expectedColorValue.toRadixString(16)}, Actual color: 0x${actualColor.toRadixString(16)}');
 
     expect(actualColor, expectedColorValue,
