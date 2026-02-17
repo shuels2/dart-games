@@ -83,13 +83,31 @@ void main() {
       expect(selectedAfterAdd2.any((p) => p.id == player1!.id), isTrue);
       expect(selectedAfterAdd2.any((p) => p.id == player2!.id), isTrue);
 
-      // Verify both players visible in list (ensureVisible handles ListView.builder lazy rendering)
-      await tester.ensureVisible(config.getPlayerTile(player1!.id));
+      // Verify both players visible in list
+      // Wait for ListView.builder to create the tile widgets (poll up to 10 seconds)
+      final player1Tile = config.getPlayerTile(player1!.id);
+      final player2Tile = config.getPlayerTile(player2!.id);
+
+      print('[DEBUG] Test 1: Waiting for player tiles to render...');
+      print('[DEBUG] Test 1: Player 1 ID: ${player1.id}');
+      print('[DEBUG] Test 1: Player 2 ID: ${player2.id}');
+
+      int attempts = 0;
+      while ((player1Tile.evaluate().isEmpty || player2Tile.evaluate().isEmpty) && attempts < 20) {
+        print('[DEBUG] Test 1: Attempt ${attempts + 1}/20 - Player1: ${player1Tile.evaluate().length}, Player2: ${player2Tile.evaluate().length}');
+        await tester.pump(const Duration(milliseconds: 500));
+        attempts++;
+      }
+
+      print('[DEBUG] Test 1: Final state - Player1: ${player1Tile.evaluate().length}, Player2: ${player2Tile.evaluate().length}');
+
+      // Now ensureVisible and verify
+      await tester.ensureVisible(player1Tile);
       await tester.pump();
-      expect(config.getPlayerTile(player1.id), findsOneWidget);
-      await tester.ensureVisible(config.getPlayerTile(player2!.id));
+      expect(player1Tile, findsOneWidget);
+      await tester.ensureVisible(player2Tile);
       await tester.pump();
-      expect(config.getPlayerTile(player2.id), findsOneWidget);
+      expect(player2Tile, findsOneWidget);
     });
 
     // ==========================================================================
@@ -148,6 +166,20 @@ void main() {
       final player11 = ProviderHelpers.findPlayerByName(tester, 'Player11');
       expect(player11, isNotNull);
       final player11Tile = config.getPlayerTile(player11!.id);
+
+      print('[DEBUG] Test 2: Waiting for Player11 tile to render...');
+      print('[DEBUG] Test 2: Player11 ID: ${player11.id}');
+
+      // Wait for tile to render (poll up to 10 seconds)
+      int attempts = 0;
+      while (player11Tile.evaluate().isEmpty && attempts < 20) {
+        print('[DEBUG] Test 2: Attempt ${attempts + 1}/20 - Found ${player11Tile.evaluate().length} tiles');
+        await tester.pump(const Duration(milliseconds: 500));
+        attempts++;
+      }
+
+      print('[DEBUG] Test 2: Final state - Found ${player11Tile.evaluate().length} tiles');
+
       await tester.ensureVisible(player11Tile);
       await tester.pump();
       await tester.tap(player11Tile);

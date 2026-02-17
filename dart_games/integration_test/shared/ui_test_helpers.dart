@@ -4,6 +4,7 @@ import 'game_ui_config.dart';
 import 'element_finders.dart';
 import 'pump_sequences.dart';
 import 'settings_helpers.dart';
+import 'provider_helpers.dart';
 
 /// High-level UI navigation and interaction helpers
 ///
@@ -133,16 +134,41 @@ class UITestHelpers {
   }) async {
     final dartButton = config.getDartButton(multiplier, number);
 
-    // Ensure dartboard buttons are visible before tapping
-    // (InteractiveDartboard may not be rendered yet after game starts)
-    if (dartButton.evaluate().isEmpty) {
-      await PumpSequences.asyncDataLoad(tester);
+    // DEBUG: Print dartboard state
+    print('[DEBUG] throwDart: Looking for $multiplier $number');
+    print('[DEBUG] throwDart: Found ${dartButton.evaluate().length} matching buttons');
+
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    print('[DEBUG] throwDart: isConnected = ${dartboardProvider.isConnected}');
+
+    // Wait for dartboard buttons to render (poll up to 10 seconds)
+    int attempts = 0;
+    while (dartButton.evaluate().isEmpty && attempts < 20) {
+      print('[DEBUG] throwDart: Waiting for button (attempt ${attempts + 1}/20)...');
+      await tester.pump(const Duration(milliseconds: 500));
+      attempts++;
     }
 
+    if (dartButton.evaluate().isEmpty) {
+      print('[DEBUG] throwDart: ERROR - Button still not found after 10 seconds!');
+      print('[DEBUG] throwDart: Dumping all dart buttons on screen:');
+      final allDartButtons = find.byWidgetPredicate((widget) =>
+        widget.key?.toString().contains('dart_') ?? false
+      );
+      print('[DEBUG] throwDart: Found ${allDartButtons.evaluate().length} dart buttons total');
+      throw TestFailure(
+        'Dartboard button for $multiplier $number not found after 10 seconds. '
+        'isConnected=${dartboardProvider.isConnected}, '
+        'buttons found=${dartButton.evaluate().length}'
+      );
+    }
+
+    print('[DEBUG] throwDart: Button found! Tapping...');
     await tester.ensureVisible(dartButton);
     await tester.pump();
     await tester.tap(dartButton);
     await PumpSequences.simpleUpdate(tester);
+    print('[DEBUG] throwDart: Tap complete');
   }
 
   /// Throw bullseye (50 points)
@@ -152,9 +178,19 @@ class UITestHelpers {
   ) async {
     final bullButton = config.getBullseyeButton();
 
-    // Ensure dartboard buttons are visible before tapping
+    print('[DEBUG] throwBullseye: Looking for bullseye button');
+    print('[DEBUG] throwBullseye: Found ${bullButton.evaluate().length} matching buttons');
+
+    // Wait for dartboard buttons to render (poll up to 10 seconds)
+    int attempts = 0;
+    while (bullButton.evaluate().isEmpty && attempts < 20) {
+      await tester.pump(const Duration(milliseconds: 500));
+      attempts++;
+    }
+
     if (bullButton.evaluate().isEmpty) {
-      await PumpSequences.asyncDataLoad(tester);
+      print('[DEBUG] throwBullseye: ERROR - Bullseye button not found after 10 seconds!');
+      throw TestFailure('Bullseye button not found after 10 seconds');
     }
 
     await tester.ensureVisible(bullButton);
@@ -170,9 +206,19 @@ class UITestHelpers {
   ) async {
     final outerBullButton = config.getOuterBullButton();
 
-    // Ensure dartboard buttons are visible before tapping
+    print('[DEBUG] throwOuterBull: Looking for outer bull button');
+    print('[DEBUG] throwOuterBull: Found ${outerBullButton.evaluate().length} matching buttons');
+
+    // Wait for dartboard buttons to render (poll up to 10 seconds)
+    int attempts = 0;
+    while (outerBullButton.evaluate().isEmpty && attempts < 20) {
+      await tester.pump(const Duration(milliseconds: 500));
+      attempts++;
+    }
+
     if (outerBullButton.evaluate().isEmpty) {
-      await PumpSequences.asyncDataLoad(tester);
+      print('[DEBUG] throwOuterBull: ERROR - Outer bull button not found after 10 seconds!');
+      throw TestFailure('Outer bull button not found after 10 seconds');
     }
 
     await tester.ensureVisible(outerBullButton);
@@ -188,9 +234,19 @@ class UITestHelpers {
   ) async {
     final missButton = config.getMissButton();
 
-    // Ensure dartboard buttons are visible before tapping
+    print('[DEBUG] throwMiss: Looking for miss button');
+    print('[DEBUG] throwMiss: Found ${missButton.evaluate().length} matching buttons');
+
+    // Wait for dartboard buttons to render (poll up to 10 seconds)
+    int attempts = 0;
+    while (missButton.evaluate().isEmpty && attempts < 20) {
+      await tester.pump(const Duration(milliseconds: 500));
+      attempts++;
+    }
+
     if (missButton.evaluate().isEmpty) {
-      await PumpSequences.asyncDataLoad(tester);
+      print('[DEBUG] throwMiss: ERROR - Miss button not found after 10 seconds!');
+      throw TestFailure('Miss button not found after 10 seconds');
     }
 
     await tester.ensureVisible(missButton);
