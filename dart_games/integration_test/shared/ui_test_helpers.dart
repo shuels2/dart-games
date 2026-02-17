@@ -132,6 +132,15 @@ class UITestHelpers {
     String multiplier = 'single',
   }) async {
     final dartButton = config.getDartButton(multiplier, number);
+
+    // Ensure dartboard buttons are visible before tapping
+    // (InteractiveDartboard may not be rendered yet after game starts)
+    if (dartButton.evaluate().isEmpty) {
+      await PumpSequences.asyncDataLoad(tester);
+    }
+
+    await tester.ensureVisible(dartButton);
+    await tester.pump();
     await tester.tap(dartButton);
     await PumpSequences.simpleUpdate(tester);
   }
@@ -142,6 +151,14 @@ class UITestHelpers {
     GameUIConfig config,
   ) async {
     final bullButton = config.getBullseyeButton();
+
+    // Ensure dartboard buttons are visible before tapping
+    if (bullButton.evaluate().isEmpty) {
+      await PumpSequences.asyncDataLoad(tester);
+    }
+
+    await tester.ensureVisible(bullButton);
+    await tester.pump();
     await tester.tap(bullButton);
     await PumpSequences.simpleUpdate(tester);
   }
@@ -152,6 +169,14 @@ class UITestHelpers {
     GameUIConfig config,
   ) async {
     final outerBullButton = config.getOuterBullButton();
+
+    // Ensure dartboard buttons are visible before tapping
+    if (outerBullButton.evaluate().isEmpty) {
+      await PumpSequences.asyncDataLoad(tester);
+    }
+
+    await tester.ensureVisible(outerBullButton);
+    await tester.pump();
     await tester.tap(outerBullButton);
     await PumpSequences.simpleUpdate(tester);
   }
@@ -162,6 +187,14 @@ class UITestHelpers {
     GameUIConfig config,
   ) async {
     final missButton = config.getMissButton();
+
+    // Ensure dartboard buttons are visible before tapping
+    if (missButton.evaluate().isEmpty) {
+      await PumpSequences.asyncDataLoad(tester);
+    }
+
+    await tester.ensureVisible(missButton);
+    await tester.pump();
     await tester.tap(missButton);
     await PumpSequences.simpleUpdate(tester);
   }

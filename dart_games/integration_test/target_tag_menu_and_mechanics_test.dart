@@ -60,7 +60,7 @@ void main() {
 
       // Add Player 1
       await UITestHelpers.addPlayer(tester, 'Player 1', config);
-      await PumpSequences.simpleUpdate(tester);
+      await PumpSequences.asyncDataLoad(tester); // Wait for ListView to render
 
       // Verify Player 1 auto-selected
       expect(find.text('(1/10 selected)'), findsOneWidget);
@@ -72,7 +72,7 @@ void main() {
 
       // Add Player 2
       await UITestHelpers.addPlayer(tester, 'Player 2', config);
-      await PumpSequences.simpleUpdate(tester);
+      await PumpSequences.asyncDataLoad(tester); // Wait for ListView to render
 
       // Verify Player 2 auto-selected
       expect(find.text('(2/10 selected)'), findsOneWidget);
@@ -86,10 +86,10 @@ void main() {
       // Verify both players visible in list (ensureVisible handles ListView.builder lazy rendering)
       await tester.ensureVisible(config.getPlayerTile(player1!.id));
       await tester.pump();
-      expect(config.getPlayerTile(player1!.id), findsOneWidget);
+      expect(config.getPlayerTile(player1.id), findsOneWidget);
       await tester.ensureVisible(config.getPlayerTile(player2!.id));
       await tester.pump();
-      expect(config.getPlayerTile(player2!.id), findsOneWidget);
+      expect(config.getPlayerTile(player2.id), findsOneWidget);
     });
 
     // ==========================================================================
@@ -135,6 +135,9 @@ void main() {
         await UITestHelpers.addPlayer(tester, 'Player$i', config);
         await tester.pump();
       }
+
+      // Wait for ListView to render all players
+      await PumpSequences.asyncDataLoad(tester);
 
       // Verify only 10 players auto-selected
       expect(find.text('(10/10 selected)'), findsOneWidget);
