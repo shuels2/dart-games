@@ -10,8 +10,8 @@ class TargetTagTestHelper {
   final List<Player> players;
 
   // Track state before each dart throw for proper announcements
-  Map<String, int> _shieldsBefore = {};
-  Map<String, bool> _taggedInBefore = {};
+  final Map<String, int> _shieldsBefore = {};
+  final Map<String, bool> _taggedInBefore = {};
   Set<String> _eliminatedBefore = {};
   String? _currentPlayerId;
   bool _gameStartAnnounced = false;
@@ -51,9 +51,7 @@ class TargetTagTestHelper {
 
   /// Process dart throw with announcements
   void processDartThrowWithAnnouncements(String sector) {
-    if (_currentPlayerId == null) {
-      _currentPlayerId = provider.getCurrentPlayerId();
-    }
+    _currentPlayerId ??= provider.getCurrentPlayerId();
 
     final currentPlayer = players.firstWhere((p) => p.id == _currentPlayerId);
     final game = provider.currentGame!;
@@ -90,12 +88,11 @@ class TargetTagTestHelper {
 
     // Parse sector
     final parsed = _parseSector(sector);
-    final isMiss = sector == 'None' || sector == 'Miss' || parsed == null;
 
     // ===== ANNOUNCEMENTS (matching game screen logic) =====
 
     // 1. Dart score announcement
-    if (!isMiss && parsed != null) {
+    if (parsed != null) {
       audioQueue.announceHit(
         parsed['number'] as int,
         parsed['multiplier'] as String,
@@ -123,7 +120,7 @@ class TargetTagTestHelper {
         playerNames = [currentPlayer.name];
       }
       audioQueue.announceTaggedIn(playerNames);
-    } else if (!wasTaggedIn && !isMiss && shieldsAfter > (_shieldsBefore[currentPlayer.id] ?? 0)) {
+    } else if (!wasTaggedIn && parsed != null && shieldsAfter > (_shieldsBefore[currentPlayer.id] ?? 0)) {
       // Gained shields but not yet tagged-in - announce shield count
       audioQueue.announceShieldGained(currentPlayer.name, shieldsAfter, game.shieldMax);
     }

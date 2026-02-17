@@ -63,56 +63,6 @@ void main() {
     }
   }
 
-  /// Simulate hitting bullseye (50 points) using mock API
-  Future<void> throwBullseyeViaMock(WidgetTester tester) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: 50,
-        multiplier: 'bullseye',
-        playerName: 'Player',
-        baseScore: 25,
-        widgetX: 125.0,
-        widgetY: 125.0,
-        widgetSize: 250.0,
-      );
-      await PumpSequences.simpleUpdate(tester);
-    }
-  }
-
-  /// Simulate hitting outer bull (25 points) using mock API
-  Future<void> throwOuterBullViaMock(WidgetTester tester) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: 25,
-        multiplier: 'outer_bull',
-        playerName: 'Player',
-        baseScore: 25,
-        widgetX: 125.0,
-        widgetY: 125.0,
-        widgetSize: 250.0,
-      );
-      await PumpSequences.simpleUpdate(tester);
-    }
-  }
-
-  /// Simulate missing the board using mock API
-  Future<void> throwMissViaMock(WidgetTester tester) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: 0,
-        multiplier: 'miss',
-        playerName: 'Player',
-        baseScore: 0,
-        widgetX: 0.0,
-        widgetY: 0.0,
-        widgetSize: 250.0,
-      );
-      await PumpSequences.simpleUpdate(tester);
-    }
-  }
 
   /// Click DARTS REMOVED button on emulator
   Future<void> clickDartsRemoved(WidgetTester tester) async {
@@ -131,11 +81,6 @@ void main() {
     return targetNumber ?? 20;
   }
 
-  /// Skip the current turn
-  Future<void> skipTurn(WidgetTester tester) async {
-    await UITestHelpers.clickSkipTurn(tester, config);
-  }
-
   /// Enable Hero Bonus by tapping the hero bonus switch
   Future<void> enableHeroBonus(WidgetTester tester) async {
     await SettingsHelpers.toggleTargetTagHeroBonus(tester);
@@ -148,17 +93,6 @@ void main() {
     await PumpSequences.fullRebuild(tester);
   }
 
-  /// Enable Manual Team Assignment (Switch index 1)
-  Future<void> enableManualTeamAssignment(WidgetTester tester) async {
-    // Find Team Assignment switch (second switch, index 1)
-    // Switch 0: Team Mode, Switch 1: Team Assignment, Switch 2: Hero Bonus
-    final switchFinder = find.byType(Switch);
-    if (switchFinder.evaluate().length >= 2) {
-      await tester.tap(switchFinder.at(1));
-      await PumpSequences.simpleUpdate(tester);
-    }
-  }
-
   /// Navigate back to menu from game screen
   Future<void> navigateBackToMenu(WidgetTester tester) async {
     final backButton = find.byTooltip('Back');
@@ -166,21 +100,6 @@ void main() {
       await tester.tap(backButton.first);
       await PumpSequences.navigation(tester);
     }
-  }
-
-  /// Extract target number from active panel text
-  /// Returns the target number found in "Target number: XX" text
-  int? getTargetNumberFromActivePanel(WidgetTester tester) {
-    final targetTextFinder = find.textContaining('Target number:');
-    if (targetTextFinder.evaluate().isEmpty) return null;
-
-    final textWidget = tester.widget<Text>(targetTextFinder.first);
-    final text = textWidget.data ?? '';
-    final match = RegExp(r'Target number:\s*(\d+)').firstMatch(text);
-    if (match != null) {
-      return int.parse(match.group(1)!);
-    }
-    return null;
   }
 
   /// Extract hero buff value from active panel text
@@ -210,7 +129,7 @@ void main() {
     expect(decoration!.border, isNotNull);
 
     final border = decoration.border as Border;
-    expect(border.top.color.value, expectedColorValue,
+    expect(border.top.color.toARGB32, expectedColorValue,
         reason: 'Dart $dartKey should have border color 0x${expectedColorValue.toRadixString(16)}');
   }
 

@@ -816,7 +816,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
-                        key: CarnivalDerbyMenuKeys.addPlayerButton,
+                        key: CarnivalDerbyMenuKeys.addPlayerButtonEmptyState,
                         onPressed: _handleAddPlayer,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE63946), // Lava Red

@@ -9,6 +9,9 @@ import 'shared/pump_sequences.dart';
 import 'shared/settings_helpers.dart';
 import 'shared/game_ui_config.dart';
 
+// Test keys
+import 'package:dart_games/constants/test_keys.dart';
+
 /// Target Tag - Add Player Dialog Integration Tests
 ///
 /// These are full integration tests that run the complete app in Chrome
@@ -46,12 +49,10 @@ void main() {
       expect(find.text('Solo'), findsOneWidget);
       expect(find.text('Team'), findsOneWidget);
 
-      // Add first player
-      final addButton = ElementFinders.getTargetTagAddPlayerButton();
-      expect(addButton, findsAtLeastNWidgets(1));
-      await tester.ensureVisible(addButton.first);
-      await tester.pump();
-      await tester.tap(addButton.first);
+      // Add first player (using empty state button)
+      final addButtonEmpty = find.byKey(TargetTagMenuKeys.addPlayerButtonEmptyState);
+      expect(addButtonEmpty, findsOneWidget);
+      await tester.tap(addButtonEmpty);
       await PumpSequences.dialogOpen(tester);
 
       // Enter first player name
@@ -67,10 +68,10 @@ void main() {
       // Verify first player was added
       expect(find.text('Player 1'), findsOneWidget);
 
-      // Add second player
-      await tester.ensureVisible(addButton.first);
-      await tester.pump();
-      await tester.tap(addButton.first);
+      // Add second player (now using normal state button)
+      final addButtonNormal = ElementFinders.getTargetTagAddPlayerButton();
+      expect(addButtonNormal, findsAtLeastNWidgets(1));
+      await tester.tap(addButtonNormal.first);
       await PumpSequences.dialogOpen(tester);
 
       // Enter second player name
@@ -89,8 +90,8 @@ void main() {
       // Navigate to Target Tag menu
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Find and tap "NEW PLAYER" button
-      final addButton = ElementFinders.getTargetTagAddPlayerButton();
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       expect(addButton, findsAtLeastNWidgets(1));
       await tester.ensureVisible(addButton.first);
       await tester.pump();
@@ -131,8 +132,8 @@ void main() {
       // Navigate to Target Tag menu
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Find and tap "NEW PLAYER" button
-      final addButton = ElementFinders.getTargetTagAddPlayerButton();
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       await tester.tap(addButton.first);
       await PumpSequences.dialogOpen(tester);
 
@@ -168,8 +169,8 @@ void main() {
       // Navigate to Target Tag menu
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Find and tap "NEW PLAYER" button
-      final addButton = ElementFinders.getTargetTagAddPlayerButton();
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       await tester.tap(addButton.first);
       await PumpSequences.dialogOpen(tester);
 
@@ -210,8 +211,8 @@ void main() {
       // Navigate to Target Tag menu
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Find and tap "NEW PLAYER" button
-      final addButton = ElementFinders.getTargetTagAddPlayerButton();
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       await tester.tap(addButton.first);
       await PumpSequences.dialogOpen(tester);
 
@@ -236,8 +237,8 @@ void main() {
       // Navigate to Target Tag menu
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Find and tap "NEW PLAYER" button
-      final addButton = ElementFinders.getTargetTagAddPlayerButton();
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       await tester.tap(addButton.first);
       await PumpSequences.dialogOpen(tester);
 

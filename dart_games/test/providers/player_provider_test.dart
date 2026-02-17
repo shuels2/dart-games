@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/models/player.dart';
-import 'package:dart_games/models/game_history_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

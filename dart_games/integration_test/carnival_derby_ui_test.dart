@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:dart_games/main.dart' as app;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/providers/horse_race_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
-import 'package:dart_games/services/mock_scolia_api_service.dart';
+
+// Shared component imports
+import 'shared/ui_test_helpers.dart';
+import 'shared/element_finders.dart';
+import 'shared/settings_helpers.dart';
+import 'shared/game_ui_config.dart';
 
 /// Carnival Derby - Interactive UI Tests
 ///
@@ -33,58 +35,18 @@ import 'package:dart_games/services/mock_scolia_api_service.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  // Game configuration
+  final config = GameUIConfig.carnivalDerby();
+
   // ==================== HELPER FUNCTIONS ====================
 
-  /// Navigate to Carnival Derby menu
+  /// Navigate to Carnival Derby menu using shared helper
   Future<void> navigateToCarnivalDerbyMenu(WidgetTester tester) async {
-    app.main();
-    await tester.pumpAndSettle();
-    await tester.pumpAndSettle(const Duration(seconds: 3));
-
-    final carnivalDerbyCard = find.text('Carnival Derby');
-    expect(carnivalDerbyCard, findsOneWidget);
-    await tester.tap(carnivalDerbyCard);
-
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
+    await SettingsHelpers.initializeSettings();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
     // Verify we're on the menu screen
     expect(find.textContaining('Target score:'), findsOneWidget);
-  }
-
-  /// Add a player via NEW PLAYER button
-  Future<void> addPlayer(WidgetTester tester, String name) async {
-    final addButton = find.text('NEW PLAYER');
-    await tester.ensureVisible(addButton.first);
-    await tester.pump();
-    await tester.tap(addButton.first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-
-    final nameField = find.byType(TextField);
-    await tester.enterText(nameField, name);
-    await tester.pump();
-    await tester.pump();
-
-    // Click ADD PLAYER button (all caps)
-    final addPlayerButton = find.text('ADD PLAYER');
-    await tester.tap(addPlayerButton);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pump();
   }
 
   /// Set target score by programmatically calling the slider's onChanged callback
@@ -128,108 +90,12 @@ void main() {
     await tester.pump();
   }
 
-  /// Start the game by clicking START THE RACE! button
+  /// Start the game using shared helper
   Future<void> startGame(WidgetTester tester) async {
-    final playButton = find.text('START THE RACE!');
-    await tester.ensureVisible(playButton);
-    await tester.pump();
-    await tester.tap(playButton);
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
+    await UITestHelpers.startGame(tester, config);
 
     // Verify we're on the game screen
     expect(find.text('Carnival Derby Race'), findsOneWidget);
-  }
-
-  /// Get MockScoliaApiService from the widget tree
-  MockScoliaApiService? getMockApi(WidgetTester tester) {
-    final context = tester.element(find.byType(MaterialApp));
-    final dartboardProvider = Provider.of<DartboardProvider>(context, listen: false);
-    return dartboardProvider.apiService;
-  }
-
-  /// Simulate throwing a dart with specific number and multiplier
-  Future<void> throwDart(WidgetTester tester, int number, {String multiplier = 'single'}) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: number * (multiplier == 'double' ? 2 : multiplier == 'triple' ? 3 : 1),
-        multiplier: multiplier,
-        playerName: 'Player',
-        baseScore: number,
-        widgetX: 125.0,
-        widgetY: 125.0,
-        widgetSize: 250.0,
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-    }
-  }
-
-  /// Simulate throwing bullseye (50 points)
-  Future<void> throwBullseye(WidgetTester tester) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: 50,
-        multiplier: 'bullseye',
-        playerName: 'Player',
-        baseScore: 25,
-        widgetX: 125.0,
-        widgetY: 125.0,
-        widgetSize: 250.0,
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-    }
-  }
-
-  /// Simulate throwing outer bull (25 points)
-  Future<void> throwOuterBull(WidgetTester tester) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: 25,
-        multiplier: 'outer_bull',
-        playerName: 'Player',
-        baseScore: 25,
-        widgetX: 125.0,
-        widgetY: 125.0,
-        widgetSize: 250.0,
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-    }
-  }
-
-  /// Simulate missing the board
-  Future<void> throwMiss(WidgetTester tester) async {
-    final mockApi = getMockApi(tester);
-    if (mockApi != null) {
-      mockApi.simulateDartThrow(
-        score: 0,
-        multiplier: 'miss',
-        playerName: 'Player',
-        baseScore: 0,
-        widgetX: 0.0,
-        widgetY: 0.0,
-        widgetSize: 250.0,
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-    }
   }
 
   /// Click DARTS REMOVED button on emulator
@@ -243,20 +109,9 @@ void main() {
     }
   }
 
-  /// Click SKIP TURN button
-  Future<void> clickSkipTurn(WidgetTester tester) async {
-    final skipButton = find.text('SKIP TURN');
-    await tester.ensureVisible(skipButton);
-    await tester.pump();
-    await tester.tap(skipButton);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump();
-  }
-
   /// Open edit score dialog
   Future<void> openEditScore(WidgetTester tester) async {
-    final editButton = find.text('Edit player score');
+    final editButton = config.getEditScoreButton();
     expect(editButton, findsOneWidget);
     await tester.tap(editButton);
     await tester.pump();
@@ -304,20 +159,8 @@ void main() {
 
   /// Update score (click Update button in edit dialog)
   Future<void> updateScore(WidgetTester tester) async {
-    final updateButton = find.text('Update score');
+    final updateButton = ElementFinders.getEditScoreSaveButton();
     await tester.tap(updateButton);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump();
-
-    // Verify dialog closed
-    expect(find.text('Update score'), findsNothing);
-  }
-
-  /// Cancel edit score
-  Future<void> cancelEditScore(WidgetTester tester) async {
-    final cancelButton = find.text('Cancel');
-    await tester.tap(cancelButton);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
@@ -428,11 +271,7 @@ void main() {
 
   group('Section 1: Menu - Player Selection', () {
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      await SettingsHelpers.initializeSettings();
     });
 
     // Test 1: Menu - Player Selection & Auto-Selection
@@ -443,11 +282,11 @@ void main() {
       await navigateToCarnivalDerbyMenu(tester);
 
       // Verify play button disabled with 0 players
-      final playButton = find.text('START THE RACE!');
+      final playButton = config.getStartButton();
       expect(playButton, findsOneWidget);
 
       // Add Player 1
-      await addPlayer(tester, 'Player 1');
+      await UITestHelpers.addPlayer(tester, 'Player 1', config);
       // Player 1 appears twice: once in Available Players, once in Selected Players
       expect(find.text('Player 1'), findsWidgets);
 
@@ -456,7 +295,7 @@ void main() {
       expect(getSelectedPlayerCount(tester), 1);
 
       // Add Player 2
-      await addPlayer(tester, 'Player 2');
+      await UITestHelpers.addPlayer(tester, 'Player 2', config);
       // Player 2 appears twice: once in Available Players, once in Selected Players
       expect(find.text('Player 2'), findsWidgets);
 
@@ -475,7 +314,7 @@ void main() {
 
       // Add 10 players
       for (int i = 1; i <= 10; i++) {
-        await addPlayer(tester, 'Player $i');
+        await UITestHelpers.addPlayer(tester, 'Player $i', config);
       }
 
       // Verify all 10 players exist in list
@@ -488,7 +327,7 @@ void main() {
       // (Cannot manually select more than 8)
 
       // Start game with first 8 players selected
-      final playButton = find.text('START THE RACE!');
+      final playButton = config.getStartButton();
       expect(playButton, findsOneWidget);
 
       await tester.ensureVisible(playButton);
@@ -507,11 +346,7 @@ void main() {
 
   group('Section 2: Menu - Target Score Settings', () {
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      await SettingsHelpers.initializeSettings();
     });
 
     // Test 3: Menu - Target Score Slider Range
@@ -560,11 +395,7 @@ void main() {
 
   group('Section 3: Game - Basic Race Mechanics (Normal Mode)', () {
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      await SettingsHelpers.initializeSettings();
     });
 
     // Test 5: Game - Single Player Quick Win (Normal Mode)
@@ -574,7 +405,7 @@ void main() {
     testWidgets('Test 5: Single Player Quick Win (Normal Mode)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Alice');
+      await UITestHelpers.addPlayer(tester, 'Alice', config);
 
       // Set target to 60
       await setTargetScore(tester, 60);
@@ -586,15 +417,15 @@ void main() {
       verifyGameSettings(tester, 60, false); // target=60, Perfect Finish OFF
 
       // Turn 1: T20, T20, T20 = 180 (instant win)
-      await throwDart(tester, 20, multiplier: 'triple'); // 60
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // 60
       expect(getCurrentPlayerScore(tester), 60);
       verifyCurrentPlayerScoreDisplay(tester, 60, 60); // Current player section
       verifyRaceTrackScore(tester, 60, 60); // Race track lane
 
-      await throwDart(tester, 20, multiplier: 'triple'); // 120
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // 120
       expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(60));
 
-      await throwDart(tester, 20, multiplier: 'triple'); // 180
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // 180
       expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(60));
 
       // Verify game has winner
@@ -620,8 +451,8 @@ void main() {
     testWidgets('Test 6: Two Players Alternating Turns (Normal Mode)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Alice');
-      await addPlayer(tester, 'Bob');
+      await UITestHelpers.addPlayer(tester, 'Alice', config);
+      await UITestHelpers.addPlayer(tester, 'Bob', config);
 
       // Set target to 100
       await setTargetScore(tester, 100);
@@ -629,9 +460,9 @@ void main() {
       await startGame(tester);
 
       // Alice Turn 1: S20, S20, S20 = 60
-      await throwDart(tester, 20); // 20
-      await throwDart(tester, 20); // 40
-      await throwDart(tester, 20); // 60
+      await UITestHelpers.throwDart(tester, config, 20); // 20
+      await UITestHelpers.throwDart(tester, config, 20); // 40
+      await UITestHelpers.throwDart(tester, config, 20); // 60
 
       expect(getCurrentPlayerScore(tester), 60);
       verifyCurrentPlayerScoreDisplay(tester, 60, 100); // Alice's current score
@@ -640,9 +471,9 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Bob Turn 1: S15, S15, S15 = 45
-      await throwDart(tester, 15); // 15
-      await throwDart(tester, 15); // 30
-      await throwDart(tester, 15); // 45
+      await UITestHelpers.throwDart(tester, config, 15); // 15
+      await UITestHelpers.throwDart(tester, config, 15); // 30
+      await UITestHelpers.throwDart(tester, config, 15); // 45
 
       expect(getCurrentPlayerScore(tester), 45);
       verifyCurrentPlayerScoreDisplay(tester, 45, 100); // Bob's current score
@@ -651,7 +482,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Alice Turn 2: D20 = 40 (total 100 - wins)
-      await throwDart(tester, 20, multiplier: 'double'); // 40
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'double'); // 40
 
       expect(getCurrentPlayerScore(tester), 100);
       verifyCurrentPlayerScoreDisplay(tester, 100, 100); // Alice wins with 100/100
@@ -676,7 +507,7 @@ void main() {
     testWidgets('Test 7: All Dart Types (Normal Mode)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'TestPlayer');
+      await UITestHelpers.addPlayer(tester, 'TestPlayer', config);
 
       // Set target to 200
       await setTargetScore(tester, 200);
@@ -687,9 +518,9 @@ void main() {
       verifyGameSettings(tester, 200, false); // target=200, Perfect Finish OFF
 
       // Turn 1: Single, Double, Triple
-      await throwDart(tester, 20); // 20
-      await throwDart(tester, 20, multiplier: 'double'); // 40
-      await throwDart(tester, 20, multiplier: 'triple'); // 60
+      await UITestHelpers.throwDart(tester, config, 20); // 20
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'double'); // 40
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // 60
 
       expect(getCurrentPlayerScore(tester), 120);
       verifyCurrentPlayerScoreDisplay(tester, 120, 200); // Current player: 120/200
@@ -701,13 +532,13 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Turn 2: Bullseye, Outer Bull, Miss
-      await throwBullseye(tester); // 50
+      await UITestHelpers.throwBullseye(tester, config); // 50
       expect(getCurrentPlayerScore(tester), 170);
 
-      await throwOuterBull(tester); // 25
+      await UITestHelpers.throwOuterBull(tester, config); // 25
       expect(getCurrentPlayerScore(tester), 195);
 
-      await throwMiss(tester); // 0
+      await UITestHelpers.throwMiss(tester, config); // 0
       expect(getCurrentPlayerScore(tester), 195);
       verifyCurrentPlayerScoreDisplay(tester, 195, 200); // Current player: 195/200
       verifyRaceTrackScore(tester, 195, 200); // Race track: 195/200
@@ -718,7 +549,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Turn 3: T20, T20, S5 = 125 (total 320 > 200 - wins)
-      await throwDart(tester, 20, multiplier: 'triple'); // 255 total - wins!
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // 255 total - wins!
 
       // Player wins on first dart of turn 3 (195 + 60 = 255 >= 200)
       expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(200));
@@ -730,11 +561,7 @@ void main() {
 
   group('Section 4: Game - Perfect Finish Mode (Bust Mechanics)', () {
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      await SettingsHelpers.initializeSettings();
     });
 
     // Test 8: Game - Perfect Finish Mode: Simple Bust
@@ -744,7 +571,7 @@ void main() {
     testWidgets('Test 8: Simple Bust (Going Over)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Alice');
+      await UITestHelpers.addPlayer(tester, 'Alice', config);
 
       // Set target to 50 and enable Perfect Finish
       await setTargetScore(tester, 50);
@@ -756,13 +583,13 @@ void main() {
       verifyGameSettings(tester, 50, true); // target=50, Perfect Finish ON
 
       // Turn 1: S20, then T20 (would bust: 20 + 60 = 80 > 50)
-      await throwDart(tester, 20); // 20
+      await UITestHelpers.throwDart(tester, config, 20); // 20
       int scoreAfterFirstDart = getCurrentPlayerScore(tester);
       expect(scoreAfterFirstDart, 20);
       verifyCurrentPlayerScoreDisplay(tester, 20, 50); // Current player: 20/50
       verifyRaceTrackScore(tester, 20, 50); // Race track: 20/50
 
-      await throwDart(tester, 20, multiplier: 'triple'); // Would be 80 total = BUST
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // Would be 80 total = BUST
 
       // Score should stay at 20 (before the busting dart)
       int scoreAfterBust = getCurrentPlayerScore(tester);
@@ -774,8 +601,8 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Turn 2: S20, S10 = 50 (exact win)
-      await throwDart(tester, 20); // 40
-      await throwDart(tester, 10); // 50 (exact)
+      await UITestHelpers.throwDart(tester, config, 20); // 40
+      await UITestHelpers.throwDart(tester, config, 10); // 50 (exact)
 
       expect(getCurrentPlayerScore(tester), 50);
       verifyCurrentPlayerScoreDisplay(tester, 50, 50); // Winner: 50/50
@@ -790,7 +617,7 @@ void main() {
     testWidgets('Test 9: Bust on First Dart', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'TestPlayer');
+      await UITestHelpers.addPlayer(tester, 'TestPlayer', config);
 
       // Set target to 30 and enable Perfect Finish
       await setTargetScore(tester, 30);
@@ -802,7 +629,7 @@ void main() {
       verifyGameSettings(tester, 30, true);
 
       // Turn 1: D20 = 40 (BUST on first dart)
-      await throwDart(tester, 20, multiplier: 'double');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'double');
 
       // Score should stay at 0 (busted from 0)
       expect(getCurrentPlayerScore(tester), 0);
@@ -811,8 +638,8 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Turn 2: S20, S10 = 30 (exact win)
-      await throwDart(tester, 20); // 20
-      await throwDart(tester, 10); // 30
+      await UITestHelpers.throwDart(tester, config, 20); // 20
+      await UITestHelpers.throwDart(tester, config, 10); // 30
 
       expect(getCurrentPlayerScore(tester), 30);
       expect(hasWinner(tester), true);
@@ -825,8 +652,8 @@ void main() {
     testWidgets('Test 10: Multiple Busts Before Win', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Alice');
-      await addPlayer(tester, 'Bob');
+      await UITestHelpers.addPlayer(tester, 'Alice', config);
+      await UITestHelpers.addPlayer(tester, 'Bob', config);
 
       // Set target to 40 and enable Perfect Finish
       await setTargetScore(tester, 40);
@@ -838,21 +665,21 @@ void main() {
       verifyGameSettings(tester, 40, true);
 
       // Alice Turn 1: Bullseye (50) - BUST
-      await throwBullseye(tester);
+      await UITestHelpers.throwBullseye(tester, config);
       expect(getCurrentPlayerScore(tester), 0);
       expect(currentPlayerBusted(tester), true);
 
       await clickDartsRemoved(tester);
 
       // Bob Turn 1: T20 (60) - BUST
-      await throwDart(tester, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
       expect(getCurrentPlayerScore(tester), 0);
       expect(currentPlayerBusted(tester), true);
 
       await clickDartsRemoved(tester);
 
       // Alice Turn 2: D20 (40) - exact win
-      await throwDart(tester, 20, multiplier: 'double');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'double');
       expect(getCurrentPlayerScore(tester), 40);
       expect(hasWinner(tester), true);
     });
@@ -864,7 +691,7 @@ void main() {
     testWidgets('Test 11: Close Call (Just Under, Then Exact)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'TestPlayer');
+      await UITestHelpers.addPlayer(tester, 'TestPlayer', config);
 
       // Set target to 100 and enable Perfect Finish
       await setTargetScore(tester, 100);
@@ -876,9 +703,9 @@ void main() {
       verifyGameSettings(tester, 100, true); // target=100, Perfect Finish ON
 
       // Turn 1: T20, S20, S15 = 95 (5 under - safe)
-      await throwDart(tester, 20, multiplier: 'triple'); // 60
-      await throwDart(tester, 20); // 80
-      await throwDart(tester, 15); // 95
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // 60
+      await UITestHelpers.throwDart(tester, config, 20); // 80
+      await UITestHelpers.throwDart(tester, config, 15); // 95
 
       expect(getCurrentPlayerScore(tester), 95);
       expect(currentPlayerBusted(tester), false);
@@ -886,7 +713,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Turn 2: S5 = 100 (exact win)
-      await throwDart(tester, 5); // 100
+      await UITestHelpers.throwDart(tester, config, 5); // 100
 
       expect(getCurrentPlayerScore(tester), 100);
       expect(hasWinner(tester), true);
@@ -895,11 +722,7 @@ void main() {
 
   group('Section 5: Game - Skip Turn Functionality', () {
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      await SettingsHelpers.initializeSettings();
     });
 
     // Test 12: Game - Skip Turn with No Darts (Immediate Turn Advance)
@@ -909,15 +732,15 @@ void main() {
     testWidgets('Test 12: Skip Turn with No Darts Thrown (Turn Advances)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Alice');
-      await addPlayer(tester, 'Bob');
+      await UITestHelpers.addPlayer(tester, 'Alice', config);
+      await UITestHelpers.addPlayer(tester, 'Bob', config);
 
       await setTargetScore(tester, 60);
 
       await startGame(tester);
 
       // Alice Turn 1: SKIP immediately (no darts thrown)
-      await clickSkipTurn(tester);
+      await UITestHelpers.clickSkipTurn(tester, config);
 
       // No remove darts modal should appear - turn should advance immediately
       // Wait for turn to advance
@@ -929,7 +752,7 @@ void main() {
       // Verify we're now on Bob's turn by checking current player
       // We can't check dart display since it advances too quickly
       // Instead, verify that when Bob throws a dart, his score updates
-      await throwDart(tester, 20, multiplier: 'triple'); // Bob: 60 (wins)
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // Bob: 60 (wins)
 
       expect(getCurrentPlayerScore(tester), 60);
       expect(hasWinner(tester), true);
@@ -942,21 +765,21 @@ void main() {
     testWidgets('Test 13: Skip Turn with Darts Thrown', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Alice');
-      await addPlayer(tester, 'Bob');
+      await UITestHelpers.addPlayer(tester, 'Alice', config);
+      await UITestHelpers.addPlayer(tester, 'Bob', config);
 
       await setTargetScore(tester, 60);
 
       await startGame(tester);
 
       // Alice Turn 1: S20, then SKIP
-      await throwDart(tester, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
       expect(getCurrentPlayerScore(tester), 20);
       verifyCurrentPlayerScoreDisplay(tester, 20, 60); // Alice: 20/60
       verifyRaceTrackScore(tester, 20, 60); // Race track: 20/60
 
       // Click SKIP TURN
-      await clickSkipTurn(tester);
+      await UITestHelpers.clickSkipTurn(tester, config);
 
       // Verify dart display: D1=20, D2=Skip, D3=Skip (remaining darts marked as Skip)
       verifyDartDisplay(tester, '20', 'Skip', 'Skip');
@@ -968,7 +791,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Bob's turn
-      await throwDart(tester, 20, multiplier: 'triple'); // 60 (wins)
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // 60 (wins)
       expect(getCurrentPlayerScore(tester), 60);
       verifyCurrentPlayerScoreDisplay(tester, 60, 60); // Bob wins: 60/60
       verifyRaceTrackScore(tester, 60, 60); // Race track: 60/60
@@ -982,18 +805,18 @@ void main() {
     testWidgets('Test 14: Skip Turn After 1 Dart (Remaining Marked as Miss)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Alice');
-      await addPlayer(tester, 'Bob');
+      await UITestHelpers.addPlayer(tester, 'Alice', config);
+      await UITestHelpers.addPlayer(tester, 'Bob', config);
 
       await setTargetScore(tester, 60);
 
       await startGame(tester);
 
       // Alice Turn 1: Throw 1 dart (S10), then SKIP
-      await throwDart(tester, 10); // D1 = 10
+      await UITestHelpers.throwDart(tester, config, 10); // D1 = 10
       expect(getCurrentPlayerScore(tester), 10);
 
-      await clickSkipTurn(tester);
+      await UITestHelpers.clickSkipTurn(tester, config);
 
       // D2 and D3 should be marked as Skip, score stays 10
       expect(getCurrentPlayerScore(tester), 10);
@@ -1005,7 +828,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Bob's turn
-      await throwDart(tester, 20, multiplier: 'triple'); // 60 (wins)
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // 60 (wins)
       expect(getCurrentPlayerScore(tester), 60);
       expect(hasWinner(tester), true);
     });
@@ -1013,11 +836,7 @@ void main() {
 
   group('Section 6: Game - Edit Score Functionality', () {
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      await SettingsHelpers.initializeSettings();
     });
 
     // Test 15: Game - Edit Score to Change Rings (Normal Mode)
@@ -1027,16 +846,16 @@ void main() {
     testWidgets('Test 15: Edit Score During Remove Darts Modal', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'TestPlayer');
+      await UITestHelpers.addPlayer(tester, 'TestPlayer', config);
 
       await setTargetScore(tester, 100);
 
       await startGame(tester);
 
       // Turn 1: S20, S20, S20 = 60
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
 
       expect(getCurrentPlayerScore(tester), 60);
 
@@ -1064,7 +883,7 @@ void main() {
     testWidgets('Test 16: Edit Score with Bust (Perfect Finish Mode)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'TestPlayer');
+      await UITestHelpers.addPlayer(tester, 'TestPlayer', config);
 
       await setTargetScore(tester, 70);
       await togglePerfectFinish(tester);
@@ -1072,9 +891,9 @@ void main() {
       await startGame(tester);
 
       // Turn 1: S20, S15, S10 = 45
-      await throwDart(tester, 20);
-      await throwDart(tester, 15);
-      await throwDart(tester, 10);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 15);
+      await UITestHelpers.throwDart(tester, config, 10);
 
       expect(getCurrentPlayerScore(tester), 45);
 
@@ -1097,17 +916,13 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Turn 2: Win with exact score (score is 60 after bust, need 10 to reach 70)
-      await throwDart(tester, 5, multiplier: 'double'); // D5 = 10 points, total = 70
+      await UITestHelpers.throwDart(tester, config, 5, multiplier: 'double'); // D5 = 10 points, total = 70
     });
   });
 
   group('Section 7: Game - Multi-Player Race', () {
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      await SettingsHelpers.initializeSettings();
     });
 
     // Test 17: Game - 4-Player Race with Leaderboard Changes
@@ -1117,81 +932,81 @@ void main() {
     testWidgets('Test 17: 4-Player Race', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Alice');
-      await addPlayer(tester, 'Bob');
-      await addPlayer(tester, 'Charlie');
-      await addPlayer(tester, 'Diana');
+      await UITestHelpers.addPlayer(tester, 'Alice', config);
+      await UITestHelpers.addPlayer(tester, 'Bob', config);
+      await UITestHelpers.addPlayer(tester, 'Charlie', config);
+      await UITestHelpers.addPlayer(tester, 'Diana', config);
 
       await setTargetScore(tester, 150);
 
       await startGame(tester);
 
       // Round 1 - Alice: 60
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
       expect(getCurrentPlayerScore(tester), 60);
       await clickDartsRemoved(tester);
 
       // Round 1 - Bob: 45
-      await throwDart(tester, 15);
-      await throwDart(tester, 15);
-      await throwDart(tester, 15);
+      await UITestHelpers.throwDart(tester, config, 15);
+      await UITestHelpers.throwDart(tester, config, 15);
+      await UITestHelpers.throwDart(tester, config, 15);
       expect(getCurrentPlayerScore(tester), 45);
       await clickDartsRemoved(tester);
 
       // Round 1 - Charlie: 80
-      await throwDart(tester, 20, multiplier: 'double');
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'double');
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
       expect(getCurrentPlayerScore(tester), 80);
       await clickDartsRemoved(tester);
 
       // Round 1 - Diana: 20
-      await throwDart(tester, 20);
-      await throwMiss(tester);
-      await throwMiss(tester);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwMiss(tester, config);
+      await UITestHelpers.throwMiss(tester, config);
       expect(getCurrentPlayerScore(tester), 20);
       await clickDartsRemoved(tester);
 
       // Round 2 - Alice: 120 total
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
       await clickDartsRemoved(tester);
 
       // Round 2 - Bob: 100 total
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
-      await throwDart(tester, 15);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 15);
       await clickDartsRemoved(tester);
 
       // Round 2 - Charlie: 140 total
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
       await clickDartsRemoved(tester);
 
       // Round 2 - Diana: 80 total
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
-      await throwDart(tester, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
       await clickDartsRemoved(tester);
 
       // Round 3 - Alice: Doesn't win
-      await throwDart(tester, 10);
-      await throwDart(tester, 10);
-      await throwDart(tester, 5);
+      await UITestHelpers.throwDart(tester, config, 10);
+      await UITestHelpers.throwDart(tester, config, 10);
+      await UITestHelpers.throwDart(tester, config, 5);
       await clickDartsRemoved(tester);
 
       // Round 3 - Bob: Doesn't win
-      await throwDart(tester, 10);
-      await throwDart(tester, 10);
-      await throwDart(tester, 10);
+      await UITestHelpers.throwDart(tester, config, 10);
+      await UITestHelpers.throwDart(tester, config, 10);
+      await UITestHelpers.throwDart(tester, config, 10);
       await clickDartsRemoved(tester);
 
       // Round 3 - Charlie: Wins with 180+
-      await throwDart(tester, 20, multiplier: 'double');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'double');
       expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(150));
       expect(hasWinner(tester), true);
     });
@@ -1205,7 +1020,7 @@ void main() {
 
       // Add 8 players
       for (int i = 1; i <= 8; i++) {
-        await addPlayer(tester, 'Player $i');
+        await UITestHelpers.addPlayer(tester, 'Player $i', config);
       }
 
       await setTargetScore(tester, 60);
@@ -1214,7 +1029,7 @@ void main() {
 
       // Each player throws T20 (all reach 60 in turn 1)
       for (int i = 0; i < 8; i++) {
-        await throwDart(tester, 20, multiplier: 'triple');
+        await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
 
         if (i == 0) {
           // First player reaches 60 and wins
@@ -1231,11 +1046,7 @@ void main() {
 
   group('Section 8: Edge Cases', () {
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      await SettingsHelpers.initializeSettings();
     });
 
     // Test 19: Game - Minimum Target Score (20 points)
@@ -1245,7 +1056,7 @@ void main() {
     testWidgets('Test 19: Minimum Target Score (20 points)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'TestPlayer');
+      await UITestHelpers.addPlayer(tester, 'TestPlayer', config);
 
       // Set target to 20 (minimum)
       await setTargetScore(tester, 20);
@@ -1257,7 +1068,7 @@ void main() {
       verifyGameSettings(tester, 20, true); // target=20, Perfect Finish ON
 
       // Single S20 should win
-      await throwDart(tester, 20);
+      await UITestHelpers.throwDart(tester, config, 20);
       expect(getCurrentPlayerScore(tester), 20);
       expect(hasWinner(tester), true);
     });
@@ -1269,7 +1080,7 @@ void main() {
     testWidgets('Test 20: Maximum Target Score (250 points)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'TestPlayer');
+      await UITestHelpers.addPlayer(tester, 'TestPlayer', config);
 
       // Set target to 250 (maximum)
       await setTargetScore(tester, 250);
@@ -1281,15 +1092,15 @@ void main() {
 
       // Multiple turns to reach 250
       // Turn 1: 150 (3x Bullseye)
-      await throwBullseye(tester);
-      await throwBullseye(tester);
-      await throwBullseye(tester);
+      await UITestHelpers.throwBullseye(tester, config);
+      await UITestHelpers.throwBullseye(tester, config);
+      await UITestHelpers.throwBullseye(tester, config);
       expect(getCurrentPlayerScore(tester), 150);
       await clickDartsRemoved(tester);
 
       // Turn 2: 300 total (wins)
-      await throwBullseye(tester);
-      await throwBullseye(tester);
+      await UITestHelpers.throwBullseye(tester, config);
+      await UITestHelpers.throwBullseye(tester, config);
       expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(250));
       expect(hasWinner(tester), true);
     });
@@ -1301,17 +1112,17 @@ void main() {
     testWidgets('Test 21: All Misses Turn', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Alice');
-      await addPlayer(tester, 'Bob');
+      await UITestHelpers.addPlayer(tester, 'Alice', config);
+      await UITestHelpers.addPlayer(tester, 'Bob', config);
 
       await setTargetScore(tester, 60);
 
       await startGame(tester);
 
       // Alice Turn 1: Miss, Miss, Miss
-      await throwMiss(tester);
-      await throwMiss(tester);
-      await throwMiss(tester);
+      await UITestHelpers.throwMiss(tester, config);
+      await UITestHelpers.throwMiss(tester, config);
+      await UITestHelpers.throwMiss(tester, config);
 
       expect(getCurrentPlayerScore(tester), 0);
       verifyCurrentPlayerScoreDisplay(tester, 0, 60); // Alice: 0/60 (all misses)
@@ -1323,7 +1134,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Bob Turn 1: T20 wins
-      await throwDart(tester, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
       expect(getCurrentPlayerScore(tester), 60);
       verifyCurrentPlayerScoreDisplay(tester, 60, 60); // Bob wins: 60/60
       verifyRaceTrackScore(tester, 60, 60); // Race track: 60/60
@@ -1333,11 +1144,7 @@ void main() {
 
   group('Section 9: Results Screen', () {
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      await SettingsHelpers.initializeSettings();
     });
 
     // Test 22: Results - Results Screen Display & Content
@@ -1347,16 +1154,16 @@ void main() {
     testWidgets('Test 22: Results Screen Content', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Winner');
+      await UITestHelpers.addPlayer(tester, 'Winner', config);
 
       await setTargetScore(tester, 180);
 
       await startGame(tester);
 
       // Quick win
-      await throwDart(tester, 20, multiplier: 'triple');
-      await throwDart(tester, 20, multiplier: 'triple');
-      await throwDart(tester, 20, multiplier: 'triple'); // 180
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // 180
 
       expect(hasWinner(tester), true);
 
@@ -1383,16 +1190,16 @@ void main() {
     testWidgets('Test 23: Play Again (Same Settings)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Player1');
+      await UITestHelpers.addPlayer(tester, 'Player1', config);
 
       await setTargetScore(tester, 180);
 
       await startGame(tester);
 
       // Quick win
-      await throwDart(tester, 20, multiplier: 'triple');
-      await throwDart(tester, 20, multiplier: 'triple');
-      await throwDart(tester, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
 
       await clickDartsRemoved(tester);
 
@@ -1402,7 +1209,7 @@ void main() {
       await tester.pump();
 
       // Click Play Again
-      final playAgainButton = find.text('Play Again');
+      final playAgainButton = config.getPlayAgainButton();
       await tester.tap(playAgainButton);
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
@@ -1420,16 +1227,16 @@ void main() {
     testWidgets('Test 24: Change Settings', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
-      await addPlayer(tester, 'Player1');
+      await UITestHelpers.addPlayer(tester, 'Player1', config);
 
       await setTargetScore(tester, 180);
 
       await startGame(tester);
 
       // Quick win
-      await throwDart(tester, 20, multiplier: 'triple');
-      await throwDart(tester, 20, multiplier: 'triple');
-      await throwDart(tester, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
+      await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple');
 
       await clickDartsRemoved(tester);
 
@@ -1439,7 +1246,7 @@ void main() {
       await tester.pump();
 
       // Click Change Settings
-      final changeSettingsButton = find.text('Change game players and settings');
+      final changeSettingsButton = config.getChangeSettingsButton();
       await tester.ensureVisible(changeSettingsButton);
       await tester.pump();
       await tester.tap(changeSettingsButton);

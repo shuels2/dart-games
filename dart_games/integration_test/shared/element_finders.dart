@@ -25,6 +25,10 @@ class ElementFinders {
     return find.byKey(CarnivalDerbyMenuKeys.addPlayerButton);
   }
 
+  static Finder getCarnivalDerbyAddPlayerButtonEmptyState() {
+    return find.byKey(CarnivalDerbyMenuKeys.addPlayerButtonEmptyState);
+  }
+
   static Finder getCarnivalDerbyPlayerTile(String playerId) {
     return find.byKey(CarnivalDerbyMenuKeys.playerTile(playerId));
   }
@@ -91,6 +95,10 @@ class ElementFinders {
 
   static Finder getTargetTagAddPlayerButton() {
     return find.byKey(TargetTagMenuKeys.addPlayerButton);
+  }
+
+  static Finder getTargetTagAddPlayerButtonEmptyState() {
+    return find.byKey(TargetTagMenuKeys.addPlayerButtonEmptyState);
   }
 
   static Finder getTargetTagPlayerTile(String playerId) {

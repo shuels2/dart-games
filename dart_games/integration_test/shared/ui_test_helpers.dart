@@ -62,7 +62,32 @@ class UITestHelpers {
     String name,
     GameUIConfig config,
   ) async {
-    final addButton = config.getAddPlayerButton();
+    // Try to find the add player button (handles both empty state and normal state)
+    Finder addButton;
+    if (config.gameName == 'Target Tag') {
+      // For Target Tag, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getTargetTagAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
+    } else if (config.gameName == 'Carnival Derby') {
+      // For Carnival Derby, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getCarnivalDerbyAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getCarnivalDerbyAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
+    } else {
+      // For other games, use the config method
+      addButton = config.getAddPlayerButton();
+    }
 
     await tester.ensureVisible(addButton.first);
     await tester.pump();

@@ -732,7 +732,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
-                            key: TargetTagMenuKeys.addPlayerButton,
+                            key: TargetTagMenuKeys.addPlayerButtonEmptyState,
                             onPressed: _handleAddPlayer,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF007A),
@@ -850,7 +850,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
-                            key: TargetTagMenuKeys.addPlayerButton,
+                            key: TargetTagMenuKeys.addPlayerButtonEmptyState,
                             onPressed: _handleAddPlayer,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF007A),
@@ -940,6 +940,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                     const Spacer(),
                     if (allPlayers.isNotEmpty)
                       ElevatedButton.icon(
+                        key: TargetTagMenuKeys.addPlayerButton,
                         onPressed: _handleAddPlayer,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFF007A),
@@ -990,6 +991,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
+                                  key: TargetTagMenuKeys.addPlayerButtonEmptyState,
                                   onPressed: _handleAddPlayer,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFFF007A),

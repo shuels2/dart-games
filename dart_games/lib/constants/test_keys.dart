@@ -38,6 +38,7 @@ class HomeKeys {
 class CarnivalDerbyMenuKeys {
   // Player selection
   static const addPlayerButton = Key('carnival_menu_add_player_button');
+  static const addPlayerButtonEmptyState = Key('carnival_menu_add_player_button_empty');
   static const playerListView = Key('carnival_menu_player_list_view');
   static Key playerTile(String playerId) =>
       Key('carnival_menu_player_${playerId}_tile');
@@ -177,6 +178,7 @@ class CarnivalDerbyResultsKeys {
 class TargetTagMenuKeys {
   // Player selection
   static const addPlayerButton = Key('target_menu_add_player_button');
+  static const addPlayerButtonEmptyState = Key('target_menu_add_player_button_empty');
   static const playerListView = Key('target_menu_player_list_view');
   static Key playerTile(String playerId) =>
       Key('target_menu_player_${playerId}_tile');
