@@ -717,7 +717,12 @@ void main() {
       }
 
       // ===== Step 4: Verify victory screen appears =====
-      await PumpSequences.fullRebuild(tester);
+      // Wait for game ending logic, stats updates, and navigation to results screen
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3)); // Wait for navigation to results screen
+      await tester.pump(); // Build results screen
+      await tester.pump(); // Layout results screen
+      await tester.pump(); // Paint results screen
 
       // Check if we're on results screen
       final playAgainButton = config.getPlayAgainButton();
