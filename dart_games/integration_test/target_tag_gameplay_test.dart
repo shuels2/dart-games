@@ -83,53 +83,83 @@ void main() {
 
   /// Enable Hero Bonus by tapping the hero bonus switch
   Future<void> enableHeroBonus(WidgetTester tester) async {
+    print('[DEBUG] enableHeroBonus: Toggling hero bonus switch');
     await SettingsHelpers.toggleTargetTagHeroBonus(tester);
     await PumpSequences.simpleUpdate(tester);
+    print('[DEBUG] enableHeroBonus: Hero bonus toggle complete');
   }
 
   /// Enable Team Mode by tapping the team mode switch
   Future<void> enableTeamMode(WidgetTester tester) async {
+    print('[DEBUG] enableTeamMode: Toggling team mode switch');
     await SettingsHelpers.toggleTargetTagTeamMode(tester);
     await PumpSequences.fullRebuild(tester);
+    print('[DEBUG] enableTeamMode: Team mode toggle complete');
   }
 
   /// Navigate back to menu from game screen
   Future<void> navigateBackToMenu(WidgetTester tester) async {
+    print('[DEBUG] navigateBackToMenu: Looking for Back button');
     final backButton = find.byTooltip('Back');
+    print('[DEBUG] navigateBackToMenu: Found ${backButton.evaluate().length} Back buttons');
     if (backButton.evaluate().isNotEmpty) {
+      print('[DEBUG] navigateBackToMenu: Tapping Back button');
       await tester.tap(backButton.first);
       await PumpSequences.navigation(tester);
+      print('[DEBUG] navigateBackToMenu: Navigation complete');
+    } else {
+      print('[DEBUG] navigateBackToMenu: WARNING - No Back button found!');
     }
   }
 
   /// Extract hero buff value from active panel text
   /// Returns the buff value found in "Buff: XXx" text
   String? getHeroBuffFromActivePanel(WidgetTester tester) {
+    print('[DEBUG] getHeroBuffFromActivePanel: Searching for "Buff:" text');
     final buffTextFinder = find.textContaining('Buff:');
-    if (buffTextFinder.evaluate().isEmpty) return null;
+    print('[DEBUG] getHeroBuffFromActivePanel: Found ${buffTextFinder.evaluate().length} widgets containing "Buff:"');
+
+    if (buffTextFinder.evaluate().isEmpty) {
+      print('[DEBUG] getHeroBuffFromActivePanel: No "Buff:" text found, returning null');
+      return null;
+    }
 
     final textWidget = tester.widget<Text>(buffTextFinder.first);
     final text = textWidget.data ?? '';
+    print('[DEBUG] getHeroBuffFromActivePanel: Found text: "$text"');
+
     final match = RegExp(r'Buff:\s*(\d+x)').firstMatch(text);
     if (match != null) {
-      return match.group(1);
+      final buffValue = match.group(1);
+      print('[DEBUG] getHeroBuffFromActivePanel: Extracted buff value: $buffValue');
+      return buffValue;
     }
+
+    print('[DEBUG] getHeroBuffFromActivePanel: No buff value matched in text, returning null');
     return null;
   }
 
   /// Verify dart indicator border color
   /// Dart indicators are identified by key pattern: d1_indicator, d2_indicator, d3_indicator
   void verifyDartIndicatorColor(WidgetTester tester, String dartKey, int expectedColorValue) {
+    print('[DEBUG] verifyDartIndicatorColor: Looking for dart indicator with key "$dartKey"');
     final indicatorFinder = find.byKey(Key(dartKey));
+    print('[DEBUG] verifyDartIndicatorColor: Found ${indicatorFinder.evaluate().length} widgets with key "$dartKey"');
     expect(indicatorFinder, findsOneWidget);
 
     final container = tester.widget<Container>(indicatorFinder);
     final decoration = container.decoration as BoxDecoration?;
+    print('[DEBUG] verifyDartIndicatorColor: Decoration is null: ${decoration == null}');
     expect(decoration, isNotNull);
-    expect(decoration!.border, isNotNull);
+
+    print('[DEBUG] verifyDartIndicatorColor: Border is null: ${decoration!.border == null}');
+    expect(decoration.border, isNotNull);
 
     final border = decoration.border as Border;
-    expect(border.top.color.toARGB32, expectedColorValue,
+    final actualColor = border.top.color.toARGB32;
+    print('[DEBUG] verifyDartIndicatorColor: Expected color: 0x${expectedColorValue.toRadixString(16)}, Actual color: 0x${actualColor.toRadixString(16)}');
+
+    expect(actualColor, expectedColorValue,
         reason: 'Dart $dartKey should have border color 0x${expectedColorValue.toRadixString(16)}');
   }
 
@@ -189,54 +219,85 @@ void main() {
       expect(find.textContaining('Opponent targets:'), findsNothing);
 
       // ===== Step 3: Return to menu, enable hero bonus, and start game =====
+      print('[DEBUG] Test 1: Navigating back to menu');
       await navigateBackToMenu(tester);
 
       // Enable hero bonus
+      print('[DEBUG] Test 1: Enabling hero bonus');
       await enableHeroBonus(tester);
 
       // Verify hero bonus is now ON (toggle should be enabled)
+      print('[DEBUG] Test 1: Verifying hero bonus switch is ON');
       final heroBonusSwitch = find.byType(Switch).last;
+      print('[DEBUG] Test 1: Found ${heroBonusSwitch.evaluate().length} Switch widgets');
       final switchWidget = tester.widget<Switch>(heroBonusSwitch);
+      print('[DEBUG] Test 1: Hero bonus switch value: ${switchWidget.value}');
       expect(switchWidget.value, isTrue);
 
       // Start the game again
+      print('[DEBUG] Test 1: Starting game with hero bonus ON');
       await UITestHelpers.startGame(tester, config);
 
       // Verify we're on the game screen
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
+      print('[DEBUG] Test 1: Verifying game screen title');
+      final titleFinder = find.text('Target Tag Game On!');
+      print('[DEBUG] Test 1: Found ${titleFinder.evaluate().length} widgets with "Target Tag Game On!"');
+      expect(titleFinder, findsOneWidget);
 
       // ===== Step 4: Verify hero buff displays in solo mode =====
-      // Verify active player panel shows BOTH "Target number:" AND "Buff:"
-      expect(find.textContaining('Target number:'), findsWidgets);
-      expect(find.textContaining('Buff:'), findsWidgets);
+      print('[DEBUG] Test 1: Verifying active player panel shows both target number and buff');
+      final targetNumberFinder = find.textContaining('Target number:');
+      print('[DEBUG] Test 1: Found ${targetNumberFinder.evaluate().length} widgets containing "Target number:"');
+      expect(targetNumberFinder, findsWidgets);
+
+      final buffFinder = find.textContaining('Buff:');
+      print('[DEBUG] Test 1: Found ${buffFinder.evaluate().length} widgets containing "Buff:"');
+      expect(buffFinder, findsWidgets);
 
       // Extract and validate the buff value (should be 2x, 3x, 4x, or 5x)
+      print('[DEBUG] Test 1: Extracting buff value from active panel');
       final buffValue = getHeroBuffFromActivePanel(tester);
+      print('[DEBUG] Test 1: Buff value: $buffValue');
       expect(buffValue, isNotNull);
       expect(['2x', '3x', '4x', '5x'].contains(buffValue), isTrue,
-          reason: 'Buff value should be 2x, 3x, 4x, or 5x');
+          reason: 'Buff value should be 2x, 3x, 4x, or 5x, got: $buffValue');
 
       // ===== Step 5: Return to menu and enable team mode =====
+      print('[DEBUG] Test 1: Returning to menu to enable team mode');
       await navigateBackToMenu(tester);
 
       // Enable team mode (this will also enable random team assignment)
+      print('[DEBUG] Test 1: Enabling team mode');
       await enableTeamMode(tester);
 
       // Verify team mode is enabled
+      print('[DEBUG] Test 1: Verifying team mode switch is ON');
       final teamModeSwitch = find.byType(Switch).first;
+      print('[DEBUG] Test 1: Found ${teamModeSwitch.evaluate().length} Switch widgets');
       final teamModeSwitchWidget = tester.widget<Switch>(teamModeSwitch);
+      print('[DEBUG] Test 1: Team mode switch value: ${teamModeSwitchWidget.value}');
       expect(teamModeSwitchWidget.value, isTrue);
 
       // Start the game in team mode
+      print('[DEBUG] Test 1: Starting game in team mode');
       await UITestHelpers.startGame(tester, config);
 
       // Verify we're on the game screen
-      expect(find.text('Target Tag Game On!'), findsOneWidget);
+      print('[DEBUG] Test 1: Verifying game screen title (team mode)');
+      final teamTitleFinder = find.text('Target Tag Game On!');
+      print('[DEBUG] Test 1: Found ${teamTitleFinder.evaluate().length} widgets with "Target Tag Game On!"');
+      expect(teamTitleFinder, findsOneWidget);
 
       // ===== Step 6: Verify hero buff displays correctly in team mode =====
       // In team mode, buff is shared per team
-      expect(find.textContaining('Target number:'), findsWidgets);
-      expect(find.textContaining('Buff:'), findsWidgets);
+      print('[DEBUG] Test 1: Verifying hero buff displays in team mode');
+      final teamTargetFinder = find.textContaining('Target number:');
+      print('[DEBUG] Test 1: Found ${teamTargetFinder.evaluate().length} widgets containing "Target number:"');
+      expect(teamTargetFinder, findsWidgets);
+
+      final teamBuffFinder = find.textContaining('Buff:');
+      print('[DEBUG] Test 1: Found ${teamBuffFinder.evaluate().length} widgets containing "Buff:"');
+      expect(teamBuffFinder, findsWidgets);
 
       // Extract and validate the team buff value
       final teamBuffValue = getHeroBuffFromActivePanel(tester);
