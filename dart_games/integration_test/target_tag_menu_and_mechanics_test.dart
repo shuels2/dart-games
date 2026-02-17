@@ -83,8 +83,12 @@ void main() {
       expect(selectedAfterAdd2.any((p) => p.id == player1!.id), isTrue);
       expect(selectedAfterAdd2.any((p) => p.id == player2!.id), isTrue);
 
-      // Verify both players visible in list
+      // Verify both players visible in list (ensureVisible handles ListView.builder lazy rendering)
+      await tester.ensureVisible(config.getPlayerTile(player1!.id));
+      await tester.pump();
       expect(config.getPlayerTile(player1!.id), findsOneWidget);
+      await tester.ensureVisible(config.getPlayerTile(player2!.id));
+      await tester.pump();
       expect(config.getPlayerTile(player2!.id), findsOneWidget);
     });
 
@@ -347,7 +351,7 @@ void main() {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Set shield max to 3
-      await SettingsHelpers.setTargetTagTargetScore(tester, '3');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 3);
 
       await UITestHelpers.addPlayer(tester, 'TaggedIn1', config);
       await UITestHelpers.addPlayer(tester, 'TaggedIn2', config);
@@ -384,7 +388,7 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '3');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 3);
 
       await UITestHelpers.addPlayer(tester, 'InvertLogic1', config);
       await UITestHelpers.addPlayer(tester, 'InvertLogic2', config);
@@ -429,7 +433,7 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '5');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 5);
 
       await UITestHelpers.addPlayer(tester, 'Attacker', config);
       await UITestHelpers.addPlayer(tester, 'Defender', config);
@@ -477,7 +481,7 @@ void main() {
       // Enable hero bonus
       await SettingsHelpers.toggleTargetTagHeroBonus(tester);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '3');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 3);
 
       await UITestHelpers.addPlayer(tester, 'HeroTest1', config);
       await UITestHelpers.addPlayer(tester, 'HeroTest2', config);
@@ -500,7 +504,7 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '3');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 3);
 
       await UITestHelpers.addPlayer(tester, 'Eliminator', config);
       await UITestHelpers.addPlayer(tester, 'Victim', config);
@@ -539,7 +543,7 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '5');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 5);
 
       await UITestHelpers.addPlayer(tester, 'Priority1', config);
       await UITestHelpers.addPlayer(tester, 'Priority2', config);
@@ -571,7 +575,7 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '3');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 3);
 
       await UITestHelpers.addPlayer(tester, 'Solo1', config);
       await UITestHelpers.addPlayer(tester, 'Solo2', config);
@@ -742,7 +746,7 @@ void main() {
       // Enable hero bonus
       await SettingsHelpers.toggleTargetTagHeroBonus(tester);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '5');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 5);
 
       await UITestHelpers.addPlayer(tester, 'HeroSolo1', config);
       await UITestHelpers.addPlayer(tester, 'HeroSolo2', config);
@@ -767,7 +771,7 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '3');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 3);
 
       await UITestHelpers.addPlayer(tester, 'LastShield1', config);
       await UITestHelpers.addPlayer(tester, 'LastShield2', config);
@@ -877,7 +881,7 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '5');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 5);
 
       await UITestHelpers.addPlayer(tester, 'EditElim1', config);
       await UITestHelpers.addPlayer(tester, 'EditElim2', config);
@@ -916,7 +920,7 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagTargetScore(tester, '5');
+      await SettingsHelpers.setTargetTagShieldMax(tester, 5);
 
       await UITestHelpers.addPlayer(tester, 'EditTagIn1', config);
       await UITestHelpers.addPlayer(tester, 'EditTagIn2', config);

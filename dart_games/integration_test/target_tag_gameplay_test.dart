@@ -640,22 +640,20 @@ void main() {
       await SettingsHelpers.initializeSettings();
     });
 
-    testWidgets('Test 11: Game Settings Panel - All Settings Visible - Validates game settings panel displays all configuration options, Shield Max slider is present and functional, Target Score dropdown is visible, Team mode toggle is present, Hero Bonus toggle is present, all settings controls are interactive', (WidgetTester tester) async {
+    testWidgets('Test 11: Game Settings Panel - All Settings Visible - Validates game settings panel displays all configuration options, Shield Max slider is present and functional, Team mode toggle is present, Hero Bonus toggle is present, all settings controls are interactive', (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Verify all game settings are visible on menu screen
+      // Note: Target Tag has no Target Score setting (uses Shield Max slider instead)
       verifyGameSettingsPanel(tester,
         hasShieldMax: true,
-        hasTargetScore: true,
+        hasTargetScore: false,
         hasTeamMode: true,
         hasHeroBonus: true,
       );
 
       // Verify Shield Max slider exists
       expect(find.byType(Slider), findsOneWidget);
-
-      // Verify Target Score dropdown exists
-      expect(find.byType(DropdownButton<String>), findsWidgets);
 
       // Verify Team mode switch exists
       expect(find.byType(Switch), findsWidgets);

@@ -38,11 +38,11 @@ class ElementFinders {
   }
 
   static Finder getCarnivalDerbyPerfectFinishToggle() {
-    return find.byKey(CarnivalDerbyMenuKeys.perfectFinishToggle);
+    return find.byKey(CarnivalDerbyMenuKeys.perfectFinishSwitch);
   }
 
   static Finder getCarnivalDerbyStartButton() {
-    return find.byKey(CarnivalDerbyMenuKeys.startGameButton);
+    return find.byKey(CarnivalDerbyMenuKeys.startButton);
   }
 
   // ==========================================================================
@@ -105,24 +105,24 @@ class ElementFinders {
     return find.byKey(TargetTagMenuKeys.playerTile(playerId));
   }
 
-  static Finder getTargetTagTargetScoreDropdown() {
-    return find.byKey(TargetTagMenuKeys.targetScoreDropdown);
+  static Finder getTargetTagShieldMaxSlider() {
+    return find.byKey(TargetTagMenuKeys.shieldMaxSlider);
   }
 
   static Finder getTargetTagTeamModeToggle() {
-    return find.byKey(TargetTagMenuKeys.teamModeToggle);
+    return find.byKey(TargetTagMenuKeys.teamModeSwitch);
   }
 
   static Finder getTargetTagHeroBonusToggle() {
-    return find.byKey(TargetTagMenuKeys.heroBonusToggle);
+    return find.byKey(TargetTagMenuKeys.heroBonusSwitch);
   }
 
   static Finder getTargetTagAssignTeamsButton() {
-    return find.byKey(TargetTagMenuKeys.assignTeamsButton);
+    return find.byKey(TargetTagMenuKeys.manualTeamAssignmentSwitch);
   }
 
   static Finder getTargetTagStartButton() {
-    return find.byKey(TargetTagMenuKeys.startGameButton);
+    return find.byKey(TargetTagMenuKeys.startButton);
   }
 
   // ==========================================================================

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Slider;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dart_games/models/player.dart';
@@ -96,18 +97,31 @@ class SettingsHelpers {
     await PumpSequences.dialogClose(tester);
   }
 
-  /// Target Tag: Set Target Score (dropdown)
+  /// Target Tag: Set Shield Max (slider)
   ///
-  /// Valid values: 10, 20, 30, 40, 50 (as strings)
-  static Future<void> setTargetTagTargetScore(
+  /// Valid values: 1-10
+  static Future<void> setTargetTagShieldMax(
     WidgetTester tester,
-    String targetScore,
+    int value,
   ) async {
-    await setDropdownValue(
-      tester,
-      ElementFinders.getTargetTagTargetScoreDropdown(),
-      targetScore,
-    );
+    final sliderFinder = ElementFinders.getTargetTagShieldMaxSlider();
+    expect(sliderFinder, findsOneWidget);
+
+    // Programmatically call the slider's onChanged callback with the target value
+    Slider sliderWidget = tester.widget<Slider>(sliderFinder);
+    if (sliderWidget.onChanged != null) {
+      sliderWidget.onChanged!(value.toDouble());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+    }
+
+    await PumpSequences.simpleUpdate(tester);
+
+    // Verify the value was set correctly
+    sliderWidget = tester.widget<Slider>(sliderFinder);
+    expect(sliderWidget.value.toInt(), value,
+        reason: 'Shield Max should be set to $value');
   }
 
   /// Carnival Derby: Set Target Score (dropdown)
