@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
+import 'package:dart_games/services/mock_scolia_api_service.dart';
 import 'shared/element_finders.dart';
 import 'shared/pump_sequences.dart';
 import 'shared/settings_helpers.dart';
@@ -40,6 +41,91 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   final config = GameUIConfig.targetTag();
+
+  // ===== MOCK API DART THROWING HELPERS =====
+
+  /// Get MockScoliaApiService from the widget tree
+  MockScoliaApiService? getMockApi(WidgetTester tester) {
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    return dartboardProvider.apiService;
+  }
+
+  /// Simulate hitting a specific dartboard number using mock API
+  Future<void> throwDartViaMock(WidgetTester tester, int number, {String multiplier = 'single'}) async {
+    final mockApi = getMockApi(tester);
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: number * (multiplier == 'double' ? 2 : multiplier == 'triple' ? 3 : 1),
+        multiplier: multiplier,
+        playerName: 'Player',
+        baseScore: number,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Simulate hitting bullseye (50 points) using mock API
+  Future<void> throwBullseyeViaMock(WidgetTester tester) async {
+    final mockApi = getMockApi(tester);
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 50,
+        multiplier: 'bullseye',
+        playerName: 'Player',
+        baseScore: 50,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Simulate hitting outer bull (25 points) using mock API
+  Future<void> throwOuterBullViaMock(WidgetTester tester) async {
+    final mockApi = getMockApi(tester);
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 25,
+        multiplier: 'outer_bull',
+        playerName: 'Player',
+        baseScore: 25,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Simulate missing the dartboard using mock API
+  Future<void> throwMissViaMock(WidgetTester tester) async {
+    final mockApi = getMockApi(tester);
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 0,
+        multiplier: 'miss',
+        playerName: 'Player',
+        baseScore: 0,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Click DARTS REMOVED button on emulator
+  Future<void> clickDartsRemoved(WidgetTester tester) async {
+    final dartsRemovedButton = find.text('DARTS REMOVED');
+    if (dartsRemovedButton.evaluate().isNotEmpty) {
+      await tester.tap(dartsRemovedButton.first);
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
 
   group('Target Tag - Menu & Game Mechanics Tests', () {
     setUp(() async {
@@ -361,7 +447,7 @@ void main() {
       expect(playerTarget, isNotNull);
 
       // Hit own target (should be green - building shields)
-      await UITestHelpers.throwDart(tester, config, playerTarget!);
+      await throwDartViaMock(tester, playerTarget!);
 
       // Verify dart indicator present (actual color checking would require visual testing)
       // For now, verify game continues normally
@@ -369,7 +455,7 @@ void main() {
       expect(shieldsAfterHit, greaterThan(0));
 
       // Throw miss (should be pink)
-      await UITestHelpers.throwMiss(tester, config);
+      await throwMissViaMock(tester);
 
       // Shields should not increase
       final shieldsAfterMiss = ProviderHelpers.getTargetTagPlayerShields(tester, currentPlayerId);
@@ -399,7 +485,7 @@ void main() {
 
       // Hit opponent target (should be invalid - pink)
       final shieldsBefore = ProviderHelpers.getTargetTagPlayerShields(tester, currentPlayerId);
-      await UITestHelpers.throwDart(tester, config, opponentTarget!);
+      await throwDartViaMock(tester, opponentTarget!);
 
       // Shields should NOT increase
       final shieldsAfter = ProviderHelpers.getTargetTagPlayerShields(tester, currentPlayerId);
@@ -432,7 +518,7 @@ void main() {
       expect(playerTarget, isNotNull);
 
       // Hit with triple to reach max shields instantly
-      await UITestHelpers.throwDart(tester, config, playerTarget!, multiplier: 'triple');
+      await throwDartViaMock(tester, playerTarget!, multiplier: 'triple');
 
       // Verify reached tagged in
       final finalShields = ProviderHelpers.getTargetTagPlayerShields(tester, currentPlayerId);
@@ -460,20 +546,20 @@ void main() {
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
       // Reach tagged in
-      await UITestHelpers.throwDart(tester, config, player1Target!, multiplier: 'triple');
+      await throwDartViaMock(tester, player1Target!, multiplier: 'triple');
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
 
       // Advance to next turn
-      await UITestHelpers.throwMiss(tester, config);
-      await UITestHelpers.throwMiss(tester, config);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
 
       // Now back to player 1 (tagged in)
       final currentAfterRotation = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       if (currentAfterRotation != player1Id) {
         // Skip second player's turn
-        await UITestHelpers.throwMiss(tester, config);
-        await UITestHelpers.throwMiss(tester, config);
-        await UITestHelpers.throwMiss(tester, config);
+        await throwMissViaMock(tester);
+        await throwMissViaMock(tester);
+        await throwMissViaMock(tester);
       }
 
       // Now player 1 is tagged in and it's their turn
@@ -482,7 +568,7 @@ void main() {
 
       // Hit own target (should be pink - bad when tagged in)
       final shieldsBefore = ProviderHelpers.getTargetTagPlayerShields(tester, currentId);
-      await UITestHelpers.throwDart(tester, config, player1Target);
+      await throwDartViaMock(tester, player1Target);
 
       // Shields should not change (hitting own target when tagged in is bad)
       final shieldsAfter = ProviderHelpers.getTargetTagPlayerShields(tester, currentId);
@@ -506,7 +592,7 @@ void main() {
 
       // Build shields to max
       for (int i = 0; i < 5; i++) {
-        await UITestHelpers.throwDart(tester, config, player1Target!);
+        await throwDartViaMock(tester, player1Target!);
       }
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
 
@@ -514,20 +600,20 @@ void main() {
       final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
-      await UITestHelpers.throwDart(tester, config, player2Target!);
-      await UITestHelpers.throwDart(tester, config, player2Target);
+      await throwDartViaMock(tester, player2Target!);
+      await throwDartViaMock(tester, player2Target);
 
       final player2Shields = ProviderHelpers.getTargetTagPlayerShields(tester, player2.id);
       expect(player2Shields, 2);
 
       // Player 2 ends turn
-      await UITestHelpers.throwMiss(tester, config);
+      await throwMissViaMock(tester);
 
       // Player 1 attacks Player 2
       final currentId = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, currentId!), isTrue);
 
-      await UITestHelpers.throwDart(tester, config, player2Target);
+      await throwDartViaMock(tester, player2Target);
 
       // Verify Player 2 shields reduced
       final player2ShieldsAfter = ProviderHelpers.getTargetTagPlayerShields(tester, player2.id);
@@ -552,7 +638,7 @@ void main() {
       final player1Id = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
-      await UITestHelpers.throwDart(tester, config, player1Target!, multiplier: 'triple');
+      await throwDartViaMock(tester, player1Target!, multiplier: 'triple');
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
 
       // Hero bonus is active - verify game continues
@@ -575,21 +661,21 @@ void main() {
       final player1Id = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
-      await UITestHelpers.throwDart(tester, config, player1Target!, multiplier: 'triple');
+      await throwDartViaMock(tester, player1Target!, multiplier: 'triple');
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
 
       // Player 2 builds 1 shield
       final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
-      await UITestHelpers.throwDart(tester, config, player2Target!);
-      await UITestHelpers.throwMiss(tester, config);
-      await UITestHelpers.throwMiss(tester, config);
+      await throwDartViaMock(tester, player2Target!);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
 
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player2.id), 1);
 
       // Player 1 eliminates Player 2
-      await UITestHelpers.throwDart(tester, config, player2Target);
+      await throwDartViaMock(tester, player2Target);
 
       // Verify elimination
       final isEliminated = ProviderHelpers.isTargetTagPlayerEliminated(tester, player2.id);
@@ -615,12 +701,12 @@ void main() {
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
       // Hit own target (should build shields)
-      await UITestHelpers.throwDart(tester, config, player1Target!);
+      await throwDartViaMock(tester, player1Target!);
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1Id), greaterThan(0));
 
       // Miss (no change)
       final shieldsBefore = ProviderHelpers.getTargetTagPlayerShields(tester, player1Id);
-      await UITestHelpers.throwMiss(tester, config);
+      await throwMissViaMock(tester);
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1Id), equals(shieldsBefore));
 
       // Visual validation of colors would require screenshot testing
@@ -648,21 +734,21 @@ void main() {
       final player1Id = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
-      await UITestHelpers.throwDart(tester, config, player1Target!, multiplier: 'triple');
+      await throwDartViaMock(tester, player1Target!, multiplier: 'triple');
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
 
       // Player 2 builds partial shields
       final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
-      await UITestHelpers.throwDart(tester, config, player2Target!);
-      await UITestHelpers.throwMiss(tester, config);
-      await UITestHelpers.throwMiss(tester, config);
+      await throwDartViaMock(tester, player2Target!);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
 
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player2.id), 1);
 
       // Player 1 attacks Player 2
-      await UITestHelpers.throwDart(tester, config, player2Target);
+      await throwDartViaMock(tester, player2Target);
 
       final player2ShieldsAfter = ProviderHelpers.getTargetTagPlayerShields(tester, player2.id);
       expect(player2ShieldsAfter, 0);
@@ -818,7 +904,7 @@ void main() {
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
       for (int i = 0; i < 5; i++) {
-        await UITestHelpers.throwDart(tester, config, player1Target!);
+        await throwDartViaMock(tester, player1Target!);
       }
 
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
@@ -842,28 +928,28 @@ void main() {
       final player1Id = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
-      await UITestHelpers.throwDart(tester, config, player1Target!, multiplier: 'triple');
+      await throwDartViaMock(tester, player1Target!, multiplier: 'triple');
 
       final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
-      await UITestHelpers.throwDart(tester, config, player2Target!, multiplier: 'triple');
+      await throwDartViaMock(tester, player2Target!, multiplier: 'triple');
 
       // Both tagged in
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player2.id), isTrue);
 
       // Player 1 attacks Player 2 twice (3 shields -> 1 shield)
-      await UITestHelpers.throwDart(tester, config, player2Target);
-      await UITestHelpers.throwDart(tester, config, player2Target);
+      await throwDartViaMock(tester, player2Target);
+      await throwDartViaMock(tester, player2Target);
 
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player2.id), 1);
 
       // Skip to Player 1's turn
-      await UITestHelpers.throwMiss(tester, config);
+      await throwMissViaMock(tester);
 
       // Final elimination attack
-      await UITestHelpers.throwDart(tester, config, player2Target);
+      await throwDartViaMock(tester, player2Target);
 
       expect(ProviderHelpers.isTargetTagPlayerEliminated(tester, player2.id), isTrue);
     });
@@ -953,16 +1039,16 @@ void main() {
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
       for (int i = 0; i < 5; i++) {
-        await UITestHelpers.throwDart(tester, config, player1Target!);
+        await throwDartViaMock(tester, player1Target!);
       }
 
       // Player 2 builds partial shields
       final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
-      await UITestHelpers.throwDart(tester, config, player2Target!);
-      await UITestHelpers.throwDart(tester, config, player2Target);
-      await UITestHelpers.throwMiss(tester, config);
+      await throwDartViaMock(tester, player2Target!);
+      await throwDartViaMock(tester, player2Target);
+      await throwMissViaMock(tester);
 
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player2.id), 2);
 
@@ -991,8 +1077,8 @@ void main() {
       final player1Id = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
-      await UITestHelpers.throwDart(tester, config, player1Target!);
-      await UITestHelpers.throwDart(tester, config, player1Target);
+      await throwDartViaMock(tester, player1Target!);
+      await throwDartViaMock(tester, player1Target);
 
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1Id), 2);
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isFalse);
