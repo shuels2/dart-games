@@ -11,13 +11,20 @@ class SettingsHelpers {
   // ==========================================================================
 
   /// Initialize SharedPreferences for tests (clears data, sets emulator mode)
+  ///
+  /// NOTE: For integration tests, we need to actually set values in SharedPreferences
+  /// (which persists to browser's IndexedDB), not use setMockInitialValues which
+  /// only works in widget tests.
   static Future<void> initializeSettings({
     bool useEmulator = true,
   }) async {
-    SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+
+    // Set emulator mode and mock dartboard info for integration tests
     await prefs.setBool('use_emulator', useEmulator);
+    await prefs.setString('dartboard_name', 'Test Dartboard');
+    await prefs.setString('dartboard_serial', 'TEST-001');
   }
 
   /// Create test players with IDs and names
