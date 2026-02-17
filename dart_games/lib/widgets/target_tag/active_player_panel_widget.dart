@@ -139,6 +139,9 @@ class ActivePlayerPanelWidget extends StatelessWidget {
                 children: [
                   Text(
                     isTaggedIn ? 'Opponent targets: ' : 'Target number: ',
+                    key: isTaggedIn
+                        ? TargetTagGameKeys.activePlayerOpponentTargetsLabel
+                        : TargetTagGameKeys.activePlayerTargetLabel,
                     style: GoogleFonts.fredoka(
                       fontSize: 26, // Increased from 24
                       fontWeight: FontWeight.bold,
@@ -152,6 +155,9 @@ class ActivePlayerPanelWidget extends StatelessWidget {
                       isTaggedIn
                           ? opponentTargetNumbers.join(', ')
                           : '$targetNumber',
+                      key: isTaggedIn
+                          ? TargetTagGameKeys.activePlayerOpponentTargetsValue
+                          : TargetTagGameKeys.activePlayerTargetValue,
                       style: GoogleFonts.luckiestGuy(
                         fontSize: 32, // Increased from 30
                         color: const Color(0xFFFF007A), // Pink
@@ -195,6 +201,7 @@ class ActivePlayerPanelWidget extends StatelessWidget {
               if (isTaggedIn) ...[
                 const SizedBox(height: 8),
                 Container(
+                  key: TargetTagGameKeys.activePlayerTaggedInBadge,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFD700), // Arcade gold for tagged in
@@ -302,7 +309,15 @@ class ActivePlayerPanelWidget extends StatelessWidget {
     final isHeroBonusHit = dartIndex < dartHeroBonusHit.length && dartHeroBonusHit[dartIndex];
     final borderColor = _getDartBoxColor(dartIndex);
 
+    // Map label to key (D1 -> d1_indicator, D2 -> d2_indicator, D3 -> d3_indicator)
+    final indicatorKey = label == 'D1'
+        ? TargetTagGameKeys.activePlayerD1Indicator
+        : label == 'D2'
+            ? TargetTagGameKeys.activePlayerD2Indicator
+            : TargetTagGameKeys.activePlayerD3Indicator;
+
     Widget dartBox = Container(
+      key: indicatorKey,
       width: 70,
       height: 50,
       decoration: BoxDecoration(

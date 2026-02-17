@@ -214,8 +214,16 @@ class TargetTagGameKeys {
       Key('target_game_player_${playerId}_eliminated_overlay');
 
   // Active player panel
+  static const activePlayerTargetLabel = Key('target_game_active_player_target_label');
+  static const activePlayerTargetValue = Key('target_game_active_player_target_value');
+  static const activePlayerOpponentTargetsLabel = Key('target_game_active_player_opponent_targets_label');
+  static const activePlayerOpponentTargetsValue = Key('target_game_active_player_opponent_targets_value');
   static const activePlayerBuffLabel = Key('target_game_active_player_buff_label');
   static const activePlayerBuffValue = Key('target_game_active_player_buff_value');
+  static const activePlayerTaggedInBadge = Key('target_game_active_player_tagged_in_badge');
+  static const activePlayerD1Indicator = Key('d1_indicator');
+  static const activePlayerD2Indicator = Key('d2_indicator');
+  static const activePlayerD3Indicator = Key('d3_indicator');
 
   // Game controls
   static const skipTurnButton = Key('target_game_skip_turn_button');
