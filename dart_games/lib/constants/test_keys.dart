@@ -213,6 +213,10 @@ class TargetTagGameKeys {
   static Key playerEliminatedOverlay(String playerId) =>
       Key('target_game_player_${playerId}_eliminated_overlay');
 
+  // Active player panel
+  static const activePlayerBuffLabel = Key('target_game_active_player_buff_label');
+  static const activePlayerBuffValue = Key('target_game_active_player_buff_value');
+
   // Game controls
   static const skipTurnButton = Key('target_game_skip_turn_button');
   static const editScoreButton = Key('target_game_edit_score_button');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
+import 'package:dart_games/constants/test_keys.dart';
 
 // Shared component imports
 import 'shared/ui_test_helpers.dart';
@@ -112,31 +113,22 @@ void main() {
     }
   }
 
-  /// Extract hero buff value from active panel text
-  /// Returns the buff value found in "Buff: XXx" text
+  /// Extract hero buff value from active panel using key
+  /// Returns the buff value found in the buff value widget
   String? getHeroBuffFromActivePanel(WidgetTester tester) {
-    print('[DEBUG] getHeroBuffFromActivePanel: Searching for "Buff:" text');
-    final buffTextFinder = find.textContaining('Buff:');
-    print('[DEBUG] getHeroBuffFromActivePanel: Found ${buffTextFinder.evaluate().length} widgets containing "Buff:"');
+    print('[DEBUG] getHeroBuffFromActivePanel: Looking for buff value widget with key');
+    final buffValueFinder = find.byKey(TargetTagGameKeys.activePlayerBuffValue);
+    print('[DEBUG] getHeroBuffFromActivePanel: Found ${buffValueFinder.evaluate().length} buff value widgets');
 
-    if (buffTextFinder.evaluate().isEmpty) {
-      print('[DEBUG] getHeroBuffFromActivePanel: No "Buff:" text found, returning null');
+    if (buffValueFinder.evaluate().isEmpty) {
+      print('[DEBUG] getHeroBuffFromActivePanel: No buff value widget found, returning null');
       return null;
     }
 
-    final textWidget = tester.widget<Text>(buffTextFinder.first);
-    final text = textWidget.data ?? '';
-    print('[DEBUG] getHeroBuffFromActivePanel: Found text: "$text"');
-
-    final match = RegExp(r'Buff:\s*(\d+x)').firstMatch(text);
-    if (match != null) {
-      final buffValue = match.group(1);
-      print('[DEBUG] getHeroBuffFromActivePanel: Extracted buff value: $buffValue');
-      return buffValue;
-    }
-
-    print('[DEBUG] getHeroBuffFromActivePanel: No buff value matched in text, returning null');
-    return null;
+    final textWidget = tester.widget<Text>(buffValueFinder.first);
+    final buffValue = textWidget.data ?? '';
+    print('[DEBUG] getHeroBuffFromActivePanel: Extracted buff value: "$buffValue"');
+    return buffValue.isNotEmpty ? buffValue : null;
   }
 
   /// Verify dart indicator border color

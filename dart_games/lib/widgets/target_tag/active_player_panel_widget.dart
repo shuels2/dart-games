@@ -170,6 +170,7 @@ class ActivePlayerPanelWidget extends StatelessWidget {
                     const SizedBox(width: 12),
                     Text(
                       'Buff: ',
+                      key: TargetTagGameKeys.activePlayerBuffLabel,
                       style: GoogleFonts.fredoka(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -181,6 +182,7 @@ class ActivePlayerPanelWidget extends StatelessWidget {
                       offset: const Offset(0, 5), // Move down 5px
                       child: Text(
                         _formatBuffNumber(soloHeroBuffNumber!, soloHeroBuffMultiplier),
+                        key: TargetTagGameKeys.activePlayerBuffValue,
                         style: GoogleFonts.luckiestGuy(
                           fontSize: 30, // Increased from 28
                           color: const Color(0xFFFFD700), // Arcade gold for buff
