@@ -297,7 +297,6 @@ void main() {
       final teamBuffValue = getHeroBuffFromActivePanel(tester);
       expect(teamBuffValue, isNotNull);
       // Buff should be in dart notation: D1-D20 or T1-T20
-      final buffPattern = RegExp(r'^[DT]\d{1,2}$');
       expect(buffPattern.hasMatch(teamBuffValue!), isTrue,
           reason: 'Team buff value should be dart notation (D1-D20 or T1-T20), got: $teamBuffValue');
     });
@@ -444,7 +443,6 @@ void main() {
       final teamBuff = getHeroBuffFromActivePanel(tester);
       expect(teamBuff, isNotNull);
       // Buff should be in dart notation: D1-D20 or T1-T20
-      final buffPattern = RegExp(r'^[DT]\d{1,2}$');
       expect(buffPattern.hasMatch(teamBuff!), isTrue,
           reason: 'Team buff value should be dart notation (D1-D20 or T1-T20), got: $teamBuff');
 
