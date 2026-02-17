@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:dart_games/constants/test_keys.dart';
 import 'shared/element_finders.dart';
 import 'shared/pump_sequences.dart';
 import 'shared/settings_helpers.dart';
@@ -84,22 +85,34 @@ void main() {
       expect(selectedAfterAdd2.any((p) => p.id == player2!.id), isTrue);
 
       // Verify both players visible in list
-      // Wait for ListView.builder to create the tile widgets (poll up to 10 seconds)
-      final player1Tile = config.getPlayerTile(player1!.id);
-      final player2Tile = config.getPlayerTile(player2!.id);
+      print('[DEBUG] Test 1: Player 1 ID: ${player1!.id}');
+      print('[DEBUG] Test 1: Player 2 ID: ${player2!.id}');
 
-      print('[DEBUG] Test 1: Waiting for player tiles to render...');
-      print('[DEBUG] Test 1: Player 1 ID: ${player1.id}');
-      print('[DEBUG] Test 1: Player 2 ID: ${player2.id}');
+      // First, wait for the ListView itself to render (poll up to 10 seconds)
+      final playerListView = find.byKey(TargetTagMenuKeys.playerListView);
+      print('[DEBUG] Test 1: Waiting for ListView to render...');
 
-      int attempts = 0;
-      while ((player1Tile.evaluate().isEmpty || player2Tile.evaluate().isEmpty) && attempts < 20) {
-        print('[DEBUG] Test 1: Attempt ${attempts + 1}/20 - Player1: ${player1Tile.evaluate().length}, Player2: ${player2Tile.evaluate().length}');
+      int listAttempts = 0;
+      while (playerListView.evaluate().isEmpty && listAttempts < 20) {
+        print('[DEBUG] Test 1: ListView attempt ${listAttempts + 1}/20 - Found ${playerListView.evaluate().length}');
         await tester.pump(const Duration(milliseconds: 500));
-        attempts++;
+        listAttempts++;
       }
 
-      print('[DEBUG] Test 1: Final state - Player1: ${player1Tile.evaluate().length}, Player2: ${player2Tile.evaluate().length}');
+      print('[DEBUG] Test 1: ListView state - Found ${playerListView.evaluate().length}');
+
+      // Now wait for ListView.builder to create the tile widgets
+      final player1Tile = config.getPlayerTile(player1.id);
+      final player2Tile = config.getPlayerTile(player2.id);
+
+      int tileAttempts = 0;
+      while ((player1Tile.evaluate().isEmpty || player2Tile.evaluate().isEmpty) && tileAttempts < 20) {
+        print('[DEBUG] Test 1: Tile attempt ${tileAttempts + 1}/20 - Player1: ${player1Tile.evaluate().length}, Player2: ${player2Tile.evaluate().length}');
+        await tester.pump(const Duration(milliseconds: 500));
+        tileAttempts++;
+      }
+
+      print('[DEBUG] Test 1: Final tile state - Player1: ${player1Tile.evaluate().length}, Player2: ${player2Tile.evaluate().length}');
 
       // Now ensureVisible and verify
       await tester.ensureVisible(player1Tile);
@@ -165,20 +178,33 @@ void main() {
       // Try to manually select 11th player (should be rejected)
       final player11 = ProviderHelpers.findPlayerByName(tester, 'Player11');
       expect(player11, isNotNull);
-      final player11Tile = config.getPlayerTile(player11!.id);
+      print('[DEBUG] Test 2: Player11 ID: ${player11!.id}');
 
-      print('[DEBUG] Test 2: Waiting for Player11 tile to render...');
-      print('[DEBUG] Test 2: Player11 ID: ${player11.id}');
+      // First, wait for the ListView itself to render (poll up to 10 seconds)
+      final playerListView = find.byKey(TargetTagMenuKeys.playerListView);
+      print('[DEBUG] Test 2: Waiting for ListView to render...');
 
-      // Wait for tile to render (poll up to 10 seconds)
-      int attempts = 0;
-      while (player11Tile.evaluate().isEmpty && attempts < 20) {
-        print('[DEBUG] Test 2: Attempt ${attempts + 1}/20 - Found ${player11Tile.evaluate().length} tiles');
+      int listAttempts = 0;
+      while (playerListView.evaluate().isEmpty && listAttempts < 20) {
+        print('[DEBUG] Test 2: ListView attempt ${listAttempts + 1}/20 - Found ${playerListView.evaluate().length}');
         await tester.pump(const Duration(milliseconds: 500));
-        attempts++;
+        listAttempts++;
       }
 
-      print('[DEBUG] Test 2: Final state - Found ${player11Tile.evaluate().length} tiles');
+      print('[DEBUG] Test 2: ListView state - Found ${playerListView.evaluate().length}');
+
+      // Now wait for ListView.builder to create the tile widget
+      final player11Tile = config.getPlayerTile(player11!.id);
+      print('[DEBUG] Test 2: Waiting for Player11 tile to render...');
+
+      int tileAttempts = 0;
+      while (player11Tile.evaluate().isEmpty && tileAttempts < 20) {
+        print('[DEBUG] Test 2: Tile attempt ${tileAttempts + 1}/20 - Found ${player11Tile.evaluate().length} tiles');
+        await tester.pump(const Duration(milliseconds: 500));
+        tileAttempts++;
+      }
+
+      print('[DEBUG] Test 2: Final tile state - Found ${player11Tile.evaluate().length} tiles');
 
       await tester.ensureVisible(player11Tile);
       await tester.pump();

@@ -751,6 +751,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                       ),
                     )
                   : ListView.builder(
+                      key: TargetTagMenuKeys.playerListView,
                       controller: _scrollController,
                       itemCount: allPlayers.length,
                       itemBuilder: (context, index) {
@@ -869,6 +870,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                       ),
                     )
                   : ListView.builder(
+                      key: TargetTagMenuKeys.playerListView,
                       controller: _scrollController,
                       itemCount: allPlayers.length,
                       itemBuilder: (context, index) {
@@ -1011,12 +1013,14 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           )
                         : (!_isTeamMode || _isRandomTeams)
                             ? ListView.builder(
+                                key: TargetTagMenuKeys.playerListView,
                                 controller: _scrollController,
                                 itemCount: allPlayers.length,
                                 itemBuilder: (context, index) {
                                   final player = allPlayers[index];
                                   final isSelected = selectedPlayers.any((p) => p.id == player.id);
                                   return PlayerSelectionCard(
+                                    key: TargetTagMenuKeys.playerTile(player.id),
                                     player: player,
                                     isSelected: isSelected,
                                     selectedColor: const Color(0xFFFF007A),
@@ -1032,6 +1036,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                                 },
                               )
                             : ListView.builder(
+                                key: TargetTagMenuKeys.playerListView,
                                 controller: _scrollController,
                                 itemCount: allPlayers.length,
                                 itemBuilder: (context, index) {

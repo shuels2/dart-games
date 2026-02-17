@@ -847,6 +847,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   ),
                 )
               : ListView.builder(
+                  key: CarnivalDerbyMenuKeys.playerListView,
                   controller: _availablePlayersScrollController,
                   itemCount: allPlayers.length,
                   itemBuilder: (context, index) {
