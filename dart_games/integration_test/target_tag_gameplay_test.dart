@@ -132,10 +132,10 @@ void main() {
   }
 
   /// Verify dart indicator border color
-  /// Dart indicators are identified by key pattern: d1_indicator, d2_indicator, d3_indicator
-  void verifyDartIndicatorColor(WidgetTester tester, String dartKey, int expectedColorValue) {
+  /// Dart indicators are identified by TargetTagGameKeys constants
+  void verifyDartIndicatorColor(WidgetTester tester, Key dartKey, int expectedColorValue) {
     print('[DEBUG] verifyDartIndicatorColor: Looking for dart indicator with key "$dartKey"');
-    final indicatorFinder = find.byKey(Key(dartKey));
+    final indicatorFinder = find.byKey(dartKey);
     print('[DEBUG] verifyDartIndicatorColor: Found ${indicatorFinder.evaluate().length} widgets with key "$dartKey"');
     expect(indicatorFinder, findsOneWidget);
 
@@ -488,7 +488,7 @@ void main() {
       await throwDartViaMock(tester, targetNumber, multiplier: 'single');
 
       // Verify D1 has green border (0xFF00FFA3)
-      verifyDartIndicatorColor(tester, 'd1_indicator', 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFF00FFA3);
 
       // ===== Test D2: Miss own target (should be pink) =====
       // Throw a different number (not the target)
@@ -496,13 +496,13 @@ void main() {
       await throwDartViaMock(tester, missNumber, multiplier: 'single');
 
       // Verify D2 has pink border (0xFFFF007A)
-      verifyDartIndicatorColor(tester, 'd2_indicator', 0xFFFF007A);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD2Indicator, 0xFFFF007A);
 
       // ===== Test D3: Hit own target with double (should be green) =====
       await throwDartViaMock(tester, targetNumber, multiplier: 'double');
 
       // Verify D3 has green border (0xFF00FFA3)
-      verifyDartIndicatorColor(tester, 'd3_indicator', 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD3Indicator, 0xFF00FFA3);
     });
 
     testWidgets('Test 7: D1/D2/D3 Highlighting - Tagged In Mode Attack - Validates dart highlighting when player is tagged in and attacking opponents, D1 hits opponent target shows green border (successful attack), D2 misses all opponent targets shows pink border (failed attack), D3 hits different opponent target shows green border, dart indicators correctly show attack hit/miss status', (WidgetTester tester) async {
@@ -550,7 +550,7 @@ void main() {
       // ===== Step 3: Attack opponent targets and verify highlighting =====
       // D1: Hit Player B's target (should be green)
       await throwDartViaMock(tester, playerBTarget!, multiplier: 'single');
-      verifyDartIndicatorColor(tester, 'd1_indicator', 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFF00FFA3);
 
       // D2: Miss all opponent targets (should be pink)
       // Throw a number that's neither Player B nor Player C target
@@ -559,11 +559,11 @@ void main() {
         missNumber++;
       }
       await throwDartViaMock(tester, missNumber, multiplier: 'single');
-      verifyDartIndicatorColor(tester, 'd2_indicator', 0xFFFF007A);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD2Indicator, 0xFFFF007A);
 
       // D3: Hit Player C's target (should be green)
       await throwDartViaMock(tester, playerCTarget!, multiplier: 'single');
-      verifyDartIndicatorColor(tester, 'd3_indicator', 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD3Indicator, 0xFF00FFA3);
     });
 
     testWidgets('Test 8: Hero Buff Multiplier Application - Validates hero buff multiplier is correctly applied to attack damage, 2x buff doubles shield damage, 3x buff triples shield damage, different buff values (2x/3x/4x/5x) all work correctly, buff applies to all dart types (single/double/triple)', (WidgetTester tester) async {
@@ -642,18 +642,18 @@ void main() {
 
       // Throw all three darts hitting the target
       await throwDartViaMock(tester, targetNumber, multiplier: 'single');
-      verifyDartIndicatorColor(tester, 'd1_indicator', 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFF00FFA3);
 
       await throwDartViaMock(tester, targetNumber, multiplier: 'single');
-      verifyDartIndicatorColor(tester, 'd2_indicator', 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD2Indicator, 0xFF00FFA3);
 
       await throwDartViaMock(tester, targetNumber, multiplier: 'single');
-      verifyDartIndicatorColor(tester, 'd3_indicator', 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD3Indicator, 0xFF00FFA3);
 
       // All three should be green
-      verifyDartIndicatorColor(tester, 'd1_indicator', 0xFF00FFA3);
-      verifyDartIndicatorColor(tester, 'd2_indicator', 0xFF00FFA3);
-      verifyDartIndicatorColor(tester, 'd3_indicator', 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD2Indicator, 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD3Indicator, 0xFF00FFA3);
     });
 
     testWidgets('Test 10: Dart Highlighting - All Three Darts Miss Target - Validates all three dart indicators show pink borders when all darts miss the target number, D1/D2/D3 all display 0xFFFF007A pink border color, visual feedback correctly indicates failed shield building attempts', (WidgetTester tester) async {
@@ -673,18 +673,18 @@ void main() {
       final missNumber = targetNumber == 20 ? 19 : 20;
 
       await throwDartViaMock(tester, missNumber, multiplier: 'single');
-      verifyDartIndicatorColor(tester, 'd1_indicator', 0xFFFF007A);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFFFF007A);
 
       await throwDartViaMock(tester, missNumber, multiplier: 'single');
-      verifyDartIndicatorColor(tester, 'd2_indicator', 0xFFFF007A);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD2Indicator, 0xFFFF007A);
 
       await throwDartViaMock(tester, missNumber, multiplier: 'single');
-      verifyDartIndicatorColor(tester, 'd3_indicator', 0xFFFF007A);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD3Indicator, 0xFFFF007A);
 
       // All three should be pink
-      verifyDartIndicatorColor(tester, 'd1_indicator', 0xFFFF007A);
-      verifyDartIndicatorColor(tester, 'd2_indicator', 0xFFFF007A);
-      verifyDartIndicatorColor(tester, 'd3_indicator', 0xFFFF007A);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFFFF007A);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD2Indicator, 0xFFFF007A);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD3Indicator, 0xFFFF007A);
     });
   });
 
