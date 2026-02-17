@@ -246,13 +246,15 @@ void main() {
       print('[DEBUG] Test 1: Found ${buffFinder.evaluate().length} widgets containing "Buff:"');
       expect(buffFinder, findsWidgets);
 
-      // Extract and validate the buff value (should be 2x, 3x, 4x, or 5x)
+      // Extract and validate the buff value (should be dart notation like D3, T16)
       print('[DEBUG] Test 1: Extracting buff value from active panel');
       final buffValue = getHeroBuffFromActivePanel(tester);
       print('[DEBUG] Test 1: Buff value: $buffValue');
       expect(buffValue, isNotNull);
-      expect(['2x', '3x', '4x', '5x'].contains(buffValue), isTrue,
-          reason: 'Buff value should be 2x, 3x, 4x, or 5x, got: $buffValue');
+      // Buff should be in dart notation: D1-D20 or T1-T20
+      final buffPattern = RegExp(r'^[DT]\d{1,2}$');
+      expect(buffPattern.hasMatch(buffValue!), isTrue,
+          reason: 'Buff value should be dart notation (D1-D20 or T1-T20), got: $buffValue');
 
       // ===== Step 5: Return to menu and enable team mode =====
       print('[DEBUG] Test 1: Returning to menu to enable team mode');
@@ -294,8 +296,10 @@ void main() {
       // Extract and validate the team buff value
       final teamBuffValue = getHeroBuffFromActivePanel(tester);
       expect(teamBuffValue, isNotNull);
-      expect(['2x', '3x', '4x', '5x'].contains(teamBuffValue), isTrue,
-          reason: 'Team buff value should be 2x, 3x, 4x, or 5x');
+      // Buff should be in dart notation: D1-D20 or T1-T20
+      final buffPattern = RegExp(r'^[DT]\d{1,2}$');
+      expect(buffPattern.hasMatch(teamBuffValue!), isTrue,
+          reason: 'Team buff value should be dart notation (D1-D20 or T1-T20), got: $teamBuffValue');
     });
 
     testWidgets('Test 2: Active Panel Opponent Targets Display - Validates active panel shows target number when not tagged in, panel switches to show opponent targets list when player gets tagged in, opponent targets displayed correctly with player names and target numbers', (WidgetTester tester) async {
@@ -329,6 +333,11 @@ void main() {
 
       await throwDartViaMock(tester, targetNumber, multiplier: 'triple');  // 3 shields (total: 6 = max)
       await clickDartsRemoved(tester);
+
+      // Wait for tagged-in state to update and active panel to rebuild
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
 
       // ===== Step 3: Verify active panel NOW shows opponent targets =====
       expect(find.textContaining('Opponent targets:'), findsWidgets);
@@ -370,6 +379,11 @@ void main() {
       await throwDartViaMock(tester, player1Target, multiplier: 'triple');
       await clickDartsRemoved(tester);
 
+      // Wait for tagged-in state to update and active panel to rebuild
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
       // ===== Step 3: Verify tagged in badge appears =====
       expect(find.text('TAGGED IN'), findsWidgets);
       expect(find.textContaining('Opponent targets:'), findsWidgets);
@@ -410,7 +424,10 @@ void main() {
       expect(find.textContaining('Buff:'), findsWidgets);
       final soloBuff = getHeroBuffFromActivePanel(tester);
       expect(soloBuff, isNotNull);
-      expect(['2x', '3x', '4x', '5x'].contains(soloBuff), isTrue);
+      // Buff should be in dart notation: D1-D20 or T1-T20
+      final buffPattern = RegExp(r'^[DT]\d{1,2}$');
+      expect(buffPattern.hasMatch(soloBuff!), isTrue,
+          reason: 'Solo buff value should be dart notation (D1-D20 or T1-T20), got: $soloBuff');
 
       // ===== Step 3: Return to menu and enable team mode =====
       await navigateBackToMenu(tester);
@@ -426,7 +443,10 @@ void main() {
       expect(find.textContaining('Buff:'), findsWidgets);
       final teamBuff = getHeroBuffFromActivePanel(tester);
       expect(teamBuff, isNotNull);
-      expect(['2x', '3x', '4x', '5x'].contains(teamBuff), isTrue);
+      // Buff should be in dart notation: D1-D20 or T1-T20
+      final buffPattern = RegExp(r'^[DT]\d{1,2}$');
+      expect(buffPattern.hasMatch(teamBuff!), isTrue,
+          reason: 'Team buff value should be dart notation (D1-D20 or T1-T20), got: $teamBuff');
 
       // Verify team target numbers are assigned
       expect(find.textContaining('Target number:'), findsWidgets);
@@ -460,6 +480,11 @@ void main() {
 
       await throwDartViaMock(tester, player1Target, multiplier: 'triple');
       await clickDartsRemoved(tester);
+
+      // Wait for tagged-in state to update and active panel to rebuild
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
 
       // ===== Step 3: Verify Player 1 is now tagged in =====
       expect(find.text('TAGGED IN'), findsWidgets);
@@ -527,6 +552,11 @@ void main() {
 
       await throwDartViaMock(tester, player1Target, multiplier: 'triple');
       await clickDartsRemoved(tester);
+
+      // Wait for tagged-in state to update and active panel to rebuild
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
 
       // Verify tagged in
       expect(find.text('TAGGED IN'), findsWidgets);
@@ -615,7 +645,8 @@ void main() {
       final shieldsAfter = ProviderHelpers.getTargetTagPlayerShields(tester, playerB.id);
 
       // Verify damage was multiplied by buff
-      final buffMultiplier = int.parse(buffValue!.replaceAll('x', ''));
+      // Parse dart notation: D = 2x multiplier, T = 3x multiplier
+      final buffMultiplier = buffValue!.startsWith('D') ? 2 : 3;
       final expectedDamage = 1 * buffMultiplier; // Single dart = 1 shield damage, multiplied by buff
       expect(shieldsBefore - shieldsAfter, expectedDamage,
           reason: 'Buff $buffValue should multiply damage by $buffMultiplier');
