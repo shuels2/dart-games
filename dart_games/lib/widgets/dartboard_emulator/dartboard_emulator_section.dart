@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../interactive_dartboard.dart';
 import 'dartboard_emulator_controller.dart';
 import 'dartboard_emulator_config.dart';
+import 'package:dart_games/constants/test_keys.dart';
 
 class DartboardEmulatorSection extends StatelessWidget {
   final DartboardEmulatorController controller;
@@ -98,6 +99,7 @@ class DartboardEmulatorSection extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
+            key: DartboardEmulatorKeys.removeDartsButton,
             onPressed: () => dartboardKey?.currentState?.removeDarts(),
             style: ElevatedButton.styleFrom(
               backgroundColor: config.removeButtonBackgroundColor,

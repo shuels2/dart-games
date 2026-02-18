@@ -153,6 +153,18 @@ class ElementFinders {
     return find.byKey(TargetTagGameKeys.dartMissButton);
   }
 
+  static Finder getTargetTagD1Indicator() {
+    return find.byKey(TargetTagGameKeys.activePlayerD1Indicator);
+  }
+
+  static Finder getTargetTagD2Indicator() {
+    return find.byKey(TargetTagGameKeys.activePlayerD2Indicator);
+  }
+
+  static Finder getTargetTagD3Indicator() {
+    return find.byKey(TargetTagGameKeys.activePlayerD3Indicator);
+  }
+
   // ==========================================================================
   // TARGET TAG RESULTS FINDERS
   // ==========================================================================

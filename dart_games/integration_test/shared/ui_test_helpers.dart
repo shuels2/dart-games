@@ -19,25 +19,62 @@ class UITestHelpers {
     WidgetTester tester,
     GameUIConfig config,
   ) async {
+    print('UITestHelpers.navigateToGameMenu: START');
+
     // Set up emulator mode
+    print('UITestHelpers.navigateToGameMenu: Calling initializeSettings...');
     await SettingsHelpers.initializeSettings();
+    print('UITestHelpers.navigateToGameMenu: initializeSettings complete');
 
     // Launch app
+    print('UITestHelpers.navigateToGameMenu: Launching app...');
     app.main();
+    print('UITestHelpers.navigateToGameMenu: App launched, pumping...');
+
     await tester.pumpAndSettle();
+    print('UITestHelpers.navigateToGameMenu: First pumpAndSettle complete');
+
     await tester.pumpAndSettle(const Duration(seconds: 3));
+    print('UITestHelpers.navigateToGameMenu: Second pumpAndSettle (3s) complete');
+
     await tester.pump(const Duration(seconds: 2));
+    print('UITestHelpers.navigateToGameMenu: pump(2s) complete');
+
     await tester.pump();
     await tester.pump();
     await tester.pump();
+    print('UITestHelpers.navigateToGameMenu: Additional pumps complete');
+
+    // Debug: Check what screen we're on
+    print('UITestHelpers.navigateToGameMenu: Checking which screen is displayed...');
+
+    // Check for home screen
+    final homeScreenText = find.text('Let\'s play some Dart Games');
+    print('UITestHelpers.navigateToGameMenu: Home screen found: ${homeScreenText.evaluate().length}');
+
+    // Check for setup screen
+    final setupText = find.text('Scolia Dartboard Setup');
+    print('UITestHelpers.navigateToGameMenu: Setup screen found: ${setupText.evaluate().length}');
+
+    // Check for splash screen
+    final splashText = find.text('DARTS');
+    print('UITestHelpers.navigateToGameMenu: Splash screen found: ${splashText.evaluate().length}');
 
     // Tap game card
+    print('UITestHelpers.navigateToGameMenu: Looking for game card...');
     final gameCard = config.getGameCard();
+    print('UITestHelpers.navigateToGameMenu: Game card finder created, checking...');
+
+    print('UITestHelpers.navigateToGameMenu: Found ${gameCard.evaluate().length} game cards');
+
     expect(gameCard, findsOneWidget);
+    print('UITestHelpers.navigateToGameMenu: Game card found, tapping...');
+
     await tester.tap(gameCard);
 
     // Wait for navigation
     await PumpSequences.navigation(tester);
+    print('UITestHelpers.navigateToGameMenu: COMPLETE');
   }
 
   /// Start the game from menu screen
