@@ -495,19 +495,13 @@ void main() {
       // Verify game settings displayed on game screen
       verifyGameSettings(tester, 60, false); // target=60, Perfect Finish OFF
 
-      // Turn 1: T20, T20, T20 = 180 (instant win)
+      // Turn 1: T20 = 60 (instant win on first dart)
       await throwDartViaMock(tester, 20, multiplier: 'triple'); // 60
       expect(getCurrentPlayerScore(tester), 60);
       verifyCurrentPlayerScoreDisplay(tester, 60, 60); // Current player section
       verifyRaceTrackScore(tester, 60, 60); // Race track lane
 
-      await throwDartViaMock(tester, 20, multiplier: 'triple'); // 120
-      expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(60));
-
-      await throwDartViaMock(tester, 20, multiplier: 'triple'); // 180
-      expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(60));
-
-      // Verify game has winner
+      // Verify game has winner immediately after winning dart
       expect(hasWinner(tester), true);
 
       // Click DARTS REMOVED to advance to results
