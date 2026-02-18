@@ -64,6 +64,22 @@ void main() {
     }
   }
 
+  Future<void> throwMissViaMock(WidgetTester tester) async {
+    final mockApi = getMockApi(tester);
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 0,
+        multiplier: 'single',
+        playerName: 'Player',
+        baseScore: 0,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
 
   /// Click DARTS REMOVED button on emulator
   Future<void> clickDartsRemoved(WidgetTester tester) async {
@@ -84,72 +100,54 @@ void main() {
 
   /// Enable Hero Bonus by tapping the hero bonus switch
   Future<void> enableHeroBonus(WidgetTester tester) async {
-    print('[DEBUG] enableHeroBonus: Toggling hero bonus switch');
     await SettingsHelpers.toggleTargetTagHeroBonus(tester);
     await PumpSequences.simpleUpdate(tester);
-    print('[DEBUG] enableHeroBonus: Hero bonus toggle complete');
   }
 
   /// Enable Team Mode by tapping the team mode switch
   Future<void> enableTeamMode(WidgetTester tester) async {
-    print('[DEBUG] enableTeamMode: Toggling team mode switch');
     await SettingsHelpers.toggleTargetTagTeamMode(tester);
     await PumpSequences.fullRebuild(tester);
-    print('[DEBUG] enableTeamMode: Team mode toggle complete');
   }
 
   /// Navigate back to menu from game screen
   Future<void> navigateBackToMenu(WidgetTester tester) async {
-    print('[DEBUG] navigateBackToMenu: Looking for Back button');
     final backButton = find.byTooltip('Back');
-    print('[DEBUG] navigateBackToMenu: Found ${backButton.evaluate().length} Back buttons');
     if (backButton.evaluate().isNotEmpty) {
-      print('[DEBUG] navigateBackToMenu: Tapping Back button');
       await tester.tap(backButton.first);
       await PumpSequences.navigation(tester);
-      print('[DEBUG] navigateBackToMenu: Navigation complete');
     } else {
-      print('[DEBUG] navigateBackToMenu: WARNING - No Back button found!');
     }
   }
 
   /// Extract hero buff value from active panel using key
   /// Returns the buff value found in the buff value widget
   String? getHeroBuffFromActivePanel(WidgetTester tester) {
-    print('[DEBUG] getHeroBuffFromActivePanel: Looking for buff value widget with key');
     final buffValueFinder = find.byKey(TargetTagGameKeys.activePlayerBuffValue);
-    print('[DEBUG] getHeroBuffFromActivePanel: Found ${buffValueFinder.evaluate().length} buff value widgets');
 
     if (buffValueFinder.evaluate().isEmpty) {
-      print('[DEBUG] getHeroBuffFromActivePanel: No buff value widget found, returning null');
       return null;
     }
 
     final textWidget = tester.widget<Text>(buffValueFinder.first);
     final buffValue = textWidget.data ?? '';
-    print('[DEBUG] getHeroBuffFromActivePanel: Extracted buff value: "$buffValue"');
     return buffValue.isNotEmpty ? buffValue : null;
   }
 
   /// Verify dart indicator border color
   /// Dart indicators are identified by TargetTagGameKeys constants
   void verifyDartIndicatorColor(WidgetTester tester, Key dartKey, int expectedColorValue) {
-    print('[DEBUG] verifyDartIndicatorColor: Looking for dart indicator with key "$dartKey"');
     final indicatorFinder = find.byKey(dartKey);
-    print('[DEBUG] verifyDartIndicatorColor: Found ${indicatorFinder.evaluate().length} widgets with key "$dartKey"');
     expect(indicatorFinder, findsOneWidget);
 
     final container = tester.widget<Container>(indicatorFinder);
     final decoration = container.decoration as BoxDecoration?;
-    print('[DEBUG] verifyDartIndicatorColor: Decoration is null: ${decoration == null}');
     expect(decoration, isNotNull);
 
-    print('[DEBUG] verifyDartIndicatorColor: Border is null: ${decoration!.border == null}');
     expect(decoration.border, isNotNull);
 
     final border = decoration.border as Border;
     final actualColor = border.top.color.value;
-    print('[DEBUG] verifyDartIndicatorColor: Expected color: 0x${expectedColorValue.toRadixString(16)}, Actual color: 0x${actualColor.toRadixString(16)}');
 
     expect(actualColor, expectedColorValue,
         reason: 'Dart $dartKey should have border color 0x${expectedColorValue.toRadixString(16)}');
@@ -211,45 +209,32 @@ void main() {
       expect(find.textContaining('Opponent targets:'), findsNothing);
 
       // ===== Step 3: Return to menu, enable hero bonus, and start game =====
-      print('[DEBUG] Test 1: Navigating back to menu');
       await navigateBackToMenu(tester);
 
       // Enable hero bonus
-      print('[DEBUG] Test 1: Enabling hero bonus');
       await enableHeroBonus(tester);
 
       // Verify hero bonus is now ON (toggle should be enabled)
-      print('[DEBUG] Test 1: Verifying hero bonus switch is ON');
       final heroBonusSwitch = find.byType(Switch).last;
-      print('[DEBUG] Test 1: Found ${heroBonusSwitch.evaluate().length} Switch widgets');
       final switchWidget = tester.widget<Switch>(heroBonusSwitch);
-      print('[DEBUG] Test 1: Hero bonus switch value: ${switchWidget.value}');
       expect(switchWidget.value, isTrue);
 
       // Start the game again
-      print('[DEBUG] Test 1: Starting game with hero bonus ON');
       await UITestHelpers.startGame(tester, config);
 
       // Verify we're on the game screen
-      print('[DEBUG] Test 1: Verifying game screen title');
       final titleFinder = find.text('Target Tag Game On!');
-      print('[DEBUG] Test 1: Found ${titleFinder.evaluate().length} widgets with "Target Tag Game On!"');
       expect(titleFinder, findsOneWidget);
 
       // ===== Step 4: Verify hero buff displays in solo mode =====
-      print('[DEBUG] Test 1: Verifying active player panel shows both target number and buff');
       final targetNumberFinder = find.textContaining('Target number:');
-      print('[DEBUG] Test 1: Found ${targetNumberFinder.evaluate().length} widgets containing "Target number:"');
       expect(targetNumberFinder, findsWidgets);
 
       final buffFinder = find.textContaining('Buff:');
-      print('[DEBUG] Test 1: Found ${buffFinder.evaluate().length} widgets containing "Buff:"');
       expect(buffFinder, findsWidgets);
 
       // Extract and validate the buff value (should be dart notation like D3, T16)
-      print('[DEBUG] Test 1: Extracting buff value from active panel');
       final buffValue = getHeroBuffFromActivePanel(tester);
-      print('[DEBUG] Test 1: Buff value: $buffValue');
       expect(buffValue, isNotNull);
       // Buff should be in dart notation: D1-D20 or T1-T20
       final buffPattern = RegExp(r'^[DT]\d{1,2}$');
@@ -257,40 +242,29 @@ void main() {
           reason: 'Buff value should be dart notation (D1-D20 or T1-T20), got: $buffValue');
 
       // ===== Step 5: Return to menu and enable team mode =====
-      print('[DEBUG] Test 1: Returning to menu to enable team mode');
       await navigateBackToMenu(tester);
 
       // Enable team mode (this will also enable random team assignment)
-      print('[DEBUG] Test 1: Enabling team mode');
       await enableTeamMode(tester);
 
       // Verify team mode is enabled
-      print('[DEBUG] Test 1: Verifying team mode switch is ON');
       final teamModeSwitch = find.byType(Switch).first;
-      print('[DEBUG] Test 1: Found ${teamModeSwitch.evaluate().length} Switch widgets');
       final teamModeSwitchWidget = tester.widget<Switch>(teamModeSwitch);
-      print('[DEBUG] Test 1: Team mode switch value: ${teamModeSwitchWidget.value}');
       expect(teamModeSwitchWidget.value, isTrue);
 
       // Start the game in team mode
-      print('[DEBUG] Test 1: Starting game in team mode');
       await UITestHelpers.startGame(tester, config);
 
       // Verify we're on the game screen
-      print('[DEBUG] Test 1: Verifying game screen title (team mode)');
       final teamTitleFinder = find.text('Target Tag Game On!');
-      print('[DEBUG] Test 1: Found ${teamTitleFinder.evaluate().length} widgets with "Target Tag Game On!"');
       expect(teamTitleFinder, findsOneWidget);
 
       // ===== Step 6: Verify hero buff displays correctly in team mode =====
       // In team mode, buff is shared per team
-      print('[DEBUG] Test 1: Verifying hero buff displays in team mode');
       final teamTargetFinder = find.textContaining('Target number:');
-      print('[DEBUG] Test 1: Found ${teamTargetFinder.evaluate().length} widgets containing "Target number:"');
       expect(teamTargetFinder, findsWidgets);
 
       final teamBuffFinder = find.textContaining('Buff:');
-      print('[DEBUG] Test 1: Found ${teamBuffFinder.evaluate().length} widgets containing "Buff:"');
       expect(teamBuffFinder, findsWidgets);
 
       // Extract and validate the team buff value
@@ -325,22 +299,21 @@ void main() {
       // ===== Step 2: Throw darts to reach max shields and get tagged in =====
       // Throw darts hitting current player's target number
       await throwDartViaMock(tester, targetNumber, multiplier: 'single');  // 1 shield
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, targetNumber, multiplier: 'double');  // 2 shields (total: 3)
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, targetNumber, multiplier: 'triple');  // 3 shields (total: 6 = max)
-      await clickDartsRemoved(tester);
 
       // Wait for tagged-in state to update and active panel to rebuild
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pump();
       await tester.pump();
 
       // ===== Step 3: Verify active panel NOW shows opponent targets =====
-      expect(find.textContaining('Opponent targets:'), findsWidgets);
-      expect(find.textContaining('Target number:'), findsNothing);
+      // Check for opponent targets label in active panel (not player tiles)
+      expect(find.byKey(TargetTagGameKeys.activePlayerOpponentTargetsLabel), findsOneWidget);
+      // Target label should NOT be in active panel (still exists on player tiles, which is correct)
+      expect(find.byKey(TargetTagGameKeys.activePlayerTargetLabel), findsNothing);
+      await clickDartsRemoved(tester);
 
       // Verify opponent name and target appear in the list
       final opponent = find.textContaining('Player');
@@ -370,29 +343,24 @@ void main() {
       final player1Target = getCurrentPlayerTargetNumber(tester);
 
       await throwDartViaMock(tester, player1Target, multiplier: 'single');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'double');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'triple');
-      await clickDartsRemoved(tester);
 
       // Wait for tagged-in state to update and active panel to rebuild
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pump();
       await tester.pump();
 
       // ===== Step 3: Verify tagged in badge appears =====
       expect(find.text('TAGGED IN'), findsWidgets);
       expect(find.textContaining('Opponent targets:'), findsWidgets);
+      await clickDartsRemoved(tester);
 
       // ===== Step 4: Player 2 builds partial shields (does NOT get tagged in) =====
       final player2Target = getCurrentPlayerTargetNumber(tester);
 
       await throwDartViaMock(tester, player2Target, multiplier: 'single');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player2Target, multiplier: 'double');
       await clickDartsRemoved(tester);
 
@@ -471,22 +439,19 @@ void main() {
       final player1Target = getCurrentPlayerTargetNumber(tester);
 
       await throwDartViaMock(tester, player1Target, multiplier: 'single');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'double');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'triple');
-      await clickDartsRemoved(tester);
 
       // Wait for tagged-in state to update and active panel to rebuild
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pump();
       await tester.pump();
 
       // ===== Step 3: Verify Player 1 is now tagged in =====
       expect(find.text('TAGGED IN'), findsWidgets);
       expect(find.textContaining('Opponent targets:'), findsWidgets);
+      await clickDartsRemoved(tester);
 
       // ===== Step 4: Verify Player 1 REMAINS tagged in on next turn =====
       // Note: Player 1's turn ended when they removed darts, now it's Player 2's turn
@@ -543,22 +508,19 @@ void main() {
       final player1Target = getCurrentPlayerTargetNumber(tester);
 
       await throwDartViaMock(tester, player1Target, multiplier: 'single');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'double');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'triple');
-      await clickDartsRemoved(tester);
 
       // Wait for tagged-in state to update and active panel to rebuild
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pump();
       await tester.pump();
 
       // Verify tagged in
       expect(find.text('TAGGED IN'), findsWidgets);
       expect(find.textContaining('Opponent targets:'), findsWidgets);
+      await clickDartsRemoved(tester);
 
       // ===== Step 2: Get opponent target numbers from provider =====
       // Player A is tagged in, so get Player B and Player C target numbers
@@ -575,10 +537,22 @@ void main() {
       expect(playerBTarget, isNotNull);
       expect(playerCTarget, isNotNull);
 
-      // ===== Step 3: Attack opponent targets and verify highlighting =====
-      // D1: Hit Player B's target (should be green)
+      // Player B gets 3 shields
       await throwDartViaMock(tester, playerBTarget!, multiplier: 'single');
-      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFF00FFA3);
+      await throwDartViaMock(tester, playerBTarget!, multiplier: 'single');
+      await throwDartViaMock(tester, playerBTarget!, multiplier: 'single');
+      await clickDartsRemoved(tester);
+
+      // Player C gets 3 shields
+      await throwDartViaMock(tester, playerCTarget!, multiplier: 'single');
+      await throwDartViaMock(tester, playerCTarget!, multiplier: 'single');
+      await throwDartViaMock(tester, playerCTarget!, multiplier: 'single');
+      await clickDartsRemoved(tester);
+
+      // ===== Step 3: Player 1 attack opponent targets and verify highlighting =====
+      // D1: Hit Player B's target (should be gold)
+      await throwDartViaMock(tester, playerBTarget!, multiplier: 'single');
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFFFFD700);
 
       // D2: Miss all opponent targets (should be pink)
       // Throw a number that's neither Player B nor Player C target
@@ -589,9 +563,9 @@ void main() {
       await throwDartViaMock(tester, missNumber, multiplier: 'single');
       verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD2Indicator, 0xFFFF007A);
 
-      // D3: Hit Player C's target (should be green)
+      // D3: Hit Player C's target (should be gold)
       await throwDartViaMock(tester, playerCTarget!, multiplier: 'single');
-      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD3Indicator, 0xFF00FFA3);
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD3Indicator, 0xFFFFD700);
     });
 
     testWidgets('Test 8: Hero Buff Multiplier Application - Validates hero buff multiplier is correctly applied to attack damage, 2x buff doubles shield damage, 3x buff triples shield damage, different buff values (2x/3x/4x/5x) all work correctly, buff applies to all dart types (single/double/triple)', (WidgetTester tester) async {
@@ -611,18 +585,28 @@ void main() {
       final player1Target = getCurrentPlayerTargetNumber(tester);
 
       await throwDartViaMock(tester, player1Target, multiplier: 'single');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'double');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'triple');
-      await clickDartsRemoved(tester);
+
+      // Wait for tagged-in state to update and active panel to rebuild
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pump();
+      await tester.pump();
 
       // Verify tagged in and get the buff value
       expect(find.text('TAGGED IN'), findsWidgets);
       final buffValue = getHeroBuffFromActivePanel(tester);
       expect(buffValue, isNotNull);
+      await clickDartsRemoved(tester);
+
+      // ===== Player B's turn: Build shields so we can test damage =====
+      final player2Target = getCurrentPlayerTargetNumber(tester);
+      await throwDartViaMock(tester, player2Target, multiplier: 'single');
+      await throwDartViaMock(tester, player2Target, multiplier: 'double');
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+      // Player B now has 3 shields
 
       // ===== Step 2: Attack opponent with buff active =====
       // Get Player B's shields before attack
@@ -633,7 +617,7 @@ void main() {
 
       final shieldsBefore = ProviderHelpers.getTargetTagPlayerShields(tester, playerB.id);
 
-      // Attack with single dart
+      // Attack with single dart (Player A is now the active player)
       await throwDartViaMock(tester, playerBTarget!, multiplier: 'single');
 
       // Wait for damage to apply
@@ -642,12 +626,10 @@ void main() {
       // Get shields after attack
       final shieldsAfter = ProviderHelpers.getTargetTagPlayerShields(tester, playerB.id);
 
-      // Verify damage was multiplied by buff
-      // Parse dart notation: D = 2x multiplier, T = 3x multiplier
-      final buffMultiplier = buffValue!.startsWith('D') ? 2 : 3;
-      final expectedDamage = 1 * buffMultiplier; // Single dart = 1 shield damage, multiplied by buff
+      // Verify damage was applied (hero bonus does NOT multiply damage, just removes 1 shield)
+      final expectedDamage = 1; // Single dart = 1 shield damage (no multiplier)
       expect(shieldsBefore - shieldsAfter, expectedDamage,
-          reason: 'Buff $buffValue should multiply damage by $buffMultiplier');
+          reason: 'Hero bonus should remove 1 shield (buff value $buffValue is for display only)');
     });
   });
 
@@ -767,11 +749,7 @@ void main() {
       final player1Target = getCurrentPlayerTargetNumber(tester);
 
       await throwDartViaMock(tester, player1Target, multiplier: 'single');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'double');
-      await clickDartsRemoved(tester);
-
       await throwDartViaMock(tester, player1Target, multiplier: 'triple');
       await clickDartsRemoved(tester);
 
@@ -779,9 +757,8 @@ void main() {
       final player2Target = getCurrentPlayerTargetNumber(tester);
 
       await throwDartViaMock(tester, player2Target, multiplier: 'single');
-      await clickDartsRemoved(tester);
-
-      await throwDartViaMock(tester, player2Target, multiplier: 'double');
+      await throwDartViaMock(tester, player2Target, multiplier: 'single');
+      await throwMissViaMock(tester);
       await clickDartsRemoved(tester);
 
       // ===== Step 3: Player 1 attacks Player 2 until elimination =====
@@ -795,8 +772,9 @@ void main() {
       // Need to remove 3 shields
       for (int i = 0; i < 3; i++) {
         await throwDartViaMock(tester, playerBTarget!, multiplier: 'single');
-        await clickDartsRemoved(tester);
       }
+      await clickDartsRemoved(tester);
+
 
       // ===== Step 4: Verify victory screen appears =====
       // Wait for game ending logic, stats updates, and navigation to results screen

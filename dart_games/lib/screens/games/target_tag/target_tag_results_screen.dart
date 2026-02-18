@@ -64,11 +64,15 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
       _updatePlayerStats();
 
       Future.delayed(const Duration(milliseconds: 500), () {
-        _confettiController.play();
+        if (mounted) {
+          _confettiController.play();
+        }
       });
 
       Future.delayed(const Duration(milliseconds: 1500), () {
-        _playVictoryMusic();
+        if (mounted) {
+          _playVictoryMusic();
+        }
       });
     });
   }
