@@ -144,9 +144,9 @@ void main() {
     final decoration = container.decoration as BoxDecoration?;
     expect(decoration, isNotNull);
 
-    expect(decoration.border, isNotNull);
+    expect(decoration!.border, isNotNull);
 
-    final border = decoration.border as Border;
+    final border = decoration!.border as Border;
     final actualColor = border.top.color.value;
 
     expect(actualColor, expectedColorValue,
