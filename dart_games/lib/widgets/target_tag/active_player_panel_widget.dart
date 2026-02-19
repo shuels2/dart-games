@@ -84,6 +84,7 @@ class ActivePlayerPanelWidget extends StatelessWidget {
             children: [
               Text(
                 player.name,
+                key: TargetTagGameKeys.activePlayerName,
                 style: GoogleFonts.fredoka(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

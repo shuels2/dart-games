@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
 
@@ -163,6 +164,20 @@ class ElementFinders {
 
   static Finder getTargetTagD3Indicator() {
     return find.byKey(TargetTagGameKeys.activePlayerD3Indicator);
+  }
+
+  static Finder getTargetTagActivePlayerName() {
+    return find.byKey(TargetTagGameKeys.activePlayerName);
+  }
+
+  /// Get the current player's name from the active player panel
+  static String? getTargetTagActivePlayerNameText(WidgetTester tester) {
+    final nameFinder = getTargetTagActivePlayerName();
+    if (nameFinder.evaluate().isEmpty) {
+      return null;
+    }
+    final textWidget = tester.widget<Text>(nameFinder.first);
+    return textWidget.data;
   }
 
   // ==========================================================================

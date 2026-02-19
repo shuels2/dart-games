@@ -214,6 +214,7 @@ class TargetTagGameKeys {
       Key('target_game_player_${playerId}_eliminated_overlay');
 
   // Active player panel
+  static const activePlayerName = Key('target_game_active_player_name');
   static const activePlayerTargetLabel = Key('target_game_active_player_target_label');
   static const activePlayerTargetValue = Key('target_game_active_player_target_value');
   static const activePlayerOpponentTargetsLabel = Key('target_game_active_player_opponent_targets_label');
