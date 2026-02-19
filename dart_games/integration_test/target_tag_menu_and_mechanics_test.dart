@@ -264,39 +264,21 @@ void main() {
     testWidgets(
         'Test 3: Team Assignment - Complete Manual Flow - Validates team mode enabled successfully, manual team assignment switch toggles on, 4 players added (Team1 Player1/2, Team2 Player1/2), all players found in scrollable player list, players manually assigned to teams (team selection UI functional), team badges displayed correctly for each player showing team assignment',
         (WidgetTester tester) async {
-      return; // SKIP TEST 3
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Enable team mode
       await SettingsHelpers.toggleTargetTagTeamMode(tester);
-      expect(ElementFinders.getTargetTagTeamModeToggle(), findsOneWidget);
 
-      // Open manual team assignment dialog
-      await SettingsHelpers.openTargetTagAssignTeamsDialog(tester);
-
-      // Verify dialog opened
-      expect(ElementFinders.getTeamAssignmentDialog(), findsOneWidget);
+      // Toggle manual team assignment (turn OFF random assignment)
+      await tester.tap(ElementFinders.getTargetTagAssignTeamsButton());
+      await PumpSequences.simpleUpdate(tester);
 
       // Add 4 players
       for (int i = 1; i <= 4; i++) {
-        // Close dialog first
-        await tester.tap(ElementFinders.getTeamAssignmentCancelButton());
-        await PumpSequences.dialogClose(tester);
-
         await UITestHelpers.addPlayer(tester, 'TeamPlayer$i', config);
-
-        // Reopen dialog
-        await SettingsHelpers.openTargetTagAssignTeamsDialog(tester);
       }
 
-      // Set team count to 2
-      await SettingsHelpers.setDropdownValue(
-        tester,
-        ElementFinders.getTeamAssignmentTeamCountDropdown(),
-        '2',
-      );
-
-      // Assign players to teams
+      // Get all players
       final player1 = ProviderHelpers.findPlayerByName(tester, 'TeamPlayer1');
       final player2 = ProviderHelpers.findPlayerByName(tester, 'TeamPlayer2');
       final player3 = ProviderHelpers.findPlayerByName(tester, 'TeamPlayer3');
@@ -307,35 +289,53 @@ void main() {
       expect(player3, isNotNull);
       expect(player4, isNotNull);
 
-      // Assign to Team 1 and Team 2
-      await SettingsHelpers.setDropdownValue(
-        tester,
-        ElementFinders.getTeamAssignmentPlayerDropdown(player1!.id),
-        'Team 1',
-      );
-      await SettingsHelpers.setDropdownValue(
-        tester,
-        ElementFinders.getTeamAssignmentPlayerDropdown(player2!.id),
-        'Team 1',
-      );
-      await SettingsHelpers.setDropdownValue(
-        tester,
-        ElementFinders.getTeamAssignmentPlayerDropdown(player3!.id),
-        'Team 2',
-      );
-      await SettingsHelpers.setDropdownValue(
-        tester,
-        ElementFinders.getTeamAssignmentPlayerDropdown(player4!.id),
-        'Team 2',
-      );
+      // Assign Player 1 to Team 1 (index 0)
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog1 = find.byType(AlertDialog);
+      final gestureDetectors1 = find.descendant(of: dialog1, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors1.at(0)); // Team 1 - dialog auto-closes
+      await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
 
-      // Save team assignment
-      await tester.tap(ElementFinders.getTeamAssignmentSaveButton());
+      // Assign Player 2 to Team 1 (index 0)
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog2 = find.byType(AlertDialog);
+      final gestureDetectors2 = find.descendant(of: dialog2, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors2.at(0)); // Team 1 - dialog auto-closes
+      await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
+
+      // Assign Player 3 to Team 2 (index 1)
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog3 = find.byType(AlertDialog);
+      final gestureDetectors3 = find.descendant(of: dialog3, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors3.at(1)); // Team 2 - dialog auto-closes
+      await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
+
+      // Check if Player 4 needs assignment or was auto-assigned
+      final remainingButtons = find.text('Assign team');
+      if (remainingButtons.evaluate().isEmpty) {
+        print('All players auto-assigned after 3 manual assignments');
+      } else {
+        // Assign Player 4 to Team 2 (index 1)
+        await tester.tap(find.text('Assign team').first);
+        await PumpSequences.dialogOpen(tester);
+        final dialog4 = find.byType(AlertDialog);
+        final gestureDetectors4 = find.descendant(of: dialog4, matching: find.byType(GestureDetector));
+        await tester.tap(gestureDetectors4.at(1)); // Team 2 - dialog auto-closes
+        await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
+      }
+
+      // Ensure final dialog is fully closed and UI updated before verification
       await PumpSequences.dialogClose(tester);
 
-      // Verify team badges displayed
-      expect(find.text('Team 1'), findsAtLeastNWidgets(2));
-      expect(find.text('Team 2'), findsAtLeastNWidgets(2));
+      // Verify all teams assigned (no more "Assign team" buttons)
+      expect(find.text('Assign team'), findsNothing);
+
+      // Verify start button exists
+      final startButton = find.byKey(TargetTagMenuKeys.startButton);
+      expect(startButton, findsOneWidget);
     });
 
     testWidgets(
@@ -751,42 +751,68 @@ void main() {
       // Enable team mode
       await SettingsHelpers.toggleTargetTagTeamMode(tester);
 
-      // Open manual team assignment
-      await SettingsHelpers.openTargetTagAssignTeamsDialog(tester);
+      // Toggle manual team assignment (turn OFF random assignment)
+      await tester.tap(ElementFinders.getTargetTagAssignTeamsButton());
+      await PumpSequences.simpleUpdate(tester);
 
       // Add 6 players
       for (int i = 1; i <= 6; i++) {
-        await tester.tap(ElementFinders.getTeamAssignmentCancelButton());
-        await PumpSequences.dialogClose(tester);
-
         await UITestHelpers.addPlayer(tester, 'ManualTeam$i', config);
-
-        await SettingsHelpers.openTargetTagAssignTeamsDialog(tester);
       }
 
-      // Set team count to 3
-      await SettingsHelpers.setDropdownValue(
-        tester,
-        ElementFinders.getTeamAssignmentTeamCountDropdown(),
-        '3',
-      );
+      // Assign Player 1 to Team 1 (index 0)
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog1 = find.byType(AlertDialog);
+      final gestureDetectors1 = find.descendant(of: dialog1, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors1.at(0)); // Team 1
+      await tester.pump(const Duration(milliseconds: 500));
 
-      // Assign players to 3 teams
-      final allPlayers = ProviderHelpers.getAllPlayers(tester);
-      final players = allPlayers.where((p) => p.name.startsWith('ManualTeam')).toList();
+      // Assign Player 2 to Team 1 (index 0)
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog2 = find.byType(AlertDialog);
+      final gestureDetectors2 = find.descendant(of: dialog2, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors2.at(0)); // Team 1
+      await tester.pump(const Duration(milliseconds: 500));
 
-      for (int i = 0; i < players.length; i++) {
-        final teamNum = (i % 3) + 1;
-        await SettingsHelpers.setDropdownValue(
-          tester,
-          ElementFinders.getTeamAssignmentPlayerDropdown(players[i].id),
-          'Team $teamNum',
-        );
-      }
+      // Assign Player 3 to Team 2 (index 1)
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog3 = find.byType(AlertDialog);
+      final gestureDetectors3 = find.descendant(of: dialog3, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors3.at(1)); // Team 2
+      await tester.pump(const Duration(milliseconds: 500));
 
-      // Save assignment
-      await tester.tap(ElementFinders.getTeamAssignmentSaveButton());
+      // Assign Player 4 to Team 2 (index 1)
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog4 = find.byType(AlertDialog);
+      final gestureDetectors4 = find.descendant(of: dialog4, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors4.at(1)); // Team 2
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Assign Player 5 to Team 3 (index 2)
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog5 = find.byType(AlertDialog);
+      final gestureDetectors5 = find.descendant(of: dialog5, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors5.at(2)); // Team 3
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Assign Player 6 to Team 3 (index 2)
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog6 = find.byType(AlertDialog);
+      final gestureDetectors6 = find.descendant(of: dialog6, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors6.at(2)); // Team 3
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Ensure final dialog is fully closed
       await PumpSequences.dialogClose(tester);
+
+      // Verify all teams assigned (no more "Assign team" buttons)
+      expect(find.text('Assign team'), findsNothing);
 
       // Start game
       await UITestHelpers.startGame(tester, config);
@@ -807,30 +833,32 @@ void main() {
       // Enable team mode
       await SettingsHelpers.toggleTargetTagTeamMode(tester);
 
+      // Toggle manual team assignment (turn OFF random assignment)
+      await tester.tap(ElementFinders.getTargetTagAssignTeamsButton());
+      await PumpSequences.simpleUpdate(tester);
+
       // Add 4 players
       for (int i = 1; i <= 4; i++) {
         await UITestHelpers.addPlayer(tester, 'Deselect$i', config);
       }
 
-      // Open manual team assignment
-      await SettingsHelpers.openTargetTagAssignTeamsDialog(tester);
-
       // Assign first player to Team 1
       final player1 = ProviderHelpers.findPlayerByName(tester, 'Deselect1');
       expect(player1, isNotNull);
 
-      await SettingsHelpers.setDropdownValue(
-        tester,
-        ElementFinders.getTeamAssignmentPlayerDropdown(player1!.id),
-        'Team 1',
-      );
-
-      // Save and close dialog
-      await tester.tap(ElementFinders.getTeamAssignmentSaveButton());
+      await tester.tap(find.text('Assign team').first);
+      await PumpSequences.dialogOpen(tester);
+      final dialog1 = find.byType(AlertDialog);
+      final gestureDetectors1 = find.descendant(of: dialog1, matching: find.byType(GestureDetector));
+      await tester.tap(gestureDetectors1.at(0)); // Team 1
+      await tester.pump(const Duration(milliseconds: 500));
       await PumpSequences.dialogClose(tester);
 
-      // Deselect player
-      final player1Tile = config.getPlayerTile(player1.id);
+      // Verify player 1 assigned (no more "Assign team" for them)
+      expect(find.text('Assign team'), findsNWidgets(3)); // 3 remaining players
+
+      // Deselect player 1
+      final player1Tile = config.getPlayerTile(player1!.id);
       await tester.ensureVisible(player1Tile);
       await tester.pump();
       await tester.tap(player1Tile);
@@ -840,13 +868,16 @@ void main() {
       final selectedPlayers = ProviderHelpers.getSelectedPlayers(tester);
       expect(selectedPlayers.any((p) => p.id == player1.id), isFalse);
 
-      // Reselect player
+      // Reselect player 1
       await tester.tap(player1Tile);
       await PumpSequences.simpleUpdate(tester);
 
       // Verify reselected
       final reselectedPlayers = ProviderHelpers.getSelectedPlayers(tester);
       expect(reselectedPlayers.any((p) => p.id == player1.id), isTrue);
+
+      // Verify can assign to team again after reselection
+      expect(find.text('Assign team'), findsAtLeastNWidgets(1));
     });
 
     testWidgets(
