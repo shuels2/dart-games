@@ -416,7 +416,6 @@ void main() {
     testWidgets(
         'Test 6: Building Shields - Hit Opponent Target (Not Tagged In) - Validates player not tagged in initially, hitting opponent target while building shields shows pink border (0xFFFF007A), opponent target hits do not add shields when not tagged in, dart color correctly indicates invalid action (hitting opponent before tagged in is bad)',
         (WidgetTester tester) async {
-      return; // SKIP TEST 6
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await UITestHelpers.addPlayer(tester, 'Shield1', config);
