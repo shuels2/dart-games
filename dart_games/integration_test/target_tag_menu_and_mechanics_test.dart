@@ -540,7 +540,6 @@ void main() {
     testWidgets(
         'Test 9: Tagged In - Successfully Attack Opponent (GOLD) - Validates Player 1 gets tagged in with max shields, Player 2 builds partial shields (not tagged in), Player 1 on next turn hits Player 2 target shows gold border (0xFFFFD700), successful opponent attack reduces opponent shields, dart color correctly indicates successful attack (gold for hitting opponent while tagged in)',
         (WidgetTester tester) async {
-      return; // SKIP TEST 9
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await SettingsHelpers.setTargetTagShieldMax(tester, 5);
@@ -559,6 +558,9 @@ void main() {
       }
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
 
+      // Remove darts to advance turn
+      await clickDartsRemoved(tester);
+
       // Player 2 builds partial shields
       final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
@@ -572,6 +574,9 @@ void main() {
       // Player 2 ends turn
       await throwMissViaMock(tester);
 
+      // Remove darts to advance turn
+      await clickDartsRemoved(tester);
+
       // Player 1 attacks Player 2
       final currentId = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, currentId!), isTrue);
@@ -581,6 +586,9 @@ void main() {
       // Verify Player 2 shields reduced
       final player2ShieldsAfter = ProviderHelpers.getTargetTagPlayerShields(tester, player2.id);
       expect(player2ShieldsAfter, equals(player2Shields - 1));
+
+      // Verify D1 indicator has gold border (0xFFFFD700)
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFFFFD700);
     });
 
     testWidgets(
