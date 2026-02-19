@@ -13,10 +13,10 @@ import 'shared/provider_helpers.dart';
 import 'shared/element_finders.dart';
 import 'shared/edit_score_helpers.dart';
 
-/// Target Tag - Menu Test 3 Isolated
+/// Target Tag - Menu Test 4 Isolated
 ///
-/// This file tests ONLY Test 3 from the menu and mechanics file
-/// (Team Assignment - Complete Manual Flow) to isolate and debug it.
+/// This file tests ONLY Test 4 from the menu and mechanics file
+/// (UI Feedback - Complete Validation) to isolate and debug it.
 ///
 /// Run with:
 /// ```bash
@@ -157,87 +157,50 @@ void main() {
     return buffValue.isNotEmpty ? buffValue : null;
   }
 
-  group('Target Tag - Test 3 Isolated', () {
+  group('Target Tag - Test 4 Isolated', () {
     setUp(() async {
       // Initialize settings with emulator mode
       await SettingsHelpers.initializeSettings();
     });
 
     testWidgets(
-        'Test 3: Team Assignment - Complete Manual Flow - Validates team mode enabled successfully, manual team assignment switch toggles on, 4 players added (Team1 Player1/2, Team2 Player1/2), all players found in scrollable player list, players manually assigned to teams (team selection UI functional), team badges displayed correctly for each player showing team assignment',
+        'Test 4: UI Feedback - Complete Validation - Validates menu screen shows Shield Max setting, Solo/Team mode toggle visible, Hero Bonus switch visible, NEW PLAYER button functional, LETS PLAY TAG button enables when minimum players selected, game screen displays Target Tag Game On! title, player tiles show shields count and target numbers, current player indicator visible, active panel shows correct information',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Enable team mode
-      await SettingsHelpers.toggleTargetTagTeamMode(tester);
+      // Verify menu UI elements
+      expect(find.textContaining('Shield Max:'), findsOneWidget);
+      expect(ElementFinders.getTargetTagTeamModeToggle(), findsOneWidget);
+      expect(ElementFinders.getTargetTagHeroBonusToggle(), findsOneWidget);
 
-      // Toggle manual team assignment (turn OFF random assignment)
-      await tester.tap(ElementFinders.getTargetTagAssignTeamsButton());
-      await PumpSequences.simpleUpdate(tester);
+      // Add 2 players (button will be verified implicitly by successful add)
+      await UITestHelpers.addPlayer(tester, 'UITest1', config);
+      await UITestHelpers.addPlayer(tester, 'UITest2', config);
 
-      // Add 4 players
-      for (int i = 1; i <= 4; i++) {
-        await UITestHelpers.addPlayer(tester, 'TeamPlayer$i', config);
-      }
+      // Verify start button enabled
+      expect(config.getStartButton(), findsOneWidget);
 
-      // Get all players
-      final player1 = ProviderHelpers.findPlayerByName(tester, 'TeamPlayer1');
-      final player2 = ProviderHelpers.findPlayerByName(tester, 'TeamPlayer2');
-      final player3 = ProviderHelpers.findPlayerByName(tester, 'TeamPlayer3');
-      final player4 = ProviderHelpers.findPlayerByName(tester, 'TeamPlayer4');
+      // Start game
+      await UITestHelpers.startGame(tester, config);
 
+      // Verify game screen UI
+      expect(find.text('Target Tag Game On!'), findsOneWidget);
+
+      // Verify player tiles show shields and targets
+      final player1 = ProviderHelpers.findPlayerByName(tester, 'UITest1');
+      final player2 = ProviderHelpers.findPlayerByName(tester, 'UITest2');
       expect(player1, isNotNull);
       expect(player2, isNotNull);
-      expect(player3, isNotNull);
-      expect(player4, isNotNull);
 
-      // Assign Player 1 to Team 1 (index 0)
-      await tester.tap(find.text('Assign team').first);
-      await PumpSequences.dialogOpen(tester);
-      final dialog1 = find.byType(AlertDialog);
-      final gestureDetectors1 = find.descendant(of: dialog1, matching: find.byType(GestureDetector));
-      await tester.tap(gestureDetectors1.at(0)); // Team 1 - dialog auto-closes
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
+      // Verify shields displayed
+      final shields1 = ProviderHelpers.getTargetTagPlayerShields(tester, player1!.id);
+      final shields2 = ProviderHelpers.getTargetTagPlayerShields(tester, player2!.id);
+      expect(shields1, 0);
+      expect(shields2, 0);
 
-      // Assign Player 2 to Team 1 (index 0)
-      await tester.tap(find.text('Assign team').first);
-      await PumpSequences.dialogOpen(tester);
-      final dialog2 = find.byType(AlertDialog);
-      final gestureDetectors2 = find.descendant(of: dialog2, matching: find.byType(GestureDetector));
-      await tester.tap(gestureDetectors2.at(0)); // Team 1 - dialog auto-closes
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
-
-      // Assign Player 3 to Team 2 (index 1)
-      await tester.tap(find.text('Assign team').first);
-      await PumpSequences.dialogOpen(tester);
-      final dialog3 = find.byType(AlertDialog);
-      final gestureDetectors3 = find.descendant(of: dialog3, matching: find.byType(GestureDetector));
-      await tester.tap(gestureDetectors3.at(1)); // Team 2 - dialog auto-closes
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
-
-      // Check if Player 4 needs assignment or was auto-assigned
-      final remainingButtons = find.text('Assign team');
-      if (remainingButtons.evaluate().isEmpty) {
-        print('All players auto-assigned after 3 manual assignments');
-      } else {
-        // Assign Player 4 to Team 2 (index 1)
-        await tester.tap(find.text('Assign team').first);
-        await PumpSequences.dialogOpen(tester);
-        final dialog4 = find.byType(AlertDialog);
-        final gestureDetectors4 = find.descendant(of: dialog4, matching: find.byType(GestureDetector));
-        await tester.tap(gestureDetectors4.at(1)); // Team 2 - dialog auto-closes
-        await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
-      }
-
-      // Ensure final dialog is fully closed and UI updated before verification
-      await PumpSequences.dialogClose(tester);
-
-      // Verify all teams assigned (no more "Assign team" buttons)
-      expect(find.text('Assign team'), findsNothing);
-
-      // Verify start button exists
-      final startButton = find.byKey(TargetTagMenuKeys.startButton);
-      expect(startButton, findsOneWidget);
+      // Verify current player indicator
+      final currentPlayerId = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
+      expect(currentPlayerId, isNotNull);
     });
   });
 }

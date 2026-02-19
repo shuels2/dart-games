@@ -60,6 +60,13 @@ class UITestHelpers {
     final splashText = find.text('DARTS');
     print('UITestHelpers.navigateToGameMenu: Splash screen found: ${splashText.evaluate().length}');
 
+    // Wait for home screen cards to load (async operation)
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    print('UITestHelpers.navigateToGameMenu: Waited for cards to load');
+
     // Tap game card
     print('UITestHelpers.navigateToGameMenu: Looking for game card...');
     final gameCard = config.getGameCard();
