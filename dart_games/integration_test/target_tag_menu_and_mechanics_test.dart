@@ -946,7 +946,6 @@ void main() {
     testWidgets(
         'Test 17: Hero Bonus in Solo Mode - Validates hero bonus switch enabled on menu, each player assigned random hero buff number (displayed on player tile), hero buff shows multiplier (single/D/T) and number (1-20), Player 1 gets tagged in and hero buff active, hitting hero buff number while tagged in deals bonus damage with gold pulsing border, hero buff provides strategic advantage in solo mode gameplay',
         (WidgetTester tester) async {
-      return; // SKIP TEST 17
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Enable hero bonus
@@ -958,18 +957,56 @@ void main() {
       await UITestHelpers.addPlayer(tester, 'HeroSolo2', config);
       await UITestHelpers.startGame(tester, config);
 
-      // Get tagged in
-      final player1Id = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
-      final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
+      // Get player IDs
+      final allPlayers = ProviderHelpers.getAllPlayers(tester);
+      final player1 = allPlayers.firstWhere((p) => p.name == 'HeroSolo1');
+      final player2 = allPlayers.firstWhere((p) => p.name == 'HeroSolo2');
 
-      for (int i = 0; i < 5; i++) {
-        await throwDartViaMock(tester, player1Target!);
-      }
+      // Get hero buffs for each player
+      final targetTagProvider = ProviderHelpers.getTargetTagProvider(tester);
+      final player1HeroBuff = targetTagProvider.getSoloHeroBuffNumber(player1.id);
+      final player1HeroMultiplier = targetTagProvider.getSoloHeroBuffMultiplier(player1.id);
+      final player2HeroBuff = targetTagProvider.getSoloHeroBuffNumber(player2.id);
+      final player2HeroMultiplier = targetTagProvider.getSoloHeroBuffMultiplier(player2.id);
 
-      expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
+      // Verify both players have hero buffs assigned
+      expect(player1HeroBuff, isNotNull);
+      expect(player1HeroMultiplier, isNotNull);
+      expect(player2HeroBuff, isNotNull);
+      expect(player2HeroMultiplier, isNotNull);
 
-      // Hero bonus is active
-      expect(ProviderHelpers.isTargetTagGameActive(tester), isTrue);
+      // Player 1's turn: Hit target, miss, miss
+      final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1.id);
+      await throwDartViaMock(tester, player1Target!);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+
+      // Player 2's turn: Hit their hero buff, miss, miss
+      await throwDartViaMock(tester, player2HeroBuff!, multiplier: player2HeroMultiplier!);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+
+      // Verify player 2 has all shields (5), player 1 has 0 shields
+      expect(ProviderHelpers.getTargetTagPlayerShields(tester, player2.id), 5);
+      expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1.id), 0);
+
+      // Verify D1 has gold border (hero bonus hit)
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFFFFD700);
+
+      await clickDartsRemoved(tester);
+
+      // Player 1's turn: Hit their hero buff, miss, miss
+      await throwDartViaMock(tester, player1HeroBuff!, multiplier: player1HeroMultiplier!);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+
+      // Verify player 1 has full shields (5), player 2 has 4 shields
+      expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1.id), 5);
+      expect(ProviderHelpers.getTargetTagPlayerShields(tester, player2.id), 4);
+
+      // Verify D1 has gold border (hero bonus hit)
+      verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD1Indicator, 0xFFFFD700);
     });
 
     testWidgets(
