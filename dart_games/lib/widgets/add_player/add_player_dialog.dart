@@ -264,6 +264,7 @@ Future<Player?> showAddPlayerDialog({
                     style: ElevatedButton.styleFrom(
                       backgroundColor: config.cancelButtonColor,
                       foregroundColor: config.cancelButtonForegroundColor,
+                      padding: config.buttonPadding,
                       side: BorderSide(
                         color: config.cancelButtonBorderColor,
                         width: 2,
@@ -317,6 +318,7 @@ Future<Player?> showAddPlayerDialog({
                     style: ElevatedButton.styleFrom(
                       backgroundColor: config.addButtonColor,
                       foregroundColor: config.addButtonForegroundColor,
+                      padding: config.buttonPadding,
                       side: BorderSide(
                         color: config.addButtonBorderColor,
                         width: 2,
@@ -366,6 +368,7 @@ Widget _buildPhotoButton({
     style: ElevatedButton.styleFrom(
       backgroundColor: config.photoButtonColor,
       foregroundColor: config.photoButtonForegroundColor,
+      padding: config.buttonPadding,
       side: BorderSide(
         color: config.photoButtonBorderColor,
         width: 2,

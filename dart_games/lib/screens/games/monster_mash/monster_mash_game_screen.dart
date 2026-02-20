@@ -305,14 +305,58 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: const Color(0xFFF5F5DC),
+            size: 32,
+            shadows: [
+              Shadow(
+                color: const Color(0xFF7FFF00),
+                blurRadius: 20,
+              ),
+              Shadow(
+                color: const Color(0xFF7FFF00).withOpacity(0.8),
+                blurRadius: 40,
+              ),
+            ],
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          splashColor: Colors.transparent,
+        ),
         title: Padding(
-          padding: const EdgeInsets.only(top: 6),
+          padding: const EdgeInsets.only(top: 0),
           child: Text(
-            'Monster Mash',
-            style: GoogleFonts.creepster(fontSize: 36, letterSpacing: 1.5),
+            'Let\'s Do the Monster Mash!',
+            style: GoogleFonts.creepster(
+              fontSize: 39,
+              letterSpacing: 1.5,
+              shadows: [
+                Shadow(
+                  color: const Color(0xFF7FFF00).withOpacity(0.6),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
           ),
         ),
-        backgroundColor: const Color(0xFF4B0082),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Color(0xFF1A1A2E),
+                Color(0xFF1A1A2E),
+                Color(0xFF7FFF00),
+              ],
+              stops: [0.0, 0.45, 1.0],
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         foregroundColor: const Color(0xFFF5F5DC),
         actions: [
           // Round indicator and buff display

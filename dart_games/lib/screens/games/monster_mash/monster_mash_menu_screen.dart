@@ -92,24 +92,44 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF4B0082),
+      backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         leading: IconButton(
           key: MonsterMashMenuKeys.backButton,
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFF5F5DC), size: 32),
+          icon: Icon(
+            Icons.arrow_back,
+            color: const Color(0xFFF5F5DC),
+            size: 32,
+            shadows: [
+              Shadow(
+                color: const Color(0xFF7FFF00),
+                blurRadius: 20,
+              ),
+              Shadow(
+                color: const Color(0xFF7FFF00).withOpacity(0.8),
+                blurRadius: 40,
+              ),
+            ],
+          ),
           onPressed: () => Navigator.of(context).pop(),
           hoverColor: Colors.transparent,
           highlightColor: Colors.transparent,
           splashColor: Colors.transparent,
         ),
         title: Padding(
-          padding: const EdgeInsets.only(top: 6),
+          padding: const EdgeInsets.only(top: 0),
           child: Text(
             'Monster Mash Game Setup',
             style: GoogleFonts.creepster(
-              fontSize: 32,
+              fontSize: 39,
               letterSpacing: 1.5,
               color: const Color(0xFFF5F5DC),
+              shadows: [
+                Shadow(
+                  color: const Color(0xFF7FFF00).withOpacity(0.6),
+                  blurRadius: 12,
+                ),
+              ],
             ),
           ),
         ),
@@ -119,35 +139,47 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                Color(0xFF4B0082),
-                Color(0xFF2F4F4F),
+                Color(0xFF1A1A2E),
+                Color(0xFF1A1A2E),
+                Color(0xFF7FFF00),
               ],
+              stops: [0.0, 0.45, 1.0],
             ),
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Consumer<PlayerProvider>(
-        builder: (context, playerProvider, child) {
-          if (playerProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/games/monster_mash/images/MonsterMash-Background.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Consumer<PlayerProvider>(
+            builder: (context, playerProvider, child) {
+              if (playerProvider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 1,
-                child: _buildLeftPanel(),
-              ),
-              Expanded(
-                flex: 1,
-                child: _buildRightPanel(playerProvider),
-              ),
-            ],
-          );
-        },
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: _buildLeftPanel(),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: _buildRightPanel(playerProvider),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -158,7 +190,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
       child: Container(
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
-          color: const Color(0xFF2F4F4F).withOpacity(0.85),
+          color: const Color(0xFF2F4F4F).withOpacity(0.80),
           border: Border.all(color: const Color(0xFF7FFF00), width: 1),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -183,16 +215,9 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 Text(
                   'MONSTER MASH',
                   style: GoogleFonts.creepster(
-                    fontSize: 40,
+                    fontSize: 52,
                     color: const Color(0xFF7FFF00),
                     letterSpacing: 2,
-                  ),
-                ),
-                Text(
-                  'Classic Monster Battle!',
-                  style: GoogleFonts.creepster(
-                    fontSize: 24,
-                    color: const Color(0xFFFF8C00),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -209,7 +234,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 Text(
                   'Each player is assigned a random classic monster and a target number on the dartboard.',
                   style: GoogleFonts.montserrat(
-                    fontSize: 16,
+                    fontSize: 18,
                     color: const Color(0xFFF5F5DC).withOpacity(0.8),
                     height: 1.5,
                   ),
@@ -218,7 +243,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 Text(
                   'How to Play:',
                   style: GoogleFonts.creepster(
-                    fontSize: 22,
+                    fontSize: 30,
                     color: const Color(0xFFF5F5DC),
                   ),
                 ),
@@ -231,7 +256,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 Text(
                   'Optional Features:',
                   style: GoogleFonts.creepster(
-                    fontSize: 22,
+                    fontSize: 30,
                     color: const Color(0xFFF5F5DC),
                   ),
                 ),
@@ -242,7 +267,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 Text(
                   'Grab your darts and let the Monster Mash begin!',
                   style: GoogleFonts.montserrat(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFFFF8C00),
                     height: 1.5,
@@ -265,7 +290,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
           Text(
             '$number. ',
             style: GoogleFonts.creepster(
-              fontSize: 18,
+              fontSize: 20,
               color: const Color(0xFF7FFF00),
             ),
           ),
@@ -276,7 +301,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   TextSpan(
                     text: title,
                     style: GoogleFonts.montserrat(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFF5F5DC),
                     ),
@@ -284,7 +309,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   TextSpan(
                     text: ' $description',
                     style: GoogleFonts.montserrat(
-                      fontSize: 16,
+                      fontSize: 18,
                       color: const Color(0xFFF5F5DC).withOpacity(0.8),
                       height: 1.5,
                     ),
@@ -306,7 +331,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
         children: [
           Text(
             '\u2022 ',
-            style: TextStyle(color: const Color(0xFF7FFF00), fontSize: 20),
+            style: TextStyle(color: const Color(0xFF7FFF00), fontSize: 22),
           ),
           Expanded(
             child: RichText(
@@ -315,7 +340,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   TextSpan(
                     text: title,
                     style: GoogleFonts.montserrat(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFF5F5DC),
                     ),
@@ -323,7 +348,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   TextSpan(
                     text: ' $description',
                     style: GoogleFonts.montserrat(
-                      fontSize: 16,
+                      fontSize: 18,
                       color: const Color(0xFFF5F5DC).withOpacity(0.8),
                     ),
                   ),
@@ -353,7 +378,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   height: 60,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2F4F4F).withOpacity(0.85),
+                    color: const Color(0xFF2F4F4F).withOpacity(0.80),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFFF5F5DC).withOpacity(0.3), width: 2),
                   ),
@@ -362,7 +387,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                       Text(
                         'Health: ${_healthMax.toInt()}',
                         style: GoogleFonts.pirataOne(
-                          fontSize: 14,
+                          fontSize: 22,
                           color: const Color(0xFFF5F5DC),
                         ),
                       ),
@@ -393,7 +418,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   height: 60,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2F4F4F).withOpacity(0.85),
+                    color: const Color(0xFF2F4F4F).withOpacity(0.80),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _bonusBuffs ? const Color(0xFF7FFF00) : const Color(0xFFF5F5DC).withOpacity(0.3),
@@ -406,7 +431,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                       Text(
                         'Bonus Buffs',
                         style: GoogleFonts.pirataOne(
-                          fontSize: 14,
+                          fontSize: 22,
                           color: const Color(0xFFF5F5DC),
                         ),
                       ),
@@ -416,7 +441,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                           Text(
                             'Off',
                             style: GoogleFonts.montserrat(
-                              fontSize: 12,
+                              fontSize: 16,
                               fontWeight: !_bonusBuffs ? FontWeight.bold : FontWeight.normal,
                               color: !_bonusBuffs ? const Color(0xFFF5F5DC) : const Color(0xFFF5F5DC).withOpacity(0.5),
                             ),
@@ -437,7 +462,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                           Text(
                             'On',
                             style: GoogleFonts.montserrat(
-                              fontSize: 12,
+                              fontSize: 16,
                               fontWeight: _bonusBuffs ? FontWeight.bold : FontWeight.normal,
                               color: _bonusBuffs ? const Color(0xFFF5F5DC) : const Color(0xFFF5F5DC).withOpacity(0.5),
                             ),
@@ -462,7 +487,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   height: 60,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2F4F4F).withOpacity(0.85),
+                    color: const Color(0xFF2F4F4F).withOpacity(0.80),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _speedPlay ? const Color(0xFFFF8C00) : const Color(0xFFF5F5DC).withOpacity(0.3),
@@ -475,7 +500,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                       Text(
                         'Speed Play',
                         style: GoogleFonts.pirataOne(
-                          fontSize: 14,
+                          fontSize: 22,
                           color: const Color(0xFFF5F5DC),
                         ),
                       ),
@@ -485,7 +510,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                           Text(
                             'Off',
                             style: GoogleFonts.montserrat(
-                              fontSize: 12,
+                              fontSize: 16,
                               fontWeight: !_speedPlay ? FontWeight.bold : FontWeight.normal,
                               color: !_speedPlay ? const Color(0xFFF5F5DC) : const Color(0xFFF5F5DC).withOpacity(0.5),
                             ),
@@ -506,7 +531,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                           Text(
                             'On',
                             style: GoogleFonts.montserrat(
-                              fontSize: 12,
+                              fontSize: 16,
                               fontWeight: _speedPlay ? FontWeight.bold : FontWeight.normal,
                               color: _speedPlay ? const Color(0xFFF5F5DC) : const Color(0xFFF5F5DC).withOpacity(0.5),
                             ),
@@ -524,7 +549,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: _speedPlay
-                        ? const Color(0xFF2F4F4F).withOpacity(0.85)
+                        ? const Color(0xFF2F4F4F).withOpacity(0.80)
                         : const Color(0xFF1A1A2E).withOpacity(0.5),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
@@ -539,7 +564,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                       Text(
                         'Rounds: ${_roundLimit.toInt()}',
                         style: GoogleFonts.pirataOne(
-                          fontSize: 14,
+                          fontSize: 22,
                           color: _speedPlay
                               ? const Color(0xFFF5F5DC)
                               : const Color(0xFFF5F5DC).withOpacity(0.3),
@@ -602,7 +627,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF2F4F4F).withOpacity(0.85),
+        color: const Color(0xFF2F4F4F).withOpacity(0.80),
         border: Border.all(color: const Color(0xFFF5F5DC).withOpacity(0.3), width: 1),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -615,7 +640,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               Text(
                 'Available Players',
                 style: GoogleFonts.pirataOne(
-                  fontSize: 16,
+                  fontSize: 22,
                   color: const Color(0xFFF5F5DC),
                 ),
               ),
@@ -626,14 +651,14 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4B0082),
                     foregroundColor: const Color(0xFFF5F5DC),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     side: const BorderSide(color: Color(0xFF7FFF00), width: 2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  icon: const Icon(Icons.add, size: 18),
+                  icon: const Icon(Icons.add, size: 20),
                   label: Text(
                     'NEW PLAYER',
-                    style: GoogleFonts.pirataOne(fontSize: 12, color: const Color(0xFFF5F5DC)),
+                    style: GoogleFonts.pirataOne(fontSize: 22, color: const Color(0xFFF5F5DC)),
                   ),
                 ),
             ],
@@ -649,21 +674,22 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                           'No players yet. Add your first player!',
                           style: GoogleFonts.montserrat(
                             color: const Color(0xFFF5F5DC).withOpacity(0.7),
-                            fontSize: 14,
+                            fontSize: 20,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
                         ElevatedButton.icon(
                           onPressed: _handleAddPlayer,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4B0082),
                             foregroundColor: const Color(0xFFF5F5DC),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                             side: const BorderSide(color: Color(0xFF7FFF00), width: 2),
                           ),
-                          icon: const Icon(Icons.add),
+                          icon: const Icon(Icons.add, size: 24),
                           label: Text(
                             'NEW PLAYER',
-                            style: GoogleFonts.pirataOne(fontSize: 14, color: const Color(0xFFF5F5DC)),
+                            style: GoogleFonts.pirataOne(fontSize: 24, color: const Color(0xFFF5F5DC)),
                           ),
                         ),
                       ],
@@ -719,7 +745,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF2F4F4F).withOpacity(0.85),
+        color: const Color(0xFF2F4F4F).withOpacity(0.80),
         border: Border.all(
           color: selectedPlayers.length >= 2 ? const Color(0xFF7FFF00) : const Color(0xFFF5F5DC).withOpacity(0.3),
           width: selectedPlayers.length >= 2 ? 2 : 1,
@@ -732,7 +758,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
           Text(
             'Selected Players (${selectedPlayers.length}/8)',
             style: GoogleFonts.pirataOne(
-              fontSize: 16,
+              fontSize: 22,
               color: selectedPlayers.length >= 2 ? const Color(0xFF7FFF00) : const Color(0xFFF5F5DC),
             ),
           ),
@@ -744,6 +770,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   'Select at least 2 players',
                   style: GoogleFonts.montserrat(
                     color: const Color(0xFFF5F5DC).withOpacity(0.7),
+                    fontSize: 20,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -789,7 +816,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
             return Container(
               decoration: BoxDecoration(
                 color: canStart
-                    ? const Color(0xFF4B0082).withOpacity(0.85)
+                    ? const Color(0xFF4B0082).withOpacity(0.80)
                     : Colors.grey.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
@@ -813,12 +840,12 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   onTap: canStart ? () => _startGame(selectedPlayers) : null,
                   borderRadius: BorderRadius.circular(12),
                   child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                    child: Transform.translate(
+                      offset: const Offset(0, -3.5),
                       child: Text(
                         "LET'S DO THE MONSTER MASH!",
                         style: GoogleFonts.creepster(
-                          fontSize: 28,
+                          fontSize: 40,
                           color: canStart ? const Color(0xFFF5F5DC) : Colors.grey,
                           letterSpacing: 1.5,
                         ),

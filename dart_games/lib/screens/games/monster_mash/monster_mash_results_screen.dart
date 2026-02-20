@@ -152,13 +152,36 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         title: Padding(
-          padding: const EdgeInsets.only(top: 6),
+          padding: const EdgeInsets.only(top: 0),
           child: Text(
             'Monster Mash Game Over',
-            style: GoogleFonts.creepster(fontSize: 36, letterSpacing: 1.5),
+            style: GoogleFonts.creepster(
+              fontSize: 39,
+              letterSpacing: 1.5,
+              shadows: [
+                Shadow(
+                  color: const Color(0xFF7FFF00).withOpacity(0.6),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
           ),
         ),
-        backgroundColor: const Color(0xFF4B0082),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Color(0xFF1A1A2E),
+                Color(0xFF1A1A2E),
+                Color(0xFF7FFF00),
+              ],
+              stops: [0.0, 0.45, 1.0],
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         foregroundColor: const Color(0xFFF5F5DC),
         automaticallyImplyLeading: false,
       ),
