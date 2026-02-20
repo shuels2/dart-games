@@ -146,7 +146,6 @@ class UITestHelpers {
     final addPlayerButton = ElementFinders.getAddPlayerAddButton();
     await tester.tap(addPlayerButton.first);
     await PumpSequences.dialogClose(tester);
-    await PumpSequences.asyncDataLoad(tester);
   }
 
   /// Select multiple players from the player list
