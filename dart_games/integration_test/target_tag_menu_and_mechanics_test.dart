@@ -308,6 +308,13 @@ void main() {
       expect(player3, isNotNull);
       expect(player4, isNotNull);
 
+      // Scroll to top of player list to ensure all players are visible
+      final listFinder = find.byType(ListView).first;
+      await tester.fling(listFinder, const Offset(0, 500), 5000);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
       // Assign Player 1 to Team 1 (index 0)
       await tester.ensureVisible(find.text('TeamPlayer1'));
       await tester.pump();
@@ -580,6 +587,10 @@ void main() {
       // Build shields to max (3 shields in a single triple throw)
       await throwDartViaMock(tester, player1Target!, multiplier: 'triple');
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
+
+      // Throw 2 more darts to end the turn
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
 
       // Remove darts to advance turn
       await clickDartsRemoved(tester);
