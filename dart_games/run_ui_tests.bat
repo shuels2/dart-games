@@ -16,15 +16,17 @@ set "file_list="
 set "run_all=1"
 
 REM If any parameters provided, disable run_all and build file list
-if not "%~1"=="" (
-    set "run_all=0"
-    :parse_args
-    if "%~1"=="" goto :done_parsing
-    set "file_list=!file_list! %~1"
-    shift
-    goto :parse_args
-    :done_parsing
-)
+if not "%~1"=="" set "run_all=0"
+if not "%~1"=="" goto :parse_args
+goto :done_parsing
+
+:parse_args
+if "%~1"=="" goto :done_parsing
+set "file_list=!file_list! %~1"
+shift
+goto :parse_args
+
+:done_parsing
 
 REM ============================================================
 REM Start Test Suite
