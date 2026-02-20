@@ -98,6 +98,9 @@ REM   ChromeDriver is restarted between tests so each suite gets a
 REM   clean WebDriver session.
 REM ============================================================
 
+REM Skip over helper function definitions
+goto :start_tests
+
 REM ============================================================
 REM Helper function to check if a file should run
 REM ============================================================
@@ -116,6 +119,7 @@ if !errorlevel! equ 0 (
 )
 exit /b
 
+:start_tests
 REM ----------------------------------------------------------
 REM Test 1: Target Tag Menu and Mechanics
 REM ----------------------------------------------------------
