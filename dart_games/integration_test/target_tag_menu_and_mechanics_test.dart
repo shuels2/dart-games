@@ -1145,7 +1145,6 @@ void main() {
     testWidgets(
         'Test 20: Edit Score - Add Shields - Validates Player 2 starts with 0 shields, edit score dialog opened for Player 2, darts manually set to build shields (3x S20 own target hits), updating score adds shields to Player 2, Player 2 shield count increases from 0 to 3, canceling edit score reverts changes, edit score provides accurate shield modification throughout game',
         (WidgetTester tester) async {
-      return; // SKIP TEST 20
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await UITestHelpers.addPlayer(tester, 'EditAdd1', config);
@@ -1157,6 +1156,11 @@ void main() {
 
       // Verify initial shields
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1Id!), 0);
+
+      // Throw 3 darts to complete the turn
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
 
       // Open edit score
       await EditScoreHelpers.openEditScore(tester, config);
@@ -1179,10 +1183,9 @@ void main() {
     testWidgets(
         'Test 21: Edit Score - Create Elimination - Validates Player 2 starts with partial shields (not tagged in), edit score used to reduce Player 2 shields to 0, Player 2 receives TAGGED OUT badge after shields reach 0 via edit, player elimination through edit score functions identically to dart-based elimination, eliminated player removed from active turn rotation, game continues with remaining active players',
         (WidgetTester tester) async {
-      return; // SKIP TEST 21
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagShieldMax(tester, 5);
+      await SettingsHelpers.setTargetTagShieldMax(tester, 3);
 
       await UITestHelpers.addPlayer(tester, 'EditElim1', config);
       await UITestHelpers.addPlayer(tester, 'EditElim2', config);
@@ -1192,9 +1195,14 @@ void main() {
       final player1Id = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
-      for (int i = 0; i < 5; i++) {
+      for (int i = 0; i < 3; i++) {
         await throwDartViaMock(tester, player1Target!);
       }
+
+      expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1Id), 3);
+
+      // Remove darts to advance turn to Player 2
+      await clickDartsRemoved(tester);
 
       // Player 2 builds partial shields
       final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
@@ -1206,9 +1214,17 @@ void main() {
 
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player2.id), 2);
 
+      // Remove darts to advance turn to Player 1
+      await clickDartsRemoved(tester);
+
+      // Throw 3 darts to complete the turn
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+
       // Player 1 uses edit score to eliminate Player 2
       await EditScoreHelpers.openEditScore(tester, config);
-      await EditScoreHelpers.setAllDarts(tester, 'S$player2Target', 'S$player2Target', 'Miss');
+      await EditScoreHelpers.setAllDarts(tester, 'S$player2Target', 'S$player2Target', 'S$player2Target');
       await EditScoreHelpers.updateScore(tester);
 
       // Verify elimination
@@ -1219,10 +1235,9 @@ void main() {
     testWidgets(
         'Test 22: Edit Score - Reach Tagged In Status - Validates Player 2 starts with partial shields (not tagged in yet), edit score used to add shields to Player 2, when shields reach max value Player 2 gets TAGGED IN badge, tagged in through edit score functions identically to dart-based tagged in, Player 2 active panel switches to show opponent targets list, Player 2 can now attack opponents on their turn',
         (WidgetTester tester) async {
-      return; // SKIP TEST 22
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagShieldMax(tester, 5);
+      await SettingsHelpers.setTargetTagShieldMax(tester, 3);
 
       await UITestHelpers.addPlayer(tester, 'EditTagIn1', config);
       await UITestHelpers.addPlayer(tester, 'EditTagIn2', config);
@@ -1234,6 +1249,7 @@ void main() {
 
       await throwDartViaMock(tester, player1Target!);
       await throwDartViaMock(tester, player1Target);
+      await throwMissViaMock(tester);
 
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1Id), 2);
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isFalse);
@@ -1244,7 +1260,7 @@ void main() {
       await EditScoreHelpers.updateScore(tester);
 
       // Verify tagged in
-      expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1Id), 5);
+      expect(ProviderHelpers.getTargetTagPlayerShields(tester, player1Id), 3);
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
       expect(find.text('TAGGED IN'), findsAtLeastNWidgets(1));
     });
@@ -1252,7 +1268,6 @@ void main() {
     testWidgets(
         'Test 23: Edit Score - Cancel Without Changes - Validates edit score dialog opens successfully, darts set to different values in dropdowns, cancel button clicked without saving, all dart changes discarded and not applied to game state, player shields and game state remain unchanged, edit score cancel functions correctly preventing unintended modifications',
         (WidgetTester tester) async {
-      return; // SKIP TEST 23
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await UITestHelpers.addPlayer(tester, 'EditCancel1', config);
@@ -1261,6 +1276,11 @@ void main() {
 
       final player1Id = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       final shieldsBefore = ProviderHelpers.getTargetTagPlayerShields(tester, player1Id!);
+
+      // Throw 3 darts to complete the turn
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
 
       // Open edit score
       await EditScoreHelpers.openEditScore(tester, config);

@@ -63,49 +63,107 @@ class EditScoreHelpers {
   // DART SCORE MANIPULATION
   // ==========================================================================
 
+  /// Parse a segment string into ring and number components
+  /// Returns a map with 'ring' (String) and 'number' (int?) keys
+  static Map<String, dynamic> _parseSegment(String segment) {
+    if (segment == 'Bull') {
+      return {'ring': 'Bullseye', 'number': null};
+    }
+    if (segment == '25') {
+      return {'ring': 'Outer Bull', 'number': null};
+    }
+    if (segment == 'Miss') {
+      return {'ring': 'Miss', 'number': null};
+    }
+
+    // Parse S20, s20, D20, T20 format
+    final pattern = RegExp(r'^([SDTsd])(\d+)$');
+    final match = pattern.firstMatch(segment);
+    if (match == null) {
+      throw ArgumentError('Invalid segment format: $segment');
+    }
+
+    final prefix = match.group(1)!;
+    final number = int.parse(match.group(2)!);
+
+    String ring;
+    if (prefix == 'S') {
+      ring = 'Single (outer)';
+    } else if (prefix == 's') {
+      ring = 'Single (inner)';
+    } else if (prefix == 'D') {
+      ring = 'Double';
+    } else if (prefix == 'T') {
+      ring = 'Triple';
+    } else {
+      throw ArgumentError('Unknown prefix: $prefix');
+    }
+
+    return {'ring': ring, 'number': number};
+  }
+
+  /// Set a dart score by clicking ring button, then number button (if needed)
+  /// dartIndex: 0 for D1, 1 for D2, 2 for D3
+  static Future<void> _setDartScore(
+    WidgetTester tester,
+    int dartIndex,
+    String segment,
+  ) async {
+    final parsed = _parseSegment(segment);
+    final ring = parsed['ring'] as String;
+    final number = parsed['number'] as int?;
+
+    // Find the dart section (Column with key)
+    final dartSection = dartIndex == 0
+        ? ElementFinders.getEditScoreDart1Dropdown()
+        : dartIndex == 1
+            ? ElementFinders.getEditScoreDart2Dropdown()
+            : ElementFinders.getEditScoreDart3Dropdown();
+
+    expect(dartSection, findsOneWidget,
+        reason: 'Dart ${dartIndex + 1} section should be present');
+
+    // Find ring button within this dart section by text
+    // We need to find the ring button that is a descendant of this dart section
+    final ringButtonFinder = find.descendant(
+      of: dartSection,
+      matching: find.text(ring),
+    );
+
+    expect(ringButtonFinder, findsOneWidget,
+        reason: 'Ring button "$ring" should be present in dart ${dartIndex + 1} section');
+
+    await tester.tap(ringButtonFinder);
+    await PumpSequences.simpleUpdate(tester);
+
+    // If this ring requires a number, click the number button
+    if (number != null) {
+      final numberButtonFinder = find.descendant(
+        of: dartSection,
+        matching: find.text('$number'),
+      );
+
+      expect(numberButtonFinder, findsOneWidget,
+          reason: 'Number button "$number" should be present and enabled in dart ${dartIndex + 1} section');
+
+      await tester.tap(numberButtonFinder);
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
   /// Set dart 1 score in edit score dialog
   static Future<void> setDart1(WidgetTester tester, String sector) async {
-    final dropdown = ElementFinders.getEditScoreDart1Dropdown();
-
-    expect(dropdown, findsOneWidget,
-        reason: 'Dart 1 dropdown should be present in edit score dialog');
-
-    await tester.tap(dropdown);
-    await PumpSequences.simpleUpdate(tester);
-
-    final dropdownItem = find.text(sector).last;
-    await tester.tap(dropdownItem);
-    await PumpSequences.simpleUpdate(tester);
+    await _setDartScore(tester, 0, sector);
   }
 
   /// Set dart 2 score in edit score dialog
   static Future<void> setDart2(WidgetTester tester, String sector) async {
-    final dropdown = ElementFinders.getEditScoreDart2Dropdown();
-
-    expect(dropdown, findsOneWidget,
-        reason: 'Dart 2 dropdown should be present in edit score dialog');
-
-    await tester.tap(dropdown);
-    await PumpSequences.simpleUpdate(tester);
-
-    final dropdownItem = find.text(sector).last;
-    await tester.tap(dropdownItem);
-    await PumpSequences.simpleUpdate(tester);
+    await _setDartScore(tester, 1, sector);
   }
 
   /// Set dart 3 score in edit score dialog
   static Future<void> setDart3(WidgetTester tester, String sector) async {
-    final dropdown = ElementFinders.getEditScoreDart3Dropdown();
-
-    expect(dropdown, findsOneWidget,
-        reason: 'Dart 3 dropdown should be present in edit score dialog');
-
-    await tester.tap(dropdown);
-    await PumpSequences.simpleUpdate(tester);
-
-    final dropdownItem = find.text(sector).last;
-    await tester.tap(dropdownItem);
-    await PumpSequences.simpleUpdate(tester);
+    await _setDartScore(tester, 2, sector);
   }
 
   /// Set all three darts at once
