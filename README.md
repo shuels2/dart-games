@@ -379,7 +379,8 @@ dart_games/
 │       └── games/
 │           ├── carnival_horse_race/ # Carnival Derby game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Test suite (245 tests)
+├── test/                            # Non-UI test suite (272 tests)
+├── integration_test/                # UI automation tests (77 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
     │   ├── icons/
@@ -575,8 +576,11 @@ cd dart_games
 # Install dependencies
 flutter pub get
 
-# Run tests (all 245 tests must pass)
+# Run non-UI tests (all 272 tests must pass)
 flutter test
+
+# Optional: Run UI automation tests (77 tests, ~51 minutes, requires chromedriver)
+# See CLAUDE.md for complete UI testing guide
 
 # Launch in Chrome (web)
 flutter run -d chrome
@@ -587,20 +591,25 @@ flutter run
 
 ### Testing Requirements
 
-**All 245 tests must pass before any build or deployment.**
+**All 272 non-UI tests must pass before any build or deployment.**
 
 ```bash
 flutter test
 ```
 
-Test coverage includes:
+**Non-UI Test Coverage (272 tests):**
 - Model serialization (40 tests)
 - Provider functionality (44 tests)
 - Service integration (42 tests)
 - Game integration - Carnival Derby (37 tests: 26 user management, 11 announcements)
 - Game integration - Target Tag (46 tests: 32 announcements, 14 user management)
-- Dartboard accuracy (23 tests)
-- Widget tests (13 tests)
+- Shared test components (24 tests)
+- Widget tests (23 tests)
+
+**UI Automation Test Coverage (77 tests, ~51 minutes):**
+- Target Tag (53 tests): Menu settings, gameplay mechanics, visual validation, add player, results screen
+- Carnival Derby (24 tests): Menu, gameplay, bust mechanics, skip turn, edit score, results screen
+- Requires chromedriver setup - see [CLAUDE.md](CLAUDE.md) for complete UI testing guide
 
 ### Cross-Platform Compatibility
 
