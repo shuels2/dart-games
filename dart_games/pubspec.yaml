@@ -121,6 +121,11 @@ flutter:
     - assets/games/carnival_derby/images/
     - assets/games/carnival_derby/sounds/
 
+    # Monster Mash game assets
+    - assets/games/monster_mash/icons/
+    - assets/games/monster_mash/images/
+    - assets/games/monster_mash/characters/
+
     # Target Tag game assets
     - assets/games/target_tag/icons/
     - assets/games/target_tag/sounds/TargetTag-BananaSlip.mp3

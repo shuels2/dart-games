@@ -122,6 +122,47 @@ class EditScoreDialogConfig {
     return '$number';
   }
 
+  factory EditScoreDialogConfig.monsterMash() {
+    return EditScoreDialogConfig(
+      backgroundColor: const Color(0xFF2F4F4F).withOpacity(0.95), // Iron Gate
+      borderColor: const Color(0xFFFF8C00), // Pumpkin Orange
+      borderWidth: 4,
+      titleStyle: GoogleFonts.creepster(
+        fontSize: 24,
+        color: const Color(0xFFF5F5DC), // Aged Parchment
+      ),
+      dartLabelStyle: GoogleFonts.montserrat(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F5DC).withOpacity(0.7),
+      ),
+      scoreBoxBackgroundColor: const Color(0xFF2F4F4F),
+      scoreBoxDefaultBorderColor: const Color(0xFFF5F5DC).withOpacity(0.3),
+      scoreTextStyle: GoogleFonts.pirataOne(
+        fontSize: 18,
+        color: const Color(0xFFF5F5DC),
+      ),
+      buttonUnselectedColor: const Color(0xFF4B0082), // Haunted Purple
+      buttonUnselectedForeground: const Color(0xFFF5F5DC),
+      buttonSelectedColor: const Color(0xFF7FFF00), // Ecto-Green
+      buttonSelectedForeground: Colors.black,
+      buttonTextStyle: GoogleFonts.montserrat(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      cancelButtonColor: Colors.grey.withOpacity(0.85),
+      cancelButtonForeground: Colors.white,
+      cancelButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+      ),
+      submitButtonColor: const Color(0xFF4B0082).withOpacity(0.85),
+      submitButtonForeground: const Color(0xFFF5F5DC),
+      submitButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+      ),
+    );
+  }
+
   factory EditScoreDialogConfig.targetTag() {
     return EditScoreDialogConfig(
       backgroundColor: const Color(0xFF1A1A2E).withOpacity(0.95),

@@ -168,6 +168,53 @@ class AddPlayerDialogConfig {
     );
   }
 
+  /// Monster Mash theme configuration (purple/green horror theme)
+  factory AddPlayerDialogConfig.monsterMash() {
+    return AddPlayerDialogConfig(
+      backgroundColor: const Color(0xFF2F4F4F).withOpacity(0.95), // Iron Gate
+      textColor: const Color(0xFFF5F5DC), // Aged Parchment
+      titleStyle: GoogleFonts.creepster(
+        fontSize: 24,
+        color: const Color(0xFFF5F5DC),
+      ),
+      inputLabelStyle: GoogleFonts.montserrat(
+        fontSize: 14,
+        color: const Color(0xFFF5F5DC),
+      ),
+      inputBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      inputFocusedBorderColor: const Color(0xFFFF8C00), // Pumpkin Orange
+      inputErrorBorderColor: Colors.red,
+      photoLabelStyle: GoogleFonts.montserrat(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFFF5F5DC),
+      ),
+      photoButtonColor: const Color(0xFF4B0082), // Haunted Purple
+      photoButtonForegroundColor: const Color(0xFFF5F5DC),
+      photoButtonBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      photoButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 14,
+        color: const Color(0xFFF5F5DC),
+      ),
+      photoButtonWidth: null,
+      addButtonColor: const Color(0xFF4B0082), // Haunted Purple
+      addButtonForegroundColor: const Color(0xFFF5F5DC),
+      addButtonBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      addButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        color: const Color(0xFFF5F5DC),
+      ),
+      cancelButtonColor: const Color(0xFF2F4F4F), // Iron Gate
+      cancelButtonForegroundColor: const Color(0xFFF5F5DC),
+      cancelButtonBorderColor: const Color(0xFFF5F5DC).withOpacity(0.5),
+      cancelButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        color: const Color(0xFFF5F5DC),
+      ),
+      errorTextColor: Colors.red,
+    );
+  }
+
   /// Options Screen theme configuration (Material Design defaults)
   factory AddPlayerDialogConfig.optionsScreen(BuildContext context) {
     final theme = Theme.of(context);
