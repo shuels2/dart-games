@@ -1,5 +1,32 @@
-import 'dart:js_util' as js_util;
-import 'dart:html' as html;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
+
+// JS interop definitions for ResponsiveVoice
+@JS('responsiveVoice')
+external ResponsiveVoiceJS? get responsiveVoice;
+
+@JS()
+extension type ResponsiveVoiceJS(JSObject _) implements JSObject {
+  external bool voiceSupport();
+  external void speak(JSString text, JSString voiceName, JSAny? options);
+  external void cancel();
+  external JSArray getVoices();
+}
+
+@JS()
+extension type ResponsiveVoiceOptions._(JSObject _) implements JSObject {
+  external factory ResponsiveVoiceOptions({
+    JSNumber pitch,
+    JSNumber rate,
+    JSNumber volume,
+  });
+}
+
+@JS()
+extension type ResponsiveVoiceVoice(JSObject _) implements JSObject {
+  external JSString get name;
+}
 
 /// ResponsiveVoice Service
 /// Uses ResponsiveVoice JavaScript library for natural-sounding speech
@@ -18,15 +45,15 @@ class ResponsiveVoiceService {
   /// Check if ResponsiveVoice is loaded and ready
   bool isReady() {
     try {
-      final responsiveVoice = js_util.getProperty(html.window, 'responsiveVoice');
-      if (responsiveVoice == null) {
+      final rv = responsiveVoice;
+      if (rv == null) {
         print('ResponsiveVoice object not found on window');
         return false;
       }
 
       // Check if voiceSupport() returns true
-      final voiceSupport = js_util.callMethod(responsiveVoice, 'voiceSupport', []);
-      if (voiceSupport != true) {
+      final voiceSupport = rv.voiceSupport();
+      if (!voiceSupport) {
         print('ResponsiveVoice not ready yet (voiceSupport returned false)');
         return false;
       }
@@ -52,16 +79,18 @@ class ResponsiveVoiceService {
         return;
       }
 
-      final responsiveVoice = js_util.getProperty(html.window, 'responsiveVoice');
+      final rv = responsiveVoice;
+      if (rv == null) return;
 
-      // Create options object
-      final options = js_util.newObject();
-      js_util.setProperty(options, 'pitch', pitch);
-      js_util.setProperty(options, 'rate', rate);
-      js_util.setProperty(options, 'volume', volume);
+      // Create options object using the new JS interop
+      final options = ResponsiveVoiceOptions(
+        pitch: pitch.toJS,
+        rate: rate.toJS,
+        volume: volume.toJS,
+      );
 
       // Call responsiveVoice.speak(text, voiceName, options)
-      js_util.callMethod(responsiveVoice, 'speak', [text, voiceName, options]);
+      rv.speak(text.toJS, voiceName.toJS, options);
       print('Speaking: "$text" with voice: $voiceName');
     } catch (e) {
       print('ResponsiveVoice speak error: $e');
@@ -72,8 +101,10 @@ class ResponsiveVoiceService {
   void cancel() {
     try {
       if (isReady()) {
-        final responsiveVoice = js_util.getProperty(html.window, 'responsiveVoice');
-        js_util.callMethod(responsiveVoice, 'cancel', []);
+        final rv = responsiveVoice;
+        if (rv != null) {
+          rv.cancel();
+        }
       }
     } catch (e) {
       print('ResponsiveVoice cancel error: $e');
@@ -85,22 +116,22 @@ class ResponsiveVoiceService {
     try {
       if (!isReady()) return [];
 
-      final responsiveVoice = js_util.getProperty(html.window, 'responsiveVoice');
-      final voicesJs = js_util.callMethod(responsiveVoice, 'getVoices', []);
+      final rv = responsiveVoice;
+      if (rv == null) return [];
 
-      if (voicesJs == null) return [];
+      final voicesJs = rv.getVoices();
 
       // Convert JS array to Dart list
       final List<String> voices = [];
-      final length = js_util.getProperty(voicesJs, 'length');
+      final dartVoices = voicesJs.toDart;
 
-      for (int i = 0; i < length; i++) {
-        final voice = js_util.getProperty(voicesJs, i.toString());
-        if (voice != null) {
-          final name = js_util.getProperty(voice, 'name');
-          if (name != null) {
-            voices.add(name.toString());
-          }
+      for (final voiceAny in dartVoices) {
+        try {
+          final voice = voiceAny as ResponsiveVoiceVoice;
+          voices.add(voice.name.toDart);
+        } catch (e) {
+          // Skip invalid entries
+          continue;
         }
       }
       return voices;

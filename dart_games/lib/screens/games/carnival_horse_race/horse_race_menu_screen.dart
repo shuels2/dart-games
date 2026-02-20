@@ -11,6 +11,7 @@ import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
+import '../../../constants/test_keys.dart';
 import 'horse_race_game_screen.dart';
 
 class HorseRaceMenuScreen extends StatefulWidget {
@@ -94,6 +95,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           ),
           child: AppBar(
             leading: IconButton(
+              key: CarnivalDerbyMenuKeys.backButton,
               icon: Icon(
                 Icons.arrow_back,
                 color: const Color(0xFFF1FAEE), // Cloud Dancer white
@@ -516,6 +518,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
               ),
             ),
           Slider(
+            key: CarnivalDerbyMenuKeys.targetScoreSlider,
             value: _targetScore,
             min: 20,
             max: 250,
@@ -567,6 +570,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                             Row(
                               children: [
                                 Radio<bool>(
+                                  key: CarnivalDerbyMenuKeys.perfectFinishSwitch,
                                   value: true,
                                   groupValue: _exactScoreMode,
                                   activeColor: const Color(0xFF48CAE4), // Electric Teal
@@ -717,6 +721,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                 itemBuilder: (context, index) {
                   final player = selectedPlayers[index];
                   return PlayerSelectionCard(
+                    key: CarnivalDerbyMenuKeys.playerTile(player.id),
                     player: player,
                     isSelected: true,
                     compact: false,
@@ -724,6 +729,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                     onRemove: () {
                       playerProvider.deselectPlayer(player.id);
                     },
+                    removeButtonKey: CarnivalDerbyMenuKeys.removePlayerButton(player.id),
                   );
                 },
               ),
@@ -764,6 +770,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
               ),
               if (allPlayers.isNotEmpty)
                 ElevatedButton.icon(
+                  key: CarnivalDerbyMenuKeys.addPlayerButton,
                   onPressed: _handleAddPlayer,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE63946), // Lava Red
@@ -809,6 +816,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
+                        key: CarnivalDerbyMenuKeys.addPlayerButtonEmptyState,
                         onPressed: _handleAddPlayer,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE63946), // Lava Red
@@ -839,6 +847,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   ),
                 )
               : ListView.builder(
+                  key: CarnivalDerbyMenuKeys.playerListView,
                   controller: _availablePlayersScrollController,
                   itemCount: allPlayers.length,
                   itemBuilder: (context, index) {
@@ -847,6 +856,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                         selectedPlayers.any((p) => p.id == player.id);
 
                     return PlayerSelectionCard(
+                      key: CarnivalDerbyMenuKeys.playerTile(player.id),
                       player: player,
                       isSelected: isSelected,
                       onTap: () {
@@ -887,6 +897,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16.0),
       child: ElevatedButton(
+        key: CarnivalDerbyMenuKeys.startButton,
         onPressed: canStart ? () => _startGame(playerProvider) : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFE63946), // Lava Red

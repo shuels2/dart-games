@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:dart_games/main.dart' as app;
-import 'package:shared_preferences/shared_preferences.dart';
+
+// Shared component imports
+import 'shared/ui_test_helpers.dart';
+import 'shared/element_finders.dart';
+import 'shared/pump_sequences.dart';
+import 'shared/settings_helpers.dart';
+import 'shared/game_ui_config.dart';
+
+// Test keys
+import 'package:dart_games/constants/test_keys.dart';
 
 /// Target Tag - Add Player Dialog Integration Tests
 ///
@@ -11,7 +19,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// Run with:
 /// ```bash
-/// flutter test integration_test/target_tag_add_player_test.dart --platform chrome
+/// flutter drive --driver=test_driver/integration_test.dart \
+///   --target=integration_test/target_tag_add_player_test.dart -d chrome
 /// ```
 ///
 /// These tests automate the manual UI tests documented in TARGET_TAG_MANUAL_UI_TESTS.md:
@@ -22,138 +31,72 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  // Game configuration for Target Tag
+  final config = GameUIConfig.targetTag();
+
   group('Target Tag - Add Player Dialog Integration Tests', () {
     setUp(() async {
-      // Clear shared preferences before each test to start fresh
-      SharedPreferences.setMockInitialValues({
-        // Pre-configure dartboard in emulator mode to skip setup screen
-        'dartboard_name': 'Test Dartboard',
-        'dartboard_serial': 'TEST-001',
-        'use_emulator': true,
-      });
+      // Initialize settings with emulator mode
+      await SettingsHelpers.initializeSettings();
     });
 
     testWidgets('Test 1: Navigation and Initial Player Setup - Validates app launch, game navigation, and basic player addition workflow with two players', (WidgetTester tester) async {
-      // Launch the full app
-      app.main();
-      await tester.pumpAndSettle();
-
-      // Wait for splash screen to complete
-      // The app should navigate to HomeScreen (since dartboard is pre-configured)
-      await tester.pumpAndSettle(const Duration(seconds: 3));
-      await tester.pump(const Duration(seconds: 3)); // Extra time for home screen to fully render
-      await tester.pump(); // Process home screen render
-
-      // Find and tap the Target Tag game card
-      final targetTagCard = find.text('Target Tag');
-      expect(targetTagCard, findsOneWidget);
-      await tester.tap(targetTagCard);
-
-      // Target Tag menu has a continuous pulse animation that prevents pumpAndSettle
-      // Use pump() instead to advance frames without waiting for animations to settle
-      await tester.pump(); // Process the tap
-      await tester.pump(const Duration(seconds: 1)); // Let navigation complete
-      await tester.pump(); // Process navigation
-      await tester.pump(const Duration(seconds: 5)); // Wait for PlayerProvider async loading
-      await tester.pump(); // Process data loaded
-      await tester.pump(); // Rebuild widget tree with new data
-      await tester.pump(); // Layout the new widgets
-      await tester.pump(); // Paint the ElevatedButton
+      // Navigate to Target Tag menu
+      await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Verify we're on the Target Tag menu screen
       expect(find.textContaining('Shield Max:'), findsOneWidget);
       expect(find.text('Solo'), findsOneWidget);
       expect(find.text('Team'), findsOneWidget);
 
-      // Add first player
-      // The button text exists but ElevatedButton type doesn't match - tap the text directly
-      final addButton = find.text('NEW PLAYER');
-      expect(addButton, findsAtLeastNWidgets(1));
-      await tester.ensureVisible(addButton.first);
-      await tester.pump(); // Process ensureVisible
-      await tester.tap(addButton.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Let dialog open
-      await tester.pump(); // Build dialog
-      await tester.pump(); // Layout dialog
-      await tester.pump(); // Paint dialog
+      // Add first player (using empty state button)
+      final addButtonEmpty = find.byKey(TargetTagMenuKeys.addPlayerButtonEmptyState);
+      expect(addButtonEmpty, findsOneWidget);
+      await tester.tap(addButtonEmpty);
+      await PumpSequences.dialogOpen(tester);
 
       // Enter first player name
-      final nameField = find.byType(TextField);
+      final nameField = ElementFinders.getAddPlayerNameField();
       await tester.enterText(nameField, 'Player 1');
-      await tester.pump(); // Process text entry
-      await tester.pump(); // Update text field
+      await PumpSequences.textEntry(tester);
 
       // Tap Add Player button
-      final addPlayerButton = find.descendant(
-        of: find.byType(ElevatedButton),
-        matching: find.text('Add Player'),
-      );
+      final addPlayerButton = ElementFinders.getAddPlayerAddButton();
       await tester.tap(addPlayerButton.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for dialog to close
-      await tester.pump(); // Process dialog closing
+      await PumpSequences.dialogClose(tester);
 
       // Verify first player was added
       expect(find.text('Player 1'), findsOneWidget);
 
-      // Add second player
-      await tester.ensureVisible(addButton.first);
-      await tester.pump(); // Process ensureVisible
-      await tester.tap(addButton.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Let dialog open
-      await tester.pump(); // Build dialog
-      await tester.pump(); // Layout dialog
-      await tester.pump(); // Paint dialog
+      // Add second player (now using normal state button)
+      final addButtonNormal = ElementFinders.getTargetTagAddPlayerButton();
+      expect(addButtonNormal, findsAtLeastNWidgets(1));
+      await tester.tap(addButtonNormal.first);
+      await PumpSequences.dialogOpen(tester);
 
       // Enter second player name
       await tester.enterText(nameField, 'Player 2');
-      await tester.pump(); // Process text entry
-      await tester.pump(); // Update text field
+      await PumpSequences.textEntry(tester);
 
       // Tap Add Player button
       await tester.tap(addPlayerButton.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for dialog to close
-      await tester.pump(); // Process dialog closing
+      await PumpSequences.dialogClose(tester);
 
       // Verify second player was added
       expect(find.text('Player 2'), findsOneWidget);
     });
 
-    testWidgets('Test 2: Add Player with Name Only - Validates new player dialog opening, name field entry, player creation without photo, dialog closure, and player appears in list with auto-selection', (WidgetTester tester) async {
-      // Launch the full app
-      app.main();
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+    testWidgets('Test 2: Add Player with Name Only - Validates new player dialog opening, name field entry, player creation without photo, dialog closure, player appears in list. Note: Does NOT explicitly verify auto-selection status (checkmark visible) - only confirms player exists in list and player card renders', (WidgetTester tester) async {
+      // Navigate to Target Tag menu
+      await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Navigate to Target Tag
-      final targetTagCard = find.text('Target Tag');
-      await tester.tap(targetTagCard);
-
-      // Target Tag menu has a continuous pulse animation that prevents pumpAndSettle
-      // Use pump() instead to advance frames without waiting for animations to settle
-      await tester.pump(); // Process the tap
-      await tester.pump(const Duration(seconds: 1)); // Let navigation complete
-      await tester.pump(); // Process navigation
-      await tester.pump(const Duration(seconds: 5)); // Wait for PlayerProvider async loading
-      await tester.pump(); // Process data loaded
-      await tester.pump(); // Rebuild widget tree with new data
-      await tester.pump(); // Layout the new widgets
-      await tester.pump(); // Paint the ElevatedButton
-
-      // Find and tap "NEW PLAYER" button
-      // The button text exists but ElevatedButton type doesn't match - tap the text directly
-      final addButton = find.text('NEW PLAYER');
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       expect(addButton, findsAtLeastNWidgets(1));
       await tester.ensureVisible(addButton.first);
-      await tester.pump(); // Process ensureVisible
+      await tester.pump();
       await tester.tap(addButton.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Let dialog open
-      await tester.pump(); // Build dialog
-      await tester.pump(); // Layout dialog
-      await tester.pump(); // Paint dialog
+      await PumpSequences.dialogOpen(tester);
 
       // Verify dialog opened with expected elements
       expect(find.text('Player Name'), findsOneWidget);
@@ -164,23 +107,15 @@ void main() {
       expect(find.text('Add Player'), findsWidgets); // Multiple instances (title + button)
 
       // Enter player name
-      final nameField = find.byType(TextField);
+      final nameField = ElementFinders.getAddPlayerNameField();
       expect(nameField, findsOneWidget);
       await tester.enterText(nameField, 'Test Player');
-      await tester.pump(); // Process text entry
-      await tester.pump(); // Update text field
+      await PumpSequences.textEntry(tester);
 
       // Tap "Add Player" button in the dialog
-      // Find the button (not the title)
-      final addPlayerButtons = find.text('Add Player');
-      final buttonWidget = find.descendant(
-        of: find.byType(ElevatedButton),
-        matching: find.text('Add Player'),
-      );
-      await tester.tap(buttonWidget.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for action to complete
-      await tester.pump(); // Process completion
+      final addPlayerButton = ElementFinders.getAddPlayerAddButton();
+      await tester.tap(addPlayerButton.first);
+      await PumpSequences.dialogClose(tester);
 
       // Verify dialog closed (Player Name field should not be visible)
       expect(find.text('Player Name'), findsNothing);
@@ -189,39 +124,18 @@ void main() {
       expect(find.text('Test Player'), findsOneWidget);
 
       // The player card should show a checkmark indicating selection
-      // We can verify this by checking for the player name in the UI
       final playerCard = find.text('Test Player');
       expect(playerCard, findsOneWidget);
     });
 
     testWidgets('Test 3: Add Player Photo UI Elements - Validates photo upload interface elements (Camera/Gallery buttons, icons, placeholder avatar, optional photo label), player creation with photo UI workflow', (WidgetTester tester) async {
-      // Launch the full app
-      app.main();
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+      // Navigate to Target Tag menu
+      await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Navigate to Target Tag
-      final targetTagCard = find.text('Target Tag');
-      await tester.tap(targetTagCard);
-
-      // Target Tag menu has a continuous pulse animation that prevents pumpAndSettle
-      // Use pump() instead to advance frames without waiting for animations to settle
-      await tester.pump(); // Process the tap
-      await tester.pump(const Duration(seconds: 1)); // Let navigation complete
-      await tester.pump(); // Process navigation
-      await tester.pump(const Duration(seconds: 5)); // Wait for PlayerProvider async loading
-      await tester.pump(); // Process data loaded
-      await tester.pump(); // Rebuild widget tree with new data
-      await tester.pump(); // Layout the new widgets
-      await tester.pump(); // Paint the ElevatedButton
-
-      // Find and tap "NEW PLAYER" button
-      final addButton = find.text('NEW PLAYER');
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       await tester.tap(addButton.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Let dialog open
-      await tester.pump(); // Build dialog
-      await tester.pump(); // Layout dialog
-      await tester.pump(); // Paint dialog
+      await PumpSequences.dialogOpen(tester);
 
       // Verify dialog opened
       expect(find.text('Add New Player'), findsWidgets);
@@ -235,69 +149,38 @@ void main() {
       expect(find.byIcon(Icons.photo_library), findsOneWidget); // Gallery button icon
 
       // Enter player name
-      final nameField = find.byType(TextField);
+      final nameField = ElementFinders.getAddPlayerNameField();
       await tester.enterText(nameField, 'Photo Player');
-      await tester.pump(); // Process text entry
-      await tester.pump(); // Update text field
+      await PumpSequences.textEntry(tester);
 
       // Note: We cannot test actual photo selection in integration tests
       // without complex mocking. This test verifies UI elements exist.
 
       // Tap "Add Player" button
-      final buttonWidget = find.descendant(
-        of: find.byType(ElevatedButton),
-        matching: find.text('Add Player'),
-      );
-      await tester.tap(buttonWidget.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for action to complete
-      await tester.pump(); // Process completion
+      final addPlayerButton = ElementFinders.getAddPlayerAddButton();
+      await tester.tap(addPlayerButton.first);
+      await PumpSequences.dialogClose(tester);
 
       // Verify player was added
       expect(find.text('Photo Player'), findsOneWidget);
     });
 
     testWidgets('Test 4: Add Player Empty Name Validation - Validates empty name field submission shows error message, dialog remains open after error, error message clears on valid input, successful player creation after correction', (WidgetTester tester) async {
-      // Launch the full app
-      app.main();
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+      // Navigate to Target Tag menu
+      await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Navigate to Target Tag
-      final targetTagCard = find.text('Target Tag');
-      await tester.tap(targetTagCard);
-
-      // Target Tag menu has a continuous pulse animation that prevents pumpAndSettle
-      // Use pump() instead to advance frames without waiting for animations to settle
-      await tester.pump(); // Process the tap
-      await tester.pump(const Duration(seconds: 1)); // Let navigation complete
-      await tester.pump(); // Process navigation
-      await tester.pump(const Duration(seconds: 5)); // Wait for PlayerProvider async loading
-      await tester.pump(); // Process data loaded
-      await tester.pump(); // Rebuild widget tree with new data
-      await tester.pump(); // Layout the new widgets
-      await tester.pump(); // Paint the ElevatedButton
-
-      // Find and tap "NEW PLAYER" button
-      final addButton = find.text('NEW PLAYER');
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       await tester.tap(addButton.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Let dialog open
-      await tester.pump(); // Build dialog
-      await tester.pump(); // Layout dialog
-      await tester.pump(); // Paint dialog
+      await PumpSequences.dialogOpen(tester);
 
       // Verify dialog opened
       expect(find.text('Player Name'), findsOneWidget);
 
       // Leave name field empty and try to add player
-      final buttonWidget = find.descendant(
-        of: find.byType(ElevatedButton),
-        matching: find.text('Add Player'),
-      );
-      await tester.tap(buttonWidget.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for action to complete
-      await tester.pump(); // Process completion
+      final addPlayerButton = ElementFinders.getAddPlayerAddButton();
+      await tester.tap(addPlayerButton.first);
+      await PumpSequences.simpleUpdate(tester);
 
       // Verify error message appears
       expect(find.text('Please enter a player name'), findsOneWidget);
@@ -306,19 +189,16 @@ void main() {
       expect(find.text('Player Name'), findsOneWidget);
 
       // Enter valid name
-      final nameField = find.byType(TextField);
+      final nameField = ElementFinders.getAddPlayerNameField();
       await tester.enterText(nameField, 'Valid Player');
-      await tester.pump(); // Process text entry
-      await tester.pump(); // Update text field
+      await PumpSequences.textEntry(tester);
 
       // Verify error message disappears when typing
       expect(find.text('Please enter a player name'), findsNothing);
 
       // Tap "Add Player" button again
-      await tester.tap(buttonWidget.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for action to complete
-      await tester.pump(); // Process completion
+      await tester.tap(addPlayerButton.first);
+      await PumpSequences.dialogClose(tester);
 
       // Verify player was saved successfully
       expect(find.text('Valid Player'), findsOneWidget);
@@ -328,49 +208,23 @@ void main() {
     });
 
     testWidgets('Test 5: Add Player Whitespace-Only Name Validation - Validates whitespace-only input (spaces/tabs) is rejected as invalid, error message displays for whitespace input, dialog remains open after whitespace validation error', (WidgetTester tester) async {
-      // Launch the full app
-      app.main();
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+      // Navigate to Target Tag menu
+      await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Navigate to Target Tag
-      final targetTagCard = find.text('Target Tag');
-      await tester.tap(targetTagCard);
-
-      // Target Tag menu has a continuous pulse animation that prevents pumpAndSettle
-      // Use pump() instead to advance frames without waiting for animations to settle
-      await tester.pump(); // Process the tap
-      await tester.pump(const Duration(seconds: 1)); // Let navigation complete
-      await tester.pump(); // Process navigation
-      await tester.pump(const Duration(seconds: 5)); // Wait for PlayerProvider async loading
-      await tester.pump(); // Process data loaded
-      await tester.pump(); // Rebuild widget tree with new data
-      await tester.pump(); // Layout the new widgets
-      await tester.pump(); // Paint the ElevatedButton
-
-      // Find and tap "NEW PLAYER" button
-      final addButton = find.text('NEW PLAYER');
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       await tester.tap(addButton.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Let dialog open
-      await tester.pump(); // Build dialog
-      await tester.pump(); // Layout dialog
-      await tester.pump(); // Paint dialog
+      await PumpSequences.dialogOpen(tester);
 
       // Enter only whitespace in name field
-      final nameField = find.byType(TextField);
+      final nameField = ElementFinders.getAddPlayerNameField();
       await tester.enterText(nameField, '   ');
-      await tester.pump(); // Process text entry
-      await tester.pump(); // Update text field
+      await PumpSequences.textEntry(tester);
 
       // Try to add player
-      final buttonWidget = find.descendant(
-        of: find.byType(ElevatedButton),
-        matching: find.text('Add Player'),
-      );
-      await tester.tap(buttonWidget.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for action to complete
-      await tester.pump(); // Process completion
+      final addPlayerButton = ElementFinders.getAddPlayerAddButton();
+      await tester.tap(addPlayerButton.first);
+      await PumpSequences.simpleUpdate(tester);
 
       // Verify error message appears
       expect(find.text('Please enter a player name'), findsOneWidget);
@@ -380,47 +234,24 @@ void main() {
     });
 
     testWidgets('Test 6: Cancel Button Functionality - Validates cancel button closes dialog without saving player data, entered player name is not added to player list, dialog properly closes and returns to menu screen', (WidgetTester tester) async {
-      // Launch the full app
-      app.main();
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+      // Navigate to Target Tag menu
+      await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // Navigate to Target Tag
-      final targetTagCard = find.text('Target Tag');
-      await tester.tap(targetTagCard);
-
-      // Target Tag menu has a continuous pulse animation that prevents pumpAndSettle
-      // Use pump() instead to advance frames without waiting for animations to settle
-      await tester.pump(); // Process the tap
-      await tester.pump(const Duration(seconds: 1)); // Let navigation complete
-      await tester.pump(); // Process navigation
-      await tester.pump(const Duration(seconds: 5)); // Wait for PlayerProvider async loading
-      await tester.pump(); // Process data loaded
-      await tester.pump(); // Rebuild widget tree with new data
-      await tester.pump(); // Layout the new widgets
-      await tester.pump(); // Paint the ElevatedButton
-
-      // Find and tap "NEW PLAYER" button
-      final addButton = find.text('NEW PLAYER');
+      // Find and tap "NEW PLAYER" button (empty state since no players yet)
+      final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
       await tester.tap(addButton.first);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Let dialog open
-      await tester.pump(); // Build dialog
-      await tester.pump(); // Layout dialog
-      await tester.pump(); // Paint dialog
+      await PumpSequences.dialogOpen(tester);
 
       // Enter a player name
-      final nameField = find.byType(TextField);
+      final nameField = ElementFinders.getAddPlayerNameField();
       await tester.enterText(nameField, 'Cancelled Player');
-      await tester.pump(); // Process text entry
-      await tester.pump(); // Update text field
+      await PumpSequences.textEntry(tester);
 
       // Tap Cancel button
-      final cancelButton = find.text('Cancel');
+      final cancelButton = ElementFinders.getAddPlayerCancelButton();
       expect(cancelButton, findsOneWidget);
       await tester.tap(cancelButton);
-      await tester.pump(); // Process tap
-      await tester.pump(const Duration(milliseconds: 500)); // Wait for dialog to close
-      await tester.pump(); // Process dialog closing
+      await PumpSequences.dialogClose(tester);
 
       // Verify dialog closed
       expect(find.text('Player Name'), findsNothing);

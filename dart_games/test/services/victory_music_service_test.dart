@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/victory_music_service.dart';
 import 'package:dart_games/models/victory_music_file.dart';
@@ -56,8 +54,6 @@ void main() {
 
     test('getMimeType detects mp3 files', () async {
       // Test via addMusicFile which uses _getMimeType internally
-      final mp3Bytes = Uint8List.fromList([1, 2, 3]);
-
       // Note: This will fail on native because we can't easily mock file copying
       // This test is more conceptual to document the expected behavior
       // Just verify the method exists and can be called

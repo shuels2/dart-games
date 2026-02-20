@@ -1,18 +1,17 @@
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:async';
-import 'dart:indexed_db' as idb;
 
 const String _dbName = 'DartGamesDB';
 const String _storeName = 'victoryMusic';
 const int _dbVersion = 1;
 
-Future<idb.Database> _openDatabase() async {
+Future<dynamic> _openDatabase() async {
   return await html.window.indexedDB!.open(
     _dbName,
     version: _dbVersion,
-    onUpgradeNeeded: (idb.VersionChangeEvent event) {
-      final db = event.target.result as idb.Database;
+    onUpgradeNeeded: (event) {
+      final db = event.target.result;
       if (!db.objectStoreNames!.contains(_storeName)) {
         db.createObjectStore(_storeName);
       }

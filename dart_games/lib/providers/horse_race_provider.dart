@@ -100,7 +100,7 @@ class HorseRaceProvider extends ChangeNotifier {
       gameActive: isGameActive,
       waitingForTakeout: _waitingForTakeout,
       currentDartCount: dartsThrown,
-      maxDartsPerTurn: 3,
+      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
     )) {
       return;
     }
@@ -108,7 +108,7 @@ class HorseRaceProvider extends ChangeNotifier {
     // Execute skip using global helper
     GameSkipTurnHelper.skipRemainingDarts(
       currentDartCount: dartsThrown,
-      maxDartsPerTurn: 3,
+      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
       addVisualMarker: (marker) {
         _currentGame!.currentTurnDartScores[currentPlayerId] ??= [];
         _currentGame!.currentTurnDartScores[currentPlayerId]!.add(marker);

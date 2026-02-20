@@ -40,7 +40,6 @@ class CarnivalDerbyTestHelper {
 
     // Parse sector to get score and multiplier
     final parsed = _parseSector(sector);
-    final isMiss = sector == 'None' || sector == 'Miss' || parsed == null;
 
     // Record the throw
     if (parsed != null) {

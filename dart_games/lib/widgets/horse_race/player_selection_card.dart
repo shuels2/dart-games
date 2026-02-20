@@ -11,6 +11,7 @@ class PlayerSelectionCard extends StatelessWidget {
   final bool compact;
   final Color? selectedColor;
   final Color? selectedBorderColor;
+  final Key? removeButtonKey;
 
   const PlayerSelectionCard({
     super.key,
@@ -21,6 +22,7 @@ class PlayerSelectionCard extends StatelessWidget {
     this.compact = false,
     this.selectedColor,
     this.selectedBorderColor,
+    this.removeButtonKey,
   });
 
   @override
@@ -86,6 +88,7 @@ class PlayerSelectionCard extends StatelessWidget {
                 ),
                 if (isSelected && onRemove != null)
                   IconButton(
+                    key: removeButtonKey,
                     icon: const Icon(Icons.remove_circle, color: Color(0xFFE63946)),
                     iconSize: 24,
                     onPressed: onRemove,

@@ -10,6 +10,7 @@ import '../../../widgets/target_tag/team_setup_widget.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../widgets/horse_race/player_selection_card.dart';
 import '../../../widgets/horse_race/player_avatar_widget.dart';
+import '../../../constants/test_keys.dart';
 import 'target_tag_game_screen.dart';
 
 class TargetTagMenuScreen extends StatefulWidget {
@@ -116,6 +117,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         leading: IconButton(
+          key: TargetTagMenuKeys.backButton,
           icon: const Icon(
             Icons.arrow_back,
             color: Colors.white,
@@ -399,6 +401,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             // Game Mode setting
             Expanded(
               child: Container(
+                height: 60,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
@@ -434,6 +437,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         Transform.scale(
                           scale: 0.8,
                           child: Switch(
+                            key: TargetTagMenuKeys.teamModeSwitch,
                             value: _isTeamMode,
                             activeColor: const Color(0xFF00FFA3),
                             onChanged: (value) {
@@ -462,6 +466,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             // Shield Max slider in box
             Expanded(
               child: Container(
+                height: 60,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
@@ -484,6 +489,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                     const SizedBox(width: 12),
                     Expanded(
                       child: Slider(
+                        key: TargetTagMenuKeys.shieldMaxSlider,
                         value: _shieldMax,
                         min: 1,
                         max: 10,
@@ -550,6 +556,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         Transform.scale(
                           scale: 0.8,
                           child: Switch(
+                            key: TargetTagMenuKeys.manualTeamAssignmentSwitch,
                             value: !_isRandomTeams,
                             activeColor: const Color(0xFFFF007A),
                             onChanged: _isTeamMode ? (value) {
@@ -621,6 +628,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                       Transform.scale(
                         scale: 0.8,
                         child: Switch(
+                          key: TargetTagMenuKeys.heroBonusSwitch,
                           value: _soloHeroBonus,
                           activeColor: const Color(0xFF00FFA3),
                           onChanged: (value) {
@@ -676,6 +684,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                 const Spacer(),
                 if (allPlayers.isNotEmpty)
                   ElevatedButton.icon(
+                    key: TargetTagMenuKeys.addPlayerButton,
                     onPressed: _handleAddPlayer,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF007A),
@@ -725,6 +734,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
+                            key: TargetTagMenuKeys.addPlayerButtonEmptyState,
                             onPressed: _handleAddPlayer,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF007A),
@@ -743,6 +753,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                       ),
                     )
                   : ListView.builder(
+                      key: TargetTagMenuKeys.playerListView,
                       controller: _scrollController,
                       itemCount: allPlayers.length,
                       itemBuilder: (context, index) {
@@ -750,6 +761,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         final isSelected = selectedPlayers.any((p) => p.id == player.id);
 
                         return PlayerSelectionCard(
+                          key: TargetTagMenuKeys.playerTile(player.id),
                           player: player,
                           isSelected: isSelected,
                           selectedColor: const Color(0xFFFF007A), // Hot pink for Target Tag
@@ -791,6 +803,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                 const Spacer(),
                 if (allPlayers.isNotEmpty)
                   ElevatedButton.icon(
+                    key: TargetTagMenuKeys.addPlayerButton,
                     onPressed: _handleAddPlayer,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF007A),
@@ -840,6 +853,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
+                            key: TargetTagMenuKeys.addPlayerButtonEmptyState,
                             onPressed: _handleAddPlayer,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF007A),
@@ -858,6 +872,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                       ),
                     )
                   : ListView.builder(
+                      key: TargetTagMenuKeys.playerListView,
                       controller: _scrollController,
                       itemCount: allPlayers.length,
                       itemBuilder: (context, index) {
@@ -929,6 +944,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                     const Spacer(),
                     if (allPlayers.isNotEmpty)
                       ElevatedButton.icon(
+                        key: TargetTagMenuKeys.addPlayerButton,
                         onPressed: _handleAddPlayer,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFF007A),
@@ -979,6 +995,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
+                                  key: TargetTagMenuKeys.addPlayerButtonEmptyState,
                                   onPressed: _handleAddPlayer,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFFF007A),
@@ -998,12 +1015,14 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           )
                         : (!_isTeamMode || _isRandomTeams)
                             ? ListView.builder(
+                                key: TargetTagMenuKeys.playerListView,
                                 controller: _scrollController,
                                 itemCount: allPlayers.length,
                                 itemBuilder: (context, index) {
                                   final player = allPlayers[index];
                                   final isSelected = selectedPlayers.any((p) => p.id == player.id);
                                   return PlayerSelectionCard(
+                                    key: TargetTagMenuKeys.playerTile(player.id),
                                     player: player,
                                     isSelected: isSelected,
                                     selectedColor: const Color(0xFFFF007A),
@@ -1019,6 +1038,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                                 },
                               )
                             : ListView.builder(
+                                key: TargetTagMenuKeys.playerListView,
                                 controller: _scrollController,
                                 itemCount: allPlayers.length,
                                 itemBuilder: (context, index) {
@@ -1096,6 +1116,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
           String? _highlightedTeam;
 
           return AlertDialog(
+            key: TeamAssignmentDialogKeys.dialogContainer,
             backgroundColor: const Color(0xFF1A1A2E).withOpacity(0.95),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1127,6 +1148,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                         return Opacity(
                           opacity: isTeamFull ? 0.4 : 1.0,
                           child: GestureDetector(
+                            key: TeamAssignmentDialogKeys.playerTeamDropdown(player.id + '_' + teamId),
                             onTap: isTeamFull ? null : () async {
                               // Show highlight effect
                               setDialogState(() {
@@ -1244,6 +1266,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                     const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
+                      key: TeamAssignmentDialogKeys.cancelButton,
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2A2A3E),
@@ -1491,6 +1514,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
           child: Material(
             color: Colors.transparent,
             child: InkWell(
+              key: TargetTagMenuKeys.startButton,
               onTap: canStart ? () => _startGame(selectedPlayers) : null,
               borderRadius: BorderRadius.circular(12),
               child: Center(

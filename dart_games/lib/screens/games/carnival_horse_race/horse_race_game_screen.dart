@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../constants/test_keys.dart';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
@@ -651,6 +652,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                 const SizedBox(width: 16),
                 // Skip turn button
                 ElevatedButton(
+                  key: CarnivalDerbyGameKeys.skipTurnButton,
                   onPressed: () {
                     final dartsThrown = provider.getCurrentPlayerDartsThrown();
 
@@ -795,6 +797,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               const SizedBox(height: 24),
               // Edit player score button
               ElevatedButton(
+                key: CarnivalDerbyGameKeys.editScoreButton,
                 onPressed: () {
                   if (currentPlayer == null) return;
                   final horseRaceProvider =

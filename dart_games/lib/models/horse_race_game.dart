@@ -13,6 +13,7 @@ class HorseRaceGame {
   final int targetScore;
   final bool exactScoreMode;
   final DateTime startedAt;
+  final int maxDartsPerTurn;  // Max darts allowed per turn
 
   // Runtime state
   GameState state;
@@ -37,6 +38,7 @@ class HorseRaceGame {
     required this.targetScore,
     this.exactScoreMode = false,
     required this.startedAt,
+    this.maxDartsPerTurn = 3,  // Default to standard 3 darts
     this.state = GameState.setup,
     this.currentPlayerIndex = 0,
     Map<String, int>? scores,
@@ -73,6 +75,7 @@ class HorseRaceGame {
       targetScore: targetScore,
       exactScoreMode: exactScoreMode,
       startedAt: DateTime.now(),
+      maxDartsPerTurn: 3,  // Explicit for Carnival Derby
       totalDartsThrown: {},
       totalTurns: {},
       state: GameState.playing,
@@ -87,6 +90,9 @@ class HorseRaceGame {
   void recordDartThrow(String playerId, int score, {String? dartDisplay}) {
     if (state != GameState.playing) return;
     if (playerId != playerIds[currentPlayerIndex]) return;
+
+    // Prevent processing more darts than allowed per turn
+    if (dartsThrown[playerId]! >= maxDartsPerTurn) return;
 
     final currentScore = scores[playerId] ?? 0;
     final newScore = currentScore + score;
@@ -104,9 +110,7 @@ class HorseRaceGame {
         totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
 
         // Increment turn counter on FIRST dart only
-        if (dartsThrown[playerId] == 1) {
-          totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
-        }
+        _incrementTurnIfFirst(playerId);
         return;
       } else if (newScore == targetScore) {
         // Player hit exact score - they win!
@@ -115,9 +119,7 @@ class HorseRaceGame {
         totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
 
         // Increment turn counter on FIRST dart only
-        if (dartsThrown[playerId] == 1) {
-          totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
-        }
+        _incrementTurnIfFirst(playerId);
 
         winnerId = playerId;
         state = GameState.finished;
@@ -131,9 +133,7 @@ class HorseRaceGame {
     totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
 
     // Increment turn counter on FIRST dart only
-    if (dartsThrown[playerId] == 1) {
-      totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
-    }
+    _incrementTurnIfFirst(playerId);
 
     // Check if player has won (greater or equal mode)
     if (!exactScoreMode && scores[playerId]! >= targetScore) {
@@ -161,6 +161,9 @@ class HorseRaceGame {
   String getCurrentPlayerId() {
     return playerIds[currentPlayerIndex];
   }
+
+  // Get max darts per turn
+  int getMaxDartsPerTurn() => maxDartsPerTurn;
 
   // Get current player from list
   Player getCurrentPlayer(List<Player> players) {
@@ -220,6 +223,13 @@ class HorseRaceGame {
   // Get current turn dart scores for a specific player
   List<String> getCurrentTurnDartScores(String playerId) {
     return currentTurnDartScores[playerId] ?? [];
+  }
+
+  // Increment turn counter if this is the first dart thrown
+  void _incrementTurnIfFirst(String playerId) {
+    if (dartsThrown[playerId] == 1) {
+      totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
+    }
   }
 
   // Get total darts thrown across all turns for a player
