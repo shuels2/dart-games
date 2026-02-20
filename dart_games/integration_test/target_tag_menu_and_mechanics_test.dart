@@ -1012,7 +1012,6 @@ void main() {
     testWidgets(
         'Test 18: Last Shield Warning - Validates Player 1 tagged in with max shields, Player 2 builds shields to max and gets tagged in, Player 1 attacks Player 2 repeatedly reducing shields, when Player 2 reaches 1 shield remaining special warning UI appears, last shield warning displays correctly (visual indicator or announcement), Player 2 shield count shows "1" in UI, further attack eliminates Player 2 (shield count reaches 0)',
         (WidgetTester tester) async {
-      return; // SKIP TEST 18
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await SettingsHelpers.setTargetTagShieldMax(tester, 3);
@@ -1027,6 +1026,13 @@ void main() {
 
       await throwDartViaMock(tester, player1Target!, multiplier: 'triple');
 
+      // Throw 2 more darts to end the turn
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+
+      // Remove darts to advance turn to Player 2
+      await clickDartsRemoved(tester);
+
       final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
@@ -1036,16 +1042,35 @@ void main() {
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player2.id), isTrue);
 
+      // Throw 2 more darts to end the turn
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+
+      // Remove darts to advance turn to Player 1
+      await clickDartsRemoved(tester);
+
       // Player 1 attacks Player 2 twice (3 shields -> 1 shield)
       await throwDartViaMock(tester, player2Target);
       await throwDartViaMock(tester, player2Target);
 
       expect(ProviderHelpers.getTargetTagPlayerShields(tester, player2.id), 1);
 
-      // Skip to Player 1's turn
+      // Throw one more dart to end the turn
       await throwMissViaMock(tester);
 
-      // Final elimination attack
+      // Remove darts to advance turn to Player 2
+      await clickDartsRemoved(tester);
+
+      // Throw 3 more darts to end the turn
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+
+      // Remove darts to advance turn to Player 1
+      await clickDartsRemoved(tester);
+
+      // Final elimination attack on Player 2 (1 shield -> 0 shield -> Eliminated)
+      await throwDartViaMock(tester, player2Target);
       await throwDartViaMock(tester, player2Target);
 
       expect(ProviderHelpers.isTargetTagPlayerEliminated(tester, player2.id), isTrue);
