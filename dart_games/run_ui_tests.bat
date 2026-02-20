@@ -74,7 +74,7 @@ set fail_count=0
 
 echo ========================================
 if "!run_all!"=="1" (
-    echo Running All UI Automation Tests (77 tests, ~51 minutes)
+    echo Running All UI Automation Tests ^(77 tests, ~51 minutes^)
 ) else (
     echo Running Selected UI Automation Tests
 )
