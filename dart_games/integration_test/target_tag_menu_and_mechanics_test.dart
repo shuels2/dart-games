@@ -309,6 +309,8 @@ void main() {
       expect(player4, isNotNull);
 
       // Assign Player 1 to Team 1 (index 0)
+      await tester.ensureVisible(find.text('TeamPlayer1'));
+      await tester.pump();
       await tester.tap(find.text('Assign team').first);
       await PumpSequences.dialogOpen(tester);
       final dialog1 = find.byType(AlertDialog);
@@ -317,6 +319,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
 
       // Assign Player 2 to Team 1 (index 0)
+      await tester.ensureVisible(find.text('TeamPlayer2'));
+      await tester.pump();
       await tester.tap(find.text('Assign team').first);
       await PumpSequences.dialogOpen(tester);
       final dialog2 = find.byType(AlertDialog);
@@ -325,6 +329,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500)); // Wait for auto-close
 
       // Assign Player 3 to Team 2 (index 1)
+      await tester.ensureVisible(find.text('TeamPlayer3'));
+      await tester.pump();
       await tester.tap(find.text('Assign team').first);
       await PumpSequences.dialogOpen(tester);
       final dialog3 = find.byType(AlertDialog);
@@ -338,6 +344,8 @@ void main() {
         print('All players auto-assigned after 3 manual assignments');
       } else {
         // Assign Player 4 to Team 2 (index 1)
+        await tester.ensureVisible(find.text('TeamPlayer4'));
+        await tester.pump();
         await tester.tap(find.text('Assign team').first);
         await PumpSequences.dialogOpen(tester);
         final dialog4 = find.byType(AlertDialog);
@@ -559,7 +567,7 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      await SettingsHelpers.setTargetTagShieldMax(tester, 5);
+      await SettingsHelpers.setTargetTagShieldMax(tester, 3);
 
       await UITestHelpers.addPlayer(tester, 'Attacker', config);
       await UITestHelpers.addPlayer(tester, 'Defender', config);
@@ -569,10 +577,8 @@ void main() {
       final player1Id = ProviderHelpers.getTargetTagCurrentPlayerId(tester);
       final player1Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player1Id!);
 
-      // Build shields to max
-      for (int i = 0; i < 5; i++) {
-        await throwDartViaMock(tester, player1Target!);
-      }
+      // Build shields to max (3 shields in a single triple throw)
+      await throwDartViaMock(tester, player1Target!, multiplier: 'triple');
       expect(ProviderHelpers.isTargetTagPlayerTaggedIn(tester, player1Id), isTrue);
 
       // Remove darts to advance turn
