@@ -32,9 +32,8 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   bool _gameCompleted = false;
 
-  // Fixed random positions for opponents (generated once)
-  Map<String, Offset> _opponentPositions = {};
-  final Random _random = Random();
+  // Shuffled slot order for opponents (generated once)
+  List<int>? _shuffledSlotOrder;
 
   @override
   void initState() {
@@ -58,8 +57,8 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       });
     }
 
-    // Generate random opponent positions
-    _generateOpponentPositions();
+    // Generate shuffled slot order for opponents
+    _shuffledSlotOrder = List.generate(7, (i) => i)..shuffle(Random());
 
     _audioQueue!.announceGameStart();
 
@@ -70,18 +69,22 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     });
   }
 
-  void _generateOpponentPositions() {
-    final monsterMashProvider = context.read<MonsterMashProvider>();
-    final currentGame = monsterMashProvider.currentGame;
-    if (currentGame == null) return;
-
-    for (final playerId in currentGame.playerIds) {
-      _opponentPositions[playerId] = Offset(
-        _random.nextDouble() * 0.6 + 0.1,
-        _random.nextDouble() * 0.35 + 0.05,
-      );
-    }
-  }
+  // 7 fixed slot positions as absolute fractions of the opponent area.
+  // All slots are in the lower half of the screen (y >= 0.45).
+  // x = horizontal position (0=left, 1=right of opponent area)
+  // y = depth/vertical (higher = lower on screen = foreground)
+  static const _slotPositions = [
+    // Back row (y ~0.45-0.52) - smaller, further back
+    Offset(0.0, 0.45),
+    Offset(0.55, 0.50),
+    // Mid row (y ~0.60-0.70) - medium
+    Offset(0.15, 0.62),
+    Offset(0.65, 0.68),
+    Offset(0.35, 0.72),
+    // Front row (y ~0.82-0.90) - large, close
+    Offset(0.0, 0.84),
+    Offset(0.50, 0.90),
+  ];
 
   @override
   void dispose() {
@@ -418,6 +421,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             child: Image.asset(
               'assets/games/monster_mash/images/MonsterMash-Background.png',
               fit: BoxFit.cover,
+              alignment: Alignment.bottomCenter,
               color: Colors.black.withOpacity(0.3),
               colorBlendMode: BlendMode.darken,
             ),
@@ -510,29 +514,56 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
           ),
           const SizedBox(height: 4),
 
-          // Health bar
-          _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent),
+          // Target number with shield
+          SizedBox(
+            width: 144,
+            height: 144,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.asset(
+                  'assets/games/monster_mash/icons/Shield-Health.png',
+                  width: 144,
+                  height: 144,
+                ),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Black outline for readability
+                    Text(
+                      '$targetNumber',
+                      style: GoogleFonts.creepster(
+                        fontSize: 96,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 5
+                          ..color = Colors.black,
+                      ),
+                    ),
+                    // Main text
+                    Text(
+                      '$targetNumber',
+                      style: GoogleFonts.creepster(
+                        fontSize: 96,
+                        color: const Color(0xFF7FFF00),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 4),
 
-          // Target number with shield
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/games/monster_mash/icons/Shield-Health.png',
-                width: 32,
-                height: 32,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '$targetNumber',
-                style: GoogleFonts.creepster(
-                  fontSize: 28,
-                  color: const Color(0xFF7FFF00),
-                ),
-              ),
-            ],
-          ),
+          // Health bar
+          _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent),
+          const SizedBox(height: 8),
 
           // Monster image (flipped to face right)
           Expanded(
@@ -545,6 +576,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 8),
 
           // Darts thrown display
           Row(
@@ -651,8 +683,29 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   ) {
     final currentPlayerId = provider.getCurrentPlayerId();
     final opponents = currentGame.playerIds.where((id) => id != currentPlayerId).toList();
+    final slots = _shuffledSlotOrder ?? List.generate(7, (i) => i);
 
-    return opponents.map((opponentId) {
+    // Build list with slot assignments, then sort by Y for painter's order
+    final opponentData = <Map<String, dynamic>>[];
+    for (int i = 0; i < opponents.length && i < slots.length; i++) {
+      final slotIdx = slots[i % slots.length];
+      final position = _slotPositions[slotIdx % _slotPositions.length];
+      opponentData.add({
+        'id': opponents[i],
+        'position': position,
+      });
+    }
+    // Sort by Y so background renders first
+    opponentData.sort((a, b) => (a['position'] as Offset).dy.compareTo((b['position'] as Offset).dy));
+
+    final rightAreaStart = screenWidth * 0.32;
+    final rightAreaWidth = screenWidth * 0.55;
+    final availableHeight = screenHeight * 0.70;
+
+    return opponentData.map((data) {
+      final opponentId = data['id'] as String;
+      final position = data['position'] as Offset;
+
       final player = allPlayers.firstWhere((p) => p.id == opponentId);
       final isEliminated = provider.isEliminated(opponentId);
       final healthPercent = provider.getHealthPercentage(opponentId);
@@ -660,14 +713,19 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       final targetNumber = provider.getTargetNumber(opponentId) ?? 0;
       final imagePath = provider.getMonsterImagePath(opponentId)!;
 
-      final position = _opponentPositions[opponentId] ?? const Offset(0.5, 0.3);
+      // Calculate absolute pixel positions
+      final left = rightAreaStart + (position.dx * rightAreaWidth);
+      final top = position.dy * availableHeight;
 
-      // Position opponents on the right side of the screen
-      final rightAreaStart = screenWidth * 0.32;
-      final rightAreaWidth = screenWidth * 0.65;
-      final left = rightAreaStart + (position.dx * rightAreaWidth * 0.6);
-      final top = position.dy * (screenHeight * 0.5);
-      final imageSize = screenWidth * 0.12;
+      // Perspective scaling: y=0 (background) -> 0.55x, y=1 (foreground) -> 1.25x
+      final depth = position.dy;
+      final perspectiveScale = 0.55 + (depth * 0.70);
+      final imageSize = screenWidth * 0.11 * perspectiveScale;
+      final shieldSize = (70.0 * perspectiveScale).clamp(35.0, 90.0);
+      final shieldFontSize = (55.0 * perspectiveScale).clamp(26.0, 70.0);
+      final strokeWidth = (4.0 * perspectiveScale).clamp(2.0, 5.0);
+      final nameFontSize = (12.0 * perspectiveScale).clamp(8.0, 16.0);
+      final healthBarHeight = (14.0 * perspectiveScale).clamp(8.0, 18.0);
 
       return Positioned(
         left: left,
@@ -675,34 +733,59 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         child: Opacity(
           opacity: isEliminated ? 0.4 : 1.0,
           child: SizedBox(
-            width: imageSize + 40,
+            width: imageSize + 50,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Shield + number
+                SizedBox(
+                  width: shieldSize,
+                  height: shieldSize,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/games/monster_mash/icons/Shield-HitPoint.png',
+                        width: shieldSize,
+                        height: shieldSize,
+                      ),
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Text(
+                            '$targetNumber',
+                            style: GoogleFonts.creepster(
+                              fontSize: shieldFontSize,
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth = strokeWidth
+                                ..color = Colors.black,
+                            ),
+                          ),
+                          Text(
+                            '$targetNumber',
+                            style: GoogleFonts.creepster(
+                              fontSize: shieldFontSize,
+                              color: const Color(0xFFFF4444),
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black,
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
                 // Health bar
                 SizedBox(
                   width: imageSize,
-                  child: _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent, compact: true),
-                ),
-                const SizedBox(height: 2),
-                // Shield + number
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/games/monster_mash/icons/Shield-HitPoint.png',
-                      width: 20,
-                      height: 20,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '$targetNumber',
-                      style: GoogleFonts.creepster(
-                        fontSize: 16,
-                        color: const Color(0xFFFF4444),
-                      ),
-                    ),
-                  ],
+                  child: _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent, compact: true, compactHeight: healthBarHeight),
                 ),
                 // Monster image (faces left - default)
                 Image.asset(
@@ -715,7 +798,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                 Text(
                   player.name,
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: nameFontSize,
                     fontWeight: FontWeight.bold,
                     color: isEliminated ? Colors.grey : const Color(0xFFF5F5DC),
                   ),
@@ -730,56 +813,63 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     }).toList();
   }
 
-  Widget _buildHealthBar(int currentHealth, int maxHealth, double healthPercent, {bool compact = false}) {
-    Color barColor;
-    if (healthPercent > 0.70) {
-      barColor = const Color(0xFF00CC00);
-    } else if (healthPercent > 0.30) {
-      barColor = const Color(0xFFFFCC00);
-    } else {
-      barColor = const Color(0xFFFF4444);
-    }
+  Widget _buildHealthBar(int currentHealth, int maxHealth, double healthPercent, {bool compact = false, double? compactHeight}) {
+    const redColor = Color(0xFFFF4444);
+    const yellowColor = Color(0xFFFFCC00);
+    const greenColor = Color(0xFF00CC00);
 
-    final height = compact ? 8.0 : 14.0;
-    final fontSize = compact ? 10.0 : 14.0;
+    final height = compact ? (compactHeight ?? 14.0) : 22.0;
+    final fontSize = compact ? (height * 0.7).clamp(7.0, 12.0) : 14.0;
+    final hp = healthPercent.clamp(0.0, 1.0);
 
-    return Column(
-      children: [
-        Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(height / 2),
-            border: Border.all(color: barColor.withOpacity(0.5), width: 1),
-          ),
-          child: ClipRRect(
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(height / 2),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+      ),
+      child: Stack(
+        children: [
+          // Gradient fill
+          ClipRRect(
             borderRadius: BorderRadius.circular(height / 2),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: healthPercent.clamp(0.0, 1.0),
+              widthFactor: hp,
               child: Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [barColor, barColor.withOpacity(0.6)],
+                    colors: [
+                      redColor,
+                      Color(0xFFFF6622),
+                      yellowColor,
+                      Color(0xFF88DD00),
+                      greenColor,
+                    ],
+                    stops: [0.0, 0.25, 0.45, 0.70, 1.0],
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        if (!compact)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
+          // HP text centered inside bar
+          Center(
             child: Text(
               '$currentHealth/$maxHealth HP',
               style: GoogleFonts.montserrat(
                 fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: barColor,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                shadows: [
+                  Shadow(color: Colors.black, blurRadius: 4),
+                  Shadow(color: Colors.black, blurRadius: 8),
+                ],
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 
