@@ -782,7 +782,6 @@ void main() {
     testWidgets(
         'Test 15: Team Mode - Manual Team Assignment Game - Validates team mode enabled with manual assignment, 6 players added (Alpha1/2, Beta1/2, Charlie1/2), manual team assignment UI allows drag-drop or button-based team selection, players correctly assigned to 3 teams (Alpha, Beta, Charlie) with 2 members each, team badges show correct team for each player, max 5 teams enforced, game starts successfully with manually assigned teams',
         (WidgetTester tester) async {
-      return; // SKIP TEST 15
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Enable team mode
@@ -797,7 +796,16 @@ void main() {
         await UITestHelpers.addPlayer(tester, 'ManualTeam$i', config);
       }
 
+      // Scroll to top of player list to ensure all players are visible
+      final listFinder = find.byType(ListView).first;
+      await tester.fling(listFinder, const Offset(0, 500), 5000);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
       // Assign Player 1 to Team 1 (index 0)
+      await tester.ensureVisible(find.text('ManualTeam1'));
+      await tester.pump();
       await tester.tap(find.text('Assign team').first);
       await PumpSequences.dialogOpen(tester);
       final dialog1 = find.byType(AlertDialog);
@@ -806,6 +814,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Assign Player 2 to Team 1 (index 0)
+      await tester.ensureVisible(find.text('ManualTeam2'));
+      await tester.pump();
       await tester.tap(find.text('Assign team').first);
       await PumpSequences.dialogOpen(tester);
       final dialog2 = find.byType(AlertDialog);
@@ -814,6 +824,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Assign Player 3 to Team 2 (index 1)
+      await tester.ensureVisible(find.text('ManualTeam3'));
+      await tester.pump();
       await tester.tap(find.text('Assign team').first);
       await PumpSequences.dialogOpen(tester);
       final dialog3 = find.byType(AlertDialog);
@@ -822,6 +834,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Assign Player 4 to Team 2 (index 1)
+      await tester.ensureVisible(find.text('ManualTeam4'));
+      await tester.pump();
       await tester.tap(find.text('Assign team').first);
       await PumpSequences.dialogOpen(tester);
       final dialog4 = find.byType(AlertDialog);
@@ -830,6 +844,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Assign Player 5 to Team 3 (index 2)
+      await tester.ensureVisible(find.text('ManualTeam5'));
+      await tester.pump();
       await tester.tap(find.text('Assign team').first);
       await PumpSequences.dialogOpen(tester);
       final dialog5 = find.byType(AlertDialog);
@@ -838,6 +854,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Assign Player 6 to Team 3 (index 2)
+      await tester.ensureVisible(find.text('ManualTeam6'));
+      await tester.pump();
       await tester.tap(find.text('Assign team').first);
       await PumpSequences.dialogOpen(tester);
       final dialog6 = find.byType(AlertDialog);
@@ -845,7 +863,7 @@ void main() {
       await tester.tap(gestureDetectors6.at(2)); // Team 3
       await tester.pump(const Duration(milliseconds: 500));
 
-      // Ensure final dialog is fully closed
+      // Ensure final dialog is fully closed and UI updated before verification
       await PumpSequences.dialogClose(tester);
 
       // Verify all teams assigned (no more "Assign team" buttons)
