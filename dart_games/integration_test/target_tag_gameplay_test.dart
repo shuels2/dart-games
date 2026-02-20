@@ -568,7 +568,7 @@ void main() {
       verifyDartIndicatorColor(tester, TargetTagGameKeys.activePlayerD3Indicator, 0xFFFFD700);
     });
 
-    testWidgets('Test 8: Hero Buff Multiplier Application - Validates hero buff multiplier is correctly applied to attack damage, 2x buff doubles shield damage, 3x buff triples shield damage, different buff values (2x/3x/4x/5x) all work correctly, buff applies to all dart types (single/double/triple)', (WidgetTester tester) async {
+    testWidgets('Test 8: Hero Buff Hit Detection - Validates hero bonus enabled, 2 players added, Player 1 reaches tagged in, hero buff values retrieved from provider for both players. Players throw darts including hitting hero buff numbers. D1 indicators show gold borders (0xFFFFD700) after hero buff hits. Validates hero buff hit causes 1 shield damage. Note: Does NOT validate damage multiplier mechanics (2x, 3x, 4x, 5x) - implementation comment states "Hero bonus does NOT multiply damage, just removes 1 shield" - only single shield damage validated regardless of multiplier value', (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Enable hero bonus

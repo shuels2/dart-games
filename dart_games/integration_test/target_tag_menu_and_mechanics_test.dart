@@ -281,7 +281,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 3: Team Assignment - Complete Manual Flow - Validates team mode enabled successfully, manual team assignment switch toggles on, 4 players added (Team1 Player1/2, Team2 Player1/2), all players found in scrollable player list, players manually assigned to teams (team selection UI functional), team badges displayed correctly for each player showing team assignment',
+        'Test 3: Team Assignment - Complete Manual Flow - Validates team mode enabled successfully, manual team assignment switch toggles on, 4 players added (Team1P1, Team1P2, Team2P1, Team2P2), all players found in scrollable player list, players manually assigned to teams using team selection dialog. Verifies "Assign team" buttons removed after assignment. Note: Does NOT verify team badge visibility on player tiles',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -358,7 +358,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 4: UI Feedback - Complete Validation - Validates menu screen shows Shield Max setting, Solo/Team mode toggle visible, Hero Bonus switch visible, NEW PLAYER button functional, LETS PLAY TAG button enables when minimum players selected, game screen displays Target Tag Game On! title, player tiles show shields count and target numbers, current player indicator visible, active panel shows correct information',
+        'Test 4: UI Feedback - Complete Validation - Validates menu shows Shield Max setting, Solo/Team mode toggle visible, Hero Bonus switch visible, NEW PLAYER button functional, LETS PLAY TAG button enables when minimum players selected, game screen displays "Target Tag Game On!" title. Verifies current player ID exists and shields initialized to 0. Note: Does NOT explicitly verify player tiles show shields count/target numbers on tiles or active panel information display',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -398,7 +398,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 5: Dart Box Colors - Complete Validation - Validates D1/D2/D3 dart indicators display on game screen, initial dart boxes have neutral border color, hitting own target while not tagged in shows green border (0xFF00FFA3), missing target shows pink border (0xFFFF007A), dart border colors update immediately after each dart throw, all three dart indicators functional and displaying correct colors based on game state',
+        'Test 5: Dart Box Colors - Game Logic Validation - Validates D1/D2/D3 game mechanics when player not tagged in. Hitting own target while not tagged in adds shields (game logic verified). Missing target does not add shields (game logic verified). Note: Does NOT validate visual dart indicator border colors (green 0xFF00FFA3 or pink 0xFFFF007A) - only game logic tested, not visual display',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -432,7 +432,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 6: Building Shields - Hit Opponent Target (Not Tagged In) - Validates player not tagged in initially, hitting opponent target while building shields shows pink border (0xFFFF007A), opponent target hits do not add shields when not tagged in, dart color correctly indicates invalid action (hitting opponent before tagged in is bad)',
+        'Test 6: Building Shields - Hit Opponent Target (Not Tagged In) - Validates player not tagged in initially, hitting opponent target while building shields does not add shields to attacking player (game logic verified). Note: Does NOT validate visual dart border colors (pink 0xFFFF007A mentioned in original description) - only game logic tested',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -462,7 +462,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 7: Reached Tagged In - Green Border - Validates player starts with 0 shields not tagged in, hitting own target with triple dart reaches max shields (3 shields for max 3), final dart that reaches max shields shows green border (0xFF00FFA3), player immediately transitions to tagged in status, tagged in badge appears on player tile',
+        'Test 7: Reached Tagged In - Game State Validation - Validates player starts with 0 shields not tagged in, hitting own target with triple dart reaches max shields (3 shields for max 3), player immediately transitions to tagged in status, "TAGGED IN" badge appears on player tile. Note: Does NOT validate visual dart border colors (green 0xFF00FFA3 mentioned in original description) - only game state and badge display tested',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -609,7 +609,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 10: Hero Bonus Hit (GOLD Pulsing) - Validates hero bonus enabled on menu, player gets tagged in, hitting hero buff number while tagged in shows gold border (0xFFFFD700) with pulsing glow effect, hero buff provides bonus shields/damage, dart indicator displays special glowing animation for hero bonus hits',
+        'Test 10: Hero Bonus Toggle - Basic Validation - Validates hero bonus can be enabled on menu, shield max set to 3, 2 players added, player reaches tagged in status (game is active). Note: Does NOT validate hitting hero buff number, does NOT validate gold border (0xFFFFD700) or pulsing glow effect, does NOT validate hero buff damage mechanics - test only confirms game starts with hero bonus enabled',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -689,7 +689,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 12: Border Color Priority Order - Validates dart border color priority hierarchy, reaching max shields (green) overrides all other colors, hero bonus hit (gold pulsing) has high priority, successful opponent attack (gold) has high priority, hit own target while tagged in (pink) lower priority, miss (pink) lowest priority, border colors display correctly when multiple conditions apply simultaneously',
+        'Test 12: Border Color Priority Order - Game Logic Only - Validates basic dart game logic (hitting own target increases shields, throwing miss does not change shields) with 2 players. Note: Does NOT validate any visual dart border colors or priority hierarchy - implementation comment states "Visual validation of colors would require screenshot testing. For now, verify game logic is correct". Only game mechanics tested, not visual display',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -771,7 +771,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 14: Team Mode - Random Team Assignment - Validates team mode switch enabled, 4 players added (Team Player 1-4), random team assignment assigns players automatically to teams, team badges displayed for each player, game starts successfully in team mode with randomly assigned teams, team UI elements displayed correctly',
+        'Test 14: Team Mode - Random Team Assignment - Validates team mode switch enabled, 4 players added (TeamPlayer1-4), game starts successfully in team mode with random team assignment, game is active. Note: Does NOT validate team badges displayed for each player or team UI elements - only verifies game starts',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -794,7 +794,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 15: Team Mode - Manual Team Assignment Game - Validates team mode enabled with manual assignment, 6 players added (Alpha1/2, Beta1/2, Charlie1/2), manual team assignment UI allows drag-drop or button-based team selection, players correctly assigned to 3 teams (Alpha, Beta, Charlie) with 2 members each, team badges show correct team for each player, max 5 teams enforced, game starts successfully with manually assigned teams',
+        'Test 15: Team Mode - Manual Team Assignment Game - Validates team mode enabled with manual assignment, 6 players added (ManualTeam1-6), players correctly assigned to 3 teams with 2 members each using manual team selection dialog, "Assign team" buttons removed after all assignments, game starts successfully with "Target Tag Game On!" displayed. Note: Does NOT validate team badge visibility or max 5 teams enforcement - only verifies assignment workflow and game start',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -958,7 +958,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 17: Hero Bonus in Solo Mode - Validates hero bonus switch enabled on menu, each player assigned random hero buff number (displayed on player tile), hero buff shows multiplier (single/D/T) and number (1-20), Player 1 gets tagged in and hero buff active, hitting hero buff number while tagged in deals bonus damage with gold pulsing border, hero buff provides strategic advantage in solo mode gameplay',
+        'Test 17: Hero Bonus in Solo Mode - Validates hero bonus switch enabled on menu, 2 players added, game started, hero buff number and multiplier retrieved from provider for both players (buff values exist and are valid dart notation D1-D20 or T1-T20). Players throw darts including hero buff hits, D1 indicators show gold borders (0xFFFFD700) after hero buff throws. Note: Description originally claimed hero buff damage mechanics but test only validates hero buff values exist and gold color appears - does NOT explicitly validate bonus damage multiplier application',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -1024,7 +1024,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 18: Last Shield Warning - Validates Player 1 tagged in with max shields, Player 2 builds shields to max and gets tagged in, Player 1 attacks Player 2 repeatedly reducing shields, when Player 2 reaches 1 shield remaining special warning UI appears, last shield warning displays correctly (visual indicator or announcement), Player 2 shield count shows "1" in UI, further attack eliminates Player 2 (shield count reaches 0)',
+        'Test 18: Last Shield Warning - Game Logic Validation - Validates Player 1 tagged in with max shields, Player 2 tagged in with max shields, Player 1 attacks Player 2 repeatedly reducing shields to 1, then eliminates Player 2 (shields reach 0), elimination confirmed. Note: Does NOT validate "special warning UI appears" or "last shield warning displays correctly" or "shield count shows 1 in UI" - only validates game logic (shield reduction and elimination), not visual warnings or UI displays',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -1247,7 +1247,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 22: Edit Score - Reach Tagged In Status - Validates Player 2 starts with partial shields (not tagged in yet), edit score used to add shields to Player 2, when shields reach max value Player 2 gets TAGGED IN badge, tagged in through edit score functions identically to dart-based tagged in, Player 2 active panel switches to show opponent targets list, Player 2 can now attack opponents on their turn',
+        'Test 22: Edit Score - Reach Tagged In Status - Validates Player 2 starts with partial shields (2 shields, not tagged in yet), edit score used to add shields to Player 2 (setting darts to own target), when shields reach max value (3) Player 2 gets "TAGGED IN" badge, tagged in status confirmed via provider. Note: Does NOT validate active panel switches to show opponent targets list or that Player 2 can attack opponents - only validates game state (shields, tagged in status) and badge display',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -1312,7 +1312,7 @@ void main() {
     });
 
     testWidgets(
-        'Test 24: Multi-Team Setup - Validates 3-team game with manual assignment and unbalanced teams, team tagged-in mechanics, and state transitions',
+        'Test 24: Multi-Team Setup with Unbalanced Teams and Hero Buffs - Comprehensive 6-Phase Validation - Phase 1: Team mode with manual assignment enabled, hero bonus enabled, shield max 3, 5 players added for 3 teams (Team 1: 2 players, Team 2: 2 players, Team 3: 1 player - unbalanced), players manually assigned to teams. Phase 2: Turn rotation validated with unbalanced teams (Team 3 with 1 player appears twice per cycle due to alternating team members). Phase 3: All 3 teams reach tagged-in status through dart throws. Phase 4: Team 1 hits hero buff number and damages all opponent teams (shields reduced). Phase 5: Team 2 hits hero buff for shield regeneration (0 to 3 shields). Phase 6: Team 3 eliminated through hero buff attacks, tagged out status confirmed. Validates team rotation, tagged-in mechanics, hero buff damage to multiple opponents, shield regeneration, and team elimination',
         (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 

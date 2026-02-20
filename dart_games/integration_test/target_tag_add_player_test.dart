@@ -86,7 +86,7 @@ void main() {
       expect(find.text('Player 2'), findsOneWidget);
     });
 
-    testWidgets('Test 2: Add Player with Name Only - Validates new player dialog opening, name field entry, player creation without photo, dialog closure, and player appears in list with auto-selection', (WidgetTester tester) async {
+    testWidgets('Test 2: Add Player with Name Only - Validates new player dialog opening, name field entry, player creation without photo, dialog closure, player appears in list. Note: Does NOT explicitly verify auto-selection status (checkmark visible) - only confirms player exists in list and player card renders', (WidgetTester tester) async {
       // Navigate to Target Tag menu
       await UITestHelpers.navigateToGameMenu(tester, config);
 

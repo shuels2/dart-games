@@ -874,8 +874,8 @@ void main() {
     // Test 14: Game - Skip Turn After 1 Dart (Remaining Marked as Skip)
     // Features: Skip with 1 dart thrown, verify skip markers on D2/D3
     // UI Elements: Dart display showing "Skip" text, remove darts modal
-    // Validates: D1=10, D2=Skip, D3=Skip displayed correctly, modal appears
-    testWidgets('Test 14: Skip Turn After 1 Dart (Remaining Marked as Miss)', (WidgetTester tester) async {
+    // Validates: Skip turn with 1 dart thrown, D1=10 scored, skip button clicked, D1/D2/D3 display shows "D1: 10", "D2: Skip", "D3: Skip", remove darts modal appears, turn advances to next player who wins
+    testWidgets('Test 14: Skip Turn After 1 Dart (Remaining Marked as Skip)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
       await UITestHelpers.addPlayer(tester, 'Alice', config);
@@ -952,7 +952,7 @@ void main() {
     // Test 16: Game - Edit Score Triggers Bust (Perfect Finish Mode)
     // Features: Edit score causing bust in Perfect Finish mode, bust detection
     // UI Elements: Edit score modal, bust announcement after update
-    // Validates: Editing S20/S15/S10 → T20x3 causes bust, score reverts correctly
+    // Validates: Edit score causing bust in Perfect Finish mode, editing S20/S15/S10 (45 points) to T20x3 (180 points) with target 70, bust flag set to true after update. Note: Does NOT explicitly verify score value reverts to 45 after bust - only validates bust flag is true
     testWidgets('Test 16: Edit Score with Bust (Perfect Finish Mode)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
@@ -1087,7 +1087,7 @@ void main() {
     // Test 18: Game - 8-Player Maximum Capacity Race
     // Features: Maximum 8 players racing simultaneously
     // UI Elements: 8 race lanes, all horses visible, turn progression
-    // Validates: Game handles 8 players smoothly, all reach target simultaneously
+    // Validates: Maximum 8 players can be added, target set to 60, game starts, all 8 players take turns throwing T20 (60 points), first player to throw reaches target and wins. Note: Does NOT test all 8 players reaching target simultaneously - test exits on first player win
     testWidgets('Test 18: 8-Player Maximum Capacity', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
@@ -1223,7 +1223,7 @@ void main() {
     // Test 22: Results - Results Screen Display & Content
     // Features: Results screen layout, winner announcement, action buttons
     // UI Elements: Winner title, avatar, score, standings table, Play Again/Change Settings/Home buttons
-    // Validates: All elements visible, confetti animation, victory music plays
+    // Validates: Results screen layout with winner announcement, action buttons (Play Again, Change Settings, Back to Menu), winner name displayed. Note: Does NOT validate confetti animation or victory music plays - only verifies visual elements present
     testWidgets('Test 22: Results Screen Content', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
@@ -1259,7 +1259,7 @@ void main() {
     // Test 23: Results - Play Again with Same Settings
     // Features: Quick rematch, settings preservation
     // UI Elements: Play Again button, game screen navigation
-    // Validates: Same players/target/Perfect Finish, scores reset to 0
+    // Validates: Quick rematch, Play Again button clicked, navigates back to game screen. Note: Does NOT verify same players/target/Perfect Finish preserved or scores reset to 0 - only confirms navigation to game screen
     testWidgets('Test 23: Play Again (Same Settings)', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 
@@ -1296,7 +1296,7 @@ void main() {
     // Test 24: Results - Change Settings Navigation
     // Features: Return to menu with preserved settings
     // UI Elements: Change game players and settings button, menu navigation
-    // Validates: Players preselected, target/Perfect Finish settings preserved
+    // Validates: Return to menu with Change Settings button, menu displays with target score and player preselected. Note: Does NOT verify Perfect Finish setting preserved - only confirms menu navigation and player/target display
     testWidgets('Test 24: Change Settings', (WidgetTester tester) async {
       await navigateToCarnivalDerbyMenu(tester);
 

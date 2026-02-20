@@ -336,7 +336,7 @@ void main() {
     // Features: Quick rematch functionality, shield max preservation, player preservation, score reset
     // UI Elements: Play Again button (green), game screen with "Target Tag Game On!" title
     // Game States: Solo mode game completes with victory, click Play Again, new game starts with identical settings (shield max 3, same 2 players)
-    // Validates: Play Again navigates to new game screen, same players selected, shield max preserved at 3, scores reset to 0, game state initialized correctly
+    // Validates: Play Again button navigates to new game screen, same players remain in game. Note: Does NOT verify shield max preserved at 3 or scores reset to 0 - only confirms navigation to game screen and player presence
     testWidgets('Test 2: Play Again - Settings Preservation Solo Mode', (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -393,7 +393,7 @@ void main() {
     // Features: Team mode results screen layout, team victory announcement, shared target mechanics validation
     // UI Elements: WINNER/WINNERS title (may show plural for teams), winner avatars (multiple CircleAvatars for team), team member names, all action buttons
     // Game States: Team mode 2v2 (4 players, 2 teams), shield max 3, Team 1 gets tagged in (3 shields on shared target), Team 2 builds 2 shields, Team 1 eliminates Team 2 (entire team eliminated together)
-    // Validates: Team mode game completes successfully, results screen displays for team victory, dynamic team target lookup working, both team members shown as winners, all buttons present
+    // Validates: Team mode game completes successfully, results screen displays for team victory with "WINNER" text, all buttons present (Play Again, Change Settings, Back to Menu). Note: Does NOT explicitly verify both team members shown as winners by name - only checks for "WINNER" text existence
     testWidgets('Test 4: Results Screen Content - Team Mode Victory Display', (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -429,7 +429,7 @@ void main() {
     // Features: Team mode persistence through Play Again, shield max preservation, team assignment preservation, quick rematch in team mode
     // UI Elements: Play Again button, team mode indicators (Team labels), game screen with team displays
     // Game States: Team mode 2v2 game completes with team victory, click Play Again, new team game starts with same teams and settings (shield max 3, same 4 players in same teams)
-    // Validates: Play Again works in team mode, team mode setting preserved, shield max preserved at 3, same players in same team assignments, team targets reassigned for new game
+    // Validates: Play Again works in team mode, navigates to game screen, "Team" text present indicating team mode active. Note: Does NOT explicitly verify shield max preserved at 3, same players in same team assignments, or team targets reassigned - only confirms game restarts in team mode
     testWidgets('Test 5: Play Again - Team Mode Settings and Team Assignment Preserved', (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -479,7 +479,7 @@ void main() {
     // Features: Hero bonus persistence through Play Again, bonus multiplier preservation, settings verification
     // UI Elements: Play Again button, hero bonus buff indicators on player tiles, game screen with buff values displayed
     // Game States: Solo mode game with hero bonus enabled and shield max 3, game completes, click Play Again, new game starts with hero bonus still enabled
-    // Validates: Hero bonus setting preserved after Play Again, same players selected, shield max preserved at 3, buff values recalculated for new game, hero bonus mechanics active
+    // Validates: Hero bonus enabled on menu, game completes, Play Again clicked, game restarts, players present. Note: Does NOT explicitly verify hero bonus setting preserved (Buff: text), shield max preserved at 3, buff values recalculated, or hero bonus mechanics active - only confirms game restarts with players
     testWidgets('Test 6: Play Again - Hero Bonus Setting Preserved', (WidgetTester tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
