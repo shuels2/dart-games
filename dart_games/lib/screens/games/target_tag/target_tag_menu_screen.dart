@@ -401,6 +401,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             // Game Mode setting
             Expanded(
               child: Container(
+                height: 60,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
@@ -465,6 +466,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             // Shield Max slider in box
             Expanded(
               child: Container(
+                height: 60,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
