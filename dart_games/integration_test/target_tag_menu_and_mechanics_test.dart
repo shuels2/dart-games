@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
+import 'package:dart_games/constants/test_keys.dart';
 import 'shared/element_finders.dart';
 import 'shared/pump_sequences.dart';
 import 'shared/settings_helpers.dart';
@@ -126,6 +127,25 @@ void main() {
     }
   }
 
+  /// Verify dart indicator border color
+  /// Dart indicators are identified by TargetTagGameKeys constants
+  void verifyDartIndicatorColor(WidgetTester tester, Key dartKey, int expectedColorValue) {
+    final indicatorFinder = find.byKey(dartKey);
+    expect(indicatorFinder, findsOneWidget);
+
+    final container = tester.widget<Container>(indicatorFinder);
+    final decoration = container.decoration as BoxDecoration?;
+    expect(decoration, isNotNull);
+
+    expect(decoration!.border, isNotNull);
+
+    final border = decoration!.border as Border;
+    final actualColor = border.top.color.value;
+
+    expect(actualColor, expectedColorValue,
+        reason: 'Dart $dartKey should have border color 0x${expectedColorValue.toRadixString(16)}');
+  }
+
   group('Target Tag - Menu & Game Mechanics Tests', () {
     setUp(() async {
       await SettingsHelpers.initializeSettings();
@@ -191,7 +211,6 @@ void main() {
     testWidgets(
         'Test 2: Player Count Validation - All Modes - Validates solo mode starts with 2 players successfully, team mode enabled and starts with 3+ players, adding 15 total players with only first 10 auto-selected, attempting to manually select 11th player is rejected (max 10), play button remains enabled with exactly 10 selected, game starts successfully with 10 players',
         (WidgetTester tester) async {
-      return; // SKIP TEST 2
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Add 2 players for solo mode
@@ -381,7 +400,6 @@ void main() {
     testWidgets(
         'Test 5: Dart Box Colors - Complete Validation - Validates D1/D2/D3 dart indicators display on game screen, initial dart boxes have neutral border color, hitting own target while not tagged in shows green border (0xFF00FFA3), missing target shows pink border (0xFFFF007A), dart border colors update immediately after each dart throw, all three dart indicators functional and displaying correct colors based on game state',
         (WidgetTester tester) async {
-      return; // SKIP TEST 5
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await UITestHelpers.addPlayer(tester, 'DartColor1', config);
@@ -446,7 +464,6 @@ void main() {
     testWidgets(
         'Test 7: Reached Tagged In - Green Border - Validates player starts with 0 shields not tagged in, hitting own target with triple dart reaches max shields (3 shields for max 3), final dart that reaches max shields shows green border (0xFF00FFA3), player immediately transitions to tagged in status, tagged in badge appears on player tile',
         (WidgetTester tester) async {
-      return; // SKIP TEST 7
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Set shield max to 3
@@ -594,7 +611,6 @@ void main() {
     testWidgets(
         'Test 10: Hero Bonus Hit (GOLD Pulsing) - Validates hero bonus enabled on menu, player gets tagged in, hitting hero buff number while tagged in shows gold border (0xFFFFD700) with pulsing glow effect, hero buff provides bonus shields/damage, dart indicator displays special glowing animation for hero bonus hits',
         (WidgetTester tester) async {
-      return; // SKIP TEST 10
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Enable hero bonus
@@ -675,7 +691,6 @@ void main() {
     testWidgets(
         'Test 12: Border Color Priority Order - Validates dart border color priority hierarchy, reaching max shields (green) overrides all other colors, hero bonus hit (gold pulsing) has high priority, successful opponent attack (gold) has high priority, hit own target while tagged in (pink) lower priority, miss (pink) lowest priority, border colors display correctly when multiple conditions apply simultaneously',
         (WidgetTester tester) async {
-      return; // SKIP TEST 12
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await SettingsHelpers.setTargetTagShieldMax(tester, 5);
@@ -758,7 +773,6 @@ void main() {
     testWidgets(
         'Test 14: Team Mode - Random Team Assignment - Validates team mode switch enabled, 4 players added (Team Player 1-4), random team assignment assigns players automatically to teams, team badges displayed for each player, game starts successfully in team mode with randomly assigned teams, team UI elements displayed correctly',
         (WidgetTester tester) async {
-      return; // SKIP TEST 14
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       // Enable team mode
