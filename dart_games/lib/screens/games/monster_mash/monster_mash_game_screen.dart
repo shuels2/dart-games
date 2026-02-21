@@ -32,8 +32,8 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   bool _gameCompleted = false;
 
-  // Shuffled slot order for opponents (generated once)
-  List<int>? _shuffledSlotOrder;
+  // Shuffled opponent order for grid placement (generated once)
+  List<int>? _shuffledOpponentOrder;
 
   @override
   void initState() {
@@ -57,8 +57,10 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       });
     }
 
-    // Generate shuffled slot order for opponents
-    _shuffledSlotOrder = List.generate(7, (i) => i)..shuffle(Random());
+    // Generate shuffled order for grid cell assignment
+    final monsterMashProvider = context.read<MonsterMashProvider>();
+    final opponentCount = (monsterMashProvider.currentGame?.playerIds.length ?? 2) - 1;
+    _shuffledOpponentOrder = List.generate(opponentCount, (i) => i)..shuffle(Random());
 
     _audioQueue!.announceGameStart();
 
@@ -69,22 +71,51 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     });
   }
 
-  // 7 fixed slot positions as absolute fractions of the opponent area.
-  // All slots are in the lower half of the screen (y >= 0.45).
-  // x = horizontal position (0=left, 1=right of opponent area)
-  // y = depth/vertical (higher = lower on screen = foreground)
-  static const _slotPositions = [
-    // Back row (y ~0.45-0.52) - smaller, further back
-    Offset(0.0, 0.45),
-    Offset(0.55, 0.50),
-    // Mid row (y ~0.60-0.70) - medium
-    Offset(0.15, 0.62),
-    Offset(0.65, 0.68),
-    Offset(0.35, 0.72),
-    // Front row (y ~0.82-0.90) - large, close
-    Offset(0.0, 0.84),
-    Offset(0.50, 0.90),
-  ];
+  // Grid layout for opponents: determines rows/cols based on count
+  static Map<String, int> _getGridLayout(int count) {
+    if (count <= 2) return {'cols': 2, 'rows': 1};
+    if (count <= 4) return {'cols': 3, 'rows': 2};
+    if (count <= 6) return {'cols': 3, 'rows': 2};
+    return {'cols': 3, 'rows': 3};
+  }
+
+  // Get specific cell assignments: bottom-heavy layout (more on bottom, fewer on top)
+  static List<Map<String, int>> _getCellAssignments(int count, int cols, int rows) {
+    if (rows == 1) {
+      // Single row: just spread across columns
+      return List.generate(count, (i) => {'row': 0, 'col': i % cols});
+    }
+    if (rows == 2) {
+      // Bottom-heavy: put most on bottom row, remainder on top-right
+      final bottomCount = (count * 3 / 4).ceil().clamp(1, cols);
+      final topCount = count - bottomCount;
+      final assignments = <Map<String, int>>[];
+      // Top row: place from right side
+      for (int i = 0; i < topCount; i++) {
+        assignments.add({'row': 0, 'col': cols - 1 - i});
+      }
+      // Bottom row: spread across
+      for (int i = 0; i < bottomCount; i++) {
+        assignments.add({'row': 1, 'col': i});
+      }
+      return assignments;
+    }
+    // 3 rows: distribute bottom-heavy
+    final assignments = <Map<String, int>>[];
+    final bottomCount = (count / 3.0).ceil().clamp(1, cols);
+    final midCount = ((count - bottomCount) / 2.0).ceil().clamp(0, cols);
+    final topCount = count - bottomCount - midCount;
+    for (int i = 0; i < topCount; i++) {
+      assignments.add({'row': 0, 'col': cols - 1 - i});
+    }
+    for (int i = 0; i < midCount; i++) {
+      assignments.add({'row': 1, 'col': i});
+    }
+    for (int i = 0; i < bottomCount; i++) {
+      assignments.add({'row': 2, 'col': i});
+    }
+    return assignments;
+  }
 
   @override
   void dispose() {
@@ -332,7 +363,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         title: Padding(
           padding: const EdgeInsets.only(top: 0),
           child: Text(
-            'Let\'s Do the Monster Mash!',
+            'It\'s Monster Mashin\' Time!',
             style: GoogleFonts.creepster(
               fontSize: 39,
               letterSpacing: 1.5,
@@ -426,14 +457,16 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               colorBlendMode: BlendMode.darken,
             ),
           ),
-          Column(
-            children: [
-              // Main game area
-              Expanded(
-                child: Stack(
+          // Main game area (fills entire body)
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final gameAreaWidth = constraints.maxWidth;
+                final gameAreaHeight = constraints.maxHeight;
+                return Stack(
                   children: [
                     // Opponents (right side, scattered)
-                    ..._buildOpponents(currentGame, allPlayers, monsterMashProvider, screenWidth, screenHeight),
+                    ..._buildOpponents(currentGame, allPlayers, monsterMashProvider, gameAreaWidth, gameAreaHeight),
 
                     // Active player (left side)
                     if (currentPlayer != null)
@@ -443,34 +476,39 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                     if (shouldPromptTakeout && !dartboardProvider.isConnected)
                       _buildRemoveDartsModal(currentPlayer, monsterMashProvider),
                   ],
-                ),
-              ),
+                );
+              },
+            ),
+          ),
 
-              // Dartboard emulator
-              DartboardEmulatorSection(
-                controller: _dartboardEmulatorController,
-                isConnected: dartboardProvider.isConnected,
-                shouldPromptTakeout: shouldPromptTakeout,
-                dartboardKey: _dartboardKey,
-                onDartThrow: (score, multiplier, baseScore, position) {
-                  if (_mockApi != null) {
-                    _mockApi!.simulateDartThrow(
-                      score: score,
-                      multiplier: multiplier,
-                      playerName: 'Player',
-                      baseScore: baseScore,
-                      widgetX: position.dx,
-                      widgetY: position.dy,
-                      widgetSize: 250,
-                    );
-                  }
-                },
-                onRemoveDarts: () {
-                  _mockApi?.simulateTakeoutFinished();
-                },
-                config: DartboardSectionConfig.monsterMash(),
-              ),
-            ],
+          // Dartboard emulator (overlay, in front of everything)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: DartboardEmulatorSection(
+              controller: _dartboardEmulatorController,
+              isConnected: dartboardProvider.isConnected,
+              shouldPromptTakeout: shouldPromptTakeout,
+              dartboardKey: _dartboardKey,
+              onDartThrow: (score, multiplier, baseScore, position) {
+                if (_mockApi != null) {
+                  _mockApi!.simulateDartThrow(
+                    score: score,
+                    multiplier: multiplier,
+                    playerName: 'Player',
+                    baseScore: baseScore,
+                    widgetX: position.dx,
+                    widgetY: position.dy,
+                    widgetSize: 250,
+                  );
+                }
+              },
+              onRemoveDarts: () {
+                _mockApi?.simulateTakeoutFinished();
+              },
+              config: DartboardSectionConfig.monsterMash(),
+            ),
           ),
         ],
       ),
@@ -565,15 +603,26 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
           _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent),
           const SizedBox(height: 8),
 
-          // Monster image (flipped to face right)
+          // Monster image (flipped to face right) with ground shadow
           Expanded(
-            child: Transform(
+            child: Stack(
               alignment: Alignment.center,
-              transform: Matrix4.identity()..scale(-1.0, 1.0),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.contain,
-              ),
+              children: [
+                // Shadow at bottom
+                Positioned(
+                  bottom: 0,
+                  child: _buildGroundShadow(width: 140, height: 16),
+                ),
+                // Monster image
+                Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..scale(-1.0, 1.0),
+                  child: Image.asset(
+                    imagePath,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -683,29 +732,39 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   ) {
     final currentPlayerId = provider.getCurrentPlayerId();
     final opponents = currentGame.playerIds.where((id) => id != currentPlayerId).toList();
-    final slots = _shuffledSlotOrder ?? List.generate(7, (i) => i);
+    final n = opponents.length;
 
-    // Build list with slot assignments, then sort by Y for painter's order
-    final opponentData = <Map<String, dynamic>>[];
-    for (int i = 0; i < opponents.length && i < slots.length; i++) {
-      final slotIdx = slots[i % slots.length];
-      final position = _slotPositions[slotIdx % _slotPositions.length];
-      opponentData.add({
-        'id': opponents[i],
-        'position': position,
-      });
-    }
-    // Sort by Y so background renders first
-    opponentData.sort((a, b) => (a['position'] as Offset).dy.compareTo((b['position'] as Offset).dy));
+    // Grid layout based on opponent count
+    final grid = _getGridLayout(n);
+    final cols = grid['cols']!;
+    final rows = grid['rows']!;
 
-    final rightAreaStart = screenWidth * 0.32;
-    final rightAreaWidth = screenWidth * 0.55;
-    final availableHeight = screenHeight * 0.70;
+    // Opponent area spans from 30% to 104% of screen width
+    final rightAreaStart = screenWidth * 0.30;
+    final rightAreaEnd = screenWidth * 1.04;
+    final rightAreaWidth = rightAreaEnd - rightAreaStart;
 
-    return opponentData.map((data) {
-      final opponentId = data['id'] as String;
-      final position = data['position'] as Offset;
+    // Vertical: use 15% to 85% of game area height
+    final topBand = screenHeight * 0.15;
+    final bottomBand = screenHeight * 0.85;
+    final bandHeight = bottomBand - topBand;
 
+    // Cell dimensions
+    final cellWidth = rightAreaWidth / cols;
+    final cellHeight = bandHeight / rows;
+
+    // Get bottom-heavy cell assignments
+    final cellAssignments = _getCellAssignments(n, cols, rows);
+
+    // Build widgets sorted by row (top first for painter's order)
+    final opponentWidgets = <MapEntry<int, Widget>>[];
+
+    for (int i = 0; i < n; i++) {
+      final assignment = cellAssignments[i];
+      final row = assignment['row']!;
+      final col = assignment['col']!;
+
+      final opponentId = opponents[i];
       final player = allPlayers.firstWhere((p) => p.id == opponentId);
       final isEliminated = provider.isEliminated(opponentId);
       final healthPercent = provider.getHealthPercentage(opponentId);
@@ -713,27 +772,34 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       final targetNumber = provider.getTargetNumber(opponentId) ?? 0;
       final imagePath = provider.getMonsterImagePath(opponentId)!;
 
-      // Calculate absolute pixel positions
-      final left = rightAreaStart + (position.dx * rightAreaWidth);
-      final top = position.dy * availableHeight;
-
-      // Perspective scaling: y=0 (background) -> 0.55x, y=1 (foreground) -> 1.25x
-      final depth = position.dy;
-      final perspectiveScale = 0.55 + (depth * 0.70);
+      // Perspective: 50% difference, row 0 = 0.75x, last row = 1.25x
+      final rowFraction = rows > 1 ? row / (rows - 1) : 0.5;
+      final perspectiveScale = 0.75 + (rowFraction * 0.50);
       final imageSize = screenWidth * 0.11 * perspectiveScale;
       final shieldSize = (70.0 * perspectiveScale).clamp(35.0, 90.0);
       final shieldFontSize = (55.0 * perspectiveScale).clamp(26.0, 70.0);
       final strokeWidth = (4.0 * perspectiveScale).clamp(2.0, 5.0);
       final nameFontSize = (12.0 * perspectiveScale).clamp(8.0, 16.0);
       final healthBarHeight = (14.0 * perspectiveScale).clamp(8.0, 18.0);
+      final widgetWidth = imageSize + 50;
+      final totalWidgetHeight = shieldSize + 4 + healthBarHeight + imageSize + nameFontSize + 8;
 
-      return Positioned(
+      // Center each opponent in its grid cell, offset odd rows by half a cell width
+      final rowOffset = (row % 2 == 1) ? cellWidth * 0.5 : 0.0;
+      final cellLeft = rightAreaStart + (col * cellWidth) + rowOffset;
+      // Push top row down by 30% of cell height to bring it closer to other rows
+      final topRowNudge = (row == 0 && rows > 1) ? cellHeight * 0.30 : 0.0;
+      final cellTop = topBand + (row * cellHeight) + topRowNudge;
+      final left = (cellLeft + (cellWidth - widgetWidth) / 2).clamp(0.0, screenWidth - widgetWidth);
+      final top = (cellTop + (cellHeight - totalWidgetHeight) / 2).clamp(0.0, screenHeight - totalWidgetHeight);
+
+      opponentWidgets.add(MapEntry(row, Positioned(
         left: left,
         top: top,
         child: Opacity(
           opacity: isEliminated ? 0.4 : 1.0,
           child: SizedBox(
-            width: imageSize + 50,
+            width: widgetWidth,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -750,33 +816,36 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                         width: shieldSize,
                         height: shieldSize,
                       ),
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Text(
-                            '$targetNumber',
-                            style: GoogleFonts.creepster(
-                              fontSize: shieldFontSize,
-                              foreground: Paint()
-                                ..style = PaintingStyle.stroke
-                                ..strokeWidth = strokeWidth
-                                ..color = Colors.black,
+                      Transform.translate(
+                        offset: const Offset(0, -4),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Text(
+                              '$targetNumber',
+                              style: GoogleFonts.creepster(
+                                fontSize: shieldFontSize,
+                                foreground: Paint()
+                                  ..style = PaintingStyle.stroke
+                                  ..strokeWidth = strokeWidth
+                                  ..color = Colors.black,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '$targetNumber',
-                            style: GoogleFonts.creepster(
-                              fontSize: shieldFontSize,
-                              color: const Color(0xFFFF4444),
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black,
-                                  blurRadius: 6,
-                                ),
-                              ],
+                            Text(
+                              '$targetNumber',
+                              style: GoogleFonts.creepster(
+                                fontSize: shieldFontSize,
+                                color: const Color(0xFFFF4444),
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -787,12 +856,26 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                   width: imageSize,
                   child: _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent, compact: true, compactHeight: healthBarHeight),
                 ),
-                // Monster image (faces left - default)
-                Image.asset(
-                  imagePath,
+                const SizedBox(height: 8),
+                // Monster image (faces left - default) with ground shadow
+                SizedBox(
                   width: imageSize,
                   height: imageSize,
-                  fit: BoxFit.contain,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        bottom: 0,
+                        child: _buildGroundShadow(width: imageSize * 0.8, height: imageSize * 0.12),
+                      ),
+                      Image.asset(
+                        imagePath,
+                        width: imageSize,
+                        height: imageSize,
+                        fit: BoxFit.contain,
+                      ),
+                    ],
+                  ),
                 ),
                 // Player name
                 Text(
@@ -809,8 +892,29 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             ),
           ),
         ),
-      );
-    }).toList();
+      )));
+    }
+
+    // Sort by row for painter's order (back rows render first)
+    opponentWidgets.sort((a, b) => a.key.compareTo(b.key));
+    return opponentWidgets.map((e) => e.value).toList();
+  }
+
+  Widget _buildGroundShadow({double width = 120, double height = 20}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.all(Radius.elliptical(width / 2, height / 2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.45),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildHealthBar(int currentHealth, int maxHealth, double healthPercent, {bool compact = false, double? compactHeight}) {

@@ -70,7 +70,7 @@ class DartboardSectionConfig {
   // Factory for Monster Mash
   factory DartboardSectionConfig.monsterMash() {
     return DartboardSectionConfig(
-      backgroundColor: const Color(0xFF2F4F4F), // Iron Gate
+      backgroundColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       disabledOverlayBackgroundColor: const Color(0xFF2F4F4F).withOpacity(0.9),
       disabledOverlayBorderColor: const Color(0xFF7FFF00), // Ecto-Green
