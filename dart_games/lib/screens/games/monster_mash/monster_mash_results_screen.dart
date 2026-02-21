@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,6 +28,12 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   late ConfettiController _confettiController;
+  AnimationController? _glowController1;
+  AnimationController? _glowController2;
+  AnimationController? _glowController3;
+  Animation<double>? _glowAnimation1;
+  Animation<double>? _glowAnimation2;
+  Animation<double>? _glowAnimation3;
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _statsUpdated = false;
 
@@ -55,6 +62,31 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
       duration: const Duration(hours: 1),
     );
 
+    // Glow pulse controllers at different rates
+    _glowController1 = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat(reverse: true);
+    _glowAnimation1 = Tween<double>(begin: 0.3, end: 0.8).animate(
+      CurvedAnimation(parent: _glowController1!, curve: Curves.easeInOut),
+    );
+
+    _glowController2 = AnimationController(
+      duration: const Duration(milliseconds: 1800),
+      vsync: this,
+    )..repeat(reverse: true);
+    _glowAnimation2 = Tween<double>(begin: 0.3, end: 0.8).animate(
+      CurvedAnimation(parent: _glowController2!, curve: Curves.easeInOut),
+    );
+
+    _glowController3 = AnimationController(
+      duration: const Duration(milliseconds: 2400),
+      vsync: this,
+    )..repeat(reverse: true);
+    _glowAnimation3 = Tween<double>(begin: 0.3, end: 0.8).animate(
+      CurvedAnimation(parent: _glowController3!, curve: Curves.easeInOut),
+    );
+
     _animationController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -74,6 +106,9 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
   void dispose() {
     _animationController.dispose();
     _pulseController.dispose();
+    _glowController1?.dispose();
+    _glowController2?.dispose();
+    _glowController3?.dispose();
     _confettiController.dispose();
     _audioPlayer.dispose();
     super.dispose();
@@ -266,56 +301,103 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
 
                   // Winner text
                   ScaleTransition(
                     scale: _scaleAnimation,
                     child: ScaleTransition(
                       scale: _pulseAnimation,
-                      child: Text(
-                        winners.length == 1 ? 'LAST MONSTER STANDING!' : 'TIED!',
-                        style: GoogleFonts.creepster(
-                          fontSize: 48,
-                          color: const Color(0xFF7FFF00),
-                          letterSpacing: 2,
-                        ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Stroke outline
+                          Text(
+                            winners.length == 1 ? 'LAST MONSTER STANDING!' : 'TIED!',
+                            style: GoogleFonts.creepster(
+                              fontSize: 60,
+                              letterSpacing: 2,
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth = 5
+                                ..color = Colors.black,
+                            ),
+                          ),
+                          // Fill with glow
+                          Text(
+                            winners.length == 1 ? 'LAST MONSTER STANDING!' : 'TIED!',
+                            style: GoogleFonts.creepster(
+                              fontSize: 60,
+                              color: const Color(0xFF7FFF00),
+                              letterSpacing: 2,
+                              shadows: [
+                                Shadow(color: const Color(0xFF7FFF00).withOpacity(0.8), blurRadius: 20),
+                                Shadow(color: const Color(0xFF7FFF00).withOpacity(0.5), blurRadius: 40),
+                                const Shadow(color: Colors.black, blurRadius: 4),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 16),
 
-                  // Winner name(s)
+                  // Winner name(s) with player avatar
                   ScaleTransition(
                     scale: _scaleAnimation,
                     child: Column(
                       children: winners.map((winner) {
-                        final monsterType = monsterMashProvider.getMonsterType(winner.id);
-                        final monsterName = monsterType != null
-                            ? MonsterMashGame.getMonsterDisplayName(monsterType)
-                            : '';
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Column(
                             children: [
-                              Text(
-                                key: MonsterMashResultsKeys.winnerName,
-                                winner.name,
-                                style: GoogleFonts.creepster(
-                                  fontSize: 36,
-                                  color: const Color(0xFFF5F5DC),
-                                ),
-                                textAlign: TextAlign.center,
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Stroke outline
+                                  Text(
+                                    winner.name,
+                                    style: GoogleFonts.creepster(
+                                      fontSize: 36,
+                                      foreground: Paint()
+                                        ..style = PaintingStyle.stroke
+                                        ..strokeWidth = 4
+                                        ..color = Colors.black,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  // Fill with glow
+                                  Text(
+                                    key: MonsterMashResultsKeys.winnerName,
+                                    winner.name,
+                                    style: GoogleFonts.creepster(
+                                      fontSize: 36,
+                                      color: const Color(0xFFF5F5DC),
+                                      shadows: [
+                                        Shadow(color: const Color(0xFFFF8C00).withOpacity(0.7), blurRadius: 16),
+                                        Shadow(color: const Color(0xFFFF8C00).withOpacity(0.4), blurRadius: 30),
+                                        const Shadow(color: Colors.black, blurRadius: 4),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
-                              Text(
-                                monsterName,
-                                style: GoogleFonts.pirataOne(
-                                  fontSize: 20,
-                                  color: const Color(0xFFFF8C00),
+                              const SizedBox(height: 8),
+                              if (winner.photoPath != null)
+                                CircleAvatar(
+                                  radius: 60,
+                                  backgroundImage: winner.photoPath!.startsWith('data:')
+                                      ? MemoryImage(base64Decode(winner.photoPath!.split(',')[1]))
+                                      : NetworkImage(winner.photoPath!) as ImageProvider,
+                                )
+                              else
+                                const CircleAvatar(
+                                  radius: 60,
+                                  child: Icon(Icons.person, size: 60),
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
                             ],
                           ),
                         );
@@ -325,29 +407,37 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
 
                   const SizedBox(height: 48),
 
-                  // Action buttons
-                  _buildActionButton(
-                    'Play Again',
-                    Icons.refresh,
-                    const Color(0xFF7FFF00),
-                    _playAgain,
-                    key: MonsterMashResultsKeys.playAgainButton,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildActionButton(
-                    'Change Settings',
-                    Icons.settings,
-                    const Color(0xFFFF8C00),
-                    _changeSettings,
-                    key: MonsterMashResultsKeys.changeSettingsButton,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildActionButton(
-                    'Play Another Game',
-                    Icons.home,
-                    const Color(0xFF2F4F4F),
-                    _goHome,
-                    key: MonsterMashResultsKeys.backToMenuButton,
+                  // Action buttons (horizontal)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildActionButton(
+                        'Play Again',
+                        Icons.refresh,
+                        const Color(0xFF7FFF00),
+                        _playAgain,
+                        glowAnimation: _glowAnimation1,
+                        key: MonsterMashResultsKeys.playAgainButton,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildActionButton(
+                        'Change Settings',
+                        Icons.settings,
+                        const Color(0xFFFF8C00),
+                        _changeSettings,
+                        glowAnimation: _glowAnimation2,
+                        key: MonsterMashResultsKeys.changeSettingsButton,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildActionButton(
+                        'Play Another Game',
+                        Icons.home,
+                        const Color(0xFF4B0082),
+                        _goHome,
+                        glowAnimation: _glowAnimation3,
+                        key: MonsterMashResultsKeys.backToMenuButton,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -372,8 +462,8 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Image.asset(
             imagePath,
-            width: 200,
-            height: 200,
+            width: 340,
+            height: 340,
             fit: BoxFit.contain,
           ),
         );
@@ -387,27 +477,150 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
     Color color,
     VoidCallback onTap, {
     Key? key,
+    Animation<double>? glowAnimation,
   }) {
-    return SizedBox(
+    // Use a fixed seed based on the label so edges are consistent across rebuilds
+    final jaggedClipper = _JaggedEdgeClipper(seed: label.hashCode);
+
+    final buttonContent = SizedBox(
       width: 300,
       height: 60,
-      child: ElevatedButton.icon(
-        key: key,
-        onPressed: onTap,
-        icon: Icon(icon, color: const Color(0xFFF5F5DC)),
-        label: Text(
-          label,
-          style: GoogleFonts.pirataOne(
-            fontSize: 22,
-            color: const Color(0xFFF5F5DC),
+      child: CustomPaint(
+        painter: _StoneTabletPainter(jaggedClipper: jaggedClipper),
+        child: ClipPath(
+          clipper: jaggedClipper,
+          child: Stack(
+            children: [
+              // Stone gradient fill
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(-0.4, -0.4),
+                      radius: 1.2,
+                      colors: [
+                        Color(0xFFa8a8a8),
+                        Color(0xFF888888),
+                        Color(0xFF707070),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Inner bevel: top/left highlight edge
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withOpacity(0.35),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.4),
+                      ],
+                      stops: const [0.0, 0.15, 0.85, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Inner bevel: left/right edges
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.white.withOpacity(0.2),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.25),
+                      ],
+                      stops: const [0.0, 0.08, 0.92, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Cracked stone texture overlay
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 1.0,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      image: const DecorationImage(
+                        image: AssetImage('assets/games/monster_mash/images/stone-texture.png'),
+                        repeat: ImageRepeat.repeat,
+                        fit: BoxFit.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Button content - chiseled text effect
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: const Color(0xFF1A1A1A), size: 28,
+                      shadows: [
+                        Shadow(color: Colors.white.withOpacity(0.5), offset: const Offset(1, 1), blurRadius: 0),
+                        const Shadow(color: Colors.black, offset: Offset(-1, -1), blurRadius: 0),
+                      ],
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      label.toUpperCase(),
+                      style: GoogleFonts.pirataOne(
+                        fontSize: 26,
+                        color: const Color(0xFF1A1A1A),
+                        shadows: [
+                          Shadow(color: Colors.white.withOpacity(0.5), offset: const Offset(1, 1), blurRadius: 0),
+                          const Shadow(color: Colors.black, offset: Offset(-1, -1), blurRadius: 0),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color.withOpacity(0.85),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          side: BorderSide(color: color, width: 2),
-        ),
       ),
+    );
+
+    if (glowAnimation == null) {
+      return GestureDetector(key: key, onTap: onTap, child: buttonContent);
+    }
+
+    return AnimatedBuilder(
+      animation: glowAnimation,
+      builder: (context, child) {
+        final glowOpacity = glowAnimation.value;
+        return GestureDetector(
+          key: key,
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(glowOpacity),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+                BoxShadow(
+                  color: color.withOpacity(glowOpacity * 0.5),
+                  blurRadius: 40,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: buttonContent,
+          ),
+        );
+      },
     );
   }
 
@@ -459,4 +672,94 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
     monsterMashProvider.clearGame();
     Navigator.popUntil(context, (route) => route.isFirst);
   }
+}
+
+/// Clips a rectangle with jagged/chipped stone edges
+class _JaggedEdgeClipper extends CustomClipper<Path> {
+  final int seed;
+  final double jagAmount;
+  final int segmentsPerSide;
+
+  _JaggedEdgeClipper({
+    this.seed = 0,
+    this.jagAmount = 3.5,
+    this.segmentsPerSide = 20,
+  });
+
+  @override
+  Path getClip(Size size) {
+    final rng = Random(seed);
+    final path = Path();
+
+    final w = size.width;
+    final h = size.height;
+
+    // Start at top-left with a small inset
+    path.moveTo(jagAmount, jagAmount);
+
+    // Top edge: left to right
+    for (int i = 1; i <= segmentsPerSide; i++) {
+      final x = (w - jagAmount * 2) * i / segmentsPerSide + jagAmount;
+      final y = (rng.nextDouble() - 0.5) * jagAmount * 2;
+      path.lineTo(x, y.clamp(0, jagAmount * 2));
+    }
+
+    // Right edge: top to bottom
+    for (int i = 1; i <= segmentsPerSide; i++) {
+      final x = w - (rng.nextDouble() - 0.5) * jagAmount * 2;
+      final y = (h - jagAmount * 2) * i / segmentsPerSide + jagAmount;
+      path.lineTo(x.clamp(w - jagAmount * 2, w), y);
+    }
+
+    // Bottom edge: right to left
+    for (int i = 1; i <= segmentsPerSide; i++) {
+      final x = w - (w - jagAmount * 2) * i / segmentsPerSide - jagAmount;
+      final y = h - (rng.nextDouble() - 0.5) * jagAmount * 2;
+      path.lineTo(x, y.clamp(h - jagAmount * 2, h));
+    }
+
+    // Left edge: bottom to top
+    for (int i = 1; i <= segmentsPerSide; i++) {
+      final x = (rng.nextDouble() - 0.5) * jagAmount * 2;
+      final y = h - (h - jagAmount * 2) * i / segmentsPerSide - jagAmount;
+      path.lineTo(x.clamp(0, jagAmount * 2), y);
+    }
+
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+/// Paints the stone border and shadow following the jagged path
+class _StoneTabletPainter extends CustomPainter {
+  final _JaggedEdgeClipper jaggedClipper;
+
+  _StoneTabletPainter({required this.jaggedClipper});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = jaggedClipper.getClip(size);
+
+    // Floor shadow
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.5)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.save();
+    canvas.translate(5, 5);
+    canvas.drawPath(path, shadowPaint);
+    canvas.restore();
+
+    // Stone border
+    final borderPaint = Paint()
+      ..color = const Color(0xFF666666)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

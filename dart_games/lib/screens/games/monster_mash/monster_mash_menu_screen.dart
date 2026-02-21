@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -803,60 +804,153 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
   }
 
   Widget _buildStartButton(bool canStart, List<Player> selectedPlayers) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: AnimatedBuilder(
-          animation: _pulseController,
-          builder: (context, child) {
-            final pulseValue = canStart ? (0.7 + (_pulseController.value * 0.3)) : 1.0;
+    final jaggedClipper = _JaggedEdgeClipper(seed: 'MONSTER_MASH_START'.hashCode, jagAmount: 4.0, segmentsPerSide: 30);
 
-            return Container(
-              decoration: BoxDecoration(
-                color: canStart
-                    ? const Color(0xFF4B0082).withOpacity(0.80)
-                    : Colors.grey.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: canStart ? const Color(0xFF7FFF00) : Colors.grey,
-                  width: canStart ? 3 : 1,
+    final buttonContent = SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: CustomPaint(
+        painter: _StoneTabletPainter(jaggedClipper: jaggedClipper),
+        child: ClipPath(
+          clipper: jaggedClipper,
+          child: Stack(
+            children: [
+              // Stone gradient fill
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: canStart
+                        ? const RadialGradient(
+                            center: Alignment(-0.4, -0.4),
+                            radius: 1.2,
+                            colors: [
+                              Color(0xFFa8a8a8),
+                              Color(0xFF888888),
+                              Color(0xFF707070),
+                            ],
+                          )
+                        : const RadialGradient(
+                            center: Alignment(-0.4, -0.4),
+                            radius: 1.2,
+                            colors: [
+                              Color(0xFF707070),
+                              Color(0xFF585858),
+                              Color(0xFF484848),
+                            ],
+                          ),
+                  ),
                 ),
-                boxShadow: canStart
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFF7FFF00).withOpacity(0.6 * pulseValue),
-                          blurRadius: 20 * pulseValue,
-                          spreadRadius: 4 * pulseValue,
-                        ),
-                      ]
-                    : [],
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  key: MonsterMashMenuKeys.startGameButton,
-                  onTap: canStart ? () => _startGame(selectedPlayers) : null,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Center(
-                    child: Transform.translate(
-                      offset: const Offset(0, -3.5),
+              // Inner bevel: top/bottom edges
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withOpacity(0.35),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.4),
+                      ],
+                      stops: const [0.0, 0.15, 0.85, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Inner bevel: left/right edges
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.white.withOpacity(0.2),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.25),
+                      ],
+                      stops: const [0.0, 0.08, 0.92, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Cracked stone texture overlay
+              Positioned.fill(
+                child: Opacity(
+                  opacity: canStart ? 1.0 : 0.5,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      image: const DecorationImage(
+                        image: AssetImage('assets/games/monster_mash/images/stone-texture.png'),
+                        repeat: ImageRepeat.repeat,
+                        fit: BoxFit.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Button content - chiseled text
+              Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    key: MonsterMashMenuKeys.startGameButton,
+                    onTap: canStart ? () => _startGame(selectedPlayers) : null,
+                    child: Center(
                       child: Text(
                         "LET'S DO THE MONSTER MASH!",
                         style: GoogleFonts.creepster(
                           fontSize: 40,
-                          color: canStart ? const Color(0xFFF5F5DC) : Colors.grey,
+                          color: canStart ? const Color(0xFF1A1A1A) : const Color(0xFF555555),
                           letterSpacing: 1.5,
+                          shadows: canStart
+                              ? [
+                                  Shadow(color: Colors.white.withOpacity(0.5), offset: const Offset(1, 1), blurRadius: 0),
+                                  const Shadow(color: Colors.black, offset: Offset(-1, -1), blurRadius: 0),
+                                ]
+                              : [],
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            );
-          },
+            ],
+          ),
         ),
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: AnimatedBuilder(
+        animation: _pulseController,
+        builder: (context, child) {
+          final glowOpacity = canStart ? (0.3 + (_pulseController.value * 0.5)) : 0.0;
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: canStart
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF7FFF00).withOpacity(glowOpacity),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF7FFF00).withOpacity(glowOpacity * 0.5),
+                        blurRadius: 40,
+                        spreadRadius: 4,
+                      ),
+                    ]
+                  : [],
+            ),
+            child: buttonContent,
+          );
+        },
       ),
     );
   }
@@ -924,4 +1018,93 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
       ),
     );
   }
+}
+
+/// Clips a rectangle with jagged/chipped stone edges
+class _JaggedEdgeClipper extends CustomClipper<Path> {
+  final int seed;
+  final double jagAmount;
+  final int segmentsPerSide;
+
+  _JaggedEdgeClipper({
+    this.seed = 0,
+    this.jagAmount = 3.5,
+    this.segmentsPerSide = 20,
+  });
+
+  @override
+  Path getClip(Size size) {
+    final rng = Random(seed);
+    final path = Path();
+
+    final w = size.width;
+    final h = size.height;
+
+    path.moveTo(jagAmount, jagAmount);
+
+    // Top edge
+    for (int i = 1; i <= segmentsPerSide; i++) {
+      final x = (w - jagAmount * 2) * i / segmentsPerSide + jagAmount;
+      final y = (rng.nextDouble() - 0.5) * jagAmount * 2;
+      path.lineTo(x, y.clamp(0, jagAmount * 2));
+    }
+
+    // Right edge
+    for (int i = 1; i <= segmentsPerSide; i++) {
+      final x = w - (rng.nextDouble() - 0.5) * jagAmount * 2;
+      final y = (h - jagAmount * 2) * i / segmentsPerSide + jagAmount;
+      path.lineTo(x.clamp(w - jagAmount * 2, w), y);
+    }
+
+    // Bottom edge
+    for (int i = 1; i <= segmentsPerSide; i++) {
+      final x = w - (w - jagAmount * 2) * i / segmentsPerSide - jagAmount;
+      final y = h - (rng.nextDouble() - 0.5) * jagAmount * 2;
+      path.lineTo(x, y.clamp(h - jagAmount * 2, h));
+    }
+
+    // Left edge
+    for (int i = 1; i <= segmentsPerSide; i++) {
+      final x = (rng.nextDouble() - 0.5) * jagAmount * 2;
+      final y = h - (h - jagAmount * 2) * i / segmentsPerSide - jagAmount;
+      path.lineTo(x.clamp(0, jagAmount * 2), y);
+    }
+
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+/// Paints the stone border and shadow following the jagged path
+class _StoneTabletPainter extends CustomPainter {
+  final _JaggedEdgeClipper jaggedClipper;
+
+  _StoneTabletPainter({required this.jaggedClipper});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = jaggedClipper.getClip(size);
+
+    // Floor shadow
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.5)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.save();
+    canvas.translate(5, 5);
+    canvas.drawPath(path, shadowPaint);
+    canvas.restore();
+
+    // Stone border
+    final borderPaint = Paint()
+      ..color = const Color(0xFF666666)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

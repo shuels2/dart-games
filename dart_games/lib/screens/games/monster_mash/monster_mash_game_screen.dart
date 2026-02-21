@@ -568,7 +568,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             child: Text(
               currentPlayer.name,
               style: GoogleFonts.creepster(
-                fontSize: 28,
+                fontSize: 30,
                 color: const Color(0xFFF5F5DC),
               ),
               textAlign: TextAlign.center,
@@ -805,7 +805,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       final shieldSize = (70.0 * scaledPerspective).clamp(35.0, 160.0);
       final shieldFontSize = (55.0 * scaledPerspective).clamp(26.0, 120.0);
       final strokeWidth = (4.0 * scaledPerspective).clamp(2.0, 7.0);
-      final nameFontSize = (12.0 * scaledPerspective).clamp(8.0, 24.0);
+      final nameFontSize = (14.0 * scaledPerspective).clamp(10.0, 26.0);
       final healthBarHeight = (14.0 * scaledPerspective).clamp(8.0, 24.0);
       final widgetWidth = imageSize + 50;
       final totalWidgetHeight = shieldSize + 4 + healthBarHeight + imageSize + nameFontSize + 8;
@@ -821,10 +821,12 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       final cellTop = topBand + (row * cellHeight) + topRowNudge;
       final left = (cellLeft + (cellWidth - widgetWidth) / 2).clamp(0.0, screenWidth - widgetWidth);
       final top = (cellTop + (cellHeight - totalWidgetHeight) / 2).clamp(0.0, screenHeight - totalWidgetHeight);
+      // When eliminated, shield + health bar + spacing are hidden, so push down to keep image at same position
+      final eliminatedOffset = isEliminated ? (shieldSize + 4 + healthBarHeight + 8) : 0.0;
 
       opponentWidgets.add(MapEntry(row, Positioned(
         left: left,
-        top: top,
+        top: top + eliminatedOffset,
         child: Opacity(
           opacity: isEliminated ? 0.4 : 1.0,
           child: SizedBox(
@@ -832,66 +834,68 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Shield + number
-                SizedBox(
-                  width: shieldSize,
-                  height: shieldSize,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/games/monster_mash/icons/Shield-HitPoint.png',
-                        width: shieldSize,
-                        height: shieldSize,
-                      ),
-                      Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Text(
-                              '$targetNumber',
-                              style: GoogleFonts.creepster(
-                                fontSize: shieldFontSize,
-                                foreground: Paint()
-                                  ..style = PaintingStyle.stroke
-                                  ..strokeWidth = strokeWidth
-                                  ..color = Colors.black,
-                              ),
-                            ),
-                            Text(
-                              '$targetNumber',
-                              style: GoogleFonts.creepster(
-                                fontSize: shieldFontSize,
-                                color: const Color(0xFFFF4444),
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black,
-                                    blurRadius: 6,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                // Shield + number (hidden when eliminated)
+                if (!isEliminated)
+                  SizedBox(
+                    width: shieldSize,
+                    height: shieldSize,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/games/monster_mash/icons/Shield-HitPoint.png',
+                          width: shieldSize,
+                          height: shieldSize,
                         ),
-                      ),
-                    ],
+                        Transform.translate(
+                          offset: const Offset(0, -4),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Text(
+                                '$targetNumber',
+                                style: GoogleFonts.creepster(
+                                  fontSize: shieldFontSize,
+                                  foreground: Paint()
+                                    ..style = PaintingStyle.stroke
+                                    ..strokeWidth = strokeWidth
+                                    ..color = Colors.black,
+                                ),
+                              ),
+                              Text(
+                                '$targetNumber',
+                                style: GoogleFonts.creepster(
+                                  fontSize: shieldFontSize,
+                                  color: const Color(0xFFFF4444),
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                // Health bar
-                SizedBox(
-                  width: imageSize,
-                  child: _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent, compact: true, compactHeight: healthBarHeight),
-                ),
-                const SizedBox(height: 8),
+                if (!isEliminated) const SizedBox(height: 4),
+                // Health bar (hidden when eliminated)
+                if (!isEliminated)
+                  SizedBox(
+                    width: imageSize,
+                    child: _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent, compact: true, compactHeight: healthBarHeight),
+                  ),
+                if (!isEliminated) const SizedBox(height: 8),
                 // Monster image (faces left - default) with ground shadow
                 SizedBox(
                   width: imageSize,
                   height: imageSize,
                   child: Stack(
-                    alignment: Alignment.center,
+                    alignment: isEliminated ? Alignment.bottomCenter : Alignment.center,
                     children: [
                       Positioned(
                         bottom: 0,
@@ -902,6 +906,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                         width: imageSize,
                         height: imageSize,
                         fit: BoxFit.contain,
+                        alignment: isEliminated ? Alignment.bottomCenter : Alignment.center,
                       ),
                     ],
                   ),
@@ -909,9 +914,8 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                 // Player name
                 Text(
                   player.name,
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.creepster(
                     fontSize: nameFontSize,
-                    fontWeight: FontWeight.bold,
                     color: isEliminated ? Colors.grey : const Color(0xFFF5F5DC),
                   ),
                   textAlign: TextAlign.center,
