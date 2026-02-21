@@ -125,6 +125,7 @@ flutter:
     - assets/games/monster_mash/icons/
     - assets/games/monster_mash/images/
     - assets/games/monster_mash/characters/
+    - assets/games/monster_mash/sounds/
 
     # Target Tag game assets
     - assets/games/target_tag/icons/
