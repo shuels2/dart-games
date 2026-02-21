@@ -816,7 +816,9 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       // For 3-row grids: offset middle row (odd rows)
       final bool shouldOffset = rows <= 2 ? (row == 0) : (row % 2 == 1);
       final rowOffset = shouldOffset ? cellWidth * 0.5 : 0.0;
-      final cellLeft = rightAreaStart + (col * cellWidth) + rowOffset;
+      final topRowLeftNudge = (row == 0 && rows > 1) ? 20.0 : 0.0;
+      final topRowLeftmostRightNudge = (row == 0 && n == 5 && col == 0) ? 20.0 : 0.0;
+      final cellLeft = rightAreaStart + (col * cellWidth) + rowOffset - topRowLeftNudge + topRowLeftmostRightNudge;
       // Push top row down for 3-row grids; pull up for 2-row grids to avoid overlap
       final topRowNudge = (row == 0 && rows > 1) ? cellHeight * (rows <= 2 ? -0.10 : 0.30) : 0.0;
       final cellTop = topBand + (row * cellHeight) + topRowNudge;
