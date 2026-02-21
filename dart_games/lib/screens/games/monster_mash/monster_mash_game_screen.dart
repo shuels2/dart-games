@@ -73,46 +73,80 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
 
   // Grid layout for opponents: determines rows/cols based on count
   static Map<String, int> _getGridLayout(int count) {
-    if (count <= 2) return {'cols': 2, 'rows': 1};
-    if (count <= 4) return {'cols': 3, 'rows': 2};
-    if (count <= 6) return {'cols': 3, 'rows': 2};
+    if (count <= 1) return {'cols': 1, 'rows': 1};
+    if (count <= 3) return {'cols': 3, 'rows': 2};
+    if (count <= 5) return {'cols': 3, 'rows': 2};
     return {'cols': 3, 'rows': 3};
+  }
+
+  // Size multiplier based on opponent count (fewer opponents = larger characters)
+  static double _getSizeMultiplier(int count) {
+    if (count <= 1) return 2.2;
+    if (count <= 3) return 1.4;
+    if (count <= 5) return 1.35;
+    return 1.0;
   }
 
   // Get specific cell assignments: bottom-heavy layout (more on bottom, fewer on top)
   static List<Map<String, int>> _getCellAssignments(int count, int cols, int rows) {
-    if (rows == 1) {
-      // Single row: just spread across columns
-      return List.generate(count, (i) => {'row': 0, 'col': i % cols});
+    // 1 opponent: single centered cell
+    if (count <= 1) {
+      return [{'row': 0, 'col': 0}];
     }
-    if (rows == 2) {
-      // Bottom-heavy: put most on bottom row, remainder on top-right
-      final bottomCount = (count * 3 / 4).ceil().clamp(1, cols);
-      final topCount = count - bottomCount;
+    // 2-3 opponents: 2 rows, skip bottom-left cell (closest to current player)
+    if (count <= 3) {
       final assignments = <Map<String, int>>[];
-      // Top row: place from right side
-      for (int i = 0; i < topCount; i++) {
-        assignments.add({'row': 0, 'col': cols - 1 - i});
-      }
-      // Bottom row: spread across
-      for (int i = 0; i < bottomCount; i++) {
-        assignments.add({'row': 1, 'col': i});
+      if (count == 2) {
+        // 1 top-middle, 1 bottom-right
+        assignments.add({'row': 0, 'col': 1});
+        assignments.add({'row': 1, 'col': 2});
+      } else {
+        // 3 opponents: 1 top-middle, 2 on bottom (middle and right, skip col 0)
+        assignments.add({'row': 0, 'col': 1});
+        assignments.add({'row': 1, 'col': 1});
+        assignments.add({'row': 1, 'col': 2});
       }
       return assignments;
     }
-    // 3 rows: distribute bottom-heavy
+    // 4-5 opponents: 2 rows, bottom-heavy
+    // Top row offset by half cell, so col 0+0.5 and col 1+0.5 stagger between bottom cols
+    if (count <= 5) {
+      final assignments = <Map<String, int>>[];
+      if (count == 4) {
+        // 1 top (centered between bottom cols 1-2), 3 bottom
+        assignments.add({'row': 0, 'col': 1});
+        assignments.add({'row': 1, 'col': 0});
+        assignments.add({'row': 1, 'col': 1});
+        assignments.add({'row': 1, 'col': 2});
+      } else {
+        // 5 opponents: 2 top staggered, 3 bottom
+        assignments.add({'row': 0, 'col': 0});
+        assignments.add({'row': 0, 'col': 1});
+        assignments.add({'row': 1, 'col': 0});
+        assignments.add({'row': 1, 'col': 1});
+        assignments.add({'row': 1, 'col': 2});
+      }
+      return assignments;
+    }
+    // 6-7 opponents: 3 rows — 1 top, 2 middle, 3 bottom
     final assignments = <Map<String, int>>[];
-    final bottomCount = (count / 3.0).ceil().clamp(1, cols);
-    final midCount = ((count - bottomCount) / 2.0).ceil().clamp(0, cols);
-    final topCount = count - bottomCount - midCount;
-    for (int i = 0; i < topCount; i++) {
-      assignments.add({'row': 0, 'col': cols - 1 - i});
-    }
-    for (int i = 0; i < midCount; i++) {
-      assignments.add({'row': 1, 'col': i});
-    }
-    for (int i = 0; i < bottomCount; i++) {
-      assignments.add({'row': 2, 'col': i});
+    if (count == 6) {
+      // 1 top-middle, 2 middle, 3 bottom
+      assignments.add({'row': 0, 'col': 1});
+      assignments.add({'row': 1, 'col': 0});
+      assignments.add({'row': 1, 'col': 1});
+      assignments.add({'row': 2, 'col': 0});
+      assignments.add({'row': 2, 'col': 1});
+      assignments.add({'row': 2, 'col': 2});
+    } else {
+      // 7 opponents: 2 top, 2 middle, 3 bottom
+      assignments.add({'row': 0, 'col': 1});
+      assignments.add({'row': 0, 'col': 2});
+      assignments.add({'row': 1, 'col': 0});
+      assignments.add({'row': 1, 'col': 1});
+      assignments.add({'row': 2, 'col': 0});
+      assignments.add({'row': 2, 'col': 1});
+      assignments.add({'row': 2, 'col': 2});
     }
     return assignments;
   }
@@ -739,9 +773,9 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     final cols = grid['cols']!;
     final rows = grid['rows']!;
 
-    // Opponent area spans from 30% to 104% of screen width
-    final rightAreaStart = screenWidth * 0.30;
-    final rightAreaEnd = screenWidth * 1.04;
+    // Opponent area: adjust based on opponent count
+    final rightAreaStart = n <= 1 ? screenWidth * 0.40 : screenWidth * 0.30;
+    final rightAreaEnd = n <= 1 ? screenWidth * 0.90 : screenWidth * 1.04;
     final rightAreaWidth = rightAreaEnd - rightAreaStart;
 
     // Vertical: use 15% to 85% of game area height
@@ -775,20 +809,25 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       // Perspective: 50% difference, row 0 = 0.75x, last row = 1.25x
       final rowFraction = rows > 1 ? row / (rows - 1) : 0.5;
       final perspectiveScale = 0.75 + (rowFraction * 0.50);
-      final imageSize = screenWidth * 0.11 * perspectiveScale;
-      final shieldSize = (70.0 * perspectiveScale).clamp(35.0, 90.0);
-      final shieldFontSize = (55.0 * perspectiveScale).clamp(26.0, 70.0);
-      final strokeWidth = (4.0 * perspectiveScale).clamp(2.0, 5.0);
-      final nameFontSize = (12.0 * perspectiveScale).clamp(8.0, 16.0);
-      final healthBarHeight = (14.0 * perspectiveScale).clamp(8.0, 18.0);
+      final sizeMultiplier = _getSizeMultiplier(n);
+      final scaledPerspective = perspectiveScale * sizeMultiplier;
+      final imageSize = screenWidth * 0.11 * scaledPerspective;
+      final shieldSize = (70.0 * scaledPerspective).clamp(35.0, 160.0);
+      final shieldFontSize = (55.0 * scaledPerspective).clamp(26.0, 120.0);
+      final strokeWidth = (4.0 * scaledPerspective).clamp(2.0, 7.0);
+      final nameFontSize = (12.0 * scaledPerspective).clamp(8.0, 24.0);
+      final healthBarHeight = (14.0 * scaledPerspective).clamp(8.0, 24.0);
       final widgetWidth = imageSize + 50;
       final totalWidgetHeight = shieldSize + 4 + healthBarHeight + imageSize + nameFontSize + 8;
 
-      // Center each opponent in its grid cell, offset odd rows by half a cell width
-      final rowOffset = (row % 2 == 1) ? cellWidth * 0.5 : 0.0;
+      // Center each opponent in its grid cell, stagger alternating rows
+      // For 2-row grids: offset top row so bottom row stays evenly spread
+      // For 3-row grids: offset middle row (odd rows)
+      final bool shouldOffset = rows <= 2 ? (row == 0) : (row % 2 == 1);
+      final rowOffset = shouldOffset ? cellWidth * 0.5 : 0.0;
       final cellLeft = rightAreaStart + (col * cellWidth) + rowOffset;
-      // Push top row down by 30% of cell height to bring it closer to other rows
-      final topRowNudge = (row == 0 && rows > 1) ? cellHeight * 0.30 : 0.0;
+      // Push top row down for 3-row grids; pull up for 2-row grids to avoid overlap
+      final topRowNudge = (row == 0 && rows > 1) ? cellHeight * (rows <= 2 ? -0.10 : 0.30) : 0.0;
       final cellTop = topBand + (row * cellHeight) + topRowNudge;
       final left = (cellLeft + (cellWidth - widgetWidth) / 2).clamp(0.0, screenWidth - widgetWidth);
       final top = (cellTop + (cellHeight - totalWidgetHeight) / 2).clamp(0.0, screenHeight - totalWidgetHeight);
