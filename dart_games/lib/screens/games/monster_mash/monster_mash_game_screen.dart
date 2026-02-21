@@ -427,56 +427,12 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         backgroundColor: Colors.transparent,
         foregroundColor: const Color(0xFFF5F5DC),
         actions: [
-          // Round indicator and buff display
-          if (currentGame.speedPlayEnabled)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2F4F4F).withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFF8C00), width: 2),
-                  ),
-                  child: Text(
-                    'Round ${currentGame.currentRound}/${currentGame.roundLimit}',
-                    style: GoogleFonts.pirataOne(
-                      fontSize: 16,
-                      color: const Color(0xFFF5F5DC),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          if (currentGame.bonusBuffsEnabled && currentGame.activeBuff != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4B0082).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF7FFF00), width: 2),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.auto_awesome, color: Color(0xFF7FFF00), size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        MonsterMashGame.getBuffDisplayName(currentGame.activeBuff!),
-                        style: GoogleFonts.pirataOne(
-                          fontSize: 14,
-                          color: const Color(0xFF7FFF00),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          // DEBUG: Buff test buttons (remove later)
+          _debugBuffButton('BM', BonusBuff.bloodMoon, monsterMashProvider),
+          _debugBuffButton('AB', BonusBuff.ancientBandages, monsterMashProvider),
+          _debugBuffButton('SW', BonusBuff.shadowWalk, monsterMashProvider),
+          _debugBuffButton('LS', BonusBuff.laboratorySpark, monsterMashProvider),
+          _debugBuffButton('Off', null, monsterMashProvider),
         ],
       ),
       body: Stack(
@@ -509,6 +465,16 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                     // Remove darts modal
                     if (shouldPromptTakeout && !dartboardProvider.isConnected)
                       _buildRemoveDartsModal(currentPlayer, monsterMashProvider),
+
+                    // Round progress bar (top-center)
+                    Positioned(
+                      top: 16,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: _buildRoundProgressBar(currentGame.currentRound, currentGame.roundLimit, currentGame.activeBuff, currentGame.speedPlayEnabled),
+                      ),
+                    ),
                   ],
                 );
               },
@@ -552,6 +518,30 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         config: DartboardFABConfig.monsterMash(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  // DEBUG: Buff test button (remove later)
+  Widget _debugBuffButton(String label, BonusBuff? buff, MonsterMashProvider provider) {
+    final isActive = provider.getActiveBuff() == buff;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: TextButton(
+        onPressed: () => provider.debugSetBuff(buff),
+        style: TextButton.styleFrom(
+          backgroundColor: isActive ? const Color(0xFF7FFF00).withOpacity(0.3) : Colors.transparent,
+          minimumSize: const Size(36, 32),
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 11,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            color: isActive ? const Color(0xFF7FFF00) : const Color(0xFFF5F5DC),
+          ),
+        ),
+      ),
     );
   }
 
@@ -937,6 +927,234 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     // Sort by row for painter's order (back rows render first)
     opponentWidgets.sort((a, b) => a.key.compareTo(b.key));
     return opponentWidgets.map((e) => e.value).toList();
+  }
+
+  Widget _buildRoundProgressBar(int currentRound, int maxRounds, BonusBuff? activeBuff, bool speedPlayEnabled) {
+    final progress = speedPlayEnabled ? (currentRound / maxRounds).clamp(0.0, 1.0) : 0.0;
+    const barWidth = 408.0;
+    const barHeight = 36.0;
+    const shieldSize = 56.0;
+    const shieldFontSize = 35.0;
+    const healShieldFontSize = 39.0;
+
+    // Determine buff display based on active buff
+    final bool showHealShield = activeBuff == BonusBuff.ancientBandages;
+    final bool showDamageShield = activeBuff == BonusBuff.bloodMoon ||
+        activeBuff == BonusBuff.shadowWalk ||
+        activeBuff == BonusBuff.laboratorySpark;
+
+    String? healShieldText;
+    String? damageShieldText;
+    String? buffLabel;
+
+    switch (activeBuff) {
+      case BonusBuff.ancientBandages:
+        healShieldText = '5';
+        buffLabel = 'Hit your target number for +5 HP!';
+        break;
+      case BonusBuff.bloodMoon:
+        damageShieldText = '2x';
+        buffLabel = 'Double damage to any opponent!';
+        break;
+      case BonusBuff.shadowWalk:
+        damageShieldText = '0';
+        buffLabel = 'You cannot attack opponents this turn!';
+        break;
+      case BonusBuff.laboratorySpark:
+        damageShieldText = '10';
+        buffLabel = 'Hit any opponent and ALL opponents lose 10 HP!';
+        break;
+      case null:
+        break;
+    }
+
+    // Total height: bar + gap + label line(s)
+    const totalHeight = barHeight + 2 + 28;
+
+    return SizedBox(
+      width: barWidth + shieldSize * 2 + 16, // enough room for shields on both sides
+      height: totalHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          // Progress bar (always centered)
+          Positioned(
+            top: 0,
+            left: (shieldSize + 8),
+            child: Opacity(
+              opacity: speedPlayEnabled ? 1.0 : 0.5,
+              child: Container(
+                width: barWidth,
+                height: barHeight,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(barHeight / 2),
+                  border: Border.all(color: const Color(0xFFFF8C00).withOpacity(speedPlayEnabled ? 0.6 : 0.3), width: 1.5),
+                ),
+                child: Stack(
+                  children: [
+                    if (speedPlayEnabled)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(barHeight / 2),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: progress,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Color(0xFFFF6600),
+                                  Color(0xFFFF8C00),
+                                  Color(0xFFFFAA33),
+                                ],
+                                stops: [0.0, 0.5, 1.0],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Center(
+                      child: Text(
+                        speedPlayEnabled ? 'Round $currentRound / $maxRounds' : 'Unlimited Rounds',
+                        style: GoogleFonts.pirataOne(
+                          fontSize: 18,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(color: Colors.black, blurRadius: 4),
+                            Shadow(color: Colors.black, blurRadius: 8),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Left: healing buff shield (positioned to the left of progress bar)
+          if (showHealShield)
+            Positioned(
+              top: (barHeight - shieldSize) / 2,
+              left: 0,
+              child: SizedBox(
+                width: shieldSize,
+                height: shieldSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/games/monster_mash/icons/Shield-Health.png',
+                      width: shieldSize,
+                      height: shieldSize,
+                    ),
+                    Transform.translate(
+                      offset: Offset.zero,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Text(
+                            healShieldText!,
+                            style: GoogleFonts.creepster(
+                              fontSize: healShieldFontSize,
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth = 4
+                                ..color = Colors.black,
+                            ),
+                          ),
+                          Text(
+                            healShieldText,
+                            style: GoogleFonts.creepster(
+                              fontSize: healShieldFontSize,
+                              color: const Color(0xFF7FFF00),
+                              shadows: [
+                                Shadow(color: Colors.black, blurRadius: 6),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Right: damage buff shield (positioned to the right of progress bar)
+          if (showDamageShield)
+            Positioned(
+              top: (barHeight - shieldSize) / 2,
+              right: 0,
+              child: SizedBox(
+                width: shieldSize,
+                height: shieldSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/games/monster_mash/icons/Shield-HitPoint.png',
+                      width: shieldSize,
+                      height: shieldSize,
+                    ),
+                    Transform.translate(
+                      offset: Offset.zero,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Text(
+                            damageShieldText!,
+                            style: GoogleFonts.creepster(
+                              fontSize: shieldFontSize,
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth = 4
+                                ..color = Colors.black,
+                            ),
+                          ),
+                          Text(
+                            damageShieldText,
+                            style: GoogleFonts.creepster(
+                              fontSize: shieldFontSize,
+                              color: const Color(0xFFFF4444),
+                              shadows: [
+                                Shadow(color: Colors.black, blurRadius: 6),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Buff description label (centered under progress bar)
+          if (buffLabel != null)
+            Positioned(
+              top: barHeight + 2,
+              left: shieldSize + 8,
+              child: SizedBox(
+                width: barWidth,
+                child: Text(
+                  buffLabel,
+                  style: GoogleFonts.pirataOne(
+                    fontSize: 22,
+                    color: const Color(0xFFF5F5DC),
+                    shadows: [
+                      Shadow(color: Colors.black, blurRadius: 4),
+                      Shadow(color: Colors.black, blurRadius: 8),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildGroundShadow({double width = 120, double height = 20}) {
