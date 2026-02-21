@@ -807,7 +807,8 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       final strokeWidth = (4.0 * scaledPerspective).clamp(2.0, 7.0);
       final nameFontSize = (14.0 * scaledPerspective).clamp(10.0, 26.0);
       final healthBarHeight = (14.0 * scaledPerspective).clamp(8.0, 24.0);
-      final widgetWidth = imageSize + 50;
+      final shieldsRowWidth = shieldSize * 2;
+      final widgetWidth = (shieldsRowWidth > imageSize + 50) ? shieldsRowWidth + 10 : imageSize + 50;
       final totalWidgetHeight = shieldSize + 4 + healthBarHeight + imageSize + nameFontSize + 8;
 
       // Center each opponent in its grid cell, stagger alternating rows
@@ -834,60 +835,113 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Shield + number (hidden when eliminated)
+                // Shields row: Target Number + Health (hidden when eliminated)
                 if (!isEliminated)
-                  SizedBox(
-                    width: shieldSize,
-                    height: shieldSize,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      alignment: Alignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/games/monster_mash/icons/Shield-HitPoint.png',
-                          width: shieldSize,
-                          height: shieldSize,
-                        ),
-                        Transform.translate(
-                          offset: const Offset(0, -4),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Text(
-                                '$targetNumber',
-                                style: GoogleFonts.creepster(
-                                  fontSize: shieldFontSize,
-                                  foreground: Paint()
-                                    ..style = PaintingStyle.stroke
-                                    ..strokeWidth = strokeWidth
-                                    ..color = Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '$targetNumber',
-                                style: GoogleFonts.creepster(
-                                  fontSize: shieldFontSize,
-                                  color: const Color(0xFFFF4444),
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black,
-                                      blurRadius: 6,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Target number shield
+                      SizedBox(
+                        width: shieldSize,
+                        height: shieldSize,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/games/monster_mash/icons/Shield-HitPoint.png',
+                              width: shieldSize,
+                              height: shieldSize,
+                            ),
+                            Transform.translate(
+                              offset: const Offset(0, -4),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Text(
+                                    '$targetNumber',
+                                    style: GoogleFonts.creepster(
+                                      fontSize: shieldFontSize,
+                                      foreground: Paint()
+                                        ..style = PaintingStyle.stroke
+                                        ..strokeWidth = strokeWidth
+                                        ..color = Colors.black,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  Text(
+                                    '$targetNumber',
+                                    style: GoogleFonts.creepster(
+                                      fontSize: shieldFontSize,
+                                      color: const Color(0xFFFF4444),
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black,
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      // Health shield
+                      SizedBox(
+                        width: shieldSize,
+                        height: shieldSize,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/games/monster_mash/icons/Shield-Health.png',
+                              width: shieldSize,
+                              height: shieldSize,
+                            ),
+                            Transform.translate(
+                              offset: const Offset(0, -4),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Text(
+                                    '$currentHealth',
+                                    style: GoogleFonts.creepster(
+                                      fontSize: shieldFontSize,
+                                      foreground: Paint()
+                                        ..style = PaintingStyle.stroke
+                                        ..strokeWidth = strokeWidth
+                                        ..color = Colors.black,
+                                    ),
+                                  ),
+                                  Text(
+                                    '$currentHealth',
+                                    style: GoogleFonts.creepster(
+                                      fontSize: shieldFontSize,
+                                      color: _getHealthColor(healthPercent),
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black,
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 if (!isEliminated) const SizedBox(height: 4),
-                // Health bar (hidden when eliminated)
+                // Health bar (hidden when eliminated, no HP text)
                 if (!isEliminated)
                   SizedBox(
                     width: imageSize,
-                    child: _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent, compact: true, compactHeight: healthBarHeight),
+                    child: _buildHealthBar(currentHealth, currentGame.healthMax, healthPercent, compact: true, compactHeight: healthBarHeight, showHPText: false),
                   ),
                 if (!isEliminated) const SizedBox(height: 8),
                 // Monster image (faces left - default) with ground shadow
@@ -1178,7 +1232,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     );
   }
 
-  Widget _buildHealthBar(int currentHealth, int maxHealth, double healthPercent, {bool compact = false, double? compactHeight}) {
+  Widget _buildHealthBar(int currentHealth, int maxHealth, double healthPercent, {bool compact = false, double? compactHeight, bool showHPText = true}) {
     const redColor = Color(0xFFFF4444);
     const yellowColor = Color(0xFFFFCC00);
     const greenColor = Color(0xFF00CC00);
@@ -1194,48 +1248,67 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         borderRadius: BorderRadius.circular(height / 2),
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
       ),
-      child: Stack(
-        children: [
-          // Gradient fill
-          ClipRRect(
-            borderRadius: BorderRadius.circular(height / 2),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: hp,
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      redColor,
-                      Color(0xFFFF6622),
-                      yellowColor,
-                      Color(0xFF88DD00),
-                      greenColor,
-                    ],
-                    stops: [0.0, 0.25, 0.45, 0.70, 1.0],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final barWidth = constraints.maxWidth;
+          return Stack(
+            children: [
+              // Gradient fill - fixed gradient clipped to health percentage
+              ClipRRect(
+                borderRadius: BorderRadius.circular(height / 2),
+                child: ClipRect(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: hp,
+                    child: SizedBox(
+                      width: barWidth,
+                      height: height,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              redColor,
+                              Color(0xFFFF6622),
+                              yellowColor,
+                              Color(0xFF88DD00),
+                              greenColor,
+                            ],
+                            stops: [0.0, 0.25, 0.45, 0.70, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-          // HP text centered inside bar
-          Center(
-            child: Text(
-              '$currentHealth/$maxHealth HP',
-              style: GoogleFonts.montserrat(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                shadows: [
-                  Shadow(color: Colors.black, blurRadius: 4),
-                  Shadow(color: Colors.black, blurRadius: 8),
-                ],
-              ),
-            ),
-          ),
-        ],
+          // HP text centered inside bar (optional)
+              // HP text centered inside bar (optional)
+              if (showHPText)
+                Center(
+                  child: Text(
+                    '$currentHealth/$maxHealth HP',
+                    style: GoogleFonts.montserrat(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(color: Colors.black, blurRadius: 4),
+                        Shadow(color: Colors.black, blurRadius: 8),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  static Color _getHealthColor(double healthPercent) {
+    if (healthPercent > 0.70) return const Color(0xFF00CC00);
+    if (healthPercent > 0.30) return const Color(0xFFFFCC00);
+    return const Color(0xFFFF4444);
   }
 
   Widget _buildRemoveDartsModal(Player? currentPlayer, MonsterMashProvider provider) {
