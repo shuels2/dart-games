@@ -426,14 +426,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         ),
         backgroundColor: Colors.transparent,
         foregroundColor: const Color(0xFFF5F5DC),
-        actions: [
-          // DEBUG: Buff test buttons (remove later)
-          _debugBuffButton('BM', BonusBuff.bloodMoon, monsterMashProvider),
-          _debugBuffButton('AB', BonusBuff.ancientBandages, monsterMashProvider),
-          _debugBuffButton('SW', BonusBuff.shadowWalk, monsterMashProvider),
-          _debugBuffButton('LS', BonusBuff.laboratorySpark, monsterMashProvider),
-          _debugBuffButton('Off', null, monsterMashProvider),
-        ],
+        actions: const [],
       ),
       body: Stack(
         children: [
@@ -522,29 +515,6 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   }
 
   // DEBUG: Buff test button (remove later)
-  Widget _debugBuffButton(String label, BonusBuff? buff, MonsterMashProvider provider) {
-    final isActive = provider.getActiveBuff() == buff;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: TextButton(
-        onPressed: () => provider.debugSetBuff(buff),
-        style: TextButton.styleFrom(
-          backgroundColor: isActive ? const Color(0xFF7FFF00).withOpacity(0.3) : Colors.transparent,
-          minimumSize: const Size(36, 32),
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.montserrat(
-            fontSize: 11,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            color: isActive ? const Color(0xFF7FFF00) : const Color(0xFFF5F5DC),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildActivePlayer(MonsterMashGame currentGame, Player currentPlayer, MonsterMashProvider provider) {
     final playerId = currentPlayer.id;
     final healthPercent = provider.getHealthPercentage(playerId);

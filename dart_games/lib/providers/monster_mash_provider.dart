@@ -69,14 +69,6 @@ class MonsterMashProvider extends ChangeNotifier {
     return _currentGame?.activeBuff;
   }
 
-  // Debug: manually set active buff for testing
-  void debugSetBuff(BonusBuff? buff) {
-    if (_currentGame != null) {
-      _currentGame!.activeBuff = buff;
-      notifyListeners();
-    }
-  }
-
   int getCurrentRound() {
     return _currentGame?.currentRound ?? 1;
   }
