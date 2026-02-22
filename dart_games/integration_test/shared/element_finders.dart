@@ -197,6 +197,102 @@ class ElementFinders {
   }
 
   // ==========================================================================
+  // MONSTER MASH HOME FINDERS
+  // ==========================================================================
+
+  static Finder getMonsterMashCard() {
+    return find.byKey(HomeKeys.monsterMashCard);
+  }
+
+  // ==========================================================================
+  // MONSTER MASH MENU FINDERS
+  // ==========================================================================
+
+  static Finder getMonsterMashAddPlayerButton() {
+    return find.byKey(MonsterMashMenuKeys.addPlayerButton);
+  }
+
+  static Finder getMonsterMashAddPlayerButtonEmptyState() {
+    return find.byKey(MonsterMashMenuKeys.addPlayerButtonEmptyState);
+  }
+
+  static Finder getMonsterMashPlayerTile(String playerId) {
+    return find.byKey(MonsterMashMenuKeys.playerTile(playerId));
+  }
+
+  static Finder getMonsterMashHealthPointsSlider() {
+    return find.byKey(MonsterMashMenuKeys.healthPointsSlider);
+  }
+
+  static Finder getMonsterMashBonusBuffsSwitch() {
+    return find.byKey(MonsterMashMenuKeys.bonusBuffsSwitch);
+  }
+
+  static Finder getMonsterMashSpeedPlaySwitch() {
+    return find.byKey(MonsterMashMenuKeys.speedPlaySwitch);
+  }
+
+  static Finder getMonsterMashRoundLimitSlider() {
+    return find.byKey(MonsterMashMenuKeys.roundLimitSlider);
+  }
+
+  static Finder getMonsterMashStartButton() {
+    return find.byKey(MonsterMashMenuKeys.startGameButton);
+  }
+
+  static Finder getMonsterMashBackButton() {
+    return find.byKey(MonsterMashMenuKeys.backButton);
+  }
+
+  // ==========================================================================
+  // MONSTER MASH GAME FINDERS
+  // ==========================================================================
+
+  static Finder getMonsterMashSkipTurnButton() {
+    return find.byKey(MonsterMashGameKeys.skipTurnButton);
+  }
+
+  static Finder getMonsterMashEditScoreButton() {
+    return find.byKey(MonsterMashGameKeys.editScoreButton);
+  }
+
+  static Finder getMonsterMashDartButton(String multiplier, int number) {
+    return find.byKey(MonsterMashGameKeys.getDartKey(multiplier, number));
+  }
+
+  static Finder getMonsterMashBullseyeButton() {
+    return find.byKey(MonsterMashGameKeys.dartBullseyeButton);
+  }
+
+  static Finder getMonsterMashOuterBullButton() {
+    return find.byKey(MonsterMashGameKeys.dartOuterBullButton);
+  }
+
+  static Finder getMonsterMashMissButton() {
+    return find.byKey(MonsterMashGameKeys.dartMissButton);
+  }
+
+  // ==========================================================================
+  // MONSTER MASH RESULTS FINDERS
+  // ==========================================================================
+
+  static Finder getMonsterMashPlayAgainButton() {
+    return find.byKey(MonsterMashResultsKeys.playAgainButton);
+  }
+
+  static Finder getMonsterMashChangeSettingsButton() {
+    return find.byKey(MonsterMashResultsKeys.changeSettingsButton);
+  }
+
+  static Finder getMonsterMashBackToMenuButton() {
+    return find.byKey(MonsterMashResultsKeys.backToMenuButton);
+  }
+
+  static Finder getMonsterMashWinnerName() {
+    return find.byKey(MonsterMashResultsKeys.winnerName);
+  }
+
+  // ==========================================================================
   // DIALOG FINDERS
   // ==========================================================================
 

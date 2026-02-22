@@ -74,7 +74,7 @@ set fail_count=0
 
 echo ========================================
 if "!run_all!"=="1" (
-    echo Running All UI Automation Tests ^(77 tests, ~51 minutes^)
+    echo Running All UI Automation Tests ^(128 tests, ~91 minutes^)
 ) else (
     echo Running Selected UI Automation Tests
 )
@@ -112,8 +112,8 @@ if "!run_all!"=="1" (
     set "should_run=1"
     exit /b
 )
-REM Check if filename is in file_list
-echo !file_list! | findstr /i /c:"%~1" >nul
+REM Check if any user argument is a substring of the test filename
+echo %~1 | findstr /i !file_list! >nul
 if !errorlevel! equ 0 (
     set "should_run=1"
 )
@@ -458,6 +458,344 @@ if "!should_run!"=="1" (
     echo.
 )
 
+REM ----------------------------------------------------------
+REM Test 7: Monster Mash Add Player
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_add_player_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Add Player Test
+    echo ========================================
+    echo File: monster_mash_add_player_test.dart
+    echo Tests: 6 tests
+    echo Expected Duration: ~4 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Add Player Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_add_player_test.dart >> integration_test_output\summary.txt
+    echo Tests: 6 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\07_monster_mash_add_player.log
+    set _TARGET=integration_test/monster_mash_add_player_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+    echo Restarting ChromeDriver for next test...
+    taskkill /F /IM chromedriver.exe >nul 2>&1
+    timeout /t 3 /nobreak >nul
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 8: Monster Mash Menu and Settings
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_menu_and_settings_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Menu and Settings Test
+    echo ========================================
+    echo File: monster_mash_menu_and_settings_test.dart
+    echo Tests: 8 tests
+    echo Expected Duration: ~6 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Menu and Settings Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_menu_and_settings_test.dart >> integration_test_output\summary.txt
+    echo Tests: 8 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~6 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\08_monster_mash_menu_and_settings.log
+    set _TARGET=integration_test/monster_mash_menu_and_settings_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+    echo Restarting ChromeDriver for next test...
+    taskkill /F /IM chromedriver.exe >nul 2>&1
+    timeout /t 3 /nobreak >nul
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 9: Monster Mash Gameplay
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_gameplay_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Gameplay Test
+    echo ========================================
+    echo File: monster_mash_gameplay_test.dart
+    echo Tests: 20 tests
+    echo Expected Duration: ~15 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Gameplay Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_gameplay_test.dart >> integration_test_output\summary.txt
+    echo Tests: 20 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~15 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\09_monster_mash_gameplay.log
+    set _TARGET=integration_test/monster_mash_gameplay_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+    echo Restarting ChromeDriver for next test...
+    taskkill /F /IM chromedriver.exe >nul 2>&1
+    timeout /t 3 /nobreak >nul
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 10: Monster Mash Edit Score
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_edit_score_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Edit Score Test
+    echo ========================================
+    echo File: monster_mash_edit_score_test.dart
+    echo Tests: 5 tests
+    echo Expected Duration: ~5 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Edit Score Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_edit_score_test.dart >> integration_test_output\summary.txt
+    echo Tests: 5 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\10_monster_mash_edit_score.log
+    set _TARGET=integration_test/monster_mash_edit_score_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+    echo Restarting ChromeDriver for next test...
+    taskkill /F /IM chromedriver.exe >nul 2>&1
+    timeout /t 3 /nobreak >nul
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 11: Monster Mash Results Screen
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_results_screen_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Results Screen Test
+    echo ========================================
+    echo File: monster_mash_results_screen_test.dart
+    echo Tests: 6 tests
+    echo Expected Duration: ~5 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Results Screen Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_results_screen_test.dart >> integration_test_output\summary.txt
+    echo Tests: 6 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\11_monster_mash_results_screen.log
+    set _TARGET=integration_test/monster_mash_results_screen_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+    echo Restarting ChromeDriver for next test...
+    taskkill /F /IM chromedriver.exe >nul 2>&1
+    timeout /t 3 /nobreak >nul
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 12: Monster Mash Visual Validation
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_visual_validation_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Visual Validation Test
+    echo ========================================
+    echo File: monster_mash_visual_validation_test.dart
+    echo Tests: 6 tests
+    echo Expected Duration: ~5 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Visual Validation Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_visual_validation_test.dart >> integration_test_output\summary.txt
+    echo Tests: 6 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\12_monster_mash_visual_validation.log
+    set _TARGET=integration_test/monster_mash_visual_validation_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
 REM Generate summary
 echo ========================================
 echo Test Suite Complete
@@ -511,7 +849,7 @@ echo   run_ui_tests.bat /help
 echo.
 echo DESCRIPTION:
 echo   Runs UI automation tests for the Dart Games application.
-echo   By default, runs all 6 test files (77 total tests, ~51 minutes).
+echo   By default, runs all 12 test files (128 total tests, ~91 minutes).
 echo   You can optionally specify which test files to run.
 echo.
 echo PARAMETERS:
@@ -526,6 +864,12 @@ echo   3. target_tag_gameplay_test.dart              (13 tests, ~10 min)
 echo   4. target_tag_add_player_test.dart            (6 tests,  ~2 min)
 echo   5. target_tag_results_screen_test.dart        (6 tests,  ~5.5 min)
 echo   6. carnival_derby_ui_test.dart                (24 tests, ~12 min)
+echo   7. monster_mash_add_player_test.dart          (6 tests,  ~4 min)
+echo   8. monster_mash_menu_and_settings_test.dart   (8 tests,  ~6 min)
+echo   9. monster_mash_gameplay_test.dart            (20 tests, ~15 min)
+echo  10. monster_mash_edit_score_test.dart           (5 tests,  ~5 min)
+echo  11. monster_mash_results_screen_test.dart       (6 tests,  ~5 min)
+echo  12. monster_mash_visual_validation_test.dart    (6 tests,  ~5 min)
 echo.
 echo EXAMPLES:
 echo   Run all tests (default):
@@ -544,6 +888,9 @@ echo   Partial file names also work (case-insensitive):
 echo     run_ui_tests.bat menu_and_mechanics
 echo     run_ui_tests.bat gameplay
 echo     run_ui_tests.bat carnival
+echo.
+echo   Run all Monster Mash tests:
+echo     run_ui_tests.bat monster_mash
 echo.
 echo   Run all Target Tag tests:
 echo     run_ui_tests.bat target_tag_menu target_tag_visual target_tag_gameplay target_tag_add target_tag_results

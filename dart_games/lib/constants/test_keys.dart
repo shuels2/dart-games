@@ -338,6 +338,7 @@ class TargetTagResultsKeys {
 class MonsterMashMenuKeys {
   // Player selection
   static const addPlayerButton = Key('monster_menu_add_player_button');
+  static const addPlayerButtonEmptyState = Key('monster_menu_add_player_button_empty');
   static const playerListView = Key('monster_menu_player_list_view');
   static Key playerTile(String playerId) =>
       Key('monster_menu_player_${playerId}_tile');

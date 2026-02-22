@@ -680,6 +680,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
+                          key: MonsterMashMenuKeys.addPlayerButtonEmptyState,
                           onPressed: _handleAddPlayer,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4B0082),

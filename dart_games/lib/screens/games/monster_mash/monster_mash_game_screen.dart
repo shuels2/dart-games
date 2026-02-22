@@ -992,7 +992,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         break;
       case BonusBuff.laboratorySpark:
         damageShieldText = '10';
-        buffLabel = 'Hit any opponent and ALL opponents lose 10 HP!';
+        buffLabel = 'Hit the bullseye and ALL opponents lose 10 HP!';
         break;
       case null:
         break;

@@ -91,6 +91,27 @@ class GameUIConfig {
     );
   }
 
+  /// Monster Mash game configuration
+  factory GameUIConfig.monsterMash() {
+    return GameUIConfig._(
+      gameName: 'Monster Mash',
+      getGameCard: ElementFinders.getMonsterMashCard,
+      getAddPlayerButton: ElementFinders.getMonsterMashAddPlayerButton,
+      getPlayerTile: ElementFinders.getMonsterMashPlayerTile,
+      getStartButton: ElementFinders.getMonsterMashStartButton,
+      getSkipTurnButton: ElementFinders.getMonsterMashSkipTurnButton,
+      getEditScoreButton: ElementFinders.getMonsterMashEditScoreButton,
+      getDartButton: ElementFinders.getMonsterMashDartButton,
+      getBullseyeButton: ElementFinders.getMonsterMashBullseyeButton,
+      getOuterBullButton: ElementFinders.getMonsterMashOuterBullButton,
+      getMissButton: ElementFinders.getMonsterMashMissButton,
+      getPlayAgainButton: ElementFinders.getMonsterMashPlayAgainButton,
+      getChangeSettingsButton:
+          ElementFinders.getMonsterMashChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getMonsterMashBackToMenuButton,
+    );
+  }
+
   // ==========================================================================
   // HOME SCREEN OPERATIONS
   // ==========================================================================
