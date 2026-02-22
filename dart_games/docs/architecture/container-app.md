@@ -95,7 +95,7 @@ dart_games/
 │               ├── monster_mash_menu_screen.dart   # Game setup
 │               ├── monster_mash_game_screen.dart   # Active gameplay
 │               └── monster_mash_results_screen.dart # Winner announcement
-├── test/                            # Non-UI test suite (327 tests)
+├── test/                            # Non-UI test suite (337 tests)
 ├── integration_test/                # UI automation tests (128 tests)
 ├── assets/                          # Assets organized by game
 │   ├── common/                      # Shared assets

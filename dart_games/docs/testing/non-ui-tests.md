@@ -2,7 +2,7 @@
 
 ## Overview
 
-327 non-UI tests validate models, providers, services, widgets, and game logic.
+337 non-UI tests validate models, providers, services, widgets, and game logic.
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -54,7 +54,7 @@
 - Random selection
 - Cross-platform file handling
 
-### Integration Tests (138 tests)
+### Integration Tests (148 tests)
 
 **Carnival Derby User Management (26 tests)**
 - Winner/loser stat tracking with duration
@@ -87,11 +87,13 @@
 - Edit score with state snapshots
 - Multiple winner tiebreak logic
 
-**Monster Mash Announcements (8 tests)**
+**Monster Mash Announcements (18 tests)**
 - Announcement message text verification
-- Sound effect pairing validation
-- Priority level correctness
-- Buff announcement text for all 4 buffs
+- Precedence rule validation (10 rules)
+- All health warning tier crossings (weaken, critical, barely clinging)
+- Buff-modified announcements (Shadow Walk, Blood Moon, Ancient Bandages, Lab Spark)
+- Edge cases (eliminated opponent hit, bullseye at full health, Max Health text)
+- Combined elimination and hat trick + elimination merged announcements
 
 ### Shared Component Tests (24 tests)
 
