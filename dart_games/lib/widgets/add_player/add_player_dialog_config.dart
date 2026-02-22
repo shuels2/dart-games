@@ -180,6 +180,17 @@ class AddPlayerDialogConfig {
       titleStyle: GoogleFonts.creepster(
         fontSize: 28,
         color: const Color(0xFFF5F5DC),
+        shadows: [
+          Shadow(
+            color: const Color(0xFFF5F5DC).withOpacity(0.4),
+            blurRadius: 8,
+          ),
+          const Shadow(
+            color: Colors.black,
+            blurRadius: 3,
+            offset: Offset(1, 1),
+          ),
+        ],
       ),
       inputLabelStyle: GoogleFonts.montserrat(
         fontSize: 18,
@@ -189,7 +200,7 @@ class AddPlayerDialogConfig {
       inputFocusedBorderColor: const Color(0xFFFF8C00), // Pumpkin Orange
       inputErrorBorderColor: Colors.red,
       photoLabelStyle: GoogleFonts.montserrat(
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: FontWeight.w700,
         color: const Color(0xFFF5F5DC),
       ),

@@ -8,8 +8,8 @@ import '../../../providers/target_tag_provider.dart';
 import '../../../widgets/add_player/add_player.dart';
 import '../../../widgets/target_tag/team_setup_widget.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
-import '../../../widgets/horse_race/player_selection_card.dart';
-import '../../../widgets/horse_race/player_avatar_widget.dart';
+import '../../../widgets/player_selection_card.dart';
+import '../../../widgets/player_avatar_widget.dart';
 import '../../../constants/test_keys.dart';
 import 'target_tag_game_screen.dart';
 

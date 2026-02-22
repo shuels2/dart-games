@@ -9,7 +9,7 @@ import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
 import '../../../providers/dartboard_provider.dart';
-import '../../../widgets/horse_race/player_avatar_widget.dart';
+import '../../../widgets/player_avatar_widget.dart';
 import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
 import '../../../widgets/carnival_string_lights.dart';

@@ -6,7 +6,7 @@ import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/monster_mash_provider.dart';
 import '../../../widgets/add_player/add_player.dart';
-import '../../../widgets/horse_race/player_selection_card.dart';
+import '../../../widgets/player_selection_card.dart';
 import '../../../constants/test_keys.dart';
 import 'monster_mash_game_screen.dart';
 
@@ -31,7 +31,7 @@ class MonsterMashMenuScreen extends StatefulWidget {
 }
 
 class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   double _healthMax = 20.0;
   bool _bonusBuffs = false;
   bool _speedPlay = false;
@@ -39,6 +39,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
   final ScrollController _availablePlayersScrollController = ScrollController();
   final ScrollController _selectedPlayersScrollController = ScrollController();
   late AnimationController _pulseController;
+  late AnimationController _lightningController;
   PlayerProvider? _playerProvider;
 
   @override
@@ -49,6 +50,11 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
+
+    _lightningController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
 
     if (widget.initialHealthMax != null) {
       _healthMax = widget.initialHealthMax!.toDouble();
@@ -85,6 +91,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
   void dispose() {
     _playerProvider?.markPlayersSorted();
     _pulseController.dispose();
+    _lightningController.dispose();
     _availablePlayersScrollController.dispose();
     _selectedPlayersScrollController.dispose();
     super.dispose();
@@ -216,12 +223,27 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 Text(
                   'MONSTER MASH',
                   style: GoogleFonts.creepster(
-                    fontSize: 52,
+                    fontSize: 60,
                     color: const Color(0xFF7FFF00),
                     letterSpacing: 2,
+                    shadows: [
+                      Shadow(
+                        color: const Color(0xFF7FFF00).withOpacity(0.6),
+                        blurRadius: 12,
+                      ),
+                      Shadow(
+                        color: const Color(0xFF7FFF00).withOpacity(0.3),
+                        blurRadius: 24,
+                      ),
+                      const Shadow(
+                        color: Colors.black,
+                        blurRadius: 4,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
                 Text(
                   'The creatures of the night have gathered for the ultimate showdown! Choose your monster and battle for survival in this classic horror-themed dart game.',
                   style: GoogleFonts.montserrat(
@@ -244,8 +266,19 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 Text(
                   'How to Play:',
                   style: GoogleFonts.creepster(
-                    fontSize: 30,
+                    fontSize: 38,
                     color: const Color(0xFFF5F5DC),
+                    shadows: [
+                      Shadow(
+                        color: const Color(0xFFF5F5DC).withOpacity(0.4),
+                        blurRadius: 8,
+                      ),
+                      const Shadow(
+                        color: Colors.black,
+                        blurRadius: 3,
+                        offset: Offset(1, 1),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -257,8 +290,19 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 Text(
                   'Optional Features:',
                   style: GoogleFonts.creepster(
-                    fontSize: 30,
+                    fontSize: 38,
                     color: const Color(0xFFF5F5DC),
+                    shadows: [
+                      Shadow(
+                        color: const Color(0xFFF5F5DC).withOpacity(0.4),
+                        blurRadius: 8,
+                      ),
+                      const Shadow(
+                        color: Colors.black,
+                        blurRadius: 3,
+                        offset: Offset(1, 1),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -272,6 +316,17 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFFFF8C00),
                     height: 1.5,
+                    shadows: [
+                      Shadow(
+                        color: const Color(0xFFFF8C00).withOpacity(0.5),
+                        blurRadius: 10,
+                      ),
+                      const Shadow(
+                        color: Colors.black,
+                        blurRadius: 3,
+                        offset: Offset(1, 1),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -646,25 +701,20 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 ),
               ),
               if (allPlayers.isNotEmpty)
-                ElevatedButton.icon(
+                Transform.translate(
+                  offset: const Offset(0, -5),
+                  child: _buildStoneNewPlayerButton(
                   key: MonsterMashMenuKeys.addPlayerButton,
                   onPressed: _handleAddPlayer,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4B0082),
-                    foregroundColor: const Color(0xFFF5F5DC),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    side: const BorderSide(color: Color(0xFF7FFF00), width: 2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  icon: const Icon(Icons.add, size: 20),
-                  label: Text(
-                    'NEW PLAYER',
-                    style: GoogleFonts.pirataOne(fontSize: 22, color: const Color(0xFFF5F5DC)),
-                  ),
-                ),
+                  fontSize: 18,
+                  iconSize: 18,
+                  width: 170,
+                  height: 36,
+                  seed: 'NEW_PLAYER_HEADER'.hashCode,
+                )),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Expanded(
             child: allPlayers.isEmpty
                 ? Center(
@@ -679,20 +729,14 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                           ),
                         ),
                         const SizedBox(height: 24),
-                        ElevatedButton.icon(
+                        _buildStoneNewPlayerButton(
                           key: MonsterMashMenuKeys.addPlayerButtonEmptyState,
                           onPressed: _handleAddPlayer,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4B0082),
-                            foregroundColor: const Color(0xFFF5F5DC),
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                            side: const BorderSide(color: Color(0xFF7FFF00), width: 2),
-                          ),
-                          icon: const Icon(Icons.add, size: 24),
-                          label: Text(
-                            'NEW PLAYER',
-                            style: GoogleFonts.pirataOne(fontSize: 24, color: const Color(0xFFF5F5DC)),
-                          ),
+                          fontSize: 24,
+                          iconSize: 24,
+                          width: 210,
+                          height: 44,
+                          seed: 'NEW_PLAYER_EMPTY'.hashCode,
                         ),
                       ],
                     ),
@@ -711,6 +755,22 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                         isSelected: isSelected,
                         selectedColor: const Color(0xFF4B0082),
                         selectedBorderColor: const Color(0xFF7FFF00),
+                        nameStyle: GoogleFonts.creepster(
+                          fontSize: 21,
+                          color: const Color(0xFFF1FAEE),
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFFF1FAEE).withOpacity(0.4),
+                              blurRadius: 8,
+                            ),
+                            const Shadow(
+                              color: Colors.black,
+                              blurRadius: 3,
+                              offset: Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                        nameStatsSpacing: 1.4,
                         onTap: () {
                           if (isSelected) {
                             playerProvider.deselectPlayer(player.id);
@@ -791,6 +851,22 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                     compact: false,
                     selectedColor: const Color(0xFF4B0082),
                     selectedBorderColor: const Color(0xFF7FFF00),
+                    nameStyle: GoogleFonts.creepster(
+                      fontSize: 21,
+                      color: const Color(0xFFF1FAEE),
+                      shadows: [
+                        Shadow(
+                          color: const Color(0xFFF1FAEE).withOpacity(0.4),
+                          blurRadius: 8,
+                        ),
+                        const Shadow(
+                          color: Colors.black,
+                          blurRadius: 3,
+                          offset: Offset(1, 1),
+                        ),
+                      ],
+                    ),
+                    nameStatsSpacing: 1.4,
                     onTap: () {},
                     onRemove: () {
                       playerProvider.deselectPlayer(player.id);
@@ -893,6 +969,20 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   ),
                 ),
               ),
+              // Lightning effect overlay
+              if (canStart)
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: _lightningController,
+                    builder: (context, child) {
+                      return CustomPaint(
+                        painter: _LightningPainter(
+                          animationValue: _lightningController.value,
+                        ),
+                      );
+                    },
+                  ),
+                ),
               // Button content - chiseled text
               Center(
                 child: Material(
@@ -1019,6 +1109,147 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
       ),
     );
   }
+
+  Widget _buildStoneNewPlayerButton({
+    required Key key,
+    required VoidCallback onPressed,
+    required double fontSize,
+    required double iconSize,
+    required double width,
+    required double height,
+    required int seed,
+  }) {
+    final jaggedClipper = _JaggedEdgeClipper(seed: seed, jagAmount: 3.0, segmentsPerSide: 20);
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: CustomPaint(
+        painter: _StoneTabletPainter(jaggedClipper: jaggedClipper),
+        child: ClipPath(
+          clipper: jaggedClipper,
+          child: Stack(
+            children: [
+              // Stone gradient fill
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(-0.4, -0.4),
+                      radius: 1.2,
+                      colors: [
+                        Color(0xFFa8a8a8),
+                        Color(0xFF888888),
+                        Color(0xFF707070),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Inner bevel: top/bottom
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withOpacity(0.35),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.4),
+                      ],
+                      stops: const [0.0, 0.15, 0.85, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Inner bevel: left/right
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.white.withOpacity(0.2),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.25),
+                      ],
+                      stops: const [0.0, 0.08, 0.92, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Stone texture
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage('assets/games/monster_mash/images/stone-texture.png'),
+                      repeat: ImageRepeat.repeat,
+                      fit: BoxFit.none,
+                    ),
+                  ),
+                ),
+              ),
+              // Lightning effect
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _lightningController,
+                  builder: (context, child) {
+                    return CustomPaint(
+                      painter: _LightningPainter(
+                        animationValue: (_lightningController.value + 0.5) % 1.0,
+                        lightningColor: const Color(0xFFF5F5DC),
+                        seedOffset: seed,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // Button content
+              Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    key: key,
+                    onTap: onPressed,
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add, size: iconSize, color: const Color(0xFF1A1A1A),
+                            shadows: [
+                              Shadow(color: Colors.white.withOpacity(0.5), offset: const Offset(1, 1), blurRadius: 0),
+                              const Shadow(color: Colors.black, offset: Offset(-1, -1), blurRadius: 0),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'NEW PLAYER',
+                            style: GoogleFonts.pirataOne(
+                              fontSize: fontSize,
+                              color: const Color(0xFF1A1A1A),
+                              shadows: [
+                                Shadow(color: Colors.white.withOpacity(0.5), offset: const Offset(1, 1), blurRadius: 0),
+                                const Shadow(color: Colors.black, offset: Offset(-1, -1), blurRadius: 0),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Clips a rectangle with jagged/chipped stone edges
@@ -1108,4 +1339,104 @@ class _StoneTabletPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _LightningPainter extends CustomPainter {
+  final double animationValue;
+  final Color lightningColor;
+  final int seedOffset;
+
+  _LightningPainter({required this.animationValue, this.lightningColor = const Color(0xFF7FFF00), this.seedOffset = 0});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    _maybeDrawBolt(canvas, size, phase: 0.0, duration: 0.08, seed: 42 + seedOffset);
+    _maybeDrawBolt(canvas, size, phase: 0.05, duration: 0.04, seed: 43 + seedOffset);
+    _maybeDrawBolt(canvas, size, phase: 0.45, duration: 0.06, seed: 77 + seedOffset);
+    _maybeDrawBolt(canvas, size, phase: 0.50, duration: 0.03, seed: 78 + seedOffset);
+
+    final flashOpacity = _getFlashOpacity();
+    if (flashOpacity > 0) {
+      final flashPaint = Paint()
+        ..color = lightningColor.withOpacity(flashOpacity * 0.15);
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), flashPaint);
+    }
+  }
+
+  double _getFlashOpacity() {
+    // Flash during bolt windows
+    for (final window in [(0.0, 0.08), (0.05, 0.04), (0.45, 0.06), (0.50, 0.03)]) {
+      final start = window.$1;
+      final dur = window.$2;
+      if (animationValue >= start && animationValue <= start + dur) {
+        final t = (animationValue - start) / dur;
+        return 1.0 - (2.0 * (t - 0.5)).abs(); // peak at midpoint
+      }
+    }
+    return 0.0;
+  }
+
+  void _maybeDrawBolt(Canvas canvas, Size size, {
+    required double phase,
+    required double duration,
+    required int seed,
+  }) {
+    if (animationValue < phase || animationValue > phase + duration) return;
+
+    final t = (animationValue - phase) / duration;
+    // Fade in fast, fade out
+    final opacity = t < 0.3 ? t / 0.3 : 1.0 - ((t - 0.3) / 0.7);
+
+    final rng = Random(seed);
+    final startX = size.width * (0.15 + rng.nextDouble() * 0.7);
+    final segments = 5 + rng.nextInt(4);
+
+    final path = Path();
+    path.moveTo(startX, 0);
+
+    double x = startX;
+    double y = 0;
+    final segHeight = size.height / segments;
+
+    for (int i = 0; i < segments; i++) {
+      x += (rng.nextDouble() - 0.5) * size.width * 0.3;
+      x = x.clamp(4.0, size.width - 4.0);
+      y += segHeight;
+      path.lineTo(x, y);
+    }
+
+    // Core bright bolt
+    final corePaint = Paint()
+      ..color = Colors.white.withOpacity(opacity * 0.9)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(path, corePaint);
+
+    // Outer glow
+    final glowPaint = Paint()
+      ..color = lightningColor.withOpacity(opacity * 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawPath(path, glowPaint);
+
+    // Wide ambient glow
+    final ambientPaint = Paint()
+      ..color = lightningColor.withOpacity(opacity * 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawPath(path, ambientPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _LightningPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue ||
+        oldDelegate.lightningColor != lightningColor ||
+        oldDelegate.seedOffset != seedOffset;
+  }
 }

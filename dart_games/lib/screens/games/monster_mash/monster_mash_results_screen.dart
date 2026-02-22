@@ -31,6 +31,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
   AnimationController? _glowController1;
   AnimationController? _glowController2;
   AnimationController? _glowController3;
+  late AnimationController _lightningController;
   Animation<double>? _glowAnimation1;
   Animation<double>? _glowAnimation2;
   Animation<double>? _glowAnimation3;
@@ -87,6 +88,11 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
       CurvedAnimation(parent: _glowController3!, curve: Curves.easeInOut),
     );
 
+    _lightningController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
+
     _animationController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -109,6 +115,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
     _glowController1?.dispose();
     _glowController2?.dispose();
     _glowController3?.dispose();
+    _lightningController.dispose();
     _confettiController.dispose();
     _audioPlayer.dispose();
     super.dispose();
@@ -417,6 +424,9 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
                         const Color(0xFF7FFF00),
                         _playAgain,
                         glowAnimation: _glowAnimation1,
+                        lightningColor: const Color(0xFF7FFF00),
+                        lightningPhaseOffset: 0.0,
+                        lightningSeedOffset: 0,
                         key: MonsterMashResultsKeys.playAgainButton,
                       ),
                       const SizedBox(width: 16),
@@ -426,6 +436,9 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
                         const Color(0xFFFF8C00),
                         _changeSettings,
                         glowAnimation: _glowAnimation2,
+                        lightningColor: const Color(0xFFFF8C00),
+                        lightningPhaseOffset: 0.33,
+                        lightningSeedOffset: 100,
                         key: MonsterMashResultsKeys.changeSettingsButton,
                       ),
                       const SizedBox(width: 16),
@@ -435,6 +448,9 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
                         const Color(0xFF4B0082),
                         _goHome,
                         glowAnimation: _glowAnimation3,
+                        lightningColor: const Color(0xFF4B0082),
+                        lightningPhaseOffset: 0.67,
+                        lightningSeedOffset: 200,
                         key: MonsterMashResultsKeys.backToMenuButton,
                       ),
                     ],
@@ -478,6 +494,9 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
     VoidCallback onTap, {
     Key? key,
     Animation<double>? glowAnimation,
+    Color? lightningColor,
+    double lightningPhaseOffset = 0.0,
+    int lightningSeedOffset = 0,
   }) {
     // Use a fixed seed based on the label so edges are consistent across rebuilds
     final jaggedClipper = _JaggedEdgeClipper(seed: label.hashCode);
@@ -558,6 +577,22 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
                   ),
                 ),
               ),
+              // Lightning effect overlay
+              if (lightningColor != null)
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: _lightningController,
+                    builder: (context, child) {
+                      return CustomPaint(
+                        painter: _LightningPainter(
+                          animationValue: (_lightningController.value + lightningPhaseOffset) % 1.0,
+                          lightningColor: lightningColor,
+                          seedOffset: lightningSeedOffset,
+                        ),
+                      );
+                    },
+                  ),
+                ),
               // Button content - chiseled text effect
               Center(
                 child: Row(
@@ -762,4 +797,97 @@ class _StoneTabletPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _LightningPainter extends CustomPainter {
+  final double animationValue;
+  final Color lightningColor;
+  final int seedOffset;
+
+  _LightningPainter({required this.animationValue, required this.lightningColor, this.seedOffset = 0});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    _maybeDrawBolt(canvas, size, phase: 0.0, duration: 0.08, seed: 42 + seedOffset);
+    _maybeDrawBolt(canvas, size, phase: 0.05, duration: 0.04, seed: 43 + seedOffset);
+    _maybeDrawBolt(canvas, size, phase: 0.45, duration: 0.06, seed: 77 + seedOffset);
+    _maybeDrawBolt(canvas, size, phase: 0.50, duration: 0.03, seed: 78 + seedOffset);
+
+    final flashOpacity = _getFlashOpacity();
+    if (flashOpacity > 0) {
+      final flashPaint = Paint()
+        ..color = lightningColor.withOpacity(flashOpacity * 0.15);
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), flashPaint);
+    }
+  }
+
+  double _getFlashOpacity() {
+    for (final window in [(0.0, 0.08), (0.05, 0.04), (0.45, 0.06), (0.50, 0.03)]) {
+      final start = window.$1;
+      final dur = window.$2;
+      if (animationValue >= start && animationValue <= start + dur) {
+        final t = (animationValue - start) / dur;
+        return 1.0 - (2.0 * (t - 0.5)).abs();
+      }
+    }
+    return 0.0;
+  }
+
+  void _maybeDrawBolt(Canvas canvas, Size size, {
+    required double phase,
+    required double duration,
+    required int seed,
+  }) {
+    if (animationValue < phase || animationValue > phase + duration) return;
+
+    final t = (animationValue - phase) / duration;
+    final opacity = t < 0.3 ? t / 0.3 : 1.0 - ((t - 0.3) / 0.7);
+
+    final rng = Random(seed);
+    final startX = size.width * (0.15 + rng.nextDouble() * 0.7);
+    final segments = 5 + rng.nextInt(4);
+
+    final path = Path();
+    path.moveTo(startX, 0);
+
+    double x = startX;
+    double y = 0;
+    final segHeight = size.height / segments;
+
+    for (int i = 0; i < segments; i++) {
+      x += (rng.nextDouble() - 0.5) * size.width * 0.3;
+      x = x.clamp(4.0, size.width - 4.0);
+      y += segHeight;
+      path.lineTo(x, y);
+    }
+
+    final corePaint = Paint()
+      ..color = Colors.white.withOpacity(opacity * 0.9)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(path, corePaint);
+
+    final glowPaint = Paint()
+      ..color = lightningColor.withOpacity(opacity * 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawPath(path, glowPaint);
+
+    final ambientPaint = Paint()
+      ..color = lightningColor.withOpacity(opacity * 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawPath(path, ambientPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _LightningPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
+  }
 }

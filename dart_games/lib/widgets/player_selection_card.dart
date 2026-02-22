@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../models/player.dart';
+import '../models/player.dart';
 import 'player_avatar_widget.dart';
 
 class PlayerSelectionCard extends StatelessWidget {
@@ -12,6 +12,8 @@ class PlayerSelectionCard extends StatelessWidget {
   final Color? selectedColor;
   final Color? selectedBorderColor;
   final Key? removeButtonKey;
+  final TextStyle? nameStyle;
+  final double? nameStatsSpacing;
 
   const PlayerSelectionCard({
     super.key,
@@ -23,6 +25,8 @@ class PlayerSelectionCard extends StatelessWidget {
     this.selectedColor,
     this.selectedBorderColor,
     this.removeButtonKey,
+    this.nameStyle,
+    this.nameStatsSpacing,
   });
 
   @override
@@ -68,13 +72,13 @@ class PlayerSelectionCard extends StatelessWidget {
                     children: [
                       Text(
                         player.name,
-                        style: GoogleFonts.montserrat(
+                        style: nameStyle ?? GoogleFonts.montserrat(
                           fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
                           fontSize: 14,
                           color: const Color(0xFFF1FAEE), // Cloud Dancer
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: nameStatsSpacing ?? 2),
                       Text(
                         'Games: ${player.gamesPlayed} | Wins: ${player.gamesWon}',
                         style: GoogleFonts.montserrat(
@@ -150,7 +154,7 @@ class PlayerSelectionCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   player.name,
-                  style: GoogleFonts.montserrat(
+                  style: nameStyle ?? GoogleFonts.montserrat(
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
                     color: const Color(0xFFF1FAEE), // Cloud Dancer
@@ -159,7 +163,7 @@ class PlayerSelectionCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: nameStatsSpacing ?? 2),
                 Text(
                   'G: ${player.gamesPlayed}',
                   style: GoogleFonts.montserrat(

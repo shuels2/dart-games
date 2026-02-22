@@ -6,7 +6,7 @@ import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
 import '../../../providers/dartboard_provider.dart';
 import '../../../widgets/add_player/add_player.dart';
-import '../../../widgets/horse_race/player_selection_card.dart';
+import '../../../widgets/player_selection_card.dart';
 import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
 import '../../../widgets/carnival_string_lights.dart';
