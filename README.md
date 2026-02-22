@@ -585,7 +585,7 @@ flutter pub get
 # Run non-UI tests (all 327 tests must pass)
 flutter test
 
-# Optional: Run UI automation tests (128 tests, ~91 minutes, requires chromedriver)
+# Optional: Run UI automation tests (128 tests, ~86 minutes, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
 
 # Launch in Chrome (web)
@@ -613,10 +613,26 @@ flutter test
 - Shared test components (24 tests)
 - Widget tests (23 tests)
 
-**UI Automation Test Coverage (128 tests, ~91 minutes):**
-- Target Tag (53 tests): Menu settings, gameplay mechanics, visual validation, add player, results screen
-- Carnival Derby (24 tests): Menu, gameplay, bust mechanics, skip turn, edit score, results screen
-- Monster Mash (51 tests): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation
+**UI Automation Test Coverage (128 tests, ~86 minutes):**
+
+| # | Test File | Tests | Duration |
+|---|-----------|-------|----------|
+| 1 | target_tag_menu_and_mechanics_test.dart | 24 | ~16 min |
+| 2 | target_tag_visual_validation_test.dart | 4 | ~5 min |
+| 3 | target_tag_gameplay_test.dart | 13 | ~9 min |
+| 4 | target_tag_add_player_test.dart | 6 | ~3 min |
+| 5 | target_tag_results_screen_test.dart | 6 | ~7 min |
+| 6 | carnival_derby_ui_test.dart | 24 | ~14 min |
+| 7 | monster_mash_add_player_test.dart | 6 | ~3 min |
+| 8 | monster_mash_menu_and_settings_test.dart | 8 | ~4 min |
+| 9 | monster_mash_gameplay_test.dart | 20 | ~11 min |
+| 10 | monster_mash_edit_score_test.dart | 5 | ~4 min |
+| 11 | monster_mash_results_screen_test.dart | 6 | ~5 min |
+| 12 | monster_mash_visual_validation_test.dart | 6 | ~5 min |
+
+- Target Tag (53 tests, ~40 min): Menu settings, gameplay mechanics, visual validation, add player, results screen
+- Carnival Derby (24 tests, ~14 min): Menu, gameplay, bust mechanics, skip turn, edit score, results screen
+- Monster Mash (51 tests, ~32 min): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation
 - Requires chromedriver setup - see [CLAUDE.md](CLAUDE.md) for complete UI testing guide
 
 ### Cross-Platform Compatibility

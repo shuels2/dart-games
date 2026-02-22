@@ -131,7 +131,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: target_tag_menu_and_mechanics_test.dart
     echo Tests: 24 tests
-    echo Expected Duration: ~12 minutes
+    echo Expected Duration: ~16 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -142,7 +142,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: target_tag_menu_and_mechanics_test.dart >> integration_test_output\summary.txt
     echo Tests: 24 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~12 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~16 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -188,7 +188,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: target_tag_visual_validation_test.dart
     echo Tests: 4 tests
-    echo Expected Duration: ~2 minutes
+    echo Expected Duration: ~5 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -199,7 +199,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: target_tag_visual_validation_test.dart >> integration_test_output\summary.txt
     echo Tests: 4 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~2 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -245,7 +245,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: target_tag_gameplay_test.dart
     echo Tests: 13 tests
-    echo Expected Duration: ~10 minutes
+    echo Expected Duration: ~9 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -256,7 +256,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: target_tag_gameplay_test.dart >> integration_test_output\summary.txt
     echo Tests: 13 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~10 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~9 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -302,7 +302,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: target_tag_add_player_test.dart
     echo Tests: 6 tests
-    echo Expected Duration: ~2 minutes
+    echo Expected Duration: ~3 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -313,7 +313,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: target_tag_add_player_test.dart >> integration_test_output\summary.txt
     echo Tests: 6 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~2 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~3 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -359,7 +359,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: target_tag_results_screen_test.dart
     echo Tests: 6 tests
-    echo Expected Duration: ~5.5 minutes
+    echo Expected Duration: ~7 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -370,7 +370,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: target_tag_results_screen_test.dart >> integration_test_output\summary.txt
     echo Tests: 6 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~5.5 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~7 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -416,7 +416,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: carnival_derby_ui_test.dart
     echo Tests: 24 tests
-    echo Expected Duration: ~12 minutes
+    echo Expected Duration: ~14 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -427,7 +427,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: carnival_derby_ui_test.dart >> integration_test_output\summary.txt
     echo Tests: 24 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~12 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~14 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -469,7 +469,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: monster_mash_add_player_test.dart
     echo Tests: 6 tests
-    echo Expected Duration: ~4 minutes
+    echo Expected Duration: ~3 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -480,7 +480,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: monster_mash_add_player_test.dart >> integration_test_output\summary.txt
     echo Tests: 6 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~3 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -526,7 +526,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: monster_mash_menu_and_settings_test.dart
     echo Tests: 8 tests
-    echo Expected Duration: ~6 minutes
+    echo Expected Duration: ~4 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -537,7 +537,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: monster_mash_menu_and_settings_test.dart >> integration_test_output\summary.txt
     echo Tests: 8 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~6 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -583,7 +583,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: monster_mash_gameplay_test.dart
     echo Tests: 20 tests
-    echo Expected Duration: ~15 minutes
+    echo Expected Duration: ~11 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -594,7 +594,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: monster_mash_gameplay_test.dart >> integration_test_output\summary.txt
     echo Tests: 20 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~15 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~11 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -640,7 +640,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: monster_mash_edit_score_test.dart
     echo Tests: 5 tests
-    echo Expected Duration: ~5 minutes
+    echo Expected Duration: ~4 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -651,7 +651,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: monster_mash_edit_score_test.dart >> integration_test_output\summary.txt
     echo Tests: 5 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
