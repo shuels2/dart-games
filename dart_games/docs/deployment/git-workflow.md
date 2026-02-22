@@ -69,8 +69,8 @@ flutter test
 ```
 
 ### 3. Verify All Tests Pass
-- All 272 non-UI tests must pass (100% pass rate required)
-- If running UI tests, all 77 must pass
+- All 327 non-UI tests must pass (100% pass rate required)
+- If running UI tests, all 128 must pass
 
 ### 4. Ask Permission to Push
 ```
@@ -137,7 +137,7 @@ May I push the following 3 commits to remote?
 2. [hash] Update tests for feature X
 3. [hash] Update documentation
 
-All 272 tests passing.
+All 327 tests passing.
 ```
 
 ## Force Push
@@ -181,7 +181,7 @@ Brief description of change (imperative mood)
 
 Fixes #[issue-number] (if applicable)
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 EOF
 )"
 ```
@@ -201,7 +201,7 @@ EOF
 All commits should include:
 
 ```
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 ```
 
 This acknowledges AI assistance in the commit.

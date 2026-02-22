@@ -31,10 +31,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Edit Score Dialog](docs/development/edit-score-dialog.md) - Shared Edit Score dialog component
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (349 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **272 non-UI + 77 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 272 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 77 UI tests (~51 minutes, optional)
+### 🧪 Testing (455 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **327 non-UI + 128 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 327 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 128 UI tests (~86 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 
@@ -51,6 +51,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [Game Template](docs/games/_GAME_TEMPLATE/) - Template for creating new games
 - [Carnival Derby](docs/games/carnival-derby/) - Horse racing game (2-8 players)
 - [Target Tag](docs/games/target-tag/) - Shield elimination game (2-10 players)
+- [Monster Mash](docs/games/monster-mash/) - Monster battle game (2-8 players)
 
 ## Quick Reference
 
@@ -58,7 +59,7 @@ Each game has its own unique visual identity while integrating with global syste
 ```bash
 flutter test
 ```
-**Required:** 100% pass rate (272 tests)
+**Required:** 100% pass rate (327 tests)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -66,39 +67,44 @@ flutter test
 cd chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2: Run all UI tests (77 tests, ~51 minutes)
+# Terminal 2: Run all UI tests (128 tests, ~86 minutes)
 ./run_ui_tests.bat
 
 # Or run specific game
 ./run_ui_tests.bat target_tag
 ./run_ui_tests.bat carnival
+./run_ui_tests.bat monster_mash
 ```
 
 ### Run Game-Specific Tests
 ```bash
 flutter test test/screens/games/target_tag/
 flutter test test/screens/games/carnival_horse_race/
+flutter test test/screens/games/monster_mash/
 ```
 
 ## Current Test Counts
 
-**Total: 349 tests**
-- **Non-UI Tests:** 272 tests (100% pass rate MANDATORY)
+**Total: 455 tests**
+- **Non-UI Tests:** 327 tests (100% pass rate MANDATORY)
   - Model tests: 40
   - Provider tests: 44
   - Service tests: 42
-  - Integration tests: 83
+  - Integration tests: 138
   - Shared component tests: 24
   - Widget tests: 23
+  - Monster Mash announcements: 8
+  - Carnival Derby game logic: 8 (included in integration above)
 
-- **UI Automation Tests:** 77 tests (optional, ask before running)
-  - Target Tag: 53 tests (~31.5 minutes)
-  - Carnival Derby: 24 tests (~12 minutes)
+- **UI Automation Tests:** 128 tests (optional, ask before running)
+  - Target Tag: 53 tests (~40 minutes)
+  - Carnival Derby: 24 tests (~14 minutes)
+  - Monster Mash: 51 tests (~32 minutes)
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 272 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 327 non-UI tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -132,7 +138,8 @@ dart_games/
 │   └── games/                       # Game-specific docs
 │       ├── _GAME_TEMPLATE/          # Template for new games (8 files)
 │       ├── carnival-derby/          # Carnival Derby docs (8 files)
-│       └── target-tag/              # Target Tag docs (8 files)
+│       ├── target-tag/              # Target Tag docs (8 files)
+│       └── monster-mash/            # Monster Mash docs (8 files)
 ├── lib/                             # Source code
 │   ├── main.dart
 │   ├── models/
@@ -142,14 +149,16 @@ dart_games/
 │   └── screens/
 │       └── games/
 │           ├── carnival_horse_race/
-│           └── target_tag/
-├── test/                            # Non-UI tests (272 tests)
-├── integration_test/                # UI automation tests (77 tests)
+│           ├── target_tag/
+│           └── monster_mash/
+├── test/                            # Non-UI tests (327 tests)
+├── integration_test/                # UI automation tests (128 tests)
 └── assets/                          # Game assets
     ├── common/
     └── games/
         ├── carnival_derby/
-        └── target_tag/
+        ├── target_tag/
+        └── monster_mash/
 ```
 
 ## Platform Support
@@ -188,13 +197,13 @@ git push origin <branch>        # Push (with permission)
 
 ## Notes
 
-- Original CLAUDE.md (2800 lines) has been reorganized into 46 focused documentation files
+- Original CLAUDE.md (2800 lines) has been reorganized into 55 focused documentation files
 - Each topic has its own file for better maintainability and navigation
 - Game-specific documentation lives in `docs/games/[game_name]/`
 - Shared documentation lives in topic-based folders (architecture, development, testing, etc.)
 
 ---
 
-**Last Updated:** 2026-02-20
-**Documentation Version:** 2.0 (Topic-Based Structure)
-**Total Documentation Files:** 46
+**Last Updated:** 2026-02-22
+**Documentation Version:** 2.1 (Monster Mash + Updated Counts)
+**Total Documentation Files:** 55

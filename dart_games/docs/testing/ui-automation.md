@@ -2,23 +2,31 @@
 
 ## Overview
 
-77 UI automation tests validate end-to-end user flows in Chrome browser.
+128 UI automation tests validate end-to-end user flows in Chrome browser.
 
-**Run with:** `flutter drive` with chromedriver  
-**Execution time:** ~51 minutes  
+**Run with:** `flutter drive` with chromedriver
+**Execution time:** ~86 minutes
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
 
-### Target Tag (53 tests, ~31.5 minutes)
+### Target Tag (53 tests, ~40 minutes)
 1. Menu and Mechanics: 24 tests (~12 min)
 2. Visual Validation: 4 tests (~2 min)
 3. Gameplay: 13 tests (~10 min)
 4. Add Player: 6 tests (~3 min)
 5. Results Screen: 6 tests (~5.5 min)
 
-### Carnival Derby (24 tests, ~12 minutes)
+### Carnival Derby (24 tests, ~14 minutes)
 - Complete UI test coverage
+
+### Monster Mash (51 tests, ~32 minutes)
+1. Menu: ~5 min (player selection, settings, start button logic)
+2. Gameplay: ~7 min (dart throws, health bars, monster images, skip turn)
+3. Buffs: ~5 min (buff activation, shield indicators, buff effects)
+4. Edit Score: ~4 min (dialog behavior, recalculation, border colors)
+5. Add Player: ~4 min (stone button styling, name validation, cancel)
+6. Results: ~7 min (winner display, victory music, play again, settings preservation)
 
 ## Running UI Automation Tests
 
@@ -42,6 +50,7 @@ Leave this terminal running.
 # Specific game
 ./run_ui_tests.bat target_tag
 ./run_ui_tests.bat carnival
+./run_ui_tests.bat monster_mash
 
 # Specific test file
 flutter drive --driver=test_driver/integration_test.dart \
@@ -98,10 +107,10 @@ await tester.pump(); // Paint
 
 ### Use Widget Keys
 ```dart
-// ✅ CORRECT
+// CORRECT
 final button = find.byKey(YourGameKeys.startButton);
 
-// ❌ AVOID
+// AVOID
 final button = find.text('Start Game');
 ```
 
@@ -115,15 +124,15 @@ await tester.tap(find.byKey(someKey));
 ## Common Issues
 
 ### ChromeDriver Not Running
-**Error:** "Unable to start a WebDriver session"  
+**Error:** "Unable to start a WebDriver session"
 **Solution:** Start chromedriver on port 4444
 
 ### Test Hangs
-**Cause:** Using `pumpAndSettle()` on screen with continuous animations  
+**Cause:** Using `pumpAndSettle()` on screen with continuous animations
 **Solution:** Use explicit `pump()` sequences
 
 ### Widget Not Found
-**Cause:** Not pumping enough frames after async operations  
+**Cause:** Not pumping enough frames after async operations
 **Solution:** Add more `pump()` calls after async waits
 
 ## Related Documentation

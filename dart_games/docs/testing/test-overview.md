@@ -2,14 +2,14 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 349 total tests:
-- **272 non-UI tests** (models, providers, services, widgets, game logic)
-- **77 UI automation tests** (end-to-end testing with Chrome)
+The Dart Games app has a comprehensive test suite with 455 total tests:
+- **327 non-UI tests** (models, providers, services, widgets, game logic)
+- **128 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (272 tests)
+## Non-UI Tests (327 tests)
 
-**Run with:** `flutter test`  
-**Execution time:** Seconds  
+**Run with:** `flutter test`
+**Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
 
 ### Breakdown by Category
@@ -26,11 +26,13 @@ The Dart Games app has a comprehensive test suite with 349 total tests:
 - AppSettings: 20 tests
 - VictoryMusicService: 22 tests
 
-**Integration Tests (83 tests)**
+**Integration Tests (138 tests)**
 - Carnival Derby User Management: 26 tests
 - Carnival Derby Game Logic + Announcements: 11 tests
 - Target Tag Game Logic + Announcements: 32 tests
 - Target Tag User Management: 14 tests
+- Monster Mash Game Logic + Announcements: 47 tests
+- Monster Mash Announcements: 8 tests
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
@@ -39,33 +41,41 @@ The Dart Games app has a comprehensive test suite with 349 total tests:
 **Widget Tests (23 tests)**
 - InteractiveDartboard: 23 tests
 
-## UI Automation Tests (77 tests)
+## UI Automation Tests (128 tests)
 
-**Run with:** `./run_ui_tests.bat` or `flutter drive`  
-**Execution time:** ~51 minutes  
+**Run with:** `./run_ui_tests.bat` or `flutter drive`
+**Execution time:** ~86 minutes
 **OPTIONAL:** Ask user before running
 
-### Target Tag (53 tests, ~31.5 minutes)
+### Target Tag (53 tests, ~40 minutes)
 - Menu and Mechanics: 24 tests (~12 min)
 - Visual Validation: 4 tests (~2 min)
 - Gameplay: 13 tests (~10 min)
 - Add Player: 6 tests (~3 min)
 - Results Screen: 6 tests (~5.5 min)
 
-### Carnival Derby (24 tests, ~12 minutes)
+### Carnival Derby (24 tests, ~14 minutes)
 - Complete UI test suite
+
+### Monster Mash (51 tests, ~32 minutes)
+- Menu: ~5 min
+- Gameplay: ~7 min
+- Buffs: ~5 min
+- Edit Score: ~4 min
+- Add Player: ~4 min
+- Results: ~7 min
 
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (272 tests)  
-✅ 100% pass rate MANDATORY  
-✅ If ANY test fails, DO NOT proceed  
+✅ Run `flutter test` (327 tests)
+✅ 100% pass rate MANDATORY
+✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass
 
 ### UI Automation Tests
-❓ Ask user: "Would you like me to run UI automation tests?"  
-✅ If yes: Run `./run_ui_tests.bat`  
+❓ Ask user: "Would you like me to run UI automation tests?"
+✅ If yes: Run `./run_ui_tests.bat`
 ✅ If no: Proceed with build after non-UI tests pass
 
 ## Running Tests
@@ -81,6 +91,7 @@ flutter test test/models/
 flutter test test/providers/
 flutter test test/services/
 flutter test test/screens/games/target_tag/
+flutter test test/screens/games/monster_mash/
 flutter test test/shared/
 flutter test test/widgets/
 ```
@@ -97,6 +108,7 @@ cd chromedriver/chromedriver-win64
 # Or run specific game
 ./run_ui_tests.bat target_tag
 ./run_ui_tests.bat carnival
+./run_ui_tests.bat monster_mash
 ```
 
 ## Test Expectations
@@ -111,7 +123,7 @@ cd chromedriver/chromedriver-win64
 
 ### UI Automation Tests
 - 100% pass rate when run
-- Execute in ~51 minutes
+- Execute in ~86 minutes
 - Test end-to-end user flows
 - Validate visual elements
 - Test player interactions

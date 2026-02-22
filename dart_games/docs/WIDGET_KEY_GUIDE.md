@@ -8,10 +8,13 @@ Format: `{screen}_{widget_purpose}_{widget_type}`
 - `home_` - Home screen (game selection)
 - `menu_cd_` - Carnival Derby menu screen
 - `menu_tt_` - Target Tag menu screen
+- `monster_menu_` - Monster Mash menu screen
 - `game_cd_` - Carnival Derby game screen
 - `game_tt_` - Target Tag game screen
+- `monster_game_` - Monster Mash game screen
 - `results_cd_` - Carnival Derby results screen
 - `results_tt_` - Target Tag results screen
+- `monster_results_` - Monster Mash results screen
 - `dialog_edit_` - Edit score dialog
 - `dialog_add_player_` - Add player dialog
 - `dialog_team_` - Team assignment dialog

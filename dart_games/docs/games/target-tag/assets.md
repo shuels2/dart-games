@@ -243,7 +243,9 @@ assets:
 
 ## Shared Assets Used by Other Games
 
-Target Tag sound effects are reused by Carnival Derby:
+Target Tag sound effects are reused by other games:
+
+**Carnival Derby** borrows 8 sounds:
 - TargetTag-Swipe.mp3 (remove darts)
 - TargetTag-Teasing.mp3 (miss)
 - TargetTag-Spring.mp3 (single hit)
@@ -252,6 +254,15 @@ Target Tag sound effects are reused by Carnival Derby:
 - TargetTag-Choir.mp3 (bullseye)
 - TargetTag-Whistle.mp3 (outer bull)
 - TargetTag-Ominous.mp3 (bust)
+
+**Monster Mash** borrows 7 sounds:
+- TargetTag-Swipe.mp3 (remove darts)
+- TargetTag-Spring.mp3 (dart hit)
+- TargetTag-Whistle.mp3 (healing)
+- TargetTag-Ominous.mp3 (health warning)
+- TargetTag-Villain.mp3 (elimination)
+- TargetTag-Dream.mp3 (clutch heal)
+- TargetTag-Fanfare.mp3 (buff activation)
 
 This reduces asset duplication and maintains consistency across games.
 

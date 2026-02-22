@@ -294,9 +294,9 @@ Shared, reusable dartboard emulator UI components for all games.
 
 #### Configuration Classes
 - **DartboardSectionConfig:** Styling for dartboard container
-  - Factory methods: `.carnivalDerby()`, `.targetTag()`
+  - Factory methods: `.carnivalDerby()`, `.targetTag()`, `.monsterMash()`
 - **DartboardFABConfig:** Styling for FAB button
-  - Factory methods: `.carnivalDerby()`, `.targetTag()`
+  - Factory methods: `.carnivalDerby()`, `.targetTag()`, `.monsterMash()`
 
 ### Usage
 See [Dartboard Emulator Integration](../development/dartboard-emulator.md) for complete guide.
@@ -325,7 +325,16 @@ Configuration class for styling (colors, fonts, buttons).
 **Factory methods:**
 - `AddPlayerDialogConfig.carnivalDerby()` - Carnival theme
 - `AddPlayerDialogConfig.targetTag()` - Tech/neon theme
+- `AddPlayerDialogConfig.monsterMash()` - Gothic stone theme (uses StoneDialogButton)
 - `AddPlayerDialogConfig.optionsScreen(context)` - Material Design defaults
+
+**Monster Mash-specific config fields:**
+- `customCancelButton` - Widget to replace standard cancel button (StoneDialogButton)
+- `customAddButton` - Widget to replace standard add button (StoneDialogButton with lightning)
+- `dialogInsetPadding` - Custom dialog edge insets for wider layout
+- `dialogContentWidth` - Custom content width (380px for stone buttons)
+- `photoIconShadows` - Shadow list for camera/gallery icons (green glow)
+- `buttonPadding` - Custom padding around button row
 
 ### Features
 - Photo upload via camera or gallery
@@ -368,6 +377,7 @@ Configuration class for styling (colors, fonts, borders).
 **Factory methods:**
 - `EditScoreDialogConfig.carnivalDerby()` - Shows calculated point values
 - `EditScoreDialogConfig.targetTag()` - Shows raw segment strings
+- `EditScoreDialogConfig.monsterMash()` - Gothic theme, raw segment strings
 
 ### Features
 - Ring/number picker for all 3 darts
@@ -460,6 +470,18 @@ All shared systems support:
 - ✅ Android tablets
 
 Platform-specific implementations handled internally.
+
+## Promoted and Shared Widgets
+
+### StoneDialogButton
+**File:** `lib/widgets/stone_dialog_button.dart`
+
+A reusable button widget styled as a chipped stone tablet with optional lightning animation. Created for Monster Mash and placed at the shared widget level for potential reuse by future games.
+
+### Promoted Widgets
+The following widgets were promoted from game-specific to shared during Monster Mash development:
+- `lib/widgets/player_selection_card.dart` - Player selection card (previously in `lib/widgets/horse_race/`)
+- `lib/widgets/player_avatar_widget.dart` - Player avatar display (previously in `lib/widgets/horse_race/`)
 
 ## Related Documentation
 
