@@ -52,36 +52,36 @@ void main() {
 
       helper.processDartThrowWithAnnouncements('S14');
       expect(provider.getShields(alice.id), 1);
-      helper.verifyAnnouncements(['Alice, your turn', 'Single 14', '1 shields']);
+      helper.verifyAnnouncements(['Alice, your turn', '1 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('D14');
       expect(provider.getShields(alice.id), 3);
-      helper.verifyAnnouncements(['Double 14', '3 shields']);
+      helper.verifyAnnouncements(['3 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('T14');
       expect(provider.getShields(alice.id), 5);
       expect(provider.isTaggedIn(alice.id), true);
-      helper.verifyAnnouncements(['Triple 14', 'JACKPOT! Alice is TAGGED IN!', 'Remove your darts']);
+      helper.verifyAnnouncements(['JACKPOT! Alice is TAGGED IN!', 'Remove your darts']);
       helper.clearAnnouncements();
 
       helper.handleTakeoutFinished();
 
       helper.processDartThrowWithAnnouncements('S20');
       expect(provider.getShields(bob.id), 1);
-      helper.verifyAnnouncements(['Bob, your turn', 'Single 20', '1 shields']);
+      helper.verifyAnnouncements(['Bob, your turn', '1 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('D20');
       expect(provider.getShields(bob.id), 3);
-      helper.verifyAnnouncements(['Double 20', '3 shields']);
+      helper.verifyAnnouncements(['3 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('T20');
       expect(provider.getShields(bob.id), 5);
       expect(provider.isTaggedIn(bob.id), true);
-      helper.verifyAnnouncements(['Triple 20', 'JACKPOT! Bob is TAGGED IN!', 'Remove your darts']);
+      helper.verifyAnnouncements(['JACKPOT! Bob is TAGGED IN!', 'Remove your darts']);
       helper.clearAnnouncements();
 
       helper.handleTakeoutFinished();
@@ -116,36 +116,36 @@ void main() {
 
       helper.processDartThrowWithAnnouncements('S14');
       expect(provider.getShields(alice.id), 1);
-      helper.verifyAnnouncements(['Alice, your turn', 'Single 14', '1 shields']);
+      helper.verifyAnnouncements(['Alice, your turn', '1 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('T14');
       expect(provider.getShields(alice.id), 4);
-      helper.verifyAnnouncements(['Triple 14', '4 shields']);
+      helper.verifyAnnouncements(['4 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('S14');
       expect(provider.getShields(alice.id), 5);
       expect(provider.isTaggedIn(alice.id), true);
-      helper.verifyAnnouncements(['Single 14', 'JACKPOT! Alice is TAGGED IN!', 'Remove your darts']);
+      helper.verifyAnnouncements(['JACKPOT! Alice is TAGGED IN!', 'Remove your darts']);
       helper.clearAnnouncements();
 
       helper.handleTakeoutFinished();
 
       helper.processDartThrowWithAnnouncements('S20');
       expect(provider.getShields(bob.id), 1);
-      helper.verifyAnnouncements(['Bob, your turn', 'Single 20', '1 shields']);
+      helper.verifyAnnouncements(['Bob, your turn', '1 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('D20');
       expect(provider.getShields(bob.id), 3);
-      helper.verifyAnnouncements(['Double 20', '3 shields']);
+      helper.verifyAnnouncements(['3 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('S20');
       expect(provider.getShields(bob.id), 4);
       expect(provider.isTaggedIn(bob.id), false);
-      helper.verifyAnnouncements(['Single 20', '4 shields', 'Remove your darts']);
+      helper.verifyAnnouncements(['4 shields', 'Remove your darts']);
 
       expect(provider.getShields(alice.id), 5);
       expect(provider.isTaggedIn(alice.id), true);
@@ -174,7 +174,7 @@ void main() {
 
       helper.processDartThrowWithAnnouncements('S20');
       expect(provider.getShields(bob.id), 2);
-      helper.verifyAnnouncements(['Alice, your turn', 'Single 20', 'Tag! Got \'em!']);
+      helper.verifyAnnouncements(['Alice, your turn', 'Tag! Got \'em!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('D20');
@@ -182,8 +182,6 @@ void main() {
       expect(provider.isEliminated(bob.id), false); // Still alive at 0 shields!
       expect(provider.hasWinner, false); // Game not over yet
       helper.verifyAnnouncements([
-        'Double 20',
-        'Tag! Got \'em!',
         'DANGER! Bob is vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
@@ -194,8 +192,6 @@ void main() {
       expect(provider.isEliminated(bob.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Single 20',
-        'Tag! Got \'em!',
         'Bob is Tagged Out! Better luck next time!',
         'Remove your darts',
         'GAME OVER! Alice is the Target Tag Champion!',
@@ -230,8 +226,6 @@ void main() {
       expect(provider.getShields(bob.id), 1);
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Single 20',
-        'Tag! Got \'em!',
         'Warning! Bob\'s shields are almost gone!',
       ]);
       helper.clearAnnouncements();
@@ -277,8 +271,6 @@ void main() {
       expect(provider.isTaggedIn(alice.id), false);
       helper.verifyAnnouncements([
         'Bob, your turn',
-        'Single 14',
-        'Tag! Got \'em!',
         'Shield compromised! Alice is back on the hunt.',
       ]);
       helper.clearAnnouncements();
@@ -286,8 +278,6 @@ void main() {
       helper.processDartThrowWithAnnouncements('D17');
       expect(provider.getShields(carol.id), 1);
       helper.verifyAnnouncements([
-        'Double 17',
-        'Tag! Got \'em!',
         'Warning! Carol\'s shields are almost gone!',
       ]);
       helper.clearAnnouncements();
@@ -328,8 +318,6 @@ void main() {
       expect(provider.getShields(bob.id), 1);
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Single 20',
-        'Tag! Got \'em!',
         'Warning! Bob\'s shields are almost gone!',
       ]);
       helper.clearAnnouncements();
@@ -337,8 +325,6 @@ void main() {
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 1);
       helper.verifyAnnouncements([
-        'Single 17',
-        'Tag! Got \'em!',
         'Warning! Carol\'s shields are almost gone!',
       ]);
       helper.clearAnnouncements();
@@ -423,8 +409,6 @@ void main() {
       expect(provider.hasWinner, false);
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Single 20',
-        'Tag! Got \'em!',
         'DANGER! Bob is vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
@@ -435,8 +419,6 @@ void main() {
       expect(provider.isEliminated(bob.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Single 20',
-        'Tag! Got \'em!',
         'Bob is Tagged Out! Better luck next time!',
         'Remove your darts',
         'GAME OVER! Alice is the Target Tag Champion!',
@@ -490,19 +472,19 @@ void main() {
       helper.processDartThrowWithAnnouncements('S14');
       expect(provider.getShields(alice.id), 1);
       expect(provider.getShields(bob.id), 1);
-      helper.verifyAnnouncements(['Alice, your turn', 'Single 14', '1 shields']);
+      helper.verifyAnnouncements(['Alice, your turn', '1 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('D14');
       expect(provider.getShields(alice.id), 3);
       expect(provider.getShields(bob.id), 3);
-      helper.verifyAnnouncements(['Double 14', '3 shields']);
+      helper.verifyAnnouncements(['3 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('S14');
       expect(provider.getShields(alice.id), 4);
       expect(provider.getShields(bob.id), 4);
-      helper.verifyAnnouncements(['Single 14', '4 shields', 'Remove your darts']);
+      helper.verifyAnnouncements(['4 shields', 'Remove your darts']);
       helper.clearAnnouncements();
 
       helper.handleTakeoutFinished();
@@ -510,19 +492,19 @@ void main() {
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 1);
       expect(provider.getShields(dave.id), 1);
-      helper.verifyAnnouncements(['Carol, your turn', 'Single 17', '1 shields']);
+      helper.verifyAnnouncements(['Carol, your turn', '1 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 2);
       expect(provider.getShields(dave.id), 2);
-      helper.verifyAnnouncements(['Single 17', '2 shields']);
+      helper.verifyAnnouncements(['2 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 3);
       expect(provider.getShields(dave.id), 3);
-      helper.verifyAnnouncements(['Single 17', '3 shields', 'Remove your darts']);
+      helper.verifyAnnouncements(['3 shields', 'Remove your darts']);
       helper.clearAnnouncements();
 
       helper.handleTakeoutFinished();
@@ -532,7 +514,7 @@ void main() {
       expect(provider.getShields(bob.id), 5);
       expect(provider.isTaggedIn(alice.id), true);
       expect(provider.isTaggedIn(bob.id), true);
-      helper.verifyAnnouncements(['Bob, your turn', 'Single 14', 'JACKPOT! Alice and Bob are TAGGED IN!']);
+      helper.verifyAnnouncements(['Bob, your turn', 'JACKPOT! Alice and Bob are TAGGED IN!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -602,7 +584,7 @@ void main() {
       helper.processDartThrowWithAnnouncements('T18');
       expect(provider.getShields(eve.id), 3);
       expect(provider.getShields(frank.id), 3);
-      helper.verifyAnnouncements(['Eve, your turn', 'Triple 18', '3 shields']);
+      helper.verifyAnnouncements(['Eve, your turn', '3 shields']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('D18');
@@ -610,7 +592,7 @@ void main() {
       expect(provider.getShields(frank.id), 5);
       expect(provider.isTaggedIn(eve.id), true);
       expect(provider.isTaggedIn(frank.id), true);
-      helper.verifyAnnouncements(['Double 18', 'JACKPOT! Eve and Frank are TAGGED IN!']);
+      helper.verifyAnnouncements(['JACKPOT! Eve and Frank are TAGGED IN!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -673,7 +655,7 @@ void main() {
       expect(provider.getShields(bob.id), 5);
       expect(provider.isTaggedIn(alice.id), true);
       expect(provider.isTaggedIn(bob.id), true);
-      helper.verifyAnnouncements(['Bob, your turn', 'Double 14', 'JACKPOT! Alice and Bob are TAGGED IN!']);
+      helper.verifyAnnouncements(['Bob, your turn', 'JACKPOT! Alice and Bob are TAGGED IN!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -713,13 +695,13 @@ void main() {
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 2);
       expect(provider.getShields(dave.id), 2);
-      helper.verifyAnnouncements(['Alice, your turn', 'Single 17', 'Tag! Got \'em!']);
+      helper.verifyAnnouncements(['Alice, your turn', 'Tag! Got \'em!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 1);
       expect(provider.getShields(dave.id), 1);
-      helper.verifyAnnouncements(['Single 17', 'Tag! Got \'em!', 'Warning! Carol and Dave\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Carol and Dave\'s shields are almost gone!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -744,8 +726,6 @@ void main() {
       expect(provider.hasWinner, false);
       helper.verifyAnnouncements([
         'Bob, your turn',
-        'Single 17',
-        'Tag! Got \'em!',
         'DANGER! Carol and Dave are vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
@@ -758,8 +738,6 @@ void main() {
       expect(provider.isEliminated(dave.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Single 17',
-        'Tag! Got \'em!',
         'Carol and Dave are Tagged Out! Better luck next time!',
         'Remove your darts',
         'GAME OVER! Alice and Bob are the Target Tag Champions!',
@@ -802,8 +780,6 @@ void main() {
       expect(provider.isTaggedIn(dave.id), false);
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Double 17',
-        'Tag! Got \'em!',
         'Shield compromised! Carol and Dave are back on the hunt.',
       ]);
       helper.clearAnnouncements();
@@ -856,8 +832,6 @@ void main() {
       expect(provider.hasWinner, false);
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Double 17',
-        'Tag! Got \'em!',
         'DANGER! Carol and Dave are vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
@@ -870,8 +844,6 @@ void main() {
       expect(provider.isEliminated(dave.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Single 17',
-        'Tag! Got \'em!',
         'Carol and Dave are Tagged Out! Better luck next time!',
         'Remove your darts',
         'GAME OVER! Alice and Bob are the Target Tag Champions!',
@@ -924,8 +896,6 @@ void main() {
       expect(provider.isEliminated(bob.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Double 7',
-        'JACKPOT! Alice is TAGGED IN!',
         'Bob is Tagged Out! Better luck next time!',
         'Remove your darts',
         'GAME OVER! Alice is the Target Tag Champion!',
@@ -963,13 +933,13 @@ void main() {
       helper.processDartThrowWithAnnouncements('D7');
       expect(provider.getShields(bob.id), 2);
       expect(provider.getShields(carol.id), 3);
-      helper.verifyAnnouncements(['Alice, your turn', 'Double 7', 'Tag! Got \'em!']);
+      helper.verifyAnnouncements(['Alice, your turn', 'Tag! Got \'em!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('D7');
       expect(provider.getShields(bob.id), 1);
       expect(provider.getShields(carol.id), 2);
-      helper.verifyAnnouncements(['Double 7', 'Tag! Got \'em!', 'Warning! Bob\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Bob\'s shields are almost gone!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -1032,7 +1002,7 @@ void main() {
       expect(provider.getShields(dave.id), 2);
       expect(provider.getShields(eve.id), 3);
       expect(provider.getShields(frank.id), 3);
-      helper.verifyAnnouncements(['Alice, your turn', 'Triple 7', 'Tag! Got \'em!']);
+      helper.verifyAnnouncements(['Alice, your turn', 'Tag! Got \'em!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('T7');
@@ -1040,7 +1010,7 @@ void main() {
       expect(provider.getShields(dave.id), 1);
       expect(provider.getShields(eve.id), 2);
       expect(provider.getShields(frank.id), 2);
-      helper.verifyAnnouncements(['Triple 7', 'Tag! Got \'em!', 'Warning! Carol and Dave\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Carol and Dave\'s shields are almost gone!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -1103,7 +1073,7 @@ void main() {
 
       helper.processDartThrowWithAnnouncements('S14');
       expect(provider.getShields(alice.id), 1);
-      helper.verifyAnnouncements(['Alice, your turn', 'Single 14', '1 shields']);
+      helper.verifyAnnouncements(['Alice, your turn', '1 shields']);
 
       expect(provider.getShields(alice.id), 1);
       expect(provider.getShields(bob.id), 1);
@@ -1154,7 +1124,7 @@ void main() {
 
       helper.processDartThrowWithAnnouncements('D14');
       expect(provider.getShields(alice.id), 2);
-      helper.verifyAnnouncements(['Alice, your turn', 'Double 14', '2 shields']);
+      helper.verifyAnnouncements(['Alice, your turn', '2 shields']);
 
       expect(provider.getShields(alice.id), 2);
       expect(provider.getShields(bob.id), 0);
@@ -1196,14 +1166,14 @@ void main() {
       // Step 2: Add Single 14
       helper.processDartThrowWithAnnouncements('S14');
       expect(provider.getShields(alice.id), 3);
-      helper.verifyAnnouncements(['Alice, your turn', 'Single 14', '3 shields']);
+      helper.verifyAnnouncements(['Alice, your turn', '3 shields']);
       helper.clearAnnouncements();
 
       // Step 3: Add Double 14
       helper.processDartThrowWithAnnouncements('D14');
       expect(provider.getShields(alice.id), 5);
       expect(provider.isTaggedIn(alice.id), true);
-      helper.verifyAnnouncements(['Double 14', 'JACKPOT! Alice is TAGGED IN!']);
+      helper.verifyAnnouncements(['JACKPOT! Alice is TAGGED IN!']);
       helper.clearAnnouncements();
 
       // Step 4: Add Triple 14 (already at max, and turn ends after 3 darts)
@@ -1248,21 +1218,18 @@ void main() {
       helper.processDartThrowWithAnnouncements('Miss');
       helper.clearAnnouncements();
 
-      // Step 2: Edit dart 0 to Double 20
+      // Step 2: Edit dart 0 to Double 20 (tag, no status change -> Tag fires)
       provider.updateDartScore(alice.id, 0, 'D20');
-      audioQueue.announceHit(20, 'double');
       audioQueue.announceSuccessfulTag();
       expect(provider.getShields(bob.id), 2);
-      helper.verifyAnnouncements(['Double 20', 'Tag! Got \'em!']);
+      helper.verifyAnnouncements(['Tag! Got \'em!']);
       helper.clearAnnouncements();
 
-      // Step 3: Edit dart 1 to Double 17
+      // Step 3: Edit dart 1 to Double 17 (low shields > tag, hit suppressed)
       provider.updateDartScore(alice.id, 1, 'D17');
-      audioQueue.announceHit(17, 'double');
-      audioQueue.announceSuccessfulTag();
       audioQueue.announceLowShields([carol.name]);
       expect(provider.getShields(carol.id), 1);
-      helper.verifyAnnouncements(['Double 17', 'Tag! Got \'em!', 'Warning! Carol\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Carol\'s shields are almost gone!']);
 
       expect(provider.getShields(alice.id), 5);
       expect(provider.getShields(bob.id), 2);
@@ -1301,33 +1268,27 @@ void main() {
       provider.processDartThrow('Miss');
       audioQueue.clearAnnouncements();
 
-      // Step 2: Edit dart 0 to Single 17 (low shields warning)
+      // Step 2: Edit dart 0 to Single 17 (low shields > tag, hit suppressed)
       provider.updateDartScore(bob.id, 0, 'S17');
-      audioQueue.announceHit(17, 'single');
-      audioQueue.announceSuccessfulTag();
       audioQueue.announceLowShields([carol.name]);
       expect(provider.getShields(carol.id), 1);
-      helper.verifyAnnouncements(['Single 17', 'Tag! Got \'em!', 'Warning! Carol\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Carol\'s shields are almost gone!']);
       helper.clearAnnouncements();
 
-      // Step 3: Edit dart 1 to Single 17 (brings Carol to 0 shields, not eliminated)
+      // Step 3: Edit dart 1 to Single 17 (vulnerable > tag, hit suppressed)
       provider.updateDartScore(bob.id, 1, 'S17');
-      audioQueue.announceHit(17, 'single');
-      audioQueue.announceSuccessfulTag();
       audioQueue.announceVulnerable([carol.name]);
       expect(provider.getShields(carol.id), 0);
       expect(provider.isEliminated(carol.id), false);
-      helper.verifyAnnouncements(['Single 17', 'Tag! Got \'em!', 'DANGER! Carol is vulnerable! One more hit and you\'re out!']);
+      helper.verifyAnnouncements(['DANGER! Carol is vulnerable! One more hit and you\'re out!']);
       helper.clearAnnouncements();
 
-      // Step 4: Edit dart 2 to Single 17 (eliminates Carol at 0 shields)
+      // Step 4: Edit dart 2 to Single 17 (elimination > tag, hit suppressed)
       provider.updateDartScore(bob.id, 2, 'S17');
-      audioQueue.announceHit(17, 'single');
-      audioQueue.announceSuccessfulTag();
       audioQueue.announceEliminated([carol.name]);
       expect(provider.getShields(carol.id), 0);
       expect(provider.isEliminated(carol.id), true);
-      helper.verifyAnnouncements(['Single 17', 'Tag! Got \'em!', 'Carol is Tagged Out! Better luck next time!']);
+      helper.verifyAnnouncements(['Carol is Tagged Out! Better luck next time!']);
 
       expect(provider.getShields(alice.id), 4); // Alice not hit, still at starting shields
       expect(provider.getShields(bob.id), 5);
@@ -1414,18 +1375,17 @@ void main() {
       provider.processDartThrow('Miss');
       audioQueue.clearAnnouncements();
 
-      // Step 2: Edit dart 0 to Single 14
+      // Step 2: Edit dart 0 to Single 14 (tagged-in, hit suppressed)
       provider.updateDartScore(alice.id, 0, 'S14');
-      audioQueue.announceHit(14, 'single');
       audioQueue.announceTaggedIn([alice.name, bob.name]);
       expect(provider.getShields(alice.id), 5);
       expect(provider.getShields(bob.id), 5);
       expect(provider.isTaggedIn(alice.id), true);
       expect(provider.isTaggedIn(bob.id), true);
-      helper.verifyAnnouncements(['Single 14', 'JACKPOT! Alice and Bob are TAGGED IN!']);
+      helper.verifyAnnouncements(['JACKPOT! Alice and Bob are TAGGED IN!']);
       helper.clearAnnouncements();
 
-      // Step 3: Edit dart 1 to Single 14 (already at max)
+      // Step 3: Edit dart 1 to Single 14 (already at max, no secondary -> hit fires)
       provider.updateDartScore(alice.id, 1, 'S14');
       audioQueue.announceHit(14, 'single');
       expect(provider.getShields(alice.id), 5);
@@ -1482,15 +1442,13 @@ void main() {
       expect(provider.isTaggedIn(bob.id), false);
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Single 20',
-        'Tag! Got \'em!',
         'Shield compromised! Bob is back on the hunt.',
       ]);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 2);
-      helper.verifyAnnouncements(['Single 17', 'Tag! Got \'em!']);
+      helper.verifyAnnouncements(['Tag! Got \'em!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -1555,8 +1513,6 @@ void main() {
       expect(provider.hasWinner, false);
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Triple 7',
-        'Tag! Got \'em!',
         'DANGER! Carol and Dave are vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
@@ -1569,8 +1525,6 @@ void main() {
       expect(provider.isEliminated(dave.id), true);
       expect(provider.hasWinner, true);
       helper.verifyAnnouncements([
-        'Single 17',
-        'Tag! Got \'em!',
         'Carol and Dave are Tagged Out! Better luck next time!',
         'Remove your darts',
         'GAME OVER! Alice and Bob are the Target Tag Champions!',
@@ -1604,8 +1558,6 @@ void main() {
       expect(provider.isTaggedIn(alice.id), false);
       helper.verifyAnnouncements([
         'Bob, your turn',
-        'Single 14',
-        'Tag! Got \'em!',
         'Shield compromised! Alice is back on the hunt.',
       ]);
       helper.clearAnnouncements();
@@ -1619,7 +1571,7 @@ void main() {
       helper.processDartThrowWithAnnouncements('S14');
       expect(provider.getShields(alice.id), 5);
       expect(provider.isTaggedIn(alice.id), true);
-      helper.verifyAnnouncements(['Alice, your turn', 'Single 14', 'JACKPOT! Alice is TAGGED IN!']);
+      helper.verifyAnnouncements(['Alice, your turn', 'JACKPOT! Alice is TAGGED IN!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -1663,11 +1615,9 @@ void main() {
       expect(provider.isEliminated(bob.id), true);
       expect(provider.hasWinner, true);
 
-      // The game behavior shows Bob is eliminated immediately, so we get all announcements
+      // Elimination is highest priority, Tagged In suppressed by opponent status change
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Triple 13',
-        'JACKPOT! Alice is TAGGED IN!',
         'Bob is Tagged Out! Better luck next time!',
         'Remove your darts',
         'GAME OVER! Alice is the Target Tag Champion!',
@@ -1821,11 +1771,9 @@ void main() {
       expect(provider.getShields(carol.id), 1);
       expect(provider.getShields(dave.id), 0);
       expect(provider.isEliminated(dave.id), false); // Dave at 0 shields, not eliminated yet
+      // Vulnerable (Dave) > Low Shields (Carol) > Tag, hit suppressed
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Triple 13',
-        'Tag! Got \'em!',
-        'Warning! Carol\'s shields are almost gone!',
         'DANGER! Dave is vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
@@ -1836,11 +1784,9 @@ void main() {
       expect(provider.getShields(dave.id), 0);
       expect(provider.isEliminated(carol.id), false); // Carol at 0 shields, not eliminated yet
       expect(provider.isEliminated(dave.id), true); // Dave eliminated (was at 0, hit again)
+      // Elimination (Dave) > Vulnerable (Carol) > Tag, hit suppressed
       helper.verifyAnnouncements([
-        'Triple 13',
-        'Tag! Got \'em!',
         'Dave is Tagged Out! Better luck next time!',
-        'DANGER! Carol is vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
 
@@ -1850,11 +1796,9 @@ void main() {
       expect(provider.getShields(dave.id), 0);
       expect(provider.isEliminated(carol.id), true); // Carol eliminated (was at 0, hit again)
       expect(provider.isEliminated(dave.id), true);
+      // Elimination (Carol) > Low Shields (Bob) > Tag, hit suppressed
       helper.verifyAnnouncements([
-        'Triple 13',
-        'Tag! Got \'em!',
         'Carol is Tagged Out! Better luck next time!',
-        'Warning! Bob\'s shields are almost gone!',
         'Remove your darts',
       ]);
 
@@ -1919,11 +1863,9 @@ void main() {
       expect(provider.getShields(hank.id), 0);
       expect(provider.isEliminated(grace.id), false); // Team4 at 0 shields, not eliminated yet
       expect(provider.isEliminated(hank.id), false);
+      // Vulnerable (Team4) > Low Shields (Team3) > Tag, hit suppressed
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Triple 13',
-        'Tag! Got \'em!',
-        'Warning! Eve and Frank\'s shields are almost gone!',
         'DANGER! Grace and Hank are vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
@@ -1937,11 +1879,9 @@ void main() {
       expect(provider.isEliminated(hank.id), true);
       expect(provider.isEliminated(eve.id), false); // Team3 at 0 shields, not eliminated yet
       expect(provider.isEliminated(frank.id), false);
+      // Elimination (Team4) > Vulnerable (Team3) > Tag, hit suppressed
       helper.verifyAnnouncements([
-        'Triple 13',
-        'Tag! Got \'em!',
         'Grace and Hank are Tagged Out! Better luck next time!',
-        'DANGER! Eve and Frank are vulnerable! One more hit and you\'re out!',
       ]);
       helper.clearAnnouncements();
 
@@ -1952,11 +1892,9 @@ void main() {
       expect(provider.getShields(frank.id), 0);
       expect(provider.isEliminated(eve.id), true); // Team3 eliminated (was at 0, hit again)
       expect(provider.isEliminated(frank.id), true);
+      // Elimination (Team3) > Low Shields (Team2) > Tag, hit suppressed
       helper.verifyAnnouncements([
-        'Triple 13',
-        'Tag! Got \'em!',
         'Eve and Frank are Tagged Out! Better luck next time!',
-        'Warning! Carol and Dave\'s shields are almost gone!',
         'Remove your darts',
       ]);
 
@@ -2352,6 +2290,407 @@ void main() {
       // Verify multiple targets hit
       expect(provider.getShields(bob.id), 2); // Hit twice (4 - 2 = 2)
       expect(provider.getShields(carol.id), 1); // Hit twice (3 - 2 = 1)
+    });
+  });
+
+  group('Target Tag - Precedence Coverage Tests (with announcements)', () {
+    late TargetTagProvider provider;
+    late MockTargetTagAudioQueueService audioQueue;
+    late TargetTagTestHelper helper;
+    late List<Player> players;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      provider = TargetTagProvider();
+      audioQueue = MockTargetTagAudioQueueService();
+    });
+
+    test('Test 33: Tagged Out suppressed by Low Shields via hero bonus', () {
+      // Hero bonus hits opponent A (at max shields, loses tagged-in = Tagged Out)
+      // AND opponent B (drops to 1 shield = Low Shields) on the same dart.
+      // Low Shields (priority 3) > Tagged Out (priority 4), so only Low Shields fires.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      players = [alice, bob, carol];
+
+      provider.startSoloGame(players, 5, true);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+      provider.currentGame!.soloHeroBuffNumbers![alice.id] = 7;
+      provider.currentGame!.soloHeroBuffMultipliers![alice.id] = 'double';
+      provider.currentGame!.soloHeroBuffNumbers![bob.id] = 13;
+      provider.currentGame!.soloHeroBuffMultipliers![bob.id] = 'triple';
+      provider.currentGame!.soloHeroBuffNumbers![carol.id] = 18;
+      provider.currentGame!.soloHeroBuffMultipliers![carol.id] = 'double';
+
+      // Alice tagged-in (5 shields), Bob tagged-in (5 shields), Carol at 2 shields
+      provider.currentGame!.shields[alice.id] = 5;
+      provider.currentGame!.shields[bob.id] = 5;
+      provider.currentGame!.shields[carol.id] = 2;
+      provider.currentGame!.taggedIn[alice.id] = true;
+      provider.currentGame!.taggedIn[bob.id] = true;
+
+      helper = TargetTagTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      // Alice hits D7 (hero bonus): Bob 5->4 (loses tagged-in = Tagged Out),
+      // Carol 2->1 (Low Shields)
+      helper.processDartThrowWithAnnouncements('D7');
+      expect(provider.getShields(bob.id), 4);
+      expect(provider.isTaggedIn(bob.id), false);
+      expect(provider.getShields(carol.id), 1);
+      // Low Shields (priority 3) wins over Tagged Out (priority 4)
+      helper.verifyAnnouncements([
+        'Alice, your turn',
+        'Warning! Carol\'s shields are almost gone!',
+      ]);
+    });
+
+    test('Test 34: Tagged Out suppressed by Vulnerable via hero bonus', () {
+      // Hero bonus hits opponent A (at max, loses tagged-in = Tagged Out)
+      // AND opponent B (drops to 0 = Vulnerable) on the same dart.
+      // Vulnerable (priority 2) > Tagged Out (priority 4), so only Vulnerable fires.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      players = [alice, bob, carol];
+
+      provider.startSoloGame(players, 5, true);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+      provider.currentGame!.soloHeroBuffNumbers![alice.id] = 7;
+      provider.currentGame!.soloHeroBuffMultipliers![alice.id] = 'double';
+      provider.currentGame!.soloHeroBuffNumbers![bob.id] = 13;
+      provider.currentGame!.soloHeroBuffMultipliers![bob.id] = 'triple';
+      provider.currentGame!.soloHeroBuffNumbers![carol.id] = 18;
+      provider.currentGame!.soloHeroBuffMultipliers![carol.id] = 'double';
+
+      // Alice tagged-in (5), Bob tagged-in (5), Carol at 1 shield
+      provider.currentGame!.shields[alice.id] = 5;
+      provider.currentGame!.shields[bob.id] = 5;
+      provider.currentGame!.shields[carol.id] = 1;
+      provider.currentGame!.taggedIn[alice.id] = true;
+      provider.currentGame!.taggedIn[bob.id] = true;
+
+      helper = TargetTagTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      // Alice hits D7 (hero bonus): Bob 5->4 (Tagged Out), Carol 1->0 (Vulnerable)
+      helper.processDartThrowWithAnnouncements('D7');
+      expect(provider.getShields(bob.id), 4);
+      expect(provider.isTaggedIn(bob.id), false);
+      expect(provider.getShields(carol.id), 0);
+      expect(provider.isEliminated(carol.id), false);
+      // Vulnerable (priority 2) wins over Tagged Out (priority 4)
+      helper.verifyAnnouncements([
+        'Alice, your turn',
+        'DANGER! Carol is vulnerable! One more hit and you\'re out!',
+      ]);
+    });
+
+    test('Test 35: Tagged Out suppressed by Elimination via hero bonus', () {
+      // Hero bonus hits opponent A (at max, loses tagged-in = Tagged Out)
+      // AND opponent B (at 0 shields, eliminated) on the same dart.
+      // Elimination (priority 1) > Tagged Out (priority 4), so only Elimination fires.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      players = [alice, bob, carol];
+
+      provider.startSoloGame(players, 5, true);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+      provider.currentGame!.soloHeroBuffNumbers![alice.id] = 7;
+      provider.currentGame!.soloHeroBuffMultipliers![alice.id] = 'double';
+      provider.currentGame!.soloHeroBuffNumbers![bob.id] = 13;
+      provider.currentGame!.soloHeroBuffMultipliers![bob.id] = 'triple';
+      provider.currentGame!.soloHeroBuffNumbers![carol.id] = 18;
+      provider.currentGame!.soloHeroBuffMultipliers![carol.id] = 'double';
+
+      // Alice tagged-in (5), Bob tagged-in (5), Carol at 0 shields (vulnerable)
+      provider.currentGame!.shields[alice.id] = 5;
+      provider.currentGame!.shields[bob.id] = 5;
+      provider.currentGame!.shields[carol.id] = 0;
+      provider.currentGame!.taggedIn[alice.id] = true;
+      provider.currentGame!.taggedIn[bob.id] = true;
+
+      helper = TargetTagTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      // Alice hits D7 (hero bonus): Bob 5->4 (Tagged Out), Carol eliminated (was at 0)
+      helper.processDartThrowWithAnnouncements('D7');
+      expect(provider.getShields(bob.id), 4);
+      expect(provider.isTaggedIn(bob.id), false);
+      expect(provider.isEliminated(carol.id), true);
+      // Elimination (priority 1) wins over Tagged Out (priority 4)
+      helper.verifyAnnouncements([
+        'Alice, your turn',
+        'Carol is Tagged Out! Better luck next time!',
+      ]);
+    });
+
+    test('Test 36: Hero bonus fills to Tagged In without opponent status change', () {
+      // Alice not tagged-in, hits hero bonus which fills shields to max (Tagged In).
+      // Hero bonus also hits opponents but no status change threshold crossed.
+      // Since wasTaggedIn=false, hasSuccessfulTag=false. Tagged In fires.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      players = [alice, bob, carol];
+
+      provider.startSoloGame(players, 5, true);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+      provider.currentGame!.soloHeroBuffNumbers![alice.id] = 7;
+      provider.currentGame!.soloHeroBuffMultipliers![alice.id] = 'double';
+      provider.currentGame!.soloHeroBuffNumbers![bob.id] = 13;
+      provider.currentGame!.soloHeroBuffMultipliers![bob.id] = 'triple';
+      provider.currentGame!.soloHeroBuffNumbers![carol.id] = 18;
+      provider.currentGame!.soloHeroBuffMultipliers![carol.id] = 'double';
+
+      // Alice at 3 shields (not tagged-in), opponents at 3 shields (not tagged-in).
+      // Hero bonus attacks opponents: 3->2, no status change threshold crossed.
+      provider.currentGame!.shields[alice.id] = 3;
+      provider.currentGame!.shields[bob.id] = 3;
+      provider.currentGame!.shields[carol.id] = 3;
+
+      helper = TargetTagTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      // Alice hits D7 (hero bonus): fills Alice to 5 (Tagged In).
+      // Hero bonus also attacks opponents: Bob 3->2, Carol 3->2 (no status change).
+      helper.processDartThrowWithAnnouncements('D7');
+      expect(provider.getShields(alice.id), 5);
+      expect(provider.isTaggedIn(alice.id), true);
+      expect(provider.getShields(bob.id), 2); // Hit by hero bonus
+      expect(provider.getShields(carol.id), 2); // Hit by hero bonus
+      // Tagged In fires (priority 6), no higher priority status change, hit suppressed
+      helper.verifyAnnouncements([
+        'Alice, your turn',
+        'JACKPOT! Alice is TAGGED IN!',
+      ]);
+    });
+
+    test('Test 37: Hit on irrelevant number (no target match, no secondary)', () {
+      // Alice (not tagged-in, 2 shields, target=14) hits S3.
+      // S3 is not Alice's target, not any opponent's target, not hero bonus.
+      // No shield gain, no attack. hasSecondary=false, so hit fires alone.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      provider.currentGame!.shields[alice.id] = 2;
+      provider.currentGame!.shields[bob.id] = 3;
+
+      helper = TargetTagTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      helper.processDartThrowWithAnnouncements('S3');
+      expect(provider.getShields(alice.id), 2); // No change
+      expect(provider.getShields(bob.id), 3); // No change
+      // Hit fires because no secondary effect
+      helper.verifyAnnouncements(['Alice, your turn', 'Single 3']);
+    });
+
+    test('Test 38: Bullseye and Outer Bull announcements', () {
+      // Verify distinct announcement text for Bullseye and Outer Bull
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      provider.currentGame!.shields[alice.id] = 2;
+      provider.currentGame!.shields[bob.id] = 3;
+
+      helper = TargetTagTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      // Dart 1: Bullseye (50)
+      helper.processDartThrowWithAnnouncements('Bull');
+      expect(provider.getShields(alice.id), 2); // No shield change
+      helper.verifyAnnouncements(['Alice, your turn', 'Bullseye!']);
+      helper.clearAnnouncements();
+
+      // Dart 2: Outer Bull (25)
+      helper.processDartThrowWithAnnouncements('25');
+      expect(provider.getShields(alice.id), 2); // No shield change
+      helper.verifyAnnouncements(['Outer bull']);
+      helper.clearAnnouncements();
+
+      // Dart 3: Miss + Remove
+      helper.processDartThrowWithAnnouncements('Miss');
+      helper.verifyAnnouncements(['Miss', 'Remove your darts']);
+    });
+
+    test('Test 39: Multiple solo eliminations on same hero bonus dart', () {
+      // Hero bonus eliminates two solo players on the same dart.
+      // Both were at 0 shields (vulnerable). Both get eliminated.
+      // Single announceEliminated call with both names.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      final dave = Player.create(name: 'Dave');
+      players = [alice, bob, carol, dave];
+
+      provider.startSoloGame(players, 5, true);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+      provider.currentGame!.targetNumbers[dave.id] = 19;
+      provider.currentGame!.soloHeroBuffNumbers![alice.id] = 7;
+      provider.currentGame!.soloHeroBuffMultipliers![alice.id] = 'double';
+      provider.currentGame!.soloHeroBuffNumbers![bob.id] = 13;
+      provider.currentGame!.soloHeroBuffMultipliers![bob.id] = 'triple';
+      provider.currentGame!.soloHeroBuffNumbers![carol.id] = 18;
+      provider.currentGame!.soloHeroBuffMultipliers![carol.id] = 'double';
+      provider.currentGame!.soloHeroBuffNumbers![dave.id] = 16;
+      provider.currentGame!.soloHeroBuffMultipliers![dave.id] = 'triple';
+
+      // Alice tagged-in (5), Bob at 0 (vulnerable), Carol at 0 (vulnerable), Dave at 3
+      provider.currentGame!.shields[alice.id] = 5;
+      provider.currentGame!.shields[bob.id] = 0;
+      provider.currentGame!.shields[carol.id] = 0;
+      provider.currentGame!.shields[dave.id] = 3;
+      provider.currentGame!.taggedIn[alice.id] = true;
+
+      helper = TargetTagTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      // Alice hits D7 (hero bonus): Bob eliminated (was at 0), Carol eliminated (was at 0),
+      // Dave 3->2 (no status change)
+      helper.processDartThrowWithAnnouncements('D7');
+      expect(provider.isEliminated(bob.id), true);
+      expect(provider.isEliminated(carol.id), true);
+      expect(provider.getShields(dave.id), 2);
+      expect(provider.isEliminated(dave.id), false);
+      // Elimination fires with both names
+      helper.verifyAnnouncements([
+        'Alice, your turn',
+        'Bob and Carol are Tagged Out! Better luck next time!',
+      ]);
+    });
+
+    test('Test 40: Multiple solo Tagged Outs on same hero bonus dart', () {
+      // Hero bonus causes two opponents to lose tagged-in status simultaneously.
+      // Both were at max shields (tagged-in), hero bonus drops both below max.
+      // No other status change (not low shields, not vulnerable, not eliminated).
+      // Tagged Out fires with no higher priority to suppress it.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      final carol = Player.create(name: 'Carol');
+      players = [alice, bob, carol];
+
+      provider.startSoloGame(players, 5, true);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+      provider.currentGame!.targetNumbers[carol.id] = 17;
+      provider.currentGame!.soloHeroBuffNumbers![alice.id] = 7;
+      provider.currentGame!.soloHeroBuffMultipliers![alice.id] = 'double';
+      provider.currentGame!.soloHeroBuffNumbers![bob.id] = 13;
+      provider.currentGame!.soloHeroBuffMultipliers![bob.id] = 'triple';
+      provider.currentGame!.soloHeroBuffNumbers![carol.id] = 18;
+      provider.currentGame!.soloHeroBuffMultipliers![carol.id] = 'double';
+
+      // All three tagged-in at 5 shields
+      provider.currentGame!.shields[alice.id] = 5;
+      provider.currentGame!.shields[bob.id] = 5;
+      provider.currentGame!.shields[carol.id] = 5;
+      provider.currentGame!.taggedIn[alice.id] = true;
+      provider.currentGame!.taggedIn[bob.id] = true;
+      provider.currentGame!.taggedIn[carol.id] = true;
+
+      helper = TargetTagTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      // Alice hits D7 (hero bonus): Bob 5->4 (Tagged Out), Carol 5->4 (Tagged Out)
+      helper.processDartThrowWithAnnouncements('D7');
+      expect(provider.getShields(bob.id), 4);
+      expect(provider.isTaggedIn(bob.id), false);
+      expect(provider.getShields(carol.id), 4);
+      expect(provider.isTaggedIn(carol.id), false);
+      // Tagged Out fires (no higher priority), hit suppressed
+      // Both players combined into single announcement
+      helper.verifyAnnouncements([
+        'Alice, your turn',
+        'Shield compromised! Bob and Carol are back on the hunt.',
+      ]);
+    });
+
+    test('Test 41: Winner on 3rd dart of turn', () {
+      // Alice eliminates Bob on her 3rd dart. Remove darts and winner both fire.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startSoloGame(players, 5, false);
+      provider.currentGame!.targetNumbers[alice.id] = 14;
+      provider.currentGame!.targetNumbers[bob.id] = 20;
+
+      provider.currentGame!.shields[alice.id] = 5;
+      provider.currentGame!.shields[bob.id] = 0;
+      provider.currentGame!.taggedIn[alice.id] = true;
+
+      helper = TargetTagTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      // Dart 1: Miss
+      helper.processDartThrowWithAnnouncements('Miss');
+      helper.verifyAnnouncements(['Alice, your turn', 'Miss']);
+      helper.clearAnnouncements();
+
+      // Dart 2: Miss
+      helper.processDartThrowWithAnnouncements('Miss');
+      helper.verifyAnnouncements(['Miss']);
+      helper.clearAnnouncements();
+
+      // Dart 3: Hit Bob's target, eliminates him. Remove darts + Winner.
+      helper.processDartThrowWithAnnouncements('S20');
+      expect(provider.isEliminated(bob.id), true);
+      expect(provider.hasWinner, true);
+      helper.verifyAnnouncements([
+        'Bob is Tagged Out! Better luck next time!',
+        'Remove your darts',
+        'GAME OVER! Alice is the Target Tag Champion!',
+      ]);
     });
   });
 }

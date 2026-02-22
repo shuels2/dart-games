@@ -381,7 +381,7 @@ dart_games/
 │           ├── carnival_horse_race/ # Carnival Derby game
 │           ├── monster_mash/        # Monster Mash game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Non-UI test suite (327 tests)
+├── test/                            # Non-UI test suite (352 tests)
 ├── integration_test/                # UI automation tests (128 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
@@ -582,7 +582,7 @@ cd dart_games
 # Install dependencies
 flutter pub get
 
-# Run non-UI tests (all 327 tests must pass)
+# Run non-UI tests (all 352 tests must pass)
 flutter test
 
 # Optional: Run UI automation tests (128 tests, ~86 minutes, requires chromedriver)
@@ -597,19 +597,19 @@ flutter run
 
 ### Testing Requirements
 
-**All 327 non-UI tests must pass before any build or deployment.**
+**All 352 non-UI tests must pass before any build or deployment.**
 
 ```bash
 flutter test
 ```
 
-**Non-UI Test Coverage (327 tests):**
+**Non-UI Test Coverage (352 tests):**
 - Model serialization (40 tests)
 - Provider functionality (44 tests)
 - Service integration (42 tests)
-- Game integration - Carnival Derby (37 tests: 26 user management, 11 announcements)
-- Game integration - Target Tag (46 tests: 32 announcements, 14 user management)
-- Game integration - Monster Mash (55 tests: 47 game logic, 8 announcements)
+- Game integration - Carnival Derby (43 tests: 26 user management, 17 announcements)
+- Game integration - Target Tag (68 tests: 54 announcements, 14 user management)
+- Game integration - Monster Mash (65 tests: 47 game logic, 18 announcements)
 - Shared test components (24 tests)
 - Widget tests (23 tests)
 

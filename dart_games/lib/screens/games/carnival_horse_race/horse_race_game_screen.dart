@@ -163,21 +163,10 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
       // Check if player busted
       if (horseRaceProvider.currentPlayerBusted) {
-        // Player busted - announce score first, then bust, then remove darts
+        // Player busted - bust suppresses dart score (player sees score on screen)
         if (currentPlayer != null) {
-          // First announce the dart score
-          if (isMiss) {
-            _audioQueue?.announceMiss();
-          } else {
-            _audioQueue?.announceDart(
-              score,
-              _getMultiplierFromSector(sector),
-            );
-          }
-
-          // Wait for score announcement to complete (~1.5s)
-          Future.delayed(const Duration(milliseconds: 1500), () {
-            // Then announce the bust
+          // Announce the bust directly (dart score suppressed)
+          Future.delayed(const Duration(milliseconds: 500), () {
             _audioQueue?.announceBust(currentPlayer.name);
 
             // Wait for bust announcement to complete (~3s)

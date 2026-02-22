@@ -3,9 +3,9 @@
 ## Test Overview
 
 ### Test Suite Summary
-- **Total Tests:** 61 tests (24 UI + 37 non-UI)
+- **Total Tests:** 67 tests (24 UI + 43 non-UI)
 - **UI Automation Tests:** 24 tests (~12 minutes)
-- **Non-UI Tests:** 37 tests (11 game logic + 26 user management)
+- **Non-UI Tests:** 43 tests (17 game logic + 26 user management)
 
 ### Test Files
 
@@ -22,12 +22,13 @@
 #### Non-UI Tests
 **Location:** `test/screens/games/carnival_horse_race/`
 
-1. **carnival_derby_game_with_announcements_test.dart** (11 tests)
+1. **carnival_derby_game_with_announcements_test.dart** (17 tests)
    - Normal mode game logic with announcements
    - Perfect Finish mode with bust mechanics
    - Dart scoring and announcement integration
    - Skip turn functionality
    - Results screen announcements
+   - Precedence coverage (bust on 3rd dart, skip with 0 darts, all misses, win scenarios)
 
 2. **carnival_derby_user_management_test.dart** (26 tests)
    - Winner/loser stat tracking with game duration
@@ -170,6 +171,14 @@ flutter drive --driver=test_driver/integration_test.dart \
 3. **Test 11: Results Screen Announcements**
    - Validates: Game complete and winner announcements
    - Key assertions: Correct announcement text and priority levels
+
+4. **Tests 12-17: Precedence Coverage**
+   - Test 12: Bust on 3rd dart (no duplicate remove darts, bust suppresses score)
+   - Test 13: Skip with 0 darts thrown (no remove darts announcement)
+   - Test 14: All 3 darts miss (Turn + Miss + Miss + Miss + Remove)
+   - Test 15: Perfect Finish win on dart 2 (exact score with 2 darts)
+   - Test 16: Normal mode win on dart 3 (reach target on final dart)
+   - Test 17: Normal mode win by exceeding target (single dart exceeds target)
 
 ### User Management Tests
 **File:** `test/screens/games/carnival_horse_race/carnival_derby_user_management_test.dart`

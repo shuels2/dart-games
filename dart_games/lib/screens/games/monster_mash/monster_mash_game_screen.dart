@@ -32,6 +32,17 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   bool _gameCompleted = false;
 
+  // Track health tiers for announcement threshold-crossing detection
+  // 0=healthy(>70%), 1=weakening(<=70%), 2=critical(<=30%), 3=barely(<=10%)
+  final Map<String, int> _playerHealthTier = {};
+
+  static int _getHealthTier(double pct) {
+    if (pct <= 0.10) return 3;
+    if (pct <= 0.30) return 2;
+    if (pct <= 0.70) return 1;
+    return 0;
+  }
+
   // Shuffled opponent order for grid placement (generated once)
   List<int>? _shuffledOpponentOrder;
 
@@ -61,6 +72,16 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     final monsterMashProvider = context.read<MonsterMashProvider>();
     final opponentCount = (monsterMashProvider.currentGame?.playerIds.length ?? 2) - 1;
     _shuffledOpponentOrder = List.generate(opponentCount, (i) => i)..shuffle(Random());
+
+    // Initialize health tiers based on starting health
+    final monsterMashProviderInit = context.read<MonsterMashProvider>();
+    final currentGameInit = monsterMashProviderInit.currentGame;
+    if (currentGameInit != null) {
+      for (final playerId in currentGameInit.playerIds) {
+        final pct = monsterMashProviderInit.getHealth(playerId) / currentGameInit.healthMax;
+        _playerHealthTier[playerId] = _getHealthTier(pct);
+      }
+    }
 
     _audioQueue!.announceGameStart();
 
@@ -197,64 +218,124 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     final parsed = _parseSector(sector);
     final isMiss = sector == 'None' || parsed == null;
 
-    // 1. Hit announcement
-    if (!isMiss && parsed != null) {
-      _audioQueue!.announceHit(parsed['number'] as int, parsed['multiplier'] as String);
-    } else {
-      _audioQueue!.announceHit(0, 'single', isMiss: true);
-    }
+    // --- Gather facts ---
 
-    // 2. Healing announcements
+    // Healing
     final healthAfter = monsterMashProvider.getHealth(currentPlayerId);
     final healthBefore = allHealthBefore[currentPlayerId]!;
-    if (healthAfter > healthBefore) {
-      final healAmount = healthAfter - healthBefore;
-      final multiplierStr = parsed?['multiplier'] as String? ?? 'single';
-      _audioQueue!.announceHealing(multiplierStr, healAmount);
+    final hasHealing = healthAfter > healthBefore;
+    final healAmount = hasHealing ? healthAfter - healthBefore : 0;
+    final hasClutchHeal = hasHealing && healthBefore < 10 && healthBefore > 0;
 
-      // Clutch heal check
-      if (healthBefore < 10 && healthBefore > 0) {
-        _audioQueue!.announceClutchHeal(currentPlayer.name);
-      }
-    }
-
-    // 3. Attack announcements
+    // Attack
     final dartThrowTargetPlayerIds = monsterMashProvider.getDartThrowTargetPlayerId(currentPlayerId);
     final dartThrowDamageDealt = monsterMashProvider.getDartThrowDamageDealt(currentPlayerId);
     final dartIndex = dartThrowTargetPlayerIds.length - 1;
 
-    if (dartIndex >= 0 && dartThrowTargetPlayerIds[dartIndex] != null) {
-      final targetId = dartThrowTargetPlayerIds[dartIndex]!;
-      final damage = dartThrowDamageDealt[dartIndex];
-      final targetPlayer = allPlayers.firstWhere((p) => p.id == targetId);
-      final multiplierStr = parsed?['multiplier'] as String? ?? 'single';
-      _audioQueue!.announceAttack(targetPlayer.name, multiplierStr, damage);
+    String? attackTargetId;
+    String? attackTargetName;
+    final attackMultiplier = parsed?['multiplier'] as String? ?? 'single';
+    int attackDamage = 0;
+    bool hasAttack = false;
 
-      // Health warning for damaged opponent
-      final opponentHealthAfter = monsterMashProvider.getHealth(targetId);
-      final healthMax = currentGame.healthMax;
-      final pct = opponentHealthAfter / healthMax;
-      _audioQueue!.announceHealthWarning(targetPlayer.name, pct);
+    if (dartIndex >= 0 && dartThrowTargetPlayerIds[dartIndex] != null) {
+      attackTargetId = dartThrowTargetPlayerIds[dartIndex]!;
+      attackDamage = dartThrowDamageDealt[dartIndex];
+      attackTargetName = allPlayers.firstWhere((p) => p.id == attackTargetId).name;
+      hasAttack = true;
     }
 
-    // 4. Elimination announcements
+    // Eliminations
     final eliminatedAfter = currentGame.playerIds.where((id) => monsterMashProvider.isEliminated(id)).toSet();
     final newlyEliminated = eliminatedAfter.difference(eliminatedBefore);
-    for (final eliminatedId in newlyEliminated) {
-      final eliminatedPlayer = allPlayers.firstWhere((p) => p.id == eliminatedId);
-      _audioQueue!.announceElimination(eliminatedPlayer.name);
-    }
+    final hasElimination = newlyEliminated.isNotEmpty;
 
-    // 5. Hat trick check (all 3 darts hit same opponent)
+    // Hat trick
+    bool hasHatTrick = false;
+    String? hatTrickTargetId;
+    String? hatTrickTargetName;
     if (dartThrowTargetPlayerIds.length == 3) {
       final targets = dartThrowTargetPlayerIds.where((t) => t != null).toList();
       if (targets.length == 3 && targets.every((t) => t == targets.first)) {
-        final targetPlayer = allPlayers.firstWhere((p) => p.id == targets.first);
-        _audioQueue!.announceHatTrick(targetPlayer.name);
+        hasHatTrick = true;
+        hatTrickTargetId = targets.first;
+        hatTrickTargetName = allPlayers.firstWhere((p) => p.id == hatTrickTargetId).name;
       }
     }
 
-    // Check if turn is over
+    // Health warning tier crossing (only for direct attack target)
+    bool hasHealthWarningCrossing = false;
+    double? warningPct;
+    if (hasAttack && attackTargetId != null) {
+      final opponentPct = monsterMashProvider.getHealth(attackTargetId) / currentGame.healthMax;
+      final newTier = _getHealthTier(opponentPct);
+      final oldTier = _playerHealthTier[attackTargetId] ?? 0;
+      if (newTier > oldTier) {
+        hasHealthWarningCrossing = true;
+        warningPct = opponentPct;
+      }
+    }
+
+    // Update tiers for all players whose health changed
+    for (final playerId in currentGame.playerIds) {
+      final pct = monsterMashProvider.getHealth(playerId) / currentGame.healthMax;
+      _playerHealthTier[playerId] = _getHealthTier(pct);
+    }
+
+    // --- Apply precedence rules ---
+    final hasSecondary = hasHealing || hasClutchHeal || hasAttack || hasElimination || hasHatTrick;
+
+    // Rule 1: Hit only fires when no secondary effect exists
+    if (!hasSecondary) {
+      if (!isMiss && parsed != null) {
+        _audioQueue!.announceHit(parsed['number'] as int, parsed['multiplier'] as String);
+      } else {
+        _audioQueue!.announceHit(0, 'single', isMiss: true);
+      }
+    }
+
+    // Determine which moment announcement fires (highest priority wins)
+    if (hasHatTrick && hasElimination && newlyEliminated.contains(hatTrickTargetId)) {
+      // Rule 8: Merged hat trick + elimination
+      _audioQueue!.announceHatTrickElimination(hatTrickTargetName!);
+      // Handle any OTHER eliminations not covered by the hat trick (e.g. Lab Spark)
+      final otherEliminated = newlyEliminated.where((id) => id != hatTrickTargetId).toList();
+      if (otherEliminated.isNotEmpty) {
+        final names = otherEliminated.map((id) => allPlayers.firstWhere((p) => p.id == id).name).toList();
+        if (names.length > 1) {
+          _audioQueue!.announceCombinedElimination(names);
+        } else {
+          _audioQueue!.announceElimination(names.first);
+        }
+      }
+    } else if (hasElimination) {
+      // Rules 2,3,4,9: Elimination supersedes attack, health warning, heal
+      final eliminatedNames = newlyEliminated.map((id) => allPlayers.firstWhere((p) => p.id == id).name).toList();
+      if (eliminatedNames.length > 1) {
+        _audioQueue!.announceCombinedElimination(eliminatedNames);
+      } else {
+        _audioQueue!.announceElimination(eliminatedNames.first);
+      }
+    } else if (hasHatTrick) {
+      // Rule 7: Hat trick supersedes attack and health warning
+      _audioQueue!.announceHatTrick(hatTrickTargetName!);
+    } else if (hasClutchHeal) {
+      // Rule 5: Clutch heal supersedes healing amount
+      _audioQueue!.announceClutchHeal(currentPlayer.name);
+    } else if (hasAttack) {
+      // Attack fires (hit already suppressed by rule 1)
+      _audioQueue!.announceAttack(attackTargetName!, attackMultiplier, attackDamage);
+      // Rule 6: Health warning only on tier crossing
+      if (hasHealthWarningCrossing) {
+        _audioQueue!.announceHealthWarning(attackTargetName!, warningPct!);
+      }
+    } else if (hasHealing) {
+      // Healing fires (hit already suppressed by rule 1)
+      final multiplierStr = parsed?['multiplier'] as String? ?? 'single';
+      _audioQueue!.announceHealing(multiplierStr, healAmount);
+    }
+
+    // Remove darts (always fires on 3rd dart or winner)
     final dartsThrown = monsterMashProvider.getCurrentPlayerDartsThrown();
     if (dartsThrown >= 3 || monsterMashProvider.hasWinner) {
       Future.delayed(const Duration(milliseconds: 1500), () {

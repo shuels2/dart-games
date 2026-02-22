@@ -38,6 +38,6 @@ Monster Mash is an HP-based elimination dart game for 2-8 players where each pla
 - Clutch Heal detection (healing while critically low)
 
 ## Test Summary
-- **Non-UI Tests:** 55 tests (47 game logic + 8 announcements)
+- **Non-UI Tests:** 65 tests (47 game logic + 18 announcements)
 - **UI Automation Tests:** 51 tests (~32 minutes)
-- **Total:** 106 tests
+- **Total:** 116 tests

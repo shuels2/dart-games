@@ -48,16 +48,16 @@ class CarnivalDerbyTestHelper {
       provider.processDartThrow(0, dartDisplay: 'Miss');
     }
 
-    // Announce the dart score
-    if (parsed != null) {
-      audioQueue.announceDart(parsed['score'] as int, parsed['multiplier'] as String);
-    } else {
-      audioQueue.announceMiss();
-    }
-
-    // Check for bust (in exact score mode)
+    // Check for bust (in exact score mode) - bust suppresses dart score
     if (provider.currentPlayerBusted) {
       audioQueue.announceBust(currentPlayer.name);
+    } else {
+      // Announce the dart score (only when no bust)
+      if (parsed != null) {
+        audioQueue.announceDart(parsed['score'] as int, parsed['multiplier'] as String);
+      } else {
+        audioQueue.announceMiss();
+      }
     }
 
     // Announce remove darts if turn is over
@@ -90,7 +90,9 @@ class CarnivalDerbyTestHelper {
 
     provider.skipTurn();
 
-    if (provider.shouldPromptTakeout) {
+    // Only announce remove darts if darts were thrown (matches game screen behavior -
+    // skip with 0 darts advances directly without remove darts prompt)
+    if (dartsThrown > 0 && provider.shouldPromptTakeout) {
       audioQueue.announceRemoveDarts(currentPlayer.name);
     }
   }

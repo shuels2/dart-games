@@ -111,6 +111,25 @@ class MonsterMashAnnouncementHelper {
     );
   }
 
+  // Announce hat trick + elimination combined
+  void announceHatTrickElimination(String playerName) {
+    _queue.announce(
+      'MONSTROUS! Triple strike eliminates $playerName!',
+      AudioPriority.statusChange,
+      soundEffect: MonsterMashSoundEffects.hatTrick,
+    );
+  }
+
+  // Announce combined elimination (multiple players eliminated at once)
+  void announceCombinedElimination(List<String> playerNames) {
+    final names = playerNames.join(' and ');
+    _queue.announce(
+      '$names! Back to the shadows!',
+      AudioPriority.statusChange,
+      soundEffect: MonsterMashSoundEffects.elimination,
+    );
+  }
+
   // Announce clutch heal (hit own number while below 10 HP)
   void announceClutchHeal(String playerName) {
     _queue.announce(

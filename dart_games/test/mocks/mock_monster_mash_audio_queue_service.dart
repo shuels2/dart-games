@@ -107,6 +107,15 @@ class MockMonsterMashAudioQueueService {
     announce('MONSTROUS! Triple strike on $playerName!');
   }
 
+  void announceHatTrickElimination(String playerName) {
+    announce('MONSTROUS! Triple strike eliminates $playerName!');
+  }
+
+  void announceCombinedElimination(List<String> playerNames) {
+    final names = playerNames.join(' and ');
+    announce('$names! Back to the shadows!');
+  }
+
   void announceClutchHeal(String playerName) {
     announce('$playerName rises from near death!');
   }

@@ -31,9 +31,9 @@ Each game has its own unique visual identity while integrating with global syste
 - [Edit Score Dialog](docs/development/edit-score-dialog.md) - Shared Edit Score dialog component
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (455 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **327 non-UI + 128 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 327 non-UI tests (MANDATORY before builds)
+### 🧪 Testing (480 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **352 non-UI + 128 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 352 non-UI tests (MANDATORY before builds)
 - [UI Automation](docs/testing/ui-automation.md) - 128 UI tests (~86 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
@@ -59,7 +59,7 @@ Each game has its own unique visual identity while integrating with global syste
 ```bash
 flutter test
 ```
-**Required:** 100% pass rate (327 tests)
+**Required:** 100% pass rate (352 tests)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -85,15 +85,15 @@ flutter test test/screens/games/monster_mash/
 
 ## Current Test Counts
 
-**Total: 455 tests**
-- **Non-UI Tests:** 327 tests (100% pass rate MANDATORY)
+**Total: 480 tests**
+- **Non-UI Tests:** 352 tests (100% pass rate MANDATORY)
   - Model tests: 40
   - Provider tests: 44
   - Service tests: 42
-  - Integration tests: 138
+  - Integration tests: 163
   - Shared component tests: 24
   - Widget tests: 23
-  - Monster Mash announcements: 8
+  - Monster Mash announcements: 18
   - Carnival Derby game logic: 8 (included in integration above)
 
 - **UI Automation Tests:** 128 tests (optional, ask before running)
@@ -104,7 +104,7 @@ flutter test test/screens/games/monster_mash/
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 327 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 352 non-UI tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -151,7 +151,7 @@ dart_games/
 │           ├── carnival_horse_race/
 │           ├── target_tag/
 │           └── monster_mash/
-├── test/                            # Non-UI tests (327 tests)
+├── test/                            # Non-UI tests (352 tests)
 ├── integration_test/                # UI automation tests (128 tests)
 └── assets/                          # Game assets
     ├── common/

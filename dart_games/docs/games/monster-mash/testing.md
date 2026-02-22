@@ -3,8 +3,8 @@
 ## Test Overview
 
 ### Test Suite Summary
-- **Total Tests:** 106 tests (55 non-UI + 51 UI)
-- **Non-UI Tests:** 55 tests (47 game logic + 8 announcements)
+- **Total Tests:** 116 tests (65 non-UI + 51 UI)
+- **Non-UI Tests:** 65 tests (47 game logic + 18 announcements)
 - **UI Automation Tests:** 51 tests (~32 minutes)
 
 ### Test Files
@@ -22,11 +22,12 @@
    - Hat Trick and Clutch Heal detection
    - Multiple winner tiebreak logic
 
-2. **monster_mash_announcement_test.dart** (8 tests)
-   - Announcement message text verification
-   - Sound effect pairing validation
-   - Priority level correctness
-   - Buff announcement text for all 4 buffs
+2. **monster_mash_game_with_announcements_test.dart** (18 tests)
+   - Announcement precedence rule validation (10 rules)
+   - All health warning tier crossings (weaken, critical, barely clinging)
+   - Buff-modified announcements (Shadow Walk, Blood Moon, Ancient Bandages, Lab Spark)
+   - Combined elimination and hat trick + elimination merged announcements
+   - Edge cases (eliminated opponent hit, bullseye at full health, Max Health text)
 
 #### UI Automation Tests
 **Location:** `integration_test/`

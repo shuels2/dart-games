@@ -3,9 +3,9 @@
 ## Test Overview
 
 ### Test Suite Summary
-- **Total Tests:** 112 tests (52 UI + 60 non-UI)
-- **UI Automation Tests:** 52 tests (~40 minutes)
-- **Non-UI Tests:** 60 tests (46 game logic + 14 user management)
+- **Total Tests:** 121 tests (53 UI + 68 non-UI)
+- **UI Automation Tests:** 53 tests (~40 minutes)
+- **Non-UI Tests:** 68 tests (54 game logic/announcements + 14 user management)
 
 ### Test Files
 
@@ -48,14 +48,14 @@
 #### Non-UI Tests
 **Location:** `test/screens/games/target_tag/`
 
-1. **target_tag_game_with_announcements_test.dart** (46 tests)
+1. **target_tag_game_with_announcements_test.dart** (54 tests)
    - Solo mode game logic with announcements (Tests 1-8)
    - Team mode mechanics with announcements (Tests 9-14)
    - Hero bonus behavior (Tests 15-17)
    - Turn management (Tests 18-19)
    - Edit score functionality (Tests 20-24)
    - Edge cases and complex scenarios (Tests 25-32)
-   - Additional coverage (Tests 33-46)
+   - Precedence coverage tests (Tests 33-41): Tagged Out suppression by higher priorities, hero bonus Tagged In without opponent status change, irrelevant number hits, bullseye/outer bull, multiple eliminations, multiple Tagged Outs, winner on 3rd dart
 
 2. **target_tag_user_management_test.dart** (14 tests)
    - Winner/loser stat tracking with duration

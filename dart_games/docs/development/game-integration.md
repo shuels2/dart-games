@@ -29,11 +29,14 @@ for (final playerId in game.playerIds) {
 
 ### 2. Announcer Integration (GameAnnouncementQueueService)
 
-✅ **Create game-specific announcement helper**  
-✅ **DO NOT use DartAnnouncerService directly**  
+✅ **Create game-specific announcement helper**
+✅ **DO NOT use DartAnnouncerService directly**
 ✅ **Use priority-based queuing**
+✅ **Analyze announcement stacking** — identify worst-case per-dart announcement count
+✅ **Apply precedence rules** — max 2 announcements per dart (1 moment + Remove Darts)
+✅ **"Remove your darts" must always play** — never suppress this announcement
 
-See [Announcement System Integration](announcement-system.md) for complete guide.
+See [Announcement System Integration](announcement-system.md) for complete guide including the stacking prevention pattern.
 
 ### 3. Victory Music (VictoryMusicService)
 
@@ -108,6 +111,8 @@ See [Edit Score Dialog Integration](edit-score-dialog.md).
 
 - [ ] Use PlayerProvider for user management
 - [ ] Create game-specific announcement helper
+- [ ] Analyze announcement stacking and apply precedence rules (max 2 per dart)
+- [ ] Ensure "Remove your darts" announcement always plays
 - [ ] Call updatePlayerStats() for ALL players (winners and losers)
 - [ ] Track game duration from start to end
 - [ ] Play victory music on win
