@@ -3,9 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:dart_games/providers/horse_race_provider.dart';
 import 'package:dart_games/providers/target_tag_provider.dart';
+import 'package:dart_games/providers/monster_mash_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/models/player.dart';
+import 'package:dart_games/models/monster_mash_game.dart';
 
 /// Helpers for accessing provider state in UI tests.
 class ProviderHelpers {
@@ -140,6 +142,118 @@ class ProviderHelpers {
   static String? getTargetTagCurrentPlayerId(WidgetTester tester) {
     final provider = getTargetTagProvider(tester);
     return provider.getCurrentPlayerId();
+  }
+
+  // ==========================================================================
+  // MONSTER MASH HELPERS
+  // ==========================================================================
+
+  /// Get Monster Mash provider
+  static MonsterMashProvider getMonsterMashProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<MonsterMashProvider>(context, listen: false);
+  }
+
+  /// Monster Mash: Get player health
+  static int getMonsterMashPlayerHealth(WidgetTester tester, String playerId) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getHealth(playerId);
+  }
+
+  /// Monster Mash: Get player health percentage (0.0-1.0)
+  static double getMonsterMashHealthPercentage(WidgetTester tester, String playerId) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getHealthPercentage(playerId);
+  }
+
+  /// Monster Mash: Check if player is eliminated
+  static bool isMonsterMashPlayerEliminated(WidgetTester tester, String playerId) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.isEliminated(playerId);
+  }
+
+  /// Monster Mash: Get player target number
+  static int? getMonsterMashPlayerTarget(WidgetTester tester, String playerId) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getTargetNumber(playerId);
+  }
+
+  /// Monster Mash: Get player monster type
+  static MonsterType? getMonsterMashPlayerMonsterType(WidgetTester tester, String playerId) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getMonsterType(playerId);
+  }
+
+  /// Monster Mash: Get player monster image path
+  static String? getMonsterMashPlayerMonsterImagePath(WidgetTester tester, String playerId) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getMonsterImagePath(playerId);
+  }
+
+  /// Monster Mash: Get active buff
+  static BonusBuff? getMonsterMashActiveBuff(WidgetTester tester) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getActiveBuff();
+  }
+
+  /// Monster Mash: Get current round
+  static int getMonsterMashCurrentRound(WidgetTester tester) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getCurrentRound();
+  }
+
+  /// Monster Mash: Get round limit
+  static int getMonsterMashRoundLimit(WidgetTester tester) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getRoundLimit();
+  }
+
+  /// Monster Mash: Check for winner
+  static bool monsterMashHasWinner(WidgetTester tester) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Monster Mash: Get winners
+  static List<Player> getMonsterMashWinners(WidgetTester tester, List<Player> players) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getWinners(players);
+  }
+
+  /// Monster Mash: Get current player ID
+  static String? getMonsterMashCurrentPlayerId(WidgetTester tester) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getCurrentPlayerId();
+  }
+
+  /// Monster Mash: Check if game is active
+  static bool isMonsterMashGameActive(WidgetTester tester) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Monster Mash: Get current player darts thrown
+  static int getMonsterMashCurrentPlayerDartsThrown(WidgetTester tester) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getCurrentPlayerDartsThrown();
+  }
+
+  /// Monster Mash: Get dart throw heal amounts for a player
+  static List<int> getMonsterMashDartThrowHealAmount(WidgetTester tester, String playerId) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getDartThrowHealAmount(playerId);
+  }
+
+  /// Monster Mash: Get dart throw damage dealt for a player
+  static List<int> getMonsterMashDartThrowDamageDealt(WidgetTester tester, String playerId) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getDartThrowDamageDealt(playerId);
+  }
+
+  /// Monster Mash: Get dart throw target player IDs for a player
+  static List<String?> getMonsterMashDartThrowTargetPlayerId(WidgetTester tester, String playerId) {
+    final provider = getMonsterMashProvider(tester);
+    return provider.getDartThrowTargetPlayerId(playerId);
   }
 
   // ==========================================================================

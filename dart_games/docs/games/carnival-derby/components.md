@@ -221,7 +221,7 @@ RaceTrackWidget(
 ### PlayerAvatarWidget
 **Description:** Displays player avatar with horse icon and name
 
-**File:** `lib/widgets/horse_race/player_avatar_widget.dart`
+**File:** `lib/widgets/player_avatar_widget.dart`
 
 **Usage:**
 ```dart
@@ -271,7 +271,7 @@ const CarnivalTargetLogo(size: 700.0)
 ### PlayerSelectionCard
 **Description:** Drag-and-drop player selection card for menu screen
 
-**File:** `lib/widgets/horse_race/player_selection_card.dart`
+**File:** `lib/widgets/player_selection_card.dart`
 
 **Usage:**
 ```dart

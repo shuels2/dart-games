@@ -9,6 +9,7 @@ import '../widgets/compact_dartboard_info.dart';
 import 'options_screen.dart';
 import 'games/carnival_horse_race/horse_race_menu_screen.dart';
 import 'games/target_tag/target_tag_menu_screen.dart';
+import 'games/monster_mash/monster_mash_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: title == 'Target Tag' ? 10 : 8),
+                SizedBox(height: title == 'Target Tag' || title == 'Monster Mash' ? 10 : 8),
                 Text(
                   title,
                   style: title == 'Carnival Derby'
@@ -75,6 +76,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                               letterSpacing: 1.2,
                             )
+                          : title == 'Monster Mash'
+                              ? GoogleFonts.creepster(
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 7,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                                  letterSpacing: 1.0,
+                                )
                           : theme.textTheme.titleMedium?.copyWith(
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                               fontWeight: FontWeight.bold,
@@ -195,6 +203,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
             : null,
       },
+      {
+        'title': 'Monster Mash',
+        'key': HomeKeys.monsterMashCard,
+        'imageAssetPath': 'assets/games/monster_mash/icons/MonsterMash-Icon.png',
+        'color': const Color(0xFF4B0082), // Haunted Purple
+        'onTap': dartboardProvider.canPlayGames
+            ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MonsterMashMenuScreen(),
+                  ),
+                )
+            : null,
+      },
       // Add new games here - they will automatically be sorted alphabetically
     ];
 
@@ -286,14 +308,14 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.white,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(12.0),
         child: Wrap(
-          spacing: 16,
-          runSpacing: 16,
+          spacing: 12,
+          runSpacing: 12,
           children: games.map((game) {
             return SizedBox(
-              width: 315,
-              height: 350,
+              width: 360,
+              height: 400,
               child: _buildGameCard(
                 context: context,
                 key: game['key'] as Key?,

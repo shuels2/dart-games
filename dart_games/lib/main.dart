@@ -5,6 +5,7 @@ import 'providers/dartboard_provider.dart';
 import 'providers/player_provider.dart';
 import 'providers/horse_race_provider.dart';
 import 'providers/target_tag_provider.dart';
+import 'providers/monster_mash_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
@@ -41,6 +42,11 @@ Future<void> _preloadFonts() async {
   GoogleFonts.fredoka(fontWeight: FontWeight.w500);
   GoogleFonts.fredoka(fontWeight: FontWeight.w700);
 
+  // Preload Monster Mash fonts
+  GoogleFonts.creepster();
+  GoogleFonts.pirataOne();
+  // Montserrat already loaded for Carnival Derby
+
   // Wait for all fonts to load
   await GoogleFonts.pendingFonts([
     GoogleFonts.nunito(),
@@ -50,6 +56,8 @@ Future<void> _preloadFonts() async {
     GoogleFonts.montserrat(),
     GoogleFonts.robotoCondensed(),
     GoogleFonts.fredoka(),
+    GoogleFonts.creepster(),
+    GoogleFonts.pirataOne(),
   ]);
 }
 
@@ -64,6 +72,7 @@ class DartGamesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PlayerProvider()),
         ChangeNotifierProvider(create: (_) => HorseRaceProvider()),
         ChangeNotifierProvider(create: (_) => TargetTagProvider()),
+        ChangeNotifierProvider(create: (_) => MonsterMashProvider()),
       ],
       child: MaterialApp(
         title: 'Dart Games',

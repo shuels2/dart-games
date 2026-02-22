@@ -71,7 +71,7 @@ set fail_count=0
 
 echo ========================================
 if "!run_all!"=="1" (
-    echo Running All UI Automation Tests ^(STUB - ~12 seconds^)
+    echo Running All UI Automation Tests ^(STUB - ~24 seconds^)
 ) else (
     echo Running Selected UI Automation Tests ^(STUB^)
 )
@@ -93,8 +93,8 @@ if "!run_all!"=="1" (
     set "should_run=1"
     exit /b
 )
-REM Check if filename is in file_list
-echo !file_list! | findstr /i /c:"%~1" >nul
+REM Check if any user argument is a substring of the test filename
+echo %~1 | findstr /i !file_list! >nul
 if !errorlevel! equ 0 (
     set "should_run=1"
 )
@@ -419,6 +419,324 @@ if "!should_run!"=="1" (
     echo.
 )
 
+REM ----------------------------------------------------------
+REM Test 7: Monster Mash Add Player
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_add_player_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Add Player Test
+    echo ========================================
+    echo File: monster_mash_add_player_test.dart
+    echo Tests: 6 tests
+    echo Expected Duration: ~4 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Add Player Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_add_player_test.dart >> integration_test_output\summary.txt
+    echo Tests: 6 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\07_monster_mash_add_player.log
+    set _TARGET=integration_test/monster_mash_add_player_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +7: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 8: Monster Mash Menu and Settings
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_menu_and_settings_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Menu and Settings Test
+    echo ========================================
+    echo File: monster_mash_menu_and_settings_test.dart
+    echo Tests: 8 tests
+    echo Expected Duration: ~6 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Menu and Settings Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_menu_and_settings_test.dart >> integration_test_output\summary.txt
+    echo Tests: 8 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~6 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\08_monster_mash_menu_and_settings.log
+    set _TARGET=integration_test/monster_mash_menu_and_settings_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +9: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 9: Monster Mash Gameplay
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_gameplay_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Gameplay Test
+    echo ========================================
+    echo File: monster_mash_gameplay_test.dart
+    echo Tests: 20 tests
+    echo Expected Duration: ~15 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Gameplay Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_gameplay_test.dart >> integration_test_output\summary.txt
+    echo Tests: 20 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~15 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\09_monster_mash_gameplay.log
+    set _TARGET=integration_test/monster_mash_gameplay_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +21: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 10: Monster Mash Edit Score
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_edit_score_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Edit Score Test
+    echo ========================================
+    echo File: monster_mash_edit_score_test.dart
+    echo Tests: 5 tests
+    echo Expected Duration: ~5 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Edit Score Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_edit_score_test.dart >> integration_test_output\summary.txt
+    echo Tests: 5 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\10_monster_mash_edit_score.log
+    set _TARGET=integration_test/monster_mash_edit_score_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +6: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 11: Monster Mash Results Screen
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_results_screen_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Results Screen Test
+    echo ========================================
+    echo File: monster_mash_results_screen_test.dart
+    echo Tests: 6 tests
+    echo Expected Duration: ~5 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Results Screen Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_results_screen_test.dart >> integration_test_output\summary.txt
+    echo Tests: 6 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\11_monster_mash_results_screen.log
+    set _TARGET=integration_test/monster_mash_results_screen_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +7: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 12: Monster Mash Visual Validation
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_visual_validation_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Visual Validation Test
+    echo ========================================
+    echo File: monster_mash_visual_validation_test.dart
+    echo Tests: 6 tests
+    echo Expected Duration: ~5 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Visual Validation Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_visual_validation_test.dart >> integration_test_output\summary.txt
+    echo Tests: 6 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\12_monster_mash_visual_validation.log
+    set _TARGET=integration_test/monster_mash_visual_validation_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +7: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
 REM Generate summary
 echo ========================================
 echo Test Suite Complete
@@ -468,7 +786,7 @@ echo.
 echo DESCRIPTION:
 echo   Stub version of run_ui_tests.bat. Tests the full control flow
 echo   (arg parsing, test selection, result tracking, summary output)
-echo   without running actual flutter drive tests. Completes in ~12 seconds.
+echo   without running actual flutter drive tests. Completes in ~24 seconds.
 echo.
 echo   To test the FAILED path, edit this file and change
 echo   "cmd /c exit 0" to "cmd /c exit 1" for any test block.
@@ -480,6 +798,12 @@ echo   3. target_tag_gameplay_test.dart              (13 tests, ~10 min)
 echo   4. target_tag_add_player_test.dart            (6 tests,  ~2 min)
 echo   5. target_tag_results_screen_test.dart        (6 tests,  ~5.5 min)
 echo   6. carnival_derby_ui_test.dart                (24 tests, ~12 min)
+echo   7. monster_mash_add_player_test.dart          (6 tests,  ~4 min)
+echo   8. monster_mash_menu_and_settings_test.dart   (8 tests,  ~6 min)
+echo   9. monster_mash_gameplay_test.dart            (20 tests, ~15 min)
+echo  10. monster_mash_edit_score_test.dart           (5 tests,  ~5 min)
+echo  11. monster_mash_results_screen_test.dart       (6 tests,  ~5 min)
+echo  12. monster_mash_visual_validation_test.dart    (6 tests,  ~5 min)
 echo.
 echo EXAMPLES:
 echo   Run all tests (stub):

@@ -95,6 +95,7 @@ List<Color?> _computeDartBorderColors(String playerId) {
 
 - Carnival Derby: `lib/screens/games/carnival_horse_race/horse_race_game_screen.dart`
 - Target Tag: `lib/screens/games/target_tag/target_tag_game_screen.dart`
+- Monster Mash: `lib/screens/games/monster_mash/monster_mash_game_screen.dart`
 
 ## Related Documentation
 

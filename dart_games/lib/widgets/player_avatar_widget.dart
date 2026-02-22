@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import '../../models/player.dart';
+import '../models/player.dart';
 
 class PlayerAvatarWidget extends StatelessWidget {
   final Player player;

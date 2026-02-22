@@ -72,6 +72,87 @@ class SettingsHelpers {
     await toggleSwitch(tester, ElementFinders.getCarnivalDerbyPerfectFinishToggle());
   }
 
+  /// Monster Mash: Toggle Bonus Buffs
+  static Future<void> toggleMonsterMashBonusBuffs(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getMonsterMashBonusBuffsSwitch());
+  }
+
+  /// Monster Mash: Toggle Speed Play
+  static Future<void> toggleMonsterMashSpeedPlay(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getMonsterMashSpeedPlaySwitch());
+  }
+
+  /// Monster Mash: Set Health Max (slider)
+  ///
+  /// Valid values: 10-50
+  static Future<void> setMonsterMashHealthMax(
+    WidgetTester tester,
+    int value,
+  ) async {
+    final sliderFinder = ElementFinders.getMonsterMashHealthPointsSlider();
+    expect(sliderFinder, findsOneWidget);
+
+    Slider sliderWidget = tester.widget<Slider>(sliderFinder);
+    if (sliderWidget.onChanged != null) {
+      sliderWidget.onChanged!(value.toDouble());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+    }
+
+    await PumpSequences.simpleUpdate(tester);
+
+    sliderWidget = tester.widget<Slider>(sliderFinder);
+    expect(sliderWidget.value.toInt(), value,
+        reason: 'Health Max should be set to $value');
+  }
+
+  /// Monster Mash: Set Round Limit (slider)
+  ///
+  /// Valid values: 3-20
+  static Future<void> setMonsterMashRoundLimit(
+    WidgetTester tester,
+    int value,
+  ) async {
+    final sliderFinder = ElementFinders.getMonsterMashRoundLimitSlider();
+    expect(sliderFinder, findsOneWidget);
+
+    Slider sliderWidget = tester.widget<Slider>(sliderFinder);
+    if (sliderWidget.onChanged != null) {
+      sliderWidget.onChanged!(value.toDouble());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+    }
+
+    await PumpSequences.simpleUpdate(tester);
+
+    sliderWidget = tester.widget<Slider>(sliderFinder);
+    expect(sliderWidget.value.toInt(), value,
+        reason: 'Round Limit should be set to $value');
+  }
+
+  /// Monster Mash: Select player
+  static Future<void> selectMonsterMashPlayer(
+    WidgetTester tester,
+    String playerId,
+  ) async {
+    await selectPlayer(
+      tester,
+      playerId,
+      ElementFinders.getMonsterMashPlayerTile,
+    );
+  }
+
+  /// Monster Mash: Full flow to add a player
+  static Future<void> addMonsterMashPlayer(
+    WidgetTester tester,
+    String playerName,
+  ) async {
+    await openAddPlayerDialog(tester, ElementFinders.getMonsterMashAddPlayerButton());
+    await addPlayerViaDialog(tester, playerName);
+  }
+
   // ==========================================================================
   // DROPDOWN HELPERS
   // ==========================================================================

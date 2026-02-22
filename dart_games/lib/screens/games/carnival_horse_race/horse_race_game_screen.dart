@@ -13,7 +13,7 @@ import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/carnival_derby_announcement_helper.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/horse_race/race_track_widget.dart';
-import '../../../widgets/horse_race/player_avatar_widget.dart';
+import '../../../widgets/player_avatar_widget.dart';
 import '../../../widgets/dartboard_status_indicator.dart';
 import '../../../widgets/compact_dartboard_info.dart';
 import '../../../widgets/carnival_string_lights.dart';

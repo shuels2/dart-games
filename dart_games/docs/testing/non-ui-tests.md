@@ -2,10 +2,10 @@
 
 ## Overview
 
-272 non-UI tests validate models, providers, services, widgets, and game logic.
+327 non-UI tests validate models, providers, services, widgets, and game logic.
 
-**Run with:** `flutter test`  
-**Execution time:** Seconds  
+**Run with:** `flutter test`
+**Execution time:** Seconds
 **MANDATORY:** 100% pass rate required before every build
 
 ## Test Categories
@@ -54,7 +54,7 @@
 - Random selection
 - Cross-platform file handling
 
-### Integration Tests (83 tests)
+### Integration Tests (138 tests)
 
 **Carnival Derby User Management (26 tests)**
 - Winner/loser stat tracking with duration
@@ -77,6 +77,21 @@
 - Winner/loser stats with duration
 - Team mode stats
 - Stats persistence
+
+**Monster Mash Game Logic + Announcements (47 tests)**
+- Basic game mechanics (healing, damage, elimination)
+- Dart outcomes (own target, opponent target, bullseye, outer bull, miss)
+- Bonus buff mechanics (Blood Moon, Ancient Bandages, Shadow Walk, Laboratory Spark)
+- Speed Play and round limit behavior
+- Hat Trick and Clutch Heal detection
+- Edit score with state snapshots
+- Multiple winner tiebreak logic
+
+**Monster Mash Announcements (8 tests)**
+- Announcement message text verification
+- Sound effect pairing validation
+- Priority level correctness
+- Buff announcement text for all 4 buffs
 
 ### Shared Component Tests (24 tests)
 
@@ -114,6 +129,7 @@ flutter test test/providers/player_provider_test.dart
 ```bash
 flutter test test/models/
 flutter test test/screens/games/target_tag/
+flutter test test/screens/games/monster_mash/
 ```
 
 ## Test Patterns

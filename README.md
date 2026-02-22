@@ -11,6 +11,7 @@ Dart Games is a cross-platform (web and tablet) application that provides a fram
 ### Current Games
 
 - **Carnival Derby** - A horse race-style game where players advance by scoring points with darts
+- **Monster Mash** - A monster-themed battle game where players attack opponents and heal themselves using target numbers
 - **Target Tag** - A strategic elimination game where players build shields and tag opponents to win
 
 ## Features
@@ -378,15 +379,20 @@ dart_games/
 │       ├── options_screen.dart      # System settings
 │       └── games/
 │           ├── carnival_horse_race/ # Carnival Derby game
+│           ├── monster_mash/        # Monster Mash game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Non-UI test suite (272 tests)
-├── integration_test/                # UI automation tests (77 tests)
+├── test/                            # Non-UI test suite (327 tests)
+├── integration_test/                # UI automation tests (128 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
     │   ├── icons/
     │   └── images/
     └── games/                       # Game-specific assets
         ├── carnival_derby/          # Carnival Derby assets
+        │   ├── icons/
+        │   ├── images/
+        │   └── sounds/
+        ├── monster_mash/            # Monster Mash assets
         │   ├── icons/
         │   ├── images/
         │   └── sounds/
@@ -576,10 +582,10 @@ cd dart_games
 # Install dependencies
 flutter pub get
 
-# Run non-UI tests (all 272 tests must pass)
+# Run non-UI tests (all 327 tests must pass)
 flutter test
 
-# Optional: Run UI automation tests (77 tests, ~51 minutes, requires chromedriver)
+# Optional: Run UI automation tests (128 tests, ~86 minutes, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
 
 # Launch in Chrome (web)
@@ -591,24 +597,42 @@ flutter run
 
 ### Testing Requirements
 
-**All 272 non-UI tests must pass before any build or deployment.**
+**All 327 non-UI tests must pass before any build or deployment.**
 
 ```bash
 flutter test
 ```
 
-**Non-UI Test Coverage (272 tests):**
+**Non-UI Test Coverage (327 tests):**
 - Model serialization (40 tests)
 - Provider functionality (44 tests)
 - Service integration (42 tests)
 - Game integration - Carnival Derby (37 tests: 26 user management, 11 announcements)
 - Game integration - Target Tag (46 tests: 32 announcements, 14 user management)
+- Game integration - Monster Mash (55 tests: 47 game logic, 8 announcements)
 - Shared test components (24 tests)
 - Widget tests (23 tests)
 
-**UI Automation Test Coverage (77 tests, ~51 minutes):**
-- Target Tag (53 tests): Menu settings, gameplay mechanics, visual validation, add player, results screen
-- Carnival Derby (24 tests): Menu, gameplay, bust mechanics, skip turn, edit score, results screen
+**UI Automation Test Coverage (128 tests, ~86 minutes):**
+
+| # | Test File | Tests | Duration |
+|---|-----------|-------|----------|
+| 1 | target_tag_menu_and_mechanics_test.dart | 24 | ~16 min |
+| 2 | target_tag_visual_validation_test.dart | 4 | ~5 min |
+| 3 | target_tag_gameplay_test.dart | 13 | ~9 min |
+| 4 | target_tag_add_player_test.dart | 6 | ~3 min |
+| 5 | target_tag_results_screen_test.dart | 6 | ~7 min |
+| 6 | carnival_derby_ui_test.dart | 24 | ~14 min |
+| 7 | monster_mash_add_player_test.dart | 6 | ~3 min |
+| 8 | monster_mash_menu_and_settings_test.dart | 8 | ~4 min |
+| 9 | monster_mash_gameplay_test.dart | 20 | ~11 min |
+| 10 | monster_mash_edit_score_test.dart | 5 | ~4 min |
+| 11 | monster_mash_results_screen_test.dart | 6 | ~5 min |
+| 12 | monster_mash_visual_validation_test.dart | 6 | ~5 min |
+
+- Target Tag (53 tests, ~40 min): Menu settings, gameplay mechanics, visual validation, add player, results screen
+- Carnival Derby (24 tests, ~14 min): Menu, gameplay, bust mechanics, skip turn, edit score, results screen
+- Monster Mash (51 tests, ~32 min): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation
 - Requires chromedriver setup - see [CLAUDE.md](CLAUDE.md) for complete UI testing guide
 
 ### Cross-Platform Compatibility

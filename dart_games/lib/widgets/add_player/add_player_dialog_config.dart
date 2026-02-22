@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../stone_dialog_button.dart';
 
 /// Configuration class for styling the Add Player dialog.
 ///
@@ -23,6 +24,7 @@ class AddPlayerDialogConfig {
   final Color photoButtonForegroundColor;
   final Color photoButtonBorderColor;
   final TextStyle photoButtonTextStyle;
+  final List<Shadow>? photoIconShadows;
   final double? photoButtonWidth; // null = Expanded
 
   final Color addButtonColor;
@@ -35,8 +37,19 @@ class AddPlayerDialogConfig {
   final Color cancelButtonBorderColor;
   final TextStyle cancelButtonTextStyle;
 
+  // Button padding
+  final EdgeInsetsGeometry? buttonPadding;
+
   // Error styling
   final Color errorTextColor;
+
+  // Dialog layout
+  final EdgeInsets? dialogInsetPadding;
+  final double? dialogContentWidth;
+
+  // Custom button builders (optional - when provided, override default buttons)
+  final Widget Function(Key? key, VoidCallback onPressed)? customCancelButton;
+  final Widget Function(Key? key, VoidCallback onPressed)? customAddButton;
 
   const AddPlayerDialogConfig({
     required this.backgroundColor,
@@ -51,6 +64,7 @@ class AddPlayerDialogConfig {
     required this.photoButtonForegroundColor,
     required this.photoButtonBorderColor,
     required this.photoButtonTextStyle,
+    this.photoIconShadows,
     this.photoButtonWidth,
     required this.addButtonColor,
     required this.addButtonForegroundColor,
@@ -60,7 +74,12 @@ class AddPlayerDialogConfig {
     required this.cancelButtonForegroundColor,
     required this.cancelButtonBorderColor,
     required this.cancelButtonTextStyle,
+    this.buttonPadding,
     required this.errorTextColor,
+    this.dialogInsetPadding,
+    this.dialogContentWidth,
+    this.customCancelButton,
+    this.customAddButton,
   });
 
   /// Carnival Derby theme configuration (red/yellow/teal carnival theme)
@@ -165,6 +184,112 @@ class AddPlayerDialogConfig {
         color: Colors.white,
       ),
       errorTextColor: Colors.red,
+    );
+  }
+
+  /// Monster Mash theme configuration (purple/green horror theme)
+  factory AddPlayerDialogConfig.monsterMash() {
+    return AddPlayerDialogConfig(
+      backgroundColor: const Color(0xFF2F4F4F).withOpacity(0.95), // Iron Gate
+      textColor: const Color(0xFFF5F5DC), // Aged Parchment
+      titleStyle: GoogleFonts.creepster(
+        fontSize: 28,
+        color: const Color(0xFFF5F5DC),
+        shadows: [
+          Shadow(
+            color: const Color(0xFFF5F5DC).withOpacity(0.4),
+            blurRadius: 8,
+          ),
+          const Shadow(
+            color: Colors.black,
+            blurRadius: 3,
+            offset: Offset(1, 1),
+          ),
+        ],
+      ),
+      inputLabelStyle: GoogleFonts.montserrat(
+        fontSize: 18,
+        color: const Color(0xFFF5F5DC),
+      ),
+      inputBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      inputFocusedBorderColor: const Color(0xFFFF8C00), // Pumpkin Orange
+      inputErrorBorderColor: Colors.red,
+      photoLabelStyle: GoogleFonts.montserrat(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFFF5F5DC),
+      ),
+      photoButtonColor: const Color(0xFF4B0082), // Haunted Purple
+      photoButtonForegroundColor: const Color(0xFFF5F5DC),
+      photoButtonBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      photoButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 22,
+        color: const Color(0xFFF5F5DC),
+        shadows: [
+          Shadow(
+            color: const Color(0xFF7FFF00).withOpacity(0.6),
+            blurRadius: 8,
+          ),
+          const Shadow(
+            color: Colors.black,
+            blurRadius: 3,
+            offset: Offset(1, 1),
+          ),
+        ],
+      ),
+      photoIconShadows: [
+        Shadow(
+          color: const Color(0xFF7FFF00).withOpacity(0.6),
+          blurRadius: 8,
+        ),
+        const Shadow(
+          color: Colors.black,
+          blurRadius: 3,
+          offset: Offset(1, 1),
+        ),
+      ],
+      photoButtonWidth: null,
+      addButtonColor: const Color(0xFF4B0082), // Haunted Purple
+      addButtonForegroundColor: const Color(0xFFF5F5DC),
+      addButtonBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      addButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 24,
+        color: const Color(0xFFF5F5DC),
+      ),
+      cancelButtonColor: const Color(0xFF2F4F4F), // Iron Gate
+      cancelButtonForegroundColor: const Color(0xFFF5F5DC),
+      cancelButtonBorderColor: const Color(0xFFF5F5DC).withOpacity(0.5),
+      cancelButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 24,
+        color: const Color(0xFFF5F5DC),
+      ),
+      buttonPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+      errorTextColor: Colors.red,
+      dialogInsetPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 24),
+      dialogContentWidth: 380,
+      customCancelButton: (key, onPressed) => StoneDialogButton(
+        buttonKey: key,
+        onPressed: onPressed,
+        label: 'CANCEL',
+        textStyle: GoogleFonts.pirataOne(
+          fontSize: 24,
+          color: const Color(0xFFF5F5DC),
+        ),
+        showStoneFill: false,
+        showShadow: false,
+        borderColor: const Color(0xFF2F4F4F),
+        height: 52,
+        seed: 'CANCEL_DIALOG'.hashCode,
+      ),
+      customAddButton: (key, onPressed) => StoneDialogButton(
+        buttonKey: key,
+        onPressed: onPressed,
+        label: 'ADD PLAYER',
+        showLightning: true,
+        lightningColor: const Color(0xFFF5F5DC),
+        height: 52,
+        seed: 'ADD_PLAYER_DIALOG'.hashCode,
+      ),
     );
   }
 

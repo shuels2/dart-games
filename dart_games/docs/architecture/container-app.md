@@ -7,7 +7,7 @@
 The app architecture consists of two main layers:
 
 1. **Core Container App** (Dart Games)
-2. **Individual Games** (e.g., Carnival Derby, Target Tag)
+2. **Individual Games** (e.g., Carnival Derby, Target Tag, Monster Mash)
 
 ## Container App Responsibilities
 
@@ -87,17 +87,22 @@ dart_games/
 │           │   ├── horse_race_menu_screen.dart     # Game setup
 │           │   ├── horse_race_game_screen.dart     # Active gameplay
 │           │   └── horse_race_results_screen.dart  # Winner announcement
-│           └── target_tag/          # Target Tag game
-│               ├── target_tag_menu_screen.dart     # Game setup
-│               ├── target_tag_game_screen.dart     # Active gameplay
-│               └── target_tag_results_screen.dart  # Winner announcement
-├── test/                            # Non-UI test suite (272 tests)
-├── integration_test/                # UI automation tests (77 tests)
+│           ├── target_tag/          # Target Tag game
+│           │   ├── target_tag_menu_screen.dart     # Game setup
+│           │   ├── target_tag_game_screen.dart     # Active gameplay
+│           │   └── target_tag_results_screen.dart  # Winner announcement
+│           └── monster_mash/        # Monster Mash game
+│               ├── monster_mash_menu_screen.dart   # Game setup
+│               ├── monster_mash_game_screen.dart   # Active gameplay
+│               └── monster_mash_results_screen.dart # Winner announcement
+├── test/                            # Non-UI test suite (327 tests)
+├── integration_test/                # UI automation tests (128 tests)
 ├── assets/                          # Assets organized by game
 │   ├── common/                      # Shared assets
 │   └── games/                       # Game-specific assets
 │       ├── carnival_derby/
-│       └── target_tag/
+│       ├── target_tag/
+│       └── monster_mash/
 └── docs/                            # Documentation
     ├── architecture/
     ├── development/
@@ -172,6 +177,7 @@ Splash Screen
 Home Screen (Game Selection)
     ├── → Carnival Derby Menu → Game → Results → Back to Home
     ├── → Target Tag Menu → Game → Results → Back to Home
+    ├── → Monster Mash Menu → Game → Results → Back to Home
     ├── → Options Screen (System Settings) → Back to Home
     └── → Dartboard Setup (if not connected) → Back to Home
 ```
@@ -259,6 +265,7 @@ Games can add their own dependencies but should prefer using container-provided 
 - **Game-level providers:** Specific to each game
   - `HorseRaceProvider` - Carnival Derby game state
   - `TargetTagProvider` - Target Tag game state
+  - `MonsterMashProvider` - Monster Mash game state
 
 ### State Persistence
 - **SharedPreferences:** Settings, player data, game history
@@ -309,6 +316,7 @@ See [Adding New Games](../development/adding-games.md) for detailed guide.
 
 - **Carnival Derby:** Complete example of game integration
 - **Target Tag:** Complete example with team mode and complex mechanics
+- **Monster Mash:** Complete example with health system, buffs, and custom stone buttons
 
 ## Related Documentation
 

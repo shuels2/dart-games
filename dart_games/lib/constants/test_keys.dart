@@ -17,8 +17,11 @@ import 'package:flutter/material.dart';
 /// - TargetTagMenuKeys - Target Tag menu screen
 /// - TargetTagGameKeys - Target Tag game screen
 /// - TargetTagResultsKeys - Target Tag results screen
-/// - EditScoreDialogKeys - Edit Score dialog (shared by both games)
-/// - AddPlayerDialogKeys - Add Player dialog (shared by both games)
+/// - MonsterMashMenuKeys - Monster Mash menu screen
+/// - MonsterMashGameKeys - Monster Mash game screen
+/// - MonsterMashResultsKeys - Monster Mash results screen
+/// - EditScoreDialogKeys - Edit Score dialog (shared by all games)
+/// - AddPlayerDialogKeys - Add Player dialog (shared by all games)
 /// - TeamAssignmentDialogKeys - Team Assignment dialog (Target Tag only)
 /// - DartboardEmulatorKeys - Dartboard emulator widget keys
 
@@ -29,6 +32,7 @@ import 'package:flutter/material.dart';
 class HomeKeys {
   static const carnivalDerbyCard = Key('home_carnival_derby_card');
   static const targetTagCard = Key('home_target_tag_card');
+  static const monsterMashCard = Key('home_monster_mash_card');
 }
 
 // ============================================================================
@@ -325,6 +329,130 @@ class TargetTagResultsKeys {
   static const changeSettingsButton =
       Key('target_results_change_settings_button');
   static const backToMenuButton = Key('target_results_back_to_menu_button');
+}
+
+// ============================================================================
+// MONSTER MASH KEYS
+// ============================================================================
+
+class MonsterMashMenuKeys {
+  // Player selection
+  static const addPlayerButton = Key('monster_menu_add_player_button');
+  static const addPlayerButtonEmptyState = Key('monster_menu_add_player_button_empty');
+  static const playerListView = Key('monster_menu_player_list_view');
+  static Key playerTile(String playerId) =>
+      Key('monster_menu_player_${playerId}_tile');
+
+  // Game settings
+  static const healthPointsSlider = Key('monster_menu_health_points_slider');
+  static const bonusBuffsSwitch = Key('monster_menu_bonus_buffs_switch');
+  static const speedPlaySwitch = Key('monster_menu_speed_play_switch');
+  static const roundLimitSlider = Key('monster_menu_round_limit_slider');
+
+  // Navigation
+  static const startGameButton = Key('monster_menu_start_game_button');
+  static const backButton = Key('monster_menu_back_button');
+}
+
+class MonsterMashGameKeys {
+  // Player information
+  static Key playerTile(String playerId) =>
+      Key('monster_game_player_${playerId}_tile');
+  static Key healthBar(String playerId) =>
+      Key('monster_game_player_${playerId}_health_bar');
+
+  // Game controls
+  static const skipTurnButton = Key('monster_game_skip_turn_button');
+  static const editScoreButton = Key('monster_game_edit_score_button');
+
+  // Buff display
+  static const buffHealShield = Key('monster_game_buff_heal_shield');
+  static const buffDamageShield = Key('monster_game_buff_damage_shield');
+  static const buffLabel = Key('monster_game_buff_label');
+
+  // Dartboard emulator - all 63 dart buttons
+  static const dartSingle1Button = Key('monster_game_dart_single_1_button');
+  static const dartSingle2Button = Key('monster_game_dart_single_2_button');
+  static const dartSingle3Button = Key('monster_game_dart_single_3_button');
+  static const dartSingle4Button = Key('monster_game_dart_single_4_button');
+  static const dartSingle5Button = Key('monster_game_dart_single_5_button');
+  static const dartSingle6Button = Key('monster_game_dart_single_6_button');
+  static const dartSingle7Button = Key('monster_game_dart_single_7_button');
+  static const dartSingle8Button = Key('monster_game_dart_single_8_button');
+  static const dartSingle9Button = Key('monster_game_dart_single_9_button');
+  static const dartSingle10Button = Key('monster_game_dart_single_10_button');
+  static const dartSingle11Button = Key('monster_game_dart_single_11_button');
+  static const dartSingle12Button = Key('monster_game_dart_single_12_button');
+  static const dartSingle13Button = Key('monster_game_dart_single_13_button');
+  static const dartSingle14Button = Key('monster_game_dart_single_14_button');
+  static const dartSingle15Button = Key('monster_game_dart_single_15_button');
+  static const dartSingle16Button = Key('monster_game_dart_single_16_button');
+  static const dartSingle17Button = Key('monster_game_dart_single_17_button');
+  static const dartSingle18Button = Key('monster_game_dart_single_18_button');
+  static const dartSingle19Button = Key('monster_game_dart_single_19_button');
+  static const dartSingle20Button = Key('monster_game_dart_single_20_button');
+
+  static const dartDouble1Button = Key('monster_game_dart_double_1_button');
+  static const dartDouble2Button = Key('monster_game_dart_double_2_button');
+  static const dartDouble3Button = Key('monster_game_dart_double_3_button');
+  static const dartDouble4Button = Key('monster_game_dart_double_4_button');
+  static const dartDouble5Button = Key('monster_game_dart_double_5_button');
+  static const dartDouble6Button = Key('monster_game_dart_double_6_button');
+  static const dartDouble7Button = Key('monster_game_dart_double_7_button');
+  static const dartDouble8Button = Key('monster_game_dart_double_8_button');
+  static const dartDouble9Button = Key('monster_game_dart_double_9_button');
+  static const dartDouble10Button = Key('monster_game_dart_double_10_button');
+  static const dartDouble11Button = Key('monster_game_dart_double_11_button');
+  static const dartDouble12Button = Key('monster_game_dart_double_12_button');
+  static const dartDouble13Button = Key('monster_game_dart_double_13_button');
+  static const dartDouble14Button = Key('monster_game_dart_double_14_button');
+  static const dartDouble15Button = Key('monster_game_dart_double_15_button');
+  static const dartDouble16Button = Key('monster_game_dart_double_16_button');
+  static const dartDouble17Button = Key('monster_game_dart_double_17_button');
+  static const dartDouble18Button = Key('monster_game_dart_double_18_button');
+  static const dartDouble19Button = Key('monster_game_dart_double_19_button');
+  static const dartDouble20Button = Key('monster_game_dart_double_20_button');
+
+  static const dartTriple1Button = Key('monster_game_dart_triple_1_button');
+  static const dartTriple2Button = Key('monster_game_dart_triple_2_button');
+  static const dartTriple3Button = Key('monster_game_dart_triple_3_button');
+  static const dartTriple4Button = Key('monster_game_dart_triple_4_button');
+  static const dartTriple5Button = Key('monster_game_dart_triple_5_button');
+  static const dartTriple6Button = Key('monster_game_dart_triple_6_button');
+  static const dartTriple7Button = Key('monster_game_dart_triple_7_button');
+  static const dartTriple8Button = Key('monster_game_dart_triple_8_button');
+  static const dartTriple9Button = Key('monster_game_dart_triple_9_button');
+  static const dartTriple10Button = Key('monster_game_dart_triple_10_button');
+  static const dartTriple11Button = Key('monster_game_dart_triple_11_button');
+  static const dartTriple12Button = Key('monster_game_dart_triple_12_button');
+  static const dartTriple13Button = Key('monster_game_dart_triple_13_button');
+  static const dartTriple14Button = Key('monster_game_dart_triple_14_button');
+  static const dartTriple15Button = Key('monster_game_dart_triple_15_button');
+  static const dartTriple16Button = Key('monster_game_dart_triple_16_button');
+  static const dartTriple17Button = Key('monster_game_dart_triple_17_button');
+  static const dartTriple18Button = Key('monster_game_dart_triple_18_button');
+  static const dartTriple19Button = Key('monster_game_dart_triple_19_button');
+  static const dartTriple20Button = Key('monster_game_dart_triple_20_button');
+
+  static const dartBullseyeButton = Key('monster_game_dart_bullseye_button');
+  static const dartOuterBullButton = Key('monster_game_dart_outer_bull_button');
+  static const dartMissButton = Key('monster_game_dart_miss_button');
+
+  static Key getDartKey(String multiplier, int? number) {
+    if (multiplier == 'bullseye') return dartBullseyeButton;
+    if (multiplier == 'outer_bull') return dartOuterBullButton;
+    if (multiplier == 'miss') return dartMissButton;
+
+    return Key('monster_game_dart_${multiplier}_${number}_button');
+  }
+}
+
+class MonsterMashResultsKeys {
+  static const winnerName = Key('monster_results_winner_name');
+  static const playAgainButton = Key('monster_results_play_again_button');
+  static const changeSettingsButton =
+      Key('monster_results_change_settings_button');
+  static const backToMenuButton = Key('monster_results_back_to_menu_button');
 }
 
 // ============================================================================

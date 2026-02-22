@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/player.dart';
 import '../../providers/horse_race_provider.dart';
-import 'player_avatar_widget.dart';
+import '../player_avatar_widget.dart';
 
 class RaceTrackWidget extends StatelessWidget {
   final List<Player> players;

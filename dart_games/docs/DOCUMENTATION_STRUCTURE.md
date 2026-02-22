@@ -63,15 +63,25 @@ dart_games/
         │   ├── assets.md             # 3 icons, 1 image, 2 sounds (with descriptions)
         │   └── implementation-notes.md # Exact score mode bust behavior, inner/outer singles
         │
-        └── target-tag/
-            ├── README.md             # "Target Tag is a shield-based elimination game..."
-            ├── game-rules.md         # Shields, tagged-in, elimination, team mode, hero bonus
-            ├── design-system.md      # Pink/green neon theme, Fredoka font, tech aesthetic
-            ├── components.md         # DartboardSectionConfig.targetTag(), dialog configs
-            ├── announcements.md      # TargetTagAnnouncementHelper, 15 sound effects
-            ├── testing.md            # 53 UI tests, 46 non-UI tests, dart color validation
-            ├── assets.md             # 11 icons (team icons 01-10), 15 sounds
-            └── implementation-notes.md # Dart indicators (D1/D2/D3), color validation, turn flow
+        ├── target-tag/
+        │   ├── README.md             # "Target Tag is a shield-based elimination game..."
+        │   ├── game-rules.md         # Shields, tagged-in, elimination, team mode, hero bonus
+        │   ├── design-system.md      # Pink/green neon theme, Fredoka font, tech aesthetic
+        │   ├── components.md         # DartboardSectionConfig.targetTag(), dialog configs
+        │   ├── announcements.md      # TargetTagAnnouncementHelper, 15 sound effects
+        │   ├── testing.md            # 53 UI tests, 60 non-UI tests, dart color validation
+        │   ├── assets.md             # 11 icons (team icons 01-10), 15 sounds
+        │   └── implementation-notes.md # Dart indicators (D1/D2/D3), color validation, turn flow
+        │
+        └── monster-mash/
+            ├── README.md             # "Monster Mash is an HP-based elimination game..."
+            ├── game-rules.md         # HP management, buffs, speed play, elimination
+            ├── design-system.md      # Dark gothic theme, stone buttons, lightning effects
+            ├── components.md         # DartboardSectionConfig.monsterMash(), StoneDialogButton
+            ├── announcements.md      # MonsterMashAnnouncementHelper, 11 sound effects
+            ├── testing.md            # 51 UI tests, 55 non-UI tests, buff testing
+            ├── assets.md             # 32 character images, 3 icons, 2 images, 4 sounds
+            └── implementation-notes.md # Health image system, buff mechanics, grid layout
 ```
 
 ## Documentation Purpose by Category
@@ -101,9 +111,9 @@ Step-by-step guides and reference documentation for developers building new game
 Everything related to testing, from running tests to writing new ones to handling failures.
 
 **Files:**
-- `test-overview.md` - High-level overview of the 349-test suite
-- `non-ui-tests.md` - Details on the 272 non-UI tests (models, providers, services, widgets)
-- `ui-automation.md` - Running the 77 UI automation tests with chromedriver
+- `test-overview.md` - High-level overview of the 455-test suite
+- `non-ui-tests.md` - Details on the 327 non-UI tests (models, providers, services, widgets)
+- `ui-automation.md` - Running the 128 UI automation tests with chromedriver
 - `continuous-animations.md` - Critical rules for testing screens with animations
 - `test-maintenance.md` - How to update tests when features change
 
@@ -256,4 +266,4 @@ Original CLAUDE.md contained ~2800 lines of content covering:
 - Game-specific information
 - Component integration guides
 
-This has been reorganized into ~30+ focused files for better maintainability and navigation.
+This has been reorganized into 54 focused files for better maintainability and navigation.

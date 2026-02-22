@@ -49,6 +49,7 @@ Future<Player?> showAddPlayerDialog({
       builder: (context, setDialogState) => AlertDialog(
         key: AddPlayerDialogKeys.dialogContainer,
         backgroundColor: config.backgroundColor,
+        insetPadding: config.dialogInsetPadding ?? const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -57,8 +58,12 @@ Future<Player?> showAddPlayerDialog({
           style: config.titleStyle,
         ),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: config.dialogContentWidth ?? 0,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
             children: [
               // Photo preview section
               if (photoPath != null)
@@ -230,6 +235,7 @@ Future<Player?> showAddPlayerDialog({
               ),
             ],
           ),
+          ),
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
@@ -256,6 +262,13 @@ Future<Player?> showAddPlayerDialog({
                     child: Text('CANCEL', style: config.cancelButtonTextStyle),
                   ),
                 )
+              else if (config.customCancelButton != null)
+                Expanded(
+                  child: config.customCancelButton!(
+                    AddPlayerDialogKeys.cancelButton,
+                    () => Navigator.pop(dialogContext, null),
+                  ),
+                )
               else
                 Expanded(
                   child: ElevatedButton(
@@ -264,6 +277,7 @@ Future<Player?> showAddPlayerDialog({
                     style: ElevatedButton.styleFrom(
                       backgroundColor: config.cancelButtonColor,
                       foregroundColor: config.cancelButtonForegroundColor,
+                      padding: config.buttonPadding,
                       side: BorderSide(
                         color: config.cancelButtonBorderColor,
                         width: 2,
@@ -310,6 +324,27 @@ Future<Player?> showAddPlayerDialog({
                     child: Text('ADD PLAYER', style: config.addButtonTextStyle),
                   ),
                 )
+              else if (config.customAddButton != null)
+                Expanded(
+                  child: config.customAddButton!(
+                    AddPlayerDialogKeys.addButton,
+                    () {
+                      if (nameController.text.trim().isEmpty) {
+                        setDialogState(() {
+                          showError = true;
+                        });
+                        return;
+                      }
+
+                      final player = Player.create(
+                        name: nameController.text.trim(),
+                        photoPath: photoPath,
+                      );
+
+                      Navigator.pop(dialogContext, player);
+                    },
+                  ),
+                )
               else
                 Expanded(
                   child: ElevatedButton(
@@ -317,6 +352,7 @@ Future<Player?> showAddPlayerDialog({
                     style: ElevatedButton.styleFrom(
                       backgroundColor: config.addButtonColor,
                       foregroundColor: config.addButtonForegroundColor,
+                      padding: config.buttonPadding,
                       side: BorderSide(
                         color: config.addButtonBorderColor,
                         width: 2,
@@ -366,12 +402,13 @@ Widget _buildPhotoButton({
     style: ElevatedButton.styleFrom(
       backgroundColor: config.photoButtonColor,
       foregroundColor: config.photoButtonForegroundColor,
+      padding: config.buttonPadding,
       side: BorderSide(
         color: config.photoButtonBorderColor,
         width: 2,
       ),
     ),
-    icon: Icon(icon, color: config.photoButtonForegroundColor),
+    icon: Icon(icon, color: config.photoButtonForegroundColor, shadows: config.photoIconShadows),
     label: Text(label, style: config.photoButtonTextStyle),
   );
 }

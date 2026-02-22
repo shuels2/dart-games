@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dart_games/constants/test_keys.dart';
 import 'dartboard_emulator_controller.dart';
 import 'dartboard_emulator_config.dart';
 
@@ -25,6 +26,7 @@ class DartboardEmulatorFAB extends StatelessWidget {
       animation: controller,
       builder: (context, child) {
         return FloatingActionButton.extended(
+          key: DartboardEmulatorKeys.toggleFAB,
           onPressed: controller.toggle,
           backgroundColor: config.backgroundColor,
           icon: Icon(

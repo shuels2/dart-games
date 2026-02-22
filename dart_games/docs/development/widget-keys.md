@@ -174,11 +174,38 @@ static const addPlayerDialog = Key('dialog_add_player');
 static const confirmDialog = Key('dialog_confirm');
 ```
 
+## Monster Mash Keys
+
+### MonsterMashMenuKeys
+- `addPlayerButton`, `addPlayerButtonEmptyState` - Add player buttons
+- `playerListView` - Player list scrollview
+- `playerTile(playerId)` - Player selection tile (dynamic)
+- `healthPointsSlider` - Health Points slider (10-50)
+- `bonusBuffsSwitch` - Bonus Buffs toggle
+- `speedPlaySwitch` - Speed Play toggle
+- `roundLimitSlider` - Round Limit slider (3-20)
+- `startGameButton`, `backButton` - Action buttons
+
+### MonsterMashGameKeys
+- `playerTile(playerId)`, `healthBar(playerId)` - Dynamic player elements
+- `skipTurnButton`, `editScoreButton` - Action buttons
+- `buffHealShield`, `buffDamageShield`, `buffLabel` - Buff display elements
+- `dartSingle1Button` through `dartSingle20Button` - 20 single buttons
+- `dartDouble1Button` through `dartDouble20Button` - 20 double buttons
+- `dartTriple1Button` through `dartTriple20Button` - 20 triple buttons
+- `dartBullseyeButton`, `dartOuterBullButton`, `dartMissButton` - Special buttons
+- `getDartKey(multiplier, number)` - Helper method (63 total dart buttons)
+
+### MonsterMashResultsKeys
+- `winnerName` - Winner name display
+- `playAgainButton`, `changeSettingsButton`, `backToMenuButton` - Action buttons
+
 ## Reference Implementations
 
 See existing games for complete examples:
 - Target Tag: `lib/constants/test_keys.dart` (TargetTagMenuKeys, TargetTagGameKeys)
 - Carnival Derby: `lib/constants/test_keys.dart` (CarnivalDerbyMenuKeys, CarnivalDerbyGameKeys)
+- Monster Mash: `lib/constants/test_keys.dart` (MonsterMashMenuKeys, MonsterMashGameKeys, MonsterMashResultsKeys)
 - Example tests: `integration_test/target_tag_menu_and_mechanics_test.dart`
 
 ## Related Documentation

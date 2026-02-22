@@ -73,12 +73,26 @@ factory AddPlayerDialogConfig.yourGame() {
 }
 ```
 
+## Monster Mash-Specific Config Fields
+
+Monster Mash introduced 6 new config fields for advanced customization:
+
+- `customCancelButton` - Widget replacing the standard cancel button (e.g., StoneDialogButton)
+- `customAddButton` - Widget replacing the standard add button (e.g., StoneDialogButton with lightning)
+- `dialogInsetPadding` - Custom EdgeInsets for dialog edge padding (wider layout for stone buttons)
+- `dialogContentWidth` - Custom double for content width (380px for Monster Mash)
+- `photoIconShadows` - List of Shadow for camera/gallery icon glow effects
+- `buttonPadding` - Custom EdgeInsets for button row padding
+
+These fields are optional and only used when a game needs to replace standard buttons with custom widgets.
+
 ## Features
 
 - Photo upload via camera or gallery
 - Name validation (empty check)
 - Photo preview with remove button
 - Returns Player object if created, null if cancelled
+- Custom button widget support (Monster Mash uses StoneDialogButton)
 
 ## Benefits
 
@@ -91,6 +105,7 @@ factory AddPlayerDialogConfig.yourGame() {
 
 - Carnival Derby: `lib/screens/games/carnival_horse_race/horse_race_menu_screen.dart`
 - Target Tag: `lib/screens/games/target_tag/target_tag_menu_screen.dart`
+- Monster Mash: `lib/screens/games/monster_mash/monster_mash_menu_screen.dart` (uses custom StoneDialogButton)
 - System Settings: `lib/screens/options_screen.dart`
 
 ## Related Documentation

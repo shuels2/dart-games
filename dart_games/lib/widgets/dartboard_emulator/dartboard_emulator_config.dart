@@ -66,6 +66,23 @@ class DartboardSectionConfig {
       ),
     );
   }
+
+  // Factory for Monster Mash
+  factory DartboardSectionConfig.monsterMash() {
+    return DartboardSectionConfig(
+      backgroundColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      disabledOverlayBackgroundColor: const Color(0xFF2F4F4F).withOpacity(0.9),
+      disabledOverlayBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      removeButtonBackgroundColor: const Color(0xFF4B0082), // Haunted Purple
+      removeButtonBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      removeButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 1.0,
+        color: const Color(0xFFF5F5DC), // Aged Parchment
+      ),
+    );
+  }
 }
 
 class DartboardFABConfig {
@@ -102,6 +119,16 @@ class DartboardFABConfig {
       iconColor: Colors.white,
       textColor: Colors.white,
       textStyle: GoogleFonts.fredoka(fontWeight: FontWeight.bold),
+    );
+  }
+
+  // Factory for Monster Mash
+  factory DartboardFABConfig.monsterMash() {
+    return DartboardFABConfig(
+      backgroundColor: const Color(0xFF4B0082), // Haunted Purple
+      iconColor: const Color(0xFF7FFF00), // Ecto-Green
+      textColor: const Color(0xFFF5F5DC), // Aged Parchment
+      textStyle: GoogleFonts.pirataOne(fontWeight: FontWeight.bold),
     );
   }
 }
