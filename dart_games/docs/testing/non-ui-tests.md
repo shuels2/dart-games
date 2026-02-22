@@ -2,7 +2,7 @@
 
 ## Overview
 
-346 non-UI tests validate models, providers, services, widgets, and game logic.
+352 non-UI tests validate models, providers, services, widgets, and game logic.
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -54,7 +54,7 @@
 - Random selection
 - Cross-platform file handling
 
-### Integration Tests (157 tests)
+### Integration Tests (163 tests)
 
 **Carnival Derby User Management (26 tests)**
 - Winner/loser stat tracking with duration
@@ -62,10 +62,11 @@
 - Skip turn handling
 - Edit score functionality
 
-**Carnival Derby Game Logic (11 tests)**
+**Carnival Derby Game Logic (17 tests)**
 - Normal mode scoring
 - Perfect Finish mode with busts
 - Announcement validation
+- Precedence coverage (bust on 3rd dart, skip with 0 darts, all misses, win scenarios)
 
 **Target Tag Game Logic + Announcements (54 tests)**
 - Solo mode mechanics with announcement precedence

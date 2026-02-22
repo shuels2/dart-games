@@ -17,7 +17,7 @@ flutter test
 ```
 
 **Requirements:**
-- ✅ All 346 non-UI tests must pass (100% pass rate required)
+- ✅ All 352 non-UI tests must pass (100% pass rate required)
 - ❌ If ANY test fails, DO NOT proceed with build
 - 🔧 Fix all failing tests first, then re-run test suite
 - ✅ Only build after confirming all tests pass
@@ -106,7 +106,7 @@ flutter build ios
    flutter test
    ```
 
-3. **Verify ALL 346 non-UI tests pass** (100% pass rate required)
+3. **Verify ALL 352 non-UI tests pass** (100% pass rate required)
 
 4. **OPTIONAL: Ask user if they want to run UI automation tests** (128 tests, ~86 minutes)
 
@@ -275,7 +275,7 @@ flutter build ios --release          # iOS App Store
 
 Before deploying to production:
 
-- [ ] All 346 non-UI tests pass
+- [ ] All 352 non-UI tests pass
 - [ ] (Optional) All 128 UI automation tests pass
 - [ ] Code has been reviewed
 - [ ] Changes have been committed
@@ -386,7 +386,7 @@ build/ios/iphoneos/Runner.app
 ## Testing Requirements Summary
 
 **CRITICAL REQUIREMENTS:**
-- ✅ All 346 non-UI tests must pass (MANDATORY)
+- ✅ All 352 non-UI tests must pass (MANDATORY)
 - ✅ 100% pass rate required (no exceptions)
 - ❓ UI automation tests optional (ask user before running)
 - ✅ Manual testing after build

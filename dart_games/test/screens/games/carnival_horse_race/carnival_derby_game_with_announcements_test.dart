@@ -268,10 +268,10 @@ void main() {
       expect(provider.getPlayerScore(alice.id), 20);
       expect(provider.currentPlayerBusted, true);
 
+      // Bust suppresses dart score on the busting dart (T20)
       helper.verifyAnnouncements([
         'Alice, it\'s your turn',
         '20',
-        'triple 20 for 60',
         'Alice, you busted and your turn is over',
         'Alice, remove your darts',
       ]);
@@ -317,9 +317,9 @@ void main() {
       expect(provider.getPlayerScore(alice.id), 60);
       expect(provider.currentPlayerBusted, true);
 
+      // Bust suppresses dart score on the busting dart (second T20)
       helper.verifyAnnouncements([
         'Alice, it\'s your turn',
-        'triple 20 for 60',
         'triple 20 for 60',
         'Alice, you busted and your turn is over',
         'Alice, remove your darts',
@@ -363,9 +363,9 @@ void main() {
       expect(provider.getPlayerScore(alice.id), 0);
       expect(provider.currentPlayerBusted, true);
 
+      // Bust suppresses dart score (Bullseye)
       helper.verifyAnnouncements([
         'Alice, it\'s your turn',
-        'Bullseye! 50 points!',
         'Alice, you busted and your turn is over',
         'Alice, remove your darts',
       ]);
@@ -378,9 +378,9 @@ void main() {
       expect(provider.getPlayerScore(bob.id), 0);
       expect(provider.currentPlayerBusted, true);
 
+      // Bust suppresses dart score (T20)
       helper.verifyAnnouncements([
         'Bob, it\'s your turn',
-        'triple 20 for 60',
         'Bob, you busted and your turn is over',
         'Bob, remove your darts',
       ]);
@@ -468,9 +468,9 @@ void main() {
       expect(provider.getPlayerScore(alice.id), 0);
       expect(provider.currentPlayerBusted, true);
 
+      // Bust suppresses dart score (D20)
       helper.verifyAnnouncements([
         'Alice, it\'s your turn',
-        'double 20 for 40',
         'Alice, you busted and your turn is over',
         'Alice, remove your darts',
       ]);
@@ -553,6 +553,238 @@ void main() {
       helper.verifyAnnouncements([
         'The game is complete',
         'Alice is the winner',
+      ]);
+    });
+  });
+
+  group('Carnival Derby - Precedence Coverage Tests (with announcements)', () {
+    late HorseRaceProvider provider;
+    late MockCarnivalDerbyAudioQueueService audioQueue;
+    late CarnivalDerbyTestHelper helper;
+    late List<Player> players;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      provider = HorseRaceProvider();
+      audioQueue = MockCarnivalDerbyAudioQueueService();
+    });
+
+    test('Test 12: Bust on 3rd dart (no duplicate remove darts)', () {
+      // Bust on dart 3: both bust and 3rd-dart-completion trigger remove darts.
+      // Verify only one remove darts fires and bust suppresses dart score.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      // Target 50, exact score mode
+      provider.startGame(players, 50, exactScoreMode: true);
+
+      helper = CarnivalDerbyTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      helper.announceGameStart();
+      helper.clearAnnouncements();
+
+      // Alice: S10 (10), S10 (20), T20 (80 > 50 = BUST on dart 3!)
+      helper.processDartThrowWithAnnouncements('S10');
+      expect(provider.getPlayerScore(alice.id), 10);
+
+      helper.processDartThrowWithAnnouncements('S10');
+      expect(provider.getPlayerScore(alice.id), 20);
+
+      helper.processDartThrowWithAnnouncements('T20');
+      expect(provider.getPlayerScore(alice.id), 20); // Reverted to pre-bust score
+      expect(provider.currentPlayerBusted, true);
+
+      // Bust suppresses T20 dart score. Only one remove darts.
+      helper.verifyAnnouncements([
+        'Alice, it\'s your turn',
+        '10',
+        '10',
+        'Alice, you busted and your turn is over',
+        'Alice, remove your darts',
+      ]);
+    });
+
+    test('Test 13: Skip with 0 darts thrown (no remove darts)', () {
+      // Skip without throwing any darts. No darts on the board to remove.
+      // Only a turn announcement should fire, no remove darts.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startGame(players, 60, exactScoreMode: false);
+
+      helper = CarnivalDerbyTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      helper.announceGameStart();
+      helper.clearAnnouncements();
+
+      // Alice skips immediately without throwing any darts
+      helper.skipTurn();
+
+      // Only turn announcement, no remove darts
+      helper.verifyAnnouncements([
+        'Alice, it\'s your turn',
+      ]);
+
+      helper.clearAnnouncements();
+      helper.handleTakeoutFinished();
+
+      // Bob's turn proceeds normally
+      helper.processDartThrowWithAnnouncements('T20');
+      expect(provider.getPlayerScore(bob.id), 60);
+      expect(provider.hasWinner, true);
+
+      helper.verifyAnnouncements([
+        'Bob, it\'s your turn',
+        'triple 20 for 60',
+        'Bob, remove your darts',
+      ]);
+    });
+
+    test('Test 14: All 3 darts miss', () {
+      // Complete turn of 3 consecutive misses.
+      final alice = Player.create(name: 'Alice');
+      final bob = Player.create(name: 'Bob');
+      players = [alice, bob];
+
+      provider.startGame(players, 60, exactScoreMode: false);
+
+      helper = CarnivalDerbyTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      helper.announceGameStart();
+      helper.clearAnnouncements();
+
+      // Alice: Miss, Miss, Miss
+      helper.processDartThrowWithAnnouncements('Miss');
+      expect(provider.getPlayerScore(alice.id), 0);
+
+      helper.processDartThrowWithAnnouncements('Miss');
+      expect(provider.getPlayerScore(alice.id), 0);
+
+      helper.processDartThrowWithAnnouncements('Miss');
+      expect(provider.getPlayerScore(alice.id), 0);
+
+      helper.verifyAnnouncements([
+        'Alice, it\'s your turn',
+        'Miss',
+        'Miss',
+        'Miss',
+        'Alice, remove your darts',
+      ]);
+    });
+
+    test('Test 15: Perfect Finish win on dart 2', () {
+      // Win on exactly dart 2 in Perfect Finish mode.
+      final alice = Player.create(name: 'Alice');
+      players = [alice];
+
+      // Target 70, exact score mode
+      provider.startGame(players, 70, exactScoreMode: true);
+
+      helper = CarnivalDerbyTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      helper.announceGameStart();
+      helper.clearAnnouncements();
+
+      // Alice: Bull (50), S20 (20) = 70 exactly, wins on dart 2
+      helper.processDartThrowWithAnnouncements('Bull');
+      expect(provider.getPlayerScore(alice.id), 50);
+
+      helper.processDartThrowWithAnnouncements('S20');
+      expect(provider.getPlayerScore(alice.id), 70);
+      expect(provider.hasWinner, true);
+      expect(provider.getWinner(players), alice);
+
+      helper.verifyAnnouncements([
+        'Alice, it\'s your turn',
+        'Bullseye! 50 points!',
+        '20',
+        'Alice, remove your darts',
+      ]);
+    });
+
+    test('Test 16: Normal mode win on dart 3', () {
+      // Win on exactly the 3rd dart in normal mode.
+      final alice = Player.create(name: 'Alice');
+      players = [alice];
+
+      // Target 100, normal mode
+      provider.startGame(players, 100, exactScoreMode: false);
+
+      helper = CarnivalDerbyTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      helper.announceGameStart();
+      helper.clearAnnouncements();
+
+      // Alice: S20 (20), D20 (40), D20 (40) = 100, wins on dart 3
+      helper.processDartThrowWithAnnouncements('S20');
+      expect(provider.getPlayerScore(alice.id), 20);
+
+      helper.processDartThrowWithAnnouncements('D20');
+      expect(provider.getPlayerScore(alice.id), 60);
+
+      helper.processDartThrowWithAnnouncements('D20');
+      expect(provider.getPlayerScore(alice.id), 100);
+      expect(provider.hasWinner, true);
+      expect(provider.getWinner(players), alice);
+
+      helper.verifyAnnouncements([
+        'Alice, it\'s your turn',
+        '20',
+        'double 20 for 40',
+        'double 20 for 40',
+        'Alice, remove your darts',
+      ]);
+    });
+
+    test('Test 17: Normal mode win by exceeding target', () {
+      // Win by going over the target score (only possible in normal mode).
+      final alice = Player.create(name: 'Alice');
+      players = [alice];
+
+      // Target 50, normal mode
+      provider.startGame(players, 50, exactScoreMode: false);
+
+      helper = CarnivalDerbyTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      helper.announceGameStart();
+      helper.clearAnnouncements();
+
+      // Alice: T20 (60) > 50, wins by exceeding target
+      helper.processDartThrowWithAnnouncements('T20');
+      expect(provider.getPlayerScore(alice.id), 60);
+      expect(provider.hasWinner, true);
+      expect(provider.getWinner(players), alice);
+
+      helper.verifyAnnouncements([
+        'Alice, it\'s your turn',
+        'triple 20 for 60',
+        'Alice, remove your darts',
       ]);
     });
   });

@@ -367,6 +367,116 @@ void _processDartThrow(int score, int multiplier) {
 }
 ```
 
+## Announcement Stacking Prevention
+
+**During game development, always analyze announcement stacking and present optimization options to the user.**
+
+When multiple game events occur from a single dart throw (e.g., hitting an opponent's target while gaining shields and triggering a status change), naively firing every applicable announcement creates audio overload. The goal is **max 2 announcements per dart throw**: 1 moment announcement + Remove Darts (if applicable).
+
+### The Problem
+
+Without precedence rules, a single dart can trigger 5-7 stacked announcements:
+```
+Turn → Hit → Shield Gained → Tagged In → Tag! → Tagged Out → Remove Darts
+```
+
+This creates an overwhelming audio experience where announcements queue up and play long after the dart was thrown.
+
+### The Solution: Gather Facts, Pick Winner
+
+Use the "gather facts, then pick single winner" pattern:
+
+1. **Process the dart throw** and update all game state
+2. **Gather facts** — collect boolean flags for every announcement-worthy event that occurred
+3. **Apply precedence** — pick the single highest-priority moment and fire only that announcement
+4. **Always fire Remove Darts** if applicable (not counted toward the moment limit)
+5. **Always fire Turn announcement** on first dart (not counted toward the moment limit)
+
+### Precedence Rules
+
+Define a priority order for moment announcements. Higher-severity events suppress lower ones:
+
+```
+Highest:  Elimination (opponent eliminated)
+          Vulnerable (opponent at 0 shields/HP)
+          Low Shields/Critical HP (opponent near death)
+          Status Change (opponent lost a status)
+          Successful Attack (hit opponent, no status change)
+          Player Gained Status (current player powered up)
+          Player Gained Resource (shields, HP, etc.)
+Lowest:   Hit/Miss (only when no secondary effect exists)
+```
+
+**Key suppression rules:**
+- **Hit/Miss suppressed** when any secondary effect (shield gain, attack, status change) exists — the player can see what they threw on screen
+- **Attack suppressed** when any status change (elimination, vulnerable, low shields) exists — the status change is more important
+- **Player status gain suppressed** when any opponent status change exists — opponent impact takes priority
+
+### Implementation Pattern
+
+```dart
+void _handleDartThrow(int score) {
+  // 1. Process throw and update game state
+  provider.processDartThrow(score);
+
+  // 2. Gather facts
+  final hasElimination = /* check if opponent eliminated */;
+  final hasVulnerable = /* check if opponent at 0 shields */;
+  final hasLowShields = /* check if opponent at 1 shield */;
+  final hasStatusChange = /* check if opponent lost status */;
+  final hasAttack = /* check if hit opponent target */;
+  final hasPlayerGain = /* check if current player gained resource */;
+  final hasSecondary = hasElimination || hasVulnerable || hasLowShields ||
+      hasStatusChange || hasAttack || hasPlayerGain;
+
+  // 3. Apply precedence — fire exactly 1 moment announcement
+  if (hasElimination) {
+    audioQueue.announceEliminated(opponentName);
+  } else if (hasVulnerable) {
+    audioQueue.announceVulnerable(opponentName);
+  } else if (hasLowShields) {
+    audioQueue.announceLowShields(opponentName);
+  } else if (hasStatusChange) {
+    audioQueue.announceStatusChange(opponentName);
+  } else if (hasAttack) {
+    audioQueue.announceAttack(opponentName);
+  } else if (hasPlayerGain) {
+    audioQueue.announceGain(playerName);
+  } else {
+    // No secondary — announce hit or miss
+    audioQueue.announceHit(score);
+  }
+
+  // 4. Always fire Remove Darts if applicable
+  if (provider.shouldPromptTakeout) {
+    audioQueue.announceRemoveDarts(playerName);
+  }
+}
+```
+
+### Development Checklist
+
+When building or modifying a game's announcement system:
+
+- [ ] **Identify worst case** — find the dart throw that triggers the most simultaneous events
+- [ ] **Count max announcements** — if more than 2 per dart (1 moment + Remove Darts), optimization is needed
+- [ ] **Present options to user** — show the stacking analysis and recommend precedence rules
+- [ ] **Implement precedence** — use the gather-facts-pick-winner pattern
+- [ ] **Update test helper** — mirror the precedence logic in the test helper for unit testing
+- [ ] **Update game screen** — apply matching precedence logic in the production game screen
+- [ ] **Update test expectations** — adjust all `verifyAnnouncements` calls to reflect suppressed announcements
+- [ ] **Verify Remove Darts** — the "Remove your darts" announcement must always play when applicable
+
+### Reference Implementations
+
+- **Target Tag:** Complex precedence with 8 priority tiers (elimination, vulnerable, low shields, tagged out, successful tag, tagged in, shield gained, hit/miss)
+- **Carnival Derby:** Simple precedence — bust suppresses dart score (only change needed)
+- **Monster Mash:** Precedence with healing, attack, elimination, and buff-modified announcements
+
+### The "Remove Your Darts" Rule
+
+**The "Remove your darts" announcement must always play.** It serves a functional purpose — telling the player to physically remove their darts from the board before the next player throws. This announcement is never suppressed by precedence rules and is not counted toward the per-dart moment limit.
+
 ## Best Practices
 
 ### DO:
@@ -376,6 +486,8 @@ void _processDartThrow(int score, int multiplier) {
 ✅ Dispose of the helper in dispose()
 ✅ Initialize helper in initState() with addPostFrameCallback
 ✅ Use optional chaining (`_audioQueue?.method()`)
+✅ Analyze announcement stacking and apply precedence rules
+✅ Ensure "Remove your darts" always plays
 
 ### DON'T:
 ❌ Use `DartAnnouncerService` directly (use queue service instead)
@@ -383,6 +495,7 @@ void _processDartThrow(int score, int multiplier) {
 ❌ Forget to dispose of the helper
 ❌ Use wrong priority levels
 ❌ Create very long announcements (keep under 5 seconds)
+❌ Fire every applicable announcement per dart — use precedence to pick one
 
 ## Announcer Settings
 
