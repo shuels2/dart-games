@@ -69,7 +69,7 @@ flutter test
 ```
 
 ### 3. Verify All Tests Pass
-- All 337 non-UI tests must pass (100% pass rate required)
+- All 346 non-UI tests must pass (100% pass rate required)
 - If running UI tests, all 128 must pass
 
 ### 4. Ask Permission to Push
@@ -137,7 +137,7 @@ May I push the following 3 commits to remote?
 2. [hash] Update tests for feature X
 3. [hash] Update documentation
 
-All 337 tests passing.
+All 346 tests passing.
 ```
 
 ## Force Push

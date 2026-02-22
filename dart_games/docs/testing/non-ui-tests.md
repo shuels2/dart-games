@@ -2,7 +2,7 @@
 
 ## Overview
 
-337 non-UI tests validate models, providers, services, widgets, and game logic.
+346 non-UI tests validate models, providers, services, widgets, and game logic.
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -54,7 +54,7 @@
 - Random selection
 - Cross-platform file handling
 
-### Integration Tests (148 tests)
+### Integration Tests (157 tests)
 
 **Carnival Derby User Management (26 tests)**
 - Winner/loser stat tracking with duration
@@ -67,11 +67,12 @@
 - Perfect Finish mode with busts
 - Announcement validation
 
-**Target Tag Game Logic (32 tests)**
-- Solo mode mechanics
-- Team mode mechanics
+**Target Tag Game Logic + Announcements (54 tests)**
+- Solo mode mechanics with announcement precedence
+- Team mode mechanics with announcement precedence
 - Hero bonus behavior
 - Edit score functionality
+- Precedence coverage (Tagged Out suppression, hero bonus edge cases, bullseye, multiple eliminations/tagged outs, winner timing)
 
 **Target Tag User Management (14 tests)**
 - Winner/loser stats with duration

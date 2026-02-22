@@ -146,163 +146,84 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final parsed = _parseSector(sector);
     final isMiss = sector == 'None' || parsed == null;
 
-    // ===== ANNOUNCEMENT ORDER =====
+    // ===== PHASE 1: GATHER FACTS =====
 
-    // 1. Dart score announcement
-    if (!isMiss && parsed != null) {
-      _audioQueue!.announceHit(
-        parsed['number'] as int,
-        parsed['multiplier'] as String,
-      );
-    } else {
-      _audioQueue!.announceHit(0, 'single', isMiss: true);
-    }
+    // Check current player shield changes
+    final hasShieldGain = !wasTaggedIn && !isMiss && parsed != null && shieldsAfter > shieldsBefore;
+    final hasTaggedIn = isNowTaggedIn && !wasTaggedIn;
+    final hasSuccessfulTag = didHitOpponentTarget || (didHitHeroBonus && wasTaggedIn);
 
-    // 2. Shield status announcements
-    if (shieldsAfter > shieldsBefore) {
-      // Gained shields
-      if (isNowTaggedIn && !wasTaggedIn) {
-        // Just reached Tagged In!
-        // Get all player names for the announcement
-        List<String> playerNames;
-        if (currentGame.mode == GameMode.team) {
-          // Team mode: announce all team members
-          final teamId = currentGame.playerToTeam![currentPlayer.id]!;
-          final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-          playerNames = teamPlayerIds
-              .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
-              .toList();
-        } else {
-          // Solo mode: announce just the current player
-          playerNames = [currentPlayer.name];
-        }
-        _audioQueue!.announceTaggedIn(playerNames);
-      } else if (!wasTaggedIn) {
-        // Only announce shield count if not already at max shields before this throw
-        _audioQueue!.announceShieldGained(
-          currentPlayer.name,
-          shieldsAfter,
-          targetTagProvider.currentGame!.shieldMax,
-        );
-      }
-    }
-
-    // 3. "Tag! Got 'em!" - if hit opponent's target or own hero bonus while tagged-in
-    if (wasTaggedIn && (didHitOpponentTarget || didHitHeroBonus)) {
-      _audioQueue!.announceSuccessfulTag();
-    }
-
-    // 4. "Shield compromised!" - lost tagged-in status
-    if (wasTaggedIn && !isNowTaggedIn && shieldsAfter < shieldsBefore) {
-      // Get all player names for the announcement
-      List<String> playerNames;
-      if (currentGame.mode == GameMode.team) {
-        // Team mode: announce all team members
-        final teamId = currentGame.playerToTeam![currentPlayer.id]!;
-        final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-        playerNames = teamPlayerIds
-            .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
-            .toList();
-      } else {
-        // Solo mode: announce just the current player
-        playerNames = [currentPlayer.name];
-      }
-      _audioQueue!.announceTaggedOut(playerNames);
-    }
-
-    // 5. "Warning!" - for each opponent who dropped to 1 shield
-    // Only announce if at least one player/team is tagged-in
-    final anyoneTaggedIn = currentGame.playerIds.any((id) => targetTagProvider.isTaggedIn(id));
-    if (anyoneTaggedIn && wasTaggedIn && (didHitOpponentTarget || didHitHeroBonus)) {
-      if (currentGame.mode == GameMode.team) {
-        // Team mode: group low shield warnings by team
-        final lowShieldTeams = <String, List<String>>{};
-        for (final playerId in currentGame.playerIds) {
-          if (playerId == currentPlayer.id) continue; // Skip current player
-
-          final shieldsBeforeThis = allShieldsBefore[playerId] ?? 0;
-          final shieldsAfterThis = targetTagProvider.getShields(playerId);
-
-          // Check if this opponent dropped to exactly 1 shield
-          if (shieldsBeforeThis > 1 && shieldsAfterThis == 1) {
-            final teamId = currentGame.playerToTeam![playerId]!;
-            if (!lowShieldTeams.containsKey(teamId)) {
-              lowShieldTeams[teamId] = [];
-            }
-            final player = allPlayers.firstWhere((p) => p.id == playerId);
-            lowShieldTeams[teamId]!.add(player.name);
-          }
-        }
-        // Announce each team with low shields
-        for (final playerNames in lowShieldTeams.values) {
-          _audioQueue!.announceLowShields(playerNames);
-        }
-      } else {
-        // Solo mode: announce each player individually
-        for (final playerId in currentGame.playerIds) {
-          if (playerId == currentPlayer.id) continue; // Skip current player
-
-          final shieldsBeforeThis = allShieldsBefore[playerId] ?? 0;
-          final shieldsAfterThis = targetTagProvider.getShields(playerId);
-
-          // Check if this opponent dropped to exactly 1 shield
-          if (shieldsBeforeThis > 1 && shieldsAfterThis == 1) {
-            final player = allPlayers.firstWhere((p) => p.id == playerId);
-            _audioQueue!.announceLowShields([player.name]);
-          }
-        }
-      }
-    }
-
-    // 5.5. "Vulnerable!" - shields reached 0 but not eliminated
-    if (anyoneTaggedIn && wasTaggedIn && (didHitOpponentTarget || didHitHeroBonus)) {
-      if (currentGame.mode == GameMode.team) {
-        // Team mode: group vulnerable teams
-        final vulnerableTeams = <String, List<String>>{};
-        for (final playerId in currentGame.playerIds) {
-          if (playerId == currentPlayer.id) continue; // Skip current player
-
-          final shieldsBeforeThis = allShieldsBefore[playerId] ?? 0;
-          final shieldsAfterThis = targetTagProvider.getShields(playerId);
-          final isEliminatedNow = targetTagProvider.isEliminated(playerId);
-
-          // Check if this opponent dropped to exactly 0 shields but is NOT eliminated
-          if (shieldsBeforeThis > 0 && shieldsAfterThis == 0 && !isEliminatedNow) {
-            final teamId = currentGame.playerToTeam![playerId]!;
-            if (!vulnerableTeams.containsKey(teamId)) {
-              vulnerableTeams[teamId] = [];
-            }
-            final player = allPlayers.firstWhere((p) => p.id == playerId);
-            vulnerableTeams[teamId]!.add(player.name);
-          }
-        }
-        // Announce each vulnerable team
-        for (final playerNames in vulnerableTeams.values) {
-          _audioQueue!.announceVulnerable(playerNames);
-        }
-      } else {
-        // Solo mode: announce each vulnerable player individually
-        for (final playerId in currentGame.playerIds) {
-          if (playerId == currentPlayer.id) continue; // Skip current player
-
-          final shieldsBeforeThis = allShieldsBefore[playerId] ?? 0;
-          final shieldsAfterThis = targetTagProvider.getShields(playerId);
-          final isEliminatedNow = targetTagProvider.isEliminated(playerId);
-
-          // Check if this opponent dropped to exactly 0 shields but is NOT eliminated
-          if (shieldsBeforeThis > 0 && shieldsAfterThis == 0 && !isEliminatedNow) {
-            final player = allPlayers.firstWhere((p) => p.id == playerId);
-            _audioQueue!.announceVulnerable([player.name]);
-          }
-        }
-      }
-    }
-
-    // 6. "Tagged Out!" - eliminations
+    // Check opponent status changes
     final newlyEliminated = eliminatedAfter.difference(eliminatedBefore);
-    if (newlyEliminated.isNotEmpty) {
+    final hasElimination = newlyEliminated.isNotEmpty;
+
+    // Check for opponents who lost tagged-in status
+    final lostTaggedInPlayers = <String>[];
+    for (final playerId in currentGame.playerIds) {
+      if (playerId == currentPlayer.id) continue;
+      final wasPreviouslyTaggedIn = currentGame.playerIds.contains(playerId) &&
+          (allShieldsBefore[playerId] ?? 0) >= currentGame.shieldMax;
+      final isStillTaggedIn = targetTagProvider.isTaggedIn(playerId);
+      // Use actual tagged-in tracking from the game state
+      if (targetTagProvider.isTaggedIn(playerId) != true) {
+        // Check if they WERE tagged-in before this dart
+        final shieldsBeforeThis = allShieldsBefore[playerId] ?? 0;
+        final shieldsAfterThis = targetTagProvider.getShields(playerId);
+        if (shieldsBeforeThis >= currentGame.shieldMax && shieldsAfterThis < currentGame.shieldMax) {
+          lostTaggedInPlayers.add(playerId);
+        }
+      }
+    }
+    final hasTaggedOut = lostTaggedInPlayers.isNotEmpty;
+
+    // Check for opponents at low shields (exactly 1)
+    final lowShieldPlayers = <String>[];
+    for (final playerId in currentGame.playerIds) {
+      if (targetTagProvider.isEliminated(playerId)) continue;
+      if (playerId == currentPlayer.id) continue;
+      final sb = allShieldsBefore[playerId] ?? 0;
+      final sn = targetTagProvider.getShields(playerId);
+      if (sb > 1 && sn == 1) {
+        lowShieldPlayers.add(playerId);
+      }
+    }
+    final hasLowShields = lowShieldPlayers.isNotEmpty;
+
+    // Check for opponents at vulnerable (exactly 0 shields, not eliminated)
+    final vulnerablePlayers = <String>[];
+    for (final playerId in currentGame.playerIds) {
+      if (targetTagProvider.isEliminated(playerId)) continue;
+      if (playerId == currentPlayer.id) continue;
+      final sb = allShieldsBefore[playerId] ?? 0;
+      final sn = targetTagProvider.getShields(playerId);
+      if (sb > 0 && sn == 0) {
+        vulnerablePlayers.add(playerId);
+      }
+    }
+    final hasVulnerable = vulnerablePlayers.isNotEmpty;
+
+    // Determine if any secondary effect exists
+    final hasSecondary = hasShieldGain || hasTaggedIn || hasSuccessfulTag ||
+        hasTaggedOut || hasLowShields || hasVulnerable || hasElimination;
+
+    // ===== PHASE 2: APPLY PRECEDENCE (max 1 moment announcement) =====
+
+    // Hit/Miss: only fire if NO secondary effect exists
+    if (!hasSecondary) {
+      if (!isMiss && parsed != null) {
+        _audioQueue!.announceHit(
+          parsed['number'] as int,
+          parsed['multiplier'] as String,
+        );
+      } else {
+        _audioQueue!.announceHit(0, 'single', isMiss: true);
+      }
+    }
+
+    // Pick highest-priority moment and fire exactly one
+    if (hasElimination) {
+      // Priority 1: Elimination
       if (currentGame.mode == GameMode.team) {
-        // Team mode: group eliminated players by team and announce teams together
         final eliminatedTeams = <String, List<String>>{};
         for (final eliminatedId in newlyEliminated) {
           final teamId = currentGame.playerToTeam![eliminatedId]!;
@@ -312,18 +233,107 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           final player = allPlayers.firstWhere((p) => p.id == eliminatedId);
           eliminatedTeams[teamId]!.add(player.name);
         }
-        // Announce each eliminated team
         for (final playerNames in eliminatedTeams.values) {
           _audioQueue!.announceEliminated(playerNames);
         }
       } else {
-        // Solo mode: announce each eliminated player individually
         for (final eliminatedId in newlyEliminated) {
           final eliminatedPlayer = allPlayers.firstWhere((p) => p.id == eliminatedId);
           _audioQueue!.announceEliminated([eliminatedPlayer.name]);
         }
       }
+    } else if (hasVulnerable) {
+      // Priority 2: Vulnerable
+      if (currentGame.mode == GameMode.team) {
+        final vulnerableTeams = <String, List<String>>{};
+        for (final playerId in vulnerablePlayers) {
+          final teamId = currentGame.playerToTeam![playerId]!;
+          if (!vulnerableTeams.containsKey(teamId)) {
+            vulnerableTeams[teamId] = [];
+          }
+        }
+        for (final teamId in vulnerableTeams.keys) {
+          final teamPlayerIds = currentGame.teamPlayers![teamId]!;
+          final playerNames = teamPlayerIds
+              .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+              .toList();
+          _audioQueue!.announceVulnerable(playerNames);
+        }
+      } else {
+        for (final playerId in vulnerablePlayers) {
+          final player = allPlayers.firstWhere((p) => p.id == playerId);
+          _audioQueue!.announceVulnerable([player.name]);
+        }
+      }
+    } else if (hasLowShields) {
+      // Priority 3: Low Shields
+      if (currentGame.mode == GameMode.team) {
+        final lowShieldTeams = <String, List<String>>{};
+        for (final playerId in lowShieldPlayers) {
+          final teamId = currentGame.playerToTeam![playerId]!;
+          if (!lowShieldTeams.containsKey(teamId)) {
+            lowShieldTeams[teamId] = [];
+          }
+        }
+        for (final teamId in lowShieldTeams.keys) {
+          final teamPlayerIds = currentGame.teamPlayers![teamId]!;
+          final playerNames = teamPlayerIds
+              .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+              .toList();
+          _audioQueue!.announceLowShields(playerNames);
+        }
+      } else {
+        for (final playerId in lowShieldPlayers) {
+          final player = allPlayers.firstWhere((p) => p.id == playerId);
+          _audioQueue!.announceLowShields([player.name]);
+        }
+      }
+    } else if (hasTaggedOut) {
+      // Priority 4: Tagged Out
+      if (currentGame.mode == GameMode.team) {
+        final lostByTeam = <String, List<String>>{};
+        for (final playerId in lostTaggedInPlayers) {
+          final teamId = currentGame.playerToTeam![playerId]!;
+          lostByTeam[teamId] ??= [];
+        }
+        for (final teamId in lostByTeam.keys) {
+          final teamPlayerIds = currentGame.teamPlayers![teamId]!;
+          final playerNames = teamPlayerIds
+              .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+              .toList();
+          _audioQueue!.announceTaggedOut(playerNames);
+        }
+      } else {
+        final lostNames = lostTaggedInPlayers
+            .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+            .toList();
+        _audioQueue!.announceTaggedOut(lostNames);
+      }
+    } else if (hasSuccessfulTag) {
+      // Priority 5: Successful Tag (no status change triggered)
+      _audioQueue!.announceSuccessfulTag();
+    } else if (hasTaggedIn) {
+      // Priority 6: Tagged In
+      List<String> playerNames;
+      if (currentGame.mode == GameMode.team) {
+        final teamId = currentGame.playerToTeam![currentPlayer.id]!;
+        final teamPlayerIds = currentGame.teamPlayers![teamId]!;
+        playerNames = teamPlayerIds
+            .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+            .toList();
+      } else {
+        playerNames = [currentPlayer.name];
+      }
+      _audioQueue!.announceTaggedIn(playerNames);
+    } else if (hasShieldGain) {
+      // Priority 7: Shield Gained
+      _audioQueue!.announceShieldGained(
+        currentPlayer.name,
+        shieldsAfter,
+        targetTagProvider.currentGame!.shieldMax,
+      );
     }
+    // Priority 8: Hit/Miss already handled above (when !hasSecondary)
 
     // Check if turn is over (3 darts or winner)
     if (dartsThrown >= 3 || targetTagProvider.hasWinner) {

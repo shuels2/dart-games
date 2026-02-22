@@ -111,8 +111,8 @@ Step-by-step guides and reference documentation for developers building new game
 Everything related to testing, from running tests to writing new ones to handling failures.
 
 **Files:**
-- `test-overview.md` - High-level overview of the 465-test suite
-- `non-ui-tests.md` - Details on the 337 non-UI tests (models, providers, services, widgets)
+- `test-overview.md` - High-level overview of the 474-test suite
+- `non-ui-tests.md` - Details on the 346 non-UI tests (models, providers, services, widgets)
 - `ui-automation.md` - Running the 128 UI automation tests with chromedriver
 - `continuous-animations.md` - Critical rules for testing screens with animations
 - `test-maintenance.md` - How to update tests when features change
