@@ -1066,6 +1066,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
           // Left: healing buff shield (positioned to the left of progress bar)
           if (showHealShield)
             Positioned(
+              key: MonsterMashGameKeys.buffHealShield,
               top: (barHeight - shieldSize) / 2,
               left: 0,
               child: SizedBox(
@@ -1115,6 +1116,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
           // Right: damage buff shield (positioned to the right of progress bar)
           if (showDamageShield)
             Positioned(
+              key: MonsterMashGameKeys.buffDamageShield,
               top: (barHeight - shieldSize) / 2,
               right: 0,
               child: SizedBox(
@@ -1169,6 +1171,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               child: SizedBox(
                 width: barWidth,
                 child: Text(
+                  key: MonsterMashGameKeys.buffLabel,
                   buffLabel,
                   style: GoogleFonts.pirataOne(
                     fontSize: 22,

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 import 'package:dart_games/models/monster_mash_game.dart';
+import 'package:dart_games/constants/test_keys.dart';
 
 // Shared component imports
 import 'shared/ui_test_helpers.dart';
@@ -134,6 +135,8 @@ void main() {
   Future<void> setActiveBuff(WidgetTester tester, BonusBuff buff) async {
     final provider = ProviderHelpers.getMonsterMashProvider(tester);
     provider.currentGame!.activeBuff = buff;
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    provider.notifyListeners();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
@@ -426,12 +429,22 @@ void main() {
       await throwMissViaMock(tester);
       expect(ProviderHelpers.getMonsterMashCurrentPlayerDartsThrown(tester), 1);
 
+      // Hide dartboard emulator so skip button is not obscured
+      await tester.tap(find.byKey(DartboardEmulatorKeys.toggleFAB));
+      await tester.pump();
+      await tester.pump();
+
       // Skip turn
       await UITestHelpers.clickSkipTurn(tester, config);
 
       // Verify shouldPromptTakeout
       final provider = ProviderHelpers.getMonsterMashProvider(tester);
       expect(provider.shouldPromptTakeout, isTrue);
+
+      // Show dartboard emulator for DARTS REMOVED button
+      await tester.tap(find.byKey(DartboardEmulatorKeys.toggleFAB));
+      await tester.pump();
+      await tester.pump();
 
       // Click darts removed
       await clickDartsRemoved(tester);
@@ -451,16 +464,18 @@ void main() {
 
       final player1Id = ProviderHelpers.getMonsterMashCurrentPlayerId(tester)!;
 
+      // Hide dartboard emulator so skip button is not obscured
+      await tester.tap(find.byKey(DartboardEmulatorKeys.toggleFAB));
+      await tester.pump();
+      await tester.pump();
+
       // Skip turn without throwing darts
       await UITestHelpers.clickSkipTurn(tester, config);
 
-      // Wait for auto-advance
-      await tester.pump(const Duration(milliseconds: 500));
+      // Wait for auto-advance (500ms delay in game screen for 0-dart skip)
+      await tester.pump(const Duration(milliseconds: 600));
       await tester.pump();
       await tester.pump();
-
-      // Click darts removed if prompted
-      await clickDartsRemoved(tester);
 
       // Verify advanced to next player
       final player2Id = ProviderHelpers.getMonsterMashCurrentPlayerId(tester)!;
@@ -809,8 +824,11 @@ void main() {
       // Set Blood Moon buff programmatically
       await setActiveBuff(tester, BonusBuff.bloodMoon);
 
-      // Verify UI shows buff indicator
+      // Verify UI shows buff indicator via keys
+      expect(find.byKey(MonsterMashGameKeys.buffDamageShield), findsOneWidget);
+      expect(find.byKey(MonsterMashGameKeys.buffLabel), findsOneWidget);
       expect(find.textContaining('2x'), findsWidgets);
+      expect(find.textContaining('Double damage to any opponent!'), findsOneWidget);
 
       // Throw single at opponent
       await throwDartViaMock(tester, opponentTarget, multiplier: 'single');
@@ -864,8 +882,10 @@ void main() {
       // Set Ancient Bandages buff
       await setActiveBuff(tester, BonusBuff.ancientBandages);
 
-      // Verify UI shows buff indicator
-      expect(find.textContaining('5'), findsWidgets);
+      // Verify UI shows buff indicator via keys
+      expect(find.byKey(MonsterMashGameKeys.buffHealShield), findsOneWidget);
+      expect(find.byKey(MonsterMashGameKeys.buffLabel), findsOneWidget);
+      expect(find.textContaining('Hit your target number for +5 HP!'), findsOneWidget);
 
       // Hit own target number (single) -> should heal +5
       await throwDartViaMock(tester, firstPlayerTarget, multiplier: 'single');
@@ -899,8 +919,10 @@ void main() {
       // Set Shadow Walk buff
       await setActiveBuff(tester, BonusBuff.shadowWalk);
 
-      // Verify UI shows buff indicator
-      expect(find.textContaining('0'), findsWidgets);
+      // Verify UI shows buff indicator via keys
+      expect(find.byKey(MonsterMashGameKeys.buffDamageShield), findsOneWidget);
+      expect(find.byKey(MonsterMashGameKeys.buffLabel), findsOneWidget);
+      expect(find.textContaining('You cannot attack opponents this turn!'), findsOneWidget);
 
       // Throw single at opponent
       await throwDartViaMock(tester, opponentTarget, multiplier: 'single');
@@ -934,8 +956,10 @@ void main() {
       // Set Laboratory Spark buff
       await setActiveBuff(tester, BonusBuff.laboratorySpark);
 
-      // Verify UI shows buff indicator
-      expect(find.textContaining('10'), findsWidgets);
+      // Verify UI shows buff indicator via keys
+      expect(find.byKey(MonsterMashGameKeys.buffDamageShield), findsOneWidget);
+      expect(find.byKey(MonsterMashGameKeys.buffLabel), findsOneWidget);
+      expect(find.textContaining('Hit the bullseye and ALL opponents lose 10 HP!'), findsOneWidget);
 
       // Record opponent health before
       final opponents = [playerA, playerB, playerC].where((p) => p.id != currentPlayerId).toList();

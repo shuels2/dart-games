@@ -365,6 +365,11 @@ class MonsterMashGameKeys {
   static const skipTurnButton = Key('monster_game_skip_turn_button');
   static const editScoreButton = Key('monster_game_edit_score_button');
 
+  // Buff display
+  static const buffHealShield = Key('monster_game_buff_heal_shield');
+  static const buffDamageShield = Key('monster_game_buff_damage_shield');
+  static const buffLabel = Key('monster_game_buff_label');
+
   // Dartboard emulator - all 63 dart buttons
   static const dartSingle1Button = Key('monster_game_dart_single_1_button');
   static const dartSingle2Button = Key('monster_game_dart_single_2_button');

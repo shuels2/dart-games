@@ -112,7 +112,7 @@ void main() {
       await EditScoreHelpers.openEditScore(tester, config);
 
       // Verify dialog is open with dart dropdowns
-      EditScoreHelpers.verifyDialogElements(tester);
+      EditScoreHelpers.verifyDialogElements();
     });
 
     testWidgets('Test 2: Change single dart and save - 3 misses -> edit dart 1 to opponent target -> save -> opponent health -1', (WidgetTester tester) async {

@@ -376,12 +376,11 @@ void main() {
       // Round should increment
       expect(ProviderHelpers.getMonsterMashCurrentRound(tester), 2);
 
-      // Navigate back and start with speed play ON
-      final backButton = find.byTooltip('Back');
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await PumpSequences.navigation(tester);
-      }
+      // Navigate back to menu via arrow_back icon (game screen has no tooltip on back button)
+      final backButton = find.byIcon(Icons.arrow_back);
+      expect(backButton, findsOneWidget);
+      await tester.tap(backButton.first);
+      await PumpSequences.navigation(tester);
 
       await SettingsHelpers.toggleMonsterMashSpeedPlay(tester);
       await SettingsHelpers.setMonsterMashRoundLimit(tester, 5);

@@ -153,7 +153,7 @@ void main() {
       await PumpSequences.simpleUpdate(tester);
 
       // Verify error message appears
-      expect(find.textContaining('enter a name'), findsOneWidget);
+      expect(find.textContaining('Please enter a player name'), findsOneWidget);
 
       // Now enter a valid name
       final nameField = ElementFinders.getAddPlayerNameField();
@@ -202,7 +202,7 @@ void main() {
       expect(dialog, findsOneWidget);
 
       // Verify error message
-      expect(find.textContaining('enter a name'), findsOneWidget);
+      expect(find.textContaining('Please enter a player name'), findsOneWidget);
     });
 
     testWidgets('Test 6: Cancel button - Enter name, tap Cancel -> dialog closes, player NOT added', (WidgetTester tester) async {
