@@ -14,8 +14,8 @@ import '../../../services/carnival_derby_announcement_helper.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/horse_race/race_track_widget.dart';
 import '../../../widgets/player_avatar_widget.dart';
-import '../../../widgets/dartboard_status_indicator.dart';
-import '../../../widgets/compact_dartboard_info.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
@@ -402,12 +402,10 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
             elevation: 0,
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: CompactDartboardInfo(provider: dartboardProvider),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(right: 16.0),
-                child: DartboardStatusIndicator(),
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.carnivalDerby(),
+                ),
               ),
             ],
           ),

@@ -483,6 +483,49 @@ The following widgets were promoted from game-specific to shared during Monster 
 - `lib/widgets/player_selection_card.dart` - Player selection card (previously in `lib/widgets/horse_race/`)
 - `lib/widgets/player_avatar_widget.dart` - Player avatar display (previously in `lib/widgets/horse_race/`)
 
+## 9. Dartboard Connection Info Component
+
+### Purpose
+Shared widget that displays dartboard name, type (emulator/hardware), and connection status in a compact row. Replaces the need for screens to individually compose `CompactDartboardInfo` and `DartboardStatusIndicator`.
+
+### File Location
+`lib/widgets/dartboard_connection_info/`
+
+### Components
+
+#### DartboardConnectionInfo
+- Combined widget using `Consumer<DartboardProvider>` internally
+- Shows dartboard name, type icon, emulator label, and connection status
+- Returns `SizedBox.shrink()` if no dartboard configured
+- Accepts `DartboardConnectionInfoConfig` for game-specific styling
+
+#### DartboardConnectionInfoConfig
+Configuration class with factory methods for each game's theme.
+
+**Factory methods:**
+- `DartboardConnectionInfoConfig.homeScreen()` - White background, standard styling
+- `DartboardConnectionInfoConfig.carnivalDerby()` - Carnival theme (Rye font, Lava Red/Canary Yellow)
+- `DartboardConnectionInfoConfig.targetTag()` - Tech/neon theme (Luckiest Guy font, Hot Pink/Neon Green)
+- `DartboardConnectionInfoConfig.monsterMash()` - Gothic theme (Creepster font, Lime Green/Beige)
+- `DartboardConnectionInfoConfig.reefRoyale()` - Ocean theme (Fredoka font, Seafoam Green/Ocean Blue)
+
+### Usage
+```dart
+AppBar(
+  title: Text('Your Game'),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.only(right: 16.0),
+      child: DartboardConnectionInfo(
+        config: DartboardConnectionInfoConfig.yourGame(),
+      ),
+    ),
+  ],
+),
+```
+
+See [Dartboard Connection Info Integration](../development/dartboard-connection-info.md) for complete guide.
+
 ## Related Documentation
 
 - [Container App Architecture](container-app.md)
@@ -491,3 +534,4 @@ The following widgets were promoted from game-specific to shared during Monster 
 - [Dartboard Emulator Integration](../development/dartboard-emulator.md)
 - [Add Player Dialog Integration](../development/add-player-dialog.md)
 - [Edit Score Dialog Integration](../development/edit-score-dialog.md)
+- [Dartboard Connection Info Integration](../development/dartboard-connection-info.md)

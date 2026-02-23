@@ -299,7 +299,40 @@ class _YourGameScreenState extends State<YourGameScreen> {
 
 See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
-#### 9. Skip Turn Helper (`GameSkipTurnHelper`)
+#### 9. Dartboard Connection Info (`lib/widgets/dartboard_connection_info/`)
+- Shared widget displaying dartboard name, type (emulator/hardware), and connection status
+- Uses `Consumer<DartboardProvider>` internally for reactive updates
+- Game-specific theming via `DartboardConnectionInfoConfig` factory methods
+- Returns `SizedBox.shrink()` if no dartboard configured
+
+```dart
+// Import the shared component
+import 'package:dart_games/widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import 'package:dart_games/widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+
+// Add to AppBar actions
+AppBar(
+  title: Text('Your Game'),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.only(right: 16.0),
+      child: DartboardConnectionInfo(
+        config: DartboardConnectionInfoConfig.yourGame(),
+      ),
+    ),
+  ],
+),
+```
+
+**Available Configurations:**
+- `DartboardConnectionInfoConfig.homeScreen()` - White background, standard styling
+- `DartboardConnectionInfoConfig.carnivalDerby()` - Carnival theme (Rye font, Lava Red/Canary Yellow)
+- `DartboardConnectionInfoConfig.targetTag()` - Tech/neon theme (Luckiest Guy font, Hot Pink/Neon Green)
+- `DartboardConnectionInfoConfig.monsterMash()` - Gothic theme (Creepster font, Lime Green/Beige)
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide.
+
+#### 10. Skip Turn Helper (`GameSkipTurnHelper`)
 - Global utility for consistent skip turn behavior across ALL games
 - Ensures skip turn does NOT increment dart throw or turn counters
 - Provides validation and visual marker management

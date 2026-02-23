@@ -8,10 +8,9 @@ import 'dart:math';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
-import '../../../providers/dartboard_provider.dart';
 import '../../../widgets/player_avatar_widget.dart';
-import '../../../widgets/dartboard_status_indicator.dart';
-import '../../../widgets/compact_dartboard_info.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
 import '../../../services/game_announcement_queue_service.dart';
@@ -178,8 +177,6 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final dartboardProvider = context.read<DartboardProvider>();
-
     return Scaffold(
       backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
       appBar: PreferredSize(
@@ -221,12 +218,10 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
             automaticallyImplyLeading: false,
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: CompactDartboardInfo(provider: dartboardProvider),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(right: 16.0),
-                child: DartboardStatusIndicator(),
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.carnivalDerby(),
+                ),
               ),
             ],
           ),

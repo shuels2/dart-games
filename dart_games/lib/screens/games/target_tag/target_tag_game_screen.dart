@@ -17,6 +17,8 @@ import '../../../widgets/target_tag/player_card_widget.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import 'target_tag_results_screen.dart';
 
@@ -529,6 +531,14 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         ),
         backgroundColor: const Color(0xFFFF007A), // Hot pink
         foregroundColor: Colors.white,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: DartboardConnectionInfo(
+              config: DartboardConnectionInfoConfig.targetTag(),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [

@@ -11,6 +11,8 @@ import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../widgets/player_selection_card.dart';
 import '../../../widgets/player_avatar_widget.dart';
 import '../../../constants/test_keys.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import 'target_tag_game_screen.dart';
 
 class TargetTagMenuScreen extends StatefulWidget {
@@ -140,6 +142,14 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
         ),
         backgroundColor: const Color(0xFFFF007A), // Hot pink
         foregroundColor: Colors.white,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: DartboardConnectionInfo(
+              config: DartboardConnectionInfoConfig.targetTag(),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
