@@ -20,6 +20,7 @@ import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
+import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import 'target_tag_results_screen.dart';
 
 class TargetTagGameScreen extends StatefulWidget {
@@ -729,7 +730,27 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                   ),
                   // Modal overlay for remove darts prompt
                   if (shouldPromptTakeout && !dartboardProvider.isConnected)
-                    _buildRemoveDartsModal(currentPlayer),
+                    RemoveDartsModal(
+                      config: RemoveDartsModalConfig.targetTag(),
+                      playerName: currentPlayer?.name ?? 'Player',
+                      editScoreButtonKey: TargetTagGameKeys.editScoreButton,
+                      onEditScore: () {
+                        if (currentPlayer == null) return;
+                        final targetTagProvider =
+                            Provider.of<TargetTagProvider>(context, listen: false);
+                        showEditScoreDialog(
+                          context: context,
+                          playerName: currentPlayer.name,
+                          initialSegments:
+                              targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
+                          onSubmit: (newSegments) => targetTagProvider
+                              .updateAllDartScores(currentPlayer.id, newSegments),
+                          config: EditScoreDialogConfig.targetTag(),
+                          dartBorderColors:
+                              _computeDartBorderColors(currentPlayer.id),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
@@ -864,103 +885,6 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         teamMembers: teamPlayers,
       );
     }
-  }
-
-  Widget _buildRemoveDartsModal(Player? currentPlayer) {
-    final playerName = currentPlayer?.name ?? 'Player';
-
-    return Container(
-      color: Colors.black.withOpacity(0.7),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E).withOpacity(0.95), // Dark navy
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFFF007A), // Hot pink border
-                width: 4,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.pan_tool,
-                  color: Colors.white,
-                  size: 48,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  playerName,
-                  style: GoogleFonts.luckiestGuy(
-                    color: const Color(0xFFFF007A), // Hot pink
-                    fontSize: 24,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Remove Your Darts',
-                  style: GoogleFonts.fredoka(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.0,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  key: TargetTagGameKeys.editScoreButton,
-                  onPressed: () {
-                    if (currentPlayer == null) return;
-                    final targetTagProvider =
-                        Provider.of<TargetTagProvider>(context, listen: false);
-                    showEditScoreDialog(
-                      context: context,
-                      playerName: currentPlayer.name,
-                      initialSegments:
-                          targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
-                      onSubmit: (newSegments) => targetTagProvider
-                          .updateAllDartScores(currentPlayer.id, newSegments),
-                      config: EditScoreDialogConfig.targetTag(),
-                      dartBorderColors:
-                          _computeDartBorderColors(currentPlayer.id),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF007A).withOpacity(0.85),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    'Edit player score',
-                    style: GoogleFonts.fredoka(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   /// Computes per-dart score box border colors for the edit score dialog.

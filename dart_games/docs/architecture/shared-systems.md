@@ -408,6 +408,47 @@ showEditScoreDialog(
 
 See [Edit Score Dialog Integration](../development/edit-score-dialog.md) for complete guide.
 
+## 10. Remove Darts Modal Component
+
+### Purpose
+Shared full-screen modal overlay prompting the current player to remove their darts from the board. Appears when the turn ends and no physical dartboard is connected.
+
+### File Location
+`lib/widgets/remove_darts_modal/`
+
+### Components
+
+#### RemoveDartsModal
+- Full-screen semi-transparent overlay with centered game-themed container
+- Shows `pan_tool` icon, player name, "Remove Your Darts" instruction
+- Includes "Edit player score" button with game-specific callback
+- Optional `ConstrainedBox` wrapping when `maxWidth` is not infinite
+- Accepts `RemoveDartsModalConfig` for game-specific styling
+
+#### RemoveDartsModalConfig
+Configuration class with factory methods for each game's theme.
+
+**Factory methods:**
+- `RemoveDartsModalConfig.carnivalDerby()` — Canary Yellow border, LuckiestGuy/Bangers fonts, larger icon
+- `RemoveDartsModalConfig.targetTag()` — Hot Pink border, Fredoka font, 400px max width
+- `RemoveDartsModalConfig.monsterMash()` — Lime Green border with green glow, Creepster/PirataOne fonts
+- `RemoveDartsModalConfig.reefRoyale()` — Seafoam Green border, Fredoka font
+
+### Usage
+```dart
+if (shouldPromptTakeout && !dartboardProvider.isConnected)
+  RemoveDartsModal(
+    config: RemoveDartsModalConfig.targetTag(),
+    playerName: currentPlayer?.name ?? 'Player',
+    editScoreButtonKey: YourGameKeys.editScoreButton,
+    onEditScore: () {
+      // Call showEditScoreDialog() with game-specific provider/config
+    },
+  ),
+```
+
+See [Remove Darts Modal Integration](../development/remove-darts-modal.md) for complete guide.
+
 ## System Integration Requirements
 
 All games MUST integrate with these systems:
@@ -535,3 +576,4 @@ See [Dartboard Connection Info Integration](../development/dartboard-connection-
 - [Add Player Dialog Integration](../development/add-player-dialog.md)
 - [Edit Score Dialog Integration](../development/edit-score-dialog.md)
 - [Dartboard Connection Info Integration](../development/dartboard-connection-info.md)
+- [Remove Darts Modal Integration](../development/remove-darts-modal.md)

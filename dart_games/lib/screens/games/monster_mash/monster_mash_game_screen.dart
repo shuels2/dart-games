@@ -17,6 +17,7 @@ import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
+import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import 'monster_mash_results_screen.dart';
 
 class MonsterMashGameScreen extends StatefulWidget {
@@ -547,7 +548,23 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
 
                     // Remove darts modal
                     if (shouldPromptTakeout && !dartboardProvider.isConnected)
-                      _buildRemoveDartsModal(currentPlayer, monsterMashProvider),
+                      RemoveDartsModal(
+                        config: RemoveDartsModalConfig.monsterMash(),
+                        playerName: currentPlayer?.name ?? 'Player',
+                        editScoreButtonKey: MonsterMashGameKeys.editScoreButton,
+                        onEditScore: () {
+                          if (currentPlayer == null) return;
+                          showEditScoreDialog(
+                            context: context,
+                            playerName: currentPlayer.name,
+                            initialSegments: monsterMashProvider.getCurrentTurnDarts(currentPlayer.id),
+                            onSubmit: (newSegments) =>
+                                monsterMashProvider.updateAllDartScores(currentPlayer.id, newSegments),
+                            config: EditScoreDialogConfig.monsterMash(),
+                            dartBorderColors: _computeDartBorderColors(currentPlayer.id, monsterMashProvider),
+                          );
+                        },
+                      ),
 
                     // Round progress bar (top-center)
                     Positioned(
@@ -1374,86 +1391,6 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     if (healthPercent > 0.70) return const Color(0xFF00CC00);
     if (healthPercent > 0.30) return const Color(0xFFFFCC00);
     return const Color(0xFFFF4444);
-  }
-
-  Widget _buildRemoveDartsModal(Player? currentPlayer, MonsterMashProvider provider) {
-    final playerName = currentPlayer?.name ?? 'Player';
-
-    return Container(
-      color: Colors.black.withOpacity(0.7),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2F4F4F).withOpacity(0.95),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF7FFF00), width: 4),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF7FFF00).withOpacity(0.3),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.pan_tool, color: Color(0xFFF5F5DC), size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  playerName,
-                  style: GoogleFonts.creepster(
-                    color: const Color(0xFF7FFF00),
-                    fontSize: 24,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Remove Your Darts',
-                  style: GoogleFonts.pirataOne(
-                    color: const Color(0xFFF5F5DC),
-                    fontSize: 20,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  key: MonsterMashGameKeys.editScoreButton,
-                  onPressed: () {
-                    if (currentPlayer == null) return;
-                    showEditScoreDialog(
-                      context: context,
-                      playerName: currentPlayer.name,
-                      initialSegments: provider.getCurrentTurnDarts(currentPlayer.id),
-                      onSubmit: (newSegments) =>
-                          provider.updateAllDartScores(currentPlayer.id, newSegments),
-                      config: EditScoreDialogConfig.monsterMash(),
-                      dartBorderColors: _computeDartBorderColors(currentPlayer.id, provider),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4B0082).withOpacity(0.85),
-                    foregroundColor: const Color(0xFFF5F5DC),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    side: const BorderSide(color: Color(0xFFFF8C00), width: 2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: Text(
-                    'Edit Player Score',
-                    style: GoogleFonts.pirataOne(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   List<Color?> _computeDartBorderColors(String playerId, MonsterMashProvider provider) {

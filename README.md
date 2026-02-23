@@ -391,6 +391,43 @@ void skipTurn() {
 - Carnival Derby: `lib/providers/horse_race_provider.dart`
 - Helper source: `lib/services/game_skip_turn_helper.dart`
 
+#### 11. Remove Darts Modal (`lib/widgets/remove_darts_modal/`)
+- Shared full-screen overlay prompting the player to remove their darts from the board
+- Appears when a turn ends and no physical dartboard is connected
+- Game-specific theming via `RemoveDartsModalConfig` factory methods
+- Includes "Edit player score" button with game-specific callback
+
+```dart
+// Import the shared component
+import 'package:dart_games/widgets/remove_darts_modal/remove_darts_modal.dart';
+
+// In your game screen's Stack:
+if (shouldPromptTakeout && !dartboardProvider.isConnected)
+  RemoveDartsModal(
+    config: RemoveDartsModalConfig.yourGame(),
+    playerName: currentPlayer?.name ?? 'Player',
+    editScoreButtonKey: YourGameKeys.editScoreButton,
+    onEditScore: () {
+      if (currentPlayer == null) return;
+      showEditScoreDialog(
+        context: context,
+        playerName: currentPlayer.name,
+        initialSegments: yourProvider.getCurrentTurnDarts(currentPlayer.id),
+        onSubmit: (newSegments) =>
+            yourProvider.updateAllDartScores(currentPlayer.id, newSegments),
+        config: EditScoreDialogConfig.yourGame(),
+      );
+    },
+  ),
+```
+
+**Available Configurations:**
+- `RemoveDartsModalConfig.carnivalDerby()` - Canary Yellow border, LuckiestGuy/Bangers fonts
+- `RemoveDartsModalConfig.targetTag()` - Hot Pink border, Fredoka font
+- `RemoveDartsModalConfig.monsterMash()` - Lime Green border with green glow, Creepster/PirataOne fonts
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide.
+
 ## Architecture
 
 ### Container App Structure

@@ -20,6 +20,7 @@ import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/edit_score/edit_score.dart';
+import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import 'horse_race_results_screen.dart';
 
 class HorseRaceGameScreen extends StatefulWidget {
@@ -508,7 +509,25 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     ),
                     // Modal overlay for remove darts prompt
                     if (shouldPromptTakeout && !dartboardProvider.isConnected)
-                      _buildRemoveDartsModal(currentPlayer),
+                      RemoveDartsModal(
+                        config: RemoveDartsModalConfig.carnivalDerby(),
+                        playerName: currentPlayer?.name ?? 'Player',
+                        editScoreButtonKey: CarnivalDerbyGameKeys.editScoreButton,
+                        onEditScore: () {
+                          if (currentPlayer == null) return;
+                          final horseRaceProvider =
+                              Provider.of<HorseRaceProvider>(context, listen: false);
+                          showEditScoreDialog(
+                            context: context,
+                            playerName: currentPlayer.name,
+                            initialSegments: horseRaceProvider
+                                .getCurrentTurnDartScores(currentPlayer.id),
+                            onSubmit: (newSegments) => horseRaceProvider
+                                .updateAllDartScores(currentPlayer.id, newSegments),
+                            config: EditScoreDialogConfig.carnivalDerby(),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -728,101 +747,6 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRemoveDartsModal(Player? currentPlayer) {
-    final playerName = currentPlayer?.name ?? 'Player';
-
-    return Container(
-      color: Colors.black.withOpacity(0.7),
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(32),
-          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 48),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1D3557).withOpacity(0.95), // Midnight Navy
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFFFFD700), // Canary Yellow border
-              width: 4,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 20,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.pan_tool,
-                color: Colors.white,
-                size: 64,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                playerName,
-                style: GoogleFonts.luckiestGuy(
-                  color: const Color(0xFFFFD700), // Canary Yellow
-                  fontSize: 28,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Remove Your Darts',
-                style: GoogleFonts.bangers(
-                  color: const Color(0xFFF1FAEE), // Cloud Dancer
-                  fontSize: 24,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Edit player score button
-              ElevatedButton(
-                key: CarnivalDerbyGameKeys.editScoreButton,
-                onPressed: () {
-                  if (currentPlayer == null) return;
-                  final horseRaceProvider =
-                      Provider.of<HorseRaceProvider>(context, listen: false);
-                  showEditScoreDialog(
-                    context: context,
-                    playerName: currentPlayer.name,
-                    initialSegments: horseRaceProvider
-                        .getCurrentTurnDartScores(currentPlayer.id),
-                    onSubmit: (newSegments) => horseRaceProvider
-                        .updateAllDartScores(currentPlayer.id, newSegments),
-                    config: EditScoreDialogConfig.carnivalDerby(),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD700), // Canary Yellow
-                  foregroundColor: const Color(0xFF1D3557), // Midnight Navy
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  side: const BorderSide(
-                    color: Color(0xFFF1FAEE), // Cloud Dancer border
-                    width: 2,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  'Edit player score',
-                  style: GoogleFonts.bangers(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
