@@ -449,6 +449,65 @@ if (shouldPromptTakeout && !dartboardProvider.isConnected)
 
 See [Remove Darts Modal Integration](../development/remove-darts-modal.md) for complete guide.
 
+## 11. Player List Panel Component
+
+### Purpose
+Shared, configurable player management UI for game menu screens. Supports two patterns: dual-list (Available + Selected) and single-list with team assignment.
+
+### File Location
+`lib/widgets/player_list_panel/`
+
+### Components
+
+#### DualPlayerListPanel
+Two side-by-side lists: "Available Players" and "Selected Players" with selection, removal, and add player functionality. Used by Carnival Derby and Monster Mash.
+
+#### DualPlayerListPanelConfig
+Configuration class with factory methods for each game's theme.
+
+**Factory methods:**
+- `DualPlayerListPanelConfig.carnivalDerby()` — Navy containers, Bangers font, Lava Red button
+- `DualPlayerListPanelConfig.monsterMash()` — Dark slate containers, PirataOne headers, Creepster names
+
+#### TeamPlayerListPanel
+Single player list with optional team assignment (team icons, team selection dialog, team assignment boxes). Used by Target Tag.
+
+#### TeamPlayerListPanelConfig
+Configuration class for team game pattern.
+
+**Factory methods:**
+- `TeamPlayerListPanelConfig.targetTag()` — Hot Pink/Neon Green theme, Fredoka font
+
+### Features
+- Custom button builders (Monster Mash stone buttons via `customAddPlayerButton`)
+- Auto-select and auto-scroll on player add
+- Team selection dialog with "FULL" badge and "Remove from Team"
+- Fixed height or expanded layout modes
+- All test keys passed through (not generated internally)
+
+### Usage
+```dart
+// Dual-list pattern (Carnival Derby, Monster Mash)
+DualPlayerListPanel(
+  config: DualPlayerListPanelConfig.carnivalDerby(),
+  addPlayerButtonKey: CarnivalDerbyMenuKeys.addPlayerButton,
+  playerListViewKey: CarnivalDerbyMenuKeys.playerListView,
+  playerTileKey: (id) => CarnivalDerbyMenuKeys.playerTile(id),
+  removePlayerButtonKey: (id) => CarnivalDerbyMenuKeys.removePlayerButton(id),
+)
+
+// Team pattern (Target Tag)
+TeamPlayerListPanel(
+  config: TeamPlayerListPanelConfig.targetTag(),
+  isTeamMode: _isTeamMode,
+  isManualTeamAssignment: !_isRandomTeams,
+  teamIconPaths: _teamIconPaths,
+  onTeamAssignmentsChanged: (assignments) { ... },
+)
+```
+
+See [Player List Panel Integration](../development/player-list-panel.md) for complete guide.
+
 ## System Integration Requirements
 
 All games MUST integrate with these systems:
@@ -577,3 +636,4 @@ See [Dartboard Connection Info Integration](../development/dartboard-connection-
 - [Edit Score Dialog Integration](../development/edit-score-dialog.md)
 - [Dartboard Connection Info Integration](../development/dartboard-connection-info.md)
 - [Remove Darts Modal Integration](../development/remove-darts-modal.md)
+- [Player List Panel Integration](../development/player-list-panel.md)

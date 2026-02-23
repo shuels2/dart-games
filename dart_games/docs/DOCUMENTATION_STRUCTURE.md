@@ -26,6 +26,7 @@ dart_games/
     │   ├── edit-score-dialog.md      # Edit Score dialog component
     │   ├── dartboard-connection-info.md # Dartboard connection info component
     │   ├── remove-darts-modal.md     # Remove darts modal component
+    │   ├── player-list-panel.md     # Player list panel component
     │   └── widget-keys.md            # Widget key requirements for testing
     │
     ├── testing/
@@ -109,6 +110,7 @@ Step-by-step guides and reference documentation for developers building new game
 - `edit-score-dialog.md` - Using the shared Edit Score dialog component
 - `dartboard-connection-info.md` - Using the shared Dartboard Connection Info component
 - `remove-darts-modal.md` - Using the shared Remove Darts Modal component
+- `player-list-panel.md` - Using the shared Player List Panel component
 - `widget-keys.md` - Widget key naming conventions and requirements
 
 ### Testing Documentation
@@ -270,4 +272,4 @@ Original CLAUDE.md contained ~2800 lines of content covering:
 - Game-specific information
 - Component integration guides
 
-This has been reorganized into 57 focused files for better maintainability and navigation.
+This has been reorganized into 58 focused files for better maintainability and navigation.

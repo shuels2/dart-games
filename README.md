@@ -428,6 +428,44 @@ if (shouldPromptTakeout && !dartboardProvider.isConnected)
 
 See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
+#### 12. Player List Panel (`lib/widgets/player_list_panel/`)
+- Shared, configurable player management UI for game menu screens
+- Two patterns: dual-list (Available + Selected) and single-list with team assignment
+- Game-specific theming via config classes with factory methods
+- Custom button builders for unique game styling (Monster Mash stone buttons)
+
+```dart
+// Dual-list pattern (Carnival Derby, Monster Mash)
+import 'package:dart_games/widgets/player_list_panel/player_list_panel.dart';
+
+DualPlayerListPanel(
+  config: DualPlayerListPanelConfig.carnivalDerby(),
+  addPlayerButtonKey: CarnivalDerbyMenuKeys.addPlayerButton,
+  addPlayerButtonEmptyStateKey: CarnivalDerbyMenuKeys.addPlayerButtonEmptyState,
+  playerListViewKey: CarnivalDerbyMenuKeys.playerListView,
+  playerTileKey: (id) => CarnivalDerbyMenuKeys.playerTile(id),
+  removePlayerButtonKey: (id) => CarnivalDerbyMenuKeys.removePlayerButton(id),
+)
+
+// Team game pattern (Target Tag)
+TeamPlayerListPanel(
+  config: TeamPlayerListPanelConfig.targetTag(),
+  isTeamMode: _isTeamMode,
+  isManualTeamAssignment: !_isRandomTeams,
+  teamIconPaths: _teamIconPaths,
+  onTeamAssignmentsChanged: (assignments) {
+    setState(() { _playerTeamAssignments = assignments; });
+  },
+)
+```
+
+**Available Configurations:**
+- `DualPlayerListPanelConfig.carnivalDerby()` - Navy containers, Bangers font, Lava Red button
+- `DualPlayerListPanelConfig.monsterMash()` - Dark slate containers, PirataOne headers, Creepster names
+- `TeamPlayerListPanelConfig.targetTag()` - Hot Pink/Neon Green theme, Fredoka font
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide.
+
 ## Architecture
 
 ### Container App Structure
