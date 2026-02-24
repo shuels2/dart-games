@@ -11,6 +11,8 @@ import '../../../providers/player_provider.dart';
 import '../../../providers/monster_mash_provider.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../constants/test_keys.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import 'monster_mash_menu_screen.dart';
 import 'monster_mash_game_screen.dart';
 
@@ -226,6 +228,14 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
         backgroundColor: Colors.transparent,
         foregroundColor: const Color(0xFFF5F5DC),
         automaticallyImplyLeading: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: DartboardConnectionInfo(
+              config: DartboardConnectionInfoConfig.monsterMash(),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [

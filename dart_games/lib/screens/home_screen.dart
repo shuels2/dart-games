@@ -4,8 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../constants/test_keys.dart';
 import '../providers/dartboard_provider.dart';
 import '../services/dart_announcer_service.dart';
-import '../widgets/dartboard_status_indicator.dart';
-import '../widgets/compact_dartboard_info.dart';
+import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import 'options_screen.dart';
 import 'games/carnival_horse_race/horse_race_menu_screen.dart';
 import 'games/target_tag/target_tag_menu_screen.dart';
@@ -259,12 +259,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: CompactDartboardInfo(provider: dartboardProvider),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: DartboardStatusIndicator(),
+            padding: const EdgeInsets.only(right: 16.0),
+            child: DartboardConnectionInfo(
+              config: DartboardConnectionInfoConfig.homeScreen(),
+            ),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),

@@ -5,9 +5,10 @@ import 'package:provider/provider.dart';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/monster_mash_provider.dart';
-import '../../../widgets/add_player/add_player.dart';
-import '../../../widgets/player_selection_card.dart';
+import '../../../widgets/player_list_panel/player_list_panel.dart';
 import '../../../constants/test_keys.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import 'monster_mash_game_screen.dart';
 
 class MonsterMashMenuScreen extends StatefulWidget {
@@ -36,8 +37,6 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
   bool _bonusBuffs = false;
   bool _speedPlay = false;
   double _roundLimit = 10.0;
-  final ScrollController _availablePlayersScrollController = ScrollController();
-  final ScrollController _selectedPlayersScrollController = ScrollController();
   late AnimationController _pulseController;
   late AnimationController _lightningController;
   PlayerProvider? _playerProvider;
@@ -92,8 +91,6 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
     _playerProvider?.markPlayersSorted();
     _pulseController.dispose();
     _lightningController.dispose();
-    _availablePlayersScrollController.dispose();
-    _selectedPlayersScrollController.dispose();
     super.dispose();
   }
 
@@ -157,6 +154,14 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: DartboardConnectionInfo(
+              config: DartboardConnectionInfoConfig.monsterMash(),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -659,13 +664,23 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildAvailablePlayersSection(playerProvider)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildSelectedPlayersSection(playerProvider)),
-              ],
+            child: DualPlayerListPanel(
+              config: DualPlayerListPanelConfig.monsterMash(),
+              addPlayerButtonKey: MonsterMashMenuKeys.addPlayerButton,
+              addPlayerButtonEmptyStateKey: MonsterMashMenuKeys.addPlayerButtonEmptyState,
+              playerListViewKey: MonsterMashMenuKeys.playerListView,
+              playerTileKey: (id) => MonsterMashMenuKeys.playerTile(id),
+              customAddPlayerButton: ({required Key key, required VoidCallback onPressed, required bool isEmptyState}) {
+                return _buildStoneNewPlayerButton(
+                  key: key,
+                  onPressed: onPressed,
+                  fontSize: isEmptyState ? 24 : 18,
+                  iconSize: isEmptyState ? 24 : 18,
+                  width: isEmptyState ? 210 : 170,
+                  height: isEmptyState ? 44 : 36,
+                  seed: isEmptyState ? 'NEW_PLAYER_EMPTY'.hashCode : 'NEW_PLAYER_HEADER'.hashCode,
+                );
+              },
             ),
           ),
         ),
@@ -676,209 +691,6 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
     );
   }
 
-  Widget _buildAvailablePlayersSection(PlayerProvider playerProvider) {
-    final allPlayers = playerProvider.allPlayers;
-    final selectedPlayers = playerProvider.selectedPlayers;
-
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F4F4F).withOpacity(0.80),
-        border: Border.all(color: const Color(0xFFF5F5DC).withOpacity(0.3), width: 1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Available Players',
-                style: GoogleFonts.pirataOne(
-                  fontSize: 22,
-                  color: const Color(0xFFF5F5DC),
-                ),
-              ),
-              if (allPlayers.isNotEmpty)
-                Transform.translate(
-                  offset: const Offset(0, -5),
-                  child: _buildStoneNewPlayerButton(
-                  key: MonsterMashMenuKeys.addPlayerButton,
-                  onPressed: _handleAddPlayer,
-                  fontSize: 18,
-                  iconSize: 18,
-                  width: 170,
-                  height: 36,
-                  seed: 'NEW_PLAYER_HEADER'.hashCode,
-                )),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: allPlayers.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'No players yet. Add your first player!',
-                          style: GoogleFonts.montserrat(
-                            color: const Color(0xFFF5F5DC).withOpacity(0.7),
-                            fontSize: 20,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        _buildStoneNewPlayerButton(
-                          key: MonsterMashMenuKeys.addPlayerButtonEmptyState,
-                          onPressed: _handleAddPlayer,
-                          fontSize: 24,
-                          iconSize: 24,
-                          width: 210,
-                          height: 44,
-                          seed: 'NEW_PLAYER_EMPTY'.hashCode,
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    key: MonsterMashMenuKeys.playerListView,
-                    controller: _availablePlayersScrollController,
-                    itemCount: allPlayers.length,
-                    itemBuilder: (context, index) {
-                      final player = allPlayers[index];
-                      final isSelected = selectedPlayers.any((p) => p.id == player.id);
-
-                      return PlayerSelectionCard(
-                        key: MonsterMashMenuKeys.playerTile(player.id),
-                        player: player,
-                        isSelected: isSelected,
-                        selectedColor: const Color(0xFF4B0082),
-                        selectedBorderColor: const Color(0xFF7FFF00),
-                        nameStyle: GoogleFonts.creepster(
-                          fontSize: 21,
-                          color: const Color(0xFFF1FAEE),
-                          shadows: [
-                            Shadow(
-                              color: const Color(0xFFF1FAEE).withOpacity(0.4),
-                              blurRadius: 8,
-                            ),
-                            const Shadow(
-                              color: Colors.black,
-                              blurRadius: 3,
-                              offset: Offset(1, 1),
-                            ),
-                          ],
-                        ),
-                        nameStatsSpacing: 1.4,
-                        onTap: () {
-                          if (isSelected) {
-                            playerProvider.deselectPlayer(player.id);
-                          } else {
-                            playerProvider.selectPlayer(player, maxPlayers: 8);
-                            Future.delayed(const Duration(milliseconds: 100), () {
-                              if (mounted) {
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  if (mounted && _selectedPlayersScrollController.hasClients) {
-                                    final targetPosition = _selectedPlayersScrollController.position.maxScrollExtent + 150;
-                                    _selectedPlayersScrollController.animateTo(
-                                      targetPosition,
-                                      duration: const Duration(milliseconds: 300),
-                                      curve: Curves.easeOut,
-                                    );
-                                  }
-                                });
-                              }
-                            });
-                          }
-                        },
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSelectedPlayersSection(PlayerProvider playerProvider) {
-    final selectedPlayers = playerProvider.selectedPlayers;
-
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F4F4F).withOpacity(0.80),
-        border: Border.all(
-          color: selectedPlayers.length >= 2 ? const Color(0xFF7FFF00) : const Color(0xFFF5F5DC).withOpacity(0.3),
-          width: selectedPlayers.length >= 2 ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Selected Players (${selectedPlayers.length}/8)',
-            style: GoogleFonts.pirataOne(
-              fontSize: 22,
-              color: selectedPlayers.length >= 2 ? const Color(0xFF7FFF00) : const Color(0xFFF5F5DC),
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (selectedPlayers.isEmpty)
-            Expanded(
-              child: Center(
-                child: Text(
-                  'Select at least 2 players',
-                  style: GoogleFonts.montserrat(
-                    color: const Color(0xFFF5F5DC).withOpacity(0.7),
-                    fontSize: 20,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.builder(
-                controller: _selectedPlayersScrollController,
-                itemCount: selectedPlayers.length,
-                itemBuilder: (context, index) {
-                  final player = selectedPlayers[index];
-                  return PlayerSelectionCard(
-                    player: player,
-                    isSelected: true,
-                    compact: false,
-                    selectedColor: const Color(0xFF4B0082),
-                    selectedBorderColor: const Color(0xFF7FFF00),
-                    nameStyle: GoogleFonts.creepster(
-                      fontSize: 21,
-                      color: const Color(0xFFF1FAEE),
-                      shadows: [
-                        Shadow(
-                          color: const Color(0xFFF1FAEE).withOpacity(0.4),
-                          blurRadius: 8,
-                        ),
-                        const Shadow(
-                          color: Colors.black,
-                          blurRadius: 3,
-                          offset: Offset(1, 1),
-                        ),
-                      ],
-                    ),
-                    nameStatsSpacing: 1.4,
-                    onTap: () {},
-                    onRemove: () {
-                      playerProvider.deselectPlayer(player.id);
-                    },
-                  );
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildStartButton(bool canStart, List<Player> selectedPlayers) {
     final jaggedClipper = _JaggedEdgeClipper(seed: 'MONSTER_MASH_START'.hashCode, jagAmount: 4.0, segmentsPerSide: 30);
@@ -1046,50 +858,6 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
     );
   }
 
-  void _handleAddPlayer() async {
-    final player = await showAddPlayerDialog(
-      context: context,
-      config: AddPlayerDialogConfig.monsterMash(),
-    );
-
-    if (player != null && mounted) {
-      final playerProvider = context.read<PlayerProvider>();
-      await playerProvider.savePlayer(player);
-
-      if (playerProvider.selectedPlayers.length < 8) {
-        playerProvider.selectPlayer(player, maxPlayers: 8);
-      }
-
-      _scrollToNewPlayer();
-    }
-  }
-
-  void _scrollToNewPlayer() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            if (_availablePlayersScrollController.hasClients) {
-              final targetPosition = _availablePlayersScrollController.position.maxScrollExtent + 150;
-              _availablePlayersScrollController.animateTo(
-                targetPosition,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-            if (_selectedPlayersScrollController.hasClients) {
-              final targetPosition = _selectedPlayersScrollController.position.maxScrollExtent + 150;
-              _selectedPlayersScrollController.animateTo(
-                targetPosition,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          }
-        });
-      }
-    });
-  }
 
   void _startGame(List<Player> selectedPlayers) {
     final monsterMashProvider = context.read<MonsterMashProvider>();

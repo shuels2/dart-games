@@ -10,6 +10,8 @@ import '../../../providers/target_tag_provider.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../constants/test_keys.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import 'target_tag_menu_screen.dart';
 import 'target_tag_game_screen.dart';
 
@@ -185,6 +187,14 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
         backgroundColor: const Color(0xFFFF007A), // Hot pink
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: DartboardConnectionInfo(
+              config: DartboardConnectionInfoConfig.targetTag(),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [

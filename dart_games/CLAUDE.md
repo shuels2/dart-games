@@ -18,7 +18,7 @@ Each game has its own unique visual identity while integrating with global syste
 
 ### 🏗️ Architecture
 - [Container App Structure](docs/architecture/container-app.md) - App structure, project layout, navigation
-- [Shared Systems](docs/architecture/shared-systems.md) - 8 global systems (DartboardProvider, PlayerProvider, etc.)
+- [Shared Systems](docs/architecture/shared-systems.md) - 11 global systems (DartboardProvider, PlayerProvider, etc.)
 - [Design System](docs/architecture/design-system.md) - Container app colors, typography, patterns
 
 ### 👨‍💻 Development Guides
@@ -29,6 +29,9 @@ Each game has its own unique visual identity while integrating with global syste
 - [Dartboard Emulator](docs/development/dartboard-emulator.md) - Dartboard emulator components
 - [Add Player Dialog](docs/development/add-player-dialog.md) - Shared Add Player dialog component
 - [Edit Score Dialog](docs/development/edit-score-dialog.md) - Shared Edit Score dialog component
+- [Dartboard Connection Info](docs/development/dartboard-connection-info.md) - Shared dartboard connection info component
+- [Remove Darts Modal](docs/development/remove-darts-modal.md) - Shared remove darts modal component
+- [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
 ### 🧪 Testing (480 tests total)
@@ -131,7 +134,7 @@ dart_games/
 ├── docs/                            # All documentation
 │   ├── DOCUMENTATION_STRUCTURE.md  # Documentation organization guide
 │   ├── architecture/                # Container app architecture (3 files)
-│   ├── development/                 # Development guides (8 files)
+│   ├── development/                 # Development guides (11 files)
 │   ├── testing/                     # Testing documentation (5 files)
 │   ├── deployment/                  # Build and git workflow (2 files)
 │   ├── critical-rules/              # Critical rules (3 files)
@@ -197,13 +200,13 @@ git push origin <branch>        # Push (with permission)
 
 ## Notes
 
-- Original CLAUDE.md (2800 lines) has been reorganized into 55 focused documentation files
+- Original CLAUDE.md (2800 lines) has been reorganized into 57 focused documentation files
 - Each topic has its own file for better maintainability and navigation
 - Game-specific documentation lives in `docs/games/[game_name]/`
 - Shared documentation lives in topic-based folders (architecture, development, testing, etc.)
 
 ---
 
-**Last Updated:** 2026-02-22
-**Documentation Version:** 2.1 (Monster Mash + Updated Counts)
-**Total Documentation Files:** 55
+**Last Updated:** 2026-02-23
+**Documentation Version:** 2.4 (Player List Panel Component)
+**Total Documentation Files:** 58

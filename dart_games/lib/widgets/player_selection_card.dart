@@ -14,6 +14,12 @@ class PlayerSelectionCard extends StatelessWidget {
   final Key? removeButtonKey;
   final TextStyle? nameStyle;
   final double? nameStatsSpacing;
+  final Color? unselectedBackgroundColor;
+  final Color? unselectedBorderColor;
+  final TextStyle? statsStyle;
+  final Color? checkIconColor;
+  final Color? removeIconColor;
+  final Widget? trailing;
 
   const PlayerSelectionCard({
     super.key,
@@ -27,6 +33,12 @@ class PlayerSelectionCard extends StatelessWidget {
     this.removeButtonKey,
     this.nameStyle,
     this.nameStatsSpacing,
+    this.unselectedBackgroundColor,
+    this.unselectedBorderColor,
+    this.statsStyle,
+    this.checkIconColor,
+    this.removeIconColor,
+    this.trailing,
   });
 
   @override
@@ -38,16 +50,26 @@ class PlayerSelectionCard extends StatelessWidget {
       return _buildCompactCard();
     }
 
+    final defaultUnselectedBg = unselectedBackgroundColor ?? const Color(0xFF1D3557);
+    final defaultUnselectedBorder = unselectedBorderColor ?? const Color(0xFF48CAE4);
+    final defaultStatsStyle = statsStyle ?? GoogleFonts.montserrat(
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+      color: const Color(0xFFF1FAEE).withOpacity(0.8),
+    );
+    final defaultCheckColor = checkIconColor ?? const Color(0xFF48CAE4);
+    final defaultRemoveColor = removeIconColor ?? const Color(0xFFE63946);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       decoration: BoxDecoration(
         color: isSelected
             ? defaultSelectedColor.withOpacity(0.2)  // Selected tint
-            : const Color(0xFF1D3557).withOpacity(0.6), // Navy
+            : defaultUnselectedBg.withOpacity(0.6),
         border: Border.all(
           color: isSelected
               ? defaultSelectedBorderColor  // Selected border
-              : const Color(0xFF48CAE4),  // Electric Teal
+              : defaultUnselectedBorder,
           width: isSelected ? 3 : 2,
         ),
         borderRadius: BorderRadius.circular(8),
@@ -81,24 +103,22 @@ class PlayerSelectionCard extends StatelessWidget {
                       SizedBox(height: nameStatsSpacing ?? 2),
                       Text(
                         'Games: ${player.gamesPlayed} | Wins: ${player.gamesWon}',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFFF1FAEE).withOpacity(0.8),
-                        ),
+                        style: defaultStatsStyle,
                       ),
                     ],
                   ),
                 ),
-                if (isSelected && onRemove != null)
+                if (trailing != null)
+                  trailing!
+                else if (isSelected && onRemove != null)
                   IconButton(
                     key: removeButtonKey,
-                    icon: const Icon(Icons.remove_circle, color: Color(0xFFE63946)),
+                    icon: Icon(Icons.remove_circle, color: defaultRemoveColor),
                     iconSize: 24,
                     onPressed: onRemove,
                   )
                 else if (isSelected)
-                  const Icon(Icons.check_circle, color: Color(0xFF48CAE4), size: 24),
+                  Icon(Icons.check_circle, color: defaultCheckColor, size: 24),
               ],
             ),
           ),
@@ -110,6 +130,12 @@ class PlayerSelectionCard extends StatelessWidget {
   Widget _buildCompactCard() {
     final defaultSelectedColor = selectedColor ?? const Color(0xFFFFD700); // Canary Yellow
     final defaultSelectedBorderColor = selectedBorderColor ?? const Color(0xFFFFD700); // Canary Yellow
+    final defaultRemoveColor = removeIconColor ?? const Color(0xFFE63946);
+    final defaultCompactStatsStyle = statsStyle ?? GoogleFonts.montserrat(
+      fontSize: 10,
+      fontWeight: FontWeight.w500,
+      color: const Color(0xFFF1FAEE).withOpacity(0.8),
+    );
 
     return Container(
       margin: const EdgeInsets.all(0),
@@ -143,9 +169,9 @@ class PlayerSelectionCard extends StatelessWidget {
                     if (onRemove != null)
                       GestureDetector(
                         onTap: onRemove,
-                        child: const Icon(
+                        child: Icon(
                           Icons.remove_circle,
-                          color: Color(0xFFE63946), // Lava Red
+                          color: defaultRemoveColor,
                           size: 20,
                         ),
                       ),
@@ -166,19 +192,11 @@ class PlayerSelectionCard extends StatelessWidget {
                 SizedBox(height: nameStatsSpacing ?? 2),
                 Text(
                   'G: ${player.gamesPlayed}',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFFF1FAEE).withOpacity(0.8),
-                  ),
+                  style: defaultCompactStatsStyle,
                 ),
                 Text(
                   'W: ${player.gamesWon}',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFFF1FAEE).withOpacity(0.8),
-                  ),
+                  style: defaultCompactStatsStyle,
                 ),
               ],
             ),

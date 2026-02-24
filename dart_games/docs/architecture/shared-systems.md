@@ -408,6 +408,106 @@ showEditScoreDialog(
 
 See [Edit Score Dialog Integration](../development/edit-score-dialog.md) for complete guide.
 
+## 10. Remove Darts Modal Component
+
+### Purpose
+Shared full-screen modal overlay prompting the current player to remove their darts from the board. Appears when the turn ends and no physical dartboard is connected.
+
+### File Location
+`lib/widgets/remove_darts_modal/`
+
+### Components
+
+#### RemoveDartsModal
+- Full-screen semi-transparent overlay with centered game-themed container
+- Shows `pan_tool` icon, player name, "Remove Your Darts" instruction
+- Includes "Edit player score" button with game-specific callback
+- Optional `ConstrainedBox` wrapping when `maxWidth` is not infinite
+- Accepts `RemoveDartsModalConfig` for game-specific styling
+
+#### RemoveDartsModalConfig
+Configuration class with factory methods for each game's theme.
+
+**Factory methods:**
+- `RemoveDartsModalConfig.carnivalDerby()` — Canary Yellow border, LuckiestGuy/Bangers fonts, larger icon
+- `RemoveDartsModalConfig.targetTag()` — Hot Pink border, Fredoka font, 400px max width
+- `RemoveDartsModalConfig.monsterMash()` — Lime Green border with green glow, Creepster/PirataOne fonts
+- `RemoveDartsModalConfig.reefRoyale()` — Seafoam Green border, Fredoka font
+
+### Usage
+```dart
+if (shouldPromptTakeout && !dartboardProvider.isConnected)
+  RemoveDartsModal(
+    config: RemoveDartsModalConfig.targetTag(),
+    playerName: currentPlayer?.name ?? 'Player',
+    editScoreButtonKey: YourGameKeys.editScoreButton,
+    onEditScore: () {
+      // Call showEditScoreDialog() with game-specific provider/config
+    },
+  ),
+```
+
+See [Remove Darts Modal Integration](../development/remove-darts-modal.md) for complete guide.
+
+## 11. Player List Panel Component
+
+### Purpose
+Shared, configurable player management UI for game menu screens. Supports two patterns: dual-list (Available + Selected) and single-list with team assignment.
+
+### File Location
+`lib/widgets/player_list_panel/`
+
+### Components
+
+#### DualPlayerListPanel
+Two side-by-side lists: "Available Players" and "Selected Players" with selection, removal, and add player functionality. Used by Carnival Derby and Monster Mash.
+
+#### DualPlayerListPanelConfig
+Configuration class with factory methods for each game's theme.
+
+**Factory methods:**
+- `DualPlayerListPanelConfig.carnivalDerby()` — Navy containers, Bangers font, Lava Red button
+- `DualPlayerListPanelConfig.monsterMash()` — Dark slate containers, PirataOne headers, Creepster names
+
+#### TeamPlayerListPanel
+Single player list with optional team assignment (team icons, team selection dialog, team assignment boxes). Used by Target Tag.
+
+#### TeamPlayerListPanelConfig
+Configuration class for team game pattern.
+
+**Factory methods:**
+- `TeamPlayerListPanelConfig.targetTag()` — Hot Pink/Neon Green theme, Fredoka font
+
+### Features
+- Custom button builders (Monster Mash stone buttons via `customAddPlayerButton`)
+- Auto-select and auto-scroll on player add
+- Team selection dialog with "FULL" badge and "Remove from Team"
+- Fixed height or expanded layout modes
+- All test keys passed through (not generated internally)
+
+### Usage
+```dart
+// Dual-list pattern (Carnival Derby, Monster Mash)
+DualPlayerListPanel(
+  config: DualPlayerListPanelConfig.carnivalDerby(),
+  addPlayerButtonKey: CarnivalDerbyMenuKeys.addPlayerButton,
+  playerListViewKey: CarnivalDerbyMenuKeys.playerListView,
+  playerTileKey: (id) => CarnivalDerbyMenuKeys.playerTile(id),
+  removePlayerButtonKey: (id) => CarnivalDerbyMenuKeys.removePlayerButton(id),
+)
+
+// Team pattern (Target Tag)
+TeamPlayerListPanel(
+  config: TeamPlayerListPanelConfig.targetTag(),
+  isTeamMode: _isTeamMode,
+  isManualTeamAssignment: !_isRandomTeams,
+  teamIconPaths: _teamIconPaths,
+  onTeamAssignmentsChanged: (assignments) { ... },
+)
+```
+
+See [Player List Panel Integration](../development/player-list-panel.md) for complete guide.
+
 ## System Integration Requirements
 
 All games MUST integrate with these systems:
@@ -483,6 +583,49 @@ The following widgets were promoted from game-specific to shared during Monster 
 - `lib/widgets/player_selection_card.dart` - Player selection card (previously in `lib/widgets/horse_race/`)
 - `lib/widgets/player_avatar_widget.dart` - Player avatar display (previously in `lib/widgets/horse_race/`)
 
+## 9. Dartboard Connection Info Component
+
+### Purpose
+Shared widget that displays dartboard name, type (emulator/hardware), and connection status in a compact row. Replaces the need for screens to individually compose `CompactDartboardInfo` and `DartboardStatusIndicator`.
+
+### File Location
+`lib/widgets/dartboard_connection_info/`
+
+### Components
+
+#### DartboardConnectionInfo
+- Combined widget using `Consumer<DartboardProvider>` internally
+- Shows dartboard name, type icon, emulator label, and connection status
+- Returns `SizedBox.shrink()` if no dartboard configured
+- Accepts `DartboardConnectionInfoConfig` for game-specific styling
+
+#### DartboardConnectionInfoConfig
+Configuration class with factory methods for each game's theme.
+
+**Factory methods:**
+- `DartboardConnectionInfoConfig.homeScreen()` - White background, standard styling
+- `DartboardConnectionInfoConfig.carnivalDerby()` - Carnival theme (Rye font, Lava Red/Canary Yellow)
+- `DartboardConnectionInfoConfig.targetTag()` - Tech/neon theme (Luckiest Guy font, Hot Pink/Neon Green)
+- `DartboardConnectionInfoConfig.monsterMash()` - Gothic theme (Creepster font, Lime Green/Beige)
+- `DartboardConnectionInfoConfig.reefRoyale()` - Ocean theme (Fredoka font, Seafoam Green/Ocean Blue)
+
+### Usage
+```dart
+AppBar(
+  title: Text('Your Game'),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.only(right: 16.0),
+      child: DartboardConnectionInfo(
+        config: DartboardConnectionInfoConfig.yourGame(),
+      ),
+    ),
+  ],
+),
+```
+
+See [Dartboard Connection Info Integration](../development/dartboard-connection-info.md) for complete guide.
+
 ## Related Documentation
 
 - [Container App Architecture](container-app.md)
@@ -491,3 +634,6 @@ The following widgets were promoted from game-specific to shared during Monster 
 - [Dartboard Emulator Integration](../development/dartboard-emulator.md)
 - [Add Player Dialog Integration](../development/add-player-dialog.md)
 - [Edit Score Dialog Integration](../development/edit-score-dialog.md)
+- [Dartboard Connection Info Integration](../development/dartboard-connection-info.md)
+- [Remove Darts Modal Integration](../development/remove-darts-modal.md)
+- [Player List Panel Integration](../development/player-list-panel.md)

@@ -299,7 +299,40 @@ class _YourGameScreenState extends State<YourGameScreen> {
 
 See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
-#### 9. Skip Turn Helper (`GameSkipTurnHelper`)
+#### 9. Dartboard Connection Info (`lib/widgets/dartboard_connection_info/`)
+- Shared widget displaying dartboard name, type (emulator/hardware), and connection status
+- Uses `Consumer<DartboardProvider>` internally for reactive updates
+- Game-specific theming via `DartboardConnectionInfoConfig` factory methods
+- Returns `SizedBox.shrink()` if no dartboard configured
+
+```dart
+// Import the shared component
+import 'package:dart_games/widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import 'package:dart_games/widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+
+// Add to AppBar actions
+AppBar(
+  title: Text('Your Game'),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.only(right: 16.0),
+      child: DartboardConnectionInfo(
+        config: DartboardConnectionInfoConfig.yourGame(),
+      ),
+    ),
+  ],
+),
+```
+
+**Available Configurations:**
+- `DartboardConnectionInfoConfig.homeScreen()` - White background, standard styling
+- `DartboardConnectionInfoConfig.carnivalDerby()` - Carnival theme (Rye font, Lava Red/Canary Yellow)
+- `DartboardConnectionInfoConfig.targetTag()` - Tech/neon theme (Luckiest Guy font, Hot Pink/Neon Green)
+- `DartboardConnectionInfoConfig.monsterMash()` - Gothic theme (Creepster font, Lime Green/Beige)
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide.
+
+#### 10. Skip Turn Helper (`GameSkipTurnHelper`)
 - Global utility for consistent skip turn behavior across ALL games
 - Ensures skip turn does NOT increment dart throw or turn counters
 - Provides validation and visual marker management
@@ -357,6 +390,81 @@ void skipTurn() {
 - Target Tag: `lib/providers/target_tag_provider.dart`
 - Carnival Derby: `lib/providers/horse_race_provider.dart`
 - Helper source: `lib/services/game_skip_turn_helper.dart`
+
+#### 11. Remove Darts Modal (`lib/widgets/remove_darts_modal/`)
+- Shared full-screen overlay prompting the player to remove their darts from the board
+- Appears when a turn ends and no physical dartboard is connected
+- Game-specific theming via `RemoveDartsModalConfig` factory methods
+- Includes "Edit player score" button with game-specific callback
+
+```dart
+// Import the shared component
+import 'package:dart_games/widgets/remove_darts_modal/remove_darts_modal.dart';
+
+// In your game screen's Stack:
+if (shouldPromptTakeout && !dartboardProvider.isConnected)
+  RemoveDartsModal(
+    config: RemoveDartsModalConfig.yourGame(),
+    playerName: currentPlayer?.name ?? 'Player',
+    editScoreButtonKey: YourGameKeys.editScoreButton,
+    onEditScore: () {
+      if (currentPlayer == null) return;
+      showEditScoreDialog(
+        context: context,
+        playerName: currentPlayer.name,
+        initialSegments: yourProvider.getCurrentTurnDarts(currentPlayer.id),
+        onSubmit: (newSegments) =>
+            yourProvider.updateAllDartScores(currentPlayer.id, newSegments),
+        config: EditScoreDialogConfig.yourGame(),
+      );
+    },
+  ),
+```
+
+**Available Configurations:**
+- `RemoveDartsModalConfig.carnivalDerby()` - Canary Yellow border, LuckiestGuy/Bangers fonts
+- `RemoveDartsModalConfig.targetTag()` - Hot Pink border, Fredoka font
+- `RemoveDartsModalConfig.monsterMash()` - Lime Green border with green glow, Creepster/PirataOne fonts
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide.
+
+#### 12. Player List Panel (`lib/widgets/player_list_panel/`)
+- Shared, configurable player management UI for game menu screens
+- Two patterns: dual-list (Available + Selected) and single-list with team assignment
+- Game-specific theming via config classes with factory methods
+- Custom button builders for unique game styling (Monster Mash stone buttons)
+
+```dart
+// Dual-list pattern (Carnival Derby, Monster Mash)
+import 'package:dart_games/widgets/player_list_panel/player_list_panel.dart';
+
+DualPlayerListPanel(
+  config: DualPlayerListPanelConfig.carnivalDerby(),
+  addPlayerButtonKey: CarnivalDerbyMenuKeys.addPlayerButton,
+  addPlayerButtonEmptyStateKey: CarnivalDerbyMenuKeys.addPlayerButtonEmptyState,
+  playerListViewKey: CarnivalDerbyMenuKeys.playerListView,
+  playerTileKey: (id) => CarnivalDerbyMenuKeys.playerTile(id),
+  removePlayerButtonKey: (id) => CarnivalDerbyMenuKeys.removePlayerButton(id),
+)
+
+// Team game pattern (Target Tag)
+TeamPlayerListPanel(
+  config: TeamPlayerListPanelConfig.targetTag(),
+  isTeamMode: _isTeamMode,
+  isManualTeamAssignment: !_isRandomTeams,
+  teamIconPaths: _teamIconPaths,
+  onTeamAssignmentsChanged: (assignments) {
+    setState(() { _playerTeamAssignments = assignments; });
+  },
+)
+```
+
+**Available Configurations:**
+- `DualPlayerListPanelConfig.carnivalDerby()` - Navy containers, Bangers font, Lava Red button
+- `DualPlayerListPanelConfig.monsterMash()` - Dark slate containers, PirataOne headers, Creepster names
+- `TeamPlayerListPanelConfig.targetTag()` - Hot Pink/Neon Green theme, Fredoka font
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
 ## Architecture
 
