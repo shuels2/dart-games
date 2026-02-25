@@ -1,0 +1,820 @@
+import 'dart:math';
+import 'package:uuid/uuid.dart';
+import '../utils/dartboard_layout.dart';
+
+enum ReefRoyaleGameState { setup, playing, finished }
+
+enum ReefRoyaleGameMode { standard, cursedTide }
+
+enum SeaCreature {
+  coralClownfish,
+  shellyTurtle,
+  jetOctopus,
+  bubblesSeahorse,
+  spikePufferfish,
+  pearlJellyfish,
+  captainCrab,
+  finnDolphin
+}
+
+enum ReefBuff { riptideRush, pearlFever, inkCloud }
+
+class ReefRoyaleGame {
+  final String id;
+  final DateTime startedAt;
+  final int maxDartsPerTurn;
+
+  // Game options
+  final ReefRoyaleGameMode gameMode;
+  final bool easyClaim;
+  final bool neighborNumbers;
+  final bool randomReefs;
+  final bool bonusBuffsEnabled;
+  final bool showHints;
+  final bool speedPlayEnabled;
+  final int roundLimit;
+
+  // Players
+  final List<String> playerIds;
+  final Map<String, SeaCreature> creatureAssignments;
+
+  // Targets & corals
+  final List<int> activeTargets; // 7 target numbers (25 = Bull)
+  final List<String> coralOrder; // Coral type names parallel to activeTargets
+
+  // Runtime state
+  ReefRoyaleGameState state;
+  int currentPlayerIndex;
+  int currentRound;
+  int turnsCompletedThisRound;
+  ReefBuff? activeBuff;
+
+  // Per-player per-target marks: playerId -> {target -> markCount}
+  Map<String, Map<int, int>> marks;
+  // Per-player claimed targets: playerId -> set of claimed targets
+  Map<String, Set<int>> claimed;
+  // Targets locked by all players
+  Set<int> locked;
+  // Pearl counts
+  Map<String, int> pearls;
+
+  // Per-turn tracking
+  Map<String, int> dartsThrown;
+  Map<String, List<String>> currentTurnDarts;
+
+  // Per-dart tracking arrays for UI/announcements
+  Map<String, List<int>> dartThrowMarksAdded;
+  Map<String, List<int>> dartThrowPearlsScored;
+  Map<String, List<bool>> dartThrowClaimedCoral;
+  Map<String, List<bool>> dartThrowLockedReef;
+  Map<String, List<int?>> dartThrowTargetNumber;
+  Map<String, List<bool>> dartThrowIsNeighbor;
+  Map<String, List<String?>> dartThrowPearlRecipientId;
+
+  // Lifetime stats
+  Map<String, int> totalDartsThrown;
+  Map<String, int> totalTurns;
+
+  // Winner
+  String? winnerId;
+  List<String>? winnerIds;
+
+  // Turn start snapshots for edit score
+  Map<String, Map<int, int>> turnStartMarks;
+  Map<String, Set<int>> turnStartClaimed;
+  Set<int> turnStartLocked;
+  Map<String, int> turnStartPearls;
+  ReefRoyaleGameState turnStartState;
+  String? turnStartWinnerId;
+  List<String>? turnStartWinnerIds;
+
+  // Standard targets: 20, 19, 18, 17, 16, 15, Bull
+  static const List<int> standardTargets = [20, 19, 18, 17, 16, 15, 25];
+  static const List<String> standardCoralOrder = [
+    'FireCoral',
+    'BrainCoral',
+    'FanCoral',
+    'StaghornCoral',
+    'MushroomCoral',
+    'TubeCoral',
+    'PearlOyster'
+  ];
+
+  ReefRoyaleGame({
+    required this.id,
+    required this.startedAt,
+    this.maxDartsPerTurn = 3,
+    required this.gameMode,
+    required this.easyClaim,
+    required this.neighborNumbers,
+    required this.randomReefs,
+    required this.bonusBuffsEnabled,
+    required this.showHints,
+    required this.speedPlayEnabled,
+    required this.roundLimit,
+    required this.playerIds,
+    required this.creatureAssignments,
+    required this.activeTargets,
+    required this.coralOrder,
+    this.state = ReefRoyaleGameState.setup,
+    this.currentPlayerIndex = 0,
+    this.currentRound = 1,
+    this.turnsCompletedThisRound = 0,
+    this.activeBuff,
+    Map<String, Map<int, int>>? marks,
+    Map<String, Set<int>>? claimed,
+    Set<int>? locked,
+    Map<String, int>? pearls,
+    Map<String, int>? dartsThrown,
+    Map<String, List<String>>? currentTurnDarts,
+    Map<String, List<int>>? dartThrowMarksAdded,
+    Map<String, List<int>>? dartThrowPearlsScored,
+    Map<String, List<bool>>? dartThrowClaimedCoral,
+    Map<String, List<bool>>? dartThrowLockedReef,
+    Map<String, List<int?>>? dartThrowTargetNumber,
+    Map<String, List<bool>>? dartThrowIsNeighbor,
+    Map<String, List<String?>>? dartThrowPearlRecipientId,
+    Map<String, int>? totalDartsThrown,
+    Map<String, int>? totalTurns,
+    this.winnerId,
+    this.winnerIds,
+    Map<String, Map<int, int>>? turnStartMarks,
+    Map<String, Set<int>>? turnStartClaimed,
+    Set<int>? turnStartLocked,
+    Map<String, int>? turnStartPearls,
+    ReefRoyaleGameState? turnStartState,
+    this.turnStartWinnerId,
+    this.turnStartWinnerIds,
+  })  : marks = marks ?? {},
+        claimed = claimed ?? {},
+        locked = locked ?? {},
+        pearls = pearls ?? {},
+        dartsThrown = dartsThrown ?? {},
+        currentTurnDarts = currentTurnDarts ?? {},
+        dartThrowMarksAdded = dartThrowMarksAdded ?? {},
+        dartThrowPearlsScored = dartThrowPearlsScored ?? {},
+        dartThrowClaimedCoral = dartThrowClaimedCoral ?? {},
+        dartThrowLockedReef = dartThrowLockedReef ?? {},
+        dartThrowTargetNumber = dartThrowTargetNumber ?? {},
+        dartThrowIsNeighbor = dartThrowIsNeighbor ?? {},
+        dartThrowPearlRecipientId = dartThrowPearlRecipientId ?? {},
+        totalDartsThrown = totalDartsThrown ?? {},
+        totalTurns = totalTurns ?? {},
+        turnStartMarks = turnStartMarks ?? {},
+        turnStartClaimed = turnStartClaimed ?? {},
+        turnStartLocked = turnStartLocked ?? {},
+        turnStartPearls = turnStartPearls ?? {},
+        turnStartState = turnStartState ?? ReefRoyaleGameState.setup {
+    // Initialize per-player state
+    for (var playerId in playerIds) {
+      this.marks[playerId] ??= {};
+      this.claimed[playerId] ??= {};
+      this.pearls[playerId] ??= 0;
+      this.dartsThrown[playerId] ??= 0;
+      this.currentTurnDarts[playerId] ??= [];
+      this.dartThrowMarksAdded[playerId] ??= [];
+      this.dartThrowPearlsScored[playerId] ??= [];
+      this.dartThrowClaimedCoral[playerId] ??= [];
+      this.dartThrowLockedReef[playerId] ??= [];
+      this.dartThrowTargetNumber[playerId] ??= [];
+      this.dartThrowIsNeighbor[playerId] ??= [];
+      this.dartThrowPearlRecipientId[playerId] ??= [];
+      this.totalDartsThrown[playerId] ??= 0;
+      this.totalTurns[playerId] ??= 0;
+      // Initialize marks for all targets
+      for (var target in activeTargets) {
+        this.marks[playerId]![target] ??= 0;
+      }
+    }
+  }
+
+  factory ReefRoyaleGame.create({
+    required List<String> playerIds,
+    required ReefRoyaleGameMode gameMode,
+    required bool easyClaim,
+    required bool neighborNumbers,
+    required bool randomReefs,
+    required bool bonusBuffsEnabled,
+    required bool showHints,
+    required bool speedPlayEnabled,
+    required int roundLimit,
+  }) {
+    final random = Random();
+
+    // Assign creatures (unique per player)
+    final availableCreatures = List<SeaCreature>.from(SeaCreature.values)
+      ..shuffle(random);
+    final creatureAssignments = <String, SeaCreature>{};
+    for (int i = 0; i < playerIds.length; i++) {
+      creatureAssignments[playerIds[i]] = availableCreatures[i];
+    }
+
+    // Determine targets and coral order
+    List<int> activeTargets;
+    List<String> coralOrder;
+    if (randomReefs) {
+      final numbers = List.generate(20, (i) => i + 1)..shuffle(random);
+      activeTargets = numbers.take(6).toList()
+        ..sort((a, b) => b.compareTo(a));
+      activeTargets.add(25); // Bull always 7th
+      final numberCorals = [
+        'FireCoral',
+        'BrainCoral',
+        'FanCoral',
+        'StaghornCoral',
+        'MushroomCoral',
+        'TubeCoral'
+      ]..shuffle(random);
+      coralOrder = [...numberCorals, 'PearlOyster'];
+    } else {
+      activeTargets = List.from(standardTargets);
+      coralOrder = List.from(standardCoralOrder);
+    }
+
+    return ReefRoyaleGame(
+      id: const Uuid().v4(),
+      startedAt: DateTime.now(),
+      maxDartsPerTurn: 3,
+      gameMode: gameMode,
+      easyClaim: easyClaim,
+      neighborNumbers: neighborNumbers,
+      randomReefs: randomReefs,
+      bonusBuffsEnabled: bonusBuffsEnabled,
+      showHints: showHints,
+      speedPlayEnabled: speedPlayEnabled,
+      roundLimit: roundLimit,
+      playerIds: playerIds,
+      creatureAssignments: creatureAssignments,
+      activeTargets: activeTargets,
+      coralOrder: coralOrder,
+      state: ReefRoyaleGameState.playing,
+      currentPlayerIndex: 0,
+      currentRound: 1,
+      turnsCompletedThisRound: 0,
+    );
+  }
+
+  // --- Accessors ---
+
+  String getCurrentPlayerId() => playerIds[currentPlayerIndex];
+
+  int get markThreshold => easyClaim ? 2 : 3;
+
+  int getPlayerMarks(String playerId, int target) =>
+      marks[playerId]?[target] ?? 0;
+
+  bool hasPlayerClaimed(String playerId, int target) =>
+      claimed[playerId]?.contains(target) ?? false;
+
+  bool isTargetLocked(int target) => locked.contains(target);
+
+  int getPlayerPearls(String playerId) => pearls[playerId] ?? 0;
+
+  int getPlayerClaimedCount(String playerId) =>
+      claimed[playerId]?.length ?? 0;
+
+  int getCurrentPlayerDartsThrown() =>
+      dartsThrown[getCurrentPlayerId()] ?? 0;
+
+  List<String> getCurrentTurnDarts(String playerId) =>
+      currentTurnDarts[playerId] ?? [];
+
+  int getPlayerCount() => playerIds.length;
+
+  // --- Target Resolution ---
+
+  /// Resolve what target a thrown number maps to.
+  /// Returns null if not a valid target.
+  int? resolveTarget(int hitNumber) {
+    // Bull
+    if (hitNumber == 50 || hitNumber == 25) {
+      return activeTargets.contains(25) ? 25 : null;
+    }
+
+    // Direct target hit
+    if (activeTargets.contains(hitNumber)) {
+      return hitNumber;
+    }
+
+    // Neighbor hit
+    if (neighborNumbers) {
+      return DartboardLayout.findNeighborTarget(
+        hitNumber,
+        activeTargets.where((t) => t != 25).toList(),
+      );
+    }
+
+    return null;
+  }
+
+  // --- Dart Processing ---
+
+  void _incrementTurnIfFirst(String playerId) {
+    if (dartsThrown[playerId] == 1) {
+      totalTurns[playerId] = (totalTurns[playerId] ?? 0) + 1;
+    }
+  }
+
+  void _recordMissDartTracking(String playerId) {
+    dartThrowMarksAdded[playerId]!.add(0);
+    dartThrowPearlsScored[playerId]!.add(0);
+    dartThrowClaimedCoral[playerId]!.add(false);
+    dartThrowLockedReef[playerId]!.add(false);
+    dartThrowTargetNumber[playerId]!.add(null);
+    dartThrowIsNeighbor[playerId]!.add(false);
+    dartThrowPearlRecipientId[playerId]!.add(null);
+  }
+
+  /// Process a miss (no valid target hit).
+  void processMiss(String playerId) {
+    if (state != ReefRoyaleGameState.playing) return;
+    if (playerId != playerIds[currentPlayerIndex]) return;
+    if (dartsThrown[playerId]! >= maxDartsPerTurn) return;
+
+    dartsThrown[playerId] = (dartsThrown[playerId] ?? 0) + 1;
+    totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
+    _incrementTurnIfFirst(playerId);
+    _recordMissDartTracking(playerId);
+  }
+
+  /// Process a dart hit on a resolved target.
+  /// [hitNumber]: actual number thrown (1-20, 25=outer bull, 50=inner bull)
+  /// [multiplier]: 'single', 'double', 'triple'
+  /// [isNeighborHit]: true if redirected from a neighbor number
+  /// [resolvedTarget]: the target this hit counts toward
+  void processDart(
+    String playerId,
+    int hitNumber,
+    String multiplier, {
+    required bool isNeighborHit,
+    required int resolvedTarget,
+  }) {
+    if (state != ReefRoyaleGameState.playing) return;
+    if (playerId != playerIds[currentPlayerIndex]) return;
+    if (dartsThrown[playerId]! >= maxDartsPerTurn) return;
+
+    dartsThrown[playerId] = (dartsThrown[playerId] ?? 0) + 1;
+    totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
+    _incrementTurnIfFirst(playerId);
+
+    final target = resolvedTarget;
+
+    // Calculate multiplier value
+    int multiplierValue = 1;
+    if (multiplier == 'double') multiplierValue = 2;
+    if (multiplier == 'triple') multiplierValue = 3;
+
+    // Calculate marks to add
+    int marksToAdd;
+    if (isNeighborHit) {
+      marksToAdd = 1; // Neighbors always 1 mark
+    } else if (hitNumber == 50) {
+      marksToAdd = 2; // Inner bull = 2 marks
+    } else if (hitNumber == 25) {
+      marksToAdd = 1; // Outer bull = 1 mark
+    } else {
+      marksToAdd = multiplierValue;
+    }
+
+    // Riptide Rush doubles marks
+    if (activeBuff == ReefBuff.riptideRush) {
+      marksToAdd *= 2;
+    }
+
+    // Locked target - no effect
+    if (locked.contains(target)) {
+      dartThrowMarksAdded[playerId]!.add(0);
+      dartThrowPearlsScored[playerId]!.add(0);
+      dartThrowClaimedCoral[playerId]!.add(false);
+      dartThrowLockedReef[playerId]!.add(false);
+      dartThrowTargetNumber[playerId]!.add(target);
+      dartThrowIsNeighbor[playerId]!.add(isNeighborHit);
+      dartThrowPearlRecipientId[playerId]!.add(null);
+      return;
+    }
+
+    bool playerClaimed = claimed[playerId]!.contains(target);
+
+    if (!playerClaimed) {
+      _processMarking(playerId, target, hitNumber, multiplierValue,
+          marksToAdd, isNeighborHit);
+    } else {
+      _processScoring(playerId, target, hitNumber, multiplierValue,
+          isNeighborHit);
+    }
+  }
+
+  void _processMarking(String playerId, int target, int hitNumber,
+      int multiplierValue, int marksToAdd, bool isNeighborHit) {
+    int currentMarks = marks[playerId]![target] ?? 0;
+    int newMarks = currentMarks + marksToAdd;
+    marks[playerId]![target] = newMarks;
+
+    bool justClaimed = false;
+    bool justLocked = false;
+    int pearlsScoredThisDart = 0;
+    String? pearlRecipient;
+
+    if (newMarks >= markThreshold) {
+      // Coral blooms!
+      claimed[playerId]!.add(target);
+      justClaimed = true;
+
+      // Check if locked
+      bool allClaimed =
+          playerIds.every((pid) => claimed[pid]!.contains(target));
+      if (allClaimed) {
+        locked.add(target);
+        justLocked = true;
+      }
+
+      // Excess marks can score if not locked
+      int excessMarks = newMarks - markThreshold;
+      if (excessMarks > 0 && !locked.contains(target)) {
+        bool anyOpponentUnclaimed = playerIds.any(
+            (pid) => pid != playerId && !claimed[pid]!.contains(target));
+        if (anyOpponentUnclaimed) {
+          int pearlValue = excessMarks * getPearlValuePerMark(target);
+          pearlsScoredThisDart =
+              _applyPearlScoring(playerId, target, pearlValue);
+          if (gameMode == ReefRoyaleGameMode.cursedTide) {
+            pearlRecipient = playerIds.firstWhere(
+              (pid) =>
+                  pid != playerId && !claimed[pid]!.contains(target),
+              orElse: () => playerId,
+            );
+          }
+        }
+      }
+
+      _checkWinCondition();
+    }
+
+    dartThrowMarksAdded[playerId]!.add(marksToAdd);
+    dartThrowPearlsScored[playerId]!.add(pearlsScoredThisDart);
+    dartThrowClaimedCoral[playerId]!.add(justClaimed);
+    dartThrowLockedReef[playerId]!.add(justLocked);
+    dartThrowTargetNumber[playerId]!.add(target);
+    dartThrowIsNeighbor[playerId]!.add(isNeighborHit);
+    dartThrowPearlRecipientId[playerId]!.add(pearlRecipient);
+  }
+
+  void _processScoring(String playerId, int target, int hitNumber,
+      int multiplierValue, bool isNeighborHit) {
+    bool anyOpponentUnclaimed = playerIds
+        .any((pid) => pid != playerId && !claimed[pid]!.contains(target));
+
+    int pearlsScoredThisDart = 0;
+    String? pearlRecipient;
+
+    if (anyOpponentUnclaimed) {
+      int pearlValue;
+      if (isNeighborHit) {
+        pearlValue = getPearlValuePerMark(target);
+      } else if (hitNumber == 50) {
+        pearlValue = 50;
+      } else if (hitNumber == 25) {
+        pearlValue = 25;
+      } else {
+        pearlValue = target * multiplierValue;
+      }
+
+      pearlsScoredThisDart =
+          _applyPearlScoring(playerId, target, pearlValue);
+      if (gameMode == ReefRoyaleGameMode.cursedTide) {
+        pearlRecipient = playerIds.firstWhere(
+          (pid) =>
+              pid != playerId && !claimed[pid]!.contains(target),
+          orElse: () => playerId,
+        );
+      }
+    }
+
+    dartThrowMarksAdded[playerId]!.add(0);
+    dartThrowPearlsScored[playerId]!.add(pearlsScoredThisDart);
+    dartThrowClaimedCoral[playerId]!.add(false);
+    dartThrowLockedReef[playerId]!.add(false);
+    dartThrowTargetNumber[playerId]!.add(target);
+    dartThrowIsNeighbor[playerId]!.add(isNeighborHit);
+    dartThrowPearlRecipientId[playerId]!.add(pearlRecipient);
+  }
+
+  /// Apply pearl scoring based on game mode. Returns the pearl value applied.
+  int _applyPearlScoring(String playerId, int target, int pearlValue) {
+    // Pearl Fever doubles pearls
+    if (activeBuff == ReefBuff.pearlFever) {
+      pearlValue *= 2;
+    }
+
+    if (gameMode == ReefRoyaleGameMode.cursedTide) {
+      // Pearls go to all opponents who haven't claimed this target
+      for (final opponentId in playerIds) {
+        if (opponentId != playerId &&
+            !claimed[opponentId]!.contains(target)) {
+          pearls[opponentId] = (pearls[opponentId] ?? 0) + pearlValue;
+        }
+      }
+    } else {
+      pearls[playerId] = (pearls[playerId] ?? 0) + pearlValue;
+    }
+
+    return pearlValue;
+  }
+
+  /// Get pearl value per mark for a target (used for excess mark scoring).
+  static int getPearlValuePerMark(int target) {
+    if (target == 25) return 25; // Bull = 25 per mark
+    return target;
+  }
+
+  // --- Win Condition ---
+
+  void _checkWinCondition() {
+    // Check if any player claimed all 7 and has pearl lead
+    for (final playerId in playerIds) {
+      if (claimed[playerId]!.length == activeTargets.length) {
+        bool hasPearlLead;
+        if (gameMode == ReefRoyaleGameMode.cursedTide) {
+          hasPearlLead = playerIds.every((pid) =>
+              pid == playerId ||
+              (pearls[playerId] ?? 0) <= (pearls[pid] ?? 0));
+        } else {
+          hasPearlLead = playerIds.every((pid) =>
+              pid == playerId ||
+              (pearls[playerId] ?? 0) >= (pearls[pid] ?? 0));
+        }
+
+        if (hasPearlLead) {
+          state = ReefRoyaleGameState.finished;
+          winnerId = playerId;
+          winnerIds = [playerId];
+          return;
+        }
+      }
+    }
+
+    // All targets locked -> determine winner by ranking
+    if (locked.length == activeTargets.length) {
+      state = ReefRoyaleGameState.finished;
+      _determineWinnerByRanking();
+    }
+  }
+
+  void _checkRoundLimit() {
+    if (!speedPlayEnabled) return;
+    if (currentRound > roundLimit) {
+      state = ReefRoyaleGameState.finished;
+      _determineWinnerByRanking();
+    }
+  }
+
+  void _determineWinnerByRanking() {
+    final sorted = getRankedPlayerIds();
+
+    // Check for ties at the top
+    final topCorals = claimed[sorted[0]]?.length ?? 0;
+    final topPearls = pearls[sorted[0]] ?? 0;
+    final tiedPlayers = sorted.where((pid) {
+      return (claimed[pid]?.length ?? 0) == topCorals &&
+          (pearls[pid] ?? 0) == topPearls;
+    }).toList();
+
+    if (tiedPlayers.length == 1) {
+      winnerId = tiedPlayers[0];
+      winnerIds = tiedPlayers;
+    } else {
+      // Tiebreaker: first player in turn order
+      final firstInOrder =
+          playerIds.firstWhere((pid) => tiedPlayers.contains(pid));
+      winnerId = firstInOrder;
+      winnerIds = [firstInOrder];
+    }
+  }
+
+  bool hasWinner() {
+    if (state != ReefRoyaleGameState.finished) return false;
+    return winnerId != null;
+  }
+
+  /// Get ranked player IDs (best first).
+  List<String> getRankedPlayerIds() {
+    final sorted = List<String>.from(playerIds);
+    sorted.sort((a, b) {
+      final coralsCompare =
+          (claimed[b]?.length ?? 0).compareTo(claimed[a]?.length ?? 0);
+      if (coralsCompare != 0) return coralsCompare;
+      if (gameMode == ReefRoyaleGameMode.cursedTide) {
+        return (pearls[a] ?? 0).compareTo(pearls[b] ?? 0);
+      } else {
+        return (pearls[b] ?? 0).compareTo(pearls[a] ?? 0);
+      }
+    });
+    return sorted;
+  }
+
+  // --- Turn Management ---
+
+  void advanceToNextPlayer() {
+    if (state != ReefRoyaleGameState.playing) return;
+
+    final currentPlayerId = getCurrentPlayerId();
+
+    // Reset tracking
+    dartsThrown[currentPlayerId] = 0;
+    currentTurnDarts[currentPlayerId] = [];
+    dartThrowMarksAdded[currentPlayerId] = [];
+    dartThrowPearlsScored[currentPlayerId] = [];
+    dartThrowClaimedCoral[currentPlayerId] = [];
+    dartThrowLockedReef[currentPlayerId] = [];
+    dartThrowTargetNumber[currentPlayerId] = [];
+    dartThrowIsNeighbor[currentPlayerId] = [];
+    dartThrowPearlRecipientId[currentPlayerId] = [];
+
+    turnsCompletedThisRound++;
+
+    // Check for round completion
+    if (turnsCompletedThisRound >= playerIds.length) {
+      turnsCompletedThisRound = 0;
+      currentRound++;
+
+      _checkRoundLimit();
+      if (state == ReefRoyaleGameState.finished) {
+        _saveTurnStartState();
+        return;
+      }
+
+      // Trigger buff at start of new round
+      if (bonusBuffsEnabled) {
+        if (_shouldTriggerBuff()) {
+          activeBuff = _selectRandomBuff();
+        } else {
+          activeBuff = null;
+        }
+      }
+    }
+
+    // Move to next player
+    currentPlayerIndex = (currentPlayerIndex + 1) % playerIds.length;
+
+    _saveTurnStartState();
+  }
+
+  bool _shouldTriggerBuff() => Random().nextInt(3) == 0;
+
+  ReefBuff _selectRandomBuff() {
+    final buffs = ReefBuff.values;
+    return buffs[Random().nextInt(buffs.length)];
+  }
+
+  // --- Edit Score Support ---
+
+  void _saveTurnStartState() {
+    turnStartMarks = {};
+    for (final entry in marks.entries) {
+      turnStartMarks[entry.key] = Map.from(entry.value);
+    }
+    turnStartClaimed = {};
+    for (final entry in claimed.entries) {
+      turnStartClaimed[entry.key] = Set.from(entry.value);
+    }
+    turnStartLocked = Set.from(locked);
+    turnStartPearls = Map.from(pearls);
+    turnStartState = state;
+    turnStartWinnerId = winnerId;
+    turnStartWinnerIds =
+        winnerIds != null ? List.from(winnerIds!) : null;
+  }
+
+  void saveInitialTurnStartState() => _saveTurnStartState();
+
+  void resetToStartOfTurn(String playerId) {
+    marks = {};
+    for (final entry in turnStartMarks.entries) {
+      marks[entry.key] = Map.from(entry.value);
+    }
+    claimed = {};
+    for (final entry in turnStartClaimed.entries) {
+      claimed[entry.key] = Set.from(entry.value);
+    }
+    locked = Set.from(turnStartLocked);
+    pearls = Map.from(turnStartPearls);
+    state = turnStartState;
+    winnerId = turnStartWinnerId;
+    winnerIds =
+        turnStartWinnerIds != null ? List.from(turnStartWinnerIds!) : null;
+  }
+
+  // --- Display Helpers ---
+
+  String getCreatureImagePath(String playerId) {
+    final creature = creatureAssignments[playerId]!;
+    final fileName = getCreatureFileName(creature);
+    return 'assets/games/reef_royale/characters/$fileName.png';
+  }
+
+  String getCoralImagePath(int target, bool isClaimed) {
+    final index = activeTargets.indexOf(target);
+    if (index == -1) return '';
+    final coralName = coralOrder[index];
+    final stateName = isClaimed ? 'Claimed' : 'Unclaimed';
+    return 'assets/games/reef_royale/corals/$coralName-$stateName.png';
+  }
+
+  String getCoralDisplayName(int target) {
+    final index = activeTargets.indexOf(target);
+    if (index == -1) return 'Unknown';
+    final coralName = coralOrder[index];
+    return coralName.replaceAllMapped(
+        RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}');
+  }
+
+  String getTargetDisplayName(int target) {
+    if (target == 25) return 'Bull';
+    return '$target';
+  }
+
+  static String getCreatureFileName(SeaCreature creature) {
+    switch (creature) {
+      case SeaCreature.coralClownfish:
+        return 'CoralClownfish';
+      case SeaCreature.shellyTurtle:
+        return 'ShellyTurtle';
+      case SeaCreature.jetOctopus:
+        return 'JetOctopus';
+      case SeaCreature.bubblesSeahorse:
+        return 'BubblesSeahorse';
+      case SeaCreature.spikePufferfish:
+        return 'SpikePufferfish';
+      case SeaCreature.pearlJellyfish:
+        return 'PearlJellyfish';
+      case SeaCreature.captainCrab:
+        return 'CaptainCrab';
+      case SeaCreature.finnDolphin:
+        return 'FinnDolphin';
+    }
+  }
+
+  static String getCreatureDisplayName(SeaCreature creature) {
+    switch (creature) {
+      case SeaCreature.coralClownfish:
+        return 'Coral the Clownfish';
+      case SeaCreature.shellyTurtle:
+        return 'Shelly the Sea Turtle';
+      case SeaCreature.jetOctopus:
+        return 'Jet the Octopus';
+      case SeaCreature.bubblesSeahorse:
+        return 'Bubbles the Seahorse';
+      case SeaCreature.spikePufferfish:
+        return 'Spike the Pufferfish';
+      case SeaCreature.pearlJellyfish:
+        return 'Pearl the Jellyfish';
+      case SeaCreature.captainCrab:
+        return 'Captain Crab';
+      case SeaCreature.finnDolphin:
+        return 'Finn the Dolphin';
+    }
+  }
+
+  static String getCoralName(int target) {
+    switch (target) {
+      case 20:
+        return 'Fire Coral';
+      case 19:
+        return 'Brain Coral';
+      case 18:
+        return 'Fan Coral';
+      case 17:
+        return 'Staghorn Coral';
+      case 16:
+        return 'Mushroom Coral';
+      case 15:
+        return 'Tube Coral';
+      case 25:
+        return 'Pearl Oyster';
+      default:
+        return 'Coral $target';
+    }
+  }
+
+  static String getBuffDisplayName(ReefBuff buff) {
+    switch (buff) {
+      case ReefBuff.riptideRush:
+        return 'Riptide Rush';
+      case ReefBuff.pearlFever:
+        return 'Pearl Fever';
+      case ReefBuff.inkCloud:
+        return 'Ink Cloud';
+    }
+  }
+
+  static String getBuffDescription(ReefBuff buff) {
+    switch (buff) {
+      case ReefBuff.riptideRush:
+        return 'Double marks this round!';
+      case ReefBuff.pearlFever:
+        return 'Double pearls this round!';
+      case ReefBuff.inkCloud:
+        return 'The reef goes dark!';
+    }
+  }
+}

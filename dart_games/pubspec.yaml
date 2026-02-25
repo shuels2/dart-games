@@ -127,6 +127,13 @@ flutter:
     - assets/games/monster_mash/characters/
     - assets/games/monster_mash/sounds/
 
+    # Reef Royale game assets
+    - assets/games/reef_royale/icons/
+    - assets/games/reef_royale/images/
+    - assets/games/reef_royale/characters/
+    - assets/games/reef_royale/corals/
+    - assets/games/reef_royale/sounds/
+
     # Target Tag game assets
     - assets/games/target_tag/icons/
     - assets/games/target_tag/sounds/TargetTag-BananaSlip.mp3
