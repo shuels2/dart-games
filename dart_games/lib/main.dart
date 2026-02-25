@@ -6,6 +6,7 @@ import 'providers/player_provider.dart';
 import 'providers/horse_race_provider.dart';
 import 'providers/target_tag_provider.dart';
 import 'providers/monster_mash_provider.dart';
+import 'providers/reef_royale_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
@@ -73,6 +74,7 @@ class DartGamesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HorseRaceProvider()),
         ChangeNotifierProvider(create: (_) => TargetTagProvider()),
         ChangeNotifierProvider(create: (_) => MonsterMashProvider()),
+        ChangeNotifierProvider(create: (_) => ReefRoyaleProvider()),
       ],
       child: MaterialApp(
         title: 'Dart Games',
