@@ -504,6 +504,17 @@ class ReefRoyaleGameKeys {
   static const hintOverlay = Key('reef_game_hint_overlay');
   static Key playerTile(String playerId) => Key('reef_game_player_tile_$playerId');
   static const cursedBadge = Key('reef_game_cursed_badge');
+
+  static const dartBullseyeButton = Key('reef_game_dart_bullseye_button');
+  static const dartOuterBullButton = Key('reef_game_dart_outer_bull_button');
+  static const dartMissButton = Key('reef_game_dart_miss_button');
+
+  static Key getDartKey(String multiplier, int? number) {
+    if (multiplier == 'bullseye') return dartBullseyeButton;
+    if (multiplier == 'outer_bull') return dartOuterBullButton;
+    if (multiplier == 'miss') return dartMissButton;
+    return Key('reef_game_dart_${multiplier}_${number}_button');
+  }
 }
 
 class ReefRoyaleResultsKeys {

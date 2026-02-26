@@ -293,6 +293,118 @@ class ElementFinders {
   }
 
   // ==========================================================================
+  // REEF ROYALE HOME FINDERS
+  // ==========================================================================
+
+  static Finder getReefRoyaleCard() {
+    return find.byKey(HomeKeys.reefRoyaleCard);
+  }
+
+  // ==========================================================================
+  // REEF ROYALE MENU FINDERS
+  // ==========================================================================
+
+  static Finder getReefRoyaleAddPlayerButton() {
+    return find.byKey(ReefRoyaleMenuKeys.addPlayerButton);
+  }
+
+  static Finder getReefRoyaleAddPlayerButtonEmptyState() {
+    return find.byKey(ReefRoyaleMenuKeys.addPlayerButtonEmptyState);
+  }
+
+  static Finder getReefRoyalePlayerTile(String playerId) {
+    return find.byKey(ReefRoyaleMenuKeys.playerTile(playerId));
+  }
+
+  static Finder getReefRoyaleGameModeDropdown() {
+    return find.byKey(ReefRoyaleMenuKeys.gameModeDropdown);
+  }
+
+  static Finder getReefRoyaleEasyClaimSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.easyClaimSwitch);
+  }
+
+  static Finder getReefRoyaleNeighborNumbersSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.neighborNumbersSwitch);
+  }
+
+  static Finder getReefRoyaleRandomReefsSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.randomReefsSwitch);
+  }
+
+  static Finder getReefRoyaleBonusBuffsSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.bonusBuffsSwitch);
+  }
+
+  static Finder getReefRoyaleShowHintsSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.showHintsSwitch);
+  }
+
+  static Finder getReefRoyaleSpeedPlaySwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.speedPlaySwitch);
+  }
+
+  static Finder getReefRoyaleRoundLimitSlider() {
+    return find.byKey(ReefRoyaleMenuKeys.roundLimitSlider);
+  }
+
+  static Finder getReefRoyaleStartButton() {
+    return find.byKey(ReefRoyaleMenuKeys.startGameButton);
+  }
+
+  static Finder getReefRoyaleBackButton() {
+    return find.byKey(ReefRoyaleMenuKeys.backButton);
+  }
+
+  // ==========================================================================
+  // REEF ROYALE GAME FINDERS
+  // ==========================================================================
+
+  static Finder getReefRoyaleSkipTurnButton() {
+    return find.byKey(ReefRoyaleGameKeys.skipTurnButton);
+  }
+
+  static Finder getReefRoyaleEditScoreButton() {
+    return find.byKey(ReefRoyaleGameKeys.editScoreButton);
+  }
+
+  static Finder getReefRoyaleDartButton(String multiplier, int number) {
+    return find.byKey(ReefRoyaleGameKeys.getDartKey(multiplier, number));
+  }
+
+  static Finder getReefRoyaleBullseyeButton() {
+    return find.byKey(ReefRoyaleGameKeys.dartBullseyeButton);
+  }
+
+  static Finder getReefRoyaleOuterBullButton() {
+    return find.byKey(ReefRoyaleGameKeys.dartOuterBullButton);
+  }
+
+  static Finder getReefRoyaleMissButton() {
+    return find.byKey(ReefRoyaleGameKeys.dartMissButton);
+  }
+
+  // ==========================================================================
+  // REEF ROYALE RESULTS FINDERS
+  // ==========================================================================
+
+  static Finder getReefRoyalePlayAgainButton() {
+    return find.byKey(ReefRoyaleResultsKeys.playAgainButton);
+  }
+
+  static Finder getReefRoyaleChangeSettingsButton() {
+    return find.byKey(ReefRoyaleResultsKeys.changeSettingsButton);
+  }
+
+  static Finder getReefRoyaleBackToMenuButton() {
+    return find.byKey(ReefRoyaleResultsKeys.backToMenuButton);
+  }
+
+  static Finder getReefRoyaleWinnerName() {
+    return find.byKey(ReefRoyaleResultsKeys.winnerName);
+  }
+
+  // ==========================================================================
   // DIALOG FINDERS
   // ==========================================================================
 
