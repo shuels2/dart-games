@@ -293,6 +293,54 @@ class AddPlayerDialogConfig {
     );
   }
 
+  /// Reef Royale theme — Deep Reef Blue bg, Seafoam Green accents, Fredoka font
+  factory AddPlayerDialogConfig.reefRoyale() {
+    return AddPlayerDialogConfig(
+      backgroundColor: const Color(0xFF0B3D91).withOpacity(0.95),
+      textColor: const Color(0xFFFFF8F0), // Pearl White
+      titleStyle: GoogleFonts.fredoka(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8F0),
+      ),
+      inputLabelStyle: GoogleFonts.nunito(
+        fontSize: 18,
+        color: const Color(0xFFFFF8F0),
+      ),
+      inputBorderColor: const Color(0xFF48D1CC), // Seafoam Green
+      inputFocusedBorderColor: const Color(0xFF00CED1), // Sunlit Aqua
+      inputErrorBorderColor: const Color(0xFFFF6B6B), // Coral Pink
+      photoLabelStyle: GoogleFonts.nunito(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFFFFF8F0),
+      ),
+      photoButtonColor: const Color(0xFF0B3D91),
+      photoButtonForegroundColor: const Color(0xFFFFF8F0),
+      photoButtonBorderColor: const Color(0xFF48D1CC),
+      photoButtonTextStyle: GoogleFonts.fredoka(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8F0),
+      ),
+      photoButtonWidth: null,
+      addButtonColor: const Color(0xFF48D1CC),
+      addButtonForegroundColor: const Color(0xFF0B3D91),
+      addButtonBorderColor: const Color(0xFF48D1CC),
+      addButtonTextStyle: GoogleFonts.fredoka(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+      cancelButtonColor: Colors.grey,
+      cancelButtonForegroundColor: const Color(0xFFFFF8F0),
+      cancelButtonBorderColor: Colors.grey,
+      cancelButtonTextStyle: GoogleFonts.fredoka(
+        fontSize: 16,
+      ),
+      errorTextColor: const Color(0xFFFF6B6B),
+    );
+  }
+
   /// Options Screen theme configuration (Material Design defaults)
   factory AddPlayerDialogConfig.optionsScreen(BuildContext context) {
     final theme = Theme.of(context);
