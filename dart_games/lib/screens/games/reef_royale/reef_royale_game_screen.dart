@@ -10,6 +10,8 @@ import '../../../providers/player_provider.dart';
 import '../../../providers/reef_royale_provider.dart';
 import '../../../providers/dartboard_provider.dart';
 import '../../../services/mock_scolia_api_service.dart';
+import '../../../services/game_announcement_queue_service.dart';
+import '../../../services/reef_royale_announcement_helper.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -29,6 +31,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
   StreamSubscription? _dartboardSubscription;
   final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();
   MockScoliaApiService? _mockApi;
+  ReefRoyaleAnnouncementHelper? _audioQueue;
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   bool _gameCompleted = false;
 
@@ -53,16 +56,35 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
 
+    // Initialize audio
+    final globalQueue = GameAnnouncementQueueService();
+    await globalQueue.loadSettings();
+    _audioQueue = ReefRoyaleAnnouncementHelper(globalQueue);
+
     if (_mockApi != null) {
       _dartboardSubscription = _mockApi!.eventStream.listen((event) {
         _handleDartboardEvent(event);
       });
     }
+
+    // Announce game start
+    final reefProvider = context.read<ReefRoyaleProvider>();
+    _audioQueue!.announceGameStart();
+
+    if (reefProvider.currentGame?.randomReefs ?? false) {
+      _audioQueue!.announceRandomReefs();
+    }
+
+    // Announce first player turn
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) _announceCurrentPlayerTurn();
+    });
   }
 
   @override
   void dispose() {
     _dartboardSubscription?.cancel();
+    _audioQueue?.dispose();
     _dartboardEmulatorController.dispose();
     super.dispose();
   }
@@ -83,10 +105,19 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
     final throwData = event['data']['payload'];
     final sector = throwData['sector'] as String;
 
+    // Capture player ID before processing
+    final playerId = reefProvider.getCurrentPlayerId()!;
+
     reefProvider.processDartThrow(sector);
+
+    // Announce dart result
+    _announceDartResult(reefProvider, playerId, sector);
 
     final dartsThrown = reefProvider.getCurrentPlayerDartsThrown();
     if (dartsThrown >= 3 || reefProvider.hasWinner) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) _audioQueue?.announceRemoveDarts();
+      });
       Future.delayed(const Duration(milliseconds: 3500), () {
         if (mounted) _mockApi?.simulateTakeoutStarted();
       });
@@ -106,14 +137,32 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
 
     if (!reefProvider.isGameActive) return;
 
+    // Capture buff before advancing
+    final buffBefore = reefProvider.getActiveBuff();
+
     reefProvider.handleTakeoutFinished();
 
+    // Check for buff change (new round)
+    final buffAfter = reefProvider.getActiveBuff();
+    if (buffAfter != null && buffAfter != buffBefore) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _audioQueue?.announceBuff(buffAfter);
+      });
+    }
+
     if (reefProvider.hasWinner) {
+      // Speed play end
+      _audioQueue?.announceSpeedPlayEnd();
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _handleGameWon();
       });
       return;
     }
+
+    // Announce next player's turn
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _announceCurrentPlayerTurn();
+    });
 
     setState(() {});
   }
@@ -122,6 +171,15 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
     if (_gameCompleted) return;
     _gameCompleted = true;
 
+    // Announce victory
+    final reefProvider = context.read<ReefRoyaleProvider>();
+    final playerProvider = context.read<PlayerProvider>();
+    final winnerId = reefProvider.currentGame?.winnerId;
+    if (winnerId != null) {
+      final winner = playerProvider.allPlayers.firstWhere((p) => p.id == winnerId);
+      _audioQueue?.announceVictory(winner.name);
+    }
+
     Future.delayed(const Duration(milliseconds: 3000), () {
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -129,6 +187,103 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
         MaterialPageRoute(builder: (context) => const ReefRoyaleResultsScreen()),
       );
     });
+  }
+
+  void _announceDartResult(ReefRoyaleProvider provider, String playerId, String sector) {
+    if (_audioQueue == null) return;
+    final currentGame = provider.currentGame;
+    if (currentGame == null) return;
+
+    final dartIndex = provider.getCurrentPlayerDartsThrown() - 1;
+    if (dartIndex < 0) return;
+
+    final targetList = provider.getDartThrowTargetNumber(playerId);
+    final target = dartIndex < targetList.length ? targetList[dartIndex] : null;
+
+    // Miss or non-target
+    if (target == null) {
+      if (sector == 'None' || sector.isEmpty) {
+        _audioQueue!.announceMiss();
+      } else {
+        _audioQueue!.announceNonTarget();
+      }
+      return;
+    }
+
+    // Valid target hit - check what happened
+    final claimedList = provider.getDartThrowClaimedCoral(playerId);
+    final lockedList = provider.getDartThrowLockedReef(playerId);
+    final pearlsList = provider.getDartThrowPearlsScored(playerId);
+    final marksAddedList = provider.getDartThrowMarksAdded(playerId);
+    final isNeighborList = provider.getDartThrowIsNeighbor(playerId);
+    final recipientList = provider.getDartThrowPearlRecipientId(playerId);
+
+    final justClaimed = dartIndex < claimedList.length && claimedList[dartIndex];
+    final justLocked = dartIndex < lockedList.length && lockedList[dartIndex];
+    final pearlsScored = dartIndex < pearlsList.length ? pearlsList[dartIndex] : 0;
+    final marksAdded = dartIndex < marksAddedList.length ? marksAddedList[dartIndex] : 0;
+    final isNeighbor = dartIndex < isNeighborList.length && isNeighborList[dartIndex];
+    final recipientId = dartIndex < recipientList.length ? recipientList[dartIndex] : null;
+
+    // Locked target - no announcement
+    if (marksAdded == 0 && !justClaimed && pearlsScored == 0) return;
+
+    final coralName = currentGame.getCoralDisplayName(target);
+    final playerProvider = context.read<PlayerProvider>();
+    final playerName = playerProvider.allPlayers.firstWhere((p) => p.id == playerId).name;
+
+    // Priority: claim > lock > score > mark (max 2 per dart)
+    int count = 0;
+
+    if (justClaimed && count < 2) {
+      _audioQueue!.announceCoralClaimed(playerName, coralName);
+      count++;
+    }
+
+    if (justLocked && count < 2) {
+      _audioQueue!.announceReefLocked(coralName);
+      count++;
+    }
+
+    if (pearlsScored > 0 && count < 2) {
+      if (currentGame.gameMode == ReefRoyaleGameMode.cursedTide && recipientId != null) {
+        final opponentName = playerProvider.allPlayers.firstWhere((p) => p.id == recipientId).name;
+        _audioQueue!.announceCursedScoring(pearlsScored, opponentName);
+      } else {
+        _audioQueue!.announceScoring(playerName, pearlsScored);
+      }
+      count++;
+    }
+
+    if (!justClaimed && count < 2 && marksAdded > 0) {
+      if (isNeighbor) {
+        _audioQueue!.announceNeighborMark(coralName);
+      } else if (marksAdded >= 3) {
+        _audioQueue!.announceTripleMark(coralName);
+      } else if (marksAdded >= 2) {
+        _audioQueue!.announceDoubleMark(coralName);
+      } else {
+        _audioQueue!.announceSingleMark(coralName);
+      }
+    }
+
+    // Near victory: 6 of 7 corals claimed
+    if (justClaimed && provider.getPlayerClaimedCount(playerId) == 6) {
+      _audioQueue!.announceNearVictory(playerName);
+    }
+  }
+
+  void _announceCurrentPlayerTurn() {
+    final reefProvider = context.read<ReefRoyaleProvider>();
+    final playerProvider = context.read<PlayerProvider>();
+    final currentPlayerId = reefProvider.getCurrentPlayerId();
+    if (currentPlayerId == null) return;
+
+    final player = playerProvider.allPlayers.firstWhere(
+      (p) => p.id == currentPlayerId,
+      orElse: () => playerProvider.allPlayers.first,
+    );
+    _audioQueue?.announceTurn(player.name);
   }
 
   @override
