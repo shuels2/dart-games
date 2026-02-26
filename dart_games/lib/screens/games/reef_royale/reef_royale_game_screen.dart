@@ -431,7 +431,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.target, color: _seafoamGreen, size: 32),
+                      Icon(Icons.gps_fixed, color: _seafoamGreen, size: 32),
                       const SizedBox(height: 4),
                       Text(
                         'Targets',
