@@ -10,6 +10,7 @@ import 'options_screen.dart';
 import 'games/carnival_horse_race/horse_race_menu_screen.dart';
 import 'games/target_tag/target_tag_menu_screen.dart';
 import 'games/monster_mash/monster_mash_menu_screen.dart';
+import 'games/reef_royale/reef_royale_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -82,6 +83,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.0,
+                                )
+                          : title == 'Reef Royale'
+                              ? GoogleFonts.fredoka(
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                 )
                           : theme.textTheme.titleMedium?.copyWith(
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
@@ -213,6 +220,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const MonsterMashMenuScreen(),
+                  ),
+                )
+            : null,
+      },
+      {
+        'title': 'Reef Royale',
+        'key': HomeKeys.reefRoyaleCard,
+        'imageAssetPath': 'assets/games/reef_royale/icons/ReefRoyale-Icon.png',
+        'color': const Color(0xFF0B3D91), // Deep Reef Blue
+        'onTap': dartboardProvider.canPlayGames
+            ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ReefRoyaleMenuScreen(),
                   ),
                 )
             : null,

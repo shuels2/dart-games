@@ -187,4 +187,48 @@ class DualPlayerListPanelConfig {
       addPlayerDialogConfig: AddPlayerDialogConfig.monsterMash(),
     );
   }
+
+  /// Reef Royale theme — Deep Reef Blue containers, Seafoam Green accents,
+  /// Fredoka headers, Pearl White text.
+  factory DualPlayerListPanelConfig.reefRoyale() {
+    return DualPlayerListPanelConfig(
+      containerColor: const Color(0xFF0B3D91),
+      containerOpacity: 0.85,
+      containerBorderColor: const Color(0xFF48D1CC).withOpacity(0.3),
+      containerBorderWidth: 1,
+      headerTextStyle: GoogleFonts.fredoka(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8F0),
+      ),
+      selectedBorderColorWhenReady: const Color(0xFF48D1CC),
+      selectedBorderWidthWhenReady: 2,
+      minPlayersForReady: 2,
+      selectedHeaderColorWhenReady: const Color(0xFF48D1CC),
+      emptyStateTextStyle: GoogleFonts.nunito(
+        color: const Color(0xFFFFF8F0).withOpacity(0.7),
+        fontSize: 20,
+      ),
+      selectedEmptyText: 'Select at least 2 players',
+      addButtonColor: const Color(0xFF0B3D91),
+      addButtonForegroundColor: const Color(0xFFFFF8F0),
+      addButtonTextStyle: GoogleFonts.fredoka(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8F0),
+      ),
+      selectedColor: const Color(0xFF48D1CC).withOpacity(0.2),
+      selectedBorderColor: const Color(0xFF48D1CC),
+      unselectedBackgroundColor: const Color(0xFF0B3D91).withOpacity(0.6),
+      unselectedBorderColor: const Color(0xFF48D1CC).withOpacity(0.3),
+      cardNameStyle: GoogleFonts.fredoka(
+        fontSize: 21,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8F0),
+      ),
+      nameStatsSpacing: 1.4,
+      maxPlayers: 8,
+      addPlayerDialogConfig: AddPlayerDialogConfig.reefRoyale(),
+    );
+  }
 }
