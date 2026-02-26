@@ -101,9 +101,12 @@ class _DualPlayerListPanelState extends State<DualPlayerListPanel> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                config.availableHeaderText,
-                style: config.headerTextStyle,
+              Flexible(
+                child: Text(
+                  config.availableHeaderText,
+                  style: config.headerTextStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               if (allPlayers.isNotEmpty)
                 _buildAddPlayerButton(isEmptyState: false),
