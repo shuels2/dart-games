@@ -1,0 +1,131 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+
+import 'shared/ui_test_helpers.dart';
+import 'shared/element_finders.dart';
+import 'shared/pump_sequences.dart';
+import 'shared/settings_helpers.dart';
+import 'shared/game_ui_config.dart';
+import 'shared/provider_helpers.dart';
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  final config = GameUIConfig.reefRoyale();
+
+  group('Reef Royale - Menu and Settings Tests', () {
+    setUp(() async {
+      await SettingsHelpers.initializeSettings();
+    });
+
+    testWidgets('Test 1: Menu screen shows all 8 game options',
+        (WidgetTester tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      // Verify game mode dropdown exists
+      expect(ElementFinders.getReefRoyaleGameModeDropdown(), findsOneWidget);
+
+      // Verify toggle switches exist
+      expect(ElementFinders.getReefRoyaleEasyClaimSwitch(), findsOneWidget);
+      expect(ElementFinders.getReefRoyaleNeighborNumbersSwitch(), findsOneWidget);
+      expect(ElementFinders.getReefRoyaleRandomReefsSwitch(), findsOneWidget);
+      expect(ElementFinders.getReefRoyaleBonusBuffsSwitch(), findsOneWidget);
+      expect(ElementFinders.getReefRoyaleShowHintsSwitch(), findsOneWidget);
+      expect(ElementFinders.getReefRoyaleSpeedPlaySwitch(), findsOneWidget);
+    });
+
+    testWidgets('Test 2: Toggle Easy Claim switch',
+        (WidgetTester tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      await SettingsHelpers.toggleReefRoyaleEasyClaim(tester);
+
+      // Verify the switch toggled (widget should still exist)
+      expect(ElementFinders.getReefRoyaleEasyClaimSwitch(), findsOneWidget);
+    });
+
+    testWidgets('Test 3: Toggle Neighbor Numbers switch',
+        (WidgetTester tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      await SettingsHelpers.toggleReefRoyaleNeighborNumbers(tester);
+
+      expect(ElementFinders.getReefRoyaleNeighborNumbersSwitch(), findsOneWidget);
+    });
+
+    testWidgets('Test 4: Toggle Bonus Buffs switch',
+        (WidgetTester tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      await SettingsHelpers.toggleReefRoyaleBonusBuffs(tester);
+
+      expect(ElementFinders.getReefRoyaleBonusBuffsSwitch(), findsOneWidget);
+    });
+
+    testWidgets('Test 5: Speed Play enables Round Limit slider',
+        (WidgetTester tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      // Toggle speed play ON
+      await SettingsHelpers.toggleReefRoyaleSpeedPlay(tester);
+
+      // Round limit slider should now be visible
+      expect(ElementFinders.getReefRoyaleRoundLimitSlider(), findsOneWidget);
+    });
+
+    testWidgets('Test 6: Set Round Limit slider value',
+        (WidgetTester tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      // Enable speed play first
+      await SettingsHelpers.toggleReefRoyaleSpeedPlay(tester);
+
+      // Set round limit to 8
+      await SettingsHelpers.setReefRoyaleRoundLimit(tester, 8);
+    });
+
+    testWidgets('Test 7: Start game with default settings navigates to game screen',
+        (WidgetTester tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      await UITestHelpers.addPlayer(tester, 'Player A', config);
+      await UITestHelpers.addPlayer(tester, 'Player B', config);
+
+      final players = ProviderHelpers.getAllPlayers(tester);
+      final pA = players.firstWhere((p) => p.name == 'Player A');
+      final pB = players.firstWhere((p) => p.name == 'Player B');
+      await UITestHelpers.selectPlayers(tester, [pA.id, pB.id], config);
+
+      await UITestHelpers.startGame(tester, config);
+
+      expect(ProviderHelpers.isReefRoyaleGameActive(tester), isTrue);
+    });
+
+    testWidgets('Test 8: Start game with all options enabled',
+        (WidgetTester tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      // Enable all options
+      await SettingsHelpers.toggleReefRoyaleEasyClaim(tester);
+      await SettingsHelpers.toggleReefRoyaleNeighborNumbers(tester);
+      await SettingsHelpers.toggleReefRoyaleRandomReefs(tester);
+      await SettingsHelpers.toggleReefRoyaleBonusBuffs(tester);
+      await SettingsHelpers.toggleReefRoyaleShowHints(tester);
+      await SettingsHelpers.toggleReefRoyaleSpeedPlay(tester);
+
+      // Add and select players
+      await UITestHelpers.addPlayer(tester, 'Player A', config);
+      await UITestHelpers.addPlayer(tester, 'Player B', config);
+
+      final players = ProviderHelpers.getAllPlayers(tester);
+      final pA = players.firstWhere((p) => p.name == 'Player A');
+      final pB = players.firstWhere((p) => p.name == 'Player B');
+      await UITestHelpers.selectPlayers(tester, [pA.id, pB.id], config);
+
+      await UITestHelpers.startGame(tester, config);
+
+      expect(ProviderHelpers.isReefRoyaleGameActive(tester), isTrue);
+    });
+  });
+}
