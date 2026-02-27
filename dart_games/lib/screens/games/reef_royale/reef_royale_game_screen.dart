@@ -695,13 +695,13 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
 
               return Container(
                 key: ReefRoyaleGameKeys.dartIndicator(i),
-                width: 52,
-                height: 36,
+                width: 50,
+                height: 40,
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
-                  color: hasThrown ? _seafoamGreen.withOpacity(0.3) : _deepReefBlue,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: borderColor, width: justClaimed ? 2 : 1),
+                  color: hasThrown ? borderColor.withOpacity(0.25) : _deepReefBlue.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor, width: justClaimed ? 2.5 : 1.5),
                 ),
                 child: Center(
                   child: Column(
@@ -709,8 +709,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                     children: [
                       Text(
                         segment ?? '-',
-                        style: GoogleFonts.nunito(
-                          fontSize: 11,
+                        style: GoogleFonts.fredoka(
+                          fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: hasThrown ? _pearlWhite : _pearlWhite.withOpacity(0.4),
                         ),
@@ -720,8 +720,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                         Text(
                           '(neighbor)',
                           style: GoogleFonts.nunito(
-                            fontSize: 7,
-                            color: _sunlitAqua.withOpacity(0.8),
+                            fontSize: 8,
+                            color: _sunlitAqua.withOpacity(0.9),
                           ),
                         ),
                     ],
@@ -746,8 +746,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                 });
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: _coralPink.withOpacity(0.8),
+                backgroundColor: _coralPink,
                 foregroundColor: _pearlWhite,
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -755,7 +756,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
               child: Text(
                 'Skip Turn',
                 style: GoogleFonts.fredoka(
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -775,22 +776,25 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Top row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: topRow.map((target) => Expanded(
-              child: _buildCoralCard(game, provider, target, allPlayers),
-            )).toList(),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: topRow.map((target) => Expanded(
+                child: _buildCoralCard(game, provider, target, allPlayers),
+              )).toList(),
+            ),
           ),
           const SizedBox(height: 8),
           // Bottom row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: bottomRow.map((target) => Expanded(
-              child: _buildCoralCard(game, provider, target, allPlayers),
-            )).toList(),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: bottomRow.map((target) => Expanded(
+                child: _buildCoralCard(game, provider, target, allPlayers),
+              )).toList(),
+            ),
           ),
         ],
       ),
@@ -827,7 +831,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
         ),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           // Target number
           Text(
@@ -839,14 +842,17 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
             ),
           ),
 
-          // Coral image
+          // Coral image (fills available space)
           if (coralImagePath.isNotEmpty)
-            Image.asset(
-              coralImagePath,
-              width: 60,
-              height: 60,
-              fit: BoxFit.contain,
-              opacity: AlwaysStoppedAnimation(isLocked ? 0.4 : 1.0),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Image.asset(
+                  coralImagePath,
+                  fit: BoxFit.contain,
+                  opacity: AlwaysStoppedAnimation(isLocked ? 0.4 : 1.0),
+                ),
+              ),
             ),
 
           // Marks display

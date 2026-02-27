@@ -31,19 +31,17 @@ class UITestHelpers {
     app.main();
     print('UITestHelpers.navigateToGameMenu: App launched, pumping...');
 
-    await tester.pumpAndSettle();
-    print('UITestHelpers.navigateToGameMenu: First pumpAndSettle complete');
-
-    await tester.pumpAndSettle(const Duration(seconds: 3));
-    print('UITestHelpers.navigateToGameMenu: Second pumpAndSettle (3s) complete');
-
-    await tester.pump(const Duration(seconds: 2));
-    print('UITestHelpers.navigateToGameMenu: pump(2s) complete');
-
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    print('UITestHelpers.navigateToGameMenu: Additional pumps complete');
+    // NOTE: Do NOT use pumpAndSettle() here — the splash screen has a
+    // CircularProgressIndicator (continuous animation) that prevents settling.
+    // Use manual pumps instead to wait for splash → home navigation.
+    await tester.pump(); // Process initial frame
+    await tester.pump(const Duration(seconds: 2)); // Wait for splash delay + config load
+    await tester.pump(); // Process navigation
+    await tester.pump(const Duration(seconds: 2)); // Wait for home screen to build
+    await tester.pump(); // Rebuild
+    await tester.pump(); // Layout
+    await tester.pump(); // Paint
+    print('UITestHelpers.navigateToGameMenu: Manual pump sequence complete');
 
     // Debug: Check what screen we're on
     print('UITestHelpers.navigateToGameMenu: Checking which screen is displayed...');
