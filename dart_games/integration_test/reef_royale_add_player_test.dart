@@ -8,6 +8,13 @@ import 'shared/settings_helpers.dart';
 import 'shared/game_ui_config.dart';
 import 'shared/provider_helpers.dart';
 
+/// Get whichever add player button is visible (empty state or normal)
+Finder getAddPlayerButton(WidgetTester tester) {
+  final emptyState = ElementFinders.getReefRoyaleAddPlayerButtonEmptyState();
+  if (emptyState.evaluate().isNotEmpty) return emptyState;
+  return ElementFinders.getReefRoyaleAddPlayerButton();
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -53,7 +60,7 @@ void main() {
 
       // Try to add empty name
       await SettingsHelpers.openAddPlayerDialog(
-          tester, ElementFinders.getReefRoyaleAddPlayerButton());
+          tester, getAddPlayerButton(tester));
 
       final addButton = ElementFinders.getAddPlayerAddButton();
       await tester.tap(addButton);
@@ -72,7 +79,7 @@ void main() {
       final playersBefore = ProviderHelpers.getAllPlayers(tester).length;
 
       await SettingsHelpers.openAddPlayerDialog(
-          tester, ElementFinders.getReefRoyaleAddPlayerButton());
+          tester, getAddPlayerButton(tester));
       await tester.enterText(
           ElementFinders.getAddPlayerNameField(), 'CancelMe');
       await PumpSequences.textEntry(tester);
