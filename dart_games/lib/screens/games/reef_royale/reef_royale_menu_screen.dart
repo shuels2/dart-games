@@ -522,11 +522,11 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: _deepReefBlue.withOpacity(0.85),
+        color: value ? activeColor.withOpacity(0.25) : _deepReefBlue.withOpacity(0.85),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: value ? activeColor : _seafoamGreen.withOpacity(0.3),
-          width: 2,
+          width: value ? 2.5 : 1.5,
         ),
       ),
       child: Row(
@@ -538,7 +538,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
               style: GoogleFonts.fredoka(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: _pearlWhite,
+                color: value ? _pearlWhite : _pearlWhite.withOpacity(0.7),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -551,7 +551,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: !value ? FontWeight.bold : FontWeight.normal,
-                  color: !value ? _pearlWhite : _pearlWhite.withOpacity(0.5),
+                  color: !value ? _pearlWhite : _pearlWhite.withOpacity(0.4),
                 ),
               ),
               Transform.scale(
@@ -560,6 +560,9 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                   key: switchKey,
                   value: value,
                   activeColor: activeColor,
+                  activeTrackColor: activeColor.withOpacity(0.5),
+                  inactiveThumbColor: _pearlWhite.withOpacity(0.5),
+                  inactiveTrackColor: _deepReefBlue.withOpacity(0.5),
                   onChanged: onChanged,
                 ),
               ),
@@ -568,7 +571,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: value ? FontWeight.bold : FontWeight.normal,
-                  color: value ? _pearlWhite : _pearlWhite.withOpacity(0.5),
+                  color: value ? activeColor : _pearlWhite.withOpacity(0.4),
                 ),
               ),
             ],

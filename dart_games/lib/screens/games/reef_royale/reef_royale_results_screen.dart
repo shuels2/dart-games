@@ -264,7 +264,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                     child: ScaleTransition(
                       scale: _pulseAnimation,
                       child: Text(
-                        'RULER OF THE REEF!',
+                        'CROWN OF THE REEF!',
                         style: GoogleFonts.fredoka(
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
