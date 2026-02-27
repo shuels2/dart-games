@@ -342,16 +342,21 @@ routes: {
 }
 ```
 
-### 14. Create Tests
+### 14. Create Tests and Run Spec Coverage Audit
 
 Create test files:
 - `integration_test/your_game_menu_test.dart`
 - `integration_test/your_game_gameplay_test.dart`
 - `integration_test/your_game_results_test.dart`
-- `test/screens/games/your_game/your_game_game_with_announcements_test.dart`
-- `test/screens/games/your_game/your_game_user_management_test.dart`
+- `integration_test/your_game_visual_validation_test.dart`
+- `integration_test/your_game_edit_score_test.dart`
+- `integration_test/your_game_showcase_test.dart`
+- `test/screens/games/your_game/your_game_game_test.dart`
 
 Follow patterns from existing games.
+
+**MANDATORY: After writing tests, run a Spec Coverage Audit.**
+Cross-reference EVERY option from spec Section 7 and EVERY visual element from Section 10 against actual test files. For each option, verify there is at least one non-UI test AND one UI test that exercises it. Write any missing tests before proceeding. See [Spec Coverage Audit](../testing/spec-coverage-audit.md) for the full procedure.
 
 ### 15. Create Game Documentation
 
