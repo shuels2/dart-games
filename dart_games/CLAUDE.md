@@ -139,6 +139,17 @@ flutter test test/screens/games/monster_mash/
 ❌ NEVER move to documentation or mark phases complete until all gates pass simultaneously
 ✅ If a gate cannot be run (e.g., chromedriver not available), STOP and ask the user — do NOT skip it
 
+### Screenshot Test Technical Rules
+These rules prevent common debugging traps. Follow them EXACTLY:
+- ✅ Use `test_driver/screenshot_test.dart` as the driver (has `onScreenshot` callback)
+- ❌ NEVER use `test_driver/integration_test.dart` for screenshot tests (will hang silently on `takeScreenshot()`)
+- ❌ NEVER use `--no-headless` flag — follow `run_ui_tests.bat` pattern
+- ❌ NEVER use `pumpAndSettle()` in integration tests — splash screen `CircularProgressIndicator` prevents settling
+- ❌ NEVER kill all `chrome.exe` processes — only kill `chromedriver.exe` (killing Chrome causes crash recovery state)
+- ✅ Restart chromedriver before each test run
+- ✅ Reference `run_ui_tests.bat` for the established launch pattern
+- ✅ See [UI Automation](docs/testing/ui-automation.md) for full details
+
 ## New Game Development
 
 When implementing any game from `docs/research/games/`, the game's spec file is the source of truth. Before starting: read the full spec, especially Sections 7 (Options), 10 (Screen Designs), and 13 (Agent Team). After each development phase: cross-reference what was built against the spec's Section 7 options table — every option listed must have a visible, working effect on the game screen. Before marking complete: verify every item in the spec's Definition of Done checklist and report the results to the user.

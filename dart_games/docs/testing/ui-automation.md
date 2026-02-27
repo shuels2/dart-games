@@ -64,8 +64,11 @@ flutter drive --driver=test_driver/integration_test.dart \
 taskkill /F /IM chromedriver.exe
 ```
 
-## Test Driver Setup
+## Test Drivers
 
+There are TWO test drivers — using the wrong one is a common mistake:
+
+### Standard Driver (for UI automation tests)
 **File:** `test_driver/integration_test.dart`
 
 ```dart
@@ -74,11 +77,46 @@ import 'package:integration_test/integration_test_driver.dart';
 Future<void> main() => integrationDriver();
 ```
 
-This file should already exist. Do not modify.
+Use with: `flutter drive --driver=test_driver/integration_test.dart`
+
+### Screenshot Driver (for screenshot/visual validation tests)
+**File:** `test_driver/screenshot_test.dart`
+
+```dart
+import 'dart:io';
+import 'package:integration_test/integration_test_driver_extended.dart' as driver;
+
+Future<void> main() async {
+  final dir = Directory('temp_screenshots');
+  if (!dir.existsSync()) dir.createSync(recursive: true);
+
+  await driver.integrationDriver(
+    onScreenshot: (String screenshotName, List<int> screenshotBytes,
+        [Map<String, Object?>? args]) async {
+      final File image = File('temp_screenshots/$screenshotName.png');
+      image.writeAsBytesSync(screenshotBytes);
+      return true;
+    },
+  );
+}
+```
+
+Use with: `flutter drive --driver=test_driver/screenshot_test.dart`
+
+**CRITICAL:** Any test that calls `binding.takeScreenshot()` MUST use the screenshot driver. Using `integration_test.dart` instead will cause the test to hang on the first `takeScreenshot()` call because the standard driver has no `onScreenshot` callback.
+
+### How to Tell Which Driver to Use
+
+| Test calls `takeScreenshot()`? | Driver to use |
+|-------------------------------|---------------|
+| No | `test_driver/integration_test.dart` |
+| Yes | `test_driver/screenshot_test.dart` |
 
 ## Critical Rule: Continuous Animations
 
-**NEVER use `pumpAndSettle()` on screens with continuous animations.**
+**NEVER use `pumpAndSettle()` in integration tests.**
+
+The splash screen has a `CircularProgressIndicator` (continuous animation) that prevents settling. Game screens also have pulse animations. Always use explicit `pump()` sequences instead.
 
 See [Continuous Animations](continuous-animations.md) for details.
 
@@ -121,15 +159,69 @@ await tester.pump();
 await tester.tap(find.byKey(someKey));
 ```
 
+## Running Screenshot Tests
+
+Screenshot tests use `binding.takeScreenshot()` to capture game states for visual validation. Follow these steps exactly:
+
+### Step 1: Start ChromeDriver Fresh
+
+```bash
+# Kill any existing chromedriver (ONLY chromedriver, never kill all chrome.exe)
+taskkill /F /IM chromedriver.exe
+
+# Wait a few seconds, then start fresh
+cd chromedriver/chromedriver-win64
+./chromedriver.exe --port=4444
+```
+
+**CRITICAL:** Only kill `chromedriver.exe`. NEVER kill all `chrome.exe` processes — this kills the user's browser sessions and can leave Chrome in a crash recovery state that causes `AppConnectionException` on subsequent test runs.
+
+### Step 2: Run With Screenshot Driver
+
+```bash
+# CORRECT — uses screenshot driver
+flutter drive --driver=test_driver/screenshot_test.dart \
+  --target=integration_test/<game>_screenshot_test.dart \
+  -d chrome
+
+# WRONG — standard driver has no onScreenshot callback, test will HANG
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/<game>_screenshot_test.dart \
+  -d chrome
+```
+
+**Do NOT use `--no-headless`** — follow the same pattern as `run_ui_tests.bat`.
+
+### Step 3: Evaluate Screenshots
+
+Screenshots are saved to `temp_screenshots/`. Read each one and evaluate against the spec's visual checklist.
+
+### Troubleshooting Screenshot Tests
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Test hangs on `takeScreenshot()` | Wrong driver (`integration_test.dart`) | Use `screenshot_test.dart` driver |
+| Test hangs on "App launched, pumping..." | `pumpAndSettle()` after `app.main()` | Use manual `pump()` sequences |
+| `AppConnectionException` | Chrome in crash recovery state | Open Chrome manually, dismiss recovery dialog, close Chrome, retry |
+| `AppConnectionException` (persistent) | Stale chromedriver | Kill chromedriver, wait 3s, restart, wait 5s, then run test |
+| Chrome launches then closes | ChromeDriver/Chrome version mismatch or stale session | Restart chromedriver fresh before each test run |
+
 ## Common Issues
 
 ### ChromeDriver Not Running
 **Error:** "Unable to start a WebDriver session"
 **Solution:** Start chromedriver on port 4444
 
+### AppConnectionException
+**Error:** `Instance of 'AppConnectionException'` during "Waiting for connection"
+**Causes and solutions:**
+1. **Chrome crash recovery dialog** — Open Chrome manually, dismiss the "Restore pages?" dialog, close Chrome, then retry the test
+2. **Stale chromedriver** — Kill chromedriver, wait 3 seconds, restart it, wait 5 seconds, then run the test
+3. **Previous test didn't clean up** — Kill only `chromedriver.exe` (NOT all Chrome processes), restart it
+
 ### Test Hangs
-**Cause:** Using `pumpAndSettle()` on screen with continuous animations
-**Solution:** Use explicit `pump()` sequences
+**Cause:** Using `pumpAndSettle()` on screen with continuous animations (including splash screen)
+**Solution:** Use explicit `pump()` sequences — see [Continuous Animations](continuous-animations.md)
 
 ### Widget Not Found
 **Cause:** Not pumping enough frames after async operations
