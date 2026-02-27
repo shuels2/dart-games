@@ -155,6 +155,64 @@ class DartboardConnectionInfoConfig {
     );
   }
 
+  /// Dartboard Emulator — Deep Forest Green/Crimson, classic dartboard feel
+  factory DartboardConnectionInfoConfig.dartboardEmulator() {
+    return DartboardConnectionInfoConfig(
+      backgroundColor: const Color(0xFF1B2A1B), // Deep Forest
+      backgroundOpacity: 0.95,
+      emulatorBorderColor: const Color(0xFFFFD700), // Gold
+      hardwareBorderColor: const Color(0xFFE8E8E8), // Silver Wire
+      nameTextStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFFF0E6D3), // Cream
+      ),
+      statusTextStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      emulatorLabelTextStyle: const TextStyle(
+        fontSize: 10,
+        color: Color(0xFFFFD700), // Gold
+      ),
+      emulatorIconColor: const Color(0xFFFFD700), // Gold
+      hardwareIconColor: const Color(0xFFE8E8E8), // Silver Wire
+      connectedColor: const Color(0xFF4CAF50), // Dartboard Green
+      connectingColor: const Color(0xFFFFD700), // Gold
+      disconnectedColor: const Color(0xFFD32F2F), // Dartboard Red
+      errorColor: const Color(0xFFD32F2F), // Dartboard Red
+    );
+  }
+
+  /// API Logger — Dark Teal/Cyan, data terminal feel
+  factory DartboardConnectionInfoConfig.apiLogger() {
+    return DartboardConnectionInfoConfig(
+      backgroundColor: const Color(0xFF0D2B2B), // Deep Teal Dark
+      backgroundOpacity: 0.95,
+      emulatorBorderColor: const Color(0xFF4DD0E1), // Cyan accent
+      hardwareBorderColor: const Color(0xFF80CBC4), // Teal light
+      nameTextStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFFE0F2F1), // Teal 50
+      ),
+      statusTextStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      emulatorLabelTextStyle: const TextStyle(
+        fontSize: 10,
+        color: Color(0xFF4DD0E1), // Cyan accent
+      ),
+      emulatorIconColor: const Color(0xFF4DD0E1), // Cyan accent
+      hardwareIconColor: const Color(0xFF80CBC4), // Teal light
+      connectedColor: const Color(0xFF26A69A), // Teal 400
+      connectingColor: const Color(0xFFFFB74D), // Amber light
+      disconnectedColor: const Color(0xFFEF5350), // Red 400
+      errorColor: const Color(0xFFEF5350), // Red 400
+    );
+  }
+
   /// Reef Royale — Deep Reef Blue with Seafoam Green, Fredoka font
   factory DartboardConnectionInfoConfig.reefRoyale() {
     return DartboardConnectionInfoConfig(

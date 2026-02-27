@@ -15,6 +15,10 @@ import '../widgets/add_player/add_player.dart';
 import '../models/player.dart';
 import '../providers/player_provider.dart';
 import 'test_dartboard_screen.dart';
+import 'api_logger_screen.dart';
+import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../providers/dartboard_provider.dart';
 
 class OptionsScreen extends StatefulWidget {
   final DartAnnouncerService announcer;
@@ -1308,6 +1312,14 @@ class _OptionsScreenState extends State<OptionsScreen> {
         ),
         title: const Text('System Settings'),
         foregroundColor: Colors.white,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: DartboardConnectionInfo(
+              config: DartboardConnectionInfoConfig.homeScreen(),
+            ),
+          ),
+        ],
       ),
       body: Row(
         children: [
@@ -1836,7 +1848,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                             leading: const Icon(Icons.computer),
                             title: const Text('Scolia 2 Dartboard Emulator'),
                             subtitle: const Text('Test the Scolia 2 dartboard emulator functions and API calls'),
-                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                            trailing: const Icon(Icons.arrow_forward_ios),
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -1865,6 +1877,38 @@ class _OptionsScreenState extends State<OptionsScreen> {
                             trailing: const Icon(Icons.warning_amber, color: Colors.red),
                             onTap: _clearAllData,
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        Consumer<DartboardProvider>(
+                          builder: (context, dartboardProvider, child) {
+                            final hasRealConnection = dartboardProvider.isConnected && !dartboardProvider.isEmulator;
+                            return Card(
+                              child: ListTile(
+                                leading: Icon(Icons.receipt_long, color: hasRealConnection ? Colors.teal : Colors.grey),
+                                title: Text(
+                                  'Log Dartboard API Calls',
+                                  style: TextStyle(color: hasRealConnection ? null : Colors.grey),
+                                ),
+                                subtitle: Text(
+                                  hasRealConnection
+                                      ? 'Log all dartboard API communications to a file'
+                                      : 'Requires a real dartboard connection (not emulator)',
+                                  style: TextStyle(color: hasRealConnection ? null : Colors.grey),
+                                ),
+                                trailing: Icon(Icons.arrow_forward_ios, color: hasRealConnection ? Colors.teal : Colors.grey),
+                                enabled: hasRealConnection,
+                                onTap: hasRealConnection
+                                    ? () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) => const ApiLoggerScreen(),
+                                          ),
+                                        );
+                                      }
+                                    : null,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

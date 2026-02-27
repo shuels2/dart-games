@@ -49,6 +49,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [Dartboard Protection](docs/critical-rules/dartboard-protection.md) - **NEVER modify dartboard without permission**
 - [Test Failures](docs/critical-rules/test-failures.md) - **NEVER auto-update tests without user approval**
 - [Cross-Platform](docs/critical-rules/cross-platform.md) - Must work on web + tablets
+- [Visual Validation](docs/critical-rules/visual-validation.md) - **NEVER skip visual validation or completion gates**
 
 ### 🎮 Games
 - [Game Template](docs/games/_GAME_TEMPLATE/) - Template for creating new games
@@ -125,6 +126,24 @@ flutter test test/screens/games/monster_mash/
 ❌ NEVER modify without explicit user permission
 ❓ If bug suspected, ask user to verify first
 ✅ Only change after user approval
+
+### New Game Completion Gates
+❌ NEVER mark a game as complete or skip to documentation without completing ALL of the following:
+1. **Screenshot tests** — Run screenshot tests, evaluate EVERY screenshot against the spec's visual checklist, fix issues, re-run until zero issues
+2. **UI automation tests** — Run ALL UI tests for the new game, fix failures, re-run until 100% pass
+3. **Non-UI tests** — Run `flutter test`, fix any regressions, re-run until 100% pass
+4. **Simultaneous pass** — ALL three (screenshots clean + UI tests pass + non-UI tests pass) must be true AT THE SAME TIME before proceeding
+5. **Spec Definition of Done** — Every item in the spec's Definition of Done checklist verified and reported to user
+
+❌ NEVER rationalize skipping any gate (e.g., "it requires manual setup", "it seems like a visual-only step", "the tests were already written")
+❌ NEVER move to documentation or mark phases complete until all gates pass simultaneously
+✅ If a gate cannot be run (e.g., chromedriver not available), STOP and ask the user — do NOT skip it
+
+## New Game Development
+
+When implementing any game from `docs/research/games/`, the game's spec file is the source of truth. Before starting: read the full spec, especially Sections 7 (Options), 10 (Screen Designs), and 13 (Agent Team). After each development phase: cross-reference what was built against the spec's Section 7 options table — every option listed must have a visible, working effect on the game screen. Before marking complete: verify every item in the spec's Definition of Done checklist and report the results to the user.
+
+**MANDATORY: Visual validation and UI test verification are NON-NEGOTIABLE steps.** They MUST be actually executed — not skipped, not deferred, not marked as done without running. See "New Game Completion Gates" above. A game is NOT done until screenshots have been captured and evaluated, UI tests have been run and pass, and non-UI tests pass — all simultaneously.
 
 ## Project File Structure
 

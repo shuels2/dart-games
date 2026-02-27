@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/dartboard_connection_profile.dart';
 import '../providers/dartboard_provider.dart';
 
 class DartboardSetupScreen extends StatefulWidget {
@@ -14,15 +15,24 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
   final _nameController = TextEditingController();
   final _serialController = TextEditingController();
   final _apiKeyController = TextEditingController();
+  final _nameFocusNode = FocusNode();
 
   bool _isConnecting = false;
   String? _errorMessage;
+  List<DartboardConnectionProfile> _savedProfiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _savedProfiles = context.read<DartboardProvider>().savedProfiles;
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _serialController.dispose();
     _apiKeyController.dispose();
+    _nameFocusNode.dispose();
     super.dispose();
   }
 
@@ -170,22 +180,102 @@ class _DartboardSetupScreenState extends State<DartboardSetupScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Dartboard Name
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Dartboard Name',
-                      hintText: 'My Dartboard',
-                      prefixIcon: Icon(Icons.label),
-                      border: OutlineInputBorder(),
+                  // Dartboard Name (with autocomplete for saved profiles)
+                  if (_savedProfiles.isEmpty)
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Dartboard Name',
+                        hintText: 'My Dartboard',
+                        prefixIcon: Icon(Icons.label),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a dartboard name';
+                        }
+                        return null;
+                      },
+                    )
+                  else
+                    RawAutocomplete<DartboardConnectionProfile>(
+                      textEditingController: _nameController,
+                      focusNode: _nameFocusNode,
+                      optionsBuilder: (TextEditingValue textEditingValue) {
+                        if (textEditingValue.text.isEmpty) {
+                          return _savedProfiles;
+                        }
+                        final query = textEditingValue.text.toLowerCase();
+                        return _savedProfiles.where(
+                          (profile) => profile.name.toLowerCase().contains(query),
+                        );
+                      },
+                      displayStringForOption: (profile) => profile.name,
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 800),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, index) {
+                                  final profile = options.elementAt(index);
+                                  return ListTile(
+                                    title: Text(
+                                      profile.name,
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    subtitle: Text(
+                                      profile.serialNumber,
+                                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                    ),
+                                    trailing: IconButton(
+                                      icon: Icon(Icons.delete_outline, color: Colors.grey.shade500),
+                                      onPressed: () {
+                                        context.read<DartboardProvider>().deleteConnectionProfile(profile.serialNumber);
+                                        setState(() {
+                                          _savedProfiles = context.read<DartboardProvider>().savedProfiles;
+                                        });
+                                      },
+                                    ),
+                                    onTap: () => onSelected(profile),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      onSelected: (profile) {
+                        _nameController.text = profile.name;
+                        _serialController.text = profile.serialNumber;
+                        _apiKeyController.text = profile.apiKey;
+                      },
+                      fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                        return TextFormField(
+                          controller: textEditingController,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Dartboard Name',
+                            hintText: 'My Dartboard',
+                            prefixIcon: Icon(Icons.label),
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter a dartboard name';
+                            }
+                            return null;
+                          },
+                          onFieldSubmitted: (value) => onFieldSubmitted(),
+                        );
+                      },
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a dartboard name';
-                      }
-                      return null;
-                    },
-                  ),
                   const SizedBox(height: 8),
 
                   // Serial Number
