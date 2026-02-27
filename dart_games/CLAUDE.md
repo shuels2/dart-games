@@ -139,6 +139,25 @@ flutter test test/screens/games/monster_mash/
 ❌ NEVER move to documentation or mark phases complete until all gates pass simultaneously
 ✅ If a gate cannot be run (e.g., chromedriver not available), STOP and ask the user — do NOT skip it
 
+### Visual Validation Workflow (MANDATORY — Do Not Skip Any Step)
+Capturing screenshots is NOT the same as validating them. A passing test only means screenshots were saved without errors. The actual validation is the evaluation. Follow this exact workflow every time:
+
+**Step 1: Capture** — Run the screenshot test. Confirm all screenshots saved to `temp_screenshots/`.
+**Step 2: Evaluate EVERY screenshot** — Read EVERY screenshot image with the Read tool. For EACH one, check EVERY item on the spec's visual evaluation checklist (Section 12C):
+  - Layout & Spacing (no scrolling, no clipping, alignment, no overflow, screen utilization)
+  - Typography & Consistency (font sizes match across screens, legibility, contrast)
+  - Visual Quality (color harmony, completeness, option effects visible, family-friendly scale)
+  - Correctness (characters vs avatars, usability, button sizes)
+**Step 3: Report findings** — List every issue found with screenshot number, severity, and description. Present the full report to the user.
+**Step 4: Fix** — Fix all issues identified in the evaluation.
+**Step 5: Re-capture** — Run the screenshot test again to get fresh screenshots with fixes applied.
+**Step 6: Re-evaluate ALL screenshots** — Read and evaluate EVERY screenshot again (not just the ones that were fixed — fixes can affect other screens). Repeat from Step 3 until zero issues remain.
+
+❌ NEVER treat "screenshot test passed" as "visual validation complete" — passing only means captures succeeded
+❌ NEVER skip the evaluation step after capturing or re-capturing screenshots
+❌ NEVER evaluate only the screenshots you expect changed — evaluate ALL of them every time
+❌ NEVER move on after fixing issues without re-capturing AND re-evaluating
+
 ### Screenshot Test Technical Rules
 These rules prevent common debugging traps. Follow them EXACTLY:
 - ✅ Use `test_driver/screenshot_test.dart` as the driver (has `onScreenshot` callback)

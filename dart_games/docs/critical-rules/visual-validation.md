@@ -58,19 +58,28 @@ If a gate cannot be executed (e.g., chromedriver is not available, environment i
 
 ## Iterative Fix Cycle
 
+**CRITICAL:** "Screenshot test passed" does NOT mean "visual validation complete." A passing test only means the screenshots were captured without runtime errors. The actual validation is reading and evaluating every screenshot against the checklist. These are two completely separate steps — never conflate them.
+
 The fix cycle works as follows:
 
 ```
-1. Run screenshot tests → evaluate screenshots
-2. Found visual issues? → Fix them → Go to step 1
-3. No visual issues? → Run UI automation tests
-4. UI tests fail? → Fix them → Go to step 1 (screenshots may have changed)
-5. UI tests pass? → Run flutter test
-6. Non-UI tests fail? → Fix them → Go to step 1
-7. All pass simultaneously? → Verify spec Definition of Done → DONE
+1. CAPTURE: Run screenshot test → confirm all screenshots saved
+2. EVALUATE: Read EVERY screenshot with the Read tool → check EVERY
+   item on the visual evaluation checklist for EACH screenshot
+3. REPORT: List all issues found (screenshot number, severity, description)
+4. Found visual issues? → Fix them → Go to step 1
+   (MUST re-capture AND re-evaluate ALL screenshots, not just fixed ones)
+5. No visual issues? → Run UI automation tests
+6. UI tests fail? → Fix them → Go to step 1 (screenshots may have changed)
+7. UI tests pass? → Run flutter test
+8. Non-UI tests fail? → Fix them → Go to step 1
+9. All pass simultaneously? → Verify spec Definition of Done → DONE
 ```
 
-The key insight is that fixing anything sends you back to step 1, because any code change could affect visual output.
+The key insights:
+- **Capturing ≠ Evaluating.** You must do both, every time.
+- **Fixing anything sends you back to step 1** — re-capture AND re-evaluate all screenshots.
+- **Evaluate ALL screenshots every cycle**, not just the ones you expect changed — fixes can have unintended effects on other screens.
 
 ## Visual Evaluation Checklist
 
