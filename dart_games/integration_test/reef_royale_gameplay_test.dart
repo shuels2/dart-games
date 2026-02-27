@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
@@ -102,23 +103,42 @@ Future<void> clickDartsRemoved(WidgetTester tester) async {
   }
 }
 
+/// Verify dart indicator border color
+void verifyDartIndicatorColor(WidgetTester tester, Key dartKey, int expectedColorValue) {
+  final indicatorFinder = find.byKey(dartKey);
+  expect(indicatorFinder, findsOneWidget);
+
+  final container = tester.widget<Container>(indicatorFinder);
+  final decoration = container.decoration as BoxDecoration?;
+  expect(decoration, isNotNull);
+
+  expect(decoration!.border, isNotNull);
+
+  final border = decoration.border as Border;
+  final actualColor = border.top.color.value;
+
+  expect(actualColor, expectedColorValue,
+      reason: 'Dart $dartKey should have border color 0x${expectedColorValue.toRadixString(16)}, '
+          'but got 0x${actualColor.toRadixString(16)}');
+}
+
 /// Set up a 2-player game and start it
 Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config,
-    {bool easyClaim = false}) async {
+    {bool easyClaim = false, bool neighborNumbers = false}) async {
   await UITestHelpers.navigateToGameMenu(tester, config);
 
   if (easyClaim) {
     await SettingsHelpers.toggleReefRoyaleEasyClaim(tester);
   }
 
+  if (neighborNumbers) {
+    await SettingsHelpers.toggleReefRoyaleNeighborNumbers(tester);
+  }
+
   await UITestHelpers.addPlayer(tester, 'Player A', config);
   await UITestHelpers.addPlayer(tester, 'Player B', config);
 
-  final players = ProviderHelpers.getAllPlayers(tester);
-  final pA = players.firstWhere((p) => p.name == 'Player A');
-  final pB = players.firstWhere((p) => p.name == 'Player B');
-  await UITestHelpers.selectPlayers(tester, [pA.id, pB.id], config);
-
+  // Players are auto-selected when added, no need to call selectPlayers
   await UITestHelpers.startGame(tester, config);
 }
 
@@ -260,7 +280,17 @@ void main() {
       final firstPlayerId =
           ProviderHelpers.getReefRoyaleCurrentPlayerId(tester)!;
 
+      // Hide dartboard emulator so skip button is not obscured
+      await tester.tap(find.byKey(DartboardEmulatorKeys.toggleFAB));
+      await tester.pump();
+      await tester.pump();
+
       await UITestHelpers.clickSkipTurn(tester, config);
+
+      // Show dartboard emulator for DARTS REMOVED button
+      await tester.tap(find.byKey(DartboardEmulatorKeys.toggleFAB));
+      await tester.pump();
+      await tester.pump();
 
       await clickDartsRemoved(tester);
 
@@ -389,6 +419,101 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
+    });
+
+    // ================================================================
+    // D1/D2/D3 Dart Indicator Highlighting Tests
+    // ================================================================
+    // Color values from reef_royale_game_screen.dart:
+    //   _seafoamGreen    = 0xFF48D1CC  (valid target hit, marks added)
+    //   _sandyGold       = 0xFFF4D03F  (claimed coral)
+    //   _sunlitAqua      = 0xFF00CED1  (neighbor hit)
+    //   _coralPink @ 0.5 = 0x80FF6B6B  (miss / non-target)
+    //   _sandyGold @ 0.7 = 0xB3F4D03F  (pearl scored)
+
+    testWidgets('Test 16: D1 target hit shows green, D2 miss shows pink, D3 target hit shows green',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config);
+
+      // D1: Single 20 (valid target, 1 mark, not claimed) → green
+      await throwDartViaMock(tester, 20);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(0), 0xFF48D1CC);
+
+      // D2: Miss (non-target hit) → pink
+      await throwMissViaMock(tester);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(1), 0x80FF6B6B);
+
+      // D3: Single 19 (valid target, 1 mark, not claimed) → green
+      await throwDartViaMock(tester, 19);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(2), 0xFF48D1CC);
+    });
+
+    testWidgets('Test 17: Triple claim shows gold border on D1 and D2',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config);
+
+      // D1: Triple 20 (3 marks = claimed) → gold
+      await throwDartViaMock(tester, 20, multiplier: 'triple');
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(0), 0xFFF4D03F);
+
+      // D2: Triple 19 (3 marks = claimed) → gold
+      await throwDartViaMock(tester, 19, multiplier: 'triple');
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(1), 0xFFF4D03F);
+
+      // D3: Miss → pink
+      await throwMissViaMock(tester);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(2), 0x80FF6B6B);
+    });
+
+    testWidgets('Test 18: Bullseye shows green, outer bull claiming Bull shows gold',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config);
+
+      // D1: Bullseye (2 marks on Bull, not yet claimed) → green
+      await throwBullseyeViaMock(tester);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(0), 0xFF48D1CC);
+
+      // D2: Outer bull (1 mark on Bull, total 3 = claimed!) → gold
+      await throwOuterBullViaMock(tester);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(1), 0xFFF4D03F);
+    });
+
+    testWidgets('Test 19: Neighbor hit shows aqua border',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, neighborNumbers: true);
+
+      // Throw 1 (neighbor of 20 on dartboard) → resolves to target 20, neighbor hit → aqua
+      await throwDartViaMock(tester, 1);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(0), 0xFF00CED1);
+
+      // D2: Direct hit on 20 → green
+      await throwDartViaMock(tester, 20);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(1), 0xFF48D1CC);
+
+      // D3: Non-target number (9, not neighbor of any target: 9's neighbors are 14 and 12) → pink
+      await throwDartViaMock(tester, 9);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(2), 0x80FF6B6B);
+    });
+
+    testWidgets('Test 20: Hitting claimed target for pearls shows light gold border',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config);
+
+      // P1 Turn 1: claim 20 with triple, then 2 misses
+      await throwDartViaMock(tester, 20, multiplier: 'triple');
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+
+      // P2 Turn 1: 3 misses
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+
+      // P1 Turn 2: hit 20 again (already claimed by P1, P2 hasn't → scores pearls)
+      await throwDartViaMock(tester, 20);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(0), 0xB3F4D03F);
     });
   });
 }

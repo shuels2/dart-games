@@ -92,11 +92,7 @@ void main() {
       await UITestHelpers.addPlayer(tester, 'Player A', config);
       await UITestHelpers.addPlayer(tester, 'Player B', config);
 
-      final players = ProviderHelpers.getAllPlayers(tester);
-      final pA = players.firstWhere((p) => p.name == 'Player A');
-      final pB = players.firstWhere((p) => p.name == 'Player B');
-      await UITestHelpers.selectPlayers(tester, [pA.id, pB.id], config);
-
+      // Players are auto-selected when added, no need to call selectPlayers
       await UITestHelpers.startGame(tester, config);
 
       expect(ProviderHelpers.isReefRoyaleGameActive(tester), isTrue);
@@ -114,14 +110,9 @@ void main() {
       await SettingsHelpers.toggleReefRoyaleShowHints(tester);
       await SettingsHelpers.toggleReefRoyaleSpeedPlay(tester);
 
-      // Add and select players
+      // Add players (auto-selected when added)
       await UITestHelpers.addPlayer(tester, 'Player A', config);
       await UITestHelpers.addPlayer(tester, 'Player B', config);
-
-      final players = ProviderHelpers.getAllPlayers(tester);
-      final pA = players.firstWhere((p) => p.name == 'Player A');
-      final pB = players.firstWhere((p) => p.name == 'Player B');
-      await UITestHelpers.selectPlayers(tester, [pA.id, pB.id], config);
 
       await UITestHelpers.startGame(tester, config);
 

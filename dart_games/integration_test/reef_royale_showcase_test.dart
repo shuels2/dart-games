@@ -112,14 +112,9 @@ void main() {
       // 1. Navigate to menu
       await UITestHelpers.navigateToGameMenu(tester, config);
 
-      // 2. Add and select 2 players
+      // 2. Add players (auto-selected when added)
       await UITestHelpers.addPlayer(tester, 'Nemo', config);
       await UITestHelpers.addPlayer(tester, 'Dory', config);
-
-      final players = ProviderHelpers.getAllPlayers(tester);
-      final nemo = players.firstWhere((p) => p.name == 'Nemo');
-      final dory = players.firstWhere((p) => p.name == 'Dory');
-      await UITestHelpers.selectPlayers(tester, [nemo.id, dory.id], config);
 
       // 3. Start game
       await UITestHelpers.startGame(tester, config);
@@ -154,20 +149,25 @@ void main() {
       await throwMissViaMock(tester);
       await clickDartsRemoved(tester);
 
-      // P1 Turn 3: claim Bull
+      // P1 Turn 3: claim Bull (bullseye=2 + outer=1 = 3 marks)
       await throwBullseyeViaMock(tester);
       await throwOuterBullViaMock(tester);
 
       // 6. Game should end
       expect(ProviderHelpers.reefRoyaleHasWinner(tester), isTrue);
 
-      // 7. Wait for results screen
-      await tester.pump(const Duration(seconds: 3));
+      // 7. Wait for takeout prompt (3500ms delay triggers simulateTakeoutStarted)
+      await tester.pump(const Duration(seconds: 4));
       await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
+
+      // Click DARTS REMOVED to trigger takeout_finished -> _handleGameWon
+      await clickDartsRemoved(tester);
+
+      // Wait for results screen navigation (3000ms delay in _handleGameWon)
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(); // Process navigation
+      await tester.pump(); // Build results screen
+      await tester.pump(); // Layout
 
       // 8. Verify results screen
       await UITestHelpers.verifyResultsScreen(tester, config);

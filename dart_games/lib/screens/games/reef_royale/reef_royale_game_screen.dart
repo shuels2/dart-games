@@ -679,6 +679,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
               final justClaimed = i < claimedList.length && claimedList[i];
               final pearlsList = provider.getDartThrowPearlsScored(playerId);
               final scoredPearls = i < pearlsList.length && pearlsList[i] > 0;
+              final marksAddedList = provider.getDartThrowMarksAdded(playerId);
+              final addedMarks = i < marksAddedList.length && marksAddedList[i] > 0;
 
               Color borderColor;
               if (!hasThrown) {
@@ -689,8 +691,10 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                 borderColor = _sandyGold.withOpacity(0.7);
               } else if (isNeighbor) {
                 borderColor = _sunlitAqua;
-              } else {
+              } else if (addedMarks) {
                 borderColor = _seafoamGreen;
+              } else {
+                borderColor = _coralPink.withOpacity(0.5);
               }
 
               return Container(
@@ -941,13 +945,15 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
     final claimedList = provider.getDartThrowClaimedCoral(playerId);
     final pearlsList = provider.getDartThrowPearlsScored(playerId);
     final isNeighborList = provider.getDartThrowIsNeighbor(playerId);
+    final marksAddedList = provider.getDartThrowMarksAdded(playerId);
 
     return List.generate(3, (i) {
       if (i >= claimedList.length) return null;
       if (claimedList[i]) return _sandyGold; // Coral claimed
       if (pearlsList[i] > 0) return _sandyGold.withOpacity(0.7); // Scored pearls
       if (isNeighborList[i]) return _sunlitAqua; // Neighbor hit
-      return _seafoamGreen; // Normal hit
+      if (i < marksAddedList.length && marksAddedList[i] > 0) return _seafoamGreen; // Valid target hit
+      return _coralPink.withOpacity(0.5); // Miss / non-target
     });
   }
 

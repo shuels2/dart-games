@@ -191,6 +191,8 @@ class UITestHelpers {
     GameUIConfig config,
   ) async {
     final skipButton = config.getSkipTurnButton();
+    await tester.ensureVisible(skipButton);
+    await tester.pump();
     await tester.tap(skipButton);
     await PumpSequences.simpleUpdate(tester);
   }
