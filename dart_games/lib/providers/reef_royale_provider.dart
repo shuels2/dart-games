@@ -42,9 +42,21 @@ class ReefRoyaleProvider extends ChangeNotifier {
 
   ReefBuff? getActiveBuff() => _currentGame?.activeBuff;
 
+  /// Set the active buff programmatically (for testing)
+  void setActiveBuff(ReefBuff? buff) {
+    if (_currentGame == null) return;
+    _currentGame!.activeBuff = buff;
+    notifyListeners();
+  }
+
   int getCurrentRound() => _currentGame?.currentRound ?? 1;
 
   int getRoundLimit() => _currentGame?.roundLimit ?? 10;
+
+  ReefRoyaleGameMode? getGameMode() => _currentGame?.gameMode;
+
+  List<String> getRankedPlayerIds() =>
+      _currentGame?.getRankedPlayerIds() ?? [];
 
   List<int> getDartThrowMarksAdded(String playerId) =>
       _currentGame?.dartThrowMarksAdded[playerId] ?? [];

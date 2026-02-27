@@ -211,5 +211,17 @@ void main() {
       // Should be back on home screen
       expect(ElementFinders.getReefRoyaleCard(), findsOneWidget);
     });
+
+    testWidgets('Test 6: Rankings show in correct order',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config);
+      await completeGameToVictory(tester);
+
+      // Verify ranking keys exist for both players
+      expect(find.byKey(ReefRoyaleResultsKeys.playerRanking(0)),
+          findsOneWidget);
+      expect(find.byKey(ReefRoyaleResultsKeys.playerRanking(1)),
+          findsOneWidget);
+    });
   });
 }

@@ -153,6 +153,20 @@ class SettingsHelpers {
     await addPlayerViaDialog(tester, playerName);
   }
 
+  /// Reef Royale: Set Game Mode (dropdown)
+  ///
+  /// Valid values: 'Standard', 'Cursed Tide'
+  static Future<void> setReefRoyaleGameMode(
+    WidgetTester tester,
+    String modeText,
+  ) async {
+    await setDropdownValue(
+      tester,
+      ElementFinders.getReefRoyaleGameModeDropdown(),
+      modeText,
+    );
+  }
+
   /// Reef Royale: Toggle Easy Claim
   static Future<void> toggleReefRoyaleEasyClaim(WidgetTester tester) async {
     await toggleSwitch(tester, ElementFinders.getReefRoyaleEasyClaimSwitch());

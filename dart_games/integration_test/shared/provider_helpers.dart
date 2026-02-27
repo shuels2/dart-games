@@ -334,6 +334,30 @@ class ProviderHelpers {
     return provider.getCurrentPlayerDartsThrown();
   }
 
+  /// Reef Royale: Set active buff programmatically
+  static void setReefRoyaleActiveBuff(WidgetTester tester, ReefBuff buff) {
+    final provider = getReefRoyaleProvider(tester);
+    provider.setActiveBuff(buff);
+  }
+
+  /// Reef Royale: Get game mode
+  static ReefRoyaleGameMode? getReefRoyaleGameMode(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getGameMode();
+  }
+
+  /// Reef Royale: Get round limit
+  static int getReefRoyaleRoundLimit(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getRoundLimit();
+  }
+
+  /// Reef Royale: Get ranked player IDs
+  static List<String> getReefRoyaleRankedPlayerIds(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getRankedPlayerIds();
+  }
+
   // ==========================================================================
   // PLAYER PROVIDER HELPERS
   // ==========================================================================

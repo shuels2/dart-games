@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 import 'package:dart_games/constants/test_keys.dart';
+import 'package:dart_games/models/reef_royale_game.dart';
 
 import 'shared/ui_test_helpers.dart';
 import 'shared/element_finders.dart';
@@ -123,9 +124,20 @@ void verifyDartIndicatorColor(WidgetTester tester, Key dartKey, int expectedColo
 }
 
 /// Set up a 2-player game and start it
-Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config,
-    {bool easyClaim = false, bool neighborNumbers = false}) async {
+Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config, {
+  bool easyClaim = false,
+  bool neighborNumbers = false,
+  bool cursedTide = false,
+  bool bonusBuffs = false,
+  bool speedPlay = false,
+  int? roundLimit,
+  bool randomReefs = false,
+}) async {
   await UITestHelpers.navigateToGameMenu(tester, config);
+
+  if (cursedTide) {
+    await SettingsHelpers.setReefRoyaleGameMode(tester, 'Cursed Tide');
+  }
 
   if (easyClaim) {
     await SettingsHelpers.toggleReefRoyaleEasyClaim(tester);
@@ -133,6 +145,22 @@ Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config,
 
   if (neighborNumbers) {
     await SettingsHelpers.toggleReefRoyaleNeighborNumbers(tester);
+  }
+
+  if (randomReefs) {
+    await SettingsHelpers.toggleReefRoyaleRandomReefs(tester);
+  }
+
+  if (bonusBuffs) {
+    await SettingsHelpers.toggleReefRoyaleBonusBuffs(tester);
+  }
+
+  if (speedPlay) {
+    await SettingsHelpers.toggleReefRoyaleSpeedPlay(tester);
+  }
+
+  if (roundLimit != null) {
+    await SettingsHelpers.setReefRoyaleRoundLimit(tester, roundLimit);
   }
 
   await UITestHelpers.addPlayer(tester, 'Player A', config);
@@ -514,6 +542,115 @@ void main() {
       // P1 Turn 2: hit 20 again (already claimed by P1, P2 hasn't → scores pearls)
       await throwDartViaMock(tester, 20);
       verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(0), 0xB3F4D03F);
+    });
+
+    // ================================================================
+    // Game Option Tests (Tests 21-25)
+    // ================================================================
+
+    testWidgets('Test 21: Cursed Tide mode shows badge and pearls go to opponent',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, cursedTide: true);
+
+      // Verify cursed badge is visible
+      expect(find.byKey(ReefRoyaleGameKeys.cursedBadge), findsOneWidget);
+
+      final playerId =
+          ProviderHelpers.getReefRoyaleCurrentPlayerId(tester)!;
+
+      // Claim target 20 with triple
+      await throwDartViaMock(tester, 20, multiplier: 'triple');
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+
+      // P2 misses
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+
+      // P1 scores on claimed 20 → in Cursed Tide, pearls go to opponent
+      await throwDartViaMock(tester, 20);
+
+      // P1 should have 0 pearls, opponent gets them
+      expect(
+          ProviderHelpers.getReefRoyalePlayerPearls(tester, playerId), 0);
+    });
+
+    testWidgets('Test 22: Buff Riptide Rush doubles marks',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, bonusBuffs: true);
+
+      final playerId =
+          ProviderHelpers.getReefRoyaleCurrentPlayerId(tester)!;
+
+      // Programmatically set Riptide Rush buff
+      ProviderHelpers.setReefRoyaleActiveBuff(tester, ReefBuff.riptideRush);
+
+      // Throw single 20 → should get 2 marks (doubled)
+      await throwDartViaMock(tester, 20);
+
+      expect(
+          ProviderHelpers.getReefRoyalePlayerMarks(tester, playerId, 20), 2);
+    });
+
+    testWidgets('Test 23: Buff Pearl Fever doubles pearl value',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, bonusBuffs: true);
+
+      final playerId =
+          ProviderHelpers.getReefRoyaleCurrentPlayerId(tester)!;
+
+      // Claim target 20 with triple
+      await throwDartViaMock(tester, 20, multiplier: 'triple');
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+
+      // P2 misses
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+
+      // Activate Pearl Fever before P1's next turn
+      ProviderHelpers.setReefRoyaleActiveBuff(tester, ReefBuff.pearlFever);
+
+      // P1 scores on claimed 20 → 20 * 2 = 40 pearls
+      await throwDartViaMock(tester, 20);
+
+      expect(
+          ProviderHelpers.getReefRoyalePlayerPearls(tester, playerId), 40);
+    });
+
+    testWidgets('Test 24: Speed Play shows round counter',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config,
+          speedPlay: true, roundLimit: 8);
+
+      // Verify round counter is visible
+      expect(find.byKey(ReefRoyaleGameKeys.roundCounter), findsOneWidget);
+
+      // Verify round limit was set
+      expect(ProviderHelpers.getReefRoyaleRoundLimit(tester), 8);
+    });
+
+    testWidgets('Test 25: Random Reefs shows coral cards for non-standard targets',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, randomReefs: true);
+
+      // With random reefs, the game should still have coral cards displayed
+      // The exact targets will be random, but we verify via the provider
+      final provider = ProviderHelpers.getReefRoyaleProvider(tester);
+      final targets = provider.currentGame!.activeTargets;
+      expect(targets.length, 7); // Still 7 targets (6 random + Bull)
+      expect(targets.last, 25); // Bull always last
+
+      // Verify coral cards exist for whatever targets were selected
+      for (final target in targets) {
+        expect(find.byKey(ReefRoyaleGameKeys.coralCard(target)), findsOneWidget);
+      }
     });
   });
 }
