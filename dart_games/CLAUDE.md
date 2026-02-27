@@ -40,6 +40,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [UI Automation](docs/testing/ui-automation.md) - 128 UI tests (~86 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
+- [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
 
 ### 🚀 Deployment
 - [Build Process](docs/deployment/build-process.md) - Mandatory testing requirements, build commands
@@ -129,14 +130,16 @@ flutter test test/screens/games/monster_mash/
 
 ### New Game Completion Gates
 ❌ NEVER mark a game as complete or skip to documentation without completing ALL of the following:
-1. **Screenshot tests** — Run screenshot tests, evaluate EVERY screenshot against the spec's visual checklist, fix issues, re-run until zero issues
-2. **UI automation tests** — Run ALL UI tests for the new game, fix failures, re-run until 100% pass
-3. **Non-UI tests** — Run `flutter test`, fix any regressions, re-run until 100% pass
-4. **Simultaneous pass** — ALL three (screenshots clean + UI tests pass + non-UI tests pass) must be true AT THE SAME TIME before proceeding
-5. **Spec Definition of Done** — Every item in the spec's Definition of Done checklist verified and reported to user
+1. **Spec coverage audit** — Cross-reference EVERY option from spec Section 7 and EVERY visual element from Section 10 against actual test files. For each option/element, verify there is at least one non-UI test AND one UI test that exercises it. List any gaps, write missing tests, and re-verify. See [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) for the full procedure.
+2. **Screenshot tests** — Run screenshot tests, evaluate EVERY screenshot against the spec's visual checklist, fix issues, re-run until zero issues
+3. **UI automation tests** — Run ALL UI tests for the new game, fix failures, re-run until 100% pass
+4. **Non-UI tests** — Run `flutter test`, fix any regressions, re-run until 100% pass
+5. **Simultaneous pass** — ALL four (spec audit clean + screenshots clean + UI tests pass + non-UI tests pass) must be true AT THE SAME TIME before proceeding
+6. **Spec Definition of Done** — Every item in the spec's Definition of Done checklist verified and reported to user
 
 ❌ NEVER rationalize skipping any gate (e.g., "it requires manual setup", "it seems like a visual-only step", "the tests were already written")
 ❌ NEVER move to documentation or mark phases complete until all gates pass simultaneously
+❌ NEVER assume existing tests cover all spec options — always run the spec coverage audit
 ✅ If a gate cannot be run (e.g., chromedriver not available), STOP and ask the user — do NOT skip it
 
 ### Visual Validation Workflow (MANDATORY — Do Not Skip Any Step)
@@ -173,7 +176,7 @@ These rules prevent common debugging traps. Follow them EXACTLY:
 
 When implementing any game from `docs/research/games/`, the game's spec file is the source of truth. Before starting: read the full spec, especially Sections 7 (Options), 10 (Screen Designs), and 13 (Agent Team). After each development phase: cross-reference what was built against the spec's Section 7 options table — every option listed must have a visible, working effect on the game screen. Before marking complete: verify every item in the spec's Definition of Done checklist and report the results to the user.
 
-**MANDATORY: Visual validation and UI test verification are NON-NEGOTIABLE steps.** They MUST be actually executed — not skipped, not deferred, not marked as done without running. See "New Game Completion Gates" above. A game is NOT done until screenshots have been captured and evaluated, UI tests have been run and pass, and non-UI tests pass — all simultaneously.
+**MANDATORY: Spec coverage audit, visual validation, and UI test verification are NON-NEGOTIABLE steps.** They MUST be actually executed — not skipped, not deferred, not marked as done without running. See "New Game Completion Gates" above. A game is NOT done until the spec coverage audit shows 100% coverage, screenshots have been captured and evaluated, UI tests have been run and pass, and non-UI tests pass — all simultaneously.
 
 ## Project File Structure
 
@@ -184,7 +187,7 @@ dart_games/
 │   ├── DOCUMENTATION_STRUCTURE.md  # Documentation organization guide
 │   ├── architecture/                # Container app architecture (3 files)
 │   ├── development/                 # Development guides (11 files)
-│   ├── testing/                     # Testing documentation (5 files)
+│   ├── testing/                     # Testing documentation (6 files)
 │   ├── deployment/                  # Build and git workflow (2 files)
 │   ├── critical-rules/              # Critical rules (3 files)
 │   └── games/                       # Game-specific docs
@@ -257,5 +260,5 @@ git push origin <branch>        # Push (with permission)
 ---
 
 **Last Updated:** 2026-02-23
-**Documentation Version:** 2.4 (Player List Panel Component)
-**Total Documentation Files:** 58
+**Documentation Version:** 2.5 (Spec Coverage Audit)
+**Total Documentation Files:** 59
