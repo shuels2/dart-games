@@ -79,11 +79,7 @@ Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config,
   await UITestHelpers.addPlayer(tester, 'Player A', config);
   await UITestHelpers.addPlayer(tester, 'Player B', config);
 
-  final players = ProviderHelpers.getAllPlayers(tester);
-  final pA = players.firstWhere((p) => p.name == 'Player A');
-  final pB = players.firstWhere((p) => p.name == 'Player B');
-  await UITestHelpers.selectPlayers(tester, [pA.id, pB.id], config);
-
+  // Players are auto-selected when added
   await UITestHelpers.startGame(tester, config);
 }
 

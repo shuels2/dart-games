@@ -104,11 +104,7 @@ Future<void> setupAndStartGame(
   await UITestHelpers.addPlayer(tester, 'Player A', config);
   await UITestHelpers.addPlayer(tester, 'Player B', config);
 
-  final players = ProviderHelpers.getAllPlayers(tester);
-  final pA = players.firstWhere((p) => p.name == 'Player A');
-  final pB = players.firstWhere((p) => p.name == 'Player B');
-  await UITestHelpers.selectPlayers(tester, [pA.id, pB.id], config);
-
+  // Players are auto-selected when added
   await UITestHelpers.startGame(tester, config);
 }
 
@@ -142,13 +138,18 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   await throwBullseyeViaMock(tester);
   await throwOuterBullViaMock(tester);
 
-  // Wait for results screen
-  await tester.pump(const Duration(seconds: 3));
+  // Wait for takeout prompt (3500ms delay triggers simulateTakeoutStarted)
+  await tester.pump(const Duration(seconds: 4));
   await tester.pump();
-  await tester.pump(const Duration(seconds: 2));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 1));
-  await tester.pump();
+
+  // Click DARTS REMOVED to trigger takeout_finished -> _handleGameWon
+  await clickDartsRemoved(tester);
+
+  // Wait for results screen navigation (3000ms delay in _handleGameWon)
+  await tester.pump(const Duration(seconds: 4));
+  await tester.pump(); // Process navigation
+  await tester.pump(); // Build results screen
+  await tester.pump(); // Layout
 }
 
 void main() {

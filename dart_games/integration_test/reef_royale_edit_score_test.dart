@@ -64,11 +64,7 @@ Future<void> setupAndStartGame(
   await UITestHelpers.addPlayer(tester, 'Player A', config);
   await UITestHelpers.addPlayer(tester, 'Player B', config);
 
-  final players = ProviderHelpers.getAllPlayers(tester);
-  final pA = players.firstWhere((p) => p.name == 'Player A');
-  final pB = players.firstWhere((p) => p.name == 'Player B');
-  await UITestHelpers.selectPlayers(tester, [pA.id, pB.id], config);
-
+  // Players are auto-selected when added
   await UITestHelpers.startGame(tester, config);
 }
 
@@ -174,12 +170,19 @@ void main() {
           ProviderHelpers.getReefRoyalePlayerMarks(tester, playerId, 20), 0);
 
       // Open edit score dialog
-      final editButton = config.getEditScoreButton();
-      await tester.tap(editButton);
-      await PumpSequences.dialogOpen(tester);
+      await EditScoreHelpers.openEditScore(tester, config);
 
-      // Verify dialog is open
-      expect(ElementFinders.getEditScoreDialog(), findsOneWidget);
+      // Change dart 1 from Miss to Triple 20 (should add 3 marks = claim target 20)
+      await EditScoreHelpers.setDart1(tester, 'T20');
+
+      // Save
+      await EditScoreHelpers.updateScore(tester);
+
+      // Target 20 should now have 3 marks (claimed)
+      expect(
+          ProviderHelpers.getReefRoyalePlayerMarks(tester, playerId, 20), 3);
+      expect(
+          ProviderHelpers.reefRoyaleHasPlayerClaimed(tester, playerId, 20), isTrue);
     });
   });
 }
