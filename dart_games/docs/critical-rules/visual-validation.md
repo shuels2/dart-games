@@ -88,6 +88,39 @@ When evaluating screenshots, check for:
 - Game characters render correctly
 - All game states display the correct information
 
+## Screenshot Test Technical Requirements
+
+When running screenshot tests, follow these rules exactly to avoid debugging infrastructure issues:
+
+### Use the Correct Driver
+Screenshot tests MUST use `test_driver/screenshot_test.dart`, NOT `test_driver/integration_test.dart`. The standard driver has no `onScreenshot` callback, so `binding.takeScreenshot()` will hang silently.
+
+```bash
+# CORRECT
+flutter drive --driver=test_driver/screenshot_test.dart \
+  --target=integration_test/<game>_screenshot_test.dart -d chrome
+
+# WRONG — will hang on first takeScreenshot() call
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/<game>_screenshot_test.dart -d chrome
+```
+
+### Follow Existing UI Test Patterns
+Before writing or running screenshot tests, reference `run_ui_tests.bat` for the established launch pattern:
+- Kill and restart chromedriver before each test
+- Do NOT use `--no-headless` flag
+- Wait 5 seconds after starting chromedriver before launching tests
+
+### Never Use pumpAndSettle() in Integration Tests
+The splash screen has a `CircularProgressIndicator` that prevents `pumpAndSettle()` from ever completing. Use manual `pump()` sequences instead. See [Continuous Animations](../testing/continuous-animations.md).
+
+### Never Kill All Chrome Processes
+Only kill `chromedriver.exe`. Killing all `chrome.exe` processes destroys the user's browser sessions and leaves Chrome in a crash recovery state that causes `AppConnectionException` errors on subsequent runs.
+
+### ChromeDriver Session Management
+- Restart chromedriver before each screenshot test run
+- If `AppConnectionException` occurs: open Chrome manually, dismiss any crash recovery dialogs, close Chrome, restart chromedriver, retry
+
 ## Summary
 
 **Visual validation is not optional.** It is a mandatory quality gate that must be executed, not just planned. No rationalization justifies skipping it. If it cannot be run, stop and ask the user.
