@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/dartboard.dart';
 import '../services/mock_scolia_api_service.dart';
+import '../services/api_logger_service.dart';
 
 enum DartboardConnectionStatus {
   disconnected,
@@ -232,7 +233,8 @@ class DartboardProvider with ChangeNotifier {
     }
 
     try {
-      final url = Uri.parse('$_scoliaBaseUrl/api/sbc/status/${_dartboard!.serialNumber}');
+      final endpoint = '/api/sbc/status/${_dartboard!.serialNumber}';
+      final url = Uri.parse('$_scoliaBaseUrl$endpoint');
       final response = await http.get(
         url,
         headers: {
@@ -240,6 +242,20 @@ class DartboardProvider with ChangeNotifier {
           'Content-Type': 'application/json',
         },
       ).timeout(const Duration(seconds: 5));
+
+      // Log the API call
+      Map<String, dynamic>? responseBody;
+      try {
+        responseBody = json.decode(response.body) as Map<String, dynamic>;
+      } catch (_) {
+        responseBody = {'statusCode': response.statusCode, 'body': response.body};
+      }
+      ApiLoggerService.logApiCall(
+        method: 'GET',
+        endpoint: endpoint,
+        request: {'serial': _dartboard!.serialNumber},
+        response: responseBody,
+      );
 
       if (response.statusCode == 200) {
         // Successfully connected and got status
@@ -257,6 +273,14 @@ class DartboardProvider with ChangeNotifier {
         }
       }
     } catch (e) {
+      // Log the failed call
+      ApiLoggerService.logApiCall(
+        method: 'GET',
+        endpoint: '/api/sbc/status/${_dartboard!.serialNumber}',
+        request: {'serial': _dartboard!.serialNumber},
+        response: {'error': e.toString()},
+      );
+
       // Network error or timeout
       if (_status != DartboardConnectionStatus.error) {
         _status = DartboardConnectionStatus.error;

@@ -5,6 +5,8 @@ import '../services/mock_scolia_api_service.dart';
 import '../services/dart_announcer_service.dart';
 import '../services/app_settings.dart';
 import '../widgets/interactive_dartboard.dart';
+import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
+import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 
 class TestDartboardScreen extends StatefulWidget {
   final DartAnnouncerService announcer;
@@ -185,15 +187,29 @@ class _TestDartboardScreenState extends State<TestDartboardScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFF44336), // Red
-                Color(0xFFFFC107), // Amber
+                Color(0xFF1B5E20), // Forest Green
+                Color(0xFFC62828), // Crimson Red
               ],
             ),
           ),
         ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          iconSize: 32,
+          onPressed: () => Navigator.of(context).pop(),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+        ),
         title: const Text('Scolia 2 Dartboard Emulator'),
         foregroundColor: Colors.white,
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: DartboardConnectionInfo(
+              config: DartboardConnectionInfoConfig.dartboardEmulator(),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Clear Logs',

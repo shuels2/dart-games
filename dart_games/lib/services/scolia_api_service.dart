@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/dartboard.dart';
+import 'api_logger_service.dart';
 
 class ScoliaApiService {
   static const String baseUrl = 'https://game.scoliadarts.com';
@@ -19,6 +20,13 @@ class ScoliaApiService {
           'username': username,
           'password': password,
         }),
+      );
+
+      ApiLoggerService.logApiCall(
+        method: 'POST',
+        endpoint: '/api/social/auth/login',
+        request: {'username': username, 'password': '***'},
+        response: {'statusCode': response.statusCode, 'body': response.body.length > 200 ? '${response.body.substring(0, 200)}...' : response.body},
       );
 
       if (response.statusCode == 200) {
@@ -54,6 +62,13 @@ class ScoliaApiService {
         }),
       );
 
+      ApiLoggerService.logApiCall(
+        method: 'POST',
+        endpoint: '/api/social/auth/google',
+        request: {'idToken': '***'},
+        response: {'statusCode': response.statusCode},
+      );
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return {
@@ -85,6 +100,18 @@ class ScoliaApiService {
         },
       );
 
+      Map<String, dynamic>? responseBody;
+      try {
+        responseBody = {'statusCode': response.statusCode, 'boards': json.decode(response.body)};
+      } catch (_) {
+        responseBody = {'statusCode': response.statusCode};
+      }
+      ApiLoggerService.logApiCall(
+        method: 'GET',
+        endpoint: '/api/social/boards',
+        response: responseBody,
+      );
+
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data.map((json) => Dartboard.fromJson(json)).toList();
@@ -112,6 +139,19 @@ class ScoliaApiService {
         body: json.encode({
           'serialNumber': serialNumber,
         }),
+      );
+
+      Map<String, dynamic>? responseBody;
+      try {
+        responseBody = json.decode(response.body) as Map<String, dynamic>;
+      } catch (_) {
+        responseBody = {'statusCode': response.statusCode};
+      }
+      ApiLoggerService.logApiCall(
+        method: 'PUT',
+        endpoint: '/api/social/boards',
+        request: {'serialNumber': serialNumber},
+        response: responseBody,
       );
 
       if (response.statusCode == 200) {
@@ -145,6 +185,13 @@ class ScoliaApiService {
           'Authorization': 'Bearer $bearerToken',
           'Content-Type': 'application/json',
         },
+      );
+
+      ApiLoggerService.logApiCall(
+        method: 'DELETE',
+        endpoint: '/api/social/boards/$serialNumber',
+        request: {'serialNumber': serialNumber},
+        response: {'statusCode': response.statusCode},
       );
 
       if (response.statusCode == 200) {
