@@ -705,7 +705,7 @@ void main() {
       final d0Center = d0Container.child as Center;
       final d0Column = d0Center.child as Column;
       final d0Text = d0Column.children.first as Text;
-      expect(d0Text.data, 'S20'); // First dart was a real throw
+      expect(d0Text.data, 's20'); // First dart was inner single (lowercase s)
 
       final d1Container = tester.widget<Container>(d1Finder);
       final d1Center = d1Container.child as Center;
@@ -752,7 +752,7 @@ void main() {
       final d1Center = d1Container.child as Center;
       final d1Column = d1Center.child as Column;
       final d1Text = d1Column.children.first as Text;
-      expect(d1Text.data, 'S20'); // Valid target shows sector
+      expect(d1Text.data, 's20'); // Valid target shows sector (inner single)
 
       final d2Container = tester.widget<Container>(d2Finder);
       final d2Center = d2Container.child as Center;
