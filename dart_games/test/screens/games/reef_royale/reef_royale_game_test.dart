@@ -634,6 +634,45 @@ void main() {
       expect(game.resolveAllTargets(19), [19]);
     });
 
+    test('target number is never treated as a neighbor of another target', () {
+      // With random reefs, adjacent targets could exist (e.g. 1 and 18 are
+      // physically adjacent on the dartboard). Hitting 1 should only count
+      // as a direct hit on 1, never as a neighbor of 18.
+      final game = ReefRoyaleGame(
+        id: 'test',
+        startedAt: DateTime.now(),
+        maxDartsPerTurn: 3,
+        gameMode: ReefRoyaleGameMode.standard,
+        easyClaim: false,
+        neighborNumbers: true,
+        randomReefs: true,
+        bonusBuffsEnabled: false,
+        showHints: false,
+        speedPlayEnabled: false,
+        roundLimit: 10,
+        playerIds: ['p1', 'p2'],
+        creatureAssignments: {},
+        activeTargets: [1, 18, 20, 4, 13, 6, 25], // 1 and 18 are adjacent, 18 and 20 are near-adjacent via 1
+        coralOrder: ['brain', 'fan', 'fire', 'mushroom', 'staghorn', 'table', 'bubble'],
+        state: ReefRoyaleGameState.playing,
+      );
+
+      // Hit 1 — it IS a target, so only direct hit on 1
+      final result1 = game.resolveAllTargets(1);
+      expect(result1, [1]);
+      expect(result1.contains(18), isFalse); // NOT also a neighbor of 18
+      expect(result1.contains(20), isFalse); // NOT also a neighbor of 20
+
+      // Hit 18 — it IS a target, so only direct hit on 18
+      final result18 = game.resolveAllTargets(18);
+      expect(result18, [18]);
+      expect(result18.contains(1), isFalse);
+
+      // Hit 20 — it IS a target, so only direct hit on 20
+      final result20 = game.resolveAllTargets(20);
+      expect(result20, [20]);
+    });
+
     test('resolveAllTargets returns empty for non-targets', () {
       final game = createStandardGame(neighborNumbers: true);
       expect(game.resolveAllTargets(9), isEmpty);
