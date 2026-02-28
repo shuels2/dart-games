@@ -1051,8 +1051,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
       if (i >= claimedList.length) return null;
       if (claimedList[i]) return _sandyGold; // Coral claimed
       if (pearlsList[i] > 0) return _sandyGold.withOpacity(0.7); // Scored pearls
+      if (i < marksAddedList.length && marksAddedList[i] > 0) return _seafoamGreen; // Valid target hit (direct hit takes precedence)
       if (isNeighborList[i]) return _sunlitAqua; // Neighbor hit
-      if (i < marksAddedList.length && marksAddedList[i] > 0) return _seafoamGreen; // Valid target hit
       return _coralPink.withOpacity(0.5); // Miss / non-target
     });
   }
