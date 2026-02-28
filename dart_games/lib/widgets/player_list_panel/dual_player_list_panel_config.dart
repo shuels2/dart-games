@@ -186,6 +186,8 @@ class DualPlayerListPanelConfig {
       ),
       nameStatsSpacing: 1.4,
       maxPlayers: 8,
+      availableContainerMargin: EdgeInsets.zero,
+      selectedContainerMargin: EdgeInsets.zero,
       addPlayerDialogConfig: AddPlayerDialogConfig.monsterMash(),
     );
   }
