@@ -1118,6 +1118,27 @@ void main() {
       provider.processDartThrow('S1'); // 1 is not a standard target
       expect(provider.getCurrentPlayerDartsThrown(), 1);
       expect(provider.getPlayerMarks('p1', 20), 0); // No marks added
+      // Non-target displays the sector info
+      final darts = provider.getCurrentTurnDarts('p1');
+      expect(darts[0], 'S1');
+    });
+
+    test('complete miss (None) displays as Miss in dart label', () {
+      provider.startGame(players, ReefRoyaleGameMode.standard, false,
+          false, false, false, true, false, 10);
+      provider.processDartThrow('None');
+      expect(provider.getCurrentPlayerDartsThrown(), 1);
+      final darts = provider.getCurrentTurnDarts('p1');
+      expect(darts[0], 'Miss');
+    });
+
+    test('empty sector displays as Miss in dart label', () {
+      provider.startGame(players, ReefRoyaleGameMode.standard, false,
+          false, false, false, true, false, 10);
+      provider.processDartThrow('');
+      expect(provider.getCurrentPlayerDartsThrown(), 1);
+      final darts = provider.getCurrentTurnDarts('p1');
+      expect(darts[0], 'Miss');
     });
 
     test('updateAllDartScores replays with new sectors', () {

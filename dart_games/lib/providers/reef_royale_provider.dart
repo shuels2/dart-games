@@ -130,9 +130,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
 
     if (parsed == null) {
       // Complete miss (None, empty, or unparseable)
-      final displaySector =
-          (sector == 'None' || sector.isEmpty) ? 'Miss' : sector;
-      _currentGame!.currentTurnDarts[currentPlayerId]!.add(displaySector);
+      _currentGame!.currentTurnDarts[currentPlayerId]!.add('Miss');
       _currentGame!.processMiss(currentPlayerId);
       _checkTakeoutCondition();
       notifyListeners();
@@ -146,7 +144,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
     final resolvedTargets = _currentGame!.resolveAllTargets(hitNumber);
 
     if (resolvedTargets.isEmpty) {
-      // Non-target number hit
+      // Non-target number hit — display the sector info
       _currentGame!.currentTurnDarts[currentPlayerId]!.add(sector);
       _currentGame!.processMiss(currentPlayerId);
       _checkTakeoutCondition();
