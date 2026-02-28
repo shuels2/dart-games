@@ -70,6 +70,7 @@ class ReefRoyaleGame {
   Map<String, List<int?>> dartThrowTargetNumber;
   Map<String, List<bool>> dartThrowIsNeighbor;
   Map<String, List<String?>> dartThrowPearlRecipientId;
+  Map<String, List<int>> dartThrowTargetCount; // Number of targets hit per dart (>1 = shared neighbor)
 
   // Lifetime stats
   Map<String, int> totalDartsThrown;
@@ -134,6 +135,7 @@ class ReefRoyaleGame {
     Map<String, List<int?>>? dartThrowTargetNumber,
     Map<String, List<bool>>? dartThrowIsNeighbor,
     Map<String, List<String?>>? dartThrowPearlRecipientId,
+    Map<String, List<int>>? dartThrowTargetCount,
     Map<String, int>? totalDartsThrown,
     Map<String, int>? totalTurns,
     this.winnerId,
@@ -158,6 +160,7 @@ class ReefRoyaleGame {
         dartThrowTargetNumber = dartThrowTargetNumber ?? {},
         dartThrowIsNeighbor = dartThrowIsNeighbor ?? {},
         dartThrowPearlRecipientId = dartThrowPearlRecipientId ?? {},
+        dartThrowTargetCount = dartThrowTargetCount ?? {},
         totalDartsThrown = totalDartsThrown ?? {},
         totalTurns = totalTurns ?? {},
         turnStartMarks = turnStartMarks ?? {},
@@ -179,6 +182,7 @@ class ReefRoyaleGame {
       this.dartThrowTargetNumber[playerId] ??= [];
       this.dartThrowIsNeighbor[playerId] ??= [];
       this.dartThrowPearlRecipientId[playerId] ??= [];
+      this.dartThrowTargetCount[playerId] ??= [];
       this.totalDartsThrown[playerId] ??= 0;
       this.totalTurns[playerId] ??= 0;
       // Initialize marks for all targets
@@ -347,6 +351,7 @@ class ReefRoyaleGame {
     dartThrowTargetNumber[playerId]!.add(null);
     dartThrowIsNeighbor[playerId]!.add(false);
     dartThrowPearlRecipientId[playerId]!.add(null);
+    dartThrowTargetCount[playerId]!.add(0);
   }
 
   /// Process a miss (no valid target hit).
@@ -460,6 +465,7 @@ class ReefRoyaleGame {
     dartThrowTargetNumber[playerId]!.add(targetsHit.isNotEmpty ? targetsHit.first : null);
     dartThrowIsNeighbor[playerId]!.add(!anyDirectHit); // Neighbor only if NO direct hits
     dartThrowPearlRecipientId[playerId]!.add(pearlRecipient);
+    dartThrowTargetCount[playerId]!.add(resolvedTargets.length);
   }
 
   /// Process marking for a single target and return results (does not add to tracking lists)
@@ -689,6 +695,7 @@ class ReefRoyaleGame {
     dartThrowTargetNumber[currentPlayerId] = [];
     dartThrowIsNeighbor[currentPlayerId] = [];
     dartThrowPearlRecipientId[currentPlayerId] = [];
+    dartThrowTargetCount[currentPlayerId] = [];
 
     turnsCompletedThisRound++;
 

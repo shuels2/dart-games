@@ -79,6 +79,9 @@ class ReefRoyaleProvider extends ChangeNotifier {
   List<String?> getDartThrowPearlRecipientId(String playerId) =>
       _currentGame?.dartThrowPearlRecipientId[playerId] ?? [];
 
+  List<int> getDartThrowTargetCount(String playerId) =>
+      _currentGame?.dartThrowTargetCount[playerId] ?? [];
+
   SeaCreature? getCreatureType(String playerId) =>
       _currentGame?.creatureAssignments[playerId];
 
@@ -270,6 +273,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
     _currentGame!.dartThrowTargetNumber[playerId] = [];
     _currentGame!.dartThrowIsNeighbor[playerId] = [];
     _currentGame!.dartThrowPearlRecipientId[playerId] = [];
+    _currentGame!.dartThrowTargetCount[playerId] = [];
 
     _currentGame!.resetToStartOfTurn(playerId);
 
@@ -304,6 +308,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
     _currentGame!.dartThrowTargetNumber[playerId] = [];
     _currentGame!.dartThrowIsNeighbor[playerId] = [];
     _currentGame!.dartThrowPearlRecipientId[playerId] = [];
+    _currentGame!.dartThrowTargetCount[playerId] = [];
 
     _currentGame!.resetToStartOfTurn(playerId);
 

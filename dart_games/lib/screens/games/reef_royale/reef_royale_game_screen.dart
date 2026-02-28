@@ -28,13 +28,15 @@ class ReefRoyaleGameScreen extends StatefulWidget {
   State<ReefRoyaleGameScreen> createState() => _ReefRoyaleGameScreenState();
 }
 
-class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
+class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
+    with SingleTickerProviderStateMixin {
   StreamSubscription? _dartboardSubscription;
   final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();
   MockScoliaApiService? _mockApi;
   ReefRoyaleAnnouncementHelper? _audioQueue;
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   bool _gameCompleted = false;
+  late final AnimationController _pulseController;
 
   // Reef Royale color palette
   static const _deepReefBlue = Color(0xFF0B3D91);
@@ -48,6 +50,10 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeGame();
     });
@@ -84,6 +90,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
 
   @override
   void dispose() {
+    _pulseController.dispose();
     _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
     _dartboardEmulatorController.dispose();
@@ -658,6 +665,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
               final scoredPearls = i < pearlsList.length && pearlsList[i] > 0;
               final marksAddedList = provider.getDartThrowMarksAdded(playerId);
               final addedMarks = i < marksAddedList.length && marksAddedList[i] > 0;
+              final targetCountList = provider.getDartThrowTargetCount(playerId);
+              final isMultiTarget = i < targetCountList.length && targetCountList[i] > 1;
 
               Color borderColor;
               if (!hasThrown) {
@@ -674,7 +683,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                 borderColor = _coralPink.withOpacity(0.5);
               }
 
-              return Container(
+              final indicator = Container(
                 key: ReefRoyaleGameKeys.dartIndicator(i),
                 width: 50,
                 height: 40,
@@ -706,6 +715,63 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                           ),
                         ),
                     ],
+                  ),
+                ),
+              );
+
+              if (!isMultiTarget) return indicator;
+
+              // Pulsing glow for shared neighbor multi-target hits
+              return AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _sunlitAqua.withOpacity(0.3 + 0.4 * _pulseController.value),
+                          blurRadius: 6 + 6 * _pulseController.value,
+                          spreadRadius: 1 + 2 * _pulseController.value,
+                        ),
+                      ],
+                    ),
+                    child: child,
+                  );
+                },
+                child: Container(
+                  key: ReefRoyaleGameKeys.dartIndicator(i),
+                  width: 50,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: hasThrown ? borderColor.withOpacity(0.25) : _deepReefBlue.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: borderColor, width: justClaimed ? 2.5 : 1.5),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          segment ?? '-',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: hasThrown ? _pearlWhite : _pearlWhite.withOpacity(0.4),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (isNeighbor)
+                          Text(
+                            '(neighbor)',
+                            style: GoogleFonts.nunito(
+                              fontSize: 8,
+                              color: _sunlitAqua.withOpacity(0.9),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               );

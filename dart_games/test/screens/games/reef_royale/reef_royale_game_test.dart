@@ -664,6 +664,49 @@ void main() {
       expect(game.getPlayerMarks('p1', 16), 0);
       expect(game.getPlayerMarks('p1', 15), 0);
     });
+
+    test('dartThrowTargetCount tracks multi-target shared neighbor hits', () {
+      final provider = ReefRoyaleProvider();
+      final players = [
+        Player(id: 'p1', name: 'Alice', createdAt: DateTime.now()),
+        Player(id: 'p2', name: 'Bob', createdAt: DateTime.now()),
+      ];
+      provider.startGame(players, ReefRoyaleGameMode.standard, false,
+          true, false, false, true, false, 10); // neighborNumbers: true
+      // Hit 1 — shared neighbor of 20 and 18
+      provider.processDartThrow('S1');
+      final targetCount = provider.getDartThrowTargetCount('p1');
+      expect(targetCount.length, 1);
+      expect(targetCount[0], 2); // Hit 2 targets
+    });
+
+    test('dartThrowTargetCount is 1 for single target hits', () {
+      final provider = ReefRoyaleProvider();
+      final players = [
+        Player(id: 'p1', name: 'Alice', createdAt: DateTime.now()),
+        Player(id: 'p2', name: 'Bob', createdAt: DateTime.now()),
+      ];
+      provider.startGame(players, ReefRoyaleGameMode.standard, false,
+          false, false, false, true, false, 10);
+      provider.processDartThrow('S20');
+      final targetCount = provider.getDartThrowTargetCount('p1');
+      expect(targetCount.length, 1);
+      expect(targetCount[0], 1); // Hit 1 target
+    });
+
+    test('dartThrowTargetCount is 0 for misses', () {
+      final provider = ReefRoyaleProvider();
+      final players = [
+        Player(id: 'p1', name: 'Alice', createdAt: DateTime.now()),
+        Player(id: 'p2', name: 'Bob', createdAt: DateTime.now()),
+      ];
+      provider.startGame(players, ReefRoyaleGameMode.standard, false,
+          false, false, false, true, false, 10);
+      provider.processDartThrow('None');
+      final targetCount = provider.getDartThrowTargetCount('p1');
+      expect(targetCount.length, 1);
+      expect(targetCount[0], 0); // Miss = 0 targets
+    });
   });
 
   // ═══════════════════════════════════════════════════
