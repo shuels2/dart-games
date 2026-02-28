@@ -573,7 +573,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
     final dartsThrown = provider.getCurrentPlayerDartsThrown();
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(8, 12, 0, 8),
+      margin: const EdgeInsets.fromLTRB(8, 12, 0, 4),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: _deepReefBlue.withOpacity(0.85),
@@ -748,15 +748,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
           // Hints (if enabled)
           if (game.showHints) ...[
             Builder(builder: (_) {
-              final neighborSet = <int>{};
-              if (game.neighborNumbers) {
-                for (final t in game.activeTargets) {
-                  if (t >= 1 && t <= 20) {
-                    neighborSet.addAll(DartboardLayout.getNeighbors(t));
-                  }
-                }
-                neighborSet.removeAll(game.activeTargets);
-              }
               return Container(
                 key: ReefRoyaleGameKeys.hintOverlay,
                 width: double.infinity,
@@ -769,47 +760,63 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                 child: Column(
                   children: [
                     Icon(Icons.gps_fixed, color: _seafoamGreen, size: 24),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       'Targets',
                       style: GoogleFonts.fredoka(
-                        fontSize: 14,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: _pearlWhite,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      game.activeTargets
-                          .map((t) => t == 25 ? 'Bull' : '$t')
-                          .join(', '),
-                      style: GoogleFonts.nunito(
-                        fontSize: 12,
-                        color: _seafoamGreen,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (neighborSet.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Neighbors',
-                        style: GoogleFonts.fredoka(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: _sunlitAqua,
+                    const SizedBox(height: 4),
+                    ...game.activeTargets.map((t) {
+                      final label = t == 25 ? 'Bull' : '$t';
+                      if (game.neighborNumbers && t >= 1 && t <= 20) {
+                        final neighbors = DartboardLayout.getNeighbors(t)
+                            .where((n) => !game.activeTargets.contains(n))
+                            .toList();
+                        if (neighbors.isNotEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 1),
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: label,
+                                    style: GoogleFonts.fredoka(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: _seafoamGreen,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: ' (${neighbors.join(", ")})',
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 16,
+                                      color: _sunlitAqua.withOpacity(0.8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 1),
+                        child: Text(
+                          label,
+                          style: GoogleFonts.fredoka(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: _seafoamGreen,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      Text(
-                        neighborSet.toList()
-                            .map((t) => '$t')
-                            .join(', '),
-                        style: GoogleFonts.nunito(
-                          fontSize: 11,
-                          color: _sunlitAqua.withOpacity(0.8),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                      );
+                    }),
                   ],
                 ),
               );
@@ -827,7 +834,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
     final bottomRow = targets.length > 4 ? targets.sublist(4) : <int>[];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+      padding: const EdgeInsets.fromLTRB(4, 8, 8, 0),
       child: Column(
         children: [
           // Top row
@@ -1002,12 +1009,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
     final opponents = game.playerIds.where((pid) => pid != currentPlayerId).toList();
 
     return Container(
-      height: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: _deepReefBlue.withOpacity(0.9),
-        border: Border(top: BorderSide(color: _seafoamGreen.withOpacity(0.3))),
-      ),
+      height: 90,
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: opponents.map((opponentId) {
@@ -1023,8 +1026,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
           return Expanded(
             child: Container(
               key: ReefRoyaleGameKeys.playerTile(opponentId),
-              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              padding: const EdgeInsets.all(4),
+              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               decoration: BoxDecoration(
                 color: _deepReefBlue.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(8),
@@ -1034,10 +1037,10 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                 children: [
                   // Creature avatar
                   if (imagePath != null)
-                    Image.asset(imagePath, width: 40, height: 40, fit: BoxFit.contain)
+                    Image.asset(imagePath, width: 64, height: 64, fit: BoxFit.contain)
                   else
-                    const Icon(Icons.person, size: 40, color: _pearlWhite),
-                  const SizedBox(width: 4),
+                    const Icon(Icons.person, size: 64, color: _pearlWhite),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1046,7 +1049,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                         Text(
                           player.name,
                           style: GoogleFonts.fredoka(
-                            fontSize: 13,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: _pearlWhite,
                           ),
@@ -1056,7 +1059,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                           Text(
                             '${game.gameMode == ReefRoyaleGameMode.cursedTide ? '' : ''}$pearls pearls',
                             style: GoogleFonts.nunito(
-                              fontSize: 11,
+                              fontSize: 15,
                               color: game.gameMode == ReefRoyaleGameMode.cursedTide
                                   ? _coralPink
                                   : _sandyGold,
@@ -1065,7 +1068,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                           Text(
                             '$claimedCount/7 corals',
                             style: GoogleFonts.nunito(
-                              fontSize: 11,
+                              fontSize: 15,
                               color: _seafoamGreen,
                             ),
                           ),
@@ -1073,7 +1076,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                           Text(
                             '???',
                             style: GoogleFonts.fredoka(
-                              fontSize: 14,
+                              fontSize: 18,
                               color: _biolumPurple,
                             ),
                           ),
