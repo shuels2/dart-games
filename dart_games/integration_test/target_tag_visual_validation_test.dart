@@ -542,6 +542,8 @@ void main() {
 
       await UITestHelpers.addPlayer(tester, 'Eliminated 1', config);
       await UITestHelpers.addPlayer(tester, 'Eliminated 2', config);
+      await UITestHelpers.addPlayer(tester, 'Eliminated 3', config);
+
 
       await UITestHelpers.startGame(tester, config);
       expect(find.text('Target Tag Game On!'), findsOneWidget);
@@ -552,6 +554,9 @@ void main() {
       // Skip to Player 2's turn to get their target
       await skipTurn(tester);
       final player2Target = getCurrentPlayerTargetNumber(tester);
+
+      // Skip to Player 3's turn
+      await skipTurn(tester);
 
       // Skip back to Player 1's turn
       await skipTurn(tester);
@@ -569,7 +574,7 @@ void main() {
       await throwMissViaMock(tester);
       await PumpSequences.simpleUpdate(tester);
 
-      await clickDartsRemoved(tester);
+      await clickDartsRemoved(tester); // Moves to player 3
 
       // ===== Step 4: Verify Player 2 ELIMINATED =====
 
@@ -583,7 +588,7 @@ void main() {
       verifyPlayerTileGlow(tester, 'Eliminated 2', colorGreenGlow, shouldExist: false);
 
       // ===== Step 5: Verify Player 2 no longer gets current player border =====
-      // Skip turn should cycle back to Player 1, not Player 2
+      // Skip turn should cycle back to Player 1 from Player 3
       await skipTurn(tester);
 
       // Player 1 should be current (pink border)
