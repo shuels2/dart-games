@@ -53,6 +53,7 @@ class DualPlayerListPanelConfig {
   // Layout
   final EdgeInsets availableContainerMargin;
   final EdgeInsets selectedContainerMargin;
+  final double listGap;
   final int maxPlayers;
 
   // Add player dialog
@@ -92,6 +93,7 @@ class DualPlayerListPanelConfig {
     this.nameStatsSpacing,
     this.availableContainerMargin = const EdgeInsets.only(left: 16.0),
     this.selectedContainerMargin = const EdgeInsets.only(right: 16.0),
+    this.listGap = 16,
     this.maxPlayers = 8,
     required this.addPlayerDialogConfig,
   });
@@ -230,6 +232,7 @@ class DualPlayerListPanelConfig {
       maxPlayers: 8,
       availableContainerMargin: EdgeInsets.zero,
       selectedContainerMargin: EdgeInsets.zero,
+      listGap: 8,
       addPlayerDialogConfig: AddPlayerDialogConfig.reefRoyale(),
     );
   }

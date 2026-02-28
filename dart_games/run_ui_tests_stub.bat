@@ -906,8 +906,8 @@ if "!should_run!"=="1" (
     echo [!test_count!] Reef Royale Edit Score Test
     echo ========================================
     echo File: reef_royale_edit_score_test.dart
-    echo Tests: 5 tests
-    echo Expected Duration: ~4 minutes
+    echo Tests: 6 tests
+    echo Expected Duration: ~5 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -916,8 +916,8 @@ if "!should_run!"=="1" (
     echo [!test_count!] Reef Royale Edit Score Test >> integration_test_output\summary.txt
     echo ======================================== >> integration_test_output\summary.txt
     echo File: reef_royale_edit_score_test.dart >> integration_test_output\summary.txt
-    echo Tests: 5 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
+    echo Tests: 6 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     set _LOG=integration_test_output\16_reef_royale_edit_score.log
@@ -1183,7 +1183,7 @@ echo  12. monster_mash_visual_validation_test.dart    (6 tests,  ~5 min)
 echo  13. reef_royale_add_player_test.dart            (6 tests,  ~4 min)
 echo  14. reef_royale_menu_and_settings_test.dart     (10 tests, ~6 min)
 echo  15. reef_royale_gameplay_test.dart              (25 tests, ~12 min)
-echo  16. reef_royale_edit_score_test.dart            (5 tests,  ~4 min)
+echo  16. reef_royale_edit_score_test.dart            (6 tests,  ~5 min)
 echo  17. reef_royale_results_screen_test.dart        (6 tests,  ~5 min)
 echo  18. reef_royale_visual_validation_test.dart     (7 tests,  ~5 min)
 echo  19. reef_royale_showcase_test.dart              (1 test,   ~3 min)

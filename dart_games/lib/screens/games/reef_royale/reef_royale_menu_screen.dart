@@ -111,6 +111,11 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
             fontSize: 32,
             fontWeight: FontWeight.bold,
             color: _pearlWhite,
+            letterSpacing: 2,
+            shadows: [
+              Shadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
+              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+            ],
           ),
         ),
         flexibleSpace: Container(
@@ -164,7 +169,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
   Widget _buildLeftPanel() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 16.0),
       child: Container(
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
@@ -172,21 +177,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
           border: Border.all(color: _seafoamGreen.withOpacity(0.5), width: 1),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(11),
-                child: Opacity(
-                  opacity: 0.1,
-                  child: Image.asset(
-                    'assets/games/reef_royale/images/ReefRoyale-Background.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-            Column(
+        child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -227,6 +218,11 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
                     color: _pearlWhite,
+                    letterSpacing: 1,
+                    shadows: [
+                      Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 10),
+                      const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -241,6 +237,11 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
                     color: _pearlWhite,
+                    letterSpacing: 1,
+                    shadows: [
+                      Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 10),
+                      const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -263,8 +264,6 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 ),
               ],
             ),
-          ],
-        ),
       ),
     );
   }
@@ -358,11 +357,11 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
       children: [
         // Row 1: Game Mode dropdown | Easy Claim switch
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(8, 16, 16, 0),
           child: Row(
             children: [
               Expanded(child: _buildGameModeBox()),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
               Expanded(child: _buildSwitchBox(
                 'Easy Claim',
                 _easyClaim,
@@ -375,7 +374,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
         // Row 2: Neighbor Numbers switch | Random Reefs switch
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
           child: Row(
             children: [
               Expanded(child: _buildSwitchBox(
@@ -384,7 +383,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 ReefRoyaleMenuKeys.neighborNumbersSwitch,
                 (value) => setState(() => _neighborNumbers = value),
               )),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
               Expanded(child: _buildSwitchBox(
                 'Random Reefs',
                 _randomReefs,
@@ -397,7 +396,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
         // Row 3: Bonus Buffs switch | Show Hints switch
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
           child: Row(
             children: [
               Expanded(child: _buildSwitchBox(
@@ -406,7 +405,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 ReefRoyaleMenuKeys.bonusBuffsSwitch,
                 (value) => setState(() => _bonusBuffs = value),
               )),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
               Expanded(child: _buildSwitchBox(
                 'Show Hints',
                 _showHints,
@@ -419,7 +418,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
         // Row 4: Speed Play switch | Round Limit slider
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
           child: Row(
             children: [
               Expanded(child: _buildSwitchBox(
@@ -427,20 +426,19 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 _speedPlay,
                 ReefRoyaleMenuKeys.speedPlaySwitch,
                 (value) => setState(() => _speedPlay = value),
-                activeColor: _sandyGold,
               )),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
               Expanded(child: _buildRoundLimitBox()),
             ],
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
 
         // Player list panel
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(8, 0, 16, 0),
             child: DualPlayerListPanel(
               config: DualPlayerListPanelConfig.reefRoyale(),
               addPlayerButtonKey: ReefRoyaleMenuKeys.addPlayerButton,
@@ -522,10 +520,10 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: value ? activeColor.withOpacity(0.25) : _deepReefBlue.withOpacity(0.85),
+        color: _deepReefBlue.withOpacity(0.85),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: value ? activeColor : _seafoamGreen.withOpacity(0.3),
+          color: value ? _sandyGold : _seafoamGreen.withOpacity(0.3),
           width: value ? 2.5 : 1.5,
         ),
       ),
@@ -559,8 +557,8 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 child: Switch(
                   key: switchKey,
                   value: value,
-                  activeColor: activeColor,
-                  activeTrackColor: activeColor.withOpacity(0.5),
+                  activeColor: _sandyGold,
+                  activeTrackColor: _sandyGold.withOpacity(0.5),
                   inactiveThumbColor: _pearlWhite.withOpacity(0.5),
                   inactiveTrackColor: _deepReefBlue.withOpacity(0.5),
                   onChanged: onChanged,
@@ -571,7 +569,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: value ? FontWeight.bold : FontWeight.normal,
-                  color: value ? activeColor : _pearlWhite.withOpacity(0.4),
+                  color: value ? _sandyGold : _pearlWhite.withOpacity(0.4),
                 ),
               ),
             ],
@@ -629,27 +627,53 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
   Widget _buildStartButton(bool canStart, List<Player> selectedPlayers) {
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: SizedBox(
+      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+      child: Container(
         width: double.infinity,
-        height: 56,
+        height: 64,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: canStart
+              ? [
+                  BoxShadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 16, spreadRadius: 2),
+                  BoxShadow(color: _seafoamGreen.withOpacity(0.3), blurRadius: 32, spreadRadius: 4),
+                ]
+              : [],
+        ),
         child: ElevatedButton(
           key: ReefRoyaleMenuKeys.startGameButton,
           onPressed: canStart ? () => _startGame(selectedPlayers) : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: canStart ? _seafoamGreen : Colors.grey,
-            foregroundColor: canStart ? _deepReefBlue : Colors.white54,
+            backgroundColor: canStart ? _seafoamGreen : _deepReefBlue,
+            foregroundColor: canStart ? _deepReefBlue : _pearlWhite.withOpacity(0.5),
+            disabledBackgroundColor: _deepReefBlue.withOpacity(0.85),
+            disabledForegroundColor: _pearlWhite.withOpacity(0.45),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: canStart ? _pearlWhite.withOpacity(0.5) : _seafoamGreen.withOpacity(0.3),
+                width: 2,
+              ),
             ),
             elevation: canStart ? 8 : 2,
           ),
-          child: Text(
-            'DIVE IN!',
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: 'DI'),
+                TextSpan(text: ' ', style: TextStyle(fontSize: 2, letterSpacing: 0)),
+                TextSpan(text: 'VE IN!'),
+              ],
+            ),
             style: GoogleFonts.fredoka(
-              fontSize: 32,
+              fontSize: 34,
               fontWeight: FontWeight.bold,
-              letterSpacing: 2,
+              letterSpacing: 3,
+              shadows: canStart
+                  ? [
+                      Shadow(color: _deepReefBlue.withOpacity(0.4), blurRadius: 4, offset: const Offset(1, 1)),
+                    ]
+                  : [],
             ),
           ),
         ),

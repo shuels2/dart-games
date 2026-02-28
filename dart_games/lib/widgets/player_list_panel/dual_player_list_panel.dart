@@ -70,7 +70,7 @@ class _DualPlayerListPanelState extends State<DualPlayerListPanel> {
             Expanded(
               child: _buildAvailablePlayersSection(playerProvider),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: config.listGap),
             Expanded(
               child: _buildSelectedPlayersSection(playerProvider),
             ),
