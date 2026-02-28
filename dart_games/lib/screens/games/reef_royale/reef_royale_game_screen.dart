@@ -1064,6 +1064,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
       height: 90,
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: opponents.map((opponentId) {
           final player = allPlayers.firstWhere(
             (p) => p.id == opponentId,
@@ -1074,17 +1076,18 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
           final imagePath = provider.getCreatureImagePath(opponentId);
           final showInfo = !game.bonusBuffsEnabled || game.activeBuff != ReefBuff.inkCloud;
 
-          return Expanded(
+          return Flexible(
             child: Container(
               key: ReefRoyaleGameKeys.playerTile(opponentId),
-              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: _deepReefBlue.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: _seafoamGreen.withOpacity(0.2)),
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Creature avatar
                   if (imagePath != null)
@@ -1092,7 +1095,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                   else
                     const Icon(Icons.person, size: 64, color: _pearlWhite),
                   const SizedBox(width: 6),
-                  Expanded(
+                  Flexible(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1108,7 +1111,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
                         ),
                         if (showInfo) ...[
                           Text(
-                            '${game.gameMode == ReefRoyaleGameMode.cursedTide ? '' : ''}$pearls pearls',
+                            '$pearls pearls',
                             style: GoogleFonts.nunito(
                               fontSize: 15,
                               color: game.gameMode == ReefRoyaleGameMode.cursedTide
