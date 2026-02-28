@@ -453,9 +453,9 @@ void main() {
     // D1/D2/D3 Dart Indicator Highlighting Tests
     // ================================================================
     // Color values from reef_royale_game_screen.dart:
-    //   _seafoamGreen    = 0xFF48D1CC  (valid target hit, marks added - direct or neighbor)
+    //   _seafoamGreen    = 0xFF48D1CC  (valid target hit, marks added)
     //   _sandyGold       = 0xFFF4D03F  (claimed coral)
-    //   _sunlitAqua      = 0xFF00CED1  (neighbor hit without marks - e.g., locked target)
+    //   _sunlitAqua      = 0xFF00CED1  (neighbor hit)
     //   _coralPink @ 0.5 = 0x80FF6B6B  (miss / non-target)
     //   _sandyGold @ 0.7 = 0xB3F4D03F  (pearl scored)
 
@@ -506,15 +506,15 @@ void main() {
       verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(1), 0xFFF4D03F);
     });
 
-    testWidgets('Test 19: Neighbor hit that adds marks shows green, direct hit shows green',
+    testWidgets('Test 19: Neighbor hit shows aqua border',
         (WidgetTester tester) async {
       await setupAndStartGame(tester, config, neighborNumbers: true);
 
-      // D1: Throw 1 (neighbor of 20) → resolves to target 20, adds marks → green (direct hits take precedence)
+      // Throw 1 (neighbor of 20 on dartboard) → resolves to target 20, neighbor hit → aqua
       await throwDartViaMock(tester, 1);
-      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(0), 0xFF48D1CC);
+      verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(0), 0xFF00CED1);
 
-      // D2: Direct hit on 20 → adds marks → green
+      // D2: Direct hit on 20 → green
       await throwDartViaMock(tester, 20);
       verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(1), 0xFF48D1CC);
 

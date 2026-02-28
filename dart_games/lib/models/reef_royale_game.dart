@@ -361,75 +361,110 @@ class ReefRoyaleGame {
     _recordMissDartTracking(playerId);
   }
 
-  /// Process a dart hit on a resolved target.
+  /// Process a dart hit on resolved target(s).
   /// [hitNumber]: actual number thrown (1-20, 25=outer bull, 50=inner bull)
   /// [multiplier]: 'single', 'double', 'triple'
-  /// [isNeighborHit]: true if redirected from a neighbor number
-  /// [resolvedTarget]: the target this hit counts toward
+  /// [resolvedTargets]: list of all targets this hit counts toward (can be multiple for shared neighbors)
   void processDart(
     String playerId,
     int hitNumber,
     String multiplier, {
-    required bool isNeighborHit,
-    required int resolvedTarget,
+    required List<int> resolvedTargets,
   }) {
     if (state != ReefRoyaleGameState.playing) return;
     if (playerId != playerIds[currentPlayerIndex]) return;
     if (dartsThrown[playerId]! >= maxDartsPerTurn) return;
+    if (resolvedTargets.isEmpty) return;
 
+    // Increment dart count ONCE per dart thrown (not per target hit)
     dartsThrown[playerId] = (dartsThrown[playerId] ?? 0) + 1;
     totalDartsThrown[playerId] = (totalDartsThrown[playerId] ?? 0) + 1;
     _incrementTurnIfFirst(playerId);
-
-    final target = resolvedTarget;
 
     // Calculate multiplier value
     int multiplierValue = 1;
     if (multiplier == 'double') multiplierValue = 2;
     if (multiplier == 'triple') multiplierValue = 3;
 
-    // Calculate marks to add
-    int marksToAdd;
-    if (isNeighborHit) {
-      marksToAdd = 1; // Neighbors always 1 mark
-    } else if (hitNumber == 50) {
-      marksToAdd = 2; // Inner bull = 2 marks
-    } else if (hitNumber == 25) {
-      marksToAdd = 1; // Outer bull = 1 mark
-    } else {
-      marksToAdd = multiplierValue;
+    // Aggregated tracking data (one entry per dart thrown)
+    int totalMarksAdded = 0;
+    int totalPearlsScored = 0;
+    bool anyClaimedCoral = false;
+    bool anyLockedReef = false;
+    bool anyDirectHit = false; // True if ANY target was hit directly (not as neighbor)
+    List<int> targetsHit = [];
+    String? pearlRecipient;
+
+    // Process each resolved target
+    for (final target in resolvedTargets) {
+      // Determine if this specific target was hit as a neighbor
+      bool isNeighborHit = (hitNumber != target) &&
+          !(hitNumber == 50 && target == 25) &&
+          !(hitNumber == 25 && target == 25);
+
+      // If ANY hit is direct, the dart shows as direct
+      if (!isNeighborHit) {
+        anyDirectHit = true;
+      }
+
+      targetsHit.add(target);
+
+      // Calculate marks to add for this target
+      int marksToAdd;
+      if (isNeighborHit) {
+        marksToAdd = 1; // Neighbors always 1 mark
+      } else if (hitNumber == 50) {
+        marksToAdd = 2; // Inner bull = 2 marks
+      } else if (hitNumber == 25) {
+        marksToAdd = 1; // Outer bull = 1 mark
+      } else {
+        marksToAdd = multiplierValue;
+      }
+
+      // Riptide Rush doubles marks
+      if (activeBuff == ReefBuff.riptideRush) {
+        marksToAdd *= 2;
+      }
+
+      // Locked target - no effect from this target
+      if (locked.contains(target)) {
+        anyLockedReef = true;
+        continue;
+      }
+
+      bool playerClaimed = claimed[playerId]!.contains(target);
+
+      if (!playerClaimed) {
+        // Process marking for this target
+        var result = _processMarkingForTarget(playerId, target, hitNumber,
+            multiplierValue, marksToAdd, isNeighborHit);
+        totalMarksAdded += result['marksAdded'] as int;
+        totalPearlsScored += result['pearlsScored'] as int;
+        if (result['claimed'] as bool) anyClaimedCoral = true;
+        if (result['locked'] as bool) anyLockedReef = true;
+        if (result['pearlRecipient'] != null) pearlRecipient = result['pearlRecipient'] as String?;
+      } else {
+        // Process scoring for this target
+        var result = _processScoringForTarget(playerId, target, hitNumber,
+            multiplierValue, isNeighborHit);
+        totalPearlsScored += result['pearlsScored'] as int;
+        if (result['pearlRecipient'] != null) pearlRecipient = result['pearlRecipient'] as String?;
+      }
     }
 
-    // Riptide Rush doubles marks
-    if (activeBuff == ReefBuff.riptideRush) {
-      marksToAdd *= 2;
-    }
-
-    // Locked target - no effect
-    if (locked.contains(target)) {
-      dartThrowMarksAdded[playerId]!.add(0);
-      dartThrowPearlsScored[playerId]!.add(0);
-      dartThrowClaimedCoral[playerId]!.add(false);
-      dartThrowLockedReef[playerId]!.add(false);
-      dartThrowTargetNumber[playerId]!.add(target);
-      dartThrowIsNeighbor[playerId]!.add(isNeighborHit);
-      dartThrowPearlRecipientId[playerId]!.add(null);
-      return;
-    }
-
-    bool playerClaimed = claimed[playerId]!.contains(target);
-
-    if (!playerClaimed) {
-      _processMarking(playerId, target, hitNumber, multiplierValue,
-          marksToAdd, isNeighborHit);
-    } else {
-      _processScoring(playerId, target, hitNumber, multiplierValue,
-          isNeighborHit);
-    }
+    // Add ONE aggregated tracking entry per dart thrown
+    dartThrowMarksAdded[playerId]!.add(totalMarksAdded);
+    dartThrowPearlsScored[playerId]!.add(totalPearlsScored);
+    dartThrowClaimedCoral[playerId]!.add(anyClaimedCoral);
+    dartThrowLockedReef[playerId]!.add(anyLockedReef);
+    dartThrowTargetNumber[playerId]!.add(targetsHit.isNotEmpty ? targetsHit.first : null);
+    dartThrowIsNeighbor[playerId]!.add(!anyDirectHit); // Neighbor only if NO direct hits
+    dartThrowPearlRecipientId[playerId]!.add(pearlRecipient);
   }
 
-  void _processMarking(String playerId, int target, int hitNumber,
-      int multiplierValue, int marksToAdd, bool isNeighborHit) {
+  /// Process marking for a single target and return results (does not add to tracking lists)
+  Map<String, dynamic> _processMarkingForTarget(String playerId, int target,
+      int hitNumber, int multiplierValue, int marksToAdd, bool isNeighborHit) {
     int currentMarks = marks[playerId]![target] ?? 0;
     int newMarks = currentMarks + marksToAdd;
     marks[playerId]![target] = newMarks;
@@ -474,17 +509,18 @@ class ReefRoyaleGame {
       _checkWinCondition();
     }
 
-    dartThrowMarksAdded[playerId]!.add(marksToAdd);
-    dartThrowPearlsScored[playerId]!.add(pearlsScoredThisDart);
-    dartThrowClaimedCoral[playerId]!.add(justClaimed);
-    dartThrowLockedReef[playerId]!.add(justLocked);
-    dartThrowTargetNumber[playerId]!.add(target);
-    dartThrowIsNeighbor[playerId]!.add(isNeighborHit);
-    dartThrowPearlRecipientId[playerId]!.add(pearlRecipient);
+    return {
+      'marksAdded': marksToAdd,
+      'pearlsScored': pearlsScoredThisDart,
+      'claimed': justClaimed,
+      'locked': justLocked,
+      'pearlRecipient': pearlRecipient,
+    };
   }
 
-  void _processScoring(String playerId, int target, int hitNumber,
-      int multiplierValue, bool isNeighborHit) {
+  /// Process scoring for a single target and return results (does not add to tracking lists)
+  Map<String, dynamic> _processScoringForTarget(String playerId, int target,
+      int hitNumber, int multiplierValue, bool isNeighborHit) {
     bool anyOpponentUnclaimed = playerIds
         .any((pid) => pid != playerId && !claimed[pid]!.contains(target));
 
@@ -514,13 +550,13 @@ class ReefRoyaleGame {
       }
     }
 
-    dartThrowMarksAdded[playerId]!.add(0);
-    dartThrowPearlsScored[playerId]!.add(pearlsScoredThisDart);
-    dartThrowClaimedCoral[playerId]!.add(false);
-    dartThrowLockedReef[playerId]!.add(false);
-    dartThrowTargetNumber[playerId]!.add(target);
-    dartThrowIsNeighbor[playerId]!.add(isNeighborHit);
-    dartThrowPearlRecipientId[playerId]!.add(pearlRecipient);
+    return {
+      'marksAdded': 0,
+      'pearlsScored': pearlsScoredThisDart,
+      'claimed': false,
+      'locked': false,
+      'pearlRecipient': pearlRecipient,
+    };
   }
 
   /// Apply pearl scoring based on game mode. Returns the pearl value applied.

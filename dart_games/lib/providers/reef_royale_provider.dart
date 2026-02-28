@@ -157,20 +157,13 @@ class ReefRoyaleProvider extends ChangeNotifier {
     // Add display text
     _currentGame!.currentTurnDarts[currentPlayerId]!.add(sector);
 
-    // Process each resolved target (shared neighbors hit multiple targets)
-    for (final resolvedTarget in resolvedTargets) {
-      bool isNeighborHit = (hitNumber != resolvedTarget) &&
-          !(hitNumber == 50 && resolvedTarget == 25) &&
-          !(hitNumber == 25 && resolvedTarget == 25);
-
-      _currentGame!.processDart(
-        currentPlayerId,
-        hitNumber,
-        multiplier,
-        isNeighborHit: isNeighborHit,
-        resolvedTarget: resolvedTarget,
-      );
-    }
+    // Process all resolved targets in one call (aggregates tracking data per dart)
+    _currentGame!.processDart(
+      currentPlayerId,
+      hitNumber,
+      multiplier,
+      resolvedTargets: resolvedTargets,
+    );
 
     _checkTakeoutCondition();
     notifyListeners();
@@ -344,19 +337,13 @@ class ReefRoyaleProvider extends ChangeNotifier {
       return;
     }
 
-    for (final resolvedTarget in resolvedTargets) {
-      bool isNeighborHit = (hitNumber != resolvedTarget) &&
-          !(hitNumber == 50 && resolvedTarget == 25) &&
-          !(hitNumber == 25 && resolvedTarget == 25);
-
-      _currentGame!.processDart(
-        playerId,
-        hitNumber,
-        multiplier,
-        isNeighborHit: isNeighborHit,
-        resolvedTarget: resolvedTarget,
-      );
-    }
+    // Process all resolved targets in one call (aggregates tracking data per dart)
+    _currentGame!.processDart(
+      playerId,
+      hitNumber,
+      multiplier,
+      resolvedTargets: resolvedTargets,
+    );
   }
 
   // End the current game
