@@ -399,6 +399,36 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
             ),
           ),
 
+          // Dartboard emulator
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: DartboardEmulatorSection(
+              controller: _dartboardEmulatorController,
+              isConnected: dartboardProvider.isConnected,
+              shouldPromptTakeout: shouldPromptTakeout,
+              dartboardKey: _dartboardKey,
+              onDartThrow: (score, multiplier, baseScore, position) {
+                if (_mockApi != null) {
+                  _mockApi!.simulateDartThrow(
+                    score: score,
+                    multiplier: multiplier,
+                    playerName: 'Player',
+                    baseScore: baseScore,
+                    widgetX: position.dx,
+                    widgetY: position.dy,
+                    widgetSize: 250,
+                  );
+                }
+              },
+              onRemoveDarts: () {
+                _mockApi?.simulateTakeoutFinished();
+              },
+              config: DartboardSectionConfig.reefRoyale(),
+            ),
+          ),
+
           // Cursed Tide badge
           if (currentGame.gameMode == ReefRoyaleGameMode.cursedTide)
             Positioned(
@@ -443,35 +473,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
               },
             ),
 
-          // Dartboard emulator
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              controller: _dartboardEmulatorController,
-              isConnected: dartboardProvider.isConnected,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.reefRoyale(),
-            ),
-          ),
         ],
       ),
       floatingActionButton: DartboardEmulatorFAB(
@@ -1007,12 +1008,10 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
   Widget _buildOpponentBar(ReefRoyaleGame game, ReefRoyaleProvider provider, List<Player> allPlayers) {
     final currentPlayerId = provider.getCurrentPlayerId()!;
     final opponents = game.playerIds.where((pid) => pid != currentPlayerId).toList();
-
     return Container(
       height: 90,
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: opponents.map((opponentId) {
           final player = allPlayers.firstWhere(
             (p) => p.id == opponentId,
