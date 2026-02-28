@@ -202,7 +202,7 @@ void main() {
       final playerId = game.playerIds[0];
 
       // Process a dart that hits target 20
-      game.processDart(playerId, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
+      game.processDart(playerId, 20, 'single', resolvedTargets: [20]);
 
       expect(game.dartThrowMarksAdded[playerId]!.length, 1);
       expect(game.dartThrowMarksAdded[playerId]![0], 1);
@@ -215,9 +215,9 @@ void main() {
       final playerId = game.playerIds[0];
 
       // Hit target 20 three times to claim
-      game.processDart(playerId, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
-      game.processDart(playerId, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
-      game.processDart(playerId, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
+      game.processDart(playerId, 20, 'single', resolvedTargets: [20]);
+      game.processDart(playerId, 20, 'single', resolvedTargets: [20]);
+      game.processDart(playerId, 20, 'single', resolvedTargets: [20]);
 
       expect(game.dartThrowClaimedCoral[playerId]![2], true);
       expect(game.hasPlayerClaimed(playerId, 20), true);
@@ -228,7 +228,7 @@ void main() {
       final playerId = game.playerIds[0];
 
       // Hit number 1 (neighbor of 20)
-      game.processDart(playerId, 1, 'single', isNeighborHit: true, resolvedTarget: 20);
+      game.processDart(playerId, 1, 'single', resolvedTargets: [20]);
 
       expect(game.dartThrowIsNeighbor[playerId]![0], true);
       expect(game.dartThrowMarksAdded[playerId]![0], 1); // Neighbors always 1 mark
@@ -239,15 +239,15 @@ void main() {
       final p1 = game.playerIds[0];
 
       // P1 claims target 20
-      game.processDart(p1, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
-      game.processDart(p1, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
-      game.processDart(p1, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
+      game.processDart(p1, 20, 'single', resolvedTargets: [20]);
+      game.processDart(p1, 20, 'single', resolvedTargets: [20]);
+      game.processDart(p1, 20, 'single', resolvedTargets: [20]);
 
       // Clear darts for next turn simulation
       game.dartsThrown[p1] = 0;
 
       // P1 scores pearls on target 20 (opponent hasn't claimed)
-      game.processDart(p1, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
+      game.processDart(p1, 20, 'single', resolvedTargets: [20]);
 
       final pearlsScored = game.dartThrowPearlsScored[p1]!;
       expect(pearlsScored.last, 20); // 20 pearls for single 20
@@ -259,13 +259,13 @@ void main() {
       final p2 = game.playerIds[1];
 
       // P1 claims target 20
-      game.processDart(p1, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
-      game.processDart(p1, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
-      game.processDart(p1, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
+      game.processDart(p1, 20, 'single', resolvedTargets: [20]);
+      game.processDart(p1, 20, 'single', resolvedTargets: [20]);
+      game.processDart(p1, 20, 'single', resolvedTargets: [20]);
       game.dartsThrown[p1] = 0;
 
       // P1 hits 20 again, pearls go to P2
-      game.processDart(p1, 20, 'single', isNeighborHit: false, resolvedTarget: 20);
+      game.processDart(p1, 20, 'single', resolvedTargets: [20]);
 
       expect(game.getPlayerPearls(p2), 20); // P2 got the pearls
       expect(game.getPlayerPearls(p1), 0); // P1 didn't get them

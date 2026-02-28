@@ -289,7 +289,7 @@ void main() {
     test('single adds 1 mark', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 1);
       expect(game.dartThrowMarksAdded['p1']!.last, 1);
     });
@@ -297,7 +297,7 @@ void main() {
     test('double adds 2 marks', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'double',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 2);
       expect(game.dartThrowMarksAdded['p1']!.last, 2);
     });
@@ -305,7 +305,7 @@ void main() {
     test('triple adds 3 marks', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 3);
       expect(game.dartThrowMarksAdded['p1']!.last, 3);
     });
@@ -313,23 +313,23 @@ void main() {
     test('inner bull adds 2 marks', () {
       final game = createStandardGame();
       game.processDart('p1', 50, 'single',
-          isNeighborHit: false, resolvedTarget: 25);
+          resolvedTargets: [25]);
       expect(game.getPlayerMarks('p1', 25), 2);
     });
 
     test('outer bull adds 1 mark', () {
       final game = createStandardGame();
       game.processDart('p1', 25, 'single',
-          isNeighborHit: false, resolvedTarget: 25);
+          resolvedTargets: [25]);
       expect(game.getPlayerMarks('p1', 25), 1);
     });
 
     test('marks accumulate across darts', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 2);
     });
   });
@@ -341,29 +341,29 @@ void main() {
     test('claims at 3 marks in standard mode', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.hasPlayerClaimed('p1', 20), false);
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.hasPlayerClaimed('p1', 20), true);
     });
 
     test('claims at 2 marks in easy claim mode', () {
       final game = createStandardGame(easyClaim: true);
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.hasPlayerClaimed('p1', 20), false);
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.hasPlayerClaimed('p1', 20), true);
     });
 
     test('triple instantly claims in standard mode', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.hasPlayerClaimed('p1', 20), true);
       expect(game.dartThrowClaimedCoral['p1']!.last, true);
     });
@@ -371,7 +371,7 @@ void main() {
     test('double instantly claims in easy claim mode', () {
       final game = createStandardGame(easyClaim: true);
       game.processDart('p1', 20, 'double',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.hasPlayerClaimed('p1', 20), true);
     });
 
@@ -379,11 +379,11 @@ void main() {
       final game = createStandardGame();
       // p1 has 2 marks on 20, hits triple (3 marks) → total 5, claim at 3, excess 2
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       // Excess 2 marks * 20 (face value) = 40 pearls
       expect(game.hasPlayerClaimed('p1', 20), true);
       expect(game.getPlayerPearls('p1'), 40);
@@ -394,12 +394,12 @@ void main() {
       // p2 claims 20 first
       game.advanceToNextPlayer(); // switch to p2
       game.processDart('p2', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.advanceToNextPlayer(); // switch to p1
       // p1 has 0 marks, hits triple → total 3, claim at 3, excess 0
       // But even if there were excess, p2 already claimed, so locked
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.hasPlayerClaimed('p1', 20), true);
       expect(game.isTargetLocked(20), true);
       expect(game.getPlayerPearls('p1'), 0);
@@ -408,11 +408,11 @@ void main() {
     test('locks target when all players claim', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.isTargetLocked(20), false);
       game.advanceToNextPlayer();
       game.processDart('p2', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.isTargetLocked(20), true);
       expect(game.dartThrowLockedReef['p2']!.last, true);
     });
@@ -426,11 +426,11 @@ void main() {
       final game = createStandardGame();
       // p1 claims 20
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processDart('p1', 19, 'single',
-          isNeighborHit: false, resolvedTarget: 19);
+          resolvedTargets: [19]);
       game.processDart('p1', 19, 'single',
-          isNeighborHit: false, resolvedTarget: 19);
+          resolvedTargets: [19]);
       game.advanceToNextPlayer();
       game.processMiss('p2');
       game.processMiss('p2');
@@ -438,14 +438,14 @@ void main() {
       game.advanceToNextPlayer();
       // p1 scores on claimed 20, p2 hasn't claimed it
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerPearls('p1'), 20);
     });
 
     test('pearl value equals target times multiplier', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processMiss('p1');
       game.processMiss('p1');
       game.advanceToNextPlayer();
@@ -455,7 +455,7 @@ void main() {
       game.advanceToNextPlayer();
       // D20 when claimed = 40 pearls
       game.processDart('p1', 20, 'double',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerPearls('p1'), 40);
     });
 
@@ -463,9 +463,9 @@ void main() {
       final game = createStandardGame();
       // Claim bull: triple doesn't apply to bull, use multiple darts
       game.processDart('p1', 50, 'single',
-          isNeighborHit: false, resolvedTarget: 25); // 2 marks
+          resolvedTargets: [25]); // 2 marks
       game.processDart('p1', 25, 'single',
-          isNeighborHit: false, resolvedTarget: 25); // 3 marks = claimed
+          resolvedTargets: [25]); // 3 marks = claimed
       game.processMiss('p1');
       game.advanceToNextPlayer();
       game.processMiss('p2');
@@ -474,16 +474,16 @@ void main() {
       game.advanceToNextPlayer();
       // Score with inner bull
       game.processDart('p1', 50, 'single',
-          isNeighborHit: false, resolvedTarget: 25);
+          resolvedTargets: [25]);
       expect(game.getPlayerPearls('p1'), 50);
     });
 
     test('outer bull scores 25 pearls when claimed', () {
       final game = createStandardGame();
       game.processDart('p1', 50, 'single',
-          isNeighborHit: false, resolvedTarget: 25); // 2 marks
+          resolvedTargets: [25]); // 2 marks
       game.processDart('p1', 25, 'single',
-          isNeighborHit: false, resolvedTarget: 25); // 3 marks = claimed
+          resolvedTargets: [25]); // 3 marks = claimed
       game.processMiss('p1');
       game.advanceToNextPlayer();
       game.processMiss('p2');
@@ -491,7 +491,7 @@ void main() {
       game.processMiss('p2');
       game.advanceToNextPlayer();
       game.processDart('p1', 25, 'single',
-          isNeighborHit: false, resolvedTarget: 25);
+          resolvedTargets: [25]);
       expect(game.getPlayerPearls('p1'), 25);
     });
 
@@ -499,18 +499,18 @@ void main() {
       final game = createStandardGame();
       // Both claim 20
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processMiss('p1');
       game.processMiss('p1');
       game.advanceToNextPlayer();
       game.processDart('p2', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processMiss('p2');
       game.processMiss('p2');
       game.advanceToNextPlayer();
       // 20 is locked, scoring should have no effect
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerPearls('p1'), 0);
     });
   });
@@ -524,7 +524,7 @@ void main() {
           gameMode: ReefRoyaleGameMode.cursedTide);
       // p1 claims 20
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processMiss('p1');
       game.processMiss('p1');
       game.advanceToNextPlayer();
@@ -534,7 +534,7 @@ void main() {
       game.advanceToNextPlayer();
       // p1 scores on 20 → pearls go to p2 (who hasn't claimed)
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerPearls('p1'), 0);
       expect(game.getPlayerPearls('p2'), 20);
     });
@@ -554,7 +554,7 @@ void main() {
       final game = createStandardGame(
           gameMode: ReefRoyaleGameMode.cursedTide);
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processMiss('p1');
       game.processMiss('p1');
       game.advanceToNextPlayer();
@@ -563,7 +563,7 @@ void main() {
       game.processMiss('p2');
       game.advanceToNextPlayer();
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.dartThrowPearlRecipientId['p1']!.last, 'p2');
     });
   });
@@ -576,7 +576,7 @@ void main() {
       final game = createStandardGame(neighborNumbers: true);
       // Hit 1, which is neighbor of 20
       game.processDart('p1', 1, 'single',
-          isNeighborHit: true, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 1);
     });
 
@@ -584,14 +584,14 @@ void main() {
       final game = createStandardGame(neighborNumbers: true);
       // D1 (double of neighbor) still only 1 mark
       game.processDart('p1', 1, 'double',
-          isNeighborHit: true, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 1);
     });
 
     test('neighbor hit records isNeighbor in tracking', () {
       final game = createStandardGame(neighborNumbers: true);
       game.processDart('p1', 5, 'single',
-          isNeighborHit: true, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.dartThrowIsNeighbor['p1']!.last, true);
       expect(game.dartThrowTargetNumber['p1']!.last, 20);
     });
@@ -645,7 +645,7 @@ void main() {
       final targets = game.resolveAllTargets(1);
       for (final target in targets) {
         game.processDart('p1', 1, 'single',
-            isNeighborHit: true, resolvedTarget: target);
+            resolvedTargets: [target]);
       }
       expect(game.getPlayerMarks('p1', 20), 1);
       expect(game.getPlayerMarks('p1', 18), 1);
@@ -657,7 +657,7 @@ void main() {
       final targets = game.resolveAllTargets(1);
       for (final target in targets) {
         game.processDart('p1', 1, 'single',
-            isNeighborHit: true, resolvedTarget: target);
+            resolvedTargets: [target]);
       }
       expect(game.getPlayerMarks('p1', 19), 0);
       expect(game.getPlayerMarks('p1', 17), 0);
@@ -674,7 +674,7 @@ void main() {
       final game = createStandardGame();
       game.activeBuff = ReefBuff.riptideRush;
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 2); // 1 * 2
     });
 
@@ -682,7 +682,7 @@ void main() {
       final game = createStandardGame();
       // Claim 20 for p1
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processMiss('p1');
       game.processMiss('p1');
       game.advanceToNextPlayer();
@@ -693,7 +693,7 @@ void main() {
       // Activate Pearl Fever
       game.activeBuff = ReefBuff.pearlFever;
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerPearls('p1'), 40); // 20 * 2
     });
 
@@ -701,7 +701,7 @@ void main() {
       final game = createStandardGame();
       game.activeBuff = ReefBuff.inkCloud;
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 1); // Unchanged
     });
 
@@ -709,7 +709,7 @@ void main() {
       final game = createStandardGame(neighborNumbers: true);
       game.activeBuff = ReefBuff.riptideRush;
       game.processDart('p1', 1, 'single',
-          isNeighborHit: true, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 2); // 1 * 2
     });
 
@@ -718,7 +718,7 @@ void main() {
       game.activeBuff = ReefBuff.riptideRush;
       // Complete p1 turn
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processMiss('p1');
       game.processMiss('p1');
       game.advanceToNextPlayer();
@@ -771,7 +771,7 @@ void main() {
       game.claimed['p1']!.remove(20);
       game.marks['p1']![20] = 2;
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.state, ReefRoyaleGameState.finished);
       expect(game.winnerId, 'p1');
     });
@@ -787,7 +787,7 @@ void main() {
       game.claimed['p1']!.remove(20);
       game.marks['p1']![20] = 2;
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       // Game should NOT be finished since p1 is behind in pearls
       expect(game.state, ReefRoyaleGameState.playing);
     });
@@ -808,7 +808,7 @@ void main() {
       // Switch to p2's turn
       game.currentPlayerIndex = 1;
       game.processDart('p2', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.state, ReefRoyaleGameState.finished);
     });
 
@@ -880,7 +880,7 @@ void main() {
     test('dart tracking resets on advance', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.advanceToNextPlayer();
       expect(game.dartsThrown['p1'], 0);
       expect(game.dartThrowMarksAdded['p1'], isEmpty);
@@ -889,10 +889,10 @@ void main() {
     test('totalTurns increments on first dart only', () {
       final game = createStandardGame();
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.totalTurns['p1'], 1);
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.totalTurns['p1'], 1); // Still 1
     });
   });
@@ -905,7 +905,7 @@ void main() {
       final game = createStandardGame();
       game.saveInitialTurnStartState();
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerMarks('p1', 20), 1);
       game.resetToStartOfTurn('p1');
       expect(game.getPlayerMarks('p1', 20), 0);
@@ -916,7 +916,7 @@ void main() {
       game.claimed['p1']!.add(20);
       game.saveInitialTurnStartState();
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerPearls('p1'), 20);
       game.resetToStartOfTurn('p1');
       expect(game.getPlayerPearls('p1'), 0);
@@ -926,7 +926,7 @@ void main() {
       final game = createStandardGame();
       game.saveInitialTurnStartState();
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.hasPlayerClaimed('p1', 20), true);
       game.resetToStartOfTurn('p1');
       expect(game.hasPlayerClaimed('p1', 20), false);
@@ -1207,7 +1207,7 @@ void main() {
       final game = createStandardGame(playerIds: ['p1', 'p2', 'p3']);
       // p1 claims target 20
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processMiss('p1');
       game.processMiss('p1');
       game.advanceToNextPlayer();
@@ -1221,7 +1221,7 @@ void main() {
       game.advanceToNextPlayer();
       // p1 scores on claimed 20
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerPearls('p1'), 20);
       expect(game.getPlayerPearls('p2'), 0);
       expect(game.getPlayerPearls('p3'), 0);
@@ -1234,7 +1234,7 @@ void main() {
       );
       // p1 claims target 20
       game.processDart('p1', 20, 'triple',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       game.processMiss('p1');
       game.processMiss('p1');
       game.advanceToNextPlayer();
@@ -1248,7 +1248,7 @@ void main() {
       game.advanceToNextPlayer();
       // p1 scores on claimed 20 → pearls go to both p2 and p3
       game.processDart('p1', 20, 'single',
-          isNeighborHit: false, resolvedTarget: 20);
+          resolvedTargets: [20]);
       expect(game.getPlayerPearls('p1'), 0);
       // Both opponents get pearls
       expect(game.getPlayerPearls('p2'), 20);
@@ -1276,6 +1276,47 @@ void main() {
       expect(darts[0], 'Skip');
       expect(darts[1], 'Skip');
       expect(darts[2], 'Skip');
+    });
+
+    test('skip turn after 1 dart shows Skip for remaining 2 darts', () {
+      final provider = ReefRoyaleProvider();
+      final players = [
+        Player(id: 'p1', name: 'Alice', createdAt: DateTime.now()),
+        Player(id: 'p2', name: 'Bob', createdAt: DateTime.now()),
+      ];
+      provider.startGame(players, ReefRoyaleGameMode.standard, false,
+          false, false, false, true, false, 10);
+      provider.processDartThrow('S20');
+      expect(provider.getCurrentPlayerDartsThrown(), 1);
+      provider.skipTurn();
+      final darts = provider.getCurrentTurnDarts('p1');
+      expect(darts.length, 3);
+      expect(darts[0], 'S20');
+      expect(darts[1], 'Skip');
+      expect(darts[2], 'Skip');
+      // dartsThrown only counts actual throws, not skips
+      expect(provider.getCurrentPlayerDartsThrown(), 1);
+    });
+
+    test('skip turn after 2 darts shows Skip for remaining 1 dart', () {
+      final provider = ReefRoyaleProvider();
+      final players = [
+        Player(id: 'p1', name: 'Alice', createdAt: DateTime.now()),
+        Player(id: 'p2', name: 'Bob', createdAt: DateTime.now()),
+      ];
+      provider.startGame(players, ReefRoyaleGameMode.standard, false,
+          false, false, false, true, false, 10);
+      provider.processDartThrow('S20');
+      provider.processDartThrow('S19');
+      expect(provider.getCurrentPlayerDartsThrown(), 2);
+      provider.skipTurn();
+      final darts = provider.getCurrentTurnDarts('p1');
+      expect(darts.length, 3);
+      expect(darts[0], 'S20');
+      expect(darts[1], 'S19');
+      expect(darts[2], 'Skip');
+      // dartsThrown only counts actual throws, not skips
+      expect(provider.getCurrentPlayerDartsThrown(), 2);
     });
   });
 }

@@ -648,8 +648,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(3, (i) {
-              final hasThrown = i < dartsThrown;
               final segment = i < dartSegments.length ? dartSegments[i] : null;
+              final hasThrown = i < dartsThrown || segment == 'Skip';
               final isNeighborList = provider.getDartThrowIsNeighbor(playerId);
               final isNeighbor = i < isNeighborList.length && isNeighborList[i];
               final claimedList = provider.getDartThrowClaimedCoral(playerId);

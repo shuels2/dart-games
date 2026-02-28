@@ -853,7 +853,7 @@ if "!should_run!"=="1" (
     echo [!test_count!] Reef Royale Gameplay Test
     echo ========================================
     echo File: reef_royale_gameplay_test.dart
-    echo Tests: 26 tests
+    echo Tests: 27 tests
     echo Expected Duration: ~12 minutes
     echo Start Time: %date% %time%
     echo ========================================
@@ -1182,7 +1182,7 @@ echo  11. monster_mash_results_screen_test.dart       (6 tests,  ~5 min)
 echo  12. monster_mash_visual_validation_test.dart    (6 tests,  ~5 min)
 echo  13. reef_royale_add_player_test.dart            (6 tests,  ~4 min)
 echo  14. reef_royale_menu_and_settings_test.dart     (10 tests, ~6 min)
-echo  15. reef_royale_gameplay_test.dart              (26 tests, ~12 min)
+echo  15. reef_royale_gameplay_test.dart              (27 tests, ~12 min)
 echo  16. reef_royale_edit_score_test.dart            (6 tests,  ~5 min)
 echo  17. reef_royale_results_screen_test.dart        (6 tests,  ~5 min)
 echo  18. reef_royale_visual_validation_test.dart     (7 tests,  ~5 min)
