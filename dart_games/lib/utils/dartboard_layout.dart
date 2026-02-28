@@ -30,4 +30,11 @@ class DartboardLayout {
     }
     return null;
   }
+
+  /// Find ALL targets (from a list) that a thrown number is a neighbor of.
+  static List<int> findAllNeighborTargets(int thrown, List<int> targets) {
+    return targets
+        .where((target) => target >= 1 && target <= 20 && isNeighbor(thrown, target))
+        .toList();
+  }
 }

@@ -307,6 +307,30 @@ class ReefRoyaleGame {
     return null;
   }
 
+  /// Resolve ALL targets a thrown number maps to.
+  /// A neighbor number shared by two targets returns both.
+  List<int> resolveAllTargets(int hitNumber) {
+    // Bull
+    if (hitNumber == 50 || hitNumber == 25) {
+      return activeTargets.contains(25) ? [25] : [];
+    }
+
+    // Direct target hit (always single target)
+    if (activeTargets.contains(hitNumber)) {
+      return [hitNumber];
+    }
+
+    // Neighbor hit — may match multiple targets
+    if (neighborNumbers) {
+      return DartboardLayout.findAllNeighborTargets(
+        hitNumber,
+        activeTargets.where((t) => t != 25).toList(),
+      );
+    }
+
+    return [];
+  }
+
   // --- Dart Processing ---
 
   void _incrementTurnIfFirst(String playerId) {

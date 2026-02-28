@@ -142,10 +142,10 @@ class ReefRoyaleProvider extends ChangeNotifier {
     final hitNumber = parsed['number'] as int;
     final multiplier = parsed['multiplier'] as String;
 
-    // Resolve target
-    final resolvedTarget = _currentGame!.resolveTarget(hitNumber);
+    // Resolve all targets (neighbor may match multiple)
+    final resolvedTargets = _currentGame!.resolveAllTargets(hitNumber);
 
-    if (resolvedTarget == null) {
+    if (resolvedTargets.isEmpty) {
       // Non-target number hit
       _currentGame!.currentTurnDarts[currentPlayerId]!.add(sector);
       _currentGame!.processMiss(currentPlayerId);
@@ -154,22 +154,23 @@ class ReefRoyaleProvider extends ChangeNotifier {
       return;
     }
 
-    // Determine if neighbor hit
-    bool isNeighborHit = (hitNumber != resolvedTarget) &&
-        !(hitNumber == 50 && resolvedTarget == 25) &&
-        !(hitNumber == 25 && resolvedTarget == 25);
-
     // Add display text
     _currentGame!.currentTurnDarts[currentPlayerId]!.add(sector);
 
-    // Process the dart
-    _currentGame!.processDart(
-      currentPlayerId,
-      hitNumber,
-      multiplier,
-      isNeighborHit: isNeighborHit,
-      resolvedTarget: resolvedTarget,
-    );
+    // Process each resolved target (shared neighbors hit multiple targets)
+    for (final resolvedTarget in resolvedTargets) {
+      bool isNeighborHit = (hitNumber != resolvedTarget) &&
+          !(hitNumber == 50 && resolvedTarget == 25) &&
+          !(hitNumber == 25 && resolvedTarget == 25);
+
+      _currentGame!.processDart(
+        currentPlayerId,
+        hitNumber,
+        multiplier,
+        isNeighborHit: isNeighborHit,
+        resolvedTarget: resolvedTarget,
+      );
+    }
 
     _checkTakeoutCondition();
     notifyListeners();
@@ -336,24 +337,26 @@ class ReefRoyaleProvider extends ChangeNotifier {
 
     final hitNumber = parsed['number'] as int;
     final multiplier = parsed['multiplier'] as String;
-    final resolvedTarget = _currentGame!.resolveTarget(hitNumber);
+    final resolvedTargets = _currentGame!.resolveAllTargets(hitNumber);
 
-    if (resolvedTarget == null) {
+    if (resolvedTargets.isEmpty) {
       _currentGame!.processMiss(playerId);
       return;
     }
 
-    bool isNeighborHit = (hitNumber != resolvedTarget) &&
-        !(hitNumber == 50 && resolvedTarget == 25) &&
-        !(hitNumber == 25 && resolvedTarget == 25);
+    for (final resolvedTarget in resolvedTargets) {
+      bool isNeighborHit = (hitNumber != resolvedTarget) &&
+          !(hitNumber == 50 && resolvedTarget == 25) &&
+          !(hitNumber == 25 && resolvedTarget == 25);
 
-    _currentGame!.processDart(
-      playerId,
-      hitNumber,
-      multiplier,
-      isNeighborHit: isNeighborHit,
-      resolvedTarget: resolvedTarget,
-    );
+      _currentGame!.processDart(
+        playerId,
+        hitNumber,
+        multiplier,
+        isNeighborHit: isNeighborHit,
+        resolvedTarget: resolvedTarget,
+      );
+    }
   }
 
   // End the current game

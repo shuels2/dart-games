@@ -145,6 +145,33 @@ void main() {
       expect(DartboardLayout.findNeighborTarget(9, targets), isNull);
       expect(DartboardLayout.findNeighborTarget(11, targets), isNull);
     });
+
+    test('findAllNeighborTargets returns all matching targets for shared neighbors', () {
+      final targets = [20, 19, 18, 17, 16, 15];
+      // 1 is neighbor of both 20 and 18
+      expect(DartboardLayout.findAllNeighborTargets(1, targets), containsAll([20, 18]));
+      expect(DartboardLayout.findAllNeighborTargets(1, targets), hasLength(2));
+      // 3 is neighbor of both 19 and 17
+      expect(DartboardLayout.findAllNeighborTargets(3, targets), containsAll([19, 17]));
+      expect(DartboardLayout.findAllNeighborTargets(3, targets), hasLength(2));
+      // 7 is neighbor of both 19 and 16
+      expect(DartboardLayout.findAllNeighborTargets(7, targets), containsAll([19, 16]));
+      expect(DartboardLayout.findAllNeighborTargets(7, targets), hasLength(2));
+      // 2 is neighbor of both 17 and 15
+      expect(DartboardLayout.findAllNeighborTargets(2, targets), containsAll([17, 15]));
+      expect(DartboardLayout.findAllNeighborTargets(2, targets), hasLength(2));
+    });
+
+    test('findAllNeighborTargets returns single target for non-shared neighbors', () {
+      final targets = [20, 19, 18, 17, 16, 15];
+      // 5 is neighbor of only 20
+      expect(DartboardLayout.findAllNeighborTargets(5, targets), [20]);
+    });
+
+    test('findAllNeighborTargets returns empty for non-neighbors', () {
+      final targets = [20, 19];
+      expect(DartboardLayout.findAllNeighborTargets(9, targets), isEmpty);
+    });
   });
 
   // ═══════════════════════════════════════════════════
@@ -587,6 +614,55 @@ void main() {
       final game = createStandardGame(neighborNumbers: false);
       expect(game.resolveTarget(1), isNull);
       expect(game.resolveTarget(5), isNull);
+    });
+
+    test('resolveAllTargets returns multiple targets for shared neighbors', () {
+      final game = createStandardGame(neighborNumbers: true);
+      // 1 is neighbor of both 20 and 18
+      final targets1 = game.resolveAllTargets(1);
+      expect(targets1, containsAll([20, 18]));
+      expect(targets1, hasLength(2));
+      // 3 is neighbor of both 19 and 17
+      final targets3 = game.resolveAllTargets(3);
+      expect(targets3, containsAll([19, 17]));
+      expect(targets3, hasLength(2));
+    });
+
+    test('resolveAllTargets returns single target for direct hits', () {
+      final game = createStandardGame(neighborNumbers: true);
+      expect(game.resolveAllTargets(20), [20]);
+      expect(game.resolveAllTargets(19), [19]);
+    });
+
+    test('resolveAllTargets returns empty for non-targets', () {
+      final game = createStandardGame(neighborNumbers: true);
+      expect(game.resolveAllTargets(9), isEmpty);
+    });
+
+    test('shared neighbor hit adds 1 mark to each target', () {
+      final game = createStandardGame(neighborNumbers: true);
+      // Hit 1, which is neighbor of both 20 and 18
+      final targets = game.resolveAllTargets(1);
+      for (final target in targets) {
+        game.processDart('p1', 1, 'single',
+            isNeighborHit: true, resolvedTarget: target);
+      }
+      expect(game.getPlayerMarks('p1', 20), 1);
+      expect(game.getPlayerMarks('p1', 18), 1);
+    });
+
+    test('shared neighbor hit does not affect unrelated targets', () {
+      final game = createStandardGame(neighborNumbers: true);
+      // Hit 1 (neighbor of 20 and 18), should not affect 19, 17, 16, 15
+      final targets = game.resolveAllTargets(1);
+      for (final target in targets) {
+        game.processDart('p1', 1, 'single',
+            isNeighborHit: true, resolvedTarget: target);
+      }
+      expect(game.getPlayerMarks('p1', 19), 0);
+      expect(game.getPlayerMarks('p1', 17), 0);
+      expect(game.getPlayerMarks('p1', 16), 0);
+      expect(game.getPlayerMarks('p1', 15), 0);
     });
   });
 

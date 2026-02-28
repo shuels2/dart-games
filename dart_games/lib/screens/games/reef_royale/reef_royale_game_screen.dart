@@ -399,36 +399,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
             ),
           ),
 
-          // Dartboard emulator
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              controller: _dartboardEmulatorController,
-              isConnected: dartboardProvider.isConnected,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.reefRoyale(),
-            ),
-          ),
-
           // Cursed Tide badge
           if (currentGame.gameMode == ReefRoyaleGameMode.cursedTide)
             Positioned(
@@ -473,6 +443,35 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
               },
             ),
 
+          // Dartboard emulator
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: DartboardEmulatorSection(
+              controller: _dartboardEmulatorController,
+              isConnected: dartboardProvider.isConnected,
+              shouldPromptTakeout: shouldPromptTakeout,
+              dartboardKey: _dartboardKey,
+              onDartThrow: (score, multiplier, baseScore, position) {
+                if (_mockApi != null) {
+                  _mockApi!.simulateDartThrow(
+                    score: score,
+                    multiplier: multiplier,
+                    playerName: 'Player',
+                    baseScore: baseScore,
+                    widgetX: position.dx,
+                    widgetY: position.dy,
+                    widgetSize: 250,
+                  );
+                }
+              },
+              onRemoveDarts: () {
+                _mockApi?.simulateTakeoutFinished();
+              },
+              config: DartboardSectionConfig.reefRoyale(),
+            ),
+          ),
         ],
       ),
       floatingActionButton: DartboardEmulatorFAB(
@@ -915,20 +914,34 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
               ),
             ),
 
-          // Marks display
+          // Marks display with player hit markers on sides
           if (!isLocked && !playerClaimed)
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(markThreshold, (i) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Icon(
-                    i < playerMarks ? Icons.circle : Icons.circle_outlined,
-                    size: 28,
-                    color: i < playerMarks ? _seafoamGreen : _pearlWhite.withOpacity(0.4),
-                  ),
-                );
-              }),
+              children: [
+                // Left player markers (Expanded to balance with right)
+                Expanded(
+                  child: (!game.bonusBuffsEnabled || game.activeBuff != ReefBuff.inkCloud)
+                      ? _buildSidePlayerMarkers(game, provider, target, allPlayers, isLeft: true)
+                      : const SizedBox.shrink(),
+                ),
+                // Mark circles (always centered)
+                ...List.generate(markThreshold, (i) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(
+                      i < playerMarks ? Icons.circle : Icons.circle_outlined,
+                      size: 28,
+                      color: i < playerMarks ? _seafoamGreen : _pearlWhite.withOpacity(0.4),
+                    ),
+                  );
+                }),
+                // Right player markers (Expanded to balance with left)
+                Expanded(
+                  child: (!game.bonusBuffsEnabled || game.activeBuff != ReefBuff.inkCloud)
+                      ? _buildSidePlayerMarkers(game, provider, target, allPlayers, isLeft: false)
+                      : const SizedBox.shrink(),
+                ),
+              ],
             ),
 
           // Status
@@ -951,11 +964,49 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
               ),
             ),
 
-          // Player marks summary (who has claimed)
-          if (!game.bonusBuffsEnabled || game.activeBuff != ReefBuff.inkCloud)
+          // Player marks summary for locked/claimed state
+          if ((isLocked || playerClaimed) && (!game.bonusBuffsEnabled || game.activeBuff != ReefBuff.inkCloud))
             _buildPlayerMarksSummary(game, provider, target, allPlayers),
         ],
       ),
+    );
+  }
+
+  Widget _buildSidePlayerMarkers(ReefRoyaleGame game, ReefRoyaleProvider provider, int target, List<Player> allPlayers, {required bool isLeft}) {
+    final markers = <Widget>[];
+    for (final pid in game.playerIds) {
+      final marks = provider.getPlayerMarks(pid, target);
+      final claimed = provider.hasPlayerClaimed(pid, target);
+      if (marks == 0 && !claimed) continue;
+      final player = allPlayers.firstWhere(
+        (p) => p.id == pid,
+        orElse: () => Player(id: pid, name: '?', createdAt: DateTime.now()),
+      );
+      final initial = player.name.isNotEmpty ? player.name[0].toUpperCase() : '?';
+      markers.add(Container(
+        width: 24,
+        height: 24,
+        margin: const EdgeInsets.symmetric(horizontal: 1),
+        decoration: BoxDecoration(
+          color: claimed ? _seafoamGreen.withOpacity(0.5) : _deepReefBlue,
+          shape: BoxShape.circle,
+          border: Border.all(color: claimed ? _seafoamGreen : _pearlWhite.withOpacity(0.3), width: 1),
+        ),
+        child: Center(
+          child: Text(
+            initial,
+            style: const TextStyle(fontSize: 12, color: _pearlWhite, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ));
+    }
+    if (markers.isEmpty) return const SizedBox.shrink();
+    final leftCount = (markers.length + 1) ~/ 2;
+    final side = isLeft ? markers.sublist(0, leftCount) : markers.sublist(leftCount);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: isLeft ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: side,
     );
   }
 
@@ -966,13 +1017,14 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
         final marks = provider.getPlayerMarks(pid, target);
         final claimed = provider.hasPlayerClaimed(pid, target);
         if (marks == 0 && !claimed) return const SizedBox.shrink();
-        final creature = game.creatureAssignments[pid];
-        final initial = creature != null
-            ? ReefRoyaleGame.getCreatureFileName(creature)[0]
-            : '?';
+        final player = allPlayers.firstWhere(
+          (p) => p.id == pid,
+          orElse: () => Player(id: pid, name: '?', createdAt: DateTime.now()),
+        );
+        final initial = player.name.isNotEmpty ? player.name[0].toUpperCase() : '?';
         return Container(
-          width: 16,
-          height: 16,
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
             color: claimed ? _seafoamGreen.withOpacity(0.5) : _deepReefBlue,
             shape: BoxShape.circle,
@@ -981,7 +1033,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen> {
           child: Center(
             child: Text(
               initial,
-              style: TextStyle(fontSize: 8, color: _pearlWhite, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 12, color: _pearlWhite, fontWeight: FontWeight.bold),
             ),
           ),
         );
