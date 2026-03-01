@@ -905,9 +905,9 @@ void main() {
       // Simulate 2 rounds
       game.currentRound = 2;
       game.turnsCompletedThisRound = 1;
-      // Advancing should trigger round 3 > limit 2
+      // Advancing should end the game at round limit without incrementing past it
       game.advanceToNextPlayer();
-      expect(game.currentRound, 3);
+      expect(game.currentRound, 2); // Stays at limit, doesn't exceed
       expect(game.state, ReefRoyaleGameState.finished);
     });
 

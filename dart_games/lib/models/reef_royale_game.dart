@@ -645,11 +645,11 @@ class ReefRoyaleGame {
       winnerId = tiedPlayers[0];
       winnerIds = tiedPlayers;
     } else {
-      // Tiebreaker: first player in turn order
+      // Multiple winners tied - keep all of them
       final firstInOrder =
           playerIds.firstWhere((pid) => tiedPlayers.contains(pid));
-      winnerId = firstInOrder;
-      winnerIds = [firstInOrder];
+      winnerId = firstInOrder; // Primary winner for legacy compatibility
+      winnerIds = tiedPlayers; // All tied winners
     }
   }
 
@@ -698,13 +698,16 @@ class ReefRoyaleGame {
     // Check for round completion
     if (turnsCompletedThisRound >= playerIds.length) {
       turnsCompletedThisRound = 0;
-      currentRound++;
 
-      _checkRoundLimit();
-      if (state == ReefRoyaleGameState.finished) {
+      // Check if we've reached the round limit before incrementing
+      if (speedPlayEnabled && currentRound >= roundLimit) {
+        state = ReefRoyaleGameState.finished;
+        _determineWinnerByRanking();
         _saveTurnStartState();
         return;
       }
+
+      currentRound++;
 
       // Trigger buff at start of new round
       if (bonusBuffsEnabled) {

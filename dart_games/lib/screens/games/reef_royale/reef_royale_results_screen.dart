@@ -101,11 +101,11 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     if (currentGame == null) return;
 
     final gameDuration = DateTime.now().difference(currentGame.startedAt);
-    final winnerId = currentGame.winnerId;
+    final winnerIds = currentGame.winnerIds ?? [];
     final playerCount = currentGame.getPlayerCount();
 
     for (final playerId in currentGame.playerIds) {
-      final isWinner = playerId == winnerId;
+      final isWinner = winnerIds.contains(playerId);
       final dartThrows = currentGame.totalDartsThrown[playerId] ?? 0;
       final turns = currentGame.totalTurns[playerId] ?? 0;
 
@@ -155,10 +155,10 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
 
     final allPlayers = playerProvider.allPlayers;
     final rankedIds = currentGame.getRankedPlayerIds();
-    final winnerId = currentGame.winnerId;
-    final winner = winnerId != null
-        ? allPlayers.firstWhere((p) => p.id == winnerId, orElse: () => allPlayers.first)
-        : allPlayers.first;
+    final winnerIds = currentGame.winnerIds ?? [];
+    final winners = winnerIds.isEmpty
+        ? [allPlayers.first]
+        : winnerIds.map((id) => allPlayers.firstWhere((p) => p.id == id, orElse: () => allPlayers.first)).toList();
 
     return Scaffold(
       backgroundColor: _deepReefBlue,
@@ -252,12 +252,12 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Winner creature image
+                  // Winner creature image(s)
                   ScaleTransition(
                     scale: _scaleAnimation,
                     child: ScaleTransition(
                       scale: _pulseAnimation,
-                      child: _buildWinnerCreature(winner, currentGame, reefProvider),
+                      child: _buildWinnerCreatures(winners, currentGame, reefProvider),
                     ),
                   ),
 
@@ -269,7 +269,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                     child: ScaleTransition(
                       scale: _pulseAnimation,
                       child: Text(
-                        'CROWN OF THE REEF!',
+                        winners.length == 1 ? 'CROWN OF THE REEF!' : 'TIED!',
                         style: GoogleFonts.fredoka(
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
@@ -285,65 +285,77 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
 
                   const SizedBox(height: 16),
 
-                  // Winner name with avatar
+                  // Winner name(s) with avatar(s)
                   ScaleTransition(
                     scale: _scaleAnimation,
                     child: Column(
-                      children: [
-                        Text(
-                          key: ReefRoyaleResultsKeys.winnerName,
-                          winner.name,
-                          style: GoogleFonts.fredoka(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: _pearlWhite,
-                            shadows: [
-                              Shadow(color: _seafoamGreen.withOpacity(0.7), blurRadius: 16),
-                              const Shadow(color: Colors.black, blurRadius: 4),
+                      children: winners.map((winner) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            children: [
+                              Text(
+                                key: ReefRoyaleResultsKeys.winnerName,
+                                winner.name,
+                                style: GoogleFonts.fredoka(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                  color: _pearlWhite,
+                                  shadows: [
+                                    Shadow(color: _seafoamGreen.withOpacity(0.7), blurRadius: 16),
+                                    const Shadow(color: Colors.black, blurRadius: 4),
+                                  ],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              if (winner.photoPath != null)
+                                CircleAvatar(
+                                  key: ReefRoyaleResultsKeys.winnerPhoto,
+                                  radius: 50,
+                                  backgroundImage: winner.photoPath!.startsWith('data:')
+                                      ? MemoryImage(base64Decode(winner.photoPath!.split(',')[1]))
+                                      : NetworkImage(winner.photoPath!) as ImageProvider,
+                                )
+                              else
+                                CircleAvatar(
+                                  key: ReefRoyaleResultsKeys.winnerPhoto,
+                                  radius: 50,
+                                  backgroundColor: _seafoamGreen.withOpacity(0.3),
+                                  child: const Icon(Icons.person, size: 50, color: _pearlWhite),
+                                ),
                             ],
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        if (winner.photoPath != null)
-                          CircleAvatar(
-                            key: ReefRoyaleResultsKeys.winnerPhoto,
-                            radius: 50,
-                            backgroundImage: winner.photoPath!.startsWith('data:')
-                                ? MemoryImage(base64Decode(winner.photoPath!.split(',')[1]))
-                                : NetworkImage(winner.photoPath!) as ImageProvider,
-                          )
-                        else
-                          CircleAvatar(
-                            key: ReefRoyaleResultsKeys.winnerPhoto,
-                            radius: 50,
-                            backgroundColor: _seafoamGreen.withOpacity(0.3),
-                            child: const Icon(Icons.person, size: 50, color: _pearlWhite),
-                          ),
-                        const SizedBox(height: 8),
-
-                        // Winner stats
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildStatChip(
-                              '${currentGame.getPlayerPearls(winnerId ?? '')}',
-                              'Pearls',
-                              _sandyGold,
-                              ReefRoyaleResultsKeys.pearlCount,
-                            ),
-                            const SizedBox(width: 16),
-                            _buildStatChip(
-                              '${currentGame.getPlayerClaimedCount(winnerId ?? '')}/7',
-                              'Corals',
-                              _seafoamGreen,
-                              ReefRoyaleResultsKeys.coralCount,
-                            ),
-                          ],
-                        ),
-                      ],
+                        );
+                      }).toList(),
                     ),
                   ),
+
+                  const SizedBox(height: 16),
+
+                  // Winner stats (only show if single winner)
+                  if (winners.length == 1)
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildStatChip(
+                            '${currentGame.getPlayerPearls(winners[0].id)}',
+                            'Pearls',
+                            _sandyGold,
+                            ReefRoyaleResultsKeys.pearlCount,
+                          ),
+                          const SizedBox(width: 16),
+                          _buildStatChip(
+                            '${currentGame.getPlayerClaimedCount(winners[0].id)}/7',
+                            'Corals',
+                            _seafoamGreen,
+                            ReefRoyaleResultsKeys.coralCount,
+                          ),
+                        ],
+                      ),
+                    ),
 
                   const SizedBox(height: 24),
 
@@ -393,15 +405,23 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     );
   }
 
-  Widget _buildWinnerCreature(Player winner, ReefRoyaleGame game, ReefRoyaleProvider provider) {
-    final imagePath = provider.getCreatureImagePath(winner.id);
-    if (imagePath == null) return const SizedBox();
+  Widget _buildWinnerCreatures(List<Player> winners, ReefRoyaleGame game, ReefRoyaleProvider provider) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: winners.map((winner) {
+        final imagePath = provider.getCreatureImagePath(winner.id);
+        if (imagePath == null) return const SizedBox();
 
-    return Image.asset(
-      imagePath,
-      width: 280,
-      height: 280,
-      fit: BoxFit.contain,
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Image.asset(
+            imagePath,
+            width: 280,
+            height: 280,
+            fit: BoxFit.contain,
+          ),
+        );
+      }).toList(),
     );
   }
 

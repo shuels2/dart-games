@@ -525,7 +525,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
     return Container(
       key: ReefRoyaleGameKeys.roundCounter,
-      width: 220,
+      width: 330,
       height: 28,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
