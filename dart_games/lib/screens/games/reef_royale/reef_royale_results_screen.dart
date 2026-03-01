@@ -366,21 +366,21 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
   }
 
   Widget _buildWinnerCreatures(List<Player> winners, ReefRoyaleGame game, ReefRoyaleProvider provider) {
-    // Scale creature size based on number of winners to ensure they all fit
+    // Scale creature size based on number of winners to maximize screen usage
     double creatureSize;
     double horizontalPadding;
     if (winners.length <= 2) {
-      creatureSize = 280;
-      horizontalPadding = 16;
+      creatureSize = 320;
+      horizontalPadding = 20;
     } else if (winners.length <= 4) {
-      creatureSize = 200;
-      horizontalPadding = 12;
+      creatureSize = 260;
+      horizontalPadding = 16;
     } else if (winners.length <= 6) {
-      creatureSize = 150;
-      horizontalPadding = 8;
+      creatureSize = 210;
+      horizontalPadding = 12;
     } else {
-      creatureSize = 120;
-      horizontalPadding = 4;
+      creatureSize = 180;
+      horizontalPadding = 8;
     }
 
     return Row(
@@ -403,32 +403,37 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
   }
 
   Widget _buildWinnerNamesAndAvatars(List<Player> winners) {
-    // Scale sizes based on number of winners to ensure they all fit
+    // Match sizes and spacing to character sizes above for proper alignment
     double fontSize;
     double avatarRadius;
     double horizontalPadding;
     double iconSize;
+    double maxWidth;
 
     if (winners.length <= 2) {
+      fontSize = 40;
+      avatarRadius = 60;
+      horizontalPadding = 20; // Matches creature padding
+      iconSize = 60;
+      maxWidth = 320; // Matches creature width
+    } else if (winners.length <= 4) {
       fontSize = 36;
       avatarRadius = 50;
-      horizontalPadding = 12;
+      horizontalPadding = 16; // Matches creature padding
       iconSize = 50;
-    } else if (winners.length <= 4) {
-      fontSize = 30;
-      avatarRadius = 40;
-      horizontalPadding = 10;
-      iconSize = 40;
+      maxWidth = 260; // Matches creature width
     } else if (winners.length <= 6) {
-      fontSize = 24;
-      avatarRadius = 35;
-      horizontalPadding = 8;
-      iconSize = 35;
+      fontSize = 32;
+      avatarRadius = 45;
+      horizontalPadding = 12; // Matches creature padding
+      iconSize = 45;
+      maxWidth = 210; // Matches creature width
     } else {
-      fontSize = 20;
-      avatarRadius = 30;
-      horizontalPadding = 6;
-      iconSize = 30;
+      fontSize = 30;
+      avatarRadius = 42;
+      horizontalPadding = 8; // Matches creature padding
+      iconSize = 42;
+      maxWidth = 180; // Matches creature width
     }
 
     return Row(
@@ -436,39 +441,45 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
       children: winners.map((winner) {
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          child: Column(
-            children: [
-              Text(
-                key: ReefRoyaleResultsKeys.winnerName,
-                winner.name,
-                style: GoogleFonts.fredoka(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.bold,
-                  color: _pearlWhite,
-                  shadows: [
-                    Shadow(color: _seafoamGreen.withOpacity(0.7), blurRadius: 16),
-                    const Shadow(color: Colors.black, blurRadius: 4),
-                  ],
+          child: SizedBox(
+            width: maxWidth,
+            child: Column(
+              children: [
+                Text(
+                  key: ReefRoyaleResultsKeys.winnerName,
+                  winner.name,
+                  style: GoogleFonts.fredoka(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.bold,
+                    color: _pearlWhite,
+                    shadows: [
+                      Shadow(color: _seafoamGreen.withOpacity(0.7), blurRadius: 16),
+                      const Shadow(color: Colors.black, blurRadius: 4),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                  softWrap: true,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              if (winner.photoPath != null)
-                CircleAvatar(
-                  key: ReefRoyaleResultsKeys.winnerPhoto,
-                  radius: avatarRadius,
-                  backgroundImage: winner.photoPath!.startsWith('data:')
-                      ? MemoryImage(base64Decode(winner.photoPath!.split(',')[1]))
-                      : NetworkImage(winner.photoPath!) as ImageProvider,
-                )
-              else
-                CircleAvatar(
-                  key: ReefRoyaleResultsKeys.winnerPhoto,
-                  radius: avatarRadius,
-                  backgroundColor: _seafoamGreen.withOpacity(0.3),
-                  child: Icon(Icons.person, size: iconSize, color: _pearlWhite),
-                ),
-            ],
+                const SizedBox(height: 8),
+                if (winner.photoPath != null)
+                  CircleAvatar(
+                    key: ReefRoyaleResultsKeys.winnerPhoto,
+                    radius: avatarRadius,
+                    backgroundImage: winner.photoPath!.startsWith('data:')
+                        ? MemoryImage(base64Decode(winner.photoPath!.split(',')[1]))
+                        : NetworkImage(winner.photoPath!) as ImageProvider,
+                  )
+                else
+                  CircleAvatar(
+                    key: ReefRoyaleResultsKeys.winnerPhoto,
+                    radius: avatarRadius,
+                    backgroundColor: _seafoamGreen.withOpacity(0.3),
+                    child: Icon(Icons.person, size: iconSize, color: _pearlWhite),
+                  ),
+              ],
+            ),
           ),
         );
       }).toList(),
