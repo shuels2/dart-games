@@ -105,17 +105,20 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
           icon: const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          'Reef Royale Game Setup',
-          style: GoogleFonts.fredoka(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: _pearlWhite,
-            letterSpacing: 2,
-            shadows: [
-              Shadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
-              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
-            ],
+        title: Transform.translate(
+          offset: const Offset(0, -3),
+          child: Text(
+            'Reef Royale Game Setup',
+            style: GoogleFonts.fredoka(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: _pearlWhite,
+              letterSpacing: 2,
+              shadows: [
+                Shadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
+                const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+              ],
+            ),
           ),
         ),
         flexibleSpace: Container(
