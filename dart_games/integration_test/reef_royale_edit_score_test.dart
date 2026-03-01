@@ -78,6 +78,13 @@ void main() {
       await SettingsHelpers.initializeSettings();
     });
 
+    tearDown(() async {
+      // Reef Royale has continuous animations and multiple Future.delayed
+      // callbacks. Wait for these to complete before starting the next test
+      // to prevent widget tree corruption when app.main() is called again.
+      await Future.delayed(const Duration(milliseconds: 500));
+    });
+
     testWidgets('Test 1: Edit score button appears after 3 darts',
         (WidgetTester tester) async {
       await setupAndStartGame(tester, config);
