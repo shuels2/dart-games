@@ -399,8 +399,8 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
 
     return Image.asset(
       imagePath,
-      width: 200,
-      height: 200,
+      width: 280,
+      height: 280,
       fit: BoxFit.contain,
     );
   }
