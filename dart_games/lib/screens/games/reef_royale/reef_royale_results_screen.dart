@@ -288,10 +288,11 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                   // Winner name(s) with avatar(s)
                   ScaleTransition(
                     scale: _scaleAnimation,
-                    child: Column(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: winners.map((winner) {
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Column(
                             children: [
                               Text(
