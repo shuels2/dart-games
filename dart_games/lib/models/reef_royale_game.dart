@@ -880,7 +880,7 @@ class ReefRoyaleGame {
       case ReefBuff.pearlFever:
         return 'Double pearls this round!';
       case ReefBuff.inkCloud:
-        return 'The reef goes dark!';
+        return 'All opponent info is hidden this round!';
     }
   }
 }

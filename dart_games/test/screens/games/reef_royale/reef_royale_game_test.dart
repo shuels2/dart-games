@@ -1087,6 +1087,10 @@ void main() {
     test('getBuffDescription returns correct descriptions', () {
       expect(ReefRoyaleGame.getBuffDescription(ReefBuff.riptideRush),
           'Double marks this round!');
+      expect(ReefRoyaleGame.getBuffDescription(ReefBuff.pearlFever),
+          'Double pearls this round!');
+      expect(ReefRoyaleGame.getBuffDescription(ReefBuff.inkCloud),
+          'All opponent info is hidden this round!');
     });
 
     test('getCoralImagePath returns correct paths', () {
