@@ -288,48 +288,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                   // Winner name(s) with avatar(s)
                   ScaleTransition(
                     scale: _scaleAnimation,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: winners.map((winner) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Column(
-                            children: [
-                              Text(
-                                key: ReefRoyaleResultsKeys.winnerName,
-                                winner.name,
-                                style: GoogleFonts.fredoka(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.bold,
-                                  color: _pearlWhite,
-                                  shadows: [
-                                    Shadow(color: _seafoamGreen.withOpacity(0.7), blurRadius: 16),
-                                    const Shadow(color: Colors.black, blurRadius: 4),
-                                  ],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 8),
-                              if (winner.photoPath != null)
-                                CircleAvatar(
-                                  key: ReefRoyaleResultsKeys.winnerPhoto,
-                                  radius: 50,
-                                  backgroundImage: winner.photoPath!.startsWith('data:')
-                                      ? MemoryImage(base64Decode(winner.photoPath!.split(',')[1]))
-                                      : NetworkImage(winner.photoPath!) as ImageProvider,
-                                )
-                              else
-                                CircleAvatar(
-                                  key: ReefRoyaleResultsKeys.winnerPhoto,
-                                  radius: 50,
-                                  backgroundColor: _seafoamGreen.withOpacity(0.3),
-                                  child: const Icon(Icons.person, size: 50, color: _pearlWhite),
-                                ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                    child: _buildWinnerNamesAndAvatars(winners),
                   ),
 
                   const SizedBox(height: 16),
@@ -407,6 +366,23 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
   }
 
   Widget _buildWinnerCreatures(List<Player> winners, ReefRoyaleGame game, ReefRoyaleProvider provider) {
+    // Scale creature size based on number of winners to ensure they all fit
+    double creatureSize;
+    double horizontalPadding;
+    if (winners.length <= 2) {
+      creatureSize = 280;
+      horizontalPadding = 16;
+    } else if (winners.length <= 4) {
+      creatureSize = 200;
+      horizontalPadding = 12;
+    } else if (winners.length <= 6) {
+      creatureSize = 150;
+      horizontalPadding = 8;
+    } else {
+      creatureSize = 120;
+      horizontalPadding = 4;
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: winners.map((winner) {
@@ -414,12 +390,85 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
         if (imagePath == null) return const SizedBox();
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
           child: Image.asset(
             imagePath,
-            width: 280,
-            height: 280,
+            width: creatureSize,
+            height: creatureSize,
             fit: BoxFit.contain,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildWinnerNamesAndAvatars(List<Player> winners) {
+    // Scale sizes based on number of winners to ensure they all fit
+    double fontSize;
+    double avatarRadius;
+    double horizontalPadding;
+    double iconSize;
+
+    if (winners.length <= 2) {
+      fontSize = 36;
+      avatarRadius = 50;
+      horizontalPadding = 12;
+      iconSize = 50;
+    } else if (winners.length <= 4) {
+      fontSize = 30;
+      avatarRadius = 40;
+      horizontalPadding = 10;
+      iconSize = 40;
+    } else if (winners.length <= 6) {
+      fontSize = 24;
+      avatarRadius = 35;
+      horizontalPadding = 8;
+      iconSize = 35;
+    } else {
+      fontSize = 20;
+      avatarRadius = 30;
+      horizontalPadding = 6;
+      iconSize = 30;
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: winners.map((winner) {
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          child: Column(
+            children: [
+              Text(
+                key: ReefRoyaleResultsKeys.winnerName,
+                winner.name,
+                style: GoogleFonts.fredoka(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: _pearlWhite,
+                  shadows: [
+                    Shadow(color: _seafoamGreen.withOpacity(0.7), blurRadius: 16),
+                    const Shadow(color: Colors.black, blurRadius: 4),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              if (winner.photoPath != null)
+                CircleAvatar(
+                  key: ReefRoyaleResultsKeys.winnerPhoto,
+                  radius: avatarRadius,
+                  backgroundImage: winner.photoPath!.startsWith('data:')
+                      ? MemoryImage(base64Decode(winner.photoPath!.split(',')[1]))
+                      : NetworkImage(winner.photoPath!) as ImageProvider,
+                )
+              else
+                CircleAvatar(
+                  key: ReefRoyaleResultsKeys.winnerPhoto,
+                  radius: avatarRadius,
+                  backgroundColor: _seafoamGreen.withOpacity(0.3),
+                  child: Icon(Icons.person, size: iconSize, color: _pearlWhite),
+                ),
+            ],
           ),
         );
       }).toList(),
