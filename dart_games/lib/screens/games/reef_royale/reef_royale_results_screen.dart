@@ -439,6 +439,29 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
   }
 
   Widget _buildRankings(List<String> rankedIds, List<Player> allPlayers, ReefRoyaleGame game) {
+    // If more than 4 players, split into two columns
+    if (rankedIds.length > 4) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Left column: Places 1-4
+          Expanded(
+            child: _buildRankingColumn(rankedIds.take(4).toList(), allPlayers, game, 0),
+          ),
+          const SizedBox(width: 16),
+          // Right column: Places 5-8
+          Expanded(
+            child: _buildRankingColumn(rankedIds.skip(4).toList(), allPlayers, game, 4),
+          ),
+        ],
+      );
+    }
+
+    // 4 or fewer players: single column
+    return _buildRankingColumn(rankedIds, allPlayers, game, 0);
+  }
+
+  Widget _buildRankingColumn(List<String> rankedIds, List<Player> allPlayers, ReefRoyaleGame game, int startIndex) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -456,9 +479,10 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
           final pearls = game.getPlayerPearls(playerId);
           final corals = game.getPlayerClaimedCount(playerId);
           final isWinner = playerId == game.winnerId;
+          final globalIndex = startIndex + index;
 
           return Container(
-            key: ReefRoyaleResultsKeys.playerRanking(index),
+            key: ReefRoyaleResultsKeys.playerRanking(globalIndex),
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             margin: const EdgeInsets.only(bottom: 4),
             decoration: BoxDecoration(
@@ -474,11 +498,11 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                 SizedBox(
                   width: 30,
                   child: Text(
-                    '#${index + 1}',
+                    '#${globalIndex + 1}',
                     style: GoogleFonts.fredoka(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: index == 0 ? _sandyGold : _pearlWhite.withOpacity(0.7),
+                      color: globalIndex == 0 ? _sandyGold : _pearlWhite.withOpacity(0.7),
                     ),
                   ),
                 ),
