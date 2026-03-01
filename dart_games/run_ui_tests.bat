@@ -811,7 +811,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: reef_royale_add_player_test.dart
     echo Tests: 6 tests
-    echo Expected Duration: ~4 minutes
+    echo Expected Duration: ~2 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -822,7 +822,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: reef_royale_add_player_test.dart >> integration_test_output\summary.txt
     echo Tests: 6 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~2 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -868,7 +868,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: reef_royale_menu_and_settings_test.dart
     echo Tests: 10 tests
-    echo Expected Duration: ~6 minutes
+    echo Expected Duration: ~3 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -879,7 +879,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: reef_royale_menu_and_settings_test.dart >> integration_test_output\summary.txt
     echo Tests: 10 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~6 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~3 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -924,7 +924,7 @@ if "!should_run!"=="1" (
     echo [!test_count!] Reef Royale Gameplay Test
     echo ========================================
     echo File: reef_royale_gameplay_test.dart
-    echo Tests: 30 tests
+    echo Tests: 25 tests
     echo Expected Duration: ~12 minutes
     echo Start Time: %date% %time%
     echo ========================================
@@ -982,7 +982,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: reef_royale_edit_score_test.dart
     echo Tests: 6 tests
-    echo Expected Duration: ~5 minutes
+    echo Expected Duration: ~4 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -993,7 +993,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: reef_royale_edit_score_test.dart >> integration_test_output\summary.txt
     echo Tests: 6 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -1039,7 +1039,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: reef_royale_results_screen_test.dart
     echo Tests: 6 tests
-    echo Expected Duration: ~5 minutes
+    echo Expected Duration: ~4 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -1050,7 +1050,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: reef_royale_results_screen_test.dart >> integration_test_output\summary.txt
     echo Tests: 6 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -1096,7 +1096,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: reef_royale_visual_validation_test.dart
     echo Tests: 7 tests
-    echo Expected Duration: ~5 minutes
+    echo Expected Duration: ~3 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -1107,7 +1107,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: reef_royale_visual_validation_test.dart >> integration_test_output\summary.txt
     echo Tests: 7 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~3 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...
@@ -1153,7 +1153,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: reef_royale_showcase_test.dart
     echo Tests: 1 test
-    echo Expected Duration: ~3 minutes
+    echo Expected Duration: ~1 minute
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -1164,7 +1164,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: reef_royale_showcase_test.dart >> integration_test_output\summary.txt
     echo Tests: 1 test >> integration_test_output\summary.txt
-    echo Expected Duration: ~3 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~1 minute >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver...

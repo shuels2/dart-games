@@ -2,9 +2,9 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 480 total tests:
+The Dart Games app has a comprehensive test suite with 541 total tests:
 - **352 non-UI tests** (models, providers, services, widgets, game logic)
-- **128 UI automation tests** (end-to-end testing with Chrome)
+- **189 UI automation tests** (end-to-end testing with Chrome)
 
 ## Non-UI Tests (352 tests)
 
@@ -43,10 +43,10 @@ _Note: Some tests span multiple categories. The total (352) is the authoritative
 **Widget Tests (23 tests)**
 - InteractiveDartboard: 23 tests
 
-## UI Automation Tests (128 tests)
+## UI Automation Tests (189 tests)
 
 **Run with:** `./run_ui_tests.bat` or `flutter drive`
-**Execution time:** ~86 minutes
+**Execution time:** ~112 minutes
 **OPTIONAL:** Ask user before running
 
 ### Target Tag (53 tests, ~40 minutes)
@@ -66,6 +66,15 @@ _Note: Some tests span multiple categories. The total (352) is the authoritative
 - Edit Score: ~4 min
 - Add Player: ~4 min
 - Results: ~7 min
+
+### Reef Royale (61 tests, ~26 minutes)
+- Add Player: 6 tests (~2 min)
+- Menu and Settings: 10 tests (~3 min)
+- Gameplay: 25 tests (~12 min)
+- Edit Score: 6 tests (~4 min)
+- Results Screen: 6 tests (~4 min)
+- Visual Validation: 7 tests (~3 min)
+- Showcase: 1 test (~1 min)
 
 ## Test Requirements
 
@@ -111,6 +120,7 @@ cd chromedriver/chromedriver-win64
 ./run_ui_tests.bat target_tag
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
+./run_ui_tests.bat reef_royale
 ```
 
 ## Test Expectations
@@ -125,7 +135,7 @@ cd chromedriver/chromedriver-win64
 
 ### UI Automation Tests
 - 100% pass rate when run
-- Execute in ~86 minutes
+- Execute in ~112 minutes
 - Test end-to-end user flows
 - Validate visual elements
 - Test player interactions

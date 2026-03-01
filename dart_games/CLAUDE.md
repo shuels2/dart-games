@@ -72,13 +72,14 @@ flutter test
 cd chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2: Run all UI tests (128 tests, ~86 minutes)
+# Terminal 2: Run all UI tests (189 tests, ~112 minutes)
 ./run_ui_tests.bat
 
 # Or run specific game
 ./run_ui_tests.bat target_tag
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
+./run_ui_tests.bat reef_royale
 ```
 
 ### Run Game-Specific Tests
@@ -90,7 +91,7 @@ flutter test test/screens/games/monster_mash/
 
 ## Current Test Counts
 
-**Total: 480 tests**
+**Total: 541 tests**
 - **Non-UI Tests:** 352 tests (100% pass rate MANDATORY)
   - Model tests: 40
   - Provider tests: 44
@@ -101,10 +102,11 @@ flutter test test/screens/games/monster_mash/
   - Monster Mash announcements: 18
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **UI Automation Tests:** 128 tests (optional, ask before running)
+- **UI Automation Tests:** 189 tests (optional, ask before running)
   - Target Tag: 53 tests (~40 minutes)
   - Carnival Derby: 24 tests (~14 minutes)
   - Monster Mash: 51 tests (~32 minutes)
+  - Reef Royale: 61 tests (~26 minutes)
 
 ## Critical Reminders
 
