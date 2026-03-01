@@ -1125,7 +1125,11 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
   Widget _buildOpponentBar(ReefRoyaleGame game, ReefRoyaleProvider provider, List<Player> allPlayers) {
     final currentPlayerId = provider.getCurrentPlayerId()!;
-    final opponents = game.playerIds.where((pid) => pid != currentPlayerId).toList();
+    // Order opponents by turn order: next player first, wrapping around
+    final opponents = List.generate(
+      game.playerIds.length - 1,
+      (i) => game.playerIds[(game.currentPlayerIndex + i + 1) % game.playerIds.length],
+    );
     return Container(
       height: 90,
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
