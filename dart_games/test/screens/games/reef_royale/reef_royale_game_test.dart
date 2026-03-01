@@ -580,12 +580,17 @@ void main() {
       expect(game.getPlayerMarks('p1', 20), 1);
     });
 
-    test('neighbor hit always adds 1 mark regardless of multiplier', () {
+    test('neighbor hit respects multiplier (double=2, triple=3)', () {
       final game = createStandardGame(neighborNumbers: true);
-      // D1 (double of neighbor) still only 1 mark
+      // D1 (double 1, neighbor of 20) gives 2 marks
       game.processDart('p1', 1, 'double',
           resolvedTargets: [20]);
-      expect(game.getPlayerMarks('p1', 20), 1);
+      expect(game.getPlayerMarks('p1', 20), 2);
+
+      // T1 (triple 1, neighbor of 18) gives 3 marks
+      game.processDart('p1', 1, 'triple',
+          resolvedTargets: [18]);
+      expect(game.getPlayerMarks('p1', 18), 3);
     });
 
     test('neighbor hit records isNeighbor in tracking', () {

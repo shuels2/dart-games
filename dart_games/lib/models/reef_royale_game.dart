@@ -416,14 +416,12 @@ class ReefRoyaleGame {
 
       // Calculate marks to add for this target
       int marksToAdd;
-      if (isNeighborHit) {
-        marksToAdd = 1; // Neighbors always 1 mark
-      } else if (hitNumber == 50) {
+      if (hitNumber == 50) {
         marksToAdd = 2; // Inner bull = 2 marks
       } else if (hitNumber == 25) {
         marksToAdd = 1; // Outer bull = 1 mark
       } else {
-        marksToAdd = multiplierValue;
+        marksToAdd = multiplierValue; // Applies to both direct and neighbor hits
       }
 
       // Riptide Rush doubles marks
@@ -535,14 +533,12 @@ class ReefRoyaleGame {
 
     if (anyOpponentUnclaimed) {
       int pearlValue;
-      if (isNeighborHit) {
-        pearlValue = getPearlValuePerMark(target);
-      } else if (hitNumber == 50) {
+      if (hitNumber == 50) {
         pearlValue = 50;
       } else if (hitNumber == 25) {
         pearlValue = 25;
       } else {
-        pearlValue = target * multiplierValue;
+        pearlValue = target * multiplierValue; // Applies to both direct and neighbor hits
       }
 
       pearlsScoredThisDart =
