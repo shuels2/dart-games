@@ -75,6 +75,12 @@ class _ApiLoggerScreenState extends State<ApiLoggerScreen> {
         return Colors.red;
       case 'INCOMING':
         return Colors.purple;
+      case 'WS_IN':
+        return Colors.deepPurple;
+      case 'WS_OUT':
+        return Colors.teal;
+      case 'WS_CONNECT':
+        return Colors.indigo;
       default:
         return Colors.grey;
     }

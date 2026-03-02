@@ -68,8 +68,10 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     await globalQueue.loadSettings();
     _audioQueue = ReefRoyaleAnnouncementHelper(globalQueue);
 
-    if (_mockApi != null) {
-      _dartboardSubscription = _mockApi!.eventStream.listen((event) {
+    // Subscribe to dartboard events (works for both WebSocket and emulator)
+    final eventStream = dartboardProvider.dartboardEventStream;
+    if (eventStream != null) {
+      _dartboardSubscription = eventStream.listen((event) {
         _handleDartboardEvent(event);
       });
     }
@@ -434,7 +436,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             ),
 
           // Remove darts modal
-          if (shouldPromptTakeout && !dartboardProvider.isConnected)
+          if (shouldPromptTakeout)
             RemoveDartsModal(
               config: RemoveDartsModalConfig.reefRoyale(),
               playerName: currentPlayer?.name ?? 'Player',
@@ -789,10 +791,25 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               key: ReefRoyaleGameKeys.skipTurnButton,
               onPressed: () {
                 final reefProvider = context.read<ReefRoyaleProvider>();
+                final dartsThrown = reefProvider.getCurrentPlayerDartsThrown();
                 reefProvider.skipTurn();
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) _mockApi?.simulateTakeoutStarted();
-                });
+                if (dartsThrown > 0) {
+                  // Darts in board — wait for physical takeout or emulator button
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    if (mounted) _mockApi?.simulateTakeoutStarted();
+                  });
+                } else {
+                  // No darts thrown, advance directly
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    if (mounted) {
+                      if (_mockApi != null) {
+                        _mockApi!.simulateTakeoutFinished();
+                      } else {
+                        _handleTakeoutFinished();
+                      }
+                    }
+                  });
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _coralPink,

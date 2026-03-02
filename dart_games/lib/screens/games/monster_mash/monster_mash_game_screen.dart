@@ -65,8 +65,10 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     await globalQueue.loadSettings();
     _audioQueue = MonsterMashAnnouncementHelper(globalQueue);
 
-    if (_mockApi != null) {
-      _dartboardSubscription = _mockApi!.eventStream.listen((event) {
+    // Subscribe to dartboard events (works for both WebSocket and emulator)
+    final eventStream = dartboardProvider.dartboardEventStream;
+    if (eventStream != null) {
+      _dartboardSubscription = eventStream.listen((event) {
         _handleDartboardEvent(event);
       });
     }
@@ -547,7 +549,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                       _buildActivePlayer(currentGame, currentPlayer, monsterMashProvider),
 
                     // Remove darts modal
-                    if (shouldPromptTakeout && !dartboardProvider.isConnected)
+                    if (shouldPromptTakeout)
                       RemoveDartsModal(
                         config: RemoveDartsModalConfig.monsterMash(),
                         playerName: currentPlayer?.name ?? 'Player',
@@ -778,7 +780,13 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                         });
                       } else {
                         Future.delayed(const Duration(milliseconds: 500), () {
-                          if (mounted) _mockApi?.simulateTakeoutFinished();
+                          if (mounted) {
+                            if (_mockApi != null) {
+                              _mockApi!.simulateTakeoutFinished();
+                            } else {
+                              _handleTakeoutFinished();
+                            }
+                          }
                         });
                       }
                     }

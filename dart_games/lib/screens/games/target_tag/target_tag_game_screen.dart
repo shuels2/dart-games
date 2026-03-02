@@ -59,9 +59,10 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     await globalQueue.loadSettings();
     _audioQueue = TargetTagAnnouncementHelper(globalQueue);
 
-    // Subscribe to dartboard events
-    if (_mockApi != null) {
-      _dartboardSubscription = _mockApi!.eventStream.listen((event) {
+    // Subscribe to dartboard events (works for both WebSocket and emulator)
+    final eventStream = dartboardProvider.dartboardEventStream;
+    if (eventStream != null) {
+      _dartboardSubscription = eventStream.listen((event) {
         _handleDartboardEvent(event);
       });
     }
@@ -633,7 +634,11 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                                 // No darts thrown, advance directly without showing modals.
                                 Future.delayed(const Duration(milliseconds: 500), () {
                                   if (mounted) {
-                                    _mockApi?.simulateTakeoutFinished();
+                                    if (_mockApi != null) {
+                                      _mockApi!.simulateTakeoutFinished();
+                                    } else {
+                                      _handleTakeoutFinished();
+                                    }
                                   }
                                 });
                               }
@@ -729,7 +734,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                     },
                   ),
                   // Modal overlay for remove darts prompt
-                  if (shouldPromptTakeout && !dartboardProvider.isConnected)
+                  if (shouldPromptTakeout)
                     RemoveDartsModal(
                       config: RemoveDartsModalConfig.targetTag(),
                       playerName: currentPlayer?.name ?? 'Player',
