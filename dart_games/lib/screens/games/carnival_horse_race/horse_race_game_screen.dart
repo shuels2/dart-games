@@ -21,6 +21,7 @@ import '../../../widgets/carnival_target_logo.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import 'horse_race_results_screen.dart';
 
 class HorseRaceGameScreen extends StatefulWidget {
@@ -533,6 +534,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                             config: EditScoreDialogConfig.carnivalDerby(),
                           );
                         },
+                      ),
+                    // Dartboard connection lost modal
+                    if (!dartboardProvider.isEmulator &&
+                        dartboardProvider.status != DartboardConnectionStatus.connected &&
+                        dartboardProvider.status != DartboardConnectionStatus.emulator)
+                      DartboardPausedModal(
+                        config: DartboardPausedModalConfig.carnivalDerby(),
                       ),
                   ],
                 ),

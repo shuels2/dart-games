@@ -110,6 +110,7 @@ Step-by-step guides and reference documentation for developers building new game
 - `edit-score-dialog.md` - Using the shared Edit Score dialog component
 - `dartboard-connection-info.md` - Using the shared Dartboard Connection Info component
 - `remove-darts-modal.md` - Using the shared Remove Darts Modal component
+- `dartboard-paused-modal.md` - Using the shared Dartboard Paused Modal component
 - `player-list-panel.md` - Using the shared Player List Panel component
 - `widget-keys.md` - Widget key naming conventions and requirements
 

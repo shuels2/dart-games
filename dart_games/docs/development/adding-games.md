@@ -268,6 +268,30 @@ factory EditScoreDialogConfig.yourGame() {
 }
 ```
 
+**File:** `lib/widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart`
+
+```dart
+// Add to DartboardPausedModalConfig class
+factory DartboardPausedModalConfig.yourGame() {
+  return DartboardPausedModalConfig(
+    backgroundColor: const Color(0xYOURCOLOR),
+    borderColor: const Color(0xYOURCOLOR),
+    boxShadowColor: const Color(0xYOURCOLOR),
+    boxShadowOpacity: 0.3,
+    iconColor: const Color(0xYOURCOLOR),
+    titleTextStyle: GoogleFonts.yourFont(
+      color: const Color(0xYOURCOLOR),
+      fontSize: 24,
+      fontWeight: FontWeight.bold,
+    ),
+    messageTextStyle: GoogleFonts.yourFont(
+      color: Colors.white,
+      fontSize: 18,
+    ),
+  );
+}
+```
+
 ### 9. Create Announcement Helper
 
 **File:** `lib/services/your_game_announcement_helper.dart`

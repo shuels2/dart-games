@@ -626,6 +626,45 @@ AppBar(
 
 See [Dartboard Connection Info Integration](../development/dartboard-connection-info.md) for complete guide.
 
+## 12. Dartboard Paused Modal Component
+
+### Purpose
+Shared full-screen modal overlay shown when the dartboard connection is lost mid-game. Pauses gameplay with a "Game Paused" message and auto-dismisses when the dartboard reconnects. Only appears for real dartboard connections (never in emulator mode).
+
+### File Location
+`lib/widgets/dartboard_paused_modal/`
+
+### Components
+
+#### DartboardPausedModal
+- Full-screen semi-transparent overlay with centered game-themed container
+- Shows `wifi_off` icon, "Game Paused" title, and reconnection message
+- Auto-shows when connection status becomes `error` or `disconnected`
+- Auto-dismisses when dartboard reconnects (driven by `context.watch<DartboardProvider>()`)
+- Accepts `DartboardPausedModalConfig` for game-specific styling
+
+#### DartboardPausedModalConfig
+Configuration class with factory methods for each game's theme.
+
+**Factory methods:**
+- `DartboardPausedModalConfig.carnivalDerby()` — Canary Yellow border, LuckiestGuy/Bangers fonts
+- `DartboardPausedModalConfig.targetTag()` — Hot Pink border, LuckiestGuy/Fredoka fonts
+- `DartboardPausedModalConfig.monsterMash()` — Ecto-Green border with green glow, Creepster/PirataOne fonts
+- `DartboardPausedModalConfig.reefRoyale()` — Seafoam Green border, Fredoka font
+
+### Usage
+```dart
+// In your game screen's Stack (after RemoveDartsModal):
+if (!dartboardProvider.isEmulator &&
+    dartboardProvider.status != DartboardConnectionStatus.connected &&
+    dartboardProvider.status != DartboardConnectionStatus.emulator)
+  DartboardPausedModal(
+    config: DartboardPausedModalConfig.yourGame(),
+  ),
+```
+
+See [Dartboard Paused Modal Integration](../development/dartboard-paused-modal.md) for complete guide.
+
 ## Related Documentation
 
 - [Container App Architecture](container-app.md)
@@ -636,4 +675,5 @@ See [Dartboard Connection Info Integration](../development/dartboard-connection-
 - [Edit Score Dialog Integration](../development/edit-score-dialog.md)
 - [Dartboard Connection Info Integration](../development/dartboard-connection-info.md)
 - [Remove Darts Modal Integration](../development/remove-darts-modal.md)
+- [Dartboard Paused Modal Integration](../development/dartboard-paused-modal.md)
 - [Player List Panel Integration](../development/player-list-panel.md)

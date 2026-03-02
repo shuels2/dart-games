@@ -18,6 +18,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dar
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../utils/dartboard_layout.dart';
 import 'reef_royale_results_screen.dart';
 
@@ -453,6 +454,14 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                   dartBorderColors: _computeDartBorderColors(currentPlayer.id, reefProvider),
                 );
               },
+            ),
+
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.reefRoyale(),
             ),
 
           // Dartboard emulator
