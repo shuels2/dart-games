@@ -2,10 +2,10 @@
 
 ## Overview
 
-128 UI automation tests validate end-to-end user flows in Chrome browser.
+195 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Execution time:** ~86 minutes
+**Execution time:** ~131 minutes
 **OPTIONAL:** Ask user before running
 
 ## Test Suite

@@ -35,10 +35,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (480 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **352 non-UI + 128 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 352 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 128 UI tests (~86 minutes, optional)
+### 🧪 Testing (700 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **505 non-UI + 195 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 505 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 195 UI tests (~131 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -58,6 +58,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [Carnival Derby](docs/games/carnival-derby/) - Horse racing game (2-8 players)
 - [Target Tag](docs/games/target-tag/) - Shield elimination game (2-10 players)
 - [Monster Mash](docs/games/monster-mash/) - Monster battle game (2-8 players)
+- [Reef Royale](docs/games/reef-royale/) - Coral claiming game (2-8 players)
 
 ## Quick Reference
 
@@ -65,7 +66,7 @@ Each game has its own unique visual identity while integrating with global syste
 ```bash
 flutter test
 ```
-**Required:** 100% pass rate (352 tests)
+**Required:** 100% pass rate (505 tests)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -73,7 +74,7 @@ flutter test
 cd chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2: Run all UI tests (189 tests, ~112 minutes)
+# Terminal 2: Run all UI tests (195 tests, ~131 minutes)
 ./run_ui_tests.bat
 
 # Or run specific game
@@ -88,12 +89,13 @@ cd chromedriver/chromedriver-win64
 flutter test test/screens/games/target_tag/
 flutter test test/screens/games/carnival_horse_race/
 flutter test test/screens/games/monster_mash/
+flutter test test/screens/games/reef_royale/
 ```
 
 ## Current Test Counts
 
-**Total: 541 tests**
-- **Non-UI Tests:** 352 tests (100% pass rate MANDATORY)
+**Total: 700 tests**
+- **Non-UI Tests:** 505 tests (100% pass rate MANDATORY)
   - Model tests: 40
   - Provider tests: 44
   - Service tests: 42
@@ -101,18 +103,19 @@ flutter test test/screens/games/monster_mash/
   - Shared component tests: 24
   - Widget tests: 23
   - Monster Mash announcements: 18
+  - Reef Royale game logic + announcements: ~150
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **UI Automation Tests:** 189 tests (optional, ask before running)
+- **UI Automation Tests:** 195 tests (optional, ask before running)
   - Target Tag: 53 tests (~40 minutes)
   - Carnival Derby: 24 tests (~14 minutes)
   - Monster Mash: 51 tests (~32 minutes)
-  - Reef Royale: 61 tests (~26 minutes)
+  - Reef Royale: 67 tests (~45 minutes)
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 352 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 505 non-UI tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -197,7 +200,8 @@ dart_games/
 │       ├── _GAME_TEMPLATE/          # Template for new games (8 files)
 │       ├── carnival-derby/          # Carnival Derby docs (8 files)
 │       ├── target-tag/              # Target Tag docs (8 files)
-│       └── monster-mash/            # Monster Mash docs (8 files)
+│       ├── monster-mash/            # Monster Mash docs (8 files)
+│       └── reef-royale/            # Reef Royale docs (8 files)
 ├── lib/                             # Source code
 │   ├── main.dart
 │   ├── models/
@@ -208,15 +212,17 @@ dart_games/
 │       └── games/
 │           ├── carnival_horse_race/
 │           ├── target_tag/
-│           └── monster_mash/
-├── test/                            # Non-UI tests (352 tests)
-├── integration_test/                # UI automation tests (128 tests)
+│           ├── monster_mash/
+│           └── reef_royale/
+├── test/                            # Non-UI tests (505 tests)
+├── integration_test/                # UI automation tests (195 tests)
 └── assets/                          # Game assets
     ├── common/
     └── games/
         ├── carnival_derby/
         ├── target_tag/
-        └── monster_mash/
+        ├── monster_mash/
+        └── reef_royale/
 ```
 
 ## Platform Support
@@ -255,13 +261,13 @@ git push origin <branch>        # Push (with permission)
 
 ## Notes
 
-- Original CLAUDE.md (2800 lines) has been reorganized into 57 focused documentation files
+- Original CLAUDE.md (2800 lines) has been reorganized into 65+ focused documentation files
 - Each topic has its own file for better maintainability and navigation
 - Game-specific documentation lives in `docs/games/[game_name]/`
 - Shared documentation lives in topic-based folders (architecture, development, testing, etc.)
 
 ---
 
-**Last Updated:** 2026-02-23
-**Documentation Version:** 2.5 (Spec Coverage Audit)
-**Total Documentation Files:** 60
+**Last Updated:** 2026-03-02
+**Documentation Version:** 3.0 (Reef Royale)
+**Total Documentation Files:** 68
