@@ -174,7 +174,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 16.0),
       child: Container(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0),
         decoration: BoxDecoration(
           color: _deepReefBlue.withOpacity(0.85),
           border: Border.all(color: _seafoamGreen.withOpacity(0.5), width: 1),
@@ -205,15 +205,6 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                     height: 1.5,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Each player is assigned a sea creature and competes to claim all 7 coral types on the reef.',
-                  style: GoogleFonts.nunito(
-                    fontSize: 18,
-                    color: _pearlWhite.withOpacity(0.8),
-                    height: 1.5,
-                  ),
-                ),
                 const SizedBox(height: 24),
                 Text(
                   'How to Play:',
@@ -233,7 +224,24 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 _buildStep('2', 'Score Pearls:', 'Once claimed, keep hitting it to score pearls while opponents haven\'t claimed it.'),
                 _buildStep('3', 'Lock the Reef:', 'When ALL players claim a number, it locks — no more pearls for anyone.'),
                 _buildStep('4', 'Win the Reef:', 'Claim all 7 corals AND have the most pearls to win!'),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
+                Text(
+                  'Game Modes:',
+                  style: GoogleFonts.fredoka(
+                    fontSize: 34,
+                    fontWeight: FontWeight.bold,
+                    color: _pearlWhite,
+                    letterSpacing: 1,
+                    shadows: [
+                      Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 10),
+                      const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildBullet('Cursed Tide:', 'A devious twist — when you score pearls, they go to your opponents instead! The winner is the player with the fewest pearls.'),
+                _buildBullet('Random Reefs:', 'Shuffles the 7 target numbers each game so you never play the same reef twice. Bull is always the 7th coral.'),
+                const SizedBox(height: 12),
                 Text(
                   'Beginner Tips:',
                   style: GoogleFonts.fredoka(
@@ -251,7 +259,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 _buildBullet('Easy Claim:', 'Only 2 marks needed instead of 3 — great for younger players!'),
                 _buildBullet('Neighbor Numbers:', 'Adjacent dartboard numbers also count — more hits, more fun!'),
                 _buildBullet('Show Hints:', 'Highlights valid target areas on the dartboard.'),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Text(
                   'Dive in and rule the reef!',
                   style: GoogleFonts.nunito(
