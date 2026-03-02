@@ -535,13 +535,6 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                           );
                         },
                       ),
-                    // Dartboard connection lost modal
-                    if (!dartboardProvider.isEmulator &&
-                        dartboardProvider.status != DartboardConnectionStatus.connected &&
-                        dartboardProvider.status != DartboardConnectionStatus.emulator)
-                      DartboardPausedModal(
-                        config: DartboardPausedModalConfig.carnivalDerby(),
-                      ),
                   ],
                 ),
               ),
@@ -574,6 +567,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           );
         },
       ),
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.carnivalDerby(),
+            ),
         ],
       ),
       // Floating button to toggle dartboard visibility (only show when not connected)

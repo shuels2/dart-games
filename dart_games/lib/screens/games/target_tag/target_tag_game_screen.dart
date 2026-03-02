@@ -757,13 +757,6 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                         );
                       },
                     ),
-                  // Dartboard connection lost modal
-                  if (!dartboardProvider.isEmulator &&
-                      dartboardProvider.status != DartboardConnectionStatus.connected &&
-                      dartboardProvider.status != DartboardConnectionStatus.emulator)
-                    DartboardPausedModal(
-                      config: DartboardPausedModalConfig.targetTag(),
-                    ),
                 ],
               ),
             ),
@@ -795,6 +788,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           ),
             ],
           ),
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.targetTag(),
+            ),
         ],
       ),
       // Floating button to toggle dartboard visibility (only show when not connected)

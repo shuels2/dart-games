@@ -569,14 +569,6 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                         },
                       ),
 
-                    // Dartboard connection lost modal
-                    if (!dartboardProvider.isEmulator &&
-                        dartboardProvider.status != DartboardConnectionStatus.connected &&
-                        dartboardProvider.status != DartboardConnectionStatus.emulator)
-                      DartboardPausedModal(
-                        config: DartboardPausedModalConfig.monsterMash(),
-                      ),
-
                     // Round progress bar (top-center)
                     Positioned(
                       top: 16,
@@ -621,6 +613,13 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               config: DartboardSectionConfig.monsterMash(),
             ),
           ),
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.monsterMash(),
+            ),
         ],
       ),
       floatingActionButton: DartboardEmulatorFAB(
