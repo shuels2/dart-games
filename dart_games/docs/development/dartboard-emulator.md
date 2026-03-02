@@ -10,8 +10,8 @@ The dartboard emulator provides offline development and testing capabilities whe
 
 **Purpose:**
 - Allows development and testing WITHOUT physical hardware
-- ONLY shown when `!dartboardProvider.isConnected` (emulator mode)
-- Automatically hidden when connected to real Scolia dartboard
+- ONLY shown when `dartboardProvider.isEmulator` (emulator mode)
+- Hidden when using a real Scolia dartboard (even if connection is lost mid-game)
 - FAB button only appears in emulator mode
 
 **NOT for end users:**
@@ -73,14 +73,14 @@ Scaffold(
   body: /* ... */,
   floatingActionButton: DartboardEmulatorFAB(
     controller: _dartboardEmulatorController,
-    isConnected: dartboardProvider.isConnected,
+    isConnected: !dartboardProvider.isEmulator,
     config: DartboardFABConfig.yourGame(), // Create factory for your game
   ),
 )
 ```
 
 **FAB behavior:**
-- Only visible when `!dartboardProvider.isConnected`
+- Only visible when `dartboardProvider.isEmulator`
 - Toggles dartboard visibility
 - Uses game-specific styling
 
@@ -89,7 +89,7 @@ Scaffold(
 ```dart
 DartboardEmulatorSection(
   controller: _dartboardEmulatorController,
-  isConnected: dartboardProvider.isConnected,
+  isConnected: !dartboardProvider.isEmulator,
   shouldPromptTakeout: shouldPromptTakeout,
   dartboardKey: _dartboardKey,
   onDartThrow: (score, multiplier, baseScore, position) {
@@ -117,7 +117,7 @@ DartboardEmulatorSection(
 
 **Parameters:**
 - `controller` - The emulator controller
-- `isConnected` - Dartboard connection status
+- `isConnected` - Pass `!dartboardProvider.isEmulator` (hides emulator for real dartboard connections)
 - `shouldPromptTakeout` - Whether to show "Remove Darts" button
 - `dartboardKey` - GlobalKey for dartboard state
 - `onDartThrow` - Callback when dart is thrown
@@ -296,7 +296,7 @@ void initState() {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     final dartboardProvider = Provider.of<DartboardProvider>(context, listen: false);
 
-    if (!dartboardProvider.isConnected) {
+    if (dartboardProvider.isEmulator) {
       // Initialize mock API for emulator mode
       _mockApi = MockScoliaApiService(dartboardProvider);
     }
@@ -338,7 +338,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           // Dartboard section
           DartboardEmulatorSection(
             controller: _dartboardEmulatorController,
-            isConnected: dartboardProvider.isConnected,
+            isConnected: !dartboardProvider.isEmulator,
             shouldPromptTakeout: _shouldShowRemoveDarts(),
             dartboardKey: _dartboardKey,
             onDartThrow: (score, multiplier, baseScore, position) {
@@ -361,7 +361,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       ),
       floatingActionButton: DartboardEmulatorFAB(
         controller: _dartboardEmulatorController,
-        isConnected: dartboardProvider.isConnected,
+        isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.targetTag(),
       ),
     );

@@ -353,7 +353,7 @@ if (await musicService.hasCustomMusic()) {
 ```dart
 DartboardEmulatorSection(
   controller: _dartboardEmulatorController,
-  isConnected: dartboardProvider.isConnected,
+  isConnected: !dartboardProvider.isEmulator,
   shouldPromptTakeout: horseRaceProvider.shouldPromptTakeout,
   dartboardKey: _dartboardKey,
   onDartThrow: (score, multiplier, baseScore, position) {

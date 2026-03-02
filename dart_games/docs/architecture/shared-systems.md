@@ -289,7 +289,7 @@ Shared, reusable dartboard emulator UI components for all games.
 
 #### DartboardEmulatorFAB
 - Floating action button for show/hide toggle
-- Only visible in emulator mode (when `!dartboardProvider.isConnected`)
+- Only visible in emulator mode (when `dartboardProvider.isEmulator`)
 - Game-specific styling via config
 
 #### Configuration Classes

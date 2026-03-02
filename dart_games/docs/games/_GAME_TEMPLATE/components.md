@@ -28,7 +28,7 @@ factory DartboardSectionConfig.[gameName]() {
 ```dart
 DartboardEmulatorSection(
   controller: _dartboardEmulatorController,
-  isConnected: dartboardProvider.isConnected,
+  isConnected: !dartboardProvider.isEmulator,
   shouldPromptTakeout: [condition],
   dartboardKey: _dartboardKey,
   onDartThrow: [handler],
@@ -56,7 +56,7 @@ factory DartboardFABConfig.[gameName]() {
 ```dart
 DartboardEmulatorFAB(
   controller: _dartboardEmulatorController,
-  isConnected: dartboardProvider.isConnected,
+  isConnected: !dartboardProvider.isEmulator,
   config: DartboardFABConfig.[gameName](),
 )
 ```

@@ -95,7 +95,7 @@ final dartboardProvider = Provider.of<DartboardProvider>(context);
 // Dartboard emulator
 DartboardEmulatorSection(
   controller: _dartboardEmulatorController,
-  isConnected: dartboardProvider.isConnected,
+  isConnected: !dartboardProvider.isEmulator,
   config: DartboardSectionConfig.yourGame(),
   // ... handlers
 )

@@ -6,6 +6,9 @@ import 'package:dart_games/constants/test_keys.dart';
 
 class DartboardEmulatorSection extends StatelessWidget {
   final DartboardEmulatorController controller;
+  /// When true, the emulator is hidden (real dartboard handles input).
+  /// Pass `!dartboardProvider.isEmulator` so the emulator only shows
+  /// when the user explicitly chose emulator mode.
   final bool isConnected;
   final bool shouldPromptTakeout;
   final Function(int score, String multiplier, int baseScore, Offset position) onDartThrow;

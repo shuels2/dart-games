@@ -471,7 +471,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             bottom: 0,
             child: DartboardEmulatorSection(
               controller: _dartboardEmulatorController,
-              isConnected: dartboardProvider.isConnected,
+              isConnected: !dartboardProvider.isEmulator,
               shouldPromptTakeout: shouldPromptTakeout,
               dartboardKey: _dartboardKey,
               onDartThrow: (score, multiplier, baseScore, position) {
@@ -497,7 +497,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
       ),
       floatingActionButton: DartboardEmulatorFAB(
         controller: _dartboardEmulatorController,
-        isConnected: dartboardProvider.isConnected,
+        isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.reefRoyale(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,

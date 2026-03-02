@@ -772,7 +772,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           // Dartboard emulator (if not connected and visible)
           DartboardEmulatorSection(
             controller: _dartboardEmulatorController,
-            isConnected: dartboardProvider.isConnected,
+            isConnected: !dartboardProvider.isEmulator,
             shouldPromptTakeout: shouldPromptTakeout,
             dartboardKey: _dartboardKey,
             onDartThrow: (score, multiplier, baseScore, position) {
@@ -800,7 +800,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       // Floating button to toggle dartboard visibility (only show when not connected)
       floatingActionButton: DartboardEmulatorFAB(
         controller: _dartboardEmulatorController,
-        isConnected: dartboardProvider.isConnected,
+        isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.targetTag(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,

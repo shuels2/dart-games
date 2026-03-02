@@ -28,7 +28,7 @@ factory DartboardSectionConfig.targetTag() {
 ```dart
 DartboardEmulatorSection(
   controller: _dartboardEmulatorController,
-  isConnected: dartboardProvider.isConnected,
+  isConnected: !dartboardProvider.isEmulator,
   shouldPromptTakeout: targetTagProvider.shouldPromptTakeout,
   dartboardKey: _dartboardKey,
   onDartThrow: (score, multiplier, baseScore, position) {
@@ -70,7 +70,7 @@ factory DartboardFABConfig.targetTag() {
 ```dart
 DartboardEmulatorFAB(
   controller: _dartboardEmulatorController,
-  isConnected: dartboardProvider.isConnected,
+  isConnected: !dartboardProvider.isEmulator,
   config: DartboardFABConfig.targetTag(),
 )
 ```

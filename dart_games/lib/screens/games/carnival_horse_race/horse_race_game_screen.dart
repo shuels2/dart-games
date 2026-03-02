@@ -549,7 +549,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               // Dartboard emulator (only show when not connected to real dartboard and visible)
               DartboardEmulatorSection(
                 controller: _dartboardEmulatorController,
-                isConnected: dartboardProvider.isConnected,
+                isConnected: !dartboardProvider.isEmulator,
                 shouldPromptTakeout: shouldPromptTakeout,
                 dartboardKey: _dartboardKey,
                 onDartThrow: (score, multiplier, baseScore, position) {
@@ -579,7 +579,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       // Floating button to toggle dartboard visibility (only show when not connected)
       floatingActionButton: DartboardEmulatorFAB(
         controller: _dartboardEmulatorController,
-        isConnected: dartboardProvider.isConnected,
+        isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.carnivalDerby(),
       ),
     );
