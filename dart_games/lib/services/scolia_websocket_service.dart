@@ -16,6 +16,7 @@ class ScoliaWebSocketService {
 
   WebSocketChannel? _channel;
   StreamSubscription? _channelSubscription;
+  Timer? _statusCheckTimer;
 
   String? _serialNumber;
   String? _accessToken;
@@ -82,13 +83,20 @@ class ScoliaWebSocketService {
       );
 
       // Wait for HELLO_CLIENT or timeout after 10 seconds
-      return await completer.future.timeout(
+      final connected = await completer.future.timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           disconnect();
           return false;
         },
       );
+
+      // Start periodic SBC status check over WebSocket
+      if (connected) {
+        _startStatusCheckTimer();
+      }
+
+      return connected;
     } catch (e) {
       _isConnected = false;
       ApiLoggerService.logApiCall(
@@ -196,8 +204,31 @@ class ScoliaWebSocketService {
 
   void _handleSbcStatus(Map<String, dynamic> message) {
     final payload = message['payload'] as Map<String, dynamic>?;
-    _boardStatus = payload?['boardStatus'] as String?;
+    final newStatus = payload?['boardStatus'] as String?;
+    final oldStatus = _boardStatus;
+    _boardStatus = newStatus;
     _boardPhase = payload?['boardPhase'] as String?;
+
+    // If status changed, emit as status_changed event so provider can update
+    if (newStatus != oldStatus) {
+      _eventStreamController.add({
+        'type': 'sbc_status_changed',
+        'data': message,
+      });
+    }
+  }
+
+  /// Periodically send GET_SBC_STATUS over WebSocket to detect SBC going offline.
+  void _startStatusCheckTimer() {
+    _statusCheckTimer?.cancel();
+    _statusCheckTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) {
+        if (_isConnected) {
+          sendGetSbcStatus();
+        }
+      },
+    );
   }
 
   // --- Outgoing messages ---
@@ -287,6 +318,8 @@ class ScoliaWebSocketService {
   /// Close the WebSocket connection gracefully.
   void disconnect() {
     _isConnected = false;
+    _statusCheckTimer?.cancel();
+    _statusCheckTimer = null;
     _channelSubscription?.cancel();
     _channelSubscription = null;
     _channel?.sink.close();

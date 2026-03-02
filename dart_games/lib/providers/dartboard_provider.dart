@@ -135,12 +135,14 @@ class DartboardProvider with ChangeNotifier {
           } else if (event['type'] == 'sbc_status_changed') {
             final payload = event['data']?['payload'];
             final boardStatus = payload?['boardStatus'] as String?;
-            if (boardStatus == 'Ready') {
+            if (boardStatus == 'Ready' || boardStatus == 'Throw' || boardStatus == 'Takeout') {
               _status = DartboardConnectionStatus.connected;
               _error = null;
-            } else if (boardStatus == 'Error') {
+            } else if (boardStatus == 'Offline' || boardStatus == 'Error' || boardStatus == null) {
               _status = DartboardConnectionStatus.error;
-              _error = 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
+              _error = boardStatus == 'Offline'
+                  ? 'Dartboard is offline'
+                  : 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
             }
             notifyListeners();
           }
@@ -219,12 +221,14 @@ class DartboardProvider with ChangeNotifier {
         } else if (event['type'] == 'sbc_status_changed') {
           final payload = event['data']?['payload'];
           final boardStatus = payload?['boardStatus'] as String?;
-          if (boardStatus == 'Ready') {
+          if (boardStatus == 'Ready' || boardStatus == 'Throw' || boardStatus == 'Takeout') {
             _status = DartboardConnectionStatus.connected;
             _error = null;
-          } else if (boardStatus == 'Error') {
+          } else if (boardStatus == 'Offline' || boardStatus == 'Error' || boardStatus == null) {
             _status = DartboardConnectionStatus.error;
-            _error = 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
+            _error = boardStatus == 'Offline'
+                ? 'Dartboard is offline'
+                : 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
           }
           notifyListeners();
         }

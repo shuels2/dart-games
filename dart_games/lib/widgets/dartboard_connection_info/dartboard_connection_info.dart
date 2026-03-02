@@ -96,7 +96,7 @@ class DartboardConnectionInfo extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           statusText,
-          style: config.emulatorLabelTextStyle.copyWith(color: color),
+          style: config.emulatorLabelTextStyle.copyWith(color: color, fontWeight: FontWeight.bold),
         ),
       ],
     );

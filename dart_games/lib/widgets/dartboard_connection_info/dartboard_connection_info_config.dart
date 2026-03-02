@@ -44,17 +44,17 @@ class DartboardConnectionInfoConfig {
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
   });
 
-  /// Home screen — warm yellows/oranges matching the Red→Amber gradient appbar
+  /// Home screen — semi-transparent overlay that lets the Red→Amber gradient show through
   factory DartboardConnectionInfoConfig.homeScreen() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF8B4513), // Saddle brown
-      backgroundOpacity: 0.95,
-      emulatorBorderColor: const Color(0xFFFFB300), // Vivid amber
-      hardwareBorderColor: const Color(0xFFFFB300), // Vivid amber
+      backgroundColor: Colors.black,
+      backgroundOpacity: 0.25,
+      emulatorBorderColor: Colors.white70,
+      hardwareBorderColor: Colors.white70,
       nameTextStyle: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: Color(0xFFFFECB3), // Light amber cream
+        color: Colors.white,
       ),
       statusTextStyle: const TextStyle(
         fontSize: 12,
@@ -62,14 +62,14 @@ class DartboardConnectionInfoConfig {
       ),
       emulatorLabelTextStyle: const TextStyle(
         fontSize: 10,
-        color: Color(0xFFFFCA28), // Amber 400
+        color: Colors.white70,
       ),
-      emulatorIconColor: const Color(0xFFFFCA28), // Amber 400
-      hardwareIconColor: const Color(0xFFFFCA28), // Amber 400
-      connectedColor: const Color(0xFF66BB6A), // Green 400
-      connectingColor: const Color(0xFFFF9800), // Orange
-      disconnectedColor: const Color(0xFFFF6D00), // Deep orange
-      errorColor: const Color(0xFFFF6D00), // Deep orange
+      emulatorIconColor: Colors.white,
+      hardwareIconColor: Colors.white,
+      connectedColor: const Color(0xFF69F0AE), // Bright green accent
+      connectingColor: const Color(0xFFFFD54F), // Amber
+      disconnectedColor: const Color(0xFFC62828), // Dark red
+      errorColor: const Color(0xFFC62828), // Dark red
     );
   }
 
