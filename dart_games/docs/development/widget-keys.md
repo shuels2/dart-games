@@ -206,7 +206,7 @@ See existing games for complete examples:
 - Target Tag: `lib/constants/test_keys.dart` (TargetTagMenuKeys, TargetTagGameKeys)
 - Carnival Derby: `lib/constants/test_keys.dart` (CarnivalDerbyMenuKeys, CarnivalDerbyGameKeys)
 - Monster Mash: `lib/constants/test_keys.dart` (MonsterMashMenuKeys, MonsterMashGameKeys, MonsterMashResultsKeys)
-- Example tests: `integration_test/target_tag_menu_and_mechanics_test.dart`
+- Example tests: `integration_test/target_tag/target_tag_menu_and_mechanics_test.dart`
 
 ## Related Documentation
 

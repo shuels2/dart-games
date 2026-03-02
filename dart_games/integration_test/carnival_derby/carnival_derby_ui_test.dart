@@ -7,12 +7,12 @@ import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 
 // Shared component imports
-import 'shared/ui_test_helpers.dart';
-import 'shared/element_finders.dart';
-import 'shared/settings_helpers.dart';
-import 'shared/game_ui_config.dart';
-import 'shared/provider_helpers.dart';
-import 'shared/pump_sequences.dart';
+import '../shared/ui_test_helpers.dart';
+import '../shared/element_finders.dart';
+import '../shared/settings_helpers.dart';
+import '../shared/game_ui_config.dart';
+import '../shared/provider_helpers.dart';
+import '../shared/pump_sequences.dart';
 
 /// Carnival Derby - Interactive UI Tests
 ///

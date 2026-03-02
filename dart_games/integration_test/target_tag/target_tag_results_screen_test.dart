@@ -7,12 +7,12 @@ import 'package:dart_games/providers/target_tag_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 
 // Shared component imports
-import 'shared/ui_test_helpers.dart';
-import 'shared/pump_sequences.dart';
-import 'shared/settings_helpers.dart';
-import 'shared/game_ui_config.dart';
-import 'shared/provider_helpers.dart';
-import 'shared/results_helpers.dart';
+import '../shared/ui_test_helpers.dart';
+import '../shared/pump_sequences.dart';
+import '../shared/settings_helpers.dart';
+import '../shared/game_ui_config.dart';
+import '../shared/provider_helpers.dart';
+import '../shared/results_helpers.dart';
 
 /// Target Tag - Results Screen Integration Tests
 ///

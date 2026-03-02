@@ -54,7 +54,7 @@ Leave this terminal running.
 
 # Specific test file
 flutter drive --driver=test_driver/integration_test.dart \
-  --target=integration_test/target_tag_menu_and_mechanics_test.dart \
+  --target=integration_test/target_tag/target_tag_menu_and_mechanics_test.dart \
   -d chrome
 ```
 

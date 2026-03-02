@@ -25,7 +25,7 @@ Carnival Derby is a dart-based horse racing game where players race horses to re
 - **Services:** `lib/services/carnival_derby_announcement_helper.dart`
 - **Sound Effects:** `lib/services/carnival_derby_sound_effects.dart`
 - **Assets:** `assets/games/carnival_derby/`
-- **Tests:** `integration_test/carnival_derby_ui_test.dart`, `test/screens/games/carnival_horse_race/`
+- **Tests:** `integration_test/carnival_derby/carnival_derby_ui_test.dart`, `test/screens/games/carnival_horse_race/`
 
 ## Key Features
 - Horse racing theme

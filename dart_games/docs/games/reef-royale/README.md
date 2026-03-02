@@ -27,7 +27,7 @@ Reef Royale is a coral-claiming dart game for 2-8 players where each player cont
 | Sound Effects | `lib/services/reef_royale_sound_effects.dart` |
 | Assets | `assets/games/reef_royale/` |
 | Non-UI Tests | `test/screens/games/reef_royale/` |
-| UI Tests | `integration_test/reef_royale_*.dart` |
+| UI Tests | `integration_test/reef_royale/reef_royale_*.dart` |
 
 ## Key Features
 

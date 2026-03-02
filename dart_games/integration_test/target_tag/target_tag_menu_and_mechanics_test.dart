@@ -3,13 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 import 'package:dart_games/constants/test_keys.dart';
-import 'shared/element_finders.dart';
-import 'shared/pump_sequences.dart';
-import 'shared/settings_helpers.dart';
-import 'shared/provider_helpers.dart';
-import 'shared/edit_score_helpers.dart';
-import 'shared/game_ui_config.dart';
-import 'shared/ui_test_helpers.dart';
+import '../shared/element_finders.dart';
+import '../shared/pump_sequences.dart';
+import '../shared/settings_helpers.dart';
+import '../shared/provider_helpers.dart';
+import '../shared/edit_score_helpers.dart';
+import '../shared/game_ui_config.dart';
+import '../shared/ui_test_helpers.dart';
 
 /// Target Tag - Menu & Game Mechanics Integration Tests
 ///

@@ -25,7 +25,7 @@
 - **Services:** `lib/services/[game_name]_announcement_helper.dart`
 - **Sound Effects:** `lib/services/[game_name]_sound_effects.dart`
 - **Assets:** `assets/games/[game_name]/`
-- **Tests:** `integration_test/[game_name]_*.dart`, `test/screens/games/[game_name]/`
+- **Tests:** `integration_test/[game_name]/[game_name]_*.dart`, `test/screens/games/[game_name]/`
 
 ## Key Features
 - [Feature 1]

@@ -43,7 +43,7 @@
    - Game state integration (6 tests)
 
 #### UI Automation Tests
-**Location:** `integration_test/`
+**Location:** `integration_test/reef_royale/`
 
 1. **reef_royale_menu_and_settings_test.dart** (10 tests, ~3 min)
    - Game option visibility and toggle behavior
@@ -88,7 +88,7 @@
 ## Test Coverage
 
 ### Menu and Settings Tests
-**File:** `integration_test/reef_royale_menu_and_settings_test.dart`
+**File:** `integration_test/reef_royale/reef_royale_menu_and_settings_test.dart`
 
 **Scenarios Covered:**
 - [x] All 8 game options visible on menu screen
@@ -111,7 +111,7 @@
 6. **Test 10: Random Reefs** — Random Reefs and Show Hints toggles
 
 ### Add Player Tests
-**File:** `integration_test/reef_royale_add_player_test.dart`
+**File:** `integration_test/reef_royale/reef_royale_add_player_test.dart`
 
 **Scenarios Covered:**
 - [x] Add player via dialog shows player in list
@@ -130,7 +130,7 @@
 6. **Test 6: Minimum Players** — Start disabled with <2 players
 
 ### Gameplay Tests
-**File:** `integration_test/reef_royale_gameplay_test.dart`
+**File:** `integration_test/reef_royale/reef_royale_gameplay_test.dart`
 
 **Scenarios Covered:**
 - [x] Initial game state (marks, pearls, round)
@@ -170,7 +170,7 @@
 10. **Tests 26-30: Neighbor Mechanics** — Shared neighbor marks, skip/miss indicators, pulsing glow, direct-only hits
 
 ### Edit Score Tests
-**File:** `integration_test/reef_royale_edit_score_test.dart`
+**File:** `integration_test/reef_royale/reef_royale_edit_score_test.dart`
 
 **Scenarios Covered:**
 - [x] Edit score button appears after 3 darts
@@ -189,7 +189,7 @@
 6. **Test 6: Win via Edit** — Final coral claimed through score correction
 
 ### Results Screen Tests
-**File:** `integration_test/reef_royale_results_screen_test.dart`
+**File:** `integration_test/reef_royale/reef_royale_results_screen_test.dart`
 
 **Scenarios Covered:**
 - [x] Results screen appears after game completion
@@ -208,7 +208,7 @@
 6. **Test 6: Rankings** — Players ranked by corals then pearls
 
 ### Visual Validation Tests
-**File:** `integration_test/reef_royale_visual_validation_test.dart`
+**File:** `integration_test/reef_royale/reef_royale_visual_validation_test.dart`
 
 **Scenarios Covered:**
 - [x] Coral card visual state after claim

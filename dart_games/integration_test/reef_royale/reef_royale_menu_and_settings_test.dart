@@ -3,12 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/models/reef_royale_game.dart';
 
-import 'shared/ui_test_helpers.dart';
-import 'shared/element_finders.dart';
-import 'shared/pump_sequences.dart';
-import 'shared/settings_helpers.dart';
-import 'shared/game_ui_config.dart';
-import 'shared/provider_helpers.dart';
+import '../shared/ui_test_helpers.dart';
+import '../shared/element_finders.dart';
+import '../shared/pump_sequences.dart';
+import '../shared/settings_helpers.dart';
+import '../shared/game_ui_config.dart';
+import '../shared/provider_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

@@ -10,7 +10,7 @@
 ### Test Files
 
 #### UI Automation Tests
-**Location:** `integration_test/`
+**Location:** `integration_test/carnival_derby/`
 
 1. **carnival_derby_ui_test.dart** (24 tests, ~12 minutes)
    - Menu player selection and settings
@@ -61,7 +61,7 @@ cd chromedriver/chromedriver-win64
 
 # In separate terminal, run UI tests
 flutter drive --driver=test_driver/integration_test.dart \
-  --target=integration_test/carnival_derby_ui_test.dart \
+  --target=integration_test/carnival_derby/carnival_derby_ui_test.dart \
   -d chrome
 ```
 
@@ -73,7 +73,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 ## Test Coverage
 
 ### Menu Screen Tests
-**File:** `integration_test/carnival_derby_ui_test.dart`
+**File:** `integration_test/carnival_derby/carnival_derby_ui_test.dart`
 
 **Scenarios Covered:**
 - [x] Player selection and deselection
@@ -94,7 +94,7 @@ flutter drive --driver=test_driver/integration_test.dart \
    - Key assertions: Score value updates, toggle state changes
 
 ### Gameplay Tests
-**File:** `integration_test/carnival_derby_ui_test.dart`
+**File:** `integration_test/carnival_derby/carnival_derby_ui_test.dart`
 
 **Scenarios Covered:**
 - [x] Turn progression
@@ -132,7 +132,7 @@ flutter drive --driver=test_driver/integration_test.dart \
    - Key assertions: Game state correct for unusual scenarios
 
 ### Results Screen Tests
-**File:** `integration_test/carnival_derby_ui_test.dart`
+**File:** `integration_test/carnival_derby/carnival_derby_ui_test.dart`
 
 **Scenarios Covered:**
 - [x] Winner display

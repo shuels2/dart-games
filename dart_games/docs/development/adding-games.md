@@ -368,13 +368,13 @@ routes: {
 
 ### 14. Create Tests and Run Spec Coverage Audit
 
-Create test files:
-- `integration_test/your_game_menu_test.dart`
-- `integration_test/your_game_gameplay_test.dart`
-- `integration_test/your_game_results_test.dart`
-- `integration_test/your_game_visual_validation_test.dart`
-- `integration_test/your_game_edit_score_test.dart`
-- `integration_test/your_game_showcase_test.dart`
+Create test files in a game-specific subfolder under `integration_test/`:
+- `integration_test/your_game/your_game_menu_test.dart`
+- `integration_test/your_game/your_game_gameplay_test.dart`
+- `integration_test/your_game/your_game_results_test.dart`
+- `integration_test/your_game/your_game_visual_validation_test.dart`
+- `integration_test/your_game/your_game_edit_score_test.dart`
+- `integration_test/your_game/your_game_showcase_test.dart`
 - `test/screens/games/your_game/your_game_game_test.dart`
 
 Follow patterns from existing games.

@@ -216,6 +216,11 @@ dart_games/
 │           └── reef_royale/
 ├── test/                            # Non-UI tests (505 tests)
 ├── integration_test/                # UI automation tests (195 tests)
+│   ├── shared/                     # Shared test helpers
+│   ├── target_tag/                 # Target Tag UI tests (5 files)
+│   ├── carnival_derby/             # Carnival Derby UI tests (1 file)
+│   ├── monster_mash/               # Monster Mash UI tests (6 files)
+│   └── reef_royale/                # Reef Royale UI tests (8 files)
 └── assets/                          # Game assets
     ├── common/
     └── games/

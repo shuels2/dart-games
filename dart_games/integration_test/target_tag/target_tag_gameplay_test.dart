@@ -5,11 +5,11 @@ import 'package:dart_games/services/mock_scolia_api_service.dart';
 import 'package:dart_games/constants/test_keys.dart';
 
 // Shared component imports
-import 'shared/ui_test_helpers.dart';
-import 'shared/pump_sequences.dart';
-import 'shared/settings_helpers.dart';
-import 'shared/game_ui_config.dart';
-import 'shared/provider_helpers.dart';
+import '../shared/ui_test_helpers.dart';
+import '../shared/pump_sequences.dart';
+import '../shared/settings_helpers.dart';
+import '../shared/game_ui_config.dart';
+import '../shared/provider_helpers.dart';
 
 /// Target Tag - Gameplay Integration Tests
 ///
