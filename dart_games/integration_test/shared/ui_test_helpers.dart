@@ -26,6 +26,12 @@ class UITestHelpers {
     await SettingsHelpers.initializeSettings();
     print('UITestHelpers.navigateToGameMenu: initializeSettings complete');
 
+    // CRITICAL: Wait for SharedPreferences to persist to browser's IndexedDB
+    // Without this delay, the app may load before the preferences are saved
+    print('UITestHelpers.navigateToGameMenu: Waiting for IndexedDB persistence...');
+    await Future.delayed(const Duration(milliseconds: 500));
+    print('UITestHelpers.navigateToGameMenu: IndexedDB persistence complete');
+
     // Launch app
     print('UITestHelpers.navigateToGameMenu: Launching app...');
     app.main();
