@@ -126,6 +126,10 @@ void main() {
       await UITestHelpers.startGame(tester, config);
       expect(ProviderHelpers.isReefRoyaleGameActive(tester), isTrue);
 
+      // Verify neighbors and buffs badges are visible in appbar
+      expect(find.byKey(ReefRoyaleGameKeys.neighborsBadge), findsOneWidget);
+      expect(find.byKey(ReefRoyaleGameKeys.buffsBadge), findsOneWidget);
+
       final p1Id = ProviderHelpers.getReefRoyaleCurrentPlayerId(tester)!;
 
       // ─── Step 5: P1 Turn 1, D1: Triple 20 ───

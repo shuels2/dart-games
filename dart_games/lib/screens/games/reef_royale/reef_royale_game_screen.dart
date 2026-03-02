@@ -353,6 +353,76 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             Center(
               child: _buildRoundProgressBar(currentGame),
             ),
+            if (currentGame.gameMode == ReefRoyaleGameMode.cursedTide || currentGame.bonusBuffsEnabled || currentGame.neighborNumbers)
+              Positioned(
+                left: MediaQuery.of(context).size.width * 0.60,
+                top: 0,
+                bottom: 0,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (currentGame.gameMode == ReefRoyaleGameMode.cursedTide)
+                      Container(
+                        key: ReefRoyaleGameKeys.cursedBadge,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _coralPink.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.5)),
+                        ),
+                        child: Text(
+                          'CURSED',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    if (currentGame.gameMode == ReefRoyaleGameMode.cursedTide && (currentGame.neighborNumbers || currentGame.bonusBuffsEnabled))
+                      const SizedBox(width: 6),
+                    if (currentGame.neighborNumbers)
+                      Container(
+                        key: ReefRoyaleGameKeys.neighborsBadge,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _sandyGold.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.5)),
+                        ),
+                        child: Text(
+                          'NEIGHBORS',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: _deepReefBlue,
+                          ),
+                        ),
+                      ),
+                    if (currentGame.neighborNumbers && currentGame.bonusBuffsEnabled)
+                      const SizedBox(width: 6),
+                    if (currentGame.bonusBuffsEnabled)
+                      Container(
+                        key: ReefRoyaleGameKeys.buffsBadge,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _seafoamGreen.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.5)),
+                        ),
+                        child: Text(
+                          'BUFFS',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: _deepReefBlue,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
           ],
         ),
         backgroundColor: Colors.transparent,
@@ -411,30 +481,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               ],
             ),
           ),
-
-          // Cursed Tide badge
-          if (currentGame.gameMode == ReefRoyaleGameMode.cursedTide)
-            Positioned(
-              top: 8,
-              right: 120,
-              child: Container(
-                key: ReefRoyaleGameKeys.cursedBadge,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _coralPink.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.5)),
-                ),
-                child: Text(
-                  'CURSED',
-                  style: GoogleFonts.fredoka(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
 
           // Remove darts modal
           if (shouldPromptTakeout)
@@ -603,6 +649,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
       ),
       child: Column(
         children: [
+          const SizedBox(height: 10),
           // Player avatar
           if (player.photoPath != null)
             CircleAvatar(
@@ -843,7 +890,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
           // Hints (if enabled)
           if (game.showHints) ...[
             Builder(builder: (_) {
-              return Container(
+              return Transform.translate(
+                offset: const Offset(0, -5),
+                child: Container(
                 key: ReefRoyaleGameKeys.hintOverlay,
                 width: double.infinity,
                 padding: const EdgeInsets.all(8),
@@ -914,6 +963,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                     }),
                   ],
                 ),
+              ),
               );
             }),
           ],

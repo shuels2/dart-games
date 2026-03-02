@@ -70,6 +70,7 @@ Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config, {
   bool showHints = false,
   bool bonusBuffs = false,
   bool cursedTide = false,
+  bool neighborNumbers = false,
 }) async {
   await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -78,6 +79,9 @@ Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config, {
   }
   if (showHints) {
     await SettingsHelpers.toggleReefRoyaleShowHints(tester);
+  }
+  if (neighborNumbers) {
+    await SettingsHelpers.toggleReefRoyaleNeighborNumbers(tester);
   }
   if (bonusBuffs) {
     await SettingsHelpers.toggleReefRoyaleBonusBuffs(tester);
@@ -136,6 +140,11 @@ void main() {
       expect(find.byKey(ReefRoyaleGameKeys.playerAvatar), findsOneWidget);
       expect(find.byKey(ReefRoyaleGameKeys.pearlCounter), findsOneWidget);
       expect(find.byKey(ReefRoyaleGameKeys.coralCounter), findsOneWidget);
+
+      // No option badges should be visible with default settings
+      expect(find.byKey(ReefRoyaleGameKeys.cursedBadge), findsNothing);
+      expect(find.byKey(ReefRoyaleGameKeys.neighborsBadge), findsNothing);
+      expect(find.byKey(ReefRoyaleGameKeys.buffsBadge), findsNothing);
     });
 
     testWidgets('Test 3: Dart indicators show thrown darts',
@@ -157,6 +166,9 @@ void main() {
     testWidgets('Test 4: Buff banner displays when buff active',
         (WidgetTester tester) async {
       await setupAndStartGame(tester, config, bonusBuffs: true);
+
+      // Buffs badge should be visible in appbar
+      expect(find.byKey(ReefRoyaleGameKeys.buffsBadge), findsOneWidget);
 
       // Programmatically set a buff
       ProviderHelpers.setReefRoyaleActiveBuff(tester, ReefBuff.riptideRush);

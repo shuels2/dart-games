@@ -510,6 +510,9 @@ void main() {
         (WidgetTester tester) async {
       await setupAndStartGame(tester, config, neighborNumbers: true);
 
+      // Neighbors badge should be visible in appbar
+      expect(find.byKey(ReefRoyaleGameKeys.neighborsBadge), findsOneWidget);
+
       // Throw 1 (neighbor of 20 on dartboard) → resolves to target 20, neighbor hit → aqua
       await throwDartViaMock(tester, 1);
       verifyDartIndicatorColor(tester, ReefRoyaleGameKeys.dartIndicator(0), 0xFF00CED1);
@@ -581,6 +584,9 @@ void main() {
     testWidgets('Test 22: Buff Riptide Rush doubles marks',
         (WidgetTester tester) async {
       await setupAndStartGame(tester, config, bonusBuffs: true);
+
+      // Buffs badge should be visible in appbar
+      expect(find.byKey(ReefRoyaleGameKeys.buffsBadge), findsOneWidget);
 
       final playerId =
           ProviderHelpers.getReefRoyaleCurrentPlayerId(tester)!;

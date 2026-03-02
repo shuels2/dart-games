@@ -504,6 +504,8 @@ class ReefRoyaleGameKeys {
   static const hintOverlay = Key('reef_game_hint_overlay');
   static Key playerTile(String playerId) => Key('reef_game_player_tile_$playerId');
   static const cursedBadge = Key('reef_game_cursed_badge');
+  static const buffsBadge = Key('reef_game_buffs_badge');
+  static const neighborsBadge = Key('reef_game_neighbors_badge');
 
   static const dartBullseyeButton = Key('reef_game_dart_bullseye_button');
   static const dartOuterBullButton = Key('reef_game_dart_outer_bull_button');

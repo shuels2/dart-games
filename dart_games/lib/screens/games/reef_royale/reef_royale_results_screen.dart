@@ -249,118 +249,126 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
           ),
 
           // Main content
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Winner creature image(s)
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: ScaleTransition(
-                      scale: _pulseAnimation,
-                      child: _buildWinnerCreatures(winners, currentGame, reefProvider),
-                    ),
-                  ),
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Scale creature size to fit everything on screen without scrolling
+                final availableHeight = constraints.maxHeight;
+                final creatureMaxHeight = (availableHeight * 0.30).clamp(100.0, 280.0);
 
-                  const SizedBox(height: 8),
-
-                  // Winner text
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: ScaleTransition(
-                      scale: _pulseAnimation,
-                      child: Text(
-                        winners.length == 1 ? 'CROWN OF THE REEF!' : 'TIED!',
-                        style: GoogleFonts.fredoka(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: _sandyGold,
-                          shadows: [
-                            Shadow(color: _sandyGold.withOpacity(0.5), blurRadius: 20),
-                            const Shadow(color: Colors.black, blurRadius: 4),
-                          ],
+                return Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Winner creature image(s)
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: ScaleTransition(
+                          scale: _pulseAnimation,
+                          child: _buildWinnerCreatures(winners, currentGame, reefProvider, maxSize: creatureMaxHeight),
                         ),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 8),
 
-                  // Winner name(s) with avatar(s)
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: _buildWinnerNamesAndAvatars(winners),
-                  ),
+                      // Winner text
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: ScaleTransition(
+                          scale: _pulseAnimation,
+                          child: Text(
+                            winners.length == 1 ? 'CROWN OF THE REEF!' : 'TIED!',
+                            style: GoogleFonts.fredoka(
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                              color: _sandyGold,
+                              shadows: [
+                                Shadow(color: _sandyGold.withOpacity(0.5), blurRadius: 20),
+                                const Shadow(color: Colors.black, blurRadius: 4),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
 
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 8),
 
-                  // Winner stats (only show if single winner)
-                  if (winners.length == 1)
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Row(
+                      // Winner name(s) with avatar(s)
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: _buildWinnerNamesAndAvatars(winners),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Winner stats (only show if single winner)
+                      if (winners.length == 1)
+                        ScaleTransition(
+                          scale: _scaleAnimation,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildStatChip(
+                                '${currentGame.getPlayerPearls(winners[0].id)}',
+                                'Pearls',
+                                _sandyGold,
+                                ReefRoyaleResultsKeys.pearlCount,
+                              ),
+                              const SizedBox(width: 16),
+                              _buildStatChip(
+                                '${currentGame.getPlayerClaimedCount(winners[0].id)}/7',
+                                'Corals',
+                                _seafoamGreen,
+                                ReefRoyaleResultsKeys.coralCount,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      const SizedBox(height: 12),
+
+                      // Rankings
+                      Flexible(child: _buildRankings(rankedIds, allPlayers, currentGame)),
+
+                      const SizedBox(height: 16),
+
+                      // Action buttons
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildStatChip(
-                            '${currentGame.getPlayerPearls(winners[0].id)}',
-                            'Pearls',
-                            _sandyGold,
-                            ReefRoyaleResultsKeys.pearlCount,
+                          _buildActionButton(
+                            'DIVE AGAIN',
+                            Icons.refresh,
+                            _seafoamGreen,
+                            _deepReefBlue,
+                            _playAgain,
+                            key: ReefRoyaleResultsKeys.playAgainButton,
                           ),
                           const SizedBox(width: 16),
-                          _buildStatChip(
-                            '${currentGame.getPlayerClaimedCount(winners[0].id)}/7',
-                            'Corals',
-                            _seafoamGreen,
-                            ReefRoyaleResultsKeys.coralCount,
+                          _buildActionButton(
+                            'CHANGE REEFS',
+                            Icons.settings,
+                            _sunlitAqua,
+                            _deepReefBlue,
+                            _changeSettings,
+                            key: ReefRoyaleResultsKeys.changeSettingsButton,
+                          ),
+                          const SizedBox(width: 16),
+                          _buildActionButton(
+                            'SWIM HOME',
+                            Icons.home,
+                            _coralPink,
+                            _pearlWhite,
+                            _goHome,
+                            key: ReefRoyaleResultsKeys.backToMenuButton,
                           ),
                         ],
                       ),
-                    ),
-
-                  const SizedBox(height: 24),
-
-                  // Rankings
-                  _buildRankings(rankedIds, allPlayers, currentGame),
-
-                  const SizedBox(height: 32),
-
-                  // Action buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildActionButton(
-                        'DIVE AGAIN',
-                        Icons.refresh,
-                        _seafoamGreen,
-                        _deepReefBlue,
-                        _playAgain,
-                        key: ReefRoyaleResultsKeys.playAgainButton,
-                      ),
-                      const SizedBox(width: 16),
-                      _buildActionButton(
-                        'CHANGE REEFS',
-                        Icons.settings,
-                        _sunlitAqua,
-                        _deepReefBlue,
-                        _changeSettings,
-                        key: ReefRoyaleResultsKeys.changeSettingsButton,
-                      ),
-                      const SizedBox(width: 16),
-                      _buildActionButton(
-                        'SWIM HOME',
-                        Icons.home,
-                        _coralPink,
-                        _pearlWhite,
-                        _goHome,
-                        key: ReefRoyaleResultsKeys.backToMenuButton,
-                      ),
                     ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -368,8 +376,8 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     );
   }
 
-  Widget _buildWinnerCreatures(List<Player> winners, ReefRoyaleGame game, ReefRoyaleProvider provider) {
-    // Scale creature size based on number of winners to maximize screen usage
+  Widget _buildWinnerCreatures(List<Player> winners, ReefRoyaleGame game, ReefRoyaleProvider provider, {double? maxSize}) {
+    // Scale creature size based on number of winners and available space
     double creatureSize;
     double horizontalPadding;
     if (winners.length <= 2) {
@@ -384,6 +392,11 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     } else {
       creatureSize = 180;
       horizontalPadding = 8;
+    }
+
+    // Clamp to maxSize if provided (responsive layout)
+    if (maxSize != null && creatureSize > maxSize) {
+      creatureSize = maxSize;
     }
 
     return Row(
