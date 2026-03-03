@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
 
@@ -17,11 +18,6 @@ class ElementFinders {
     return find.byKey(HomeKeys.targetTagCard);
   }
 
-  // NOTE: optionsButton not yet keyed in HomeKeys - will be added in Phase 1F
-  // static Finder getOptionsButton() {
-  //   return find.byKey(HomeKeys.optionsButton);
-  // }
-
   // ==========================================================================
   // CARNIVAL DERBY MENU FINDERS
   // ==========================================================================
@@ -30,15 +26,13 @@ class ElementFinders {
     return find.byKey(CarnivalDerbyMenuKeys.addPlayerButton);
   }
 
+  static Finder getCarnivalDerbyAddPlayerButtonEmptyState() {
+    return find.byKey(CarnivalDerbyMenuKeys.addPlayerButtonEmptyState);
+  }
+
   static Finder getCarnivalDerbyPlayerTile(String playerId) {
     return find.byKey(CarnivalDerbyMenuKeys.playerTile(playerId));
   }
-
-  // NOTE: removePlayerButton not yet added to CarnivalDerbyMenuKeys
-  // Will be added when player tiles are fully keyed
-  // static Finder getCarnivalDerbyRemovePlayerButton(String playerId) {
-  //   return find.byKey(CarnivalDerbyMenuKeys.removePlayerButton(playerId));
-  // }
 
   static Finder getCarnivalDerbyTargetScoreDropdown() {
     return find.byKey(CarnivalDerbyMenuKeys.targetScoreDropdown);
@@ -52,12 +46,6 @@ class ElementFinders {
     return find.byKey(CarnivalDerbyMenuKeys.startButton);
   }
 
-  // NOTE: backButton not yet added to CarnivalDerbyMenuKeys
-  // Will be added when menu navigation is fully keyed
-  // static Finder getCarnivalDerbyBackButton() {
-  //   return find.byKey(CarnivalDerbyMenuKeys.backButton);
-  // }
-
   // ==========================================================================
   // CARNIVAL DERBY GAME FINDERS
   // ==========================================================================
@@ -65,13 +53,6 @@ class ElementFinders {
   static Finder getCarnivalDerbySkipTurnButton() {
     return find.byKey(CarnivalDerbyGameKeys.skipTurnButton);
   }
-
-  // NOTE: dartsRemovedButton not yet added to CarnivalDerbyGameKeys
-  // This is a placeholder for when Phase 1D is complete
-  // For now, Phase 2D helpers will skip this functionality
-  // static Finder getCarnivalDerbyDartsRemovedButton() {
-  //   return find.byKey(CarnivalDerbyGameKeys.dartsRemovedButton);
-  // }
 
   static Finder getCarnivalDerbyEditScoreButton() {
     return find.byKey(CarnivalDerbyGameKeys.editScoreButton);
@@ -117,15 +98,13 @@ class ElementFinders {
     return find.byKey(TargetTagMenuKeys.addPlayerButton);
   }
 
+  static Finder getTargetTagAddPlayerButtonEmptyState() {
+    return find.byKey(TargetTagMenuKeys.addPlayerButtonEmptyState);
+  }
+
   static Finder getTargetTagPlayerTile(String playerId) {
     return find.byKey(TargetTagMenuKeys.playerTile(playerId));
   }
-
-  // NOTE: removePlayerButton not yet added to TargetTagMenuKeys
-  // Will be added when player tiles are fully keyed
-  // static Finder getTargetTagRemovePlayerButton(String playerId) {
-  //   return find.byKey(TargetTagMenuKeys.removePlayerButton(playerId));
-  // }
 
   static Finder getTargetTagShieldMaxSlider() {
     return find.byKey(TargetTagMenuKeys.shieldMaxSlider);
@@ -147,12 +126,6 @@ class ElementFinders {
     return find.byKey(TargetTagMenuKeys.startButton);
   }
 
-  // NOTE: backButton not yet added to TargetTagMenuKeys
-  // Will be added when menu navigation is fully keyed
-  // static Finder getTargetTagBackButton() {
-  //   return find.byKey(TargetTagMenuKeys.backButton);
-  // }
-
   // ==========================================================================
   // TARGET TAG GAME FINDERS
   // ==========================================================================
@@ -160,12 +133,6 @@ class ElementFinders {
   static Finder getTargetTagSkipTurnButton() {
     return find.byKey(TargetTagGameKeys.skipTurnButton);
   }
-
-  // NOTE: dartsRemovedButton not yet added to TargetTagGameKeys
-  // Will be added when game controls are fully keyed
-  // static Finder getTargetTagDartsRemovedButton() {
-  //   return find.byKey(TargetTagGameKeys.dartsRemovedButton);
-  // }
 
   static Finder getTargetTagEditScoreButton() {
     return find.byKey(TargetTagGameKeys.editScoreButton);
@@ -187,6 +154,32 @@ class ElementFinders {
     return find.byKey(TargetTagGameKeys.dartMissButton);
   }
 
+  static Finder getTargetTagD1Indicator() {
+    return find.byKey(TargetTagGameKeys.activePlayerD1Indicator);
+  }
+
+  static Finder getTargetTagD2Indicator() {
+    return find.byKey(TargetTagGameKeys.activePlayerD2Indicator);
+  }
+
+  static Finder getTargetTagD3Indicator() {
+    return find.byKey(TargetTagGameKeys.activePlayerD3Indicator);
+  }
+
+  static Finder getTargetTagActivePlayerName() {
+    return find.byKey(TargetTagGameKeys.activePlayerName);
+  }
+
+  /// Get the current player's name from the active player panel
+  static String? getTargetTagActivePlayerNameText(WidgetTester tester) {
+    final nameFinder = getTargetTagActivePlayerName();
+    if (nameFinder.evaluate().isEmpty) {
+      return null;
+    }
+    final textWidget = tester.widget<Text>(nameFinder.first);
+    return textWidget.data;
+  }
+
   // ==========================================================================
   // TARGET TAG RESULTS FINDERS
   // ==========================================================================
@@ -201,6 +194,214 @@ class ElementFinders {
 
   static Finder getTargetTagBackToMenuButton() {
     return find.byKey(TargetTagResultsKeys.backToMenuButton);
+  }
+
+  // ==========================================================================
+  // MONSTER MASH HOME FINDERS
+  // ==========================================================================
+
+  static Finder getMonsterMashCard() {
+    return find.byKey(HomeKeys.monsterMashCard);
+  }
+
+  // ==========================================================================
+  // MONSTER MASH MENU FINDERS
+  // ==========================================================================
+
+  static Finder getMonsterMashAddPlayerButton() {
+    return find.byKey(MonsterMashMenuKeys.addPlayerButton);
+  }
+
+  static Finder getMonsterMashAddPlayerButtonEmptyState() {
+    return find.byKey(MonsterMashMenuKeys.addPlayerButtonEmptyState);
+  }
+
+  static Finder getMonsterMashPlayerTile(String playerId) {
+    return find.byKey(MonsterMashMenuKeys.playerTile(playerId));
+  }
+
+  static Finder getMonsterMashHealthPointsSlider() {
+    return find.byKey(MonsterMashMenuKeys.healthPointsSlider);
+  }
+
+  static Finder getMonsterMashBonusBuffsSwitch() {
+    return find.byKey(MonsterMashMenuKeys.bonusBuffsSwitch);
+  }
+
+  static Finder getMonsterMashSpeedPlaySwitch() {
+    return find.byKey(MonsterMashMenuKeys.speedPlaySwitch);
+  }
+
+  static Finder getMonsterMashRoundLimitSlider() {
+    return find.byKey(MonsterMashMenuKeys.roundLimitSlider);
+  }
+
+  static Finder getMonsterMashStartButton() {
+    return find.byKey(MonsterMashMenuKeys.startGameButton);
+  }
+
+  static Finder getMonsterMashBackButton() {
+    return find.byKey(MonsterMashMenuKeys.backButton);
+  }
+
+  // ==========================================================================
+  // MONSTER MASH GAME FINDERS
+  // ==========================================================================
+
+  static Finder getMonsterMashSkipTurnButton() {
+    return find.byKey(MonsterMashGameKeys.skipTurnButton);
+  }
+
+  static Finder getMonsterMashEditScoreButton() {
+    return find.byKey(MonsterMashGameKeys.editScoreButton);
+  }
+
+  static Finder getMonsterMashDartButton(String multiplier, int number) {
+    return find.byKey(MonsterMashGameKeys.getDartKey(multiplier, number));
+  }
+
+  static Finder getMonsterMashBullseyeButton() {
+    return find.byKey(MonsterMashGameKeys.dartBullseyeButton);
+  }
+
+  static Finder getMonsterMashOuterBullButton() {
+    return find.byKey(MonsterMashGameKeys.dartOuterBullButton);
+  }
+
+  static Finder getMonsterMashMissButton() {
+    return find.byKey(MonsterMashGameKeys.dartMissButton);
+  }
+
+  // ==========================================================================
+  // MONSTER MASH RESULTS FINDERS
+  // ==========================================================================
+
+  static Finder getMonsterMashPlayAgainButton() {
+    return find.byKey(MonsterMashResultsKeys.playAgainButton);
+  }
+
+  static Finder getMonsterMashChangeSettingsButton() {
+    return find.byKey(MonsterMashResultsKeys.changeSettingsButton);
+  }
+
+  static Finder getMonsterMashBackToMenuButton() {
+    return find.byKey(MonsterMashResultsKeys.backToMenuButton);
+  }
+
+  static Finder getMonsterMashWinnerName() {
+    return find.byKey(MonsterMashResultsKeys.winnerName);
+  }
+
+  // ==========================================================================
+  // REEF ROYALE HOME FINDERS
+  // ==========================================================================
+
+  static Finder getReefRoyaleCard() {
+    return find.byKey(HomeKeys.reefRoyaleCard);
+  }
+
+  // ==========================================================================
+  // REEF ROYALE MENU FINDERS
+  // ==========================================================================
+
+  static Finder getReefRoyaleAddPlayerButton() {
+    return find.byKey(ReefRoyaleMenuKeys.addPlayerButton);
+  }
+
+  static Finder getReefRoyaleAddPlayerButtonEmptyState() {
+    return find.byKey(ReefRoyaleMenuKeys.addPlayerButtonEmptyState);
+  }
+
+  static Finder getReefRoyalePlayerTile(String playerId) {
+    return find.byKey(ReefRoyaleMenuKeys.playerTile(playerId));
+  }
+
+  static Finder getReefRoyaleGameModeDropdown() {
+    return find.byKey(ReefRoyaleMenuKeys.gameModeDropdown);
+  }
+
+  static Finder getReefRoyaleEasyClaimSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.easyClaimSwitch);
+  }
+
+  static Finder getReefRoyaleNeighborNumbersSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.neighborNumbersSwitch);
+  }
+
+  static Finder getReefRoyaleRandomReefsSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.randomReefsSwitch);
+  }
+
+  static Finder getReefRoyaleBonusBuffsSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.bonusBuffsSwitch);
+  }
+
+  static Finder getReefRoyaleShowHintsSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.showHintsSwitch);
+  }
+
+  static Finder getReefRoyaleSpeedPlaySwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.speedPlaySwitch);
+  }
+
+  static Finder getReefRoyaleRoundLimitSlider() {
+    return find.byKey(ReefRoyaleMenuKeys.roundLimitSlider);
+  }
+
+  static Finder getReefRoyaleStartButton() {
+    return find.byKey(ReefRoyaleMenuKeys.startGameButton);
+  }
+
+  static Finder getReefRoyaleBackButton() {
+    return find.byKey(ReefRoyaleMenuKeys.backButton);
+  }
+
+  // ==========================================================================
+  // REEF ROYALE GAME FINDERS
+  // ==========================================================================
+
+  static Finder getReefRoyaleSkipTurnButton() {
+    return find.byKey(ReefRoyaleGameKeys.skipTurnButton);
+  }
+
+  static Finder getReefRoyaleEditScoreButton() {
+    return find.byKey(ReefRoyaleGameKeys.editScoreButton);
+  }
+
+  static Finder getReefRoyaleDartButton(String multiplier, int number) {
+    return find.byKey(ReefRoyaleGameKeys.getDartKey(multiplier, number));
+  }
+
+  static Finder getReefRoyaleBullseyeButton() {
+    return find.byKey(ReefRoyaleGameKeys.dartBullseyeButton);
+  }
+
+  static Finder getReefRoyaleOuterBullButton() {
+    return find.byKey(ReefRoyaleGameKeys.dartOuterBullButton);
+  }
+
+  static Finder getReefRoyaleMissButton() {
+    return find.byKey(ReefRoyaleGameKeys.dartMissButton);
+  }
+
+  // ==========================================================================
+  // REEF ROYALE RESULTS FINDERS
+  // ==========================================================================
+
+  static Finder getReefRoyalePlayAgainButton() {
+    return find.byKey(ReefRoyaleResultsKeys.playAgainButton);
+  }
+
+  static Finder getReefRoyaleChangeSettingsButton() {
+    return find.byKey(ReefRoyaleResultsKeys.changeSettingsButton);
+  }
+
+  static Finder getReefRoyaleBackToMenuButton() {
+    return find.byKey(ReefRoyaleResultsKeys.backToMenuButton);
+  }
+
+  static Finder getReefRoyaleWinnerName() {
+    return find.byKey(ReefRoyaleResultsKeys.winnerName);
   }
 
   // ==========================================================================

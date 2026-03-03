@@ -129,6 +129,12 @@ flutter test test/screens/games/reef_royale/
 ❓ Ask user: Fix application code (A) or update tests (B)?
 ✅ Wait for user decision before proceeding
 
+### Test Helper Synchronization
+❌ NEVER modify files in `test/shared/` or `integration_test/shared/` without updating BOTH locations
+✅ When changing any shared test helper, apply the same changes to both folders
+✅ Verify both non-UI tests (`flutter test`) and UI tests pass after changes
+📖 See [Test Maintenance](docs/testing/test-maintenance.md) for synchronization rules
+
 ### Dartboard Emulator Code
 ❌ NEVER modify without explicit user permission
 ❓ If bug suspected, ask user to verify first
