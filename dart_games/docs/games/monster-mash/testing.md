@@ -30,7 +30,7 @@
    - Edge cases (eliminated opponent hit, bullseye at full health, Max Health text)
 
 #### UI Automation Tests
-**Location:** `integration_test/`
+**Location:** `integration_test/monster_mash/`
 
 1. **monster_mash_menu_test.dart** (~5 min)
    - Player selection and game settings validation

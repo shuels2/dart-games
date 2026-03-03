@@ -10,7 +10,7 @@
 ### Test Files
 
 #### UI Automation Tests
-**Location:** `integration_test/`
+**Location:** `integration_test/[game_name]/`
 
 1. **[game_name]_menu_test.dart** ([N] tests, ~[M] minutes)
    - [Brief description of what this file tests]
@@ -50,7 +50,7 @@ cd chromedriver/chromedriver-win64
 
 # In separate terminal, run UI tests
 flutter drive --driver=test_driver/integration_test.dart \
-  --target=integration_test/[game_name]_menu_test.dart \
+  --target=integration_test/[game_name]/[game_name]_menu_test.dart \
   -d chrome
 ```
 
@@ -62,7 +62,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 ## Test Coverage
 
 ### Menu Screen Tests
-**File:** `integration_test/[game_name]_menu_test.dart`
+**File:** `integration_test/[game_name]/[game_name]_menu_test.dart`
 
 **Scenarios Covered:**
 - [ ] Player selection and deselection
@@ -80,7 +80,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 [List key test cases]
 
 ### Gameplay Tests
-**File:** `integration_test/[game_name]_gameplay_test.dart`
+**File:** `integration_test/[game_name]/[game_name]_gameplay_test.dart`
 
 **Scenarios Covered:**
 - [ ] Turn progression
@@ -98,7 +98,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 [List key test cases]
 
 ### Results Screen Tests
-**File:** `integration_test/[game_name]_results_test.dart`
+**File:** `integration_test/[game_name]/[game_name]_results_test.dart`
 
 **Scenarios Covered:**
 - [ ] Winner display

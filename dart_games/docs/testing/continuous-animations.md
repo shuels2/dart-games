@@ -94,20 +94,29 @@ await tester.pump(); // Update text field
 
 ## When pumpAndSettle() is Safe
 
-**Only on screens with NO continuous animations:**
+**ALMOST NEVER in integration tests.** The splash screen has a `CircularProgressIndicator` which is a continuous indeterminate animation. This means `pumpAndSettle()` will hang even before reaching the home screen.
 
 ```dart
-// ✅ Safe - On splash/home before navigating
+// ❌ WRONG - Splash screen has CircularProgressIndicator
 app.main();
-await tester.pumpAndSettle();
-await tester.pumpAndSettle(const Duration(seconds: 3)); // Wait for splash
+await tester.pumpAndSettle(); // ← HANGS FOREVER on splash screen
+
+// ✅ CORRECT - Use manual pumps after app launch
+app.main();
+await tester.pump(); // Process initial frame
+await tester.pump(const Duration(seconds: 2)); // Wait for splash delay
+await tester.pump(); // Process navigation to home
+await tester.pump(const Duration(seconds: 2)); // Wait for home screen
+await tester.pump(); // Rebuild
+await tester.pump(); // Layout
+await tester.pump(); // Paint
 
 // ❌ UNSAFE - After navigating to game screen
 await tester.tap(find.text('Target Tag'));
 await tester.pumpAndSettle(); // ← WILL HANG if pulse animation
 ```
 
-**General rule:** Once you navigate to any game screen, assume it might have continuous animations and **stop using `pumpAndSettle()`**.
+**General rule:** NEVER use `pumpAndSettle()` in integration tests. The splash screen's `CircularProgressIndicator` and game screens' pulse animations will both cause hangs. Always use explicit `pump()` sequences.
 
 ## Applies ONLY to UI Automation Tests
 

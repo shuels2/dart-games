@@ -83,6 +83,24 @@ class DartboardSectionConfig {
       ),
     );
   }
+
+  // Factory for Reef Royale
+  factory DartboardSectionConfig.reefRoyale() {
+    return DartboardSectionConfig(
+      backgroundColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      disabledOverlayBackgroundColor: const Color(0xFF0B3D91).withOpacity(0.9),
+      disabledOverlayBorderColor: const Color(0xFF48D1CC), // Seafoam Green
+      removeButtonBackgroundColor: const Color(0xFF48D1CC), // Seafoam Green
+      removeButtonBorderColor: const Color(0xFF00CED1), // Sunlit Aqua
+      removeButtonTextStyle: GoogleFonts.fredoka(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+        color: const Color(0xFFFFF8F0), // Pearl White
+      ),
+    );
+  }
 }
 
 class DartboardFABConfig {
@@ -129,6 +147,16 @@ class DartboardFABConfig {
       iconColor: const Color(0xFF7FFF00), // Ecto-Green
       textColor: const Color(0xFFF5F5DC), // Aged Parchment
       textStyle: GoogleFonts.pirataOne(fontWeight: FontWeight.bold),
+    );
+  }
+
+  // Factory for Reef Royale
+  factory DartboardFABConfig.reefRoyale() {
+    return DartboardFABConfig(
+      backgroundColor: const Color(0xFF48D1CC), // Seafoam Green
+      iconColor: const Color(0xFFFFF8F0), // Pearl White
+      textColor: const Color(0xFFFFF8F0), // Pearl White
+      textStyle: GoogleFonts.fredoka(fontWeight: FontWeight.bold),
     );
   }
 }

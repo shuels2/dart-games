@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:dart_games/providers/horse_race_provider.dart';
 import 'package:dart_games/providers/target_tag_provider.dart';
 import 'package:dart_games/providers/monster_mash_provider.dart';
+import 'package:dart_games/providers/reef_royale_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/models/monster_mash_game.dart';
+import 'package:dart_games/models/reef_royale_game.dart';
 
 /// Helpers for accessing provider state in UI tests.
 class ProviderHelpers {
@@ -254,6 +256,106 @@ class ProviderHelpers {
   static List<String?> getMonsterMashDartThrowTargetPlayerId(WidgetTester tester, String playerId) {
     final provider = getMonsterMashProvider(tester);
     return provider.getDartThrowTargetPlayerId(playerId);
+  }
+
+  // ==========================================================================
+  // REEF ROYALE HELPERS
+  // ==========================================================================
+
+  /// Get Reef Royale provider
+  static ReefRoyaleProvider getReefRoyaleProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<ReefRoyaleProvider>(context, listen: false);
+  }
+
+  /// Reef Royale: Get player pearls
+  static int getReefRoyalePlayerPearls(WidgetTester tester, String playerId) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getPlayerPearls(playerId);
+  }
+
+  /// Reef Royale: Get player claimed coral count
+  static int getReefRoyalePlayerClaimedCount(WidgetTester tester, String playerId) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getPlayerClaimedCount(playerId);
+  }
+
+  /// Reef Royale: Check if player claimed a target
+  static bool reefRoyaleHasPlayerClaimed(WidgetTester tester, String playerId, int target) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.hasPlayerClaimed(playerId, target);
+  }
+
+  /// Reef Royale: Get player marks on a target
+  static int getReefRoyalePlayerMarks(WidgetTester tester, String playerId, int target) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getPlayerMarks(playerId, target);
+  }
+
+  /// Reef Royale: Check if target is locked
+  static bool isReefRoyaleTargetLocked(WidgetTester tester, int target) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.isTargetLocked(target);
+  }
+
+  /// Reef Royale: Get active buff
+  static ReefBuff? getReefRoyaleActiveBuff(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getActiveBuff();
+  }
+
+  /// Reef Royale: Get current round
+  static int getReefRoyaleCurrentRound(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getCurrentRound();
+  }
+
+  /// Reef Royale: Check for winner
+  static bool reefRoyaleHasWinner(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Reef Royale: Get current player ID
+  static String? getReefRoyaleCurrentPlayerId(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getCurrentPlayerId();
+  }
+
+  /// Reef Royale: Check if game is active
+  static bool isReefRoyaleGameActive(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Reef Royale: Get current player darts thrown
+  static int getReefRoyaleCurrentPlayerDartsThrown(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getCurrentPlayerDartsThrown();
+  }
+
+  /// Reef Royale: Set active buff programmatically
+  static void setReefRoyaleActiveBuff(WidgetTester tester, ReefBuff buff) {
+    final provider = getReefRoyaleProvider(tester);
+    provider.setActiveBuff(buff);
+  }
+
+  /// Reef Royale: Get game mode
+  static ReefRoyaleGameMode? getReefRoyaleGameMode(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getGameMode();
+  }
+
+  /// Reef Royale: Get round limit
+  static int getReefRoyaleRoundLimit(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getRoundLimit();
+  }
+
+  /// Reef Royale: Get ranked player IDs
+  static List<String> getReefRoyaleRankedPlayerIds(WidgetTester tester) {
+    final provider = getReefRoyaleProvider(tester);
+    return provider.getRankedPlayerIds();
   }
 
   // ==========================================================================

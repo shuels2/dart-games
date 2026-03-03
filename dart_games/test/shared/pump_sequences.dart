@@ -19,6 +19,12 @@ class PumpSequences {
     await tester.pump(const Duration(seconds: 1)); // Let navigation complete
     await tester.pump(); // Process navigation
     await tester.pump(); // Build widget tree
+    // Wait for async data loading (e.g., PlayerProvider.loadPlayers())
+    await tester.pump(const Duration(seconds: 5)); // Wait for async operation
+    await tester.pump(); // Process data loaded
+    await tester.pump(); // Rebuild widget tree with data
+    await tester.pump(); // Layout widgets
+    await tester.pump(); // Paint widgets
   }
 
   /// Async data loading pump sequence
@@ -69,6 +75,12 @@ class PumpSequences {
     await tester.pump(); // Process tap
     await tester.pump(const Duration(milliseconds: 500)); // Wait for dialog to close
     await tester.pump(); // Process dialog closing
+    // Wait for UI to rebuild after dialog action (e.g., adding player)
+    await tester.pump(const Duration(milliseconds: 500)); // Wait for state changes
+    await tester.pump(); // Process state changes
+    await tester.pump(); // Rebuild UI
+    await tester.pump(); // Layout widgets
+    await tester.pump(); // Paint widgets
   }
 
   /// Text entry pump sequence

@@ -44,27 +44,32 @@ class DartboardConnectionInfoConfig {
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
   });
 
-  /// Home screen — matches the current white-background look
+  /// Home screen — semi-transparent overlay that lets the Red→Amber gradient show through
   factory DartboardConnectionInfoConfig.homeScreen() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: Colors.white,
-      emulatorBorderColor: Colors.orange.shade700,
-      hardwareBorderColor: Colors.blue.shade700,
-      nameTextStyle: TextStyle(
+      backgroundColor: Colors.black,
+      backgroundOpacity: 0.25,
+      emulatorBorderColor: Colors.white70,
+      hardwareBorderColor: Colors.white70,
+      nameTextStyle: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: Colors.blue.shade900,
+        color: Colors.white,
       ),
       statusTextStyle: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
-      emulatorLabelTextStyle: TextStyle(
+      emulatorLabelTextStyle: const TextStyle(
         fontSize: 10,
-        color: Colors.orange.shade700,
+        color: Colors.white70,
       ),
-      emulatorIconColor: Colors.orange.shade700,
-      hardwareIconColor: Colors.blue.shade700,
+      emulatorIconColor: Colors.white,
+      hardwareIconColor: Colors.white,
+      connectedColor: const Color(0xFF69F0AE), // Bright green accent
+      connectingColor: const Color(0xFFFFD54F), // Amber
+      disconnectedColor: const Color(0xFFC62828), // Dark red
+      errorColor: const Color(0xFFC62828), // Dark red
     );
   }
 

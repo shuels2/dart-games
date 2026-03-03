@@ -33,6 +33,7 @@ class HomeKeys {
   static const carnivalDerbyCard = Key('home_carnival_derby_card');
   static const targetTagCard = Key('home_target_tag_card');
   static const monsterMashCard = Key('home_monster_mash_card');
+  static const reefRoyaleCard = Key('home_reef_royale_card');
 }
 
 // ============================================================================
@@ -466,6 +467,67 @@ class EditScoreDialogKeys {
   static const dart3Dropdown = Key('edit_score_dart3_dropdown');
   static const saveButton = Key('edit_score_save_button');
   static const cancelButton = Key('edit_score_cancel_button');
+}
+
+// ============================================================================
+// REEF ROYALE KEYS
+// ============================================================================
+
+class ReefRoyaleMenuKeys {
+  static const backButton = Key('reef_menu_back_button');
+  static const gameModeDropdown = Key('reef_menu_game_mode_dropdown');
+  static const easyClaimSwitch = Key('reef_menu_easy_claim_switch');
+  static const neighborNumbersSwitch = Key('reef_menu_neighbor_numbers_switch');
+  static const randomReefsSwitch = Key('reef_menu_random_reefs_switch');
+  static const bonusBuffsSwitch = Key('reef_menu_bonus_buffs_switch');
+  static const showHintsSwitch = Key('reef_menu_show_hints_switch');
+  static const speedPlaySwitch = Key('reef_menu_speed_play_switch');
+  static const roundLimitSlider = Key('reef_menu_round_limit_slider');
+  static const startGameButton = Key('reef_menu_start_game_button');
+  static const addPlayerButton = Key('reef_menu_add_player_button');
+  static const addPlayerButtonEmptyState = Key('reef_menu_add_player_button_empty_state');
+  static const playerListView = Key('reef_menu_player_list_view');
+  static Key playerTile(String id) => Key('reef_menu_player_tile_$id');
+  static Key removePlayerButton(String id) => Key('reef_menu_remove_player_$id');
+}
+
+class ReefRoyaleGameKeys {
+  static const skipTurnButton = Key('reef_game_skip_turn_button');
+  static const editScoreButton = Key('reef_game_edit_score_button');
+  static Key coralCard(int targetNumber) => Key('reef_game_coral_card_$targetNumber');
+  static const playerAvatar = Key('reef_game_player_avatar');
+  static const pearlCounter = Key('reef_game_pearl_counter');
+  static const coralCounter = Key('reef_game_coral_counter');
+  static Key dartIndicator(int index) => Key('reef_game_dart_indicator_$index');
+  static const buffBanner = Key('reef_game_buff_banner');
+  static const roundCounter = Key('reef_game_round_counter');
+  static const hintOverlay = Key('reef_game_hint_overlay');
+  static Key playerTile(String playerId) => Key('reef_game_player_tile_$playerId');
+  static const cursedBadge = Key('reef_game_cursed_badge');
+  static const buffsBadge = Key('reef_game_buffs_badge');
+  static const neighborsBadge = Key('reef_game_neighbors_badge');
+
+  static const dartBullseyeButton = Key('reef_game_dart_bullseye_button');
+  static const dartOuterBullButton = Key('reef_game_dart_outer_bull_button');
+  static const dartMissButton = Key('reef_game_dart_miss_button');
+
+  static Key getDartKey(String multiplier, int? number) {
+    if (multiplier == 'bullseye') return dartBullseyeButton;
+    if (multiplier == 'outer_bull') return dartOuterBullButton;
+    if (multiplier == 'miss') return dartMissButton;
+    return Key('reef_game_dart_${multiplier}_${number}_button');
+  }
+}
+
+class ReefRoyaleResultsKeys {
+  static const winnerName = Key('reef_results_winner_name');
+  static const winnerPhoto = Key('reef_results_winner_photo');
+  static const pearlCount = Key('reef_results_pearl_count');
+  static const coralCount = Key('reef_results_coral_count');
+  static const playAgainButton = Key('reef_results_play_again_button');
+  static const changeSettingsButton = Key('reef_results_change_settings_button');
+  static const backToMenuButton = Key('reef_results_back_to_menu_button');
+  static Key playerRanking(int index) => Key('reef_results_player_ranking_$index');
 }
 
 class AddPlayerDialogKeys {

@@ -80,6 +80,9 @@ dependencies:
   # Google Fonts for Nunito typography
   google_fonts: ^6.1.0
 
+  # WebSocket for Scolia dartboard connection
+  web_socket_channel: ^3.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -126,6 +129,13 @@ flutter:
     - assets/games/monster_mash/images/
     - assets/games/monster_mash/characters/
     - assets/games/monster_mash/sounds/
+
+    # Reef Royale game assets
+    - assets/games/reef_royale/icons/
+    - assets/games/reef_royale/images/
+    - assets/games/reef_royale/characters/
+    - assets/games/reef_royale/corals/
+    - assets/games/reef_royale/sounds/
 
     # Target Tag game assets
     - assets/games/target_tag/icons/

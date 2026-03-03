@@ -17,7 +17,7 @@ flutter test
 ```
 
 **Requirements:**
-- ✅ All 352 non-UI tests must pass (100% pass rate required)
+- ✅ All 505 non-UI tests must pass (100% pass rate required)
 - ❌ If ANY test fails, DO NOT proceed with build
 - 🔧 Fix all failing tests first, then re-run test suite
 - ✅ Only build after confirming all tests pass
@@ -34,7 +34,7 @@ flutter test
 
 ### 2. UI Automation Tests (OPTIONAL)
 
-The 128 UI automation tests take longer to run (~86 minutes) and require chromedriver.
+The 195 UI automation tests take longer to run (~131 minutes) and require chromedriver.
 
 **Before running a build, ASK the user:**
 ```
@@ -47,7 +47,7 @@ Would you like me to run the UI automation tests before this build?
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2 - Run UI tests (128 tests, ~86 minutes)
+# Terminal 2 - Run UI tests (195 tests, ~131 minutes)
 cd dart_games
 ./run_ui_tests.bat
 ```
@@ -106,9 +106,9 @@ flutter build ios
    flutter test
    ```
 
-3. **Verify ALL 352 non-UI tests pass** (100% pass rate required)
+3. **Verify ALL 505 non-UI tests pass** (100% pass rate required)
 
-4. **OPTIONAL: Ask user if they want to run UI automation tests** (128 tests, ~86 minutes)
+4. **OPTIONAL: Ask user if they want to run UI automation tests** (195 tests, ~131 minutes)
 
 5. **If ANY tests fail:**
    - DO NOT proceed
@@ -275,8 +275,8 @@ flutter build ios --release          # iOS App Store
 
 Before deploying to production:
 
-- [ ] All 352 non-UI tests pass
-- [ ] (Optional) All 128 UI automation tests pass
+- [ ] All 505 non-UI tests pass
+- [ ] (Optional) All 195 UI automation tests pass
 - [ ] Code has been reviewed
 - [ ] Changes have been committed
 - [ ] User has approved push to remote
@@ -386,7 +386,7 @@ build/ios/iphoneos/Runner.app
 ## Testing Requirements Summary
 
 **CRITICAL REQUIREMENTS:**
-- ✅ All 352 non-UI tests must pass (MANDATORY)
+- ✅ All 505 non-UI tests must pass (MANDATORY)
 - ✅ 100% pass rate required (no exceptions)
 - ❓ UI automation tests optional (ask user before running)
 - ✅ Manual testing after build

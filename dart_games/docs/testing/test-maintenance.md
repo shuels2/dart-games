@@ -1,5 +1,50 @@
 # Test Maintenance
 
+## CRITICAL: Shared Test Helper Synchronization
+
+**The `test/shared/` and `integration_test/shared/` folders MUST be kept in sync at all times.**
+
+### Why This Matters
+
+- **Non-UI tests** use helpers from `test/shared/`
+- **UI automation tests** use helpers from `integration_test/shared/`
+- Both test suites test the same features using the same helper functions
+- Divergence causes tests to fail inconsistently or produces false positives/negatives
+
+### Synchronization Rules
+
+When modifying any file in either shared folder:
+
+1. **Check both locations** - The file likely exists in both `test/shared/` and `integration_test/shared/`
+2. **Update both files** - Apply the same changes to both versions
+3. **Verify consistency** - Ensure both files have the same:
+   - Function signatures
+   - Helper methods
+   - Element finders
+   - Provider accessors
+   - Settings manipulation functions
+4. **Test both suites** - Run both non-UI tests (`flutter test`) and UI tests to verify
+
+### Files That Must Stay in Sync
+
+- `ui_test_helpers.dart` - Navigation, player management
+- `element_finders.dart` - Widget key-based finders
+- `provider_helpers.dart` - Provider state access
+- `settings_helpers.dart` - Settings and configuration
+- `edit_score_helpers.dart` - Edit score dialog operations
+- `results_helpers.dart` - Results screen verification
+- `pump_sequences.dart` - Animation and async waiting
+- `game_ui_config.dart` - Game-specific UI configuration
+
+### Exception: Integration-Test-Only Files
+
+Some files only exist in `integration_test/shared/` because they're specific to UI automation:
+- Screenshot test helpers
+- Web driver utilities
+- Browser-specific functions
+
+**Rule:** If a file exists in both locations, keep them in sync. If it only exists in one, that's intentional.
+
 ## When Features Change
 
 **When updating features, tests MUST be updated to match.**

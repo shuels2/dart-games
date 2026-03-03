@@ -2,7 +2,7 @@
 
 ## Overview
 
-352 non-UI tests validate models, providers, services, widgets, and game logic.
+505 non-UI tests validate models, providers, services, widgets, and game logic.
 
 **Run with:** `flutter test`
 **Execution time:** Seconds

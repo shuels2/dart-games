@@ -58,19 +58,28 @@ If a gate cannot be executed (e.g., chromedriver is not available, environment i
 
 ## Iterative Fix Cycle
 
+**CRITICAL:** "Screenshot test passed" does NOT mean "visual validation complete." A passing test only means the screenshots were captured without runtime errors. The actual validation is reading and evaluating every screenshot against the checklist. These are two completely separate steps — never conflate them.
+
 The fix cycle works as follows:
 
 ```
-1. Run screenshot tests → evaluate screenshots
-2. Found visual issues? → Fix them → Go to step 1
-3. No visual issues? → Run UI automation tests
-4. UI tests fail? → Fix them → Go to step 1 (screenshots may have changed)
-5. UI tests pass? → Run flutter test
-6. Non-UI tests fail? → Fix them → Go to step 1
-7. All pass simultaneously? → Verify spec Definition of Done → DONE
+1. CAPTURE: Run screenshot test → confirm all screenshots saved
+2. EVALUATE: Read EVERY screenshot with the Read tool → check EVERY
+   item on the visual evaluation checklist for EACH screenshot
+3. REPORT: List all issues found (screenshot number, severity, description)
+4. Found visual issues? → Fix them → Go to step 1
+   (MUST re-capture AND re-evaluate ALL screenshots, not just fixed ones)
+5. No visual issues? → Run UI automation tests
+6. UI tests fail? → Fix them → Go to step 1 (screenshots may have changed)
+7. UI tests pass? → Run flutter test
+8. Non-UI tests fail? → Fix them → Go to step 1
+9. All pass simultaneously? → Verify spec Definition of Done → DONE
 ```
 
-The key insight is that fixing anything sends you back to step 1, because any code change could affect visual output.
+The key insights:
+- **Capturing ≠ Evaluating.** You must do both, every time.
+- **Fixing anything sends you back to step 1** — re-capture AND re-evaluate all screenshots.
+- **Evaluate ALL screenshots every cycle**, not just the ones you expect changed — fixes can have unintended effects on other screens.
 
 ## Visual Evaluation Checklist
 
@@ -87,6 +96,39 @@ When evaluating screenshots, check for:
 - All interactive elements are clearly identifiable
 - Game characters render correctly
 - All game states display the correct information
+
+## Screenshot Test Technical Requirements
+
+When running screenshot tests, follow these rules exactly to avoid debugging infrastructure issues:
+
+### Use the Correct Driver
+Screenshot tests MUST use `test_driver/screenshot_test.dart`, NOT `test_driver/integration_test.dart`. The standard driver has no `onScreenshot` callback, so `binding.takeScreenshot()` will hang silently.
+
+```bash
+# CORRECT
+flutter drive --driver=test_driver/screenshot_test.dart \
+  --target=integration_test/<game>_screenshot_test.dart -d chrome
+
+# WRONG — will hang on first takeScreenshot() call
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/<game>_screenshot_test.dart -d chrome
+```
+
+### Follow Existing UI Test Patterns
+Before writing or running screenshot tests, reference `run_ui_tests.bat` for the established launch pattern:
+- Kill and restart chromedriver before each test
+- Do NOT use `--no-headless` flag
+- Wait 5 seconds after starting chromedriver before launching tests
+
+### Never Use pumpAndSettle() in Integration Tests
+The splash screen has a `CircularProgressIndicator` that prevents `pumpAndSettle()` from ever completing. Use manual `pump()` sequences instead. See [Continuous Animations](../testing/continuous-animations.md).
+
+### Never Kill All Chrome Processes
+Only kill `chromedriver.exe`. Killing all `chrome.exe` processes destroys the user's browser sessions and leaves Chrome in a crash recovery state that causes `AppConnectionException` errors on subsequent runs.
+
+### ChromeDriver Session Management
+- Restart chromedriver before each screenshot test run
+- If `AppConnectionException` occurs: open Chrome manually, dismiss any crash recovery dialogs, close Chrome, restart chromedriver, retry
 
 ## Summary
 

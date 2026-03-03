@@ -1,0 +1,197 @@
+[
+  {
+    "id": "ee80da76-1761-41dc-a3cd-710999180bed",
+    "timestamp": "2026-03-02T08:24:27.835",
+    "method": "WS_IN",
+    "endpoint": "/api/v1/social",
+    "request": null,
+    "response": {
+      "id": "aa40a29c-2869-4a52-b983-08217c3f8848",
+      "type": "THROW_DETECTED",
+      "payload": {
+        "angle": {
+          "horizontal": 23.935249808470118,
+          "vertical": 23.209151201031816
+        },
+        "bounceout": false,
+        "coordinates": [
+          -32,
+          -40
+        ],
+        "detectionTime": "2026-03-02 13:24:27.696912105 +0000",
+        "sector": "s7",
+        "sectorSuggestions": [
+          "S16"
+        ]
+      }
+    },
+    "userNote": "This throw was an inner single 7"
+  },
+  {
+    "id": "8408ac6c-d3a9-4c84-98d2-433a6397f236",
+    "timestamp": "2026-03-02T08:24:51.494",
+    "method": "WS_IN",
+    "endpoint": "/api/v1/social",
+    "request": null,
+    "response": {
+      "id": "7e9a3678-02a2-446a-a0ca-d9ffb48e9d33",
+      "type": "THROW_DETECTED",
+      "payload": {
+        "angle": {
+          "horizontal": 20.67602023101976,
+          "vertical": 31.351578285918542
+        },
+        "bounceout": false,
+        "coordinates": [
+          -63,
+          7
+        ],
+        "detectionTime": "2026-03-02 13:24:51.354434867 +0000",
+        "sector": "s11",
+        "sectorSuggestions": [
+          "S14"
+        ]
+      }
+    },
+    "userNote": "This throw was an inner single 11"
+  },
+  {
+    "id": "f38ab2dd-4da5-4c7c-a709-260f06ec5c4a",
+    "timestamp": "2026-03-02T08:25:15.502",
+    "method": "WS_IN",
+    "endpoint": "/api/v1/social",
+    "request": null,
+    "response": {
+      "id": "4e1bdb26-212d-4b51-803b-081d115b3c8f",
+      "type": "THROW_DETECTED",
+      "payload": {
+        "angle": {
+          "horizontal": 12.796029497309474,
+          "vertical": 7.905089116890716
+        },
+        "bounceout": true,
+        "coordinates": [
+          0,
+          0
+        ],
+        "detectionTime": "2026-03-02 13:25:15.362748135 +0000",
+        "sector": "None",
+        "sectorSuggestions": []
+      }
+    },
+    "userNote": "This throw was a MISS"
+  },
+  {
+    "id": "97829d98-5c69-4a97-b433-2b083098766a",
+    "timestamp": "2026-03-02T08:25:27.821",
+    "method": "WS_IN",
+    "endpoint": "/api/v1/social",
+    "request": null,
+    "response": {
+      "id": "444a1e8e-7aa0-4868-b089-01ba7e656206",
+      "type": "TAKEOUT_STARTED",
+      "payload": {
+        "time": "2026-03-02 13:25:27.684053886 +0000"
+      }
+    },
+    "userNote": ""
+  },
+  {
+    "id": "eea1d33d-6a6a-464d-bd8f-af1032b3d3fd",
+    "timestamp": "2026-03-02T08:25:32.153",
+    "method": "WS_IN",
+    "endpoint": "/api/v1/social",
+    "request": null,
+    "response": {
+      "id": "d2b45856-c8a9-4db0-8bae-1886f9558815",
+      "type": "TAKEOUT_FINISHED",
+      "payload": {
+        "falseTakeout": false,
+        "time": "2026-03-02 13:25:32.016895161 +0000"
+      }
+    },
+    "userNote": ""
+  },
+  {
+    "id": "6785850e-f9e0-48bd-86b3-18e797ea57af",
+    "timestamp": "2026-03-02T08:26:11.453",
+    "method": "WS_IN",
+    "endpoint": "/api/v1/social",
+    "request": null,
+    "response": {
+      "id": "760b67f4-d4c6-485f-80c1-68b77d8907c5",
+      "type": "THROW_DETECTED",
+      "payload": {
+        "angle": {
+          "horizontal": -26.571738613221196,
+          "vertical": 2.369150298877686
+        },
+        "bounceout": false,
+        "coordinates": [
+          -6,
+          -100
+        ],
+        "detectionTime": "2026-03-02 13:26:11.311129149 +0000",
+        "sector": "T3",
+        "sectorSuggestions": [
+          "S3"
+        ]
+      }
+    },
+    "userNote": "This throw was a triple 3"
+  },
+  {
+    "id": "b6fb0ae5-d9d9-45b4-ab3c-de095a178827",
+    "timestamp": "2026-03-02T08:26:15.321",
+    "method": "WS_IN",
+    "endpoint": "/api/v1/social",
+    "request": null,
+    "response": {
+      "id": "514587de-b5a9-49f9-86e8-3b5b8f72e6c5",
+      "type": "THROW_DETECTED",
+      "payload": {
+        "angle": {
+          "horizontal": -10.518448340434833,
+          "vertical": 6.721388338363009
+        },
+        "bounceout": false,
+        "coordinates": [
+          96,
+          -156
+        ],
+        "detectionTime": "2026-03-02 13:26:15.181887250 +0000",
+        "sector": "None",
+        "sectorSuggestions": []
+      }
+    },
+    "userNote": "This throw was a MISS"
+  },
+  {
+    "id": "525d37f0-b656-4e46-ad41-390779d6f56f",
+    "timestamp": "2026-03-02T08:26:19.240",
+    "method": "WS_IN",
+    "endpoint": "/api/v1/social",
+    "request": null,
+    "response": {
+      "id": "bd2e9e68-aa47-4d86-a050-d4570dc7b858",
+      "type": "THROW_DETECTED",
+      "payload": {
+        "angle": {
+          "horizontal": -9.687861501981324,
+          "vertical": -5.79918433314019
+        },
+        "bounceout": false,
+        "coordinates": [
+          0,
+          -152
+        ],
+        "detectionTime": "2026-03-02 13:26:19.103867703 +0000",
+        "sector": "S3",
+        "sectorSuggestions": [
+          "D3"
+        ]
+      }
+    },
+    "userNote": "This throw was an outer single 3"
+  }
+]

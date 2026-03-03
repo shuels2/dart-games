@@ -15,56 +15,81 @@ class UITestHelpers {
   // ==========================================================================
 
   /// Navigate from home screen to game menu
-  ///
-  /// Sets up emulator mode, launches app, and navigates to the specified game.
-  ///
-  /// Example:
-  /// ```dart
-  /// final config = GameUIConfig.targetTag();
-  /// await UITestHelpers.navigateToGameMenu(tester, config);
-  /// ```
   static Future<void> navigateToGameMenu(
     WidgetTester tester,
     GameUIConfig config,
   ) async {
+    print('UITestHelpers.navigateToGameMenu: START');
+
     // Set up emulator mode
+    print('UITestHelpers.navigateToGameMenu: Calling initializeSettings...');
     await SettingsHelpers.initializeSettings();
+    print('UITestHelpers.navigateToGameMenu: initializeSettings complete');
 
     // Launch app
+    print('UITestHelpers.navigateToGameMenu: Launching app...');
     app.main();
-    await tester.pumpAndSettle();
-    await tester.pumpAndSettle(const Duration(seconds: 3));
-    await tester.pump(const Duration(seconds: 2)); // Extra wait for home screen to fully render on cold start
+    print('UITestHelpers.navigateToGameMenu: App launched, pumping...');
+
+    // NOTE: Do NOT use pumpAndSettle() here — the splash screen has a
+    // CircularProgressIndicator (continuous animation) that prevents settling.
+    // Use manual pumps instead to wait for splash → home navigation.
+    await tester.pump(); // Process initial frame
+    await tester.pump(const Duration(seconds: 2)); // Wait for splash delay + config load
+    await tester.pump(); // Process navigation
+    await tester.pump(const Duration(seconds: 2)); // Wait for home screen to build
+    await tester.pump(); // Rebuild
+    await tester.pump(); // Layout
+    await tester.pump(); // Paint
+    print('UITestHelpers.navigateToGameMenu: Manual pump sequence complete');
+
+    // Debug: Check what screen we're on
+    print('UITestHelpers.navigateToGameMenu: Checking which screen is displayed...');
+
+    // Check for home screen
+    final homeScreenText = find.text('Let\'s play some Dart Games');
+    print('UITestHelpers.navigateToGameMenu: Home screen found: ${homeScreenText.evaluate().length}');
+
+    // Check for setup screen
+    final setupText = find.text('Scolia Dartboard Setup');
+    print('UITestHelpers.navigateToGameMenu: Setup screen found: ${setupText.evaluate().length}');
+
+    // Check for splash screen
+    final splashText = find.text('DARTS');
+    print('UITestHelpers.navigateToGameMenu: Splash screen found: ${splashText.evaluate().length}');
+
+    // Wait for home screen cards to load (async operation)
+    await tester.pump(const Duration(seconds: 2));
     await tester.pump();
     await tester.pump();
     await tester.pump();
+    print('UITestHelpers.navigateToGameMenu: Waited for cards to load');
 
     // Tap game card
+    print('UITestHelpers.navigateToGameMenu: Looking for game card...');
     final gameCard = config.getGameCard();
+    print('UITestHelpers.navigateToGameMenu: Game card finder created, checking...');
+
+    print('UITestHelpers.navigateToGameMenu: Found ${gameCard.evaluate().length} game cards');
+
     expect(gameCard, findsOneWidget);
+    print('UITestHelpers.navigateToGameMenu: Game card found, tapping...');
+
     await tester.tap(gameCard);
 
     // Wait for navigation
     await PumpSequences.navigation(tester);
+    print('UITestHelpers.navigateToGameMenu: COMPLETE');
   }
 
   /// Start the game from menu screen
-  ///
-  /// Taps the start game button and waits for navigation to game screen.
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.startGame(tester, config);
-  /// ```
   static Future<void> startGame(
     WidgetTester tester,
     GameUIConfig config,
   ) async {
     final startButton = config.getStartButton();
-
     await tester.ensureVisible(startButton);
     await tester.pump();
-
     await tester.tap(startButton);
     await PumpSequences.navigation(tester);
   }
@@ -74,20 +99,57 @@ class UITestHelpers {
   // ==========================================================================
 
   /// Add a player via the add player dialog
-  ///
-  /// Opens dialog, enters name, and saves the player.
-  /// Waits for async data loading after player is saved.
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.addPlayer(tester, 'Alice', config);
-  /// ```
   static Future<void> addPlayer(
     WidgetTester tester,
     String name,
     GameUIConfig config,
   ) async {
-    final addButton = config.getAddPlayerButton();
+    // Try to find the add player button (handles both empty state and normal state)
+    Finder addButton;
+    if (config.gameName == 'Target Tag') {
+      // For Target Tag, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getTargetTagAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
+    } else if (config.gameName == 'Carnival Derby') {
+      // For Carnival Derby, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getCarnivalDerbyAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getCarnivalDerbyAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
+    } else if (config.gameName == 'Monster Mash') {
+      // For Monster Mash, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getMonsterMashAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getMonsterMashAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
+    } else if (config.gameName == 'Reef Royale') {
+      // For Reef Royale, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getReefRoyaleAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getReefRoyaleAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
+    } else {
+      // For other games, use the config method
+      addButton = config.getAddPlayerButton();
+    }
 
     await tester.ensureVisible(addButton.first);
     await tester.pump();
@@ -102,17 +164,9 @@ class UITestHelpers {
     final addPlayerButton = ElementFinders.getAddPlayerAddButton();
     await tester.tap(addPlayerButton.first);
     await PumpSequences.dialogClose(tester);
-    await PumpSequences.asyncDataLoad(tester);
   }
 
   /// Select multiple players from the player list
-  ///
-  /// Taps each player tile in sequence.
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.selectPlayers(tester, ['player1', 'player2'], config);
-  /// ```
   static Future<void> selectPlayers(
     WidgetTester tester,
     List<String> playerIds,
@@ -122,82 +176,9 @@ class UITestHelpers {
       final playerTile = config.getPlayerTile(playerId);
       await tester.ensureVisible(playerTile.first);
       await tester.pump();
-
       await tester.tap(playerTile.first);
       await PumpSequences.simpleUpdate(tester);
     }
-  }
-
-  // ==========================================================================
-  // DART THROWING HELPERS
-  // ==========================================================================
-
-  /// Throw a dart (number with multiplier)
-  ///
-  /// Examples:
-  /// ```dart
-  /// await UITestHelpers.throwDart(tester, config, 20); // S20
-  /// await UITestHelpers.throwDart(tester, config, 20, multiplier: 'double'); // D20
-  /// await UITestHelpers.throwDart(tester, config, 20, multiplier: 'triple'); // T20
-  /// ```
-  static Future<void> throwDart(
-    WidgetTester tester,
-    GameUIConfig config,
-    int number, {
-    String multiplier = 'single',
-  }) async {
-    final dartButton = config.getDartButton(multiplier, number);
-
-    await tester.tap(dartButton);
-    await PumpSequences.simpleUpdate(tester);
-  }
-
-  /// Throw bullseye (50 points)
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.throwBullseye(tester, config);
-  /// ```
-  static Future<void> throwBullseye(
-    WidgetTester tester,
-    GameUIConfig config,
-  ) async {
-    final bullButton = config.getBullseyeButton();
-
-    await tester.tap(bullButton);
-    await PumpSequences.simpleUpdate(tester);
-  }
-
-  /// Throw outer bull (25 points)
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.throwOuterBull(tester, config);
-  /// ```
-  static Future<void> throwOuterBull(
-    WidgetTester tester,
-    GameUIConfig config,
-  ) async {
-    final outerBullButton = config.getOuterBullButton();
-
-    await tester.tap(outerBullButton);
-    await PumpSequences.simpleUpdate(tester);
-  }
-
-  /// Throw miss (0 points)
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.throwMiss(tester, config);
-  /// ```
-  static Future<void> throwMiss(
-    WidgetTester tester,
-    GameUIConfig config,
-  ) async {
-    final missButton = config.getMissButton();
-
-    await tester.tap(missButton);
-    await PumpSequences.simpleUpdate(tester);
   }
 
   // ==========================================================================
@@ -205,144 +186,59 @@ class UITestHelpers {
   // ==========================================================================
 
   /// Click "Skip Turn" button
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.clickSkipTurn(tester, config);
-  /// ```
   static Future<void> clickSkipTurn(
     WidgetTester tester,
     GameUIConfig config,
   ) async {
     final skipButton = config.getSkipTurnButton();
-
+    await tester.ensureVisible(skipButton);
+    await tester.pump();
     await tester.tap(skipButton);
     await PumpSequences.simpleUpdate(tester);
-  }
-
-  // NOTE: clickDartsRemoved() not implemented yet
-  // Waiting for dartsRemovedButton to be added to CarnivalDerbyGameKeys and TargetTagGameKeys
-  // Will be added when Phase 1D game control keys are complete
-  //
-  // static Future<void> clickDartsRemoved(
-  //   WidgetTester tester,
-  //   GameUIConfig config,
-  // ) async {
-  //   final removeButton = config.getDartsRemovedButton();
-  //   await tester.tap(removeButton);
-  //   await PumpSequences.simpleUpdate(tester);
-  // }
-
-  // ==========================================================================
-  // COMPLETE GAME FLOW HELPERS
-  // ==========================================================================
-
-  /// Play a complete game with specified dart sequence
-  ///
-  /// Throws darts in sequence until game is complete.
-  /// Each dart is specified as a map with 'multiplier' and 'number' keys.
-  /// Special darts: 'bullseye', 'outer_bull', 'miss'
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.playCompleteGame(tester, config, [
-  ///   {'multiplier': 'triple', 'number': 20},  // T20
-  ///   {'multiplier': 'triple', 'number': 20},  // T20
-  ///   {'multiplier': 'bullseye'},              // Bullseye
-  ///   {'multiplier': 'miss'},                  // Miss
-  /// ]);
-  /// ```
-  static Future<void> playCompleteGame(
-    WidgetTester tester,
-    GameUIConfig config,
-    List<Map<String, dynamic>> dartSequence,
-  ) async {
-    for (final dart in dartSequence) {
-      final multiplier = dart['multiplier'] as String;
-
-      if (multiplier == 'bullseye') {
-        await throwBullseye(tester, config);
-      } else if (multiplier == 'outer_bull') {
-        await throwOuterBull(tester, config);
-      } else if (multiplier == 'miss') {
-        await throwMiss(tester, config);
-      } else {
-        final number = dart['number'] as int;
-        await throwDart(tester, config, number, multiplier: multiplier);
-      }
-    }
   }
 
   // ==========================================================================
   // RESULTS SCREEN HELPERS
   // ==========================================================================
 
-  /// Verify results screen is showing and contains winner information
-  ///
-  /// Checks for play again, change settings, and back to menu buttons.
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.verifyResultsScreen(tester, config);
-  /// ```
+  /// Verify results screen is showing
   static Future<void> verifyResultsScreen(
     WidgetTester tester,
     GameUIConfig config,
   ) async {
-    // Wait for results screen to render
     await tester.pump();
     await tester.pump();
-
-    // Verify results screen buttons present
     expect(config.getPlayAgainButton(), findsOneWidget);
     expect(config.getChangeSettingsButton(), findsOneWidget);
     expect(config.getBackToMenuButton(), findsOneWidget);
   }
 
   /// Click "Play Again" button on results screen
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.clickPlayAgain(tester, config);
-  /// ```
   static Future<void> clickPlayAgain(
     WidgetTester tester,
     GameUIConfig config,
   ) async {
     final playAgainButton = config.getPlayAgainButton();
-
     await tester.tap(playAgainButton);
     await PumpSequences.navigation(tester);
   }
 
   /// Click "Change Settings" button on results screen
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.clickChangeSettings(tester, config);
-  /// ```
   static Future<void> clickChangeSettings(
     WidgetTester tester,
     GameUIConfig config,
   ) async {
     final changeSettingsButton = config.getChangeSettingsButton();
-
     await tester.tap(changeSettingsButton);
     await PumpSequences.navigation(tester);
   }
 
   /// Click "Back to Menu" button on results screen
-  ///
-  /// Example:
-  /// ```dart
-  /// await UITestHelpers.clickBackToMenu(tester, config);
-  /// ```
   static Future<void> clickBackToMenu(
     WidgetTester tester,
     GameUIConfig config,
   ) async {
     final backToMenuButton = config.getBackToMenuButton();
-
     await tester.tap(backToMenuButton);
     await PumpSequences.navigation(tester);
   }

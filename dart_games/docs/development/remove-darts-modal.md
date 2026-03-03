@@ -135,6 +135,7 @@ factory RemoveDartsModalConfig.myNewGame() {
 | Carnival Derby Game | `RemoveDartsModalConfig.carnivalDerby()` |
 | Target Tag Game | `RemoveDartsModalConfig.targetTag()` |
 | Monster Mash Game | `RemoveDartsModalConfig.monsterMash()` |
+| Reef Royale Game | `RemoveDartsModalConfig.reefRoyale()` |
 
 ## Related Documentation
 

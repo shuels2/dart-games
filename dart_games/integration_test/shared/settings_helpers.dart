@@ -153,6 +153,96 @@ class SettingsHelpers {
     await addPlayerViaDialog(tester, playerName);
   }
 
+  /// Reef Royale: Set Game Mode (dropdown)
+  ///
+  /// Valid values: 'Standard', 'Cursed Tide'
+  static Future<void> setReefRoyaleGameMode(
+    WidgetTester tester,
+    String modeText,
+  ) async {
+    await setDropdownValue(
+      tester,
+      ElementFinders.getReefRoyaleGameModeDropdown(),
+      modeText,
+    );
+  }
+
+  /// Reef Royale: Toggle Easy Claim
+  static Future<void> toggleReefRoyaleEasyClaim(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getReefRoyaleEasyClaimSwitch());
+  }
+
+  /// Reef Royale: Toggle Neighbor Numbers
+  static Future<void> toggleReefRoyaleNeighborNumbers(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getReefRoyaleNeighborNumbersSwitch());
+  }
+
+  /// Reef Royale: Toggle Random Reefs
+  static Future<void> toggleReefRoyaleRandomReefs(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getReefRoyaleRandomReefsSwitch());
+  }
+
+  /// Reef Royale: Toggle Bonus Buffs
+  static Future<void> toggleReefRoyaleBonusBuffs(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getReefRoyaleBonusBuffsSwitch());
+  }
+
+  /// Reef Royale: Toggle Show Hints
+  static Future<void> toggleReefRoyaleShowHints(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getReefRoyaleShowHintsSwitch());
+  }
+
+  /// Reef Royale: Toggle Speed Play
+  static Future<void> toggleReefRoyaleSpeedPlay(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getReefRoyaleSpeedPlaySwitch());
+  }
+
+  /// Reef Royale: Set Round Limit (slider)
+  ///
+  /// Valid values: 5-20
+  static Future<void> setReefRoyaleRoundLimit(
+    WidgetTester tester,
+    int value,
+  ) async {
+    final sliderFinder = ElementFinders.getReefRoyaleRoundLimitSlider();
+    expect(sliderFinder, findsOneWidget);
+
+    Slider sliderWidget = tester.widget<Slider>(sliderFinder);
+    if (sliderWidget.onChanged != null) {
+      sliderWidget.onChanged!(value.toDouble());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+    }
+
+    await PumpSequences.simpleUpdate(tester);
+
+    sliderWidget = tester.widget<Slider>(sliderFinder);
+    expect(sliderWidget.value.toInt(), value,
+        reason: 'Round Limit should be set to $value');
+  }
+
+  /// Reef Royale: Select player
+  static Future<void> selectReefRoyalePlayer(
+    WidgetTester tester,
+    String playerId,
+  ) async {
+    await selectPlayer(
+      tester,
+      playerId,
+      ElementFinders.getReefRoyalePlayerTile,
+    );
+  }
+
+  /// Reef Royale: Full flow to add a player
+  static Future<void> addReefRoyalePlayer(
+    WidgetTester tester,
+    String playerName,
+  ) async {
+    await openAddPlayerDialog(tester, ElementFinders.getReefRoyaleAddPlayerButton());
+    await addPlayerViaDialog(tester, playerName);
+  }
+
   // ==========================================================================
   // DROPDOWN HELPERS
   // ==========================================================================

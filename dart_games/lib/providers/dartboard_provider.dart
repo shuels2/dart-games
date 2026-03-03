@@ -6,6 +6,7 @@ import 'dart:convert';
 import '../models/dartboard.dart';
 import '../models/dartboard_connection_profile.dart';
 import '../services/mock_scolia_api_service.dart';
+import '../services/scolia_websocket_service.dart';
 import '../services/api_logger_service.dart';
 
 enum DartboardConnectionStatus {
@@ -25,6 +26,7 @@ class DartboardProvider with ChangeNotifier {
   Timer? _statusCheckTimer;
 
   MockScoliaApiService? _mockApiService;
+  ScoliaWebSocketService? _webSocketService;
 
   List<DartboardConnectionProfile> _savedProfiles = [];
 
@@ -39,7 +41,17 @@ class DartboardProvider with ChangeNotifier {
   bool get canPlayGames => isConnected || isEmulator;
   bool get isRegistered => _dartboard != null;
   MockScoliaApiService? get apiService => _mockApiService;
+  ScoliaWebSocketService? get webSocketService => _webSocketService;
   List<DartboardConnectionProfile> get savedProfiles => List.unmodifiable(_savedProfiles);
+
+  /// Unified event stream from whichever dartboard source is active
+  /// (real WebSocket or emulator). Games subscribe to this for dart events.
+  Stream<Map<String, dynamic>>? get dartboardEventStream {
+    if (_webSocketService != null && _webSocketService!.isConnected) {
+      return _webSocketService!.eventStream;
+    }
+    return _mockApiService?.eventStream;
+  }
 
   // Storage keys
   static const String _keyDartboardName = 'dartboard_name';
@@ -100,36 +112,56 @@ class DartboardProvider with ChangeNotifier {
       _apiKey = apiKey;
       _useEmulatorMode = false;
 
-      // TODO: Implement actual WebSocket connection to Scolia
-      // For now, simulate connection attempt
-      await Future.delayed(const Duration(seconds: 1));
+      // Attempt real WebSocket connection to Scolia
+      _webSocketService?.dispose();
+      _webSocketService = ScoliaWebSocketService();
 
-      // Simulate connection failure (since we don't have real WebSocket yet)
-      // In production, this would attempt actual WebSocket connection
-      // For now, start status checking to monitor the dartboard
-      await _saveConfiguration(name, serialNumber, apiKey, false);
-      startStatusChecking();
+      final success = await _webSocketService!.connect(
+        serialNumber: serialNumber,
+        accessToken: apiKey,
+      );
 
-      _status = DartboardConnectionStatus.error;
-      _error = 'WebSocket connection not yet implemented. Use emulator mode for testing.';
+      if (success) {
+        await _saveConfiguration(name, serialNumber, apiKey, false);
+        _status = DartboardConnectionStatus.connected;
+        _error = null;
 
-      notifyListeners();
-      return false;
+        // Listen for disconnect events to update status
+        _webSocketService!.eventStream.listen((event) {
+          if (event['type'] == 'disconnected') {
+            _status = DartboardConnectionStatus.error;
+            _error = event['data']?['message'] ?? 'Dartboard disconnected';
+            notifyListeners();
+          } else if (event['type'] == 'sbc_status_changed') {
+            final payload = event['data']?['payload'];
+            final boardStatus = payload?['boardStatus'] as String?;
+            if (boardStatus == 'Ready' || boardStatus == 'Throw' || boardStatus == 'Takeout') {
+              _status = DartboardConnectionStatus.connected;
+              _error = null;
+            } else if (boardStatus == 'Offline' || boardStatus == 'Error' || boardStatus == null) {
+              _status = DartboardConnectionStatus.error;
+              _error = boardStatus == 'Offline'
+                  ? 'Dartboard is offline'
+                  : 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
+            }
+            notifyListeners();
+          }
+        });
 
-      // When WebSocket is implemented:
-      // final success = await _connectWebSocket(apiKey, serialNumber);
-      // if (success) {
-      //   await _saveConfiguration(name, serialNumber, apiKey, false);
-      //   _status = DartboardConnectionStatus.connected;
-      //   notifyListeners();
-      //   return true;
-      // } else {
-      //   _status = DartboardConnectionStatus.error;
-      //   _error = 'Failed to connect to Scolia WebSocket';
-      //   notifyListeners();
-      //   return false;
-      // }
+        notifyListeners();
+        return true;
+      } else {
+        // WebSocket connection failed
+        _webSocketService?.dispose();
+        _webSocketService = null;
+        _status = DartboardConnectionStatus.error;
+        _error = 'Could not connect to Scolia dartboard. Check serial number and API key.';
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
+      _webSocketService?.dispose();
+      _webSocketService = null;
       _status = DartboardConnectionStatus.error;
       _error = 'Connection failed: $e';
       notifyListeners();
@@ -167,12 +199,47 @@ class DartboardProvider with ChangeNotifier {
     _status = DartboardConnectionStatus.connecting;
     notifyListeners();
 
-    // Simulate connection attempt
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Try real WebSocket connection
+    _webSocketService?.dispose();
+    _webSocketService = ScoliaWebSocketService();
 
-    // Set to error state - actual connection status will be determined by status checking
-    _status = DartboardConnectionStatus.error;
-    _error = 'Connecting to dartboard...';
+    final success = await _webSocketService!.connect(
+      serialNumber: _dartboard!.serialNumber,
+      accessToken: _apiKey!,
+    );
+
+    if (success) {
+      _status = DartboardConnectionStatus.connected;
+      _error = null;
+
+      // Listen for disconnect/status events
+      _webSocketService!.eventStream.listen((event) {
+        if (event['type'] == 'disconnected') {
+          _status = DartboardConnectionStatus.error;
+          _error = event['data']?['message'] ?? 'Dartboard disconnected';
+          notifyListeners();
+        } else if (event['type'] == 'sbc_status_changed') {
+          final payload = event['data']?['payload'];
+          final boardStatus = payload?['boardStatus'] as String?;
+          if (boardStatus == 'Ready' || boardStatus == 'Throw' || boardStatus == 'Takeout') {
+            _status = DartboardConnectionStatus.connected;
+            _error = null;
+          } else if (boardStatus == 'Offline' || boardStatus == 'Error' || boardStatus == null) {
+            _status = DartboardConnectionStatus.error;
+            _error = boardStatus == 'Offline'
+                ? 'Dartboard is offline'
+                : 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
+          }
+          notifyListeners();
+        }
+      });
+    } else {
+      // WebSocket failed — fall back to status checking via REST
+      _webSocketService?.dispose();
+      _webSocketService = null;
+      _status = DartboardConnectionStatus.error;
+      _error = 'Unable to Connect';
+    }
     notifyListeners();
   }
 
@@ -211,6 +278,8 @@ class DartboardProvider with ChangeNotifier {
     _apiKey = null;
     _useEmulatorMode = false;
     _mockApiService = null;
+    _webSocketService?.dispose();
+    _webSocketService = null;
     _status = DartboardConnectionStatus.disconnected;
     _error = null;
 
@@ -220,8 +289,10 @@ class DartboardProvider with ChangeNotifier {
   // Switch to emulator mode from failed connection
   void switchToEmulator() {
     if (_dartboard != null) {
-      // Stop status checking before switching to emulator
+      // Stop status checking and disconnect WebSocket before switching
       stopStatusChecking();
+      _webSocketService?.dispose();
+      _webSocketService = null;
 
       useEmulator(
         name: _dartboard!.name,
@@ -375,6 +446,7 @@ class DartboardProvider with ChangeNotifier {
   @override
   void dispose() {
     stopStatusChecking();
+    _webSocketService?.dispose();
     super.dispose();
   }
 }

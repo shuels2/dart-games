@@ -2,11 +2,11 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 480 total tests:
-- **352 non-UI tests** (models, providers, services, widgets, game logic)
-- **128 UI automation tests** (end-to-end testing with Chrome)
+The Dart Games app has a comprehensive test suite with 700 total tests:
+- **505 non-UI tests** (models, providers, services, widgets, game logic)
+- **195 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (352 tests)
+## Non-UI Tests (505 tests)
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -33,8 +33,9 @@ The Dart Games app has a comprehensive test suite with 480 total tests:
 - Target Tag User Management: 14 tests
 - Monster Mash Game Logic + Announcements: 47 tests
 - Monster Mash Announcements: 18 tests
+- Reef Royale Game Logic + Announcements: ~150 tests
 
-_Note: Some tests span multiple categories. The total (352) is the authoritative count from `flutter test`._
+_Note: Some tests span multiple categories. The total (505) is the authoritative count from `flutter test`._
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
@@ -43,10 +44,10 @@ _Note: Some tests span multiple categories. The total (352) is the authoritative
 **Widget Tests (23 tests)**
 - InteractiveDartboard: 23 tests
 
-## UI Automation Tests (128 tests)
+## UI Automation Tests (195 tests)
 
 **Run with:** `./run_ui_tests.bat` or `flutter drive`
-**Execution time:** ~86 minutes
+**Execution time:** ~131 minutes
 **OPTIONAL:** Ask user before running
 
 ### Target Tag (53 tests, ~40 minutes)
@@ -67,10 +68,20 @@ _Note: Some tests span multiple categories. The total (352) is the authoritative
 - Add Player: ~4 min
 - Results: ~7 min
 
+### Reef Royale (67 tests, ~45 minutes)
+- Add Player: 6 tests (~2 min)
+- Menu and Settings: 10 tests (~3 min)
+- Gameplay: 30 tests (~15 min)
+- Edit Score: 6 tests (~4 min)
+- Results Screen: 6 tests (~4 min)
+- Visual Validation: 7 tests (~3 min)
+- Screenshot: 1 test (~10 min)
+- Showcase: 1 test (~4 min)
+
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (352 tests)
+✅ Run `flutter test` (505 tests)
 ✅ 100% pass rate MANDATORY
 ✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass
@@ -94,6 +105,7 @@ flutter test test/providers/
 flutter test test/services/
 flutter test test/screens/games/target_tag/
 flutter test test/screens/games/monster_mash/
+flutter test test/screens/games/reef_royale/
 flutter test test/shared/
 flutter test test/widgets/
 ```
@@ -111,6 +123,7 @@ cd chromedriver/chromedriver-win64
 ./run_ui_tests.bat target_tag
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
+./run_ui_tests.bat reef_royale
 ```
 
 ## Test Expectations
@@ -125,7 +138,7 @@ cd chromedriver/chromedriver-win64
 
 ### UI Automation Tests
 - 100% pass rate when run
-- Execute in ~86 minutes
+- Execute in ~131 minutes
 - Test end-to-end user flows
 - Validate visual elements
 - Test player interactions

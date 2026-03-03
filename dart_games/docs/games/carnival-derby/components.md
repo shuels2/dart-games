@@ -28,7 +28,7 @@ factory DartboardSectionConfig.carnivalDerby() {
 ```dart
 DartboardEmulatorSection(
   controller: _dartboardEmulatorController,
-  isConnected: dartboardProvider.isConnected,
+  isConnected: !dartboardProvider.isEmulator,
   shouldPromptTakeout: horseRaceProvider.shouldPromptTakeout,
   dartboardKey: _dartboardKey,
   onDartThrow: (score, multiplier, baseScore, position) {
@@ -70,7 +70,7 @@ factory DartboardFABConfig.carnivalDerby() {
 ```dart
 DartboardEmulatorFAB(
   controller: _dartboardEmulatorController,
-  isConnected: dartboardProvider.isConnected,
+  isConnected: !dartboardProvider.isEmulator,
   config: DartboardFABConfig.carnivalDerby(),
 )
 ```

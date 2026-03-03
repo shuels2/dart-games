@@ -52,7 +52,7 @@ class DartboardConnectionInfo extends StatelessWidget {
                     : config.hardwareIconColor,
               ),
               const SizedBox(width: 8),
-              // Dartboard name + emulator label
+              // Dartboard name on top, status/type below
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -65,18 +65,16 @@ class DartboardConnectionInfo extends StatelessWidget {
                           : config.nameTextStyle.color,
                     ),
                   ),
+                  const SizedBox(height: 1),
                   if (isEmulator)
                     Text(
                       'Emulator',
                       style: config.emulatorLabelTextStyle,
-                    ),
+                    )
+                  else
+                    _buildStatusLabel(dartboardProvider),
                 ],
               ),
-              // Status indicator (only for non-emulator)
-              if (!isEmulator) ...[
-                const SizedBox(width: 12),
-                _buildStatusIndicator(dartboardProvider),
-              ],
             ],
           ),
         );
@@ -84,25 +82,23 @@ class DartboardConnectionInfo extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusIndicator(DartboardProvider provider) {
+  /// Compact status label shown below the dartboard name for non-emulator connections.
+  Widget _buildStatusLabel(DartboardProvider provider) {
     final status = provider.status;
     final color = _getStatusColor(status);
     final icon = _getStatusIcon(status);
     final statusText = _getStatusText(status);
 
-    return Tooltip(
-      message: statusText,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: config.iconSize - 2, color: color),
-          const SizedBox(width: 4),
-          Text(
-            statusText,
-            style: config.statusTextStyle.copyWith(color: color),
-          ),
-        ],
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: config.iconSize - 6, color: color),
+        const SizedBox(width: 3),
+        Text(
+          statusText,
+          style: config.emulatorLabelTextStyle.copyWith(color: color, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 

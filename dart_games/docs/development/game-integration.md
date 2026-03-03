@@ -104,8 +104,13 @@ See [Add Player Dialog Integration](add-player-dialog.md).
 
 ### Edit Score Dialog Component
 
-Use shared dialog for score editing.  
+Use shared dialog for score editing.
 See [Edit Score Dialog Integration](edit-score-dialog.md).
+
+### Dartboard Paused Modal Component
+
+Use shared modal to pause gameplay when dartboard connection is lost.
+See [Dartboard Paused Modal Integration](dartboard-paused-modal.md).
 
 ## Integration Checklist
 
@@ -120,6 +125,7 @@ See [Edit Score Dialog Integration](edit-score-dialog.md).
 - [ ] Use dartboard emulator components
 - [ ] Use add player dialog component
 - [ ] Use edit score dialog component
+- [ ] Use dartboard paused modal component
 - [ ] Create component config factory methods
 
 ## Critical: Game Duration Tracking for ALL Players

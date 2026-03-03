@@ -18,6 +18,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dar
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import 'monster_mash_results_screen.dart';
 
 class MonsterMashGameScreen extends StatefulWidget {
@@ -65,8 +66,10 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     await globalQueue.loadSettings();
     _audioQueue = MonsterMashAnnouncementHelper(globalQueue);
 
-    if (_mockApi != null) {
-      _dartboardSubscription = _mockApi!.eventStream.listen((event) {
+    // Subscribe to dartboard events (works for both WebSocket and emulator)
+    final eventStream = dartboardProvider.dartboardEventStream;
+    if (eventStream != null) {
+      _dartboardSubscription = eventStream.listen((event) {
         _handleDartboardEvent(event);
       });
     }
@@ -547,7 +550,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                       _buildActivePlayer(currentGame, currentPlayer, monsterMashProvider),
 
                     // Remove darts modal
-                    if (shouldPromptTakeout && !dartboardProvider.isConnected)
+                    if (shouldPromptTakeout)
                       RemoveDartsModal(
                         config: RemoveDartsModalConfig.monsterMash(),
                         playerName: currentPlayer?.name ?? 'Player',
@@ -588,7 +591,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             bottom: 0,
             child: DartboardEmulatorSection(
               controller: _dartboardEmulatorController,
-              isConnected: dartboardProvider.isConnected,
+              isConnected: !dartboardProvider.isEmulator,
               shouldPromptTakeout: shouldPromptTakeout,
               dartboardKey: _dartboardKey,
               onDartThrow: (score, multiplier, baseScore, position) {
@@ -610,11 +613,18 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               config: DartboardSectionConfig.monsterMash(),
             ),
           ),
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.monsterMash(),
+            ),
         ],
       ),
       floatingActionButton: DartboardEmulatorFAB(
         controller: _dartboardEmulatorController,
-        isConnected: dartboardProvider.isConnected,
+        isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.monsterMash(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -778,7 +788,13 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                         });
                       } else {
                         Future.delayed(const Duration(milliseconds: 500), () {
-                          if (mounted) _mockApi?.simulateTakeoutFinished();
+                          if (mounted) {
+                            if (_mockApi != null) {
+                              _mockApi!.simulateTakeoutFinished();
+                            } else {
+                              _handleTakeoutFinished();
+                            }
+                          }
                         });
                       }
                     }

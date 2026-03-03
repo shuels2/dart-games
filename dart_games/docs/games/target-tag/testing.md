@@ -10,7 +10,7 @@
 ### Test Files
 
 #### UI Automation Tests
-**Location:** `integration_test/`
+**Location:** `integration_test/target_tag/`
 
 1. **target_tag_menu_and_mechanics_test.dart** (24 tests, ~15 minutes)
    - Player selection and game settings validation
@@ -91,27 +91,27 @@ cd dart_games
 
 # Menu and mechanics (24 tests)
 flutter drive --driver=test_driver/integration_test.dart \
-  --target=integration_test/target_tag_menu_and_mechanics_test.dart \
+  --target=integration_test/target_tag/target_tag_menu_and_mechanics_test.dart \
   -d chrome
 
 # Visual validation (4 tests)
 flutter drive --driver=test_driver/integration_test.dart \
-  --target=integration_test/target_tag_visual_validation_test.dart \
+  --target=integration_test/target_tag/target_tag_visual_validation_test.dart \
   -d chrome
 
 # Gameplay (13 tests)
 flutter drive --driver=test_driver/integration_test.dart \
-  --target=integration_test/target_tag_gameplay_test.dart \
+  --target=integration_test/target_tag/target_tag_gameplay_test.dart \
   -d chrome
 
 # Add player (6 tests)
 flutter drive --driver=test_driver/integration_test.dart \
-  --target=integration_test/target_tag_add_player_test.dart \
+  --target=integration_test/target_tag/target_tag_add_player_test.dart \
   -d chrome
 
 # Results screen (6 tests)
 flutter drive --driver=test_driver/integration_test.dart \
-  --target=integration_test/target_tag_results_screen_test.dart \
+  --target=integration_test/target_tag/target_tag_results_screen_test.dart \
   -d chrome
 ```
 
@@ -123,7 +123,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 ## Test Coverage
 
 ### Menu Screen Tests
-**File:** `integration_test/target_tag_menu_and_mechanics_test.dart`
+**File:** `integration_test/target_tag/target_tag_menu_and_mechanics_test.dart`
 
 **Scenarios Covered:**
 - [x] Player selection and deselection (max 10 solo, max 5 teams)
@@ -147,7 +147,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 7. **Tests 18-23: Player Tile Highlighting** - Current player, Tagged In, eliminated states
 
 ### Visual Validation Tests
-**File:** `integration_test/target_tag_visual_validation_test.dart`
+**File:** `integration_test/target_tag/target_tag_visual_validation_test.dart`
 
 **Scenarios Covered:**
 - [x] Current player badge visibility ("YOUR TURN")
@@ -162,7 +162,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 4. **Test 4: Team Tagged In** - Team badge display
 
 ### Gameplay Tests
-**File:** `integration_test/target_tag_gameplay_test.dart`
+**File:** `integration_test/target_tag/target_tag_gameplay_test.dart`
 
 **Scenarios Covered:**
 - [x] Hero Bonus mechanics (double/triple requirements)
@@ -179,7 +179,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 4. **Tests 12-13: Victory Screen** - Winner announcement, confetti, stats
 
 ### Add Player Tests
-**File:** `integration_test/target_tag_add_player_test.dart`
+**File:** `integration_test/target_tag/target_tag_add_player_test.dart`
 
 **Scenarios Covered:**
 - [x] Navigation to Target Tag menu
@@ -198,7 +198,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 5. **Test 6: Cancel** - Dialog dismisses without creating player
 
 ### Results Screen Tests
-**File:** `integration_test/target_tag_results_screen_test.dart`
+**File:** `integration_test/target_tag/target_tag_results_screen_test.dart`
 
 **Scenarios Covered:**
 - [x] Solo mode victory display (single winner)

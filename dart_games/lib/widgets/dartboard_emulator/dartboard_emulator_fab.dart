@@ -5,6 +5,9 @@ import 'dartboard_emulator_config.dart';
 
 class DartboardEmulatorFAB extends StatelessWidget {
   final DartboardEmulatorController controller;
+  /// When true, the FAB is hidden (real dartboard handles input).
+  /// Pass `!dartboardProvider.isEmulator` so the FAB only shows
+  /// when the user explicitly chose emulator mode.
   final bool isConnected;
   final DartboardFABConfig config;
 

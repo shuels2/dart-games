@@ -208,4 +208,49 @@ class EditScoreDialogConfig {
       // No scoreDisplayTransform — raw segment string shown (S20, D15, etc.)
     );
   }
+
+  factory EditScoreDialogConfig.reefRoyale() {
+    return EditScoreDialogConfig(
+      backgroundColor: const Color(0xFF0B3D91).withOpacity(0.95),
+      borderColor: const Color(0xFF48D1CC), // Seafoam Green
+      borderWidth: 4,
+      titleStyle: GoogleFonts.fredoka(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8F0), // Pearl White
+      ),
+      dartLabelStyle: GoogleFonts.fredoka(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8F0).withOpacity(0.7),
+      ),
+      scoreBoxBackgroundColor: const Color(0xFF0B3D91),
+      scoreBoxDefaultBorderColor: const Color(0xFFFFF8F0).withOpacity(0.3),
+      scoreTextStyle: GoogleFonts.fredoka(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8F0),
+      ),
+      buttonUnselectedColor: const Color(0xFF0B3D91),
+      buttonUnselectedForeground: const Color(0xFFFFF8F0),
+      buttonSelectedColor: const Color(0xFF48D1CC), // Seafoam Green
+      buttonSelectedForeground: const Color(0xFF0B3D91),
+      buttonTextStyle: GoogleFonts.fredoka(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      cancelButtonColor: Colors.grey.withOpacity(0.85),
+      cancelButtonForeground: const Color(0xFFFFF8F0),
+      cancelButtonTextStyle: GoogleFonts.fredoka(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+      submitButtonColor: const Color(0xFF48D1CC).withOpacity(0.85),
+      submitButtonForeground: const Color(0xFF0B3D91),
+      submitButtonTextStyle: GoogleFonts.fredoka(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
 }

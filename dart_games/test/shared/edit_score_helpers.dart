@@ -13,15 +13,6 @@ class EditScoreHelpers {
   // ==========================================================================
 
   /// Open edit score dialog
-  ///
-  /// Taps the edit score button and waits for dialog to open.
-  /// Verifies the dialog is displayed after opening.
-  ///
-  /// Example:
-  /// ```dart
-  /// final config = GameUIConfig.targetTag();
-  /// await EditScoreHelpers.openEditScore(tester, config);
-  /// ```
   static Future<void> openEditScore(
     WidgetTester tester,
     GameUIConfig config,
@@ -34,21 +25,12 @@ class EditScoreHelpers {
     await tester.tap(editButton);
     await PumpSequences.dialogOpen(tester);
 
-    // Verify dialog opened
     final saveButton = ElementFinders.getEditScoreSaveButton();
     expect(saveButton, findsOneWidget,
         reason: 'Edit score dialog should be open after tapping edit button');
   }
 
   /// Update score (submit edit score dialog)
-  ///
-  /// Taps the save/update button and waits for dialog to close.
-  /// Verifies the dialog is dismissed after saving.
-  ///
-  /// Example:
-  /// ```dart
-  /// await EditScoreHelpers.updateScore(tester);
-  /// ```
   static Future<void> updateScore(WidgetTester tester) async {
     final saveButton = ElementFinders.getEditScoreSaveButton();
 
@@ -58,20 +40,11 @@ class EditScoreHelpers {
     await tester.tap(saveButton);
     await PumpSequences.dialogClose(tester);
 
-    // Verify dialog closed
     expect(saveButton, findsNothing,
         reason: 'Edit score dialog should be closed after saving');
   }
 
   /// Cancel edit score
-  ///
-  /// Taps the cancel button and waits for dialog to close.
-  /// Verifies the dialog is dismissed without saving changes.
-  ///
-  /// Example:
-  /// ```dart
-  /// await EditScoreHelpers.cancelEditScore(tester);
-  /// ```
   static Future<void> cancelEditScore(WidgetTester tester) async {
     final cancelButton = ElementFinders.getEditScoreCancelButton();
 
@@ -81,7 +54,6 @@ class EditScoreHelpers {
     await tester.tap(cancelButton);
     await PumpSequences.dialogClose(tester);
 
-    // Verify dialog closed
     final saveButton = ElementFinders.getEditScoreSaveButton();
     expect(saveButton, findsNothing,
         reason: 'Edit score dialog should be closed after canceling');
@@ -91,88 +63,110 @@ class EditScoreHelpers {
   // DART SCORE MANIPULATION
   // ==========================================================================
 
+  /// Parse a segment string into ring and number components
+  /// Returns a map with 'ring' (String) and 'number' (int?) keys
+  static Map<String, dynamic> _parseSegment(String segment) {
+    if (segment == 'Bull') {
+      return {'ring': 'Bullseye', 'number': null};
+    }
+    if (segment == '25') {
+      return {'ring': 'Outer Bull', 'number': null};
+    }
+    if (segment == 'Miss') {
+      return {'ring': 'Miss', 'number': null};
+    }
+
+    // Parse S20, s20, D20, T20 format
+    final pattern = RegExp(r'^([SDTsd])(\d+)$');
+    final match = pattern.firstMatch(segment);
+    if (match == null) {
+      throw ArgumentError('Invalid segment format: $segment');
+    }
+
+    final prefix = match.group(1)!;
+    final number = int.parse(match.group(2)!);
+
+    String ring;
+    if (prefix == 'S') {
+      ring = 'Single (outer)';
+    } else if (prefix == 's') {
+      ring = 'Single (inner)';
+    } else if (prefix == 'D') {
+      ring = 'Double';
+    } else if (prefix == 'T') {
+      ring = 'Triple';
+    } else {
+      throw ArgumentError('Unknown prefix: $prefix');
+    }
+
+    return {'ring': ring, 'number': number};
+  }
+
+  /// Set a dart score by clicking ring button, then number button (if needed)
+  /// dartIndex: 0 for D1, 1 for D2, 2 for D3
+  static Future<void> _setDartScore(
+    WidgetTester tester,
+    int dartIndex,
+    String segment,
+  ) async {
+    final parsed = _parseSegment(segment);
+    final ring = parsed['ring'] as String;
+    final number = parsed['number'] as int?;
+
+    // Find the dart section (Column with key)
+    final dartSection = dartIndex == 0
+        ? ElementFinders.getEditScoreDart1Dropdown()
+        : dartIndex == 1
+            ? ElementFinders.getEditScoreDart2Dropdown()
+            : ElementFinders.getEditScoreDart3Dropdown();
+
+    expect(dartSection, findsOneWidget,
+        reason: 'Dart ${dartIndex + 1} section should be present');
+
+    // Find ring button within this dart section by text
+    // We need to find the ring button that is a descendant of this dart section
+    final ringButtonFinder = find.descendant(
+      of: dartSection,
+      matching: find.text(ring),
+    );
+
+    expect(ringButtonFinder, findsOneWidget,
+        reason: 'Ring button "$ring" should be present in dart ${dartIndex + 1} section');
+
+    await tester.tap(ringButtonFinder);
+    await PumpSequences.simpleUpdate(tester);
+
+    // If this ring requires a number, click the number button
+    if (number != null) {
+      final numberButtonFinder = find.descendant(
+        of: dartSection,
+        matching: find.text('$number'),
+      );
+
+      expect(numberButtonFinder, findsOneWidget,
+          reason: 'Number button "$number" should be present and enabled in dart ${dartIndex + 1} section');
+
+      await tester.tap(numberButtonFinder);
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
   /// Set dart 1 score in edit score dialog
-  ///
-  /// Opens dart 1 dropdown and selects the specified sector.
-  /// Sector format: "S20", "D20", "T20", "Bull", "25", "Miss"
-  ///
-  /// Example:
-  /// ```dart
-  /// await EditScoreHelpers.setDart1(tester, 'T20');
-  /// ```
   static Future<void> setDart1(WidgetTester tester, String sector) async {
-    final dropdown = ElementFinders.getEditScoreDart1Dropdown();
-
-    expect(dropdown, findsOneWidget,
-        reason: 'Dart 1 dropdown should be present in edit score dialog');
-
-    await tester.tap(dropdown);
-    await PumpSequences.simpleUpdate(tester);
-
-    // Find and tap the dropdown item
-    final dropdownItem = find.text(sector).last;
-    await tester.tap(dropdownItem);
-    await PumpSequences.simpleUpdate(tester);
+    await _setDartScore(tester, 0, sector);
   }
 
   /// Set dart 2 score in edit score dialog
-  ///
-  /// Opens dart 2 dropdown and selects the specified sector.
-  /// Sector format: "S20", "D20", "T20", "Bull", "25", "Miss"
-  ///
-  /// Example:
-  /// ```dart
-  /// await EditScoreHelpers.setDart2(tester, 'D20');
-  /// ```
   static Future<void> setDart2(WidgetTester tester, String sector) async {
-    final dropdown = ElementFinders.getEditScoreDart2Dropdown();
-
-    expect(dropdown, findsOneWidget,
-        reason: 'Dart 2 dropdown should be present in edit score dialog');
-
-    await tester.tap(dropdown);
-    await PumpSequences.simpleUpdate(tester);
-
-    // Find and tap the dropdown item
-    final dropdownItem = find.text(sector).last;
-    await tester.tap(dropdownItem);
-    await PumpSequences.simpleUpdate(tester);
+    await _setDartScore(tester, 1, sector);
   }
 
   /// Set dart 3 score in edit score dialog
-  ///
-  /// Opens dart 3 dropdown and selects the specified sector.
-  /// Sector format: "S20", "D20", "T20", "Bull", "25", "Miss"
-  ///
-  /// Example:
-  /// ```dart
-  /// await EditScoreHelpers.setDart3(tester, 'S20');
-  /// ```
   static Future<void> setDart3(WidgetTester tester, String sector) async {
-    final dropdown = ElementFinders.getEditScoreDart3Dropdown();
-
-    expect(dropdown, findsOneWidget,
-        reason: 'Dart 3 dropdown should be present in edit score dialog');
-
-    await tester.tap(dropdown);
-    await PumpSequences.simpleUpdate(tester);
-
-    // Find and tap the dropdown item
-    final dropdownItem = find.text(sector).last;
-    await tester.tap(dropdownItem);
-    await PumpSequences.simpleUpdate(tester);
+    await _setDartScore(tester, 2, sector);
   }
 
   /// Set all three darts at once
-  ///
-  /// Convenience method to set all three dart scores in sequence.
-  /// Use null or empty string to leave a dart unset.
-  ///
-  /// Example:
-  /// ```dart
-  /// await EditScoreHelpers.setAllDarts(tester, 'T20', 'T20', 'D20');
-  /// await EditScoreHelpers.setAllDarts(tester, 'Bull', 'Miss', null);
-  /// ```
   static Future<void> setAllDarts(
     WidgetTester tester,
     String? dart1,
@@ -194,61 +188,26 @@ class EditScoreHelpers {
   // VERIFICATION HELPERS
   // ==========================================================================
 
-  /// Verify edit score dialog is open
-  ///
-  /// Checks that the dialog container and save button are present.
-  ///
-  /// Example:
-  /// ```dart
-  /// EditScoreHelpers.verifyDialogOpen();
-  /// ```
   static void verifyDialogOpen() {
     final dialog = ElementFinders.getEditScoreDialog();
     final saveButton = ElementFinders.getEditScoreSaveButton();
-
-    expect(dialog, findsOneWidget,
-        reason: 'Edit score dialog container should be present');
-    expect(saveButton, findsOneWidget,
-        reason: 'Edit score save button should be present');
+    expect(dialog, findsOneWidget);
+    expect(saveButton, findsOneWidget);
   }
 
-  /// Verify edit score dialog is closed
-  ///
-  /// Checks that the dialog is no longer visible.
-  ///
-  /// Example:
-  /// ```dart
-  /// EditScoreHelpers.verifyDialogClosed();
-  /// ```
   static void verifyDialogClosed() {
     final dialog = ElementFinders.getEditScoreDialog();
     final saveButton = ElementFinders.getEditScoreSaveButton();
-
-    expect(dialog, findsNothing,
-        reason: 'Edit score dialog container should not be present');
-    expect(saveButton, findsNothing,
-        reason: 'Edit score save button should not be present');
+    expect(dialog, findsNothing);
+    expect(saveButton, findsNothing);
   }
 
-  /// Verify all edit score dialog elements are present
-  ///
-  /// Checks for all three dart dropdowns, save button, and cancel button.
-  ///
-  /// Example:
-  /// ```dart
-  /// EditScoreHelpers.verifyDialogElements();
-  /// ```
   static void verifyDialogElements() {
-    expect(ElementFinders.getEditScoreDart1Dropdown(), findsOneWidget,
-        reason: 'Dart 1 dropdown should be present');
-    expect(ElementFinders.getEditScoreDart2Dropdown(), findsOneWidget,
-        reason: 'Dart 2 dropdown should be present');
-    expect(ElementFinders.getEditScoreDart3Dropdown(), findsOneWidget,
-        reason: 'Dart 3 dropdown should be present');
-    expect(ElementFinders.getEditScoreSaveButton(), findsOneWidget,
-        reason: 'Save button should be present');
-    expect(ElementFinders.getEditScoreCancelButton(), findsOneWidget,
-        reason: 'Cancel button should be present');
+    expect(ElementFinders.getEditScoreDart1Dropdown(), findsOneWidget);
+    expect(ElementFinders.getEditScoreDart2Dropdown(), findsOneWidget);
+    expect(ElementFinders.getEditScoreDart3Dropdown(), findsOneWidget);
+    expect(ElementFinders.getEditScoreSaveButton(), findsOneWidget);
+    expect(ElementFinders.getEditScoreCancelButton(), findsOneWidget);
   }
 
   // ==========================================================================
@@ -256,19 +215,6 @@ class EditScoreHelpers {
   // ==========================================================================
 
   /// Complete edit score workflow: open, set darts, save
-  ///
-  /// Convenience method that combines opening dialog, setting scores, and saving.
-  ///
-  /// Example:
-  /// ```dart
-  /// await EditScoreHelpers.editScoreAndSave(
-  ///   tester,
-  ///   config,
-  ///   dart1: 'T20',
-  ///   dart2: 'T20',
-  ///   dart3: 'D20',
-  /// );
-  /// ```
   static Future<void> editScoreAndSave(
     WidgetTester tester,
     GameUIConfig config, {
@@ -282,18 +228,6 @@ class EditScoreHelpers {
   }
 
   /// Complete edit score workflow: open, set darts, cancel
-  ///
-  /// Convenience method for testing cancel functionality.
-  ///
-  /// Example:
-  /// ```dart
-  /// await EditScoreHelpers.editScoreAndCancel(
-  ///   tester,
-  ///   config,
-  ///   dart1: 'T20',
-  ///   dart2: 'Miss',
-  /// );
-  /// ```
   static Future<void> editScoreAndCancel(
     WidgetTester tester,
     GameUIConfig config, {

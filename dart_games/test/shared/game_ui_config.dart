@@ -91,6 +91,48 @@ class GameUIConfig {
     );
   }
 
+  /// Monster Mash game configuration
+  factory GameUIConfig.monsterMash() {
+    return GameUIConfig._(
+      gameName: 'Monster Mash',
+      getGameCard: ElementFinders.getMonsterMashCard,
+      getAddPlayerButton: ElementFinders.getMonsterMashAddPlayerButton,
+      getPlayerTile: ElementFinders.getMonsterMashPlayerTile,
+      getStartButton: ElementFinders.getMonsterMashStartButton,
+      getSkipTurnButton: ElementFinders.getMonsterMashSkipTurnButton,
+      getEditScoreButton: ElementFinders.getMonsterMashEditScoreButton,
+      getDartButton: ElementFinders.getMonsterMashDartButton,
+      getBullseyeButton: ElementFinders.getMonsterMashBullseyeButton,
+      getOuterBullButton: ElementFinders.getMonsterMashOuterBullButton,
+      getMissButton: ElementFinders.getMonsterMashMissButton,
+      getPlayAgainButton: ElementFinders.getMonsterMashPlayAgainButton,
+      getChangeSettingsButton:
+          ElementFinders.getMonsterMashChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getMonsterMashBackToMenuButton,
+    );
+  }
+
+  /// Reef Royale game configuration
+  factory GameUIConfig.reefRoyale() {
+    return GameUIConfig._(
+      gameName: 'Reef Royale',
+      getGameCard: ElementFinders.getReefRoyaleCard,
+      getAddPlayerButton: ElementFinders.getReefRoyaleAddPlayerButton,
+      getPlayerTile: ElementFinders.getReefRoyalePlayerTile,
+      getStartButton: ElementFinders.getReefRoyaleStartButton,
+      getSkipTurnButton: ElementFinders.getReefRoyaleSkipTurnButton,
+      getEditScoreButton: ElementFinders.getReefRoyaleEditScoreButton,
+      getDartButton: ElementFinders.getReefRoyaleDartButton,
+      getBullseyeButton: ElementFinders.getReefRoyaleBullseyeButton,
+      getOuterBullButton: ElementFinders.getReefRoyaleOuterBullButton,
+      getMissButton: ElementFinders.getReefRoyaleMissButton,
+      getPlayAgainButton: ElementFinders.getReefRoyalePlayAgainButton,
+      getChangeSettingsButton:
+          ElementFinders.getReefRoyaleChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getReefRoyaleBackToMenuButton,
+    );
+  }
+
   // ==========================================================================
   // HOME SCREEN OPERATIONS
   // ==========================================================================
@@ -122,11 +164,6 @@ class GameUIConfig {
   Finder getEditScoreButton() => _getEditScoreButton();
 
   /// Get a dart button finder by multiplier and number
-  ///
-  /// Examples:
-  /// - getDartButton('single', 20) → S20 button
-  /// - getDartButton('double', 20) → D20 button
-  /// - getDartButton('triple', 20) → T20 button
   Finder getDartButton(String multiplier, int number) =>
       _getDartButton(multiplier, number);
 

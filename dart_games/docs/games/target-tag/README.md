@@ -25,7 +25,7 @@ Target Tag is a shield-based elimination dart game for 2-10 players supporting b
 - **Services:** `lib/services/target_tag_announcement_helper.dart`
 - **Sound Effects:** `lib/services/target_tag_sound_effects.dart`
 - **Assets:** `assets/games/target_tag/`
-- **Tests:** `integration_test/target_tag_*.dart`, `test/screens/games/target_tag/`
+- **Tests:** `integration_test/target_tag/target_tag_*.dart`, `test/screens/games/target_tag/`
 
 ## Key Features
 - Solo and team elimination gameplay

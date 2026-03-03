@@ -21,6 +21,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dar
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import 'target_tag_results_screen.dart';
 
 class TargetTagGameScreen extends StatefulWidget {
@@ -59,9 +60,10 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     await globalQueue.loadSettings();
     _audioQueue = TargetTagAnnouncementHelper(globalQueue);
 
-    // Subscribe to dartboard events
-    if (_mockApi != null) {
-      _dartboardSubscription = _mockApi!.eventStream.listen((event) {
+    // Subscribe to dartboard events (works for both WebSocket and emulator)
+    final eventStream = dartboardProvider.dartboardEventStream;
+    if (eventStream != null) {
+      _dartboardSubscription = eventStream.listen((event) {
         _handleDartboardEvent(event);
       });
     }
@@ -633,7 +635,11 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                                 // No darts thrown, advance directly without showing modals.
                                 Future.delayed(const Duration(milliseconds: 500), () {
                                   if (mounted) {
-                                    _mockApi?.simulateTakeoutFinished();
+                                    if (_mockApi != null) {
+                                      _mockApi!.simulateTakeoutFinished();
+                                    } else {
+                                      _handleTakeoutFinished();
+                                    }
                                   }
                                 });
                               }
@@ -729,7 +735,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                     },
                   ),
                   // Modal overlay for remove darts prompt
-                  if (shouldPromptTakeout && !dartboardProvider.isConnected)
+                  if (shouldPromptTakeout)
                     RemoveDartsModal(
                       config: RemoveDartsModalConfig.targetTag(),
                       playerName: currentPlayer?.name ?? 'Player',
@@ -759,7 +765,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           // Dartboard emulator (if not connected and visible)
           DartboardEmulatorSection(
             controller: _dartboardEmulatorController,
-            isConnected: dartboardProvider.isConnected,
+            isConnected: !dartboardProvider.isEmulator,
             shouldPromptTakeout: shouldPromptTakeout,
             dartboardKey: _dartboardKey,
             onDartThrow: (score, multiplier, baseScore, position) {
@@ -782,12 +788,19 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           ),
             ],
           ),
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.targetTag(),
+            ),
         ],
       ),
       // Floating button to toggle dartboard visibility (only show when not connected)
       floatingActionButton: DartboardEmulatorFAB(
         controller: _dartboardEmulatorController,
-        isConnected: dartboardProvider.isConnected,
+        isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.targetTag(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,

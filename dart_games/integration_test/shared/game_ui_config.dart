@@ -112,6 +112,27 @@ class GameUIConfig {
     );
   }
 
+  /// Reef Royale game configuration
+  factory GameUIConfig.reefRoyale() {
+    return GameUIConfig._(
+      gameName: 'Reef Royale',
+      getGameCard: ElementFinders.getReefRoyaleCard,
+      getAddPlayerButton: ElementFinders.getReefRoyaleAddPlayerButton,
+      getPlayerTile: ElementFinders.getReefRoyalePlayerTile,
+      getStartButton: ElementFinders.getReefRoyaleStartButton,
+      getSkipTurnButton: ElementFinders.getReefRoyaleSkipTurnButton,
+      getEditScoreButton: ElementFinders.getReefRoyaleEditScoreButton,
+      getDartButton: ElementFinders.getReefRoyaleDartButton,
+      getBullseyeButton: ElementFinders.getReefRoyaleBullseyeButton,
+      getOuterBullButton: ElementFinders.getReefRoyaleOuterBullButton,
+      getMissButton: ElementFinders.getReefRoyaleMissButton,
+      getPlayAgainButton: ElementFinders.getReefRoyalePlayAgainButton,
+      getChangeSettingsButton:
+          ElementFinders.getReefRoyaleChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getReefRoyaleBackToMenuButton,
+    );
+  }
+
   // ==========================================================================
   // HOME SCREEN OPERATIONS
   // ==========================================================================

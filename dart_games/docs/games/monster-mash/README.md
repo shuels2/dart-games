@@ -25,7 +25,7 @@ Monster Mash is an HP-based elimination dart game for 2-8 players where each pla
 - **Services:** `lib/services/monster_mash_announcement_helper.dart`
 - **Sound Effects:** `lib/services/monster_mash_sound_effects.dart`
 - **Assets:** `assets/games/monster_mash/`
-- **Tests:** `integration_test/monster_mash_*.dart`, `test/screens/games/monster_mash/`
+- **Tests:** `integration_test/monster_mash/monster_mash_*.dart`, `test/screens/games/monster_mash/`
 
 ## Key Features
 - 8 classic monsters (Dracula, Frankenstein, Mummy, Wolf Man, Invisible Man, Gill Man, Mr. Hyde, Phantom)

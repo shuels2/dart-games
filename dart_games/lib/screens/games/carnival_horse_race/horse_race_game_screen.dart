@@ -21,6 +21,7 @@ import '../../../widgets/carnival_target_logo.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import 'horse_race_results_screen.dart';
 
 class HorseRaceGameScreen extends StatefulWidget {
@@ -55,9 +56,10 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       await globalQueue.loadSettings();
       _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
 
-      // Listen to dartboard events if API service is available
-      if (_mockApi != null) {
-        _dartboardSubscription = _mockApi!.eventStream.listen((event) {
+      // Subscribe to dartboard events (works for both WebSocket and emulator)
+      final eventStream = dartboardProvider.dartboardEventStream;
+      if (eventStream != null) {
+        _dartboardSubscription = eventStream.listen((event) {
           _handleDartboardEvent(event);
         });
       }
@@ -234,31 +236,36 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     }
 
     if (type == 'takeout_finished') {
-      horseRaceProvider.handleTakeoutFinished();
+      _onTakeoutComplete();
+    }
+  }
 
-      // Scroll to current player's track tile
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) {
-          _scrollToCurrentPlayer();
-        }
-      });
+  void _onTakeoutComplete() {
+    final horseRaceProvider = context.read<HorseRaceProvider>();
+    horseRaceProvider.handleTakeoutFinished();
 
-      // Check if game is won after takeout
-      if (horseRaceProvider.hasWinner) {
-        _handleGameWon();
-      } else if (mounted && horseRaceProvider.currentGame != null) {
-        // Announce next player's turn (before they throw)
-        final playerProvider = context.read<PlayerProvider>();
-        final players = horseRaceProvider.currentGame!.playerIds
-            .map((id) => playerProvider.getPlayerById(id))
-            .whereType<Player>()
-            .toList();
-        final nextPlayer = horseRaceProvider.getCurrentPlayer(players);
-        if (nextPlayer != null) {
-          Future.delayed(const Duration(milliseconds: 500), () {
-            _audioQueue?.announceTurn(nextPlayer.name);
-          });
-        }
+    // Scroll to current player's track tile
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _scrollToCurrentPlayer();
+      }
+    });
+
+    // Check if game is won after takeout
+    if (horseRaceProvider.hasWinner) {
+      _handleGameWon();
+    } else if (mounted && horseRaceProvider.currentGame != null) {
+      // Announce next player's turn (before they throw)
+      final playerProvider = context.read<PlayerProvider>();
+      final players = horseRaceProvider.currentGame!.playerIds
+          .map((id) => playerProvider.getPlayerById(id))
+          .whereType<Player>()
+          .toList();
+      final nextPlayer = horseRaceProvider.getCurrentPlayer(players);
+      if (nextPlayer != null) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _audioQueue?.announceTurn(nextPlayer.name);
+        });
       }
     }
   }
@@ -508,7 +515,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                       scrollController: _scrollController,
                     ),
                     // Modal overlay for remove darts prompt
-                    if (shouldPromptTakeout && !dartboardProvider.isConnected)
+                    if (shouldPromptTakeout)
                       RemoveDartsModal(
                         config: RemoveDartsModalConfig.carnivalDerby(),
                         playerName: currentPlayer?.name ?? 'Player',
@@ -535,7 +542,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               // Dartboard emulator (only show when not connected to real dartboard and visible)
               DartboardEmulatorSection(
                 controller: _dartboardEmulatorController,
-                isConnected: dartboardProvider.isConnected,
+                isConnected: !dartboardProvider.isEmulator,
                 shouldPromptTakeout: shouldPromptTakeout,
                 dartboardKey: _dartboardKey,
                 onDartThrow: (score, multiplier, baseScore, position) {
@@ -560,12 +567,19 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           );
         },
       ),
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.carnivalDerby(),
+            ),
         ],
       ),
       // Floating button to toggle dartboard visibility (only show when not connected)
       floatingActionButton: DartboardEmulatorFAB(
         controller: _dartboardEmulatorController,
-        isConnected: dartboardProvider.isConnected,
+        isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.carnivalDerby(),
       ),
     );
@@ -681,7 +695,11 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                       // No darts thrown, advance directly without showing modals
                       Future.delayed(const Duration(milliseconds: 500), () {
                         if (mounted) {
-                          _mockApi?.simulateTakeoutFinished();
+                          if (_mockApi != null) {
+                            _mockApi!.simulateTakeoutFinished();
+                          } else {
+                            _onTakeoutComplete();
+                          }
                         }
                       });
                     }

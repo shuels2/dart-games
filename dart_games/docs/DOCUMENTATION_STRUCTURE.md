@@ -26,6 +26,7 @@ dart_games/
     │   ├── edit-score-dialog.md      # Edit Score dialog component
     │   ├── dartboard-connection-info.md # Dartboard connection info component
     │   ├── remove-darts-modal.md     # Remove darts modal component
+    │   ├── dartboard-paused-modal.md # Dartboard paused modal component
     │   ├── player-list-panel.md     # Player list panel component
     │   └── widget-keys.md            # Widget key requirements for testing
     │
@@ -76,15 +77,25 @@ dart_games/
         │   ├── assets.md             # 11 icons (team icons 01-10), 15 sounds
         │   └── implementation-notes.md # Dart indicators (D1/D2/D3), color validation, turn flow
         │
-        └── monster-mash/
-            ├── README.md             # "Monster Mash is an HP-based elimination game..."
-            ├── game-rules.md         # HP management, buffs, speed play, elimination
-            ├── design-system.md      # Dark gothic theme, stone buttons, lightning effects
-            ├── components.md         # DartboardSectionConfig.monsterMash(), StoneDialogButton
-            ├── announcements.md      # MonsterMashAnnouncementHelper, 11 sound effects
-            ├── testing.md            # 51 UI tests, 55 non-UI tests, buff testing
-            ├── assets.md             # 32 character images, 3 icons, 2 images, 4 sounds
-            └── implementation-notes.md # Health image system, buff mechanics, grid layout
+        ├── monster-mash/
+        │   ├── README.md             # "Monster Mash is an HP-based elimination game..."
+        │   ├── game-rules.md         # HP management, buffs, speed play, elimination
+        │   ├── design-system.md      # Dark gothic theme, stone buttons, lightning effects
+        │   ├── components.md         # DartboardSectionConfig.monsterMash(), StoneDialogButton
+        │   ├── announcements.md      # MonsterMashAnnouncementHelper, 11 sound effects
+        │   ├── testing.md            # 51 UI tests, 55 non-UI tests, buff testing
+        │   ├── assets.md             # 32 character images, 3 icons, 2 images, 4 sounds
+        │   └── implementation-notes.md # Health image system, buff mechanics, grid layout
+        │
+        └── reef-royale/
+            ├── README.md             # "Reef Royale is a coral-claiming dart game..."
+            ├── game-rules.md         # Cricket-style marking, pearl scoring, Cursed Tide
+            ├── design-system.md      # Ocean reef theme, seafoam/gold accents, Fredoka font
+            ├── components.md         # Coral cards, dart indicators, option badges, buff banner
+            ├── announcements.md      # ReefRoyaleAnnouncementHelper, 9 sound effects
+            ├── testing.md            # 67 UI tests, ~150 non-UI tests, neighbor/buff testing
+            ├── assets.md             # 8 creatures, 14 corals, 1 icon, 1 image, 8 sounds
+            └── implementation-notes.md # Target resolution, pearl scoring, shared neighbors
 ```
 
 ## Documentation Purpose by Category
@@ -110,6 +121,7 @@ Step-by-step guides and reference documentation for developers building new game
 - `edit-score-dialog.md` - Using the shared Edit Score dialog component
 - `dartboard-connection-info.md` - Using the shared Dartboard Connection Info component
 - `remove-darts-modal.md` - Using the shared Remove Darts Modal component
+- `dartboard-paused-modal.md` - Using the shared Dartboard Paused Modal component
 - `player-list-panel.md` - Using the shared Player List Panel component
 - `widget-keys.md` - Widget key naming conventions and requirements
 
@@ -117,9 +129,9 @@ Step-by-step guides and reference documentation for developers building new game
 Everything related to testing, from running tests to writing new ones to handling failures.
 
 **Files:**
-- `test-overview.md` - High-level overview of the 480-test suite
-- `non-ui-tests.md` - Details on the 352 non-UI tests (models, providers, services, widgets)
-- `ui-automation.md` - Running the 128 UI automation tests with chromedriver
+- `test-overview.md` - High-level overview of the 700-test suite
+- `non-ui-tests.md` - Details on the 505 non-UI tests (models, providers, services, widgets)
+- `ui-automation.md` - Running the 195 UI automation tests with chromedriver
 - `continuous-animations.md` - Critical rules for testing screens with animations
 - `test-maintenance.md` - How to update tests when features change
 
@@ -272,4 +284,4 @@ Original CLAUDE.md contained ~2800 lines of content covering:
 - Game-specific information
 - Component integration guides
 
-This has been reorganized into 58 focused files for better maintainability and navigation.
+This has been reorganized into 68 focused files for better maintainability and navigation.
