@@ -2,11 +2,11 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 700 total tests:
-- **505 non-UI tests** (models, providers, services, widgets, game logic)
+The Dart Games app has a comprehensive test suite with 701 total tests:
+- **506 non-UI tests** (models, providers, services, widgets, game logic)
 - **195 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (505 tests)
+## Non-UI Tests (506 tests)
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -33,9 +33,9 @@ The Dart Games app has a comprehensive test suite with 700 total tests:
 - Target Tag User Management: 14 tests
 - Monster Mash Game Logic + Announcements: 47 tests
 - Monster Mash Announcements: 18 tests
-- Reef Royale Game Logic + Announcements: ~150 tests
+- Reef Royale Game Logic + Announcements: ~154 tests
 
-_Note: Some tests span multiple categories. The total (505) is the authoritative count from `flutter test`._
+_Note: Some tests span multiple categories. The total (506) is the authoritative count from `flutter test`._
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
@@ -81,7 +81,7 @@ _Note: Some tests span multiple categories. The total (505) is the authoritative
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (505 tests)
+✅ Run `flutter test` (506 tests)
 ✅ 100% pass rate MANDATORY
 ✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass

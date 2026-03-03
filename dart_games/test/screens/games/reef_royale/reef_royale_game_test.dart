@@ -1339,6 +1339,35 @@ void main() {
       expect(game.getPlayerPearls('p3'), 0);
     });
 
+    test('cursed tide: pearls only go to opponents who have NOT claimed', () {
+      final game = createStandardGame(
+        playerIds: ['p1', 'p2', 'p3'],
+        gameMode: ReefRoyaleGameMode.cursedTide,
+      );
+      // p1 claims target 20
+      game.processDart('p1', 20, 'triple',
+          resolvedTargets: [20]);
+      game.processMiss('p1');
+      game.processMiss('p1');
+      game.advanceToNextPlayer();
+      // p2 also claims target 20
+      game.processDart('p2', 20, 'triple',
+          resolvedTargets: [20]);
+      game.processMiss('p2');
+      game.processMiss('p2');
+      game.advanceToNextPlayer();
+      game.processMiss('p3');
+      game.processMiss('p3');
+      game.processMiss('p3');
+      game.advanceToNextPlayer();
+      // p1 hits claimed 20 → only p3 (unclaimed) gets pearls, not p2
+      game.processDart('p1', 20, 'single',
+          resolvedTargets: [20]);
+      expect(game.getPlayerPearls('p1'), 0);
+      expect(game.getPlayerPearls('p2'), 0);
+      expect(game.getPlayerPearls('p3'), 20);
+    });
+
     test('cursed tide: pearls distributed to ALL unclaimed opponents', () {
       final game = createStandardGame(
         playerIds: ['p1', 'p2', 'p3'],
