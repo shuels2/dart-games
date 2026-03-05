@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/main.dart' as app;
 import 'game_ui_config.dart';
@@ -265,9 +264,9 @@ class UITestHelpers {
     await tester.pump();
   }
 
-  /// Tap back button on game screen (finds by arrow_back icon)
-  static Future<void> tapGameScreenBackButton(WidgetTester tester) async {
-    final backButton = find.byIcon(Icons.arrow_back);
+  /// Tap back button on game screen (uses widget key via config)
+  static Future<void> tapGameScreenBackButton(WidgetTester tester, GameUIConfig config) async {
+    final backButton = config.getGameBackButton();
     expect(backButton, findsOneWidget);
     await tester.tap(backButton);
     await PumpSequences.simpleUpdate(tester);

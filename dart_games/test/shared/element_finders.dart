@@ -50,6 +50,10 @@ class ElementFinders {
   // CARNIVAL DERBY GAME FINDERS
   // ==========================================================================
 
+  static Finder getCarnivalDerbyGameBackButton() {
+    return find.byKey(CarnivalDerbyGameKeys.backButton);
+  }
+
   static Finder getCarnivalDerbySkipTurnButton() {
     return find.byKey(CarnivalDerbyGameKeys.skipTurnButton);
   }
@@ -129,6 +133,10 @@ class ElementFinders {
   // ==========================================================================
   // TARGET TAG GAME FINDERS
   // ==========================================================================
+
+  static Finder getTargetTagGameBackButton() {
+    return find.byKey(TargetTagGameKeys.backButton);
+  }
 
   static Finder getTargetTagSkipTurnButton() {
     return find.byKey(TargetTagGameKeys.skipTurnButton);
@@ -248,6 +256,10 @@ class ElementFinders {
   // MONSTER MASH GAME FINDERS
   // ==========================================================================
 
+  static Finder getMonsterMashGameBackButton() {
+    return find.byKey(MonsterMashGameKeys.backButton);
+  }
+
   static Finder getMonsterMashSkipTurnButton() {
     return find.byKey(MonsterMashGameKeys.skipTurnButton);
   }
@@ -359,6 +371,10 @@ class ElementFinders {
   // ==========================================================================
   // REEF ROYALE GAME FINDERS
   // ==========================================================================
+
+  static Finder getReefRoyaleGameBackButton() {
+    return find.byKey(ReefRoyaleGameKeys.backButton);
+  }
 
   static Finder getReefRoyaleSkipTurnButton() {
     return find.byKey(ReefRoyaleGameKeys.skipTurnButton);

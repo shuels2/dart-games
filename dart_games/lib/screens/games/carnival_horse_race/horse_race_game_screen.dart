@@ -378,6 +378,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           ),
           child: AppBar(
             leading: IconButton(
+              key: CarnivalDerbyGameKeys.backButton,
               icon: Icon(
                 Icons.arrow_back,
                 color: const Color(0xFFF1FAEE), // Cloud Dancer white

@@ -533,6 +533,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         leading: IconButton(
+          key: TargetTagGameKeys.backButton,
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
           onPressed: () {
             if (hasDartsThrown) {

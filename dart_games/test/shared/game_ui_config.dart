@@ -20,6 +20,7 @@ class GameUIConfig {
   final Finder Function() _getPlayAgainButton;
   final Finder Function() _getChangeSettingsButton;
   final Finder Function() _getBackToMenuButton;
+  final Finder Function() _getGameBackButton;
 
   const GameUIConfig._({
     required this.gameName,
@@ -36,6 +37,7 @@ class GameUIConfig {
     required Finder Function() getPlayAgainButton,
     required Finder Function() getChangeSettingsButton,
     required Finder Function() getBackToMenuButton,
+    required Finder Function() getGameBackButton,
   })  : _getGameCard = getGameCard,
         _getAddPlayerButton = getAddPlayerButton,
         _getPlayerTile = getPlayerTile,
@@ -48,7 +50,8 @@ class GameUIConfig {
         _getMissButton = getMissButton,
         _getPlayAgainButton = getPlayAgainButton,
         _getChangeSettingsButton = getChangeSettingsButton,
-        _getBackToMenuButton = getBackToMenuButton;
+        _getBackToMenuButton = getBackToMenuButton,
+        _getGameBackButton = getGameBackButton;
 
   /// Target Tag game configuration
   factory GameUIConfig.targetTag() {
@@ -67,6 +70,7 @@ class GameUIConfig {
       getPlayAgainButton: ElementFinders.getTargetTagPlayAgainButton,
       getChangeSettingsButton: ElementFinders.getTargetTagChangeSettingsButton,
       getBackToMenuButton: ElementFinders.getTargetTagBackToMenuButton,
+      getGameBackButton: ElementFinders.getTargetTagGameBackButton,
     );
   }
 
@@ -88,6 +92,7 @@ class GameUIConfig {
       getChangeSettingsButton:
           ElementFinders.getCarnivalDerbyChangeSettingsButton,
       getBackToMenuButton: ElementFinders.getCarnivalDerbyBackToMenuButton,
+      getGameBackButton: ElementFinders.getCarnivalDerbyGameBackButton,
     );
   }
 
@@ -109,6 +114,7 @@ class GameUIConfig {
       getChangeSettingsButton:
           ElementFinders.getMonsterMashChangeSettingsButton,
       getBackToMenuButton: ElementFinders.getMonsterMashBackToMenuButton,
+      getGameBackButton: ElementFinders.getMonsterMashGameBackButton,
     );
   }
 
@@ -130,6 +136,7 @@ class GameUIConfig {
       getChangeSettingsButton:
           ElementFinders.getReefRoyaleChangeSettingsButton,
       getBackToMenuButton: ElementFinders.getReefRoyaleBackToMenuButton,
+      getGameBackButton: ElementFinders.getReefRoyaleGameBackButton,
     );
   }
 
@@ -156,6 +163,9 @@ class GameUIConfig {
   // ==========================================================================
   // GAME SCREEN OPERATIONS
   // ==========================================================================
+
+  /// Get the game screen back button finder
+  Finder getGameBackButton() => _getGameBackButton();
 
   /// Get the skip turn button finder
   Finder getSkipTurnButton() => _getSkipTurnButton();

@@ -66,6 +66,8 @@ class CarnivalDerbyMenuKeys {
 }
 
 class CarnivalDerbyGameKeys {
+  static const backButton = Key('carnival_game_back_button');
+
   // Player information
   static Key playerTile(String playerId) =>
       Key('carnival_game_player_${playerId}_tile');
@@ -208,6 +210,8 @@ class TargetTagMenuKeys {
 }
 
 class TargetTagGameKeys {
+  static const backButton = Key('target_game_back_button');
+
   // Player information
   static Key playerTile(String playerId) =>
       Key('target_game_player_${playerId}_tile');
@@ -356,6 +360,8 @@ class MonsterMashMenuKeys {
 }
 
 class MonsterMashGameKeys {
+  static const backButton = Key('monster_game_back_button');
+
   // Player information
   static Key playerTile(String playerId) =>
       Key('monster_game_player_${playerId}_tile');
@@ -492,6 +498,7 @@ class ReefRoyaleMenuKeys {
 }
 
 class ReefRoyaleGameKeys {
+  static const backButton = Key('reef_game_back_button');
   static const skipTurnButton = Key('reef_game_skip_turn_button');
   static const editScoreButton = Key('reef_game_edit_score_button');
   static Key coralCard(int targetNumber) => Key('reef_game_coral_card_$targetNumber');

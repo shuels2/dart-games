@@ -83,7 +83,7 @@ void main() {
         (tester) async {
       await navigateToGameScreen(tester);
 
-      await UITestHelpers.tapGameScreenBackButton(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
       await PumpSequences.navigation(tester);
 
       expect(ElementFinders.getSaveGameModalOverlay(), findsNothing);
@@ -95,7 +95,7 @@ void main() {
       await navigateToGameScreen(tester);
       await throwOneDart(tester);
 
-      await UITestHelpers.tapGameScreenBackButton(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
 
       UITestHelpers.verifySaveGameModal();
     });
@@ -103,7 +103,7 @@ void main() {
     testWidgets('Don\'t Save navigates back without saving', (tester) async {
       await navigateToGameScreen(tester);
       await throwOneDart(tester);
-      await UITestHelpers.tapGameScreenBackButton(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
 
       await UITestHelpers.tapDontSaveButton(tester);
 
@@ -115,7 +115,7 @@ void main() {
     testWidgets('Save button saves game and navigates back', (tester) async {
       await navigateToGameScreen(tester);
       await throwOneDart(tester);
-      await UITestHelpers.tapGameScreenBackButton(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
 
       await UITestHelpers.tapSaveGameButton(tester);
 
@@ -144,7 +144,7 @@ void main() {
       // Full roundtrip: navigate → throw → save → home → resume
       await navigateToGameScreen(tester);
       await throwOneDart(tester);
-      await UITestHelpers.tapGameScreenBackButton(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
       await UITestHelpers.tapSaveGameButton(tester);
 
       // Back to home from menu

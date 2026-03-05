@@ -329,6 +329,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
       backgroundColor: _deepReefBlue,
       appBar: AppBar(
         leading: IconButton(
+          key: ReefRoyaleGameKeys.backButton,
           icon: const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
           onPressed: () {
             if (hasDartsThrown) {

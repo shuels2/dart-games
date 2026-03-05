@@ -471,6 +471,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         leading: IconButton(
+          key: MonsterMashGameKeys.backButton,
           icon: Icon(
             Icons.arrow_back,
             color: const Color(0xFFF5F5DC),
