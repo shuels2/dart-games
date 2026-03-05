@@ -8,6 +8,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../../../models/player.dart';
 import '../../../models/monster_mash_game.dart';
 import '../../../providers/player_provider.dart';
+import '../../../services/save_game_service.dart';
 import '../../../providers/monster_mash_provider.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../constants/test_keys.dart';
@@ -152,6 +153,13 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
         turns: turns,
         playerCount: playerCount,
       );
+    }
+
+    // Auto-delete saved game if this was a resumed game
+    final savedGameId = monsterMashProvider.resumedSavedGameId;
+    if (savedGameId != null) {
+      await SaveGameService().deleteSavedGame('monster_mash', savedGameId);
+      monsterMashProvider.clearResumedSavedGameId();
     }
   }
 

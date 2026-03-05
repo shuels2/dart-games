@@ -7,6 +7,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/target_tag_provider.dart';
+import '../../../services/save_game_service.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../constants/test_keys.dart';
@@ -124,6 +125,14 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
         turns: turns,
         playerCount: playerCount,
       );
+    }
+
+    // Auto-delete saved game if this was a resumed game
+    final targetTagProvider = context.read<TargetTagProvider>();
+    final savedGameId = targetTagProvider.resumedSavedGameId;
+    if (savedGameId != null) {
+      await SaveGameService().deleteSavedGame('target_tag', savedGameId);
+      targetTagProvider.clearResumedSavedGameId();
     }
   }
 

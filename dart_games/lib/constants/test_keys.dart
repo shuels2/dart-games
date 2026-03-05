@@ -554,6 +554,46 @@ class TeamAssignmentDialogKeys {
 // DARTBOARD EMULATOR KEYS
 // ============================================================================
 
+// ============================================================================
+// SAVE GAME MODAL KEYS
+// ============================================================================
+
+class SaveGameModalKeys {
+  static const overlay = Key('save_game_modal_overlay');
+  static const container = Key('save_game_modal_container');
+  static const icon = Key('save_game_modal_icon');
+  static const title = Key('save_game_modal_title');
+  static const message = Key('save_game_modal_message');
+  static const saveButton = Key('save_game_modal_save_button');
+  static const dontSaveButton = Key('save_game_modal_dont_save_button');
+}
+
+// ============================================================================
+// RESUME GAME MODAL KEYS
+// ============================================================================
+
+class ResumeGameModalKeys {
+  static const overlay = Key('resume_game_modal_overlay');
+  static const container = Key('resume_game_modal_container');
+  static const title = Key('resume_game_modal_title');
+  static const savedGamesList = Key('resume_game_modal_saved_games_list');
+  static Key savedGameTile(String id) => Key('resume_game_modal_tile_$id');
+  static Key deleteSavedGameButton(String id) => Key('resume_game_modal_delete_$id');
+  static Key tileDate(String id) => Key('resume_game_modal_tile_date_$id');
+  static Key tilePlayers(String id) => Key('resume_game_modal_tile_players_$id');
+  static Key tileProgress(String id) => Key('resume_game_modal_tile_progress_$id');
+  static Key tileMode(String id) => Key('resume_game_modal_tile_mode_$id');
+  static Key tileLeader(String id) => Key('resume_game_modal_tile_leader_$id');
+  static const resumeGameButton = Key('resume_game_modal_resume_button');
+  static const startNewGameButton = Key('resume_game_modal_start_new_button');
+  static const deleteAllButton = Key('resume_game_modal_delete_all_button');
+  static const emptyStateText = Key('resume_game_modal_empty_state');
+}
+
+// ============================================================================
+// DARTBOARD EMULATOR KEYS
+// ============================================================================
+
 class DartboardEmulatorKeys {
   static const container = Key('dartboard_emulator_container');
   static const dartboard = Key('dartboard_emulator_dartboard');

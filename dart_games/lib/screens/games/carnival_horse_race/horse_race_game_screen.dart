@@ -22,6 +22,7 @@ import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'horse_race_results_screen.dart';
 
 class HorseRaceGameScreen extends StatefulWidget {
@@ -41,6 +42,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   final ScrollController _scrollController = ScrollController();
   bool _gameCompleted = false; // Prevent multiple navigations to results screen
+  bool _showSaveModal = false;
 
   @override
   void initState() {
@@ -348,8 +350,16 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   @override
   Widget build(BuildContext context) {
     final dartboardProvider = context.watch<DartboardProvider>();
+    final horseRaceProvider = context.watch<HorseRaceProvider>();
+    final hasDartsThrown = horseRaceProvider.currentGame?.totalDartsThrown.values.any((c) => c > 0) ?? false;
 
-    return Scaffold(
+    return PopScope(
+      canPop: !hasDartsThrown,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _showSaveModal) return;
+        setState(() => _showSaveModal = true);
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
@@ -383,7 +393,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   ),
                 ],
               ),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                if (hasDartsThrown) {
+                  setState(() => _showSaveModal = true);
+                } else {
+                  Navigator.of(context).pop();
+                }
+              },
               hoverColor: Colors.transparent,
               highlightColor: Colors.transparent,
               splashColor: Colors.transparent,
@@ -574,6 +590,17 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
             DartboardPausedModal(
               config: DartboardPausedModalConfig.carnivalDerby(),
             ),
+          // Save game modal
+          if (_showSaveModal)
+            SaveGameModal(
+              config: SaveGameModalConfig.carnivalDerby(),
+              onSave: () async {
+                final playerProvider = context.read<PlayerProvider>();
+                await horseRaceProvider.saveGame(playerProvider.allPlayers);
+                if (mounted) Navigator.of(context).pop();
+              },
+              onDontSave: () => Navigator.of(context).pop(),
+            ),
         ],
       ),
       // Floating button to toggle dartboard visibility (only show when not connected)
@@ -581,6 +608,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         controller: _dartboardEmulatorController,
         isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.carnivalDerby(),
+      ),
       ),
     );
   }

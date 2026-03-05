@@ -19,6 +19,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../utils/dartboard_layout.dart';
 import 'reef_royale_results_screen.dart';
 
@@ -37,6 +38,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
   ReefRoyaleAnnouncementHelper? _audioQueue;
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   bool _gameCompleted = false;
+  bool _showSaveModal = false;
   late final AnimationController _pulseController;
 
   // Reef Royale color palette
@@ -315,12 +317,26 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
         : null;
     final shouldPromptTakeout = reefProvider.shouldPromptTakeout;
 
-    return Scaffold(
+    final hasDartsThrown = currentGame.totalDartsThrown.values.any((c) => c > 0);
+
+    return PopScope(
+      canPop: !hasDartsThrown,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _showSaveModal) return;
+        setState(() => _showSaveModal = true);
+      },
+      child: Scaffold(
       backgroundColor: _deepReefBlue,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (hasDartsThrown) {
+              setState(() => _showSaveModal = true);
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
         ),
         title: Transform.translate(
           offset: const Offset(0, -3),
@@ -539,6 +555,17 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               config: DartboardSectionConfig.reefRoyale(),
             ),
           ),
+
+          // Save game modal
+          if (_showSaveModal)
+            SaveGameModal(
+              config: SaveGameModalConfig.reefRoyale(),
+              onSave: () async {
+                await reefProvider.saveGame(allPlayers);
+                if (mounted) Navigator.of(context).pop();
+              },
+              onDontSave: () => Navigator.of(context).pop(),
+            ),
         ],
       ),
       floatingActionButton: DartboardEmulatorFAB(
@@ -547,6 +574,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
         config: DartboardFABConfig.reefRoyale(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      ),
     );
   }
 

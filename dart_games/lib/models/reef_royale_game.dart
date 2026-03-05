@@ -883,4 +883,189 @@ class ReefRoyaleGame {
         return 'All opponent info is hidden this round!';
     }
   }
+
+  // Convert to JSON for storage
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'startedAt': startedAt.toIso8601String(),
+      'maxDartsPerTurn': maxDartsPerTurn,
+      'gameMode': gameMode.name,
+      'easyClaim': easyClaim,
+      'neighborNumbers': neighborNumbers,
+      'randomReefs': randomReefs,
+      'bonusBuffsEnabled': bonusBuffsEnabled,
+      'showHints': showHints,
+      'speedPlayEnabled': speedPlayEnabled,
+      'roundLimit': roundLimit,
+      'playerIds': playerIds,
+      'creatureAssignments': creatureAssignments.map(
+          (k, v) => MapEntry(k, v.name)),
+      'activeTargets': activeTargets,
+      'coralOrder': coralOrder,
+      'state': state.name,
+      'currentPlayerIndex': currentPlayerIndex,
+      'currentRound': currentRound,
+      'turnsCompletedThisRound': turnsCompletedThisRound,
+      'activeBuff': activeBuff?.name,
+      'marks': marks.map((k, v) => MapEntry(k, v.map(
+          (mk, mv) => MapEntry(mk.toString(), mv)))),
+      'claimed': claimed.map((k, v) => MapEntry(k, v.toList())),
+      'locked': locked.toList(),
+      'pearls': pearls,
+      'dartsThrown': dartsThrown,
+      'currentTurnDarts': currentTurnDarts,
+      'dartThrowMarksAdded': dartThrowMarksAdded,
+      'dartThrowPearlsScored': dartThrowPearlsScored,
+      'dartThrowClaimedCoral': dartThrowClaimedCoral,
+      'dartThrowLockedReef': dartThrowLockedReef,
+      'dartThrowTargetNumber': dartThrowTargetNumber,
+      'dartThrowIsNeighbor': dartThrowIsNeighbor,
+      'dartThrowPearlRecipientId': dartThrowPearlRecipientId,
+      'dartThrowTargetCount': dartThrowTargetCount,
+      'totalDartsThrown': totalDartsThrown,
+      'totalTurns': totalTurns,
+      'winnerId': winnerId,
+      'winnerIds': winnerIds,
+      'turnStartMarks': turnStartMarks.map((k, v) => MapEntry(k, v.map(
+          (mk, mv) => MapEntry(mk.toString(), mv)))),
+      'turnStartClaimed': turnStartClaimed.map(
+          (k, v) => MapEntry(k, v.toList())),
+      'turnStartLocked': turnStartLocked.toList(),
+      'turnStartPearls': turnStartPearls,
+      'turnStartState': turnStartState.name,
+      'turnStartWinnerId': turnStartWinnerId,
+      'turnStartWinnerIds': turnStartWinnerIds,
+    };
+  }
+
+  // Create from JSON
+  factory ReefRoyaleGame.fromJson(Map<String, dynamic> json) {
+    // Helper to deserialize marks maps (Map<String, Map<int, int>>)
+    Map<String, Map<int, int>>? deserializeMarks(dynamic data) {
+      if (data == null) return null;
+      return (data as Map<String, dynamic>).map((k, v) =>
+        MapEntry(k, (v as Map<String, dynamic>).map(
+          (mk, mv) => MapEntry(int.parse(mk), mv as int))));
+    }
+
+    // Helper to deserialize claimed maps (Map<String, Set<int>>)
+    Map<String, Set<int>>? deserializeClaimed(dynamic data) {
+      if (data == null) return null;
+      return (data as Map<String, dynamic>).map(
+        (k, v) => MapEntry(k, Set<int>.from(v as List)));
+    }
+
+    return ReefRoyaleGame(
+      id: json['id'],
+      startedAt: DateTime.parse(json['startedAt']),
+      maxDartsPerTurn: json['maxDartsPerTurn'] ?? 3,
+      gameMode: ReefRoyaleGameMode.values.firstWhere(
+        (e) => e.name == json['gameMode'],
+        orElse: () => ReefRoyaleGameMode.standard,
+      ),
+      easyClaim: json['easyClaim'] ?? false,
+      neighborNumbers: json['neighborNumbers'] ?? false,
+      randomReefs: json['randomReefs'] ?? false,
+      bonusBuffsEnabled: json['bonusBuffsEnabled'] ?? false,
+      showHints: json['showHints'] ?? false,
+      speedPlayEnabled: json['speedPlayEnabled'] ?? false,
+      roundLimit: json['roundLimit'] ?? 10,
+      playerIds: List<String>.from(json['playerIds']),
+      creatureAssignments: (json['creatureAssignments'] as Map<String, dynamic>).map(
+        (k, v) => MapEntry(k, SeaCreature.values.firstWhere(
+          (e) => e.name == v,
+        )),
+      ),
+      activeTargets: List<int>.from(json['activeTargets']),
+      coralOrder: List<String>.from(json['coralOrder']),
+      state: ReefRoyaleGameState.values.firstWhere(
+        (e) => e.name == json['state'],
+        orElse: () => ReefRoyaleGameState.setup,
+      ),
+      currentPlayerIndex: json['currentPlayerIndex'],
+      currentRound: json['currentRound'] ?? 1,
+      turnsCompletedThisRound: json['turnsCompletedThisRound'] ?? 0,
+      activeBuff: json['activeBuff'] != null
+          ? ReefBuff.values.firstWhere(
+              (e) => e.name == json['activeBuff'],
+            )
+          : null,
+      marks: deserializeMarks(json['marks']),
+      claimed: deserializeClaimed(json['claimed']),
+      locked: json['locked'] != null
+          ? Set<int>.from(json['locked'])
+          : null,
+      pearls: json['pearls'] != null
+          ? Map<String, int>.from(json['pearls'])
+          : null,
+      dartsThrown: json['dartsThrown'] != null
+          ? Map<String, int>.from(json['dartsThrown'])
+          : null,
+      currentTurnDarts: json['currentTurnDarts'] != null
+          ? (json['currentTurnDarts'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)))
+          : null,
+      dartThrowMarksAdded: json['dartThrowMarksAdded'] != null
+          ? (json['dartThrowMarksAdded'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<int>.from(v)))
+          : null,
+      dartThrowPearlsScored: json['dartThrowPearlsScored'] != null
+          ? (json['dartThrowPearlsScored'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<int>.from(v)))
+          : null,
+      dartThrowClaimedCoral: json['dartThrowClaimedCoral'] != null
+          ? (json['dartThrowClaimedCoral'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<bool>.from(v)))
+          : null,
+      dartThrowLockedReef: json['dartThrowLockedReef'] != null
+          ? (json['dartThrowLockedReef'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<bool>.from(v)))
+          : null,
+      dartThrowTargetNumber: json['dartThrowTargetNumber'] != null
+          ? (json['dartThrowTargetNumber'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<int?>.from(v)))
+          : null,
+      dartThrowIsNeighbor: json['dartThrowIsNeighbor'] != null
+          ? (json['dartThrowIsNeighbor'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<bool>.from(v)))
+          : null,
+      dartThrowPearlRecipientId: json['dartThrowPearlRecipientId'] != null
+          ? (json['dartThrowPearlRecipientId'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String?>.from(v)))
+          : null,
+      dartThrowTargetCount: json['dartThrowTargetCount'] != null
+          ? (json['dartThrowTargetCount'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<int>.from(v)))
+          : null,
+      totalDartsThrown: json['totalDartsThrown'] != null
+          ? Map<String, int>.from(json['totalDartsThrown'])
+          : null,
+      totalTurns: json['totalTurns'] != null
+          ? Map<String, int>.from(json['totalTurns'])
+          : null,
+      winnerId: json['winnerId'],
+      winnerIds: json['winnerIds'] != null
+          ? List<String>.from(json['winnerIds'])
+          : null,
+      turnStartMarks: deserializeMarks(json['turnStartMarks']),
+      turnStartClaimed: deserializeClaimed(json['turnStartClaimed']),
+      turnStartLocked: json['turnStartLocked'] != null
+          ? Set<int>.from(json['turnStartLocked'])
+          : null,
+      turnStartPearls: json['turnStartPearls'] != null
+          ? Map<String, int>.from(json['turnStartPearls'])
+          : null,
+      turnStartState: json['turnStartState'] != null
+          ? ReefRoyaleGameState.values.firstWhere(
+              (e) => e.name == json['turnStartState'],
+              orElse: () => ReefRoyaleGameState.setup,
+            )
+          : null,
+      turnStartWinnerId: json['turnStartWinnerId'],
+      turnStartWinnerIds: json['turnStartWinnerIds'] != null
+          ? List<String>.from(json['turnStartWinnerIds'])
+          : null,
+    );
+  }
 }

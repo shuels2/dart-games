@@ -254,7 +254,7 @@ class HorseRaceGame {
     return entries;
   }
 
-  // Convert to JSON for storage (if needed)
+  // Convert to JSON for storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -262,32 +262,64 @@ class HorseRaceGame {
       'targetScore': targetScore,
       'exactScoreMode': exactScoreMode,
       'startedAt': startedAt.toIso8601String(),
-      'state': state.toString(),
+      'maxDartsPerTurn': maxDartsPerTurn,
+      'state': state.name,
       'currentPlayerIndex': currentPlayerIndex,
       'scores': scores,
       'dartsThrown': dartsThrown,
+      'totalDartsThrown': totalDartsThrown,
+      'totalTurns': totalTurns,
+      'currentTurnDartScores': currentTurnDartScores,
       'winnerId': winnerId,
       'currentPlayerBusted': currentPlayerBusted,
+      'turnStartScores': turnStartScores,
+      'turnStartWinnerId': turnStartWinnerId,
+      'turnStartState': turnStartState.name,
+      'turnStartCurrentPlayerBusted': turnStartCurrentPlayerBusted,
     };
   }
 
   // Create from JSON
   factory HorseRaceGame.fromJson(Map<String, dynamic> json) {
-    return HorseRaceGame(
+    final game = HorseRaceGame(
       id: json['id'],
       playerIds: List<String>.from(json['playerIds']),
       targetScore: json['targetScore'],
       exactScoreMode: json['exactScoreMode'] ?? false,
       startedAt: DateTime.parse(json['startedAt']),
+      maxDartsPerTurn: json['maxDartsPerTurn'] ?? 3,
       state: GameState.values.firstWhere(
-        (e) => e.toString() == json['state'],
+        (e) => e.name == json['state'],
         orElse: () => GameState.setup,
       ),
       currentPlayerIndex: json['currentPlayerIndex'],
       scores: Map<String, int>.from(json['scores']),
       dartsThrown: Map<String, int>.from(json['dartsThrown']),
+      totalDartsThrown: json['totalDartsThrown'] != null
+          ? Map<String, int>.from(json['totalDartsThrown'])
+          : null,
+      totalTurns: json['totalTurns'] != null
+          ? Map<String, int>.from(json['totalTurns'])
+          : null,
+      currentTurnDartScores: json['currentTurnDartScores'] != null
+          ? (json['currentTurnDartScores'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)))
+          : null,
       winnerId: json['winnerId'],
       currentPlayerBusted: json['currentPlayerBusted'] ?? false,
     );
+    // Restore turn start state
+    if (json['turnStartScores'] != null) {
+      game.turnStartScores = Map<String, int>.from(json['turnStartScores']);
+    }
+    game.turnStartWinnerId = json['turnStartWinnerId'];
+    if (json['turnStartState'] != null) {
+      game.turnStartState = GameState.values.firstWhere(
+        (e) => e.name == json['turnStartState'],
+        orElse: () => GameState.setup,
+      );
+    }
+    game.turnStartCurrentPlayerBusted = json['turnStartCurrentPlayerBusted'] ?? false;
+    return game;
   }
 }

@@ -483,4 +483,100 @@ class ElementFinders {
   static Finder getTeamAssignmentCancelButton() {
     return find.byKey(TeamAssignmentDialogKeys.cancelButton);
   }
+
+  // ==========================================================================
+  // SAVE GAME MODAL FINDERS
+  // ==========================================================================
+
+  static Finder getSaveGameModalOverlay() {
+    return find.byKey(SaveGameModalKeys.overlay);
+  }
+
+  static Finder getSaveGameModalContainer() {
+    return find.byKey(SaveGameModalKeys.container);
+  }
+
+  static Finder getSaveGameModalIcon() {
+    return find.byKey(SaveGameModalKeys.icon);
+  }
+
+  static Finder getSaveGameModalTitle() {
+    return find.byKey(SaveGameModalKeys.title);
+  }
+
+  static Finder getSaveGameModalMessage() {
+    return find.byKey(SaveGameModalKeys.message);
+  }
+
+  static Finder getSaveGameModalSaveButton() {
+    return find.byKey(SaveGameModalKeys.saveButton);
+  }
+
+  static Finder getSaveGameModalDontSaveButton() {
+    return find.byKey(SaveGameModalKeys.dontSaveButton);
+  }
+
+  // ==========================================================================
+  // RESUME GAME MODAL FINDERS
+  // ==========================================================================
+
+  static Finder getResumeGameModalOverlay() {
+    return find.byKey(ResumeGameModalKeys.overlay);
+  }
+
+  static Finder getResumeGameModalContainer() {
+    return find.byKey(ResumeGameModalKeys.container);
+  }
+
+  static Finder getResumeGameModalTitle() {
+    return find.byKey(ResumeGameModalKeys.title);
+  }
+
+  static Finder getResumeGameModalSavedGamesList() {
+    return find.byKey(ResumeGameModalKeys.savedGamesList);
+  }
+
+  static Finder getResumeGameModalSavedGameTile(String id) {
+    return find.byKey(ResumeGameModalKeys.savedGameTile(id));
+  }
+
+  static Finder getResumeGameModalDeleteButton(String id) {
+    return find.byKey(ResumeGameModalKeys.deleteSavedGameButton(id));
+  }
+
+  static Finder getResumeGameModalTileDate(String id) {
+    return find.byKey(ResumeGameModalKeys.tileDate(id));
+  }
+
+  static Finder getResumeGameModalTilePlayers(String id) {
+    return find.byKey(ResumeGameModalKeys.tilePlayers(id));
+  }
+
+  static Finder getResumeGameModalTileProgress(String id) {
+    return find.byKey(ResumeGameModalKeys.tileProgress(id));
+  }
+
+  static Finder getResumeGameModalTileMode(String id) {
+    return find.byKey(ResumeGameModalKeys.tileMode(id));
+  }
+
+  static Finder getResumeGameModalTileLeader(String id) {
+    return find.byKey(ResumeGameModalKeys.tileLeader(id));
+  }
+
+  static Finder getResumeGameModalResumeButton() {
+    return find.byKey(ResumeGameModalKeys.resumeGameButton);
+  }
+
+  static Finder getResumeGameModalStartNewButton() {
+    return find.byKey(ResumeGameModalKeys.startNewGameButton);
+  }
+
+  static Finder getResumeGameModalDeleteAllButton() {
+    return find.byKey(ResumeGameModalKeys.deleteAllButton);
+  }
+
+  static Finder getResumeGameModalEmptyState() {
+    return find.byKey(ResumeGameModalKeys.emptyStateText);
+  }
 }

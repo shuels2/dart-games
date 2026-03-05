@@ -70,7 +70,7 @@ flutter test
 
 ### 3. Verify All Tests Pass
 - All 505 non-UI tests must pass (100% pass rate required)
-- If running UI tests, all 195 must pass
+- If running UI tests, all 231 must pass
 
 ### 4. Ask Permission to Push
 ```

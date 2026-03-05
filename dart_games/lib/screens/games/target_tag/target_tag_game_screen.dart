@@ -22,6 +22,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'target_tag_results_screen.dart';
 
 class TargetTagGameScreen extends StatefulWidget {
@@ -41,6 +42,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 
   bool _hasAnnouncedSuddenDeath = false;
   bool _gameCompleted = false; // Prevent multiple navigations to results screen
+  bool _showSaveModal = false;
 
   @override
   void initState() {
@@ -519,9 +521,27 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final playerIds = currentGame.playerIds;
     final shouldPromptTakeout = targetTagProvider.shouldPromptTakeout;
 
-    return Scaffold(
+    final hasDartsThrown = currentGame.totalDartsThrown.values.any((c) => c > 0);
+
+    return PopScope(
+      canPop: !hasDartsThrown,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _showSaveModal) return;
+        setState(() => _showSaveModal = true);
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+          onPressed: () {
+            if (hasDartsThrown) {
+              setState(() => _showSaveModal = true);
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
         title: Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Text(
@@ -795,6 +815,16 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             DartboardPausedModal(
               config: DartboardPausedModalConfig.targetTag(),
             ),
+          // Save game modal
+          if (_showSaveModal)
+            SaveGameModal(
+              config: SaveGameModalConfig.targetTag(),
+              onSave: () async {
+                await targetTagProvider.saveGame(allPlayers);
+                if (mounted) Navigator.of(context).pop();
+              },
+              onDontSave: () => Navigator.of(context).pop(),
+            ),
         ],
       ),
       // Floating button to toggle dartboard visibility (only show when not connected)
@@ -804,6 +834,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         config: DartboardFABConfig.targetTag(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      ),
     );
   }
 

@@ -131,7 +131,7 @@ Everything related to testing, from running tests to writing new ones to handlin
 **Files:**
 - `test-overview.md` - High-level overview of the 700-test suite
 - `non-ui-tests.md` - Details on the 505 non-UI tests (models, providers, services, widgets)
-- `ui-automation.md` - Running the 195 UI automation tests with chromedriver
+- `ui-automation.md` - Running the 231 UI automation tests with chromedriver
 - `continuous-animations.md` - Critical rules for testing screens with animations
 - `test-maintenance.md` - How to update tests when features change
 

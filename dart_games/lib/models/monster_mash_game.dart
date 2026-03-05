@@ -686,4 +686,133 @@ class MonsterMashGame {
         return 'Bullseye zaps all opponents -10 HP!';
     }
   }
+
+  // Convert to JSON for storage
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'startedAt': startedAt.toIso8601String(),
+      'maxDartsPerTurn': maxDartsPerTurn,
+      'healthMax': healthMax,
+      'bonusBuffsEnabled': bonusBuffsEnabled,
+      'speedPlayEnabled': speedPlayEnabled,
+      'roundLimit': roundLimit,
+      'playerIds': playerIds,
+      'targetNumbers': targetNumbers,
+      'monsterAssignments': monsterAssignments.map(
+          (k, v) => MapEntry(k, v.name)),
+      'state': state.name,
+      'currentPlayerIndex': currentPlayerIndex,
+      'health': health,
+      'eliminated': eliminated,
+      'currentRound': currentRound,
+      'turnsCompletedThisRound': turnsCompletedThisRound,
+      'activeBuff': activeBuff?.name,
+      'dartsThrown': dartsThrown,
+      'currentTurnDarts': currentTurnDarts,
+      'totalDartsThrown': totalDartsThrown,
+      'totalTurns': totalTurns,
+      'totalDamageDealt': totalDamageDealt,
+      'dartThrowHealAmount': dartThrowHealAmount,
+      'dartThrowDamageDealt': dartThrowDamageDealt,
+      'dartThrowTargetPlayerId': dartThrowTargetPlayerId,
+      'winnerId': winnerId,
+      'winnerIds': winnerIds,
+      'turnStartHealth': turnStartHealth,
+      'turnStartEliminated': turnStartEliminated,
+      'turnStartState': turnStartState.name,
+      'turnStartWinnerId': turnStartWinnerId,
+      'turnStartWinnerIds': turnStartWinnerIds,
+      'turnStartTotalDamageDealt': turnStartTotalDamageDealt,
+    };
+  }
+
+  // Create from JSON
+  factory MonsterMashGame.fromJson(Map<String, dynamic> json) {
+    return MonsterMashGame(
+      id: json['id'],
+      startedAt: DateTime.parse(json['startedAt']),
+      maxDartsPerTurn: json['maxDartsPerTurn'] ?? 3,
+      healthMax: json['healthMax'],
+      bonusBuffsEnabled: json['bonusBuffsEnabled'] ?? false,
+      speedPlayEnabled: json['speedPlayEnabled'] ?? false,
+      roundLimit: json['roundLimit'] ?? 10,
+      playerIds: List<String>.from(json['playerIds']),
+      targetNumbers: Map<String, int>.from(json['targetNumbers']),
+      monsterAssignments: (json['monsterAssignments'] as Map<String, dynamic>).map(
+        (k, v) => MapEntry(k, MonsterType.values.firstWhere(
+          (e) => e.name == v,
+        )),
+      ),
+      state: MonsterMashGameState.values.firstWhere(
+        (e) => e.name == json['state'],
+        orElse: () => MonsterMashGameState.setup,
+      ),
+      currentPlayerIndex: json['currentPlayerIndex'],
+      health: json['health'] != null
+          ? Map<String, int>.from(json['health'])
+          : null,
+      eliminated: json['eliminated'] != null
+          ? Map<String, bool>.from(json['eliminated'])
+          : null,
+      currentRound: json['currentRound'] ?? 1,
+      turnsCompletedThisRound: json['turnsCompletedThisRound'] ?? 0,
+      activeBuff: json['activeBuff'] != null
+          ? BonusBuff.values.firstWhere(
+              (e) => e.name == json['activeBuff'],
+            )
+          : null,
+      dartsThrown: json['dartsThrown'] != null
+          ? Map<String, int>.from(json['dartsThrown'])
+          : null,
+      currentTurnDarts: json['currentTurnDarts'] != null
+          ? (json['currentTurnDarts'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)))
+          : null,
+      totalDartsThrown: json['totalDartsThrown'] != null
+          ? Map<String, int>.from(json['totalDartsThrown'])
+          : null,
+      totalTurns: json['totalTurns'] != null
+          ? Map<String, int>.from(json['totalTurns'])
+          : null,
+      totalDamageDealt: json['totalDamageDealt'] != null
+          ? Map<String, int>.from(json['totalDamageDealt'])
+          : null,
+      dartThrowHealAmount: json['dartThrowHealAmount'] != null
+          ? (json['dartThrowHealAmount'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<int>.from(v)))
+          : null,
+      dartThrowDamageDealt: json['dartThrowDamageDealt'] != null
+          ? (json['dartThrowDamageDealt'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<int>.from(v)))
+          : null,
+      dartThrowTargetPlayerId: json['dartThrowTargetPlayerId'] != null
+          ? (json['dartThrowTargetPlayerId'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String?>.from(v)))
+          : null,
+      winnerId: json['winnerId'],
+      winnerIds: json['winnerIds'] != null
+          ? List<String>.from(json['winnerIds'])
+          : null,
+      turnStartHealth: json['turnStartHealth'] != null
+          ? Map<String, int>.from(json['turnStartHealth'])
+          : null,
+      turnStartEliminated: json['turnStartEliminated'] != null
+          ? Map<String, bool>.from(json['turnStartEliminated'])
+          : null,
+      turnStartState: json['turnStartState'] != null
+          ? MonsterMashGameState.values.firstWhere(
+              (e) => e.name == json['turnStartState'],
+              orElse: () => MonsterMashGameState.setup,
+            )
+          : null,
+      turnStartWinnerId: json['turnStartWinnerId'],
+      turnStartWinnerIds: json['turnStartWinnerIds'] != null
+          ? List<String>.from(json['turnStartWinnerIds'])
+          : null,
+      turnStartTotalDamageDealt: json['turnStartTotalDamageDealt'] != null
+          ? Map<String, int>.from(json['turnStartTotalDamageDealt'])
+          : null,
+    );
+  }
 }

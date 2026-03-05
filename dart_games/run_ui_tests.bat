@@ -1195,6 +1195,230 @@ if "!should_run!"=="1" (
     echo.
 )
 
+REM ----------------------------------------------------------
+REM Test 20: Carnival Derby Save & Resume
+REM ----------------------------------------------------------
+call :check_should_run "carnival_derby_save_resume_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Carnival Derby Save ^& Resume Test
+    echo ========================================
+    echo File: carnival_derby_save_resume_test.dart
+    echo Tests: 9 tests
+    echo Expected Duration: ~8 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Carnival Derby Save ^& Resume Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: carnival_derby_save_resume_test.dart >> integration_test_output\summary.txt
+    echo Tests: 9 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~8 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\20_carnival_derby_save_resume.log
+    set _TARGET=integration_test/carnival_derby/carnival_derby_save_resume_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+    echo Restarting ChromeDriver for next test...
+    taskkill /F /IM chromedriver.exe >nul 2>&1
+    timeout /t 3 /nobreak >nul
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 21: Target Tag Save & Resume
+REM ----------------------------------------------------------
+call :check_should_run "target_tag_save_resume_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Target Tag Save ^& Resume Test
+    echo ========================================
+    echo File: target_tag_save_resume_test.dart
+    echo Tests: 9 tests
+    echo Expected Duration: ~8 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Target Tag Save ^& Resume Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: target_tag_save_resume_test.dart >> integration_test_output\summary.txt
+    echo Tests: 9 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~8 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\21_target_tag_save_resume.log
+    set _TARGET=integration_test/target_tag/target_tag_save_resume_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+    echo Restarting ChromeDriver for next test...
+    taskkill /F /IM chromedriver.exe >nul 2>&1
+    timeout /t 3 /nobreak >nul
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 22: Monster Mash Save & Resume
+REM ----------------------------------------------------------
+call :check_should_run "monster_mash_save_resume_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Monster Mash Save ^& Resume Test
+    echo ========================================
+    echo File: monster_mash_save_resume_test.dart
+    echo Tests: 9 tests
+    echo Expected Duration: ~8 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Monster Mash Save ^& Resume Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: monster_mash_save_resume_test.dart >> integration_test_output\summary.txt
+    echo Tests: 9 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~8 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\22_monster_mash_save_resume.log
+    set _TARGET=integration_test/monster_mash/monster_mash_save_resume_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+    echo Restarting ChromeDriver for next test...
+    taskkill /F /IM chromedriver.exe >nul 2>&1
+    timeout /t 3 /nobreak >nul
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 23: Reef Royale Save & Resume
+REM ----------------------------------------------------------
+call :check_should_run "reef_royale_save_resume_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Reef Royale Save ^& Resume Test
+    echo ========================================
+    echo File: reef_royale_save_resume_test.dart
+    echo Tests: 9 tests
+    echo Expected Duration: ~8 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Reef Royale Save ^& Resume Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: reef_royale_save_resume_test.dart >> integration_test_output\summary.txt
+    echo Tests: 9 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~8 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\23_reef_royale_save_resume.log
+    set _TARGET=integration_test/reef_royale/reef_royale_save_resume_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
 REM Generate summary
 echo ========================================
 echo Test Suite Complete
@@ -1276,6 +1500,10 @@ echo  16. reef_royale_edit_score_test.dart            (6 tests,  ~5 min)
 echo  17. reef_royale_results_screen_test.dart        (6 tests,  ~5 min)
 echo  18. reef_royale_visual_validation_test.dart     (7 tests,  ~5 min)
 echo  19. reef_royale_showcase_test.dart              (1 test,   ~3 min)
+echo  20. carnival_derby_save_resume_test.dart        (9 tests,  ~8 min)
+echo  21. target_tag_save_resume_test.dart            (9 tests,  ~8 min)
+echo  22. monster_mash_save_resume_test.dart          (9 tests,  ~8 min)
+echo  23. reef_royale_save_resume_test.dart           (9 tests,  ~8 min)
 echo.
 echo EXAMPLES:
 echo   Run all tests (default):

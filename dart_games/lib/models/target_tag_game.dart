@@ -726,18 +726,19 @@ class TargetTagGame {
     return winnerId != null && state == GameState.finished;
   }
 
-  // Convert to JSON (for persistence if needed)
+  // Convert to JSON for storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'mode': mode.toString(),
+      'mode': mode.name,
       'shieldMax': shieldMax,
       'soloHeroBonus': soloHeroBonus,
       'startedAt': startedAt.toIso8601String(),
+      'maxDartsPerTurn': maxDartsPerTurn,
       'playerIds': playerIds,
-      'targetNumbers': targetNumbers,
+      'targetNumbers': targetNumbers.map((k, v) => MapEntry(k, v)),
       'playerToTeam': playerToTeam,
-      'teamPlayers': teamPlayers,
+      'teamPlayers': teamPlayers?.map((k, v) => MapEntry(k, List<String>.from(v))),
       'teamIcons': teamIcons,
       'soloHeroBuffNumbers': soloHeroBuffNumbers,
       'soloHeroBuffMultipliers': soloHeroBuffMultipliers,
@@ -745,11 +746,119 @@ class TargetTagGame {
       'taggedIn': taggedIn,
       'eliminated': eliminated,
       'dartsThrown': dartsThrown,
+      'totalDartsThrown': totalDartsThrown,
+      'totalTurns': totalTurns,
       'currentTurnDarts': currentTurnDarts,
       'dartThrowTaggedInStatus': dartThrowTaggedInStatus,
-      'state': state.toString(),
+      'dartThrowHeroBonusHit': dartThrowHeroBonusHit,
+      'dartThrowReachedMax': dartThrowReachedMax,
+      'dartThrowCausedElimination': dartThrowCausedElimination,
+      'dartThrowHitOpponentTarget': dartThrowHitOpponentTarget,
+      'turnStartShields': turnStartShields,
+      'turnStartTaggedIn': turnStartTaggedIn,
+      'turnStartEliminated': turnStartEliminated,
+      'turnStartWinnerId': turnStartWinnerId,
+      'turnStartState': turnStartState.name,
+      'state': state.name,
       'currentPlayerIndex': currentPlayerIndex,
       'winnerId': winnerId,
     };
+  }
+
+  // Create from JSON
+  factory TargetTagGame.fromJson(Map<String, dynamic> json) {
+    return TargetTagGame(
+      id: json['id'],
+      mode: GameMode.values.firstWhere(
+        (e) => e.name == json['mode'],
+        orElse: () => GameMode.solo,
+      ),
+      shieldMax: json['shieldMax'],
+      soloHeroBonus: json['soloHeroBonus'] ?? false,
+      startedAt: DateTime.parse(json['startedAt']),
+      maxDartsPerTurn: json['maxDartsPerTurn'] ?? 3,
+      playerIds: List<String>.from(json['playerIds']),
+      targetNumbers: Map<String, int>.from(json['targetNumbers']),
+      playerToTeam: json['playerToTeam'] != null
+          ? Map<String, String>.from(json['playerToTeam'])
+          : null,
+      teamPlayers: json['teamPlayers'] != null
+          ? (json['teamPlayers'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)))
+          : null,
+      teamIcons: json['teamIcons'] != null
+          ? Map<String, String>.from(json['teamIcons'])
+          : null,
+      soloHeroBuffNumbers: json['soloHeroBuffNumbers'] != null
+          ? Map<String, int>.from(json['soloHeroBuffNumbers'])
+          : null,
+      soloHeroBuffMultipliers: json['soloHeroBuffMultipliers'] != null
+          ? Map<String, String>.from(json['soloHeroBuffMultipliers'])
+          : null,
+      shields: json['shields'] != null
+          ? Map<String, int>.from(json['shields'])
+          : null,
+      taggedIn: json['taggedIn'] != null
+          ? Map<String, bool>.from(json['taggedIn'])
+          : null,
+      eliminated: json['eliminated'] != null
+          ? Map<String, bool>.from(json['eliminated'])
+          : null,
+      dartsThrown: json['dartsThrown'] != null
+          ? Map<String, int>.from(json['dartsThrown'])
+          : null,
+      totalDartsThrown: json['totalDartsThrown'] != null
+          ? Map<String, int>.from(json['totalDartsThrown'])
+          : null,
+      totalTurns: json['totalTurns'] != null
+          ? Map<String, int>.from(json['totalTurns'])
+          : null,
+      currentTurnDarts: json['currentTurnDarts'] != null
+          ? (json['currentTurnDarts'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)))
+          : null,
+      dartThrowTaggedInStatus: json['dartThrowTaggedInStatus'] != null
+          ? (json['dartThrowTaggedInStatus'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<bool>.from(v)))
+          : null,
+      dartThrowHeroBonusHit: json['dartThrowHeroBonusHit'] != null
+          ? (json['dartThrowHeroBonusHit'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<bool>.from(v)))
+          : null,
+      dartThrowReachedMax: json['dartThrowReachedMax'] != null
+          ? (json['dartThrowReachedMax'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<bool>.from(v)))
+          : null,
+      dartThrowCausedElimination: json['dartThrowCausedElimination'] != null
+          ? (json['dartThrowCausedElimination'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<bool>.from(v)))
+          : null,
+      dartThrowHitOpponentTarget: json['dartThrowHitOpponentTarget'] != null
+          ? (json['dartThrowHitOpponentTarget'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<bool>.from(v)))
+          : null,
+      turnStartShields: json['turnStartShields'] != null
+          ? Map<String, int>.from(json['turnStartShields'])
+          : null,
+      turnStartTaggedIn: json['turnStartTaggedIn'] != null
+          ? Map<String, bool>.from(json['turnStartTaggedIn'])
+          : null,
+      turnStartEliminated: json['turnStartEliminated'] != null
+          ? Map<String, bool>.from(json['turnStartEliminated'])
+          : null,
+      turnStartWinnerId: json['turnStartWinnerId'],
+      turnStartState: json['turnStartState'] != null
+          ? GameState.values.firstWhere(
+              (e) => e.name == json['turnStartState'],
+              orElse: () => GameState.setup,
+            )
+          : null,
+      state: GameState.values.firstWhere(
+        (e) => e.name == json['state'],
+        orElse: () => GameState.setup,
+      ),
+      currentPlayerIndex: json['currentPlayerIndex'],
+      winnerId: json['winnerId'],
+    );
   }
 }
