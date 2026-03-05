@@ -9,6 +9,9 @@ import '../../../widgets/player_list_panel/player_list_panel.dart';
 import '../../../constants/test_keys.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../models/saved_game_metadata.dart';
+import '../../../services/save_game_service.dart';
+import '../../../widgets/resume_game_modal/resume_game_modal.dart';
 import 'target_tag_game_screen.dart';
 
 class TargetTagMenuScreen extends StatefulWidget {
@@ -34,6 +37,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
   bool _isTeamMode = false;
   bool _isRandomTeams = true;
   bool _soloHeroBonus = false;
+  bool _showResumeModal = false;
   final Set<String> _selectedPlayerIds = {};
   final Map<String, String> _playerTeamAssignments = {}; // playerId -> teamId
   late AnimationController _pulseController;
@@ -78,7 +82,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     }
 
     // Load players and preselect if needed
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final playerProvider = context.read<PlayerProvider>();
       _playerProvider = playerProvider;
       playerProvider.loadPlayers();
@@ -93,6 +97,12 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
           }
         }
         setState(() {});
+      }
+
+      // Check for saved games
+      final hasSaved = await SaveGameService().hasSavedGames('target_tag');
+      if (mounted && hasSaved) {
+        setState(() => _showResumeModal = true);
       }
     });
   }
@@ -175,6 +185,15 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
               }
             },
           ),
+          // Resume game modal overlay
+          if (_showResumeModal)
+            ResumeGameModal(
+              config: ResumeGameModalConfig.targetTag(),
+              gameType: 'target_tag',
+              onStartNewGame: () => setState(() => _showResumeModal = false),
+              onResumeGame: (savedGame) => _resumeGame(savedGame),
+              onClose: () => setState(() => _showResumeModal = false),
+            ),
         ],
       ),
     );
@@ -800,6 +819,14 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     );
   }
 
+
+  void _resumeGame(SavedGameMetadata savedGame) {
+    context.read<TargetTagProvider>().restoreGame(savedGame);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TargetTagGameScreen()),
+    );
+  }
 
   void _startGame(List<Player> selectedPlayers) {
     final targetTagProvider = context.read<TargetTagProvider>();

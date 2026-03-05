@@ -9,6 +9,9 @@ import '../../../widgets/player_list_panel/player_list_panel.dart';
 import '../../../constants/test_keys.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../models/saved_game_metadata.dart';
+import '../../../services/save_game_service.dart';
+import '../../../widgets/resume_game_modal/resume_game_modal.dart';
 import 'monster_mash_game_screen.dart';
 
 class MonsterMashMenuScreen extends StatefulWidget {
@@ -37,6 +40,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
   bool _bonusBuffs = false;
   bool _speedPlay = false;
   double _roundLimit = 10.0;
+  bool _showResumeModal = false;
   late AnimationController _pulseController;
   late AnimationController _lightningController;
   PlayerProvider? _playerProvider;
@@ -68,7 +72,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
       _roundLimit = widget.initialRoundLimit!.toDouble();
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final playerProvider = context.read<PlayerProvider>();
       _playerProvider = playerProvider;
       playerProvider.loadPlayers();
@@ -82,6 +86,12 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
           }
         }
         setState(() {});
+      }
+
+      // Check for saved games
+      final hasSaved = await SaveGameService().hasSavedGames('monster_mash');
+      if (mounted && hasSaved) {
+        setState(() => _showResumeModal = true);
       }
     });
   }
@@ -192,6 +202,15 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               );
             },
           ),
+          // Resume game modal overlay
+          if (_showResumeModal)
+            ResumeGameModal(
+              config: ResumeGameModalConfig.monsterMash(),
+              gameType: 'monster_mash',
+              onStartNewGame: () => setState(() => _showResumeModal = false),
+              onResumeGame: (savedGame) => _resumeGame(savedGame),
+              onClose: () => setState(() => _showResumeModal = false),
+            ),
         ],
       ),
     );
@@ -858,6 +877,14 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
     );
   }
 
+
+  void _resumeGame(SavedGameMetadata savedGame) {
+    context.read<MonsterMashProvider>().restoreGame(savedGame);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MonsterMashGameScreen()),
+    );
+  }
 
   void _startGame(List<Player> selectedPlayers) {
     final monsterMashProvider = context.read<MonsterMashProvider>();

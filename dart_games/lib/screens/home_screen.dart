@@ -2,27 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/test_keys.dart';
-import '../models/saved_game_metadata.dart';
 import '../providers/dartboard_provider.dart';
-import '../providers/horse_race_provider.dart';
-import '../providers/target_tag_provider.dart';
-import '../providers/monster_mash_provider.dart';
-import '../providers/reef_royale_provider.dart';
-import '../providers/player_provider.dart';
 import '../services/dart_announcer_service.dart';
-import '../services/save_game_service.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
-import '../widgets/resume_game_modal/resume_game_modal.dart';
 import 'options_screen.dart';
 import 'games/carnival_horse_race/horse_race_menu_screen.dart';
-import 'games/carnival_horse_race/horse_race_game_screen.dart';
 import 'games/target_tag/target_tag_menu_screen.dart';
-import 'games/target_tag/target_tag_game_screen.dart';
 import 'games/monster_mash/monster_mash_menu_screen.dart';
-import 'games/monster_mash/monster_mash_game_screen.dart';
 import 'games/reef_royale/reef_royale_menu_screen.dart';
-import 'games/reef_royale/reef_royale_game_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,22 +21,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final DartAnnouncerService _announcer = DartAnnouncerService();
-  String? _resumeModalGameType;
 
   @override
   void dispose() {
     _announcer.dispose();
     super.dispose();
-  }
-
-  Future<void> _handleGameTap(String gameType) async {
-    final hasSaved = await SaveGameService().hasSavedGames(gameType);
-    if (!mounted) return;
-    if (hasSaved) {
-      setState(() => _resumeModalGameType = gameType);
-    } else {
-      _navigateToMenu(gameType);
-    }
   }
 
   void _navigateToMenu(String gameType) {
@@ -70,44 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
     }
     Navigator.push(context, MaterialPageRoute(builder: (context) => menuScreen));
-  }
-
-  void _resumeGame(String gameType, SavedGameMetadata savedGame) {
-    // Restore game state in the appropriate provider
-    switch (gameType) {
-      case 'carnival_derby':
-        context.read<HorseRaceProvider>().restoreGame(savedGame);
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const HorseRaceGameScreen()));
-        break;
-      case 'target_tag':
-        context.read<TargetTagProvider>().restoreGame(savedGame);
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const TargetTagGameScreen()));
-        break;
-      case 'monster_mash':
-        context.read<MonsterMashProvider>().restoreGame(savedGame);
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const MonsterMashGameScreen()));
-        break;
-      case 'reef_royale':
-        context.read<ReefRoyaleProvider>().restoreGame(savedGame);
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const ReefRoyaleGameScreen()));
-        break;
-    }
-    setState(() => _resumeModalGameType = null);
-  }
-
-  ResumeGameModalConfig _getResumeConfig(String gameType) {
-    switch (gameType) {
-      case 'carnival_derby':
-        return ResumeGameModalConfig.carnivalDerby();
-      case 'target_tag':
-        return ResumeGameModalConfig.targetTag();
-      case 'monster_mash':
-        return ResumeGameModalConfig.monsterMash();
-      case 'reef_royale':
-        return ResumeGameModalConfig.reefRoyale();
-      default:
-        return ResumeGameModalConfig.carnivalDerby();
-    }
   }
 
   Widget _buildGameCard({
@@ -269,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'imageAssetPath': 'assets/common/icons/icon.png',
         'color': Colors.amber,
         'onTap': dartboardProvider.canPlayGames
-            ? () => _handleGameTap('carnival_derby')
+            ? () => _navigateToMenu('carnival_derby')
             : null,
       },
       {
@@ -278,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'imageAssetPath': 'assets/games/target_tag/icons/TargetTag-Icon.png',
         'color': const Color(0xFFFF007A),
         'onTap': dartboardProvider.canPlayGames
-            ? () => _handleGameTap('target_tag')
+            ? () => _navigateToMenu('target_tag')
             : null,
       },
       {
@@ -287,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'imageAssetPath': 'assets/games/monster_mash/icons/MonsterMash-Icon.png',
         'color': const Color(0xFF4B0082), // Haunted Purple
         'onTap': dartboardProvider.canPlayGames
-            ? () => _handleGameTap('monster_mash')
+            ? () => _navigateToMenu('monster_mash')
             : null,
       },
       {
@@ -296,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'imageAssetPath': 'assets/games/reef_royale/icons/ReefRoyale-Icon.png',
         'color': const Color(0xFF0B3D91), // Deep Reef Blue
         'onTap': dartboardProvider.canPlayGames
-            ? () => _handleGameTap('reef_royale')
+            ? () => _navigateToMenu('reef_royale')
             : null,
       },
       // Add new games here - they will automatically be sorted alphabetically
@@ -411,21 +350,6 @@ class _HomeScreenState extends State<HomeScreen> {
               }).toList(),
             ),
           ),
-          // Resume game modal overlay
-          if (_resumeModalGameType != null)
-            ResumeGameModal(
-              config: _getResumeConfig(_resumeModalGameType!),
-              gameType: _resumeModalGameType!,
-              onStartNewGame: () {
-                final gameType = _resumeModalGameType!;
-                setState(() => _resumeModalGameType = null);
-                _navigateToMenu(gameType);
-              },
-              onResumeGame: (savedGame) {
-                _resumeGame(_resumeModalGameType!, savedGame);
-              },
-              onClose: () => setState(() => _resumeModalGameType = null),
-            ),
         ],
       ),
     );

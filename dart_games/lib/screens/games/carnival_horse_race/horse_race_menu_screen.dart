@@ -9,6 +9,9 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
 import '../../../constants/test_keys.dart';
+import '../../../models/saved_game_metadata.dart';
+import '../../../services/save_game_service.dart';
+import '../../../widgets/resume_game_modal/resume_game_modal.dart';
 import 'horse_race_game_screen.dart';
 
 class HorseRaceMenuScreen extends StatefulWidget {
@@ -30,6 +33,7 @@ class HorseRaceMenuScreen extends StatefulWidget {
 class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
   late double _targetScore;
   bool _exactScoreMode = false;
+  bool _showResumeModal = false;
   PlayerProvider? _playerProvider;
 
   @override
@@ -39,7 +43,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
     _exactScoreMode = widget.initialExactScoreMode ?? false;
 
     // Load players when screen opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _playerProvider = context.read<PlayerProvider>();
       _playerProvider!.loadPlayers();
       _playerProvider!.clearSelection();
@@ -53,6 +57,12 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             playerProvider.selectPlayer(player, maxPlayers: 8);
           }
         }
+      }
+
+      // Check for saved games
+      final hasSaved = await SaveGameService().hasSavedGames('carnival_derby');
+      if (mounted && hasSaved) {
+        setState(() => _showResumeModal = true);
       }
     });
   }
@@ -234,6 +244,15 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           );
         },
       ),
+          // Resume game modal overlay
+          if (_showResumeModal)
+            ResumeGameModal(
+              config: ResumeGameModalConfig.carnivalDerby(),
+              gameType: 'carnival_derby',
+              onStartNewGame: () => setState(() => _showResumeModal = false),
+              onResumeGame: (savedGame) => _resumeGame(savedGame),
+              onClose: () => setState(() => _showResumeModal = false),
+            ),
         ],
       ),
     );
@@ -688,6 +707,14 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _resumeGame(SavedGameMetadata savedGame) {
+    context.read<HorseRaceProvider>().restoreGame(savedGame);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const HorseRaceGameScreen()),
     );
   }
 

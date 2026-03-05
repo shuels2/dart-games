@@ -20,7 +20,7 @@ The save/resume feature allows players to save in-progress games and resume them
 | `lib/services/save_game_service.dart` | CRUD operations for SharedPreferences |
 | `lib/widgets/save_game_modal/save_game_modal.dart` | Save confirmation modal (back button) |
 | `lib/widgets/save_game_modal/save_game_modal_config.dart` | Per-game theming for save modal |
-| `lib/widgets/resume_game_modal/resume_game_modal.dart` | Resume/new game modal (home screen) |
+| `lib/widgets/resume_game_modal/resume_game_modal.dart` | Resume/new game modal (menu screen) |
 | `lib/widgets/resume_game_modal/resume_game_modal_config.dart` | Per-game theming for resume modal |
 
 ### Config Pattern
@@ -74,15 +74,15 @@ Each provider has:
 ### PopScope Integration
 Each game screen wraps `Scaffold` in `PopScope` with `canPop: !hasDartsThrown` to intercept system back button/gesture.
 
-## Resume Flow (Home Screen)
+## Resume Flow (Menu Screen)
 
-1. User taps game card on home screen
-2. Check `SaveGameService.hasSavedGames(gameType)`
-3. If no saved games → navigate to menu screen
-4. If saved games exist → show ResumeGameModal
+1. User taps game card on home screen → navigates to menu screen
+2. Menu screen `initState` checks `SaveGameService.hasSavedGames(gameType)`
+3. If no saved games → menu screen loads normally
+4. If saved games exist → show ResumeGameModal overlay on menu screen
 5. User can select a saved game tile, then tap "Resume Game"
 6. "Resume Game" → `provider.restoreGame()`, navigate to game screen
-7. "Start New Game" → navigate to menu screen
+7. "Start New Game" → dismiss modal, menu screen is visible underneath
 8. Individual tiles can be deleted, or "Delete All"
 
 ## Auto-Delete on Completion
@@ -126,7 +126,7 @@ Each UI test file covers:
 2. Back button after darts thrown — save modal appears
 3. Don't Save — navigates without saving
 4. Save — saves game and navigates back
-5. Home → tap game with saved games → resume modal appears
+5. Home → tap game → menu screen → resume modal appears
 6. Resume Game — loads game screen with correct state
 7. Start New Game — navigates to menu
 8. Delete individual saved game
@@ -138,7 +138,7 @@ Each UI test file covers:
 2. Add `saveGame()`, `restoreGame()`, `_resumedSavedGameId`, `clearResumedSavedGameId()` to the provider
 3. Add factory methods to `SaveGameModalConfig` and `ResumeGameModalConfig`
 4. Integrate `SaveGameModal` into the game screen (back button + PopScope + Stack)
-5. Add `_handleGameTap` case in `home_screen.dart`
+5. Add `ResumeGameModal` to the menu screen (imports, `_showResumeModal` state, `initState` check, `_resumeGame` method, Stack overlay)
 6. Add auto-delete logic in the results screen's `_updatePlayerStats()`
 7. Add widget keys to `test_keys.dart`
 8. Write serialization, provider save/restore, and integration tests

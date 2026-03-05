@@ -13,7 +13,7 @@ import '../shared/pump_sequences.dart';
 
 /// Monster Mash - Save & Resume Game UI Tests
 ///
-/// Tests the save game modal (back button) and resume game modal (home screen).
+/// Tests the save game modal (back button) and resume game modal (menu screen).
 ///
 /// Run with:
 /// ```bash
@@ -205,6 +205,7 @@ void main() {
 
       await UITestHelpers.navigateToHomeScreen(tester);
       await tester.tap(config.getGameCard());
+      await PumpSequences.navigation(tester);
       await PumpSequences.asyncDataLoad(tester);
 
       UITestHelpers.verifyResumeGameModal();
@@ -221,8 +222,9 @@ void main() {
       await tester.tap(find.byKey(MonsterMashMenuKeys.backButton));
       await PumpSequences.navigation(tester);
 
-      // Tap game card on home
+      // Tap game card on home — navigates to menu screen
       await tester.tap(config.getGameCard());
+      await PumpSequences.navigation(tester);
       await PumpSequences.asyncDataLoad(tester);
 
       // Get saved game ID and select it
@@ -253,12 +255,13 @@ void main() {
       expect(ProviderHelpers.isMonsterMashGameActive(tester), true);
     });
 
-    testWidgets('Start New Game navigates to menu', (tester) async {
+    testWidgets('Start New Game dismisses modal and shows menu', (tester) async {
       await SettingsHelpers.initializeSettings();
       await preSaveGame();
 
       await UITestHelpers.navigateToHomeScreen(tester);
       await tester.tap(config.getGameCard());
+      await PumpSequences.navigation(tester);
       await PumpSequences.asyncDataLoad(tester);
 
       await UITestHelpers.tapStartNewGameButton(tester);
@@ -272,6 +275,7 @@ void main() {
 
       await UITestHelpers.navigateToHomeScreen(tester);
       await tester.tap(config.getGameCard());
+      await PumpSequences.navigation(tester);
       await PumpSequences.asyncDataLoad(tester);
 
       expect(ElementFinders.getResumeGameModalSavedGameTile(ids[0]),
@@ -293,6 +297,7 @@ void main() {
 
       await UITestHelpers.navigateToHomeScreen(tester);
       await tester.tap(config.getGameCard());
+      await PumpSequences.navigation(tester);
       await PumpSequences.asyncDataLoad(tester);
 
       await UITestHelpers.deleteAllSavedGames(tester);
@@ -313,8 +318,9 @@ void main() {
       await tester.tap(find.byKey(MonsterMashMenuKeys.backButton));
       await PumpSequences.navigation(tester);
 
-      // Tap game card on home
+      // Tap game card on home — navigates to menu screen
       await tester.tap(config.getGameCard());
+      await PumpSequences.navigation(tester);
       await PumpSequences.asyncDataLoad(tester);
 
       // Get saved game ID and select it
