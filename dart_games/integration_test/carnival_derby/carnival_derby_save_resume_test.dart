@@ -33,16 +33,26 @@ void main() {
     await UITestHelpers.navigateToGameMenu(tester, config);
     await UITestHelpers.addPlayer(tester, 'Alice', config);
     await UITestHelpers.addPlayer(tester, 'Bob', config);
-    final players = ProviderHelpers.getAllPlayers(tester);
-    await UITestHelpers.selectPlayers(tester, players.map((p) => p.id).toList(), config);
+    // Players are auto-selected when added, no need to call selectPlayers
     await UITestHelpers.startGame(tester, config);
   }
 
-  /// Throw one dart on the game screen via emulator
+  /// Throw one dart on the game screen via mock API
   Future<void> throwOneDart(WidgetTester tester) async {
-    final dartButton = config.getDartButton('single', 20);
-    await tester.tap(dartButton);
-    await PumpSequences.simpleUpdate(tester);
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    final mockApi = dartboardProvider.apiService;
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 20,
+        multiplier: 'single',
+        playerName: 'Player',
+        baseScore: 20,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
   }
 
   /// Pre-populate a saved game in SharedPreferences (for resume modal tests)
@@ -176,8 +186,26 @@ void main() {
       await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
       await UITestHelpers.tapResumeGameButton(tester);
 
-      // Should be on game screen (skip turn button visible)
+      // Verify game screen loaded
       expect(config.getSkipTurnButton(), findsOneWidget);
+
+      // Verify players exist in resumed game
+      final alice = ProviderHelpers.findPlayerByName(tester, 'Alice');
+      final bob = ProviderHelpers.findPlayerByName(tester, 'Bob');
+      expect(alice, isNotNull);
+      expect(bob, isNotNull);
+
+      // Verify restored game state: Alice threw single-20, score should be 20
+      expect(
+          ProviderHelpers.getCarnivalDerbyPlayerScore(tester, alice!.id), 20);
+      expect(ProviderHelpers.getCarnivalDerbyPlayerScore(tester, bob!.id), 0);
+
+      // Verify it's still Alice's turn (only 1 of 3 darts thrown)
+      expect(
+          ProviderHelpers.getCarnivalDerbyCurrentPlayerId(tester), alice.id);
+
+      // Verify game is active
+      expect(ProviderHelpers.isCarnivalDerbyGameActive(tester), true);
     });
 
     testWidgets('Start New Game navigates to menu', (tester) async {
@@ -188,10 +216,8 @@ void main() {
       await tester.tap(config.getGameCard());
       await PumpSequences.asyncDataLoad(tester);
 
-      // Tap Start New Game
       await UITestHelpers.tapStartNewGameButton(tester);
 
-      // Should be on menu screen
       expect(config.getStartButton(), findsOneWidget);
     });
 

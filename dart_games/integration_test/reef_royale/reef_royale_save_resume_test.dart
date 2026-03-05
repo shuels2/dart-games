@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
@@ -33,16 +34,26 @@ void main() {
     await UITestHelpers.navigateToGameMenu(tester, config);
     await UITestHelpers.addPlayer(tester, 'Alice', config);
     await UITestHelpers.addPlayer(tester, 'Bob', config);
-    final players = ProviderHelpers.getAllPlayers(tester);
-    await UITestHelpers.selectPlayers(tester, players.map((p) => p.id).toList(), config);
+    // Players are auto-selected when added, no need to call selectPlayers
     await UITestHelpers.startGame(tester, config);
   }
 
-  /// Throw one dart on the game screen via emulator
+  /// Throw one dart on the game screen via mock API
   Future<void> throwOneDart(WidgetTester tester) async {
-    final dartButton = config.getDartButton('single', 20);
-    await tester.tap(dartButton);
-    await PumpSequences.simpleUpdate(tester);
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    final mockApi = dartboardProvider.apiService;
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 20,
+        multiplier: 'single',
+        playerName: 'Player',
+        baseScore: 20,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
   }
 
   /// Pre-populate a saved game in SharedPreferences
@@ -161,8 +172,35 @@ void main() {
       await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
       await UITestHelpers.tapResumeGameButton(tester);
 
-      // Should be on game screen
+      // Verify game screen loaded
       expect(config.getSkipTurnButton(), findsOneWidget);
+
+      // Verify visual elements on game screen (widget key checks)
+      expect(find.byKey(ReefRoyaleGameKeys.pearlCounter), findsOneWidget);
+      expect(find.byKey(ReefRoyaleGameKeys.coralCounter), findsOneWidget);
+
+      // Verify pearl counter displays text (visual widget check)
+      final pearlText =
+          tester.widget<Text>(find.byKey(ReefRoyaleGameKeys.pearlCounter));
+      expect(pearlText.data, contains('pearls'));
+
+      // Verify coral counter displays text (visual widget check)
+      final coralText =
+          tester.widget<Text>(find.byKey(ReefRoyaleGameKeys.coralCounter));
+      expect(coralText.data, contains('corals'));
+
+      // Verify players exist in resumed game
+      final alice = ProviderHelpers.findPlayerByName(tester, 'Alice');
+      final bob = ProviderHelpers.findPlayerByName(tester, 'Bob');
+      expect(alice, isNotNull);
+      expect(bob, isNotNull);
+
+      // Verify game state: 1 dart was thrown before save
+      expect(
+          ProviderHelpers.getReefRoyaleCurrentPlayerDartsThrown(tester), 1);
+
+      // Verify game is active
+      expect(ProviderHelpers.isReefRoyaleGameActive(tester), true);
     });
 
     testWidgets('Start New Game navigates to menu', (tester) async {

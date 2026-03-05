@@ -33,16 +33,26 @@ void main() {
     await UITestHelpers.navigateToGameMenu(tester, config);
     await UITestHelpers.addPlayer(tester, 'Alice', config);
     await UITestHelpers.addPlayer(tester, 'Bob', config);
-    final players = ProviderHelpers.getAllPlayers(tester);
-    await UITestHelpers.selectPlayers(tester, players.map((p) => p.id).toList(), config);
+    // Players are auto-selected when added, no need to call selectPlayers
     await UITestHelpers.startGame(tester, config);
   }
 
-  /// Throw one dart on the game screen via emulator
+  /// Throw one dart on the game screen via mock API
   Future<void> throwOneDart(WidgetTester tester) async {
-    final dartButton = config.getDartButton('single', 20);
-    await tester.tap(dartButton);
-    await PumpSequences.simpleUpdate(tester);
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    final mockApi = dartboardProvider.apiService;
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 20,
+        multiplier: 'single',
+        playerName: 'Player',
+        baseScore: 20,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
   }
 
   /// Pre-populate a saved game in SharedPreferences
@@ -161,8 +171,26 @@ void main() {
       await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
       await UITestHelpers.tapResumeGameButton(tester);
 
-      // Should be on game screen
+      // Verify game screen loaded
       expect(config.getSkipTurnButton(), findsOneWidget);
+
+      // Verify players exist in resumed game
+      final alice = ProviderHelpers.findPlayerByName(tester, 'Alice');
+      final bob = ProviderHelpers.findPlayerByName(tester, 'Bob');
+      expect(alice, isNotNull);
+      expect(bob, isNotNull);
+
+      // Verify neither player is eliminated after resume
+      expect(ProviderHelpers.isMonsterMashPlayerEliminated(tester, alice!.id),
+          false);
+      expect(ProviderHelpers.isMonsterMashPlayerEliminated(tester, bob!.id),
+          false);
+
+      // Verify game state: 1 dart was thrown before save
+      expect(ProviderHelpers.getMonsterMashCurrentPlayerDartsThrown(tester), 1);
+
+      // Verify game is active
+      expect(ProviderHelpers.isMonsterMashGameActive(tester), true);
     });
 
     testWidgets('Start New Game navigates to menu', (tester) async {

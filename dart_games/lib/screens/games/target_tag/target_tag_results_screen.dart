@@ -128,7 +128,6 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
     }
 
     // Auto-delete saved game if this was a resumed game
-    final targetTagProvider = context.read<TargetTagProvider>();
     final savedGameId = targetTagProvider.resumedSavedGameId;
     if (savedGameId != null) {
       await SaveGameService().deleteSavedGame('target_tag', savedGameId);

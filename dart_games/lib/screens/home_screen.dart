@@ -388,6 +388,7 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.white,
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
           Padding(
             padding: const EdgeInsets.all(12.0),
