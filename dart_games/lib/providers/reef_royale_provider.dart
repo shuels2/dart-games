@@ -383,6 +383,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
       leadingPlayerScore: '$leaderCorals/7 corals',
       gameState: game.toJson(),
       waitingForTakeout: _waitingForTakeout,
+      existingId: _resumedSavedGameId,
     );
 
     await SaveGameService().saveGame(metadata);

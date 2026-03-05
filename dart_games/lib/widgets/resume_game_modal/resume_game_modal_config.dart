@@ -29,10 +29,12 @@ class ResumeGameModalConfig {
   final Color resumeButtonColor;
   final Color resumeButtonTextColor;
   final TextStyle resumeButtonTextStyle;
+  final EdgeInsets resumeButtonPadding;
   final Color resumeButtonDisabledColor;
   final Color startNewButtonColor;
   final Color startNewButtonTextColor;
   final TextStyle startNewButtonTextStyle;
+  final EdgeInsets startNewButtonPadding;
   final Color deleteAllButtonColor;
   final TextStyle deleteAllButtonTextStyle;
 
@@ -65,10 +67,12 @@ class ResumeGameModalConfig {
     required this.resumeButtonColor,
     required this.resumeButtonTextColor,
     required this.resumeButtonTextStyle,
+    this.resumeButtonPadding = const EdgeInsets.symmetric(vertical: 14),
     required this.resumeButtonDisabledColor,
     required this.startNewButtonColor,
     required this.startNewButtonTextColor,
     required this.startNewButtonTextStyle,
+    this.startNewButtonPadding = const EdgeInsets.symmetric(vertical: 14),
     required this.deleteAllButtonColor,
     required this.deleteAllButtonTextStyle,
     this.maxWidth = 520,
@@ -118,11 +122,12 @@ class ResumeGameModalConfig {
       deleteButtonColor: const Color(0xFFE63946),
       resumeButtonColor: const Color(0xFFFFD700),
       resumeButtonTextColor: const Color(0xFF1D3557),
-      resumeButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 16),
+      resumeButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 20),
+      resumeButtonPadding: const EdgeInsets.only(top: 17, bottom: 11),
       resumeButtonDisabledColor: Colors.grey,
       startNewButtonColor: const Color(0xFFF1FAEE).withOpacity(0.2),
       startNewButtonTextColor: const Color(0xFFF1FAEE),
-      startNewButtonTextStyle: GoogleFonts.bangers(fontSize: 16, letterSpacing: 1.0),
+      startNewButtonTextStyle: GoogleFonts.bangers(fontSize: 18, letterSpacing: 1.0),
       deleteAllButtonColor: const Color(0xFFE63946),
       deleteAllButtonTextStyle: GoogleFonts.bangers(
         fontSize: 14,
@@ -173,11 +178,12 @@ class ResumeGameModalConfig {
       deleteButtonColor: const Color(0xFFFF007A),
       resumeButtonColor: const Color(0xFFFF007A),
       resumeButtonTextColor: Colors.white,
-      resumeButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 16),
+      resumeButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 20),
+      resumeButtonPadding: const EdgeInsets.only(top: 17, bottom: 11),
       resumeButtonDisabledColor: Colors.grey,
       startNewButtonColor: Colors.white.withOpacity(0.2),
       startNewButtonTextColor: Colors.white,
-      startNewButtonTextStyle: GoogleFonts.fredoka(fontSize: 16, fontWeight: FontWeight.w600),
+      startNewButtonTextStyle: GoogleFonts.fredoka(fontSize: 18, fontWeight: FontWeight.w600),
       deleteAllButtonColor: const Color(0xFFFF007A),
       deleteAllButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 14,
@@ -224,11 +230,12 @@ class ResumeGameModalConfig {
       deleteButtonColor: const Color(0xFFFF4444),
       resumeButtonColor: const Color(0xFF7FFF00),
       resumeButtonTextColor: const Color(0xFF2F4F4F),
-      resumeButtonTextStyle: GoogleFonts.creepster(fontSize: 16),
+      resumeButtonTextStyle: GoogleFonts.creepster(fontSize: 20),
+      resumeButtonPadding: const EdgeInsets.only(top: 14, bottom: 14),
       resumeButtonDisabledColor: Colors.grey,
       startNewButtonColor: const Color(0xFFF5F5DC).withOpacity(0.2),
       startNewButtonTextColor: const Color(0xFFF5F5DC),
-      startNewButtonTextStyle: GoogleFonts.pirataOne(fontSize: 16),
+      startNewButtonTextStyle: GoogleFonts.pirataOne(fontSize: 18),
       deleteAllButtonColor: const Color(0xFFFF4444),
       deleteAllButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 14,
@@ -280,11 +287,12 @@ class ResumeGameModalConfig {
       deleteButtonColor: const Color(0xFFFF6B6B),
       resumeButtonColor: const Color(0xFF48D1CC),
       resumeButtonTextColor: const Color(0xFF0B3D91),
-      resumeButtonTextStyle: GoogleFonts.fredoka(fontSize: 16, fontWeight: FontWeight.bold),
+      resumeButtonTextStyle: GoogleFonts.fredoka(fontSize: 18, fontWeight: FontWeight.bold),
       resumeButtonDisabledColor: Colors.grey,
       startNewButtonColor: const Color(0xFFFFF8F0).withOpacity(0.2),
       startNewButtonTextColor: const Color(0xFFFFF8F0),
       startNewButtonTextStyle: GoogleFonts.fredoka(fontSize: 16, fontWeight: FontWeight.w600),
+      startNewButtonPadding: const EdgeInsets.only(top: 12, bottom: 16),
       deleteAllButtonColor: const Color(0xFFFF6B6B),
       deleteAllButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 14,

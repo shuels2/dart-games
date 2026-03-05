@@ -259,6 +259,7 @@ class HorseRaceProvider extends ChangeNotifier {
       leadingPlayerScore: '$leaderScore pts',
       gameState: game.toJson(),
       waitingForTakeout: _waitingForTakeout,
+      existingId: _resumedSavedGameId,
     );
 
     await SaveGameService().saveGame(metadata);

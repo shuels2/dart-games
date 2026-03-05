@@ -36,10 +36,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (868 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **637 non-UI + 231 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 637 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 231 UI tests (~163 minutes, optional)
+### 🧪 Testing (878 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **643 non-UI + 235 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 643 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 235 UI tests (~167 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -95,16 +95,16 @@ flutter test test/screens/games/reef_royale/
 
 ## Current Test Counts
 
-**Total: 868 tests**
-- **Non-UI Tests:** 637 tests (100% pass rate MANDATORY)
+**Total: 878 tests**
+- **Non-UI Tests:** 643 tests (100% pass rate MANDATORY)
   - Model tests: 40
   - Model serialization tests: 55
   - Provider tests: 44
   - Provider save/restore tests: 28
   - Service tests: 42
-  - Save game service tests: 12
+  - Save game service tests: 13
   - Integration tests: 163
-  - Save/resume integration tests: 15
+  - Save/resume integration tests: 20
   - Shared component tests: 24
   - Widget tests: 23
   - Save game modal tests: 8
@@ -113,16 +113,16 @@ flutter test test/screens/games/reef_royale/
   - Reef Royale game logic + announcements: ~154
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **UI Automation Tests:** 231 tests (optional, ask before running)
-  - Target Tag: 62 tests (~48 minutes)
-  - Carnival Derby: 33 tests (~22 minutes)
-  - Monster Mash: 60 tests (~40 minutes)
-  - Reef Royale: 76 tests (~53 minutes)
+- **UI Automation Tests:** 235 tests (optional, ask before running)
+  - Target Tag: 63 tests (~49 minutes)
+  - Carnival Derby: 34 tests (~23 minutes)
+  - Monster Mash: 61 tests (~41 minutes)
+  - Reef Royale: 77 tests (~54 minutes)
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 637 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 643 non-UI tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 

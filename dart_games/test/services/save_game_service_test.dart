@@ -159,6 +159,34 @@ void main() {
       expect(loaded, isEmpty);
     });
 
+    test('saving with same ID overwrites instead of duplicating', () async {
+      await service.saveGame(_createMetadata(id: 'game-1'));
+      await service.saveGame(_createMetadata(id: 'game-2'));
+
+      var loaded = await service.loadSavedGames('carnival_derby');
+      expect(loaded, hasLength(2));
+
+      // Save again with same ID as game-1 (simulates resumed game re-save)
+      final updated = SavedGameMetadata(
+        id: 'game-1',
+        gameType: 'carnival_derby',
+        savedAt: DateTime.now(),
+        playerNames: ['Alice', 'Bob'],
+        progressInfo: 'Leading: 200 pts',
+        gameModeName: 'Target: 301',
+        leadingPlayerName: 'Alice',
+        leadingPlayerScore: '200 pts',
+        gameState: {'id': 'game-1', 'playerIds': ['p1', 'p2'], 'scores': {'p1': 200, 'p2': 85}},
+      );
+      await service.saveGame(updated);
+
+      loaded = await service.loadSavedGames('carnival_derby');
+      expect(loaded, hasLength(2)); // Still 2, not 3
+      final overwritten = loaded.firstWhere((m) => m.id == 'game-1');
+      expect(overwritten.progressInfo, 'Leading: 200 pts');
+      expect(overwritten.gameState['scores']['p1'], 200);
+    });
+
     test('complex gameState survives round-trip', () async {
       final metadata = SavedGameMetadata(
         id: 'complex-test',

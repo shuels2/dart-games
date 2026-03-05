@@ -252,7 +252,7 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
             style: ElevatedButton.styleFrom(
               backgroundColor: hasSelection ? config.resumeButtonColor : config.resumeButtonDisabledColor,
               foregroundColor: config.resumeButtonTextColor,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: config.resumeButtonPadding,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -270,7 +270,7 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
             style: ElevatedButton.styleFrom(
               backgroundColor: config.startNewButtonColor,
               foregroundColor: config.startNewButtonTextColor,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: config.startNewButtonPadding,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

@@ -309,6 +309,46 @@ void main() {
       expect(ElementFinders.getResumeGameModalEmptyState(), findsOneWidget);
     });
 
+    testWidgets('resumed game re-save overwrites instead of duplicating',
+        (tester) async {
+      // Full roundtrip: navigate → throw → save → home → resume → throw → save again
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      // Verify 1 saved game
+      var saved = await SaveGameService().loadSavedGames(gameType);
+      expect(saved, hasLength(1));
+      final originalId = saved[0].id;
+
+      // Back to home from menu
+      await tester.tap(find.byKey(TargetTagMenuKeys.backButton));
+      await PumpSequences.navigation(tester);
+
+      // Tap game card on home — navigates to menu screen
+      await tester.tap(config.getGameCard());
+      await PumpSequences.navigation(tester);
+      await PumpSequences.asyncDataLoad(tester);
+
+      // Select saved game and resume
+      saved = await SaveGameService().loadSavedGames(gameType);
+      await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
+      await UITestHelpers.tapResumeGameButton(tester);
+
+      // Throw another dart in resumed game
+      await throwOneDart(tester);
+
+      // Save again via back button
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      // Should still be 1 saved game (overwritten, not duplicated)
+      saved = await SaveGameService().loadSavedGames(gameType);
+      expect(saved, hasLength(1));
+      expect(saved[0].id, originalId);
+    });
+
     testWidgets('resumed game auto-deletes saved game on completion',
         (tester) async {
       // Full roundtrip: navigate → throw → save → home → resume → complete

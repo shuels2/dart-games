@@ -19,6 +19,8 @@ class SaveGameModalConfig {
   final Color dontSaveButtonColor;
   final Color dontSaveButtonTextColor;
   final TextStyle dontSaveButtonTextStyle;
+  final EdgeInsets saveButtonPadding;
+  final EdgeInsets dontSaveButtonPadding;
   final double maxWidth;
   final EdgeInsets margin;
   final EdgeInsets padding;
@@ -41,6 +43,8 @@ class SaveGameModalConfig {
     required this.dontSaveButtonColor,
     required this.dontSaveButtonTextColor,
     required this.dontSaveButtonTextStyle,
+    this.saveButtonPadding = const EdgeInsets.symmetric(vertical: 14),
+    this.dontSaveButtonPadding = const EdgeInsets.symmetric(vertical: 14),
     this.maxWidth = 420,
     this.margin = const EdgeInsets.all(16),
     this.padding = const EdgeInsets.all(32),
@@ -65,7 +69,8 @@ class SaveGameModalConfig {
       ),
       saveButtonColor: const Color(0xFFFFD700),
       saveButtonTextColor: const Color(0xFF1D3557),
-      saveButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 18),
+      saveButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 20),
+      saveButtonPadding: const EdgeInsets.only(top: 17, bottom: 11),
       dontSaveButtonColor: Colors.transparent,
       dontSaveButtonTextColor: const Color(0xFFF1FAEE),
       dontSaveButtonTextStyle: GoogleFonts.bangers(fontSize: 18, letterSpacing: 1.0),
@@ -91,7 +96,8 @@ class SaveGameModalConfig {
       ),
       saveButtonColor: const Color(0xFFFF007A),
       saveButtonTextColor: Colors.white,
-      saveButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 18),
+      saveButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 20),
+      saveButtonPadding: const EdgeInsets.only(top: 17, bottom: 11),
       dontSaveButtonColor: Colors.transparent,
       dontSaveButtonTextColor: Colors.white,
       dontSaveButtonTextStyle: GoogleFonts.fredoka(fontSize: 18, fontWeight: FontWeight.w600),
@@ -116,7 +122,8 @@ class SaveGameModalConfig {
       ),
       saveButtonColor: const Color(0xFF7FFF00),
       saveButtonTextColor: const Color(0xFF2F4F4F),
-      saveButtonTextStyle: GoogleFonts.creepster(fontSize: 18),
+      saveButtonTextStyle: GoogleFonts.creepster(fontSize: 20),
+      saveButtonPadding: const EdgeInsets.only(top: 14, bottom: 14),
       dontSaveButtonColor: Colors.transparent,
       dontSaveButtonTextColor: const Color(0xFFF5F5DC),
       dontSaveButtonTextStyle: GoogleFonts.pirataOne(fontSize: 18),
@@ -147,6 +154,7 @@ class SaveGameModalConfig {
       dontSaveButtonColor: Colors.transparent,
       dontSaveButtonTextColor: const Color(0xFFFFF8F0),
       dontSaveButtonTextStyle: GoogleFonts.fredoka(fontSize: 18, fontWeight: FontWeight.w600),
+      dontSaveButtonPadding: const EdgeInsets.only(top: 12, bottom: 16),
     );
   }
 }

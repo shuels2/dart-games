@@ -83,7 +83,7 @@ class SaveGameModal extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: config.saveButtonColor,
                   foregroundColor: config.saveButtonTextColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: config.saveButtonPadding,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -99,7 +99,7 @@ class SaveGameModal extends StatelessWidget {
                 onPressed: onDontSave,
                 style: TextButton.styleFrom(
                   foregroundColor: config.dontSaveButtonTextColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: config.dontSaveButtonPadding,
                 ),
                 child: Text("Don't Save", style: config.dontSaveButtonTextStyle),
               ),

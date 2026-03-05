@@ -2,36 +2,36 @@
 
 ## Overview
 
-231 UI automation tests validate end-to-end user flows in Chrome browser.
+235 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Execution time:** ~163 minutes
+**Execution time:** ~167 minutes
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
 
-### Target Tag (62 tests, ~48 minutes)
+### Target Tag (63 tests, ~49 minutes)
 1. Menu and Mechanics: 24 tests (~12 min)
 2. Visual Validation: 4 tests (~2 min)
 3. Gameplay: 13 tests (~10 min)
 4. Add Player: 6 tests (~3 min)
 5. Results Screen: 6 tests (~5.5 min)
-6. Save & Resume: 9 tests (~8 min)
+6. Save & Resume: 10 tests (~9 min)
 
-### Carnival Derby (33 tests, ~22 minutes)
+### Carnival Derby (34 tests, ~23 minutes)
 - Complete UI test coverage: 24 tests (~14 min)
-- Save & Resume: 9 tests (~8 min)
+- Save & Resume: 10 tests (~9 min)
 
-### Monster Mash (60 tests, ~40 minutes)
+### Monster Mash (61 tests, ~41 minutes)
 1. Menu: ~5 min (player selection, settings, start button logic)
 2. Gameplay: ~7 min (dart throws, health bars, monster images, skip turn)
 3. Buffs: ~5 min (buff activation, shield indicators, buff effects)
 4. Edit Score: ~4 min (dialog behavior, recalculation, border colors)
 5. Add Player: ~4 min (stone button styling, name validation, cancel)
 6. Results: ~7 min (winner display, victory music, play again, settings preservation)
-7. Save & Resume: 9 tests (~8 min)
+7. Save & Resume: 10 tests (~9 min)
 
-### Reef Royale (76 tests, ~53 minutes)
+### Reef Royale (77 tests, ~54 minutes)
 1. Add Player: 6 tests (~2 min)
 2. Menu and Settings: 10 tests (~3 min)
 3. Gameplay: 30 tests (~15 min)
@@ -40,7 +40,7 @@
 6. Visual Validation: 7 tests (~3 min)
 7. Screenshot: 1 test (~10 min)
 8. Showcase: 1 test (~4 min)
-9. Save & Resume: 9 tests (~8 min)
+9. Save & Resume: 10 tests (~9 min)
 
 ## Running UI Automation Tests
 

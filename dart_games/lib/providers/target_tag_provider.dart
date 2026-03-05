@@ -364,6 +364,7 @@ class TargetTagProvider extends ChangeNotifier {
       leadingPlayerScore: '$maxShields shields',
       gameState: game.toJson(),
       waitingForTakeout: _waitingForTakeout,
+      existingId: _resumedSavedGameId,
     );
 
     await SaveGameService().saveGame(metadata);

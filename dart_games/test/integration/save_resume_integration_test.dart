@@ -181,6 +181,134 @@ void main() {
     });
   });
 
+  group('Resumed game save overwrites instead of duplicating', () {
+    test('Carnival Derby: resume → save overwrites original entry', () async {
+      final provider = HorseRaceProvider();
+      provider.startGame(players, 200);
+      provider.processDartThrow(20, dartDisplay: '20');
+
+      await provider.saveGame(players);
+      var saved = await SaveGameService().loadSavedGames('carnival_derby');
+      expect(saved, hasLength(1));
+      final originalId = saved[0].id;
+
+      // Resume game in new provider
+      final newProvider = HorseRaceProvider();
+      newProvider.restoreGame(saved[0]);
+      expect(newProvider.resumedSavedGameId, originalId);
+
+      // Throw more darts and save again
+      newProvider.processDartThrow(19, dartDisplay: '19');
+      await newProvider.saveGame(players);
+
+      // Should still be 1 saved game, not 2
+      saved = await SaveGameService().loadSavedGames('carnival_derby');
+      expect(saved, hasLength(1));
+      expect(saved[0].id, originalId);
+      // Verify updated state
+      expect(saved[0].gameState['scores']['p1'], 39);
+    });
+
+    test('Target Tag: resume → save overwrites original entry', () async {
+      final provider = TargetTagProvider();
+      provider.startSoloGame(players, 5, false);
+      final target = provider.currentGame!.targetNumbers['p1']!;
+      provider.processDartThrow('S$target');
+
+      await provider.saveGame(players);
+      var saved = await SaveGameService().loadSavedGames('target_tag');
+      expect(saved, hasLength(1));
+      final originalId = saved[0].id;
+
+      final newProvider = TargetTagProvider();
+      newProvider.restoreGame(saved[0]);
+      expect(newProvider.resumedSavedGameId, originalId);
+
+      // Throw another dart and save again
+      final newTarget = newProvider.currentGame!.targetNumbers['p1']!;
+      newProvider.processDartThrow('S$newTarget');
+      await newProvider.saveGame(players);
+
+      saved = await SaveGameService().loadSavedGames('target_tag');
+      expect(saved, hasLength(1));
+      expect(saved[0].id, originalId);
+    });
+
+    test('Monster Mash: resume → save overwrites original entry', () async {
+      final provider = MonsterMashProvider();
+      provider.startGame(players, 20, false, false, 10);
+      provider.processDartThrow('S20');
+
+      await provider.saveGame(players);
+      var saved = await SaveGameService().loadSavedGames('monster_mash');
+      expect(saved, hasLength(1));
+      final originalId = saved[0].id;
+
+      final newProvider = MonsterMashProvider();
+      newProvider.restoreGame(saved[0]);
+      expect(newProvider.resumedSavedGameId, originalId);
+
+      newProvider.processDartThrow('S19');
+      await newProvider.saveGame(players);
+
+      saved = await SaveGameService().loadSavedGames('monster_mash');
+      expect(saved, hasLength(1));
+      expect(saved[0].id, originalId);
+    });
+
+    test('Reef Royale: resume → save overwrites original entry', () async {
+      final provider = ReefRoyaleProvider();
+      provider.startGame(players, ReefRoyaleGameMode.standard, false, false, false, false, false, false, 8);
+      provider.processDartThrow('S20');
+
+      await provider.saveGame(players);
+      var saved = await SaveGameService().loadSavedGames('reef_royale');
+      expect(saved, hasLength(1));
+      final originalId = saved[0].id;
+
+      final newProvider = ReefRoyaleProvider();
+      newProvider.restoreGame(saved[0]);
+      expect(newProvider.resumedSavedGameId, originalId);
+
+      newProvider.processDartThrow('S19');
+      await newProvider.saveGame(players);
+
+      saved = await SaveGameService().loadSavedGames('reef_royale');
+      expect(saved, hasLength(1));
+      expect(saved[0].id, originalId);
+    });
+
+    test('new game save still creates separate entry alongside resumed save', () async {
+      // Save game 1
+      final provider1 = HorseRaceProvider();
+      provider1.startGame(players, 200);
+      provider1.processDartThrow(20, dartDisplay: '20');
+      await provider1.saveGame(players);
+
+      var saved = await SaveGameService().loadSavedGames('carnival_derby');
+      expect(saved, hasLength(1));
+      final originalId = saved[0].id;
+
+      // Resume and re-save game 1
+      final resumedProvider = HorseRaceProvider();
+      resumedProvider.restoreGame(saved[0]);
+      resumedProvider.processDartThrow(19, dartDisplay: '19');
+      await resumedProvider.saveGame(players);
+
+      // Save a brand new game 2 (no resumedSavedGameId)
+      final provider2 = HorseRaceProvider();
+      provider2.startGame(players, 100);
+      provider2.processDartThrow(50, dartDisplay: 'Bull');
+      await provider2.saveGame(players);
+
+      // Should have 2 saves: overwritten game 1 + new game 2
+      saved = await SaveGameService().loadSavedGames('carnival_derby');
+      expect(saved, hasLength(2));
+      expect(saved[0].id, originalId); // overwritten, same ID
+      expect(saved[1].id, isNot(originalId)); // new game, different ID
+    });
+  });
+
   group('Multiple saves independence', () {
     test('saves for different game types are independent', () async {
       final hrProvider = HorseRaceProvider();

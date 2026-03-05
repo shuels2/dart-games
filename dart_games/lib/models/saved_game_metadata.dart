@@ -34,9 +34,10 @@ class SavedGameMetadata {
     required String leadingPlayerScore,
     required Map<String, dynamic> gameState,
     bool waitingForTakeout = false,
+    String? existingId,
   }) {
     return SavedGameMetadata(
-      id: const Uuid().v4(),
+      id: existingId ?? const Uuid().v4(),
       gameType: gameType,
       savedAt: DateTime.now(),
       playerNames: playerNames,

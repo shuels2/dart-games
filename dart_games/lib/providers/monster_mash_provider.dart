@@ -360,6 +360,7 @@ class MonsterMashProvider extends ChangeNotifier {
       leadingPlayerScore: '$maxHealth HP',
       gameState: game.toJson(),
       waitingForTakeout: _waitingForTakeout,
+      existingId: _resumedSavedGameId,
     );
 
     await SaveGameService().saveGame(metadata);

@@ -2,11 +2,11 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 868 total tests:
-- **637 non-UI tests** (models, providers, services, widgets, game logic)
-- **231 UI automation tests** (end-to-end testing with Chrome)
+The Dart Games app has a comprehensive test suite with 878 total tests:
+- **643 non-UI tests** (models, providers, services, widgets, game logic)
+- **235 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (637 tests)
+## Non-UI Tests (643 tests)
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -38,8 +38,8 @@ The Dart Games app has a comprehensive test suite with 868 total tests:
 - AppSettings: 20 tests
 - VictoryMusicService: 22 tests
 
-**Save Game Service Tests (12 tests)**
-- SaveGameService CRUD: 12 tests
+**Save Game Service Tests (13 tests)**
+- SaveGameService CRUD: 13 tests
 
 **Integration Tests (163 tests)**
 - Carnival Derby User Management: 26 tests
@@ -50,12 +50,13 @@ The Dart Games app has a comprehensive test suite with 868 total tests:
 - Monster Mash Announcements: 18 tests
 - Reef Royale Game Logic + Announcements: ~154 tests
 
-**Save/Resume Integration Tests (15 tests)**
+**Save/Resume Integration Tests (20 tests)**
 - Save trigger conditions: 8 tests
 - Full save-resume-complete cycles: 4 tests
+- Resumed game save overwrites: 5 tests
 - Multiple saves independence: 3 tests
 
-_Note: Some tests span multiple categories. The total (637) is the authoritative count from `flutter test`._
+_Note: Some tests span multiple categories. The total (643) is the authoritative count from `flutter test`._
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
@@ -66,34 +67,34 @@ _Note: Some tests span multiple categories. The total (637) is the authoritative
 - SaveGameModal: 8 tests
 - ResumeGameModal: 13 tests
 
-## UI Automation Tests (231 tests)
+## UI Automation Tests (235 tests)
 
 **Run with:** `./run_ui_tests.bat` or `flutter drive`
-**Execution time:** ~163 minutes
+**Execution time:** ~167 minutes
 **OPTIONAL:** Ask user before running
 
-### Target Tag (62 tests, ~48 minutes)
+### Target Tag (63 tests, ~49 minutes)
 - Menu and Mechanics: 24 tests (~12 min)
 - Visual Validation: 4 tests (~2 min)
 - Gameplay: 13 tests (~10 min)
 - Add Player: 6 tests (~3 min)
 - Results Screen: 6 tests (~5.5 min)
-- Save & Resume: 9 tests (~8 min)
+- Save & Resume: 10 tests (~9 min)
 
-### Carnival Derby (33 tests, ~22 minutes)
+### Carnival Derby (34 tests, ~23 minutes)
 - Complete UI test suite: 24 tests (~14 min)
-- Save & Resume: 9 tests (~8 min)
+- Save & Resume: 10 tests (~9 min)
 
-### Monster Mash (60 tests, ~40 minutes)
+### Monster Mash (61 tests, ~41 minutes)
 - Menu: ~5 min
 - Gameplay: ~7 min
 - Buffs: ~5 min
 - Edit Score: ~4 min
 - Add Player: ~4 min
 - Results: ~7 min
-- Save & Resume: 9 tests (~8 min)
+- Save & Resume: 10 tests (~9 min)
 
-### Reef Royale (76 tests, ~53 minutes)
+### Reef Royale (77 tests, ~54 minutes)
 - Add Player: 6 tests (~2 min)
 - Menu and Settings: 10 tests (~3 min)
 - Gameplay: 30 tests (~15 min)
@@ -102,12 +103,12 @@ _Note: Some tests span multiple categories. The total (637) is the authoritative
 - Visual Validation: 7 tests (~3 min)
 - Screenshot: 1 test (~10 min)
 - Showcase: 1 test (~4 min)
-- Save & Resume: 9 tests (~8 min)
+- Save & Resume: 10 tests (~9 min)
 
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (506 tests)
+✅ Run `flutter test` (643 tests)
 ✅ 100% pass rate MANDATORY
 ✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass

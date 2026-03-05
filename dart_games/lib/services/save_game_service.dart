@@ -9,7 +9,19 @@ class SaveGameService {
     final prefs = await SharedPreferences.getInstance();
     final key = _storageKey(metadata.gameType);
     final existing = prefs.getStringList(key) ?? [];
-    existing.add(jsonEncode(metadata.toJson()));
+
+    // Check if a save with this ID already exists (resumed game being re-saved)
+    final existingIndex = existing.indexWhere((s) {
+      final json = jsonDecode(s);
+      return json['id'] == metadata.id;
+    });
+
+    final encoded = jsonEncode(metadata.toJson());
+    if (existingIndex >= 0) {
+      existing[existingIndex] = encoded;
+    } else {
+      existing.add(encoded);
+    }
     await prefs.setStringList(key, existing);
   }
 
