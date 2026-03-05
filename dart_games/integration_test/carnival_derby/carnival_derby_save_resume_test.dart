@@ -55,6 +55,57 @@ void main() {
     }
   }
 
+  /// Throw a dart at a specific number via mock API
+  Future<void> throwDartViaMock(WidgetTester tester, int number,
+      {String multiplier = 'single'}) async {
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    final mockApi = dartboardProvider.apiService;
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: number *
+            (multiplier == 'double'
+                ? 2
+                : multiplier == 'triple'
+                    ? 3
+                    : 1),
+        multiplier: multiplier,
+        playerName: 'Player',
+        baseScore: number,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Throw a miss via mock API
+  Future<void> throwMissViaMock(WidgetTester tester) async {
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    final mockApi = dartboardProvider.apiService;
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 0,
+        multiplier: 'single',
+        playerName: 'Player',
+        baseScore: 0,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Click DARTS REMOVED button on emulator
+  Future<void> clickDartsRemoved(WidgetTester tester) async {
+    final dartsRemovedButton = find.text('DARTS REMOVED');
+    if (dartsRemovedButton.evaluate().isNotEmpty) {
+      await tester.tap(dartsRemovedButton.first);
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
   /// Pre-populate a saved game in SharedPreferences (for resume modal tests)
   Future<String> preSaveGame() async {
     final metadata = SavedGameMetadata.create(
@@ -258,6 +309,59 @@ void main() {
 
       // Empty state should show
       expect(ElementFinders.getResumeGameModalEmptyState(), findsOneWidget);
+    });
+
+    testWidgets('resumed game auto-deletes saved game on completion',
+        (tester) async {
+      // Full roundtrip: navigate → throw → save → home → resume → complete
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      // Back to home from menu
+      await tester.tap(find.byKey(CarnivalDerbyMenuKeys.backButton));
+      await PumpSequences.navigation(tester);
+
+      // Tap game card on home
+      await tester.tap(config.getGameCard());
+      await PumpSequences.asyncDataLoad(tester);
+
+      // Get saved game ID and select it
+      final saved = await SaveGameService().loadSavedGames(gameType);
+      expect(saved, hasLength(1));
+      final savedGameId = saved[0].id;
+      await UITestHelpers.selectSavedGameTile(tester, savedGameId);
+      await UITestHelpers.tapResumeGameButton(tester);
+
+      // Play to completion: Alice has 20 pts, 1/3 darts, target=150
+      // Remaining 2 darts this turn
+      await throwDartViaMock(tester, 20, multiplier: 'triple'); // 60 → total 80
+      await throwDartViaMock(tester, 20, multiplier: 'triple'); // 60 → total 140
+      await clickDartsRemoved(tester);
+
+      // Bob's turn: miss all 3
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+
+      // Alice's turn: S20 → total 160 ≥ 150 = wins!
+      await throwDartViaMock(tester, 20);
+      await clickDartsRemoved(tester);
+
+      // Wait for results screen
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump();
+      await tester.pump();
+
+      // Verify results screen
+      expect(config.getPlayAgainButton(), findsOneWidget);
+
+      // Verify saved game was auto-deleted
+      final remaining = await SaveGameService().loadSavedGames(gameType);
+      expect(remaining, isEmpty);
     });
   });
 }

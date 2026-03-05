@@ -55,6 +55,66 @@ void main() {
     }
   }
 
+  /// Throw a dart at a specific number via mock API
+  Future<void> throwDartViaMock(WidgetTester tester, int number,
+      {String multiplier = 'single'}) async {
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    final mockApi = dartboardProvider.apiService;
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: number *
+            (multiplier == 'double'
+                ? 2
+                : multiplier == 'triple'
+                    ? 3
+                    : 1),
+        multiplier: multiplier,
+        playerName: 'Player',
+        baseScore: number,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Throw a miss via mock API
+  Future<void> throwMissViaMock(WidgetTester tester) async {
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    final mockApi = dartboardProvider.apiService;
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 0,
+        multiplier: 'single',
+        playerName: 'Player',
+        baseScore: 0,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Click DARTS REMOVED button on emulator
+  Future<void> clickDartsRemoved(WidgetTester tester) async {
+    final dartsRemovedButton = find.text('DARTS REMOVED');
+    if (dartsRemovedButton.evaluate().isNotEmpty) {
+      await tester.tap(dartsRemovedButton.first);
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Navigate to game screen with low health for quick completion
+  Future<void> navigateToGameScreenLowHealth(WidgetTester tester) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+    await SettingsHelpers.setMonsterMashHealthMax(tester, 10);
+    await UITestHelpers.addPlayer(tester, 'Alice', config);
+    await UITestHelpers.addPlayer(tester, 'Bob', config);
+    await UITestHelpers.startGame(tester, config);
+  }
+
   /// Pre-populate a saved game in SharedPreferences
   Future<String> preSaveGame() async {
     final metadata = SavedGameMetadata.create(
@@ -238,6 +298,68 @@ void main() {
       await UITestHelpers.deleteAllSavedGames(tester);
 
       expect(ElementFinders.getResumeGameModalEmptyState(), findsOneWidget);
+    });
+
+    testWidgets('resumed game auto-deletes saved game on completion',
+        (tester) async {
+      // Full roundtrip: navigate → throw → save → home → resume → complete
+      // Use low health (10) for quick game completion
+      await navigateToGameScreenLowHealth(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      // Back to home from menu
+      await tester.tap(find.byKey(MonsterMashMenuKeys.backButton));
+      await PumpSequences.navigation(tester);
+
+      // Tap game card on home
+      await tester.tap(config.getGameCard());
+      await PumpSequences.asyncDataLoad(tester);
+
+      // Get saved game ID and select it
+      final saved = await SaveGameService().loadSavedGames(gameType);
+      expect(saved, hasLength(1));
+      final savedGameId = saved[0].id;
+      await UITestHelpers.selectSavedGameTile(tester, savedGameId);
+      await UITestHelpers.tapResumeGameButton(tester);
+
+      // Play to completion: health=10, Alice has 2 darts remaining
+      // Get Bob's target number for attacks
+      final bob = ProviderHelpers.findPlayerByName(tester, 'Bob')!;
+      final bobTarget =
+          ProviderHelpers.getMonsterMashPlayerTarget(tester, bob.id)!;
+
+      // Alice's remaining 2 darts: attack Bob with triples (6 damage)
+      await throwDartViaMock(tester, bobTarget, multiplier: 'triple');
+      await throwDartViaMock(tester, bobTarget, multiplier: 'triple');
+      await clickDartsRemoved(tester);
+
+      // Bob's turn: miss all 3
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await clickDartsRemoved(tester);
+
+      // Alice: finish off Bob (need 4 more damage max, triple + single = 4)
+      await throwDartViaMock(tester, bobTarget, multiplier: 'triple');
+      await throwDartViaMock(tester, bobTarget);
+      await clickDartsRemoved(tester);
+
+      // Wait for results screen
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+
+      // Verify results screen
+      expect(config.getPlayAgainButton(), findsOneWidget);
+
+      // Verify saved game was auto-deleted
+      final remaining = await SaveGameService().loadSavedGames(gameType);
+      expect(remaining, isEmpty);
     });
   });
 }
