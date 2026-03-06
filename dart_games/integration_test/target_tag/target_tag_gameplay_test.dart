@@ -112,11 +112,26 @@ void main() {
 
   /// Navigate back to menu from game screen
   Future<void> navigateBackToMenu(WidgetTester tester) async {
-    final backButton = find.byTooltip('Back');
+    // Use the proper keyed back button
+    final backButton = find.byKey(TargetTagGameKeys.backButton);
+
     if (backButton.evaluate().isNotEmpty) {
       await tester.tap(backButton.first);
       await PumpSequences.navigation(tester);
-    } else {
+
+      // Handle Save Game Modal (appears when leaving active game)
+      final dontSaveButton = find.byKey(SaveGameModalKeys.dontSaveButton);
+      if (dontSaveButton.evaluate().isNotEmpty) {
+        await tester.tap(dontSaveButton);
+        await PumpSequences.dialogClose(tester);
+      }
+
+      // Handle Resume Game Modal (appears when returning to menu with saved games)
+      final startNewButton = find.byKey(ResumeGameModalKeys.startNewGameButton);
+      if (startNewButton.evaluate().isNotEmpty) {
+        await tester.tap(startNewButton);
+        await PumpSequences.dialogClose(tester);
+      }
     }
   }
 

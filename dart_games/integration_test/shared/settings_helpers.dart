@@ -64,7 +64,10 @@ class SettingsHelpers {
 
   /// Target Tag: Toggle Hero Bonus
   static Future<void> toggleTargetTagHeroBonus(WidgetTester tester) async {
-    await toggleSwitch(tester, ElementFinders.getTargetTagHeroBonusToggle());
+    final finder = ElementFinders.getTargetTagHeroBonusToggle();
+    await tester.ensureVisible(finder);
+    await tester.pump();
+    await toggleSwitch(tester, finder);
   }
 
   /// Carnival Derby: Toggle Perfect Finish
@@ -79,7 +82,10 @@ class SettingsHelpers {
 
   /// Monster Mash: Toggle Speed Play
   static Future<void> toggleMonsterMashSpeedPlay(WidgetTester tester) async {
-    await toggleSwitch(tester, ElementFinders.getMonsterMashSpeedPlaySwitch());
+    final finder = ElementFinders.getMonsterMashSpeedPlaySwitch();
+    await tester.ensureVisible(finder);
+    await tester.pump();
+    await toggleSwitch(tester, finder);
   }
 
   /// Monster Mash: Set Health Max (slider)

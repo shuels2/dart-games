@@ -223,9 +223,23 @@ void main() {
       expect(find.text('Target Tag Game On!'), findsOneWidget);
 
       // Return to menu
-      final backFinder = find.byType(BackButton);
-      await tester.tap(backFinder.first);
+      final backFinder = find.byKey(TargetTagGameKeys.backButton);
+      await tester.tap(backFinder);
       await PumpSequences.navigation(tester);
+
+      // Handle Save Game Modal
+      final dontSaveButton = find.byKey(SaveGameModalKeys.dontSaveButton);
+      if (dontSaveButton.evaluate().isNotEmpty) {
+        await tester.tap(dontSaveButton);
+        await PumpSequences.dialogClose(tester);
+      }
+
+      // Handle Resume Game Modal
+      final startNewButton = find.byKey(ResumeGameModalKeys.startNewGameButton);
+      if (startNewButton.evaluate().isNotEmpty) {
+        await tester.tap(startNewButton);
+        await PumpSequences.dialogClose(tester);
+      }
 
       // Enable team mode
       await SettingsHelpers.toggleTargetTagTeamMode(tester);
@@ -239,8 +253,23 @@ void main() {
       expect(find.text('Target Tag Game On!'), findsOneWidget);
 
       // Return to menu again
-      await tester.tap(backFinder.first);
+      final backFinder2 = find.byKey(TargetTagGameKeys.backButton);
+      await tester.tap(backFinder2);
       await PumpSequences.navigation(tester);
+
+      // Handle Save Game Modal
+      final dontSaveButton2 = find.byKey(SaveGameModalKeys.dontSaveButton);
+      if (dontSaveButton2.evaluate().isNotEmpty) {
+        await tester.tap(dontSaveButton2);
+        await PumpSequences.dialogClose(tester);
+      }
+
+      // Handle Resume Game Modal
+      final startNewButton2 = find.byKey(ResumeGameModalKeys.startNewGameButton);
+      if (startNewButton2.evaluate().isNotEmpty) {
+        await tester.tap(startNewButton2);
+        await PumpSequences.dialogClose(tester);
+      }
 
       // Add 12 more players (15 total, but max 10 can be selected)
       for (int i = 4; i <= 15; i++) {
