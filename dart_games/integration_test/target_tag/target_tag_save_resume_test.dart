@@ -432,4 +432,113 @@ void main() {
       expect(remaining, isEmpty);
     });
   });
+
+  // ==================== RESUME GAME BUTTON TESTS ====================
+
+  group('Resume Game Button', () {
+    testWidgets('button is disabled when no saved games exist', (tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      // Find the resume button
+      final resumeButton = find.byKey(TargetTagMenuKeys.resumeGameButton);
+      expect(resumeButton, findsOneWidget);
+
+      // Verify button is disabled (IconButton with null onPressed)
+      final iconButton = tester.widget<IconButton>(resumeButton);
+      expect(iconButton.onPressed, isNull);
+
+      // Verify tooltip shows "No saved games"
+      expect(iconButton.tooltip, 'No saved games');
+    });
+
+    testWidgets('button becomes enabled after saving a game', (tester) async {
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      // Now on menu screen, find the resume button
+      final resumeButton = find.byKey(TargetTagMenuKeys.resumeGameButton);
+      expect(resumeButton, findsOneWidget);
+
+      // Verify button is enabled (IconButton with non-null onPressed)
+      final iconButton = tester.widget<IconButton>(resumeButton);
+      expect(iconButton.onPressed, isNotNull);
+
+      // Verify tooltip shows "Resume saved game"
+      expect(iconButton.tooltip, 'Resume saved game');
+    });
+
+    testWidgets('clicking button shows resume modal', (tester) async {
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      // Click the resume button
+      final resumeButton = find.byKey(TargetTagMenuKeys.resumeGameButton);
+      await tester.tap(resumeButton);
+      await PumpSequences.asyncDataLoad(tester);
+
+      // Verify resume modal is shown
+      UITestHelpers.verifyResumeGameModal();
+    });
+
+    testWidgets('button is visible with correct color when enabled',
+        (tester) async {
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      // Find the resume button
+      final resumeButton = find.byKey(TargetTagMenuKeys.resumeGameButton);
+      final iconButton = tester.widget<IconButton>(resumeButton);
+
+      // Verify color is white (Target Tag theme)
+      expect(iconButton.color, Colors.white);
+
+      // Verify icon is history icon
+      final icon = iconButton.icon as Icon;
+      expect(icon.icon, Icons.history);
+    });
+
+    testWidgets('button stays hidden when modal is not shown after resume',
+        (tester) async {
+      // Save a game
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      // Click resume button to show modal
+      final resumeButton = find.byKey(TargetTagMenuKeys.resumeGameButton);
+      await tester.tap(resumeButton);
+      await PumpSequences.asyncDataLoad(tester);
+
+      // Resume the game
+      final saved = await SaveGameService().loadSavedGames(gameType);
+      await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
+      await UITestHelpers.tapResumeGameButton(tester);
+
+      // Verify game screen loaded
+      expect(config.getSkipTurnButton(), findsOneWidget);
+
+      // Throw another dart and save again
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      // Verify we're back on menu screen
+      expect(config.getStartButton(), findsOneWidget);
+
+      // Verify resume modal is NOT automatically shown
+      expect(ElementFinders.getResumeGameModalOverlay(), findsNothing);
+
+      // Verify resume button is still enabled
+      final resumeButtonAfter = find.byKey(TargetTagMenuKeys.resumeGameButton);
+      final iconButton = tester.widget<IconButton>(resumeButtonAfter);
+      expect(iconButton.onPressed, isNotNull);
+    });
+  });
 }

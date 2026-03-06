@@ -1,5 +1,23 @@
 # Target Tag - Component Configurations
 
+## Shared Global Components
+
+### ResumeGameButton
+**Description:** Icon button in menu screen AppBar for accessing saved games
+
+**File:** `lib/widgets/resume_game_button.dart`
+
+**Documentation:** See [Save & Resume Game](../../development/save-resume-game.md#resume-game-button-menu-screen)
+
+**Usage:**
+```dart
+ResumeGameButton(
+  hasSavedGames: _hasSavedGames,
+  onPressed: () => setState(() => _showResumeModal = true),
+  color: Colors.white,
+)
+```
+
 ## Dartboard Emulator Components
 
 ### DartboardSectionConfig

@@ -1,5 +1,23 @@
 # Carnival Derby - Component Configurations
 
+## Shared Global Components
+
+### ResumeGameButton
+**Description:** Icon button in menu screen AppBar for accessing saved games
+
+**File:** `lib/widgets/resume_game_button.dart`
+
+**Documentation:** See [Save & Resume Game](../../development/save-resume-game.md#resume-game-button-menu-screen)
+
+**Usage:**
+```dart
+ResumeGameButton(
+  hasSavedGames: _hasSavedGames,
+  onPressed: () => setState(() => _showResumeModal = true),
+  color: const Color(0xFFF0E2D0), // Cloud Dancer
+)
+```
+
 ## Dartboard Emulator Components
 
 ### DartboardSectionConfig

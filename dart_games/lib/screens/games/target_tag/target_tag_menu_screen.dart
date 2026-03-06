@@ -12,6 +12,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../models/saved_game_metadata.dart';
 import '../../../services/save_game_service.dart';
 import '../../../widgets/resume_game_modal/resume_game_modal.dart';
+import '../../../widgets/resume_game_button.dart';
 import 'target_tag_game_screen.dart';
 
 class TargetTagMenuScreen extends StatefulWidget {
@@ -38,6 +39,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
   bool _isRandomTeams = true;
   bool _soloHeroBonus = false;
   bool _showResumeModal = false;
+  bool _hasSavedGames = false;
   final Set<String> _selectedPlayerIds = {};
   final Map<String, String> _playerTeamAssignments = {}; // playerId -> teamId
   late AnimationController _pulseController;
@@ -101,10 +103,21 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
 
       // Check for saved games
       final hasSaved = await SaveGameService().hasSavedGames('target_tag');
-      if (mounted && hasSaved) {
-        setState(() => _showResumeModal = true);
+      if (mounted) {
+        setState(() {
+          _hasSavedGames = hasSaved;
+          _showResumeModal = hasSaved;
+        });
       }
     });
+  }
+
+  /// Check for saved games and update button state
+  Future<void> _checkForSavedGames() async {
+    final hasSaved = await SaveGameService().hasSavedGames('target_tag');
+    if (mounted) {
+      setState(() => _hasSavedGames = hasSaved);
+    }
   }
 
   @override
@@ -146,6 +159,12 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
         backgroundColor: const Color(0xFFFF007A), // Hot pink
         foregroundColor: Colors.white,
         actions: [
+          ResumeGameButton(
+            key: TargetTagMenuKeys.resumeGameButton,
+            hasSavedGames: _hasSavedGames,
+            onPressed: () => setState(() => _showResumeModal = true),
+            color: Colors.white,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: DartboardConnectionInfo(
@@ -190,9 +209,18 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             ResumeGameModal(
               config: ResumeGameModalConfig.targetTag(),
               gameType: 'target_tag',
-              onStartNewGame: () => setState(() => _showResumeModal = false),
-              onResumeGame: (savedGame) => _resumeGame(savedGame),
-              onClose: () => setState(() => _showResumeModal = false),
+              onStartNewGame: () {
+                setState(() => _showResumeModal = false);
+                _checkForSavedGames();
+              },
+              onResumeGame: (savedGame) {
+                setState(() => _showResumeModal = false);
+                _resumeGame(savedGame);
+              },
+              onClose: () {
+                setState(() => _showResumeModal = false);
+                _checkForSavedGames();
+              },
             ),
         ],
       ),
@@ -825,7 +853,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TargetTagGameScreen()),
-    );
+    ).then((_) => _checkForSavedGames());
   }
 
   void _startGame(List<Player> selectedPlayers) {
@@ -880,7 +908,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
       MaterialPageRoute(
         builder: (context) => const TargetTagGameScreen(),
       ),
-    );
+    ).then((_) => _checkForSavedGames());
   }
 
   Map<String, List<String>> _randomlyAssignTeams(List<Player> players) {

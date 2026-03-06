@@ -12,6 +12,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../models/saved_game_metadata.dart';
 import '../../../services/save_game_service.dart';
 import '../../../widgets/resume_game_modal/resume_game_modal.dart';
+import '../../../widgets/resume_game_button.dart';
 import 'reef_royale_game_screen.dart';
 
 class ReefRoyaleMenuScreen extends StatefulWidget {
@@ -52,6 +53,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
   bool _speedPlay = false;
   double _roundLimit = 10.0;
   bool _showResumeModal = false;
+  bool _hasSavedGames = false;
   PlayerProvider? _playerProvider;
 
   // Reef Royale color palette
@@ -93,10 +95,21 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
       // Check for saved games
       final hasSaved = await SaveGameService().hasSavedGames('reef_royale');
-      if (mounted && hasSaved) {
-        setState(() => _showResumeModal = true);
+      if (mounted) {
+        setState(() {
+          _hasSavedGames = hasSaved;
+          _showResumeModal = hasSaved;
+        });
       }
     });
+  }
+
+  /// Check for saved games and update button state
+  Future<void> _checkForSavedGames() async {
+    final hasSaved = await SaveGameService().hasSavedGames('reef_royale');
+    if (mounted) {
+      setState(() => _hasSavedGames = hasSaved);
+    }
   }
 
   @override
@@ -144,6 +157,12 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          ResumeGameButton(
+            key: ReefRoyaleMenuKeys.resumeGameButton,
+            hasSavedGames: _hasSavedGames,
+            onPressed: () => setState(() => _showResumeModal = true),
+            color: _pearlWhite,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: DartboardConnectionInfo(
@@ -180,9 +199,18 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
             ResumeGameModal(
               config: ResumeGameModalConfig.reefRoyale(),
               gameType: 'reef_royale',
-              onStartNewGame: () => setState(() => _showResumeModal = false),
-              onResumeGame: (savedGame) => _resumeGame(savedGame),
-              onClose: () => setState(() => _showResumeModal = false),
+              onStartNewGame: () {
+                setState(() => _showResumeModal = false);
+                _checkForSavedGames();
+              },
+              onResumeGame: (savedGame) {
+                setState(() => _showResumeModal = false);
+                _resumeGame(savedGame);
+              },
+              onClose: () {
+                setState(() => _showResumeModal = false);
+                _checkForSavedGames();
+              },
             ),
         ],
       ),
@@ -716,7 +744,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ReefRoyaleGameScreen()),
-    );
+    ).then((_) => _checkForSavedGames());
   }
 
   void _startGame(List<Player> selectedPlayers) {
@@ -739,6 +767,6 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
       MaterialPageRoute(
         builder: (context) => const ReefRoyaleGameScreen(),
       ),
-    );
+    ).then((_) => _checkForSavedGames());
   }
 }

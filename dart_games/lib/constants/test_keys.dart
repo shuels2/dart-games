@@ -63,6 +63,7 @@ class CarnivalDerbyMenuKeys {
   static const startGameButton = Key('carnival_menu_start_game_button');
   static const startButton = Key('carnival_menu_start_button');
   static const backButton = Key('carnival_menu_back_button');
+  static const resumeGameButton = Key('carnival_menu_resume_game_button');
 }
 
 class CarnivalDerbyGameKeys {
@@ -207,6 +208,7 @@ class TargetTagMenuKeys {
   static const startGameButton = Key('target_menu_start_game_button');
   static const startButton = Key('target_menu_start_button');
   static const backButton = Key('target_menu_back_button');
+  static const resumeGameButton = Key('target_menu_resume_game_button');
 }
 
 class TargetTagGameKeys {
@@ -357,6 +359,7 @@ class MonsterMashMenuKeys {
   // Navigation
   static const startGameButton = Key('monster_menu_start_game_button');
   static const backButton = Key('monster_menu_back_button');
+  static const resumeGameButton = Key('monster_menu_resume_game_button');
 }
 
 class MonsterMashGameKeys {
@@ -490,6 +493,7 @@ class ReefRoyaleMenuKeys {
   static const speedPlaySwitch = Key('reef_menu_speed_play_switch');
   static const roundLimitSlider = Key('reef_menu_round_limit_slider');
   static const startGameButton = Key('reef_menu_start_game_button');
+  static const resumeGameButton = Key('reef_menu_resume_game_button');
   static const addPlayerButton = Key('reef_menu_add_player_button');
   static const addPlayerButtonEmptyState = Key('reef_menu_add_player_button_empty_state');
   static const playerListView = Key('reef_menu_player_list_view');

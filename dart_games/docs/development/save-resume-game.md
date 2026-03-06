@@ -85,6 +85,70 @@ Each game screen wraps `Scaffold` in `PopScope` with `canPop: !hasDartsThrown` t
 7. "Start New Game" → dismiss modal, menu screen is visible underneath
 8. Individual tiles can be deleted, or "Delete All"
 
+## Resume Game Button (Menu Screen)
+
+Each game's menu screen includes a ResumeGameButton in the AppBar, positioned just to the left of the DartboardConnectionInfo widget. This button provides quick access to the Resume Game Modal without requiring users to navigate back to the home screen.
+
+### Component Location
+**File:** `lib/widgets/resume_game_button.dart`
+
+### Props
+```dart
+ResumeGameButton({
+  required bool hasSavedGames,      // Enable/disable button
+  required VoidCallback onPressed,   // Callback when pressed
+  required Color color,              // Game-specific theme color
+  Color? disabledColor,              // Optional disabled color (defaults to color with 30% opacity)
+  double iconSize = 28,              // Icon size (defaults to 28)
+})
+```
+
+### Usage Pattern
+Each game menu screen:
+1. Adds state variable: `bool _hasSavedGames = false;`
+2. Adds check method:
+```dart
+Future<void> _checkForSavedGames() async {
+  final hasSaved = await SaveGameService().hasSavedGames('{game_type}');
+  if (mounted) {
+    setState(() => _hasSavedGames = hasSaved);
+  }
+}
+```
+3. Calls `_checkForSavedGames()` on:
+   - Initial screen load (`initState`)
+   - Resume modal close callback (`onClose`)
+   - Start new game callback (`onStartNewGame`)
+4. Adds button to AppBar:
+```dart
+AppBar(
+  actions: [
+    ResumeGameButton(
+      hasSavedGames: _hasSavedGames,
+      onPressed: () => setState(() => _showResumeModal = true),
+      color: {gameThemeColor},
+    ),
+    Padding(
+      padding: const EdgeInsets.only(right: 16.0),
+      child: DartboardConnectionInfo(...),
+    ),
+  ],
+)
+```
+
+### Per-Game Colors
+| Game | Color | Value |
+|------|-------|-------|
+| Target Tag | White | `Colors.white` |
+| Carnival Derby | Cloud Dancer | `Color(0xFFF0E2D0)` |
+| Monster Mash | Mist | `Color(0xFFD3D8D2)` |
+| Reef Royale | Pearl White | `Color(0xFFFFF8F0)` |
+
+### Button States
+- **Enabled:** Icon shows in game theme color, tooltip shows "Resume saved game"
+- **Disabled:** Icon shows at 30% opacity, tooltip shows "No saved games"
+- **Icon:** `Icons.history` (consistent across all games)
+
 ## Auto-Delete on Completion
 
 When a resumed game reaches the results screen:

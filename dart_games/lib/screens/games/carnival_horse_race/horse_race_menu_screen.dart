@@ -12,6 +12,7 @@ import '../../../constants/test_keys.dart';
 import '../../../models/saved_game_metadata.dart';
 import '../../../services/save_game_service.dart';
 import '../../../widgets/resume_game_modal/resume_game_modal.dart';
+import '../../../widgets/resume_game_button.dart';
 import 'horse_race_game_screen.dart';
 
 class HorseRaceMenuScreen extends StatefulWidget {
@@ -34,6 +35,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
   late double _targetScore;
   bool _exactScoreMode = false;
   bool _showResumeModal = false;
+  bool _hasSavedGames = false;
   PlayerProvider? _playerProvider;
 
   @override
@@ -61,10 +63,21 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
 
       // Check for saved games
       final hasSaved = await SaveGameService().hasSavedGames('carnival_derby');
-      if (mounted && hasSaved) {
-        setState(() => _showResumeModal = true);
+      if (mounted) {
+        setState(() {
+          _hasSavedGames = hasSaved;
+          _showResumeModal = hasSaved;
+        });
       }
     });
+  }
+
+  /// Check for saved games and update button state
+  Future<void> _checkForSavedGames() async {
+    final hasSaved = await SaveGameService().hasSavedGames('carnival_derby');
+    if (mounted) {
+      setState(() => _hasSavedGames = hasSaved);
+    }
   }
 
   @override
@@ -137,6 +150,12 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             actions: [
+              ResumeGameButton(
+                key: CarnivalDerbyMenuKeys.resumeGameButton,
+                hasSavedGames: _hasSavedGames,
+                onPressed: () => setState(() => _showResumeModal = true),
+                color: const Color(0xFFF1FAEE), // Cloud Dancer white
+              ),
               Padding(
                 padding: const EdgeInsets.only(right: 16.0),
                 child: DartboardConnectionInfo(
@@ -249,9 +268,18 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
             ResumeGameModal(
               config: ResumeGameModalConfig.carnivalDerby(),
               gameType: 'carnival_derby',
-              onStartNewGame: () => setState(() => _showResumeModal = false),
-              onResumeGame: (savedGame) => _resumeGame(savedGame),
-              onClose: () => setState(() => _showResumeModal = false),
+              onStartNewGame: () {
+                setState(() => _showResumeModal = false);
+                _checkForSavedGames();
+              },
+              onResumeGame: (savedGame) {
+                setState(() => _showResumeModal = false);
+                _resumeGame(savedGame);
+              },
+              onClose: () {
+                setState(() => _showResumeModal = false);
+                _checkForSavedGames();
+              },
             ),
         ],
       ),
@@ -715,7 +743,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const HorseRaceGameScreen()),
-    );
+    ).then((_) => _checkForSavedGames());
   }
 
   void _startGame(PlayerProvider playerProvider) {
@@ -735,7 +763,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
       MaterialPageRoute(
         builder: (context) => const HorseRaceGameScreen(),
       ),
-    );
+    ).then((_) => _checkForSavedGames());
   }
 
 }

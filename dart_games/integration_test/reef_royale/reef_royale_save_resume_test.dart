@@ -458,4 +458,92 @@ void main() {
       expect(remaining, isEmpty);
     });
   });
+
+  // ==================== RESUME GAME BUTTON TESTS ====================
+
+  group('Resume Game Button', () {
+    testWidgets('button is disabled when no saved games exist', (tester) async {
+      await UITestHelpers.navigateToGameMenu(tester, config);
+
+      final resumeButton = find.byKey(ReefRoyaleMenuKeys.resumeGameButton);
+      expect(resumeButton, findsOneWidget);
+
+      final iconButton = tester.widget<IconButton>(resumeButton);
+      expect(iconButton.onPressed, isNull);
+      expect(iconButton.tooltip, 'No saved games');
+    });
+
+    testWidgets('button becomes enabled after saving a game', (tester) async {
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      final resumeButton = find.byKey(ReefRoyaleMenuKeys.resumeGameButton);
+      expect(resumeButton, findsOneWidget);
+
+      final iconButton = tester.widget<IconButton>(resumeButton);
+      expect(iconButton.onPressed, isNotNull);
+      expect(iconButton.tooltip, 'Resume saved game');
+    });
+
+    testWidgets('clicking button shows resume modal', (tester) async {
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      final resumeButton = find.byKey(ReefRoyaleMenuKeys.resumeGameButton);
+      await tester.tap(resumeButton);
+      await PumpSequences.asyncDataLoad(tester);
+
+      UITestHelpers.verifyResumeGameModal();
+    });
+
+    testWidgets('button is visible with correct color when enabled',
+        (tester) async {
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      final resumeButton = find.byKey(ReefRoyaleMenuKeys.resumeGameButton);
+      final iconButton = tester.widget<IconButton>(resumeButton);
+
+      // Verify color is Pearl White
+      expect(iconButton.color, const Color(0xFFFFF8F0));
+
+      final icon = iconButton.icon as Icon;
+      expect(icon.icon, Icons.history);
+    });
+
+    testWidgets('button stays hidden when modal is not shown after resume',
+        (tester) async {
+      await navigateToGameScreen(tester);
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      final resumeButton = find.byKey(ReefRoyaleMenuKeys.resumeGameButton);
+      await tester.tap(resumeButton);
+      await PumpSequences.asyncDataLoad(tester);
+
+      final saved = await SaveGameService().loadSavedGames(gameType);
+      await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
+      await UITestHelpers.tapResumeGameButton(tester);
+
+      expect(config.getSkipTurnButton(), findsOneWidget);
+
+      await throwOneDart(tester);
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await UITestHelpers.tapSaveGameButton(tester);
+
+      expect(config.getStartButton(), findsOneWidget);
+      expect(ElementFinders.getResumeGameModalOverlay(), findsNothing);
+
+      final resumeButtonAfter = find.byKey(ReefRoyaleMenuKeys.resumeGameButton);
+      final iconButton = tester.widget<IconButton>(resumeButtonAfter);
+      expect(iconButton.onPressed, isNotNull);
+    });
+  });
 }
