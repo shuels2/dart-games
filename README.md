@@ -466,6 +466,65 @@ TeamPlayerListPanel(
 
 See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
+#### 13. Resume Game Button (`lib/widgets/resume_game_button.dart`)
+- Shared button for accessing saved games from game menu screens
+- Appears in AppBar next to Dartboard Connection Info
+- Automatically enabled/disabled based on saved game availability
+- Game-specific color theming
+
+```dart
+// Import the shared component
+import 'package:dart_games/widgets/resume_game_button.dart';
+
+// Add to AppBar actions
+AppBar(
+  title: Text('Your Game Setup'),
+  actions: [
+    ResumeGameButton(
+      key: YourGameMenuKeys.resumeGameButton,
+      hasSavedGames: _hasSavedGames,
+      onPressed: () => setState(() => _showResumeModal = true),
+      color: yourGameThemeColor,
+    ),
+    Padding(
+      padding: const EdgeInsets.only(right: 16.0),
+      child: DartboardConnectionInfo(
+        config: DartboardConnectionInfoConfig.yourGame(),
+      ),
+    ),
+  ],
+)
+
+// Check for saved games on screen load
+@override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    final hasSaved = await SaveGameService().hasSavedGames('your_game');
+    if (mounted) {
+      setState(() {
+        _hasSavedGames = hasSaved;
+        _showResumeModal = hasSaved; // Auto-show modal if games exist
+      });
+    }
+  });
+}
+```
+
+**Features:**
+- History icon (`Icons.history`) for visual consistency
+- Enabled state: Full color, "Resume saved game" tooltip
+- Disabled state: 30% opacity, "No saved games" tooltip
+- Integrates with ResumeGameModal and Save & Resume feature
+
+**Benefits:**
+- Consistent access to saved games across all games
+- Visual feedback when saved games exist
+- Direct access from menu without navigating to home screen
+- Minimal integration code per game
+
+See [CLAUDE.md](CLAUDE.md) for complete integration guide.
+
 ## Architecture
 
 ### Container App Structure
