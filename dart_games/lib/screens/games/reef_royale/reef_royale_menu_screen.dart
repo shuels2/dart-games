@@ -120,100 +120,104 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _deepReefBlue,
-      appBar: AppBar(
-        leading: IconButton(
-          key: ReefRoyaleMenuKeys.backButton,
-          icon: const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Transform.translate(
-          offset: const Offset(0, -3),
-          child: Text(
-            'Reef Royale Game Setup',
-            style: GoogleFonts.fredoka(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: _pearlWhite,
-              letterSpacing: 2,
-              shadows: [
-                Shadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
-                const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
-              ],
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: _deepReefBlue,
+          appBar: AppBar(
+            leading: IconButton(
+              key: ReefRoyaleMenuKeys.backButton,
+              icon: const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
+              onPressed: () => Navigator.of(context).pop(),
             ),
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [_deepReefBlue, _deepReefBlue, _seafoamGreen],
-              stops: [0.0, 0.45, 1.0],
+            title: Transform.translate(
+              offset: const Offset(0, -3),
+              child: Text(
+                'Reef Royale Game Setup',
+                style: GoogleFonts.fredoka(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: _pearlWhite,
+                  letterSpacing: 2,
+                  shadows: [
+                    Shadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
+                    const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          ResumeGameButton(
-            key: ReefRoyaleMenuKeys.resumeGameButton,
-            hasSavedGames: _hasSavedGames,
-            onPressed: () => setState(() => _showResumeModal = true),
-            color: _pearlWhite,
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.reefRoyale(),
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [_deepReefBlue, _deepReefBlue, _seafoamGreen],
+                  stops: [0.0, 0.45, 1.0],
+                ),
+              ),
             ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              ResumeGameButton(
+                key: ReefRoyaleMenuKeys.resumeGameButton,
+                hasSavedGames: _hasSavedGames,
+                onPressed: () => setState(() => _showResumeModal = true),
+                color: _pearlWhite,
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.reefRoyale(),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/games/reef_royale/images/ReefRoyale-Background.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Consumer<PlayerProvider>(
-            builder: (context, playerProvider, child) {
-              if (playerProvider.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/games/reef_royale/images/ReefRoyale-Background.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Consumer<PlayerProvider>(
+                builder: (context, playerProvider, child) {
+                  if (playerProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 1, child: _buildLeftPanel()),
-                  Expanded(flex: 1, child: _buildRightPanel(playerProvider)),
-                ],
-              );
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 1, child: _buildLeftPanel()),
+                      Expanded(flex: 1, child: _buildRightPanel(playerProvider)),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        // Resume game modal overlay - covers entire screen including AppBar
+        if (_showResumeModal)
+          ResumeGameModal(
+            config: ResumeGameModalConfig.reefRoyale(),
+            gameType: 'reef_royale',
+            onStartNewGame: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
+            },
+            onResumeGame: (savedGame) {
+              setState(() => _showResumeModal = false);
+              _resumeGame(savedGame);
+            },
+            onClose: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
             },
           ),
-          // Resume game modal overlay
-          if (_showResumeModal)
-            ResumeGameModal(
-              config: ResumeGameModalConfig.reefRoyale(),
-              gameType: 'reef_royale',
-              onStartNewGame: () {
-                setState(() => _showResumeModal = false);
-                _checkForSavedGames();
-              },
-              onResumeGame: (savedGame) {
-                setState(() => _showResumeModal = false);
-                _resumeGame(savedGame);
-              },
-              onClose: () {
-                setState(() => _showResumeModal = false);
-                _checkForSavedGames();
-              },
-            ),
-        ],
-      ),
+      ],
     );
   }
 

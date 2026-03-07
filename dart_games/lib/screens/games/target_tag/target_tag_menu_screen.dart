@@ -131,9 +131,11 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
-      appBar: AppBar(
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: const Color(0xFF1A1A2E),
+          appBar: AppBar(
         leading: IconButton(
           key: TargetTagMenuKeys.backButton,
           icon: const Icon(
@@ -204,26 +206,28 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
               }
             },
           ),
-          // Resume game modal overlay
-          if (_showResumeModal)
-            ResumeGameModal(
-              config: ResumeGameModalConfig.targetTag(),
-              gameType: 'target_tag',
-              onStartNewGame: () {
-                setState(() => _showResumeModal = false);
-                _checkForSavedGames();
-              },
-              onResumeGame: (savedGame) {
-                setState(() => _showResumeModal = false);
-                _resumeGame(savedGame);
-              },
-              onClose: () {
-                setState(() => _showResumeModal = false);
-                _checkForSavedGames();
-              },
-            ),
         ],
       ),
+        ),
+        // Resume game modal overlay - covers entire screen including AppBar
+        if (_showResumeModal)
+          ResumeGameModal(
+            config: ResumeGameModalConfig.targetTag(),
+            gameType: 'target_tag',
+            onStartNewGame: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
+            },
+            onResumeGame: (savedGame) {
+              setState(() => _showResumeModal = false);
+              _resumeGame(savedGame);
+            },
+            onClose: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
+            },
+          ),
+      ],
     );
   }
 

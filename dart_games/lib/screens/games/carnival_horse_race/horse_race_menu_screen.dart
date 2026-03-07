@@ -89,9 +89,11 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
-      appBar: PreferredSize(
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
+          appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Container(
           decoration: const BoxDecoration(
@@ -263,26 +265,28 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
           );
         },
       ),
-          // Resume game modal overlay
-          if (_showResumeModal)
-            ResumeGameModal(
-              config: ResumeGameModalConfig.carnivalDerby(),
-              gameType: 'carnival_derby',
-              onStartNewGame: () {
-                setState(() => _showResumeModal = false);
-                _checkForSavedGames();
-              },
-              onResumeGame: (savedGame) {
-                setState(() => _showResumeModal = false);
-                _resumeGame(savedGame);
-              },
-              onClose: () {
-                setState(() => _showResumeModal = false);
-                _checkForSavedGames();
-              },
-            ),
         ],
       ),
+        ),
+        // Resume game modal overlay - covers entire screen including AppBar
+        if (_showResumeModal)
+          ResumeGameModal(
+            config: ResumeGameModalConfig.carnivalDerby(),
+            gameType: 'carnival_derby',
+            onStartNewGame: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
+            },
+            onResumeGame: (savedGame) {
+              setState(() => _showResumeModal = false);
+              _resumeGame(savedGame);
+            },
+            onClose: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
+            },
+          ),
+      ],
     );
   }
 
