@@ -418,7 +418,11 @@ void main() {
       final resumeButton = find.byKey(MonsterMashMenuKeys.resumeGameButton);
       expect(resumeButton, findsOneWidget);
 
-      final iconButton = tester.widget<IconButton>(resumeButton);
+      final iconButtonFinder = find.descendant(
+        of: resumeButton,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinder);
       expect(iconButton.onPressed, isNull);
       expect(iconButton.tooltip, 'No saved games');
     });
@@ -432,7 +436,11 @@ void main() {
       final resumeButton = find.byKey(MonsterMashMenuKeys.resumeGameButton);
       expect(resumeButton, findsOneWidget);
 
-      final iconButton = tester.widget<IconButton>(resumeButton);
+      final iconButtonFinder = find.descendant(
+        of: resumeButton,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinder);
       expect(iconButton.onPressed, isNotNull);
       expect(iconButton.tooltip, 'Resume saved game');
     });
@@ -458,7 +466,11 @@ void main() {
       await UITestHelpers.tapSaveGameButton(tester);
 
       final resumeButton = find.byKey(MonsterMashMenuKeys.resumeGameButton);
-      final iconButton = tester.widget<IconButton>(resumeButton);
+      final iconButtonFinder = find.descendant(
+        of: resumeButton,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinder);
 
       // Verify color is Mist
       expect(iconButton.color, const Color(0xFFEEF0F2));
@@ -492,7 +504,11 @@ void main() {
       expect(ElementFinders.getResumeGameModalOverlay(), findsNothing);
 
       final resumeButtonAfter = find.byKey(MonsterMashMenuKeys.resumeGameButton);
-      final iconButton = tester.widget<IconButton>(resumeButtonAfter);
+      final iconButtonFinderAfter = find.descendant(
+        of: resumeButtonAfter,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinderAfter);
       expect(iconButton.onPressed, isNotNull);
     });
   });

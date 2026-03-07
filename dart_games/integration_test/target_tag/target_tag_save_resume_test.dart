@@ -443,8 +443,14 @@ void main() {
       final resumeButton = find.byKey(TargetTagMenuKeys.resumeGameButton);
       expect(resumeButton, findsOneWidget);
 
+      // Find the IconButton within ResumeGameButton
+      final iconButtonFinder = find.descendant(
+        of: resumeButton,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinder);
+
       // Verify button is disabled (IconButton with null onPressed)
-      final iconButton = tester.widget<IconButton>(resumeButton);
       expect(iconButton.onPressed, isNull);
 
       // Verify tooltip shows "No saved games"
@@ -461,8 +467,14 @@ void main() {
       final resumeButton = find.byKey(TargetTagMenuKeys.resumeGameButton);
       expect(resumeButton, findsOneWidget);
 
+      // Find the IconButton within ResumeGameButton
+      final iconButtonFinder = find.descendant(
+        of: resumeButton,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinder);
+
       // Verify button is enabled (IconButton with non-null onPressed)
-      final iconButton = tester.widget<IconButton>(resumeButton);
       expect(iconButton.onPressed, isNotNull);
 
       // Verify tooltip shows "Resume saved game"
@@ -491,9 +503,13 @@ void main() {
       await UITestHelpers.tapGameScreenBackButton(tester, config);
       await UITestHelpers.tapSaveGameButton(tester);
 
-      // Find the resume button
+      // Find the resume button and its IconButton
       final resumeButton = find.byKey(TargetTagMenuKeys.resumeGameButton);
-      final iconButton = tester.widget<IconButton>(resumeButton);
+      final iconButtonFinder = find.descendant(
+        of: resumeButton,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinder);
 
       // Verify color is white (Target Tag theme)
       expect(iconButton.color, Colors.white);
@@ -537,7 +553,11 @@ void main() {
 
       // Verify resume button is still enabled
       final resumeButtonAfter = find.byKey(TargetTagMenuKeys.resumeGameButton);
-      final iconButton = tester.widget<IconButton>(resumeButtonAfter);
+      final iconButtonFinderAfter = find.descendant(
+        of: resumeButtonAfter,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinderAfter);
       expect(iconButton.onPressed, isNotNull);
     });
   });

@@ -420,7 +420,11 @@ void main() {
       final resumeButton = find.byKey(CarnivalDerbyMenuKeys.resumeGameButton);
       expect(resumeButton, findsOneWidget);
 
-      final iconButton = tester.widget<IconButton>(resumeButton);
+      final iconButtonFinder = find.descendant(
+        of: resumeButton,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinder);
       expect(iconButton.onPressed, isNull);
       expect(iconButton.tooltip, 'No saved games');
     });
@@ -434,7 +438,11 @@ void main() {
       final resumeButton = find.byKey(CarnivalDerbyMenuKeys.resumeGameButton);
       expect(resumeButton, findsOneWidget);
 
-      final iconButton = tester.widget<IconButton>(resumeButton);
+      final iconButtonFinder = find.descendant(
+        of: resumeButton,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinder);
       expect(iconButton.onPressed, isNotNull);
       expect(iconButton.tooltip, 'Resume saved game');
     });
@@ -460,7 +468,11 @@ void main() {
       await UITestHelpers.tapSaveGameButton(tester);
 
       final resumeButton = find.byKey(CarnivalDerbyMenuKeys.resumeGameButton);
-      final iconButton = tester.widget<IconButton>(resumeButton);
+      final iconButtonFinder = find.descendant(
+        of: resumeButton,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinder);
 
       // Verify color is Cloud Dancer white
       expect(iconButton.color, const Color(0xFFF1FAEE));
@@ -495,7 +507,11 @@ void main() {
 
       final resumeButtonAfter =
           find.byKey(CarnivalDerbyMenuKeys.resumeGameButton);
-      final iconButton = tester.widget<IconButton>(resumeButtonAfter);
+      final iconButtonFinderAfter = find.descendant(
+        of: resumeButtonAfter,
+        matching: find.byType(IconButton),
+      );
+      final iconButton = tester.widget<IconButton>(iconButtonFinderAfter);
       expect(iconButton.onPressed, isNotNull);
     });
   });
