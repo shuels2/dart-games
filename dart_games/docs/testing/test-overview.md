@@ -2,9 +2,9 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 878 total tests:
+The Dart Games app has a comprehensive test suite with 868 total tests:
 - **643 non-UI tests** (models, providers, services, widgets, game logic)
-- **235 UI automation tests** (end-to-end testing with Chrome)
+- **225 UI automation tests** (end-to-end testing with Chrome)
 
 ## Non-UI Tests (643 tests)
 
@@ -67,43 +67,42 @@ _Note: Some tests span multiple categories. The total (643) is the authoritative
 - SaveGameModal: 8 tests
 - ResumeGameModal: 13 tests
 
-## UI Automation Tests (235 tests)
+## UI Automation Tests (225 tests)
 
 **Run with:** `./run_ui_tests.bat` or `flutter drive`
-**Execution time:** ~167 minutes
+**Execution time:** ~147 minutes
 **OPTIONAL:** Ask user before running
 
-### Target Tag (63 tests, ~49 minutes)
-- Menu and Mechanics: 24 tests (~12 min)
-- Visual Validation: 4 tests (~2 min)
-- Gameplay: 13 tests (~10 min)
+### Target Tag (62 tests, ~48 minutes)
+- Menu and Mechanics: 24 tests (~16 min)
+- Visual Validation: 4 tests (~5 min)
+- Gameplay: 13 tests (~9 min)
 - Add Player: 6 tests (~3 min)
-- Results Screen: 6 tests (~5.5 min)
-- Save & Resume: 10 tests (~9 min)
+- Results Screen: 6 tests (~7 min)
+- Save & Resume: 9 tests (~8 min)
 
-### Carnival Derby (34 tests, ~23 minutes)
+### Carnival Derby (33 tests, ~22 minutes)
 - Complete UI test suite: 24 tests (~14 min)
-- Save & Resume: 10 tests (~9 min)
+- Save & Resume: 9 tests (~8 min)
 
-### Monster Mash (61 tests, ~41 minutes)
-- Menu: ~5 min
-- Gameplay: ~7 min
-- Buffs: ~5 min
-- Edit Score: ~4 min
-- Add Player: ~4 min
-- Results: ~7 min
-- Save & Resume: 10 tests (~9 min)
+### Monster Mash (60 tests, ~40 minutes)
+- Add Player: 6 tests (~3 min)
+- Menu and Settings: 8 tests (~4 min)
+- Gameplay: 20 tests (~11 min)
+- Edit Score: 5 tests (~4 min)
+- Results Screen: 6 tests (~5 min)
+- Visual Validation: 6 tests (~5 min)
+- Save & Resume: 9 tests (~8 min)
 
-### Reef Royale (77 tests, ~54 minutes)
+### Reef Royale (70 tests, ~37 minutes)
 - Add Player: 6 tests (~2 min)
 - Menu and Settings: 10 tests (~3 min)
-- Gameplay: 30 tests (~15 min)
+- Gameplay: 25 tests (~12 min)
 - Edit Score: 6 tests (~4 min)
 - Results Screen: 6 tests (~4 min)
 - Visual Validation: 7 tests (~3 min)
-- Screenshot: 1 test (~10 min)
-- Showcase: 1 test (~4 min)
-- Save & Resume: 10 tests (~9 min)
+- Showcase: 1 test (~1 min)
+- Save & Resume: 9 tests (~8 min)
 
 ## Test Requirements
 
@@ -165,7 +164,7 @@ cd chromedriver/chromedriver-win64
 
 ### UI Automation Tests
 - 100% pass rate when run
-- Execute in ~163 minutes
+- Execute in ~147 minutes
 - Test end-to-end user flows
 - Validate visual elements
 - Test player interactions

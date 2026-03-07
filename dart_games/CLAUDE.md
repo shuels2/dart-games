@@ -95,7 +95,7 @@ flutter test test/screens/games/reef_royale/
 
 ## Current Test Counts
 
-**Total: 878 tests**
+**Total: 868 tests**
 - **Non-UI Tests:** 643 tests (100% pass rate MANDATORY)
   - Model tests: 40
   - Model serialization tests: 55
@@ -113,11 +113,11 @@ flutter test test/screens/games/reef_royale/
   - Reef Royale game logic + announcements: ~154
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **UI Automation Tests:** 235 tests (optional, ask before running)
-  - Target Tag: 63 tests (~49 minutes)
-  - Carnival Derby: 34 tests (~23 minutes)
-  - Monster Mash: 61 tests (~41 minutes)
-  - Reef Royale: 77 tests (~54 minutes)
+- **UI Automation Tests:** 225 tests (optional, ask before running)
+  - Target Tag: 62 tests (~48 minutes)
+  - Carnival Derby: 33 tests (~22 minutes)
+  - Monster Mash: 60 tests (~40 minutes)
+  - Reef Royale: 70 tests (~37 minutes)
 
 ## Critical Reminders
 

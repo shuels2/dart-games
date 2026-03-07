@@ -3,9 +3,9 @@
 ## Test Overview
 
 ### Test Suite Summary
-- **Total Tests:** 116 tests (65 non-UI + 51 UI)
+- **Total Tests:** 125 tests (65 non-UI + 60 UI)
 - **Non-UI Tests:** 65 tests (47 game logic + 18 announcements)
-- **UI Automation Tests:** 51 tests (~32 minutes)
+- **UI Automation Tests:** 60 tests (~40 minutes)
 
 ### Test Files
 
@@ -32,41 +32,50 @@
 #### UI Automation Tests
 **Location:** `integration_test/monster_mash/`
 
-1. **monster_mash_menu_test.dart** (~5 min)
+1. **monster_mash_add_player_test.dart** (6 tests, ~3 minutes)
+   - Stone button styling in dialog
+   - Add player with name only
+   - Name validation
+   - Cancel button functionality
+
+2. **monster_mash_menu_and_settings_test.dart** (8 tests, ~4 minutes)
    - Player selection and game settings validation
    - Health Points slider
    - Bonus Buffs toggle
    - Speed Play toggle and Round Limit slider
    - Start button enable/disable logic
 
-2. **monster_mash_gameplay_test.dart** (~7 min)
+3. **monster_mash_gameplay_test.dart** (20 tests, ~11 minutes)
    - Dart throw processing
    - Health bar updates
    - Monster image state changes
    - Skip turn functionality
+   - Buff activation and effects
 
-3. **monster_mash_buff_test.dart** (~5 min)
-   - Buff activation display
-   - Buff shield indicators
-   - Buff effect on gameplay
-
-4. **monster_mash_edit_score_test.dart** (~4 min)
+4. **monster_mash_edit_score_test.dart** (5 tests, ~4 minutes)
    - Edit score dialog behavior
    - Score recalculation
    - Dart border color coding (green/red/white)
 
-5. **monster_mash_add_player_test.dart** (~4 min)
-   - Stone button styling in dialog
-   - Add player with name only
-   - Name validation
-   - Cancel button functionality
-
-6. **monster_mash_results_test.dart** (~7 min)
+5. **monster_mash_results_screen_test.dart** (6 tests, ~5 minutes)
    - Winner display with monster image
    - Victory music playback
    - Play Again settings preservation
    - Change Settings navigation
    - Speed Play winner display
+
+6. **monster_mash_visual_validation_test.dart** (6 tests, ~5 minutes)
+   - Visual validation of game states
+   - Monster image rendering
+   - Health bar display
+   - Buff indicator visibility
+
+7. **monster_mash_save_resume_test.dart** (9 tests, ~8 minutes)
+   - Save game modal (back button behavior)
+   - Resume game modal (auto-show, game selection)
+   - Resume game button (enabled/disabled states)
+   - Save/resume/complete full cycle
+   - Auto-delete on game completion
 
 ## Running Tests
 

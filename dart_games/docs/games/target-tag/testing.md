@@ -3,8 +3,8 @@
 ## Test Overview
 
 ### Test Suite Summary
-- **Total Tests:** 121 tests (53 UI + 68 non-UI)
-- **UI Automation Tests:** 53 tests (~40 minutes)
+- **Total Tests:** 130 tests (62 UI + 68 non-UI)
+- **UI Automation Tests:** 62 tests (~48 minutes)
 - **Non-UI Tests:** 68 tests (54 game logic/announcements + 14 user management)
 
 ### Test Files
@@ -12,19 +12,19 @@
 #### UI Automation Tests
 **Location:** `integration_test/target_tag/`
 
-1. **target_tag_menu_and_mechanics_test.dart** (24 tests, ~15 minutes)
+1. **target_tag_menu_and_mechanics_test.dart** (24 tests, ~16 minutes)
    - Player selection and game settings validation
    - Team mode configuration and mechanics
    - Edit score functionality
    - Player tile visual highlighting
 
-2. **target_tag_visual_validation_test.dart** (4 tests, ~3.5 minutes)
+2. **target_tag_visual_validation_test.dart** (4 tests, ~5 minutes)
    - Current player badge visibility
    - Tagged In visual state
    - Eliminated player visual state
    - Team mode Tagged In visual
 
-3. **target_tag_gameplay_test.dart** (13 tests, ~12 minutes)
+3. **target_tag_gameplay_test.dart** (13 tests, ~9 minutes)
    - Hero bonus mechanics
    - Dart highlighting (D1/D2/D3)
    - Game settings panel
@@ -37,13 +37,20 @@
    - Name validation (empty, whitespace)
    - Cancel button functionality
 
-5. **target_tag_results_screen_test.dart** (6 tests, ~6 minutes)
+5. **target_tag_results_screen_test.dart** (6 tests, ~7 minutes)
    - Solo mode victory display
    - Play again settings preservation
    - Change settings navigation
    - Team mode victory display
    - Team settings preservation
    - Hero Bonus setting preservation
+
+6. **target_tag_save_resume_test.dart** (9 tests, ~8 minutes)
+   - Save game modal (back button behavior)
+   - Resume game modal (auto-show, game selection)
+   - Resume game button (enabled/disabled states)
+   - Save/resume/complete full cycle
+   - Auto-delete on game completion
 
 #### Non-UI Tests
 **Location:** `test/screens/games/target_tag/`
@@ -86,7 +93,7 @@ flutter test test/screens/games/target_tag/target_tag_user_management_test.dart
 cd chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# In separate terminal, run UI tests (5 test files)
+# In separate terminal, run UI tests (6 test files)
 cd dart_games
 
 # Menu and mechanics (24 tests)
@@ -112,6 +119,11 @@ flutter drive --driver=test_driver/integration_test.dart \
 # Results screen (6 tests)
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/target_tag/target_tag_results_screen_test.dart \
+  -d chrome
+
+# Save & Resume (9 tests)
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/target_tag/target_tag_save_resume_test.dart \
   -d chrome
 ```
 
