@@ -12,6 +12,7 @@ Dart Games is a cross-platform (web and tablet) application that provides a fram
 
 - **Carnival Derby** - A horse race-style game where players advance by scoring points with darts
 - **Monster Mash** - A monster-themed battle game where players attack opponents and heal themselves using target numbers
+- **Reef Royale** - An ocean-themed coral claiming game where players compete for territory on the dartboard
 - **Target Tag** - A strategic elimination game where players build shields and tag opponents to win
 
 ## Features
@@ -466,7 +467,89 @@ TeamPlayerListPanel(
 
 See [CLAUDE.md](CLAUDE.md) for complete integration guide.
 
-#### 13. Resume Game Button (`lib/widgets/resume_game_button.dart`)
+#### 13. Save Game Modal (`lib/widgets/save_game_modal/`)
+- Shared modal that prompts players to save their game when leaving mid-game
+- Appears when pressing back button during an active game
+- Game-specific theming via `SaveGameModalConfig` factory methods
+- Handles save confirmation, discard, and cancel actions
+
+```dart
+// Import the shared component
+import 'package:dart_games/widgets/save_game_modal/save_game_modal.dart';
+import 'package:dart_games/widgets/save_game_modal/save_game_modal_config.dart';
+
+// Show save game modal when leaving mid-game
+SaveGameModal(
+  config: SaveGameModalConfig.yourGame(),
+  onSave: () async {
+    await yourProvider.saveGame();
+    Navigator.of(context).pop();
+  },
+  onDontSave: () => Navigator.of(context).pop(),
+  onCancel: () {}, // Dismiss modal, continue playing
+)
+```
+
+**Available Configurations:**
+- `SaveGameModalConfig.carnivalDerby()` - Carnival theme
+- `SaveGameModalConfig.targetTag()` - Tech/neon theme
+- `SaveGameModalConfig.monsterMash()` - Gothic theme
+- `SaveGameModalConfig.reefRoyale()` - Ocean theme
+
+#### 14. Resume Game Modal (`lib/widgets/resume_game_modal/`)
+- Shared modal for browsing and selecting saved games to resume
+- Displays saved game metadata (date, players, progress, mode)
+- Supports selecting, deleting, and resuming saved games
+- Game-specific theming via `ResumeGameModalConfig` factory methods
+
+```dart
+// Import the shared component
+import 'package:dart_games/widgets/resume_game_modal/resume_game_modal.dart';
+import 'package:dart_games/widgets/resume_game_modal/resume_game_modal_config.dart';
+
+// Show resume game modal on menu screen
+ResumeGameModal(
+  config: ResumeGameModalConfig.yourGame(),
+  gameType: 'your_game',
+  onResume: (savedGame) async {
+    await yourProvider.restoreGame(savedGame);
+    Navigator.of(context).pushReplacement(/* game screen */);
+  },
+  onDismiss: () => setState(() => _showResumeModal = false),
+)
+```
+
+**Available Configurations:**
+- `ResumeGameModalConfig.carnivalDerby()` - Carnival theme
+- `ResumeGameModalConfig.targetTag()` - Tech/neon theme
+- `ResumeGameModalConfig.monsterMash()` - Gothic theme
+- `ResumeGameModalConfig.reefRoyale()` - Ocean theme
+
+#### 15. Save Game Service (`lib/services/save_game_service.dart`)
+- Shared service for persisting and retrieving saved game state
+- Uses `SharedPreferences` for cross-platform storage
+- Supports saving, loading, listing, and deleting saved games
+- Each game type stores games independently
+
+```dart
+// Import the service
+import 'package:dart_games/services/save_game_service.dart';
+
+// Save a game
+final service = SaveGameService();
+await service.saveGame('your_game', gameData);
+
+// Check for saved games
+final hasSaved = await service.hasSavedGames('your_game');
+
+// List saved games
+final savedGames = await service.getSavedGames('your_game');
+
+// Delete a saved game
+await service.deleteSavedGame('your_game', savedGameId);
+```
+
+#### 16. Resume Game Button (`lib/widgets/resume_game_button.dart`)
 - Shared button for accessing saved games from game menu screens
 - Appears in AppBar next to Dartboard Connection Info
 - Automatically enabled/disabled based on saved game availability
@@ -715,8 +798,10 @@ Add factory methods to:
 - `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` for dartboard styling
 - `lib/widgets/add_player/add_player_dialog_config.dart` for Add Player dialog styling
 - `lib/widgets/edit_score/edit_score_dialog_config.dart` for Edit Score dialog styling (if your game supports dart score editing)
+- `lib/widgets/save_game_modal/save_game_modal_config.dart` for Save Game modal styling
+- `lib/widgets/resume_game_modal/resume_game_modal_config.dart` for Resume Game modal styling
 
-See existing examples for Carnival Derby and Target Tag.
+See existing examples for Carnival Derby, Target Tag, Monster Mash, and Reef Royale.
 
 ### 7. Create Tests
 
@@ -820,6 +905,7 @@ Every game in Dart Games **must** integrate with:
 3. **User Win Tracking** - Call `updatePlayerStats()` for ALL players (winners AND losers) when games complete
 4. **Game Timer** - Track duration from start to completion
 5. **Victory Music** - Use `VictoryMusicService` for victory celebrations
+6. **Save & Resume** - Use `SaveGameService`, `SaveGameModal`, and `ResumeGameModal` for game persistence
 
 **IMPORTANT:** All games must use the global `GameAnnouncementQueueService` (not direct `DartAnnouncerService` calls). Create a game-specific announcement helper that wraps the global queue service.
 
