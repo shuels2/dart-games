@@ -32,6 +32,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [Dartboard Connection Info](docs/development/dartboard-connection-info.md) - Shared dartboard connection info component
 - [Remove Darts Modal](docs/development/remove-darts-modal.md) - Shared remove darts modal component
 - [Dartboard Paused Modal](docs/development/dartboard-paused-modal.md) - Shared dartboard paused modal component
+- [Resume Game Button](docs/development/resume-game-button.md) - Shared resume game button component
 - [Save & Resume Game](docs/development/save-resume-game.md) - Save and resume game feature
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
