@@ -9,6 +9,10 @@ import '../../../widgets/player_list_panel/player_list_panel.dart';
 import '../../../constants/test_keys.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../models/saved_game_metadata.dart';
+import '../../../services/save_game_service.dart';
+import '../../../widgets/resume_game_modal/resume_game_modal.dart';
+import '../../../widgets/resume_game_button.dart';
 import 'reef_royale_game_screen.dart';
 
 class ReefRoyaleMenuScreen extends StatefulWidget {
@@ -48,6 +52,8 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
   bool _showHints = false;
   bool _speedPlay = false;
   double _roundLimit = 10.0;
+  bool _showResumeModal = false;
+  bool _hasSavedGames = false;
   PlayerProvider? _playerProvider;
 
   // Reef Royale color palette
@@ -71,7 +77,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
     if (widget.initialSpeedPlay != null) _speedPlay = widget.initialSpeedPlay!;
     if (widget.initialRoundLimit != null) _roundLimit = widget.initialRoundLimit!.toDouble();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final playerProvider = context.read<PlayerProvider>();
       _playerProvider = playerProvider;
       playerProvider.loadPlayers();
@@ -86,7 +92,24 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
         }
         setState(() {});
       }
+
+      // Check for saved games
+      final hasSaved = await SaveGameService().hasSavedGames('reef_royale');
+      if (mounted) {
+        setState(() {
+          _hasSavedGames = hasSaved;
+          _showResumeModal = hasSaved;
+        });
+      }
     });
+  }
+
+  /// Check for saved games and update button state
+  Future<void> _checkForSavedGames() async {
+    final hasSaved = await SaveGameService().hasSavedGames('reef_royale');
+    if (mounted) {
+      setState(() => _hasSavedGames = hasSaved);
+    }
   }
 
   @override
@@ -97,76 +120,104 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _deepReefBlue,
-      appBar: AppBar(
-        leading: IconButton(
-          key: ReefRoyaleMenuKeys.backButton,
-          icon: const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Transform.translate(
-          offset: const Offset(0, -3),
-          child: Text(
-            'Reef Royale Game Setup',
-            style: GoogleFonts.fredoka(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: _pearlWhite,
-              letterSpacing: 2,
-              shadows: [
-                Shadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
-                const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
-              ],
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: _deepReefBlue,
+          appBar: AppBar(
+            leading: IconButton(
+              key: ReefRoyaleMenuKeys.backButton,
+              icon: const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
+              onPressed: () => Navigator.of(context).pop(),
             ),
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [_deepReefBlue, _deepReefBlue, _seafoamGreen],
-              stops: [0.0, 0.45, 1.0],
+            title: Transform.translate(
+              offset: const Offset(0, -3),
+              child: Text(
+                'Reef Royale Game Setup',
+                style: GoogleFonts.fredoka(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: _pearlWhite,
+                  letterSpacing: 2,
+                  shadows: [
+                    Shadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
+                    const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.reefRoyale(),
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [_deepReefBlue, _deepReefBlue, _seafoamGreen],
+                  stops: [0.0, 0.45, 1.0],
+                ),
+              ),
             ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              ResumeGameButton(
+                key: ReefRoyaleMenuKeys.resumeGameButton,
+                hasSavedGames: _hasSavedGames,
+                onPressed: () => setState(() => _showResumeModal = true),
+                color: _pearlWhite,
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.reefRoyale(),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/games/reef_royale/images/ReefRoyale-Background.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Consumer<PlayerProvider>(
-            builder: (context, playerProvider, child) {
-              if (playerProvider.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/games/reef_royale/images/ReefRoyale-Background.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Consumer<PlayerProvider>(
+                builder: (context, playerProvider, child) {
+                  if (playerProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 1, child: _buildLeftPanel()),
-                  Expanded(flex: 1, child: _buildRightPanel(playerProvider)),
-                ],
-              );
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 1, child: _buildLeftPanel()),
+                      Expanded(flex: 1, child: _buildRightPanel(playerProvider)),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        // Resume game modal overlay - covers entire screen including AppBar
+        if (_showResumeModal)
+          ResumeGameModal(
+            config: ResumeGameModalConfig.reefRoyale(),
+            gameType: 'reef_royale',
+            onStartNewGame: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
+            },
+            onResumeGame: (savedGame) {
+              setState(() => _showResumeModal = false);
+              _resumeGame(savedGame);
+            },
+            onClose: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
             },
           ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -692,6 +743,14 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
     );
   }
 
+  void _resumeGame(SavedGameMetadata savedGame) {
+    context.read<ReefRoyaleProvider>().restoreGame(savedGame);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ReefRoyaleGameScreen()),
+    ).then((_) => _checkForSavedGames());
+  }
+
   void _startGame(List<Player> selectedPlayers) {
     final reefRoyaleProvider = context.read<ReefRoyaleProvider>();
 
@@ -712,6 +771,6 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
       MaterialPageRoute(
         builder: (context) => const ReefRoyaleGameScreen(),
       ),
-    );
+    ).then((_) => _checkForSavedGames());
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../models/reef_royale_game.dart';
 import '../models/player.dart';
+import '../models/saved_game_metadata.dart';
+import '../services/save_game_service.dart';
 import '../services/game_skip_turn_helper.dart';
 
 class ReefRoyaleProvider extends ChangeNotifier {
@@ -347,6 +349,52 @@ class ReefRoyaleProvider extends ChangeNotifier {
       multiplier,
       resolvedTargets: resolvedTargets,
     );
+  }
+
+  // --- Save/Restore ---
+
+  String? _resumedSavedGameId;
+  String? get resumedSavedGameId => _resumedSavedGameId;
+
+  void clearResumedSavedGameId() {
+    _resumedSavedGameId = null;
+  }
+
+  Future<void> saveGame(List<Player> players) async {
+    if (_currentGame == null) return;
+    final game = _currentGame!;
+
+    // Find leading player (most corals, then most/fewest pearls based on mode)
+    final ranked = game.getRankedPlayerIds();
+    final leaderId = ranked.isNotEmpty ? ranked.first : game.playerIds.first;
+    final leaderPlayer = players.firstWhere((p) => p.id == leaderId,
+        orElse: () => players.first);
+    final leaderCorals = game.getPlayerClaimedCount(leaderId);
+
+    final metadata = SavedGameMetadata.create(
+      gameType: 'reef_royale',
+      playerNames: players
+          .where((p) => game.playerIds.contains(p.id))
+          .map((p) => p.name)
+          .toList(),
+      progressInfo: 'Round ${game.currentRound}',
+      gameModeName: '${game.gameMode == ReefRoyaleGameMode.cursedTide ? "Cursed Tide" : "Standard"}${game.easyClaim ? ", Easy" : ""}${game.neighborNumbers ? ", Neighbors" : ""}${game.randomReefs ? ", Random" : ""}${game.bonusBuffsEnabled ? ", Buffs" : ""}${game.speedPlayEnabled ? ", Speed (${game.roundLimit})" : ""}',
+      leadingPlayerName: leaderPlayer.name,
+      leadingPlayerScore: '$leaderCorals/7 corals',
+      gameState: game.toJson(),
+      waitingForTakeout: _waitingForTakeout,
+      existingId: _resumedSavedGameId,
+    );
+
+    await SaveGameService().saveGame(metadata);
+  }
+
+  void restoreGame(SavedGameMetadata savedGame) {
+    _currentGame = ReefRoyaleGame.fromJson(
+        Map<String, dynamic>.from(savedGame.gameState));
+    _waitingForTakeout = savedGame.waitingForTakeout;
+    _resumedSavedGameId = savedGame.id;
+    notifyListeners();
   }
 
   // End the current game

@@ -3,8 +3,8 @@
 ## Test Overview
 
 ### Test Suite Summary
-- **Total Tests:** 67 tests (24 UI + 43 non-UI)
-- **UI Automation Tests:** 24 tests (~12 minutes)
+- **Total Tests:** 76 tests (33 UI + 43 non-UI)
+- **UI Automation Tests:** 33 tests (~22 minutes)
 - **Non-UI Tests:** 43 tests (17 game logic + 26 user management)
 
 ### Test Files
@@ -12,12 +12,19 @@
 #### UI Automation Tests
 **Location:** `integration_test/carnival_derby/`
 
-1. **carnival_derby_ui_test.dart** (24 tests, ~12 minutes)
+1. **carnival_derby_ui_test.dart** (24 tests, ~14 minutes)
    - Menu player selection and settings
    - Game mechanics (Normal and Perfect Finish modes)
    - Skip turn and edit score functionality
    - Multi-player races and edge cases
    - Results screen functionality
+
+2. **carnival_derby_save_resume_test.dart** (9 tests, ~8 minutes)
+   - Save game modal (back button behavior)
+   - Resume game modal (auto-show, game selection)
+   - Resume game button (enabled/disabled states)
+   - Save/resume/complete full cycle
+   - Auto-delete on game completion
 
 #### Non-UI Tests
 **Location:** `test/screens/games/carnival_horse_race/`

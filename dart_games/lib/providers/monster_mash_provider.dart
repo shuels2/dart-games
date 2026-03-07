@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../models/monster_mash_game.dart';
 import '../models/player.dart';
+import '../models/saved_game_metadata.dart';
+import '../services/save_game_service.dart';
 import '../services/game_skip_turn_helper.dart';
 
 class MonsterMashProvider extends ChangeNotifier {
@@ -317,6 +319,58 @@ class MonsterMashProvider extends ChangeNotifier {
       _waitingForTakeout = true;
     }
 
+    notifyListeners();
+  }
+
+  // --- Save/Restore ---
+
+  String? _resumedSavedGameId;
+  String? get resumedSavedGameId => _resumedSavedGameId;
+
+  void clearResumedSavedGameId() {
+    _resumedSavedGameId = null;
+  }
+
+  Future<void> saveGame(List<Player> players) async {
+    if (_currentGame == null) return;
+    final game = _currentGame!;
+
+    // Find leading player (most health)
+    String leaderId = game.playerIds.first;
+    int maxHealth = 0;
+    for (final playerId in game.playerIds) {
+      final hp = game.health[playerId] ?? 0;
+      if (hp > maxHealth) {
+        maxHealth = hp;
+        leaderId = playerId;
+      }
+    }
+    final leaderPlayer = players.firstWhere((p) => p.id == leaderId,
+        orElse: () => players.first);
+
+    final metadata = SavedGameMetadata.create(
+      gameType: 'monster_mash',
+      playerNames: players
+          .where((p) => game.playerIds.contains(p.id))
+          .map((p) => p.name)
+          .toList(),
+      progressInfo: 'Round ${game.currentRound}',
+      gameModeName: 'HP: ${game.healthMax}${game.bonusBuffsEnabled ? ", Buffs" : ""}${game.speedPlayEnabled ? ", Speed (${game.roundLimit})" : ""}',
+      leadingPlayerName: leaderPlayer.name,
+      leadingPlayerScore: '$maxHealth HP',
+      gameState: game.toJson(),
+      waitingForTakeout: _waitingForTakeout,
+      existingId: _resumedSavedGameId,
+    );
+
+    await SaveGameService().saveGame(metadata);
+  }
+
+  void restoreGame(SavedGameMetadata savedGame) {
+    _currentGame = MonsterMashGame.fromJson(
+        Map<String, dynamic>.from(savedGame.gameState));
+    _waitingForTakeout = savedGame.waitingForTakeout;
+    _resumedSavedGameId = savedGame.id;
     notifyListeners();
   }
 

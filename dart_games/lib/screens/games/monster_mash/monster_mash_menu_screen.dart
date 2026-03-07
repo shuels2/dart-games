@@ -9,6 +9,10 @@ import '../../../widgets/player_list_panel/player_list_panel.dart';
 import '../../../constants/test_keys.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../models/saved_game_metadata.dart';
+import '../../../services/save_game_service.dart';
+import '../../../widgets/resume_game_modal/resume_game_modal.dart';
+import '../../../widgets/resume_game_button.dart';
 import 'monster_mash_game_screen.dart';
 
 class MonsterMashMenuScreen extends StatefulWidget {
@@ -37,6 +41,8 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
   bool _bonusBuffs = false;
   bool _speedPlay = false;
   double _roundLimit = 10.0;
+  bool _showResumeModal = false;
+  bool _hasSavedGames = false;
   late AnimationController _pulseController;
   late AnimationController _lightningController;
   PlayerProvider? _playerProvider;
@@ -68,7 +74,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
       _roundLimit = widget.initialRoundLimit!.toDouble();
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final playerProvider = context.read<PlayerProvider>();
       _playerProvider = playerProvider;
       playerProvider.loadPlayers();
@@ -83,7 +89,24 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
         }
         setState(() {});
       }
+
+      // Check for saved games
+      final hasSaved = await SaveGameService().hasSavedGames('monster_mash');
+      if (mounted) {
+        setState(() {
+          _hasSavedGames = hasSaved;
+          _showResumeModal = hasSaved;
+        });
+      }
     });
+  }
+
+  /// Check for saved games and update button state
+  Future<void> _checkForSavedGames() async {
+    final hasSaved = await SaveGameService().hasSavedGames('monster_mash');
+    if (mounted) {
+      setState(() => _hasSavedGames = hasSaved);
+    }
   }
 
   @override
@@ -96,9 +119,11 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
-      appBar: AppBar(
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: const Color(0xFF1A1A2E),
+          appBar: AppBar(
         leading: IconButton(
           key: MonsterMashMenuKeys.backButton,
           icon: Icon(
@@ -155,6 +180,12 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          ResumeGameButton(
+            key: MonsterMashMenuKeys.resumeGameButton,
+            hasSavedGames: _hasSavedGames,
+            onPressed: () => setState(() => _showResumeModal = true),
+            color: const Color(0xFFEEF0F2), // Mist
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: DartboardConnectionInfo(
@@ -194,6 +225,26 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
           ),
         ],
       ),
+        ),
+        // Resume game modal overlay - covers entire screen including AppBar
+        if (_showResumeModal)
+          ResumeGameModal(
+            config: ResumeGameModalConfig.monsterMash(),
+            gameType: 'monster_mash',
+            onStartNewGame: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
+            },
+            onResumeGame: (savedGame) {
+              setState(() => _showResumeModal = false);
+              _resumeGame(savedGame);
+            },
+            onClose: () {
+              setState(() => _showResumeModal = false);
+              _checkForSavedGames();
+            },
+          ),
+      ],
     );
   }
 
@@ -859,6 +910,14 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
   }
 
 
+  void _resumeGame(SavedGameMetadata savedGame) {
+    context.read<MonsterMashProvider>().restoreGame(savedGame);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MonsterMashGameScreen()),
+    ).then((_) => _checkForSavedGames());
+  }
+
   void _startGame(List<Player> selectedPlayers) {
     final monsterMashProvider = context.read<MonsterMashProvider>();
 
@@ -875,7 +934,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
       MaterialPageRoute(
         builder: (context) => const MonsterMashGameScreen(),
       ),
-    );
+    ).then((_) => _checkForSavedGames());
   }
 
   Widget _buildStoneNewPlayerButton({

@@ -3,9 +3,9 @@
 ## Test Overview
 
 ### Test Suite Summary
-- **Total Tests:** 252 tests (185 non-UI + 67 UI)
+- **Total Tests:** 255 tests (185 non-UI + 70 UI)
 - **Non-UI Tests:** 185 tests (153 game logic + 32 announcements)
-- **UI Automation Tests:** 67 tests (~45 minutes)
+- **UI Automation Tests:** 70 tests (~37 minutes)
 
 ### Test Files
 
@@ -56,7 +56,7 @@
    - Start button enable/disable logic
    - Cancel button functionality
 
-3. **reef_royale_gameplay_test.dart** (30 tests, ~15 min)
+3. **reef_royale_gameplay_test.dart** (25 tests, ~12 min)
    - Dart throw processing and mark accumulation
    - Coral claiming and pearl scoring
    - Dart indicator color coding
@@ -79,11 +79,15 @@
    - Dart indicators and buff banner
    - Badge visibility (present when enabled, absent when disabled)
 
-7. **reef_royale_screenshot_test.dart** (1 test, ~10 min)
-   - Captures 15 screenshots across all screens and option combinations
-
-8. **reef_royale_showcase_test.dart** (1 test, ~4 min)
+7. **reef_royale_showcase_test.dart** (1 test, ~1 min)
    - End-to-end game with Easy Claim, Neighbors, and Buffs enabled
+
+8. **reef_royale_save_resume_test.dart** (9 tests, ~8 min)
+   - Save game modal (back button behavior)
+   - Resume game modal (auto-show, game selection)
+   - Resume game button (enabled/disabled states)
+   - Save/resume/complete full cycle
+   - Auto-delete on game completion
 
 ## Test Coverage
 

@@ -19,6 +19,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'monster_mash_results_screen.dart';
 
 class MonsterMashGameScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   MonsterMashAnnouncementHelper? _audioQueue;
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   bool _gameCompleted = false;
+  bool _showSaveModal = false;
 
   // Track health tiers for announcement threshold-crossing detection
   // 0=healthy(>70%), 1=weakening(<=70%), 2=critical(<=30%), 3=barely(<=10%)
@@ -457,10 +459,19 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    return Scaffold(
+    final hasDartsThrown = currentGame.totalDartsThrown.values.any((c) => c > 0);
+
+    return PopScope(
+      canPop: !hasDartsThrown,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _showSaveModal) return;
+        setState(() => _showSaveModal = true);
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         leading: IconButton(
+          key: MonsterMashGameKeys.backButton,
           icon: Icon(
             Icons.arrow_back,
             color: const Color(0xFFF5F5DC),
@@ -476,7 +487,13 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               ),
             ],
           ),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (hasDartsThrown) {
+              setState(() => _showSaveModal = true);
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
           hoverColor: Colors.transparent,
           highlightColor: Colors.transparent,
           splashColor: Colors.transparent,
@@ -620,6 +637,16 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             DartboardPausedModal(
               config: DartboardPausedModalConfig.monsterMash(),
             ),
+          // Save game modal
+          if (_showSaveModal)
+            SaveGameModal(
+              config: SaveGameModalConfig.monsterMash(),
+              onSave: () async {
+                await monsterMashProvider.saveGame(allPlayers);
+                if (mounted) Navigator.of(context).pop();
+              },
+              onDontSave: () => Navigator.of(context).pop(),
+            ),
         ],
       ),
       floatingActionButton: DartboardEmulatorFAB(
@@ -628,6 +655,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         config: DartboardFABConfig.monsterMash(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      ),
     );
   }
 

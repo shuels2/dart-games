@@ -63,9 +63,12 @@ class CarnivalDerbyMenuKeys {
   static const startGameButton = Key('carnival_menu_start_game_button');
   static const startButton = Key('carnival_menu_start_button');
   static const backButton = Key('carnival_menu_back_button');
+  static const resumeGameButton = Key('carnival_menu_resume_game_button');
 }
 
 class CarnivalDerbyGameKeys {
+  static const backButton = Key('carnival_game_back_button');
+
   // Player information
   static Key playerTile(String playerId) =>
       Key('carnival_game_player_${playerId}_tile');
@@ -205,9 +208,12 @@ class TargetTagMenuKeys {
   static const startGameButton = Key('target_menu_start_game_button');
   static const startButton = Key('target_menu_start_button');
   static const backButton = Key('target_menu_back_button');
+  static const resumeGameButton = Key('target_menu_resume_game_button');
 }
 
 class TargetTagGameKeys {
+  static const backButton = Key('target_game_back_button');
+
   // Player information
   static Key playerTile(String playerId) =>
       Key('target_game_player_${playerId}_tile');
@@ -353,9 +359,12 @@ class MonsterMashMenuKeys {
   // Navigation
   static const startGameButton = Key('monster_menu_start_game_button');
   static const backButton = Key('monster_menu_back_button');
+  static const resumeGameButton = Key('monster_menu_resume_game_button');
 }
 
 class MonsterMashGameKeys {
+  static const backButton = Key('monster_game_back_button');
+
   // Player information
   static Key playerTile(String playerId) =>
       Key('monster_game_player_${playerId}_tile');
@@ -484,6 +493,7 @@ class ReefRoyaleMenuKeys {
   static const speedPlaySwitch = Key('reef_menu_speed_play_switch');
   static const roundLimitSlider = Key('reef_menu_round_limit_slider');
   static const startGameButton = Key('reef_menu_start_game_button');
+  static const resumeGameButton = Key('reef_menu_resume_game_button');
   static const addPlayerButton = Key('reef_menu_add_player_button');
   static const addPlayerButtonEmptyState = Key('reef_menu_add_player_button_empty_state');
   static const playerListView = Key('reef_menu_player_list_view');
@@ -492,6 +502,7 @@ class ReefRoyaleMenuKeys {
 }
 
 class ReefRoyaleGameKeys {
+  static const backButton = Key('reef_game_back_button');
   static const skipTurnButton = Key('reef_game_skip_turn_button');
   static const editScoreButton = Key('reef_game_edit_score_button');
   static Key coralCard(int targetNumber) => Key('reef_game_coral_card_$targetNumber');
@@ -548,6 +559,46 @@ class TeamAssignmentDialogKeys {
       Key('team_assignment_player_${playerId}_dropdown');
   static const saveButton = Key('team_assignment_save_button');
   static const cancelButton = Key('team_assignment_cancel_button');
+}
+
+// ============================================================================
+// DARTBOARD EMULATOR KEYS
+// ============================================================================
+
+// ============================================================================
+// SAVE GAME MODAL KEYS
+// ============================================================================
+
+class SaveGameModalKeys {
+  static const overlay = Key('save_game_modal_overlay');
+  static const container = Key('save_game_modal_container');
+  static const icon = Key('save_game_modal_icon');
+  static const title = Key('save_game_modal_title');
+  static const message = Key('save_game_modal_message');
+  static const saveButton = Key('save_game_modal_save_button');
+  static const dontSaveButton = Key('save_game_modal_dont_save_button');
+}
+
+// ============================================================================
+// RESUME GAME MODAL KEYS
+// ============================================================================
+
+class ResumeGameModalKeys {
+  static const overlay = Key('resume_game_modal_overlay');
+  static const container = Key('resume_game_modal_container');
+  static const title = Key('resume_game_modal_title');
+  static const savedGamesList = Key('resume_game_modal_saved_games_list');
+  static Key savedGameTile(String id) => Key('resume_game_modal_tile_$id');
+  static Key deleteSavedGameButton(String id) => Key('resume_game_modal_delete_$id');
+  static Key tileDate(String id) => Key('resume_game_modal_tile_date_$id');
+  static Key tilePlayers(String id) => Key('resume_game_modal_tile_players_$id');
+  static Key tileProgress(String id) => Key('resume_game_modal_tile_progress_$id');
+  static Key tileMode(String id) => Key('resume_game_modal_tile_mode_$id');
+  static Key tileLeader(String id) => Key('resume_game_modal_tile_leader_$id');
+  static const resumeGameButton = Key('resume_game_modal_resume_button');
+  static const startNewGameButton = Key('resume_game_modal_start_new_button');
+  static const deleteAllButton = Key('resume_game_modal_delete_all_button');
+  static const emptyStateText = Key('resume_game_modal_empty_state');
 }
 
 // ============================================================================

@@ -8,6 +8,7 @@ import 'dart:math';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
+import '../../../services/save_game_service.dart';
 import '../../../widgets/player_avatar_widget.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
@@ -145,6 +146,13 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
         turns: turns,
         playerCount: playerCount,
       );
+    }
+
+    // Auto-delete saved game if this was a resumed game
+    final savedGameId = horseRaceProvider.resumedSavedGameId;
+    if (savedGameId != null) {
+      await SaveGameService().deleteSavedGame('carnival_derby', savedGameId);
+      horseRaceProvider.clearResumedSavedGameId();
     }
   }
 

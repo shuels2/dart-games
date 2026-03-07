@@ -32,13 +32,14 @@ Each game has its own unique visual identity while integrating with global syste
 - [Dartboard Connection Info](docs/development/dartboard-connection-info.md) - Shared dartboard connection info component
 - [Remove Darts Modal](docs/development/remove-darts-modal.md) - Shared remove darts modal component
 - [Dartboard Paused Modal](docs/development/dartboard-paused-modal.md) - Shared dartboard paused modal component
+- [Save & Resume Game](docs/development/save-resume-game.md) - Save and resume game feature
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (701 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **506 non-UI + 195 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 506 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 195 UI tests (~131 minutes, optional)
+### 🧪 Testing (878 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **643 non-UI + 235 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 643 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 235 UI tests (~167 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -66,7 +67,7 @@ Each game has its own unique visual identity while integrating with global syste
 ```bash
 flutter test
 ```
-**Required:** 100% pass rate (506 tests)
+**Required:** 100% pass rate (637 tests)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -74,7 +75,7 @@ flutter test
 cd chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2: Run all UI tests (195 tests, ~131 minutes)
+# Terminal 2: Run all UI tests (231 tests, ~163 minutes)
 ./run_ui_tests.bat
 
 # Or run specific game
@@ -94,28 +95,34 @@ flutter test test/screens/games/reef_royale/
 
 ## Current Test Counts
 
-**Total: 701 tests**
-- **Non-UI Tests:** 506 tests (100% pass rate MANDATORY)
+**Total: 868 tests**
+- **Non-UI Tests:** 643 tests (100% pass rate MANDATORY)
   - Model tests: 40
+  - Model serialization tests: 55
   - Provider tests: 44
+  - Provider save/restore tests: 28
   - Service tests: 42
+  - Save game service tests: 13
   - Integration tests: 163
+  - Save/resume integration tests: 20
   - Shared component tests: 24
   - Widget tests: 23
+  - Save game modal tests: 8
+  - Resume game modal tests: 13
   - Monster Mash announcements: 18
   - Reef Royale game logic + announcements: ~154
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **UI Automation Tests:** 195 tests (optional, ask before running)
-  - Target Tag: 53 tests (~40 minutes)
-  - Carnival Derby: 24 tests (~14 minutes)
-  - Monster Mash: 51 tests (~32 minutes)
-  - Reef Royale: 67 tests (~45 minutes)
+- **UI Automation Tests:** 225 tests (optional, ask before running)
+  - Target Tag: 62 tests (~48 minutes)
+  - Carnival Derby: 33 tests (~22 minutes)
+  - Monster Mash: 60 tests (~40 minutes)
+  - Reef Royale: 70 tests (~37 minutes)
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 506 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 643 non-UI tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -220,7 +227,7 @@ dart_games/
 │           ├── target_tag/
 │           ├── monster_mash/
 │           └── reef_royale/
-├── test/                            # Non-UI tests (506 tests)
+├── test/                            # Non-UI tests (637 tests)
 ├── integration_test/                # UI automation tests (195 tests)
 │   ├── shared/                     # Shared test helpers
 │   ├── target_tag/                 # Target Tag UI tests (5 files)
@@ -279,6 +286,6 @@ git push origin <branch>        # Push (with permission)
 
 ---
 
-**Last Updated:** 2026-03-02
-**Documentation Version:** 3.0 (Reef Royale)
-**Total Documentation Files:** 68
+**Last Updated:** 2026-03-04
+**Documentation Version:** 3.1 (Save & Resume)
+**Total Documentation Files:** 69

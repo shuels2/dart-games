@@ -42,6 +42,26 @@
 - Shared player add/remove panel on menu screen right side
 - Integrates with global PlayerProvider
 
+### Resume Game Button
+
+**File:** `lib/widgets/resume_game_button.dart`
+
+**Documentation:** See [Save & Resume Game](../../development/save-resume-game.md#resume-game-button-menu-screen)
+
+**Usage:**
+```dart
+ResumeGameButton(
+  hasSavedGames: _hasSavedGames,
+  onPressed: () => setState(() => _showResumeModal = true),
+  color: const Color(0xFFFFF8F0), // Pearl White
+)
+```
+
+- Icon button in menu screen AppBar for accessing saved games
+- Positioned left of DartboardConnectionInfo widget
+- Enabled when saved games exist, disabled otherwise
+- Opens Resume Game Modal when pressed
+
 ## Custom Components
 
 ### Coral Card

@@ -28,6 +28,26 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  void _navigateToMenu(String gameType) {
+    Widget menuScreen;
+    switch (gameType) {
+      case 'carnival_derby':
+        menuScreen = const HorseRaceMenuScreen();
+        break;
+      case 'target_tag':
+        menuScreen = const TargetTagMenuScreen();
+        break;
+      case 'monster_mash':
+        menuScreen = const MonsterMashMenuScreen();
+        break;
+      case 'reef_royale':
+        menuScreen = const ReefRoyaleMenuScreen();
+        break;
+      default:
+        return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (context) => menuScreen));
+  }
 
   Widget _buildGameCard({
     required BuildContext context,
@@ -188,12 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'imageAssetPath': 'assets/common/icons/icon.png',
         'color': Colors.amber,
         'onTap': dartboardProvider.canPlayGames
-            ? () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HorseRaceMenuScreen(),
-                  ),
-                )
+            ? () => _navigateToMenu('carnival_derby')
             : null,
       },
       {
@@ -202,12 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'imageAssetPath': 'assets/games/target_tag/icons/TargetTag-Icon.png',
         'color': const Color(0xFFFF007A),
         'onTap': dartboardProvider.canPlayGames
-            ? () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TargetTagMenuScreen(),
-                  ),
-                )
+            ? () => _navigateToMenu('target_tag')
             : null,
       },
       {
@@ -216,12 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'imageAssetPath': 'assets/games/monster_mash/icons/MonsterMash-Icon.png',
         'color': const Color(0xFF4B0082), // Haunted Purple
         'onTap': dartboardProvider.canPlayGames
-            ? () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MonsterMashMenuScreen(),
-                  ),
-                )
+            ? () => _navigateToMenu('monster_mash')
             : null,
       },
       {
@@ -230,12 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'imageAssetPath': 'assets/games/reef_royale/icons/ReefRoyale-Icon.png',
         'color': const Color(0xFF0B3D91), // Deep Reef Blue
         'onTap': dartboardProvider.canPlayGames
-            ? () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ReefRoyaleMenuScreen(),
-                  ),
-                )
+            ? () => _navigateToMenu('reef_royale')
             : null,
       },
       // Add new games here - they will automatically be sorted alphabetically
@@ -326,26 +326,31 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: games.map((game) {
-            return SizedBox(
-              width: 360,
-              height: 400,
-              child: _buildGameCard(
-                context: context,
-                key: game['key'] as Key?,
-                imageAssetPath: game['imageAssetPath'] as String?,
-                title: game['title'] as String,
-                color: game['color'] as Color,
-                onTap: game['onTap'] as VoidCallback?,
-              ),
-            );
-          }).toList(),
-        ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: games.map((game) {
+                return SizedBox(
+                  width: 360,
+                  height: 400,
+                  child: _buildGameCard(
+                    context: context,
+                    key: game['key'] as Key?,
+                    imageAssetPath: game['imageAssetPath'] as String?,
+                    title: game['title'] as String,
+                    color: game['color'] as Color,
+                    onTap: game['onTap'] as VoidCallback?,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }

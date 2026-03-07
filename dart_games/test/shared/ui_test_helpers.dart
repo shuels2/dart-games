@@ -242,4 +242,91 @@ class UITestHelpers {
     await tester.tap(backToMenuButton);
     await PumpSequences.navigation(tester);
   }
+
+  // ==========================================================================
+  // SAVE/RESUME GAME HELPERS
+  // ==========================================================================
+
+  /// Launch app and navigate to home screen (settings must be initialized first)
+  static Future<void> navigateToHomeScreen(WidgetTester tester) async {
+    app.main();
+    // Same pump sequence as navigateToGameMenu but stop at home screen
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+  }
+
+  /// Tap back button on game screen (uses widget key via config)
+  static Future<void> tapGameScreenBackButton(WidgetTester tester, GameUIConfig config) async {
+    final backButton = config.getGameBackButton();
+    expect(backButton, findsOneWidget);
+    await tester.tap(backButton);
+    await PumpSequences.simpleUpdate(tester);
+  }
+
+  /// Verify save game modal is showing
+  static void verifySaveGameModal() {
+    expect(ElementFinders.getSaveGameModalOverlay(), findsOneWidget);
+    expect(ElementFinders.getSaveGameModalSaveButton(), findsOneWidget);
+    expect(ElementFinders.getSaveGameModalDontSaveButton(), findsOneWidget);
+  }
+
+  /// Tap Save button on save game modal
+  static Future<void> tapSaveGameButton(WidgetTester tester) async {
+    await tester.tap(ElementFinders.getSaveGameModalSaveButton());
+    await PumpSequences.navigation(tester);
+  }
+
+  /// Tap Don't Save button on save game modal
+  static Future<void> tapDontSaveButton(WidgetTester tester) async {
+    await tester.tap(ElementFinders.getSaveGameModalDontSaveButton());
+    await PumpSequences.navigation(tester);
+  }
+
+  /// Verify resume game modal is showing
+  static void verifyResumeGameModal() {
+    expect(ElementFinders.getResumeGameModalOverlay(), findsOneWidget);
+    expect(ElementFinders.getResumeGameModalResumeButton(), findsOneWidget);
+    expect(ElementFinders.getResumeGameModalStartNewButton(), findsOneWidget);
+  }
+
+  /// Select a saved game tile on resume modal
+  static Future<void> selectSavedGameTile(WidgetTester tester, String id) async {
+    final tile = ElementFinders.getResumeGameModalSavedGameTile(id);
+    expect(tile, findsOneWidget);
+    await tester.tap(tile);
+    await PumpSequences.simpleUpdate(tester);
+  }
+
+  /// Tap Resume Game button on resume modal
+  static Future<void> tapResumeGameButton(WidgetTester tester) async {
+    await tester.tap(ElementFinders.getResumeGameModalResumeButton());
+    await PumpSequences.navigation(tester);
+  }
+
+  /// Tap Start New Game button on resume modal
+  static Future<void> tapStartNewGameButton(WidgetTester tester) async {
+    await tester.tap(ElementFinders.getResumeGameModalStartNewButton());
+    await PumpSequences.navigation(tester);
+  }
+
+  /// Delete a saved game tile on resume modal
+  static Future<void> deleteSavedGameTile(WidgetTester tester, String id) async {
+    await tester.tap(ElementFinders.getResumeGameModalDeleteButton(id));
+    await PumpSequences.simpleUpdate(tester);
+  }
+
+  /// Delete all saved games on resume modal
+  static Future<void> deleteAllSavedGames(WidgetTester tester) async {
+    await tester.tap(ElementFinders.getResumeGameModalDeleteAllButton());
+    await PumpSequences.simpleUpdate(tester);
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
+import 'package:dart_games/constants/test_keys.dart';
 
 // Shared component imports
 import '../shared/ui_test_helpers.dart';
@@ -376,11 +377,25 @@ void main() {
       // Round should increment
       expect(ProviderHelpers.getMonsterMashCurrentRound(tester), 2);
 
-      // Navigate back to menu via arrow_back icon (game screen has no tooltip on back button)
-      final backButton = find.byIcon(Icons.arrow_back);
+      // Navigate back to menu using keyed back button
+      final backButton = find.byKey(MonsterMashGameKeys.backButton);
       expect(backButton, findsOneWidget);
       await tester.tap(backButton.first);
       await PumpSequences.navigation(tester);
+
+      // Handle Save Game Modal
+      final dontSaveButton = find.byKey(SaveGameModalKeys.dontSaveButton);
+      if (dontSaveButton.evaluate().isNotEmpty) {
+        await tester.tap(dontSaveButton);
+        await PumpSequences.dialogClose(tester);
+      }
+
+      // Handle Resume Game Modal
+      final startNewButton = find.byKey(ResumeGameModalKeys.startNewGameButton);
+      if (startNewButton.evaluate().isNotEmpty) {
+        await tester.tap(startNewButton);
+        await PumpSequences.dialogClose(tester);
+      }
 
       await SettingsHelpers.toggleMonsterMashSpeedPlay(tester);
       await SettingsHelpers.setMonsterMashRoundLimit(tester, 5);

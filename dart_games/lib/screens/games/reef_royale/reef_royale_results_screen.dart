@@ -8,6 +8,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../../../models/player.dart';
 import '../../../models/reef_royale_game.dart';
 import '../../../providers/player_provider.dart';
+import '../../../services/save_game_service.dart';
 import '../../../providers/reef_royale_provider.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../constants/test_keys.dart';
@@ -118,6 +119,13 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
         turns: turns,
         playerCount: playerCount,
       );
+    }
+
+    // Auto-delete saved game if this was a resumed game
+    final savedGameId = reefProvider.resumedSavedGameId;
+    if (savedGameId != null) {
+      await SaveGameService().deleteSavedGame('reef_royale', savedGameId);
+      reefProvider.clearResumedSavedGameId();
     }
   }
 

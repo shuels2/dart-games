@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../models/target_tag_game.dart';
 import '../models/player.dart';
+import '../models/saved_game_metadata.dart';
+import '../services/save_game_service.dart';
 import '../services/game_skip_turn_helper.dart';
 
 class TargetTagProvider extends ChangeNotifier {
@@ -303,6 +305,76 @@ class TargetTagProvider extends ChangeNotifier {
     _currentGame!.advanceToNextPlayer();
     _waitingForTakeout = false;
 
+    notifyListeners();
+  }
+
+  // --- Save/Restore ---
+
+  String? _resumedSavedGameId;
+  String? get resumedSavedGameId => _resumedSavedGameId;
+
+  void clearResumedSavedGameId() {
+    _resumedSavedGameId = null;
+  }
+
+  Future<void> saveGame(List<Player> players) async {
+    if (_currentGame == null) return;
+    final game = _currentGame!;
+
+    // Count non-eliminated entities
+    final entityIds = game.mode == GameMode.solo
+        ? game.playerIds
+        : game.teamPlayers!.keys.toList();
+    final activeCount = entityIds.where((id) => !(game.eliminated[id] ?? false)).length;
+
+    // Find leading entity (most shields)
+    String leaderId = game.playerIds.first;
+    int maxShields = 0;
+    for (final entityId in entityIds) {
+      final shields = game.shields[entityId] ?? 0;
+      if (shields > maxShields) {
+        maxShields = shields;
+        leaderId = entityId;
+      }
+    }
+
+    // Get leader display name
+    String leaderName;
+    if (game.mode == GameMode.team) {
+      // For teams, get first player name from team
+      final teamPlayers = game.teamPlayers![leaderId] ?? [];
+      final teamPlayer = teamPlayers.isNotEmpty
+          ? players.where((p) => p.id == teamPlayers.first).firstOrNull
+          : null;
+      leaderName = teamPlayer?.name ?? 'Team';
+    } else {
+      final player = players.where((p) => p.id == leaderId).firstOrNull;
+      leaderName = player?.name ?? 'Unknown';
+    }
+
+    final metadata = SavedGameMetadata.create(
+      gameType: 'target_tag',
+      playerNames: players
+          .where((p) => game.playerIds.contains(p.id))
+          .map((p) => p.name)
+          .toList(),
+      progressInfo: '$activeCount of ${entityIds.length} players remaining',
+      gameModeName: '${game.mode == GameMode.solo ? "Solo" : "Team"}, Shields: ${game.shieldMax}${game.soloHeroBonus ? ", Hero Bonus" : ""}',
+      leadingPlayerName: leaderName,
+      leadingPlayerScore: '$maxShields shields',
+      gameState: game.toJson(),
+      waitingForTakeout: _waitingForTakeout,
+      existingId: _resumedSavedGameId,
+    );
+
+    await SaveGameService().saveGame(metadata);
+  }
+
+  void restoreGame(SavedGameMetadata savedGame) {
+    _currentGame = TargetTagGame.fromJson(
+        Map<String, dynamic>.from(savedGame.gameState));
+    _waitingForTakeout = savedGame.waitingForTakeout;
+    _resumedSavedGameId = savedGame.id;
     notifyListeners();
   }
 
