@@ -238,4 +238,54 @@ class DualPlayerListPanelConfig {
       addPlayerDialogConfig: AddPlayerDialogConfig.reefRoyale(),
     );
   }
+
+  factory DualPlayerListPanelConfig.clockworkQuest() {
+    return DualPlayerListPanelConfig(
+      containerColor: const Color(0xFF2C2C34), // Dark Iron
+      containerOpacity: 0.80,
+      containerBorderColor: const Color(0xFFB87333).withOpacity(0.3), // Copper Rose
+      containerBorderWidth: 1,
+      headerTextStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFC5A54E), // Brass Gold
+        letterSpacing: 1.2,
+      ),
+      selectedBorderColorWhenReady: const Color(0xFFC5A54E),
+      selectedBorderWidthWhenReady: 2,
+      minPlayersForReady: 2,
+      selectedHeaderColorWhenReady: const Color(0xFFC5A54E),
+      emptyStateTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+        fontSize: 16,
+      ),
+      selectedEmptyText: 'Select at least 2 players',
+      addButtonColor: const Color(0xFF2C2C34),
+      addButtonForegroundColor: const Color(0xFFF5F0E8),
+      addButtonTextStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 14,
+        color: const Color(0xFFF5F0E8),
+      ),
+      selectedColor: const Color(0xFFC5A54E).withOpacity(0.2),
+      selectedBorderColor: const Color(0xFFC5A54E),
+      unselectedBackgroundColor: const Color(0xFF2C2C34).withOpacity(0.6),
+      unselectedBorderColor: const Color(0xFFB87333).withOpacity(0.3),
+      cardNameStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 21,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8),
+        letterSpacing: 1.0,
+      ),
+      cardStatsStyle: GoogleFonts.lato(
+        fontSize: 13,
+        color: const Color(0xFFF5F0E8),
+      ),
+      nameStatsSpacing: 1.4,
+      maxPlayers: 8,
+      availableContainerMargin: EdgeInsets.zero,
+      selectedContainerMargin: EdgeInsets.zero,
+      listGap: 8,
+      addPlayerDialogConfig: AddPlayerDialogConfig.clockworkQuest(),
+    );
+  }
 }

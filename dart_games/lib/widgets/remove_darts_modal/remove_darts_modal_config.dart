@@ -187,4 +187,38 @@ class RemoveDartsModalConfig {
       maxWidth: 400,
     );
   }
+
+  factory RemoveDartsModalConfig.clockworkQuest() {
+    return RemoveDartsModalConfig(
+      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+      backgroundOpacity: 0.95,
+      borderColor: const Color(0xFFC5A54E), // Brass Gold
+      borderWidth: 4,
+      boxShadowColor: const Color(0xFFFFBF00), // Amber Glow
+      boxShadowOpacity: 0.4,
+      iconColor: const Color(0xFFF5F0E8), // Steam White
+      iconSize: 48,
+      playerNameTextStyle: GoogleFonts.cinzelDecorative(
+        color: const Color(0xFFC5A54E), // Brass Gold
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
+      ),
+      instructionTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8), // Steam White
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.0,
+      ),
+      buttonBackgroundColor: const Color(0xFFC5A54E).withOpacity(0.85), // Brass Gold
+      buttonForegroundColor: const Color(0xFF2C2C34), // Dark Iron
+      buttonTextStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+      editButtonText: 'Edit player score',
+      maxWidth: 400,
+    );
+  }
 }

@@ -124,4 +124,26 @@ class DartboardPausedModalConfig {
       ),
     );
   }
+
+  factory DartboardPausedModalConfig.clockworkQuest() {
+    return DartboardPausedModalConfig(
+      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+      borderColor: const Color(0xFFC5A54E), // Brass Gold
+      boxShadowColor: const Color(0xFFFFBF00), // Amber Glow
+      boxShadowOpacity: 0.4,
+      iconColor: const Color(0xFFC5A54E), // Brass Gold
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.cinzelDecorative(
+        color: const Color(0xFFC5A54E),
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
+      ),
+      messageTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8), // Steam White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 }

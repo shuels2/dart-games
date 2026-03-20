@@ -140,6 +140,28 @@ class GameUIConfig {
     );
   }
 
+  /// Clockwork Quest game configuration
+  factory GameUIConfig.clockworkQuest() {
+    return GameUIConfig._(
+      gameName: 'Clockwork Quest',
+      getGameCard: ElementFinders.getClockworkQuestCard,
+      getAddPlayerButton: ElementFinders.getClockworkQuestAddPlayerButton,
+      getPlayerTile: ElementFinders.getClockworkQuestPlayerTile,
+      getStartButton: ElementFinders.getClockworkQuestStartButton,
+      getSkipTurnButton: ElementFinders.getClockworkQuestSkipTurnButton,
+      getEditScoreButton: ElementFinders.getClockworkQuestEditScoreButton,
+      getDartButton: (multiplier, number) => find.text('Not used in Clockwork Quest'),
+      getBullseyeButton: () => find.text('Not used in Clockwork Quest'),
+      getOuterBullButton: () => find.text('Not used in Clockwork Quest'),
+      getMissButton: () => find.text('Not used in Clockwork Quest'),
+      getPlayAgainButton: ElementFinders.getClockworkQuestPlayAgainButton,
+      getChangeSettingsButton:
+          ElementFinders.getClockworkQuestChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getClockworkQuestBackToMenuButton,
+      getGameBackButton: ElementFinders.getClockworkQuestGameBackButton,
+    );
+  }
+
   // ==========================================================================
   // HOME SCREEN OPERATIONS
   // ==========================================================================

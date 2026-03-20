@@ -146,6 +146,16 @@ class UITestHelpers {
       } else {
         addButton = normalStateButton;
       }
+    } else if (config.gameName == 'Clockwork Quest') {
+      // For Clockwork Quest, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getClockworkQuestAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getClockworkQuestAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
     } else {
       // For other games, use the config method
       addButton = config.getAddPlayerButton();

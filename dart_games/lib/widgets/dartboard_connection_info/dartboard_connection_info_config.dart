@@ -246,4 +246,35 @@ class DartboardConnectionInfoConfig {
       errorColor: const Color(0xFFFF6B6B), // Coral Pink
     );
   }
+
+  factory DartboardConnectionInfoConfig.clockworkQuest() {
+    return DartboardConnectionInfoConfig(
+      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+      backgroundOpacity: 0.95,
+      emulatorBorderColor: const Color(0xFFB87333), // Copper Rose
+      hardwareBorderColor: const Color(0xFFC5A54E), // Brass Gold
+      nameTextStyle: GoogleFonts.lato(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        height: 1.0,
+        color: const Color(0xFFF5F0E8), // Steam White
+      ),
+      statusTextStyle: GoogleFonts.lato(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        height: 1.0,
+      ),
+      emulatorLabelTextStyle: GoogleFonts.lato(
+        fontSize: 10,
+        height: 1.0,
+        color: const Color(0xFFB87333), // Copper Rose
+      ),
+      emulatorIconColor: const Color(0xFFB87333), // Copper Rose
+      hardwareIconColor: const Color(0xFFC5A54E), // Brass Gold
+      connectedColor: const Color(0xFF43B3AE), // Verdigris Green
+      connectingColor: const Color(0xFFFFBF00), // Amber Glow
+      disconnectedColor: const Color(0xFFFF6B6B),
+      errorColor: const Color(0xFFFF6B6B),
+    );
+  }
 }

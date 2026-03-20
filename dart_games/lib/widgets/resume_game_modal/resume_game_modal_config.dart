@@ -301,4 +301,66 @@ class ResumeGameModalConfig {
       ),
     );
   }
+
+  factory ResumeGameModalConfig.clockworkQuest() {
+    return ResumeGameModalConfig(
+      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+      borderColor: const Color(0xFFC5A54E), // Brass Gold
+      boxShadowColor: const Color(0xFFFFBF00), // Amber Glow
+      boxShadowOpacity: 0.4,
+      titleTextStyle: GoogleFonts.cinzelDecorative(
+        color: const Color(0xFFC5A54E),
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
+      ),
+      tileBackgroundColor: const Color(0xFF2C2C34).withOpacity(0.6),
+      tileSelectedBackgroundColor: const Color(0xFFC5A54E).withOpacity(0.15),
+      tileBorderColor: const Color(0xFFB87333).withOpacity(0.3), // Copper Rose
+      tileSelectedBorderColor: const Color(0xFFC5A54E),
+      tileDateTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8).withOpacity(0.6),
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+      ),
+      tilePlayersTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+        fontSize: 13,
+      ),
+      tileProgressTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8),
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+      tileModeTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8), // Steam White
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+      tileLeaderTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFC5A54E),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      deleteButtonColor: const Color(0xFFFF6B6B),
+      resumeButtonColor: const Color(0xFFC5A54E), // Brass Gold
+      resumeButtonTextColor: const Color(0xFF2C2C34),
+      resumeButtonTextStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+      resumeButtonDisabledColor: Colors.grey,
+      startNewButtonColor: const Color(0xFFF5F0E8).withOpacity(0.2),
+      startNewButtonTextColor: const Color(0xFFF5F0E8),
+      startNewButtonTextStyle: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w600),
+      startNewButtonPadding: const EdgeInsets.only(top: 12, bottom: 16),
+      deleteAllButtonColor: const Color(0xFFFF6B6B),
+      deleteAllButtonTextStyle: GoogleFonts.lato(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFFF6B6B),
+      ),
+    );
+  }
 }

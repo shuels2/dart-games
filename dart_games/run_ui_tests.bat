@@ -74,7 +74,7 @@ set fail_count=0
 
 echo ========================================
 if "!run_all!"=="1" (
-    echo Running All UI Automation Tests ^(225 tests, ~147 minutes^)
+    echo Running All UI Automation Tests ^(272 tests, ~173 minutes^)
 ) else (
     echo Running Selected UI Automation Tests
 )
@@ -1419,6 +1419,360 @@ if "!should_run!"=="1" (
     echo.
 )
 
+REM ==================================================================
+REM Clockwork Quest UI Tests (7 files, 37 tests, ~26 minutes)
+REM ==================================================================
+
+call :check_should_run "clockwork_quest_add_player_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Add Player Test
+    echo ========================================
+    echo File: clockwork_quest_add_player_test.dart
+    echo Tests: 6 tests
+    echo Expected Duration: ~4 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Add Player Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_add_player_test.dart >> integration_test_output\summary.txt
+    echo Tests: 6 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\24_clockwork_quest_add_player.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_add_player_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+call :check_should_run "clockwork_quest_menu_and_settings_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Menu and Settings Test
+    echo ========================================
+    echo File: clockwork_quest_menu_and_settings_test.dart
+    echo Tests: 8 tests
+    echo Expected Duration: ~5 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Menu and Settings Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_menu_and_settings_test.dart >> integration_test_output\summary.txt
+    echo Tests: 8 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\25_clockwork_quest_menu_and_settings.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_menu_and_settings_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+call :check_should_run "clockwork_quest_gameplay_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Gameplay Test
+    echo ========================================
+    echo File: clockwork_quest_gameplay_test.dart
+    echo Tests: 14 tests
+    echo Expected Duration: ~8 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Gameplay Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_gameplay_test.dart >> integration_test_output\summary.txt
+    echo Tests: 14 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~8 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\26_clockwork_quest_gameplay.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_gameplay_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+call :check_should_run "clockwork_quest_edit_score_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Edit Score Test
+    echo ========================================
+    echo File: clockwork_quest_edit_score_test.dart
+    echo Tests: 4 tests
+    echo Expected Duration: ~3 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Edit Score Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_edit_score_test.dart >> integration_test_output\summary.txt
+    echo Tests: 4 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~3 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\27_clockwork_quest_edit_score.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_edit_score_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+call :check_should_run "clockwork_quest_results_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Results Test
+    echo ========================================
+    echo File: clockwork_quest_results_test.dart
+    echo Tests: 5 tests
+    echo Expected Duration: ~4 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Results Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_results_test.dart >> integration_test_output\summary.txt
+    echo Tests: 5 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\28_clockwork_quest_results.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_results_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+call :check_should_run "clockwork_quest_save_resume_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Save ^& Resume Test
+    echo ========================================
+    echo File: clockwork_quest_save_resume_test.dart
+    echo Tests: 10 tests
+    echo Expected Duration: ~7 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Save ^& Resume Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_save_resume_test.dart >> integration_test_output\summary.txt
+    echo Tests: 10 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~7 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\29_clockwork_quest_save_resume.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_save_resume_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/integration_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+call :check_should_run "clockwork_quest_screenshot_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Screenshot Test
+    echo ========================================
+    echo File: clockwork_quest_screenshot_test.dart
+    echo Tests: 1 test
+    echo Expected Duration: ~3 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    REM Write to summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Screenshot Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_screenshot_test.dart >> integration_test_output\summary.txt
+    echo Tests: 1 test >> integration_test_output\summary.txt
+    echo Expected Duration: ~3 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    echo Starting ChromeDriver...
+    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+    timeout /t 5 /nobreak >nul
+    set _LOG=integration_test_output\30_clockwork_quest_screenshot.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_screenshot_test.dart
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    start /B "" cmd /C "flutter drive --driver=test_driver/screenshot_test.dart --target=!_TARGET! -d chrome >> !_LOG! 2>&1"
+    powershell -NoProfile -Command "$log='!_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 1800){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=$c -match 'All tests passed';break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
 REM Generate summary
 echo ========================================
 echo Test Suite Complete
@@ -1472,7 +1826,7 @@ echo   run_ui_tests.bat /help
 echo.
 echo DESCRIPTION:
 echo   Runs UI automation tests for the Dart Games application.
-echo   By default, runs all 19 test files (172 total tests, ~130 minutes).
+echo   By default, runs all 30 test files (272 total tests, ~173 minutes).
 echo   You can optionally specify which test files to run.
 echo.
 echo PARAMETERS:
@@ -1504,6 +1858,13 @@ echo  20. carnival_derby_save_resume_test.dart        (9 tests,  ~8 min)
 echo  21. target_tag_save_resume_test.dart            (9 tests,  ~8 min)
 echo  22. monster_mash_save_resume_test.dart          (9 tests,  ~8 min)
 echo  23. reef_royale_save_resume_test.dart           (9 tests,  ~8 min)
+echo  24. clockwork_quest_add_player_test.dart        (6 tests,  ~4 min)
+echo  25. clockwork_quest_menu_and_settings_test.dart (8 tests,  ~5 min)
+echo  26. clockwork_quest_gameplay_test.dart          (14 tests, ~8 min)
+echo  27. clockwork_quest_edit_score_test.dart        (4 tests,  ~3 min)
+echo  28. clockwork_quest_results_test.dart           (5 tests,  ~4 min)
+echo  29. clockwork_quest_save_resume_test.dart       (10 tests, ~7 min)
+echo  30. clockwork_quest_screenshot_test.dart        (1 test,   ~3 min)
 echo.
 echo EXAMPLES:
 echo   Run all tests (default):
@@ -1528,6 +1889,9 @@ echo     run_ui_tests.bat monster_mash
 echo.
 echo   Run all Reef Royale tests:
 echo     run_ui_tests.bat reef_royale
+echo.
+echo   Run all Clockwork Quest tests:
+echo     run_ui_tests.bat clockwork_quest
 echo.
 echo   Run all Target Tag tests:
 echo     run_ui_tests.bat target_tag_menu target_tag_visual target_tag_gameplay target_tag_add target_tag_results

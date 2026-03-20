@@ -253,4 +253,51 @@ class EditScoreDialogConfig {
       ),
     );
   }
+
+  factory EditScoreDialogConfig.clockworkQuest() {
+    return EditScoreDialogConfig(
+      backgroundColor: const Color(0xFF2C2C34).withOpacity(0.95), // Dark Iron
+      borderColor: const Color(0xFFC5A54E), // Brass Gold
+      borderWidth: 4,
+      titleStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8), // Steam White
+        letterSpacing: 1.5,
+      ),
+      dartLabelStyle: GoogleFonts.lato(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+      ),
+      scoreBoxBackgroundColor: const Color(0xFF2C2C34),
+      scoreBoxDefaultBorderColor: const Color(0xFFB87333).withOpacity(0.5), // Copper Rose
+      scoreTextStyle: GoogleFonts.lato(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8),
+      ),
+      buttonUnselectedColor: const Color(0xFF2C2C34),
+      buttonUnselectedForeground: const Color(0xFFF5F0E8),
+      buttonSelectedColor: const Color(0xFFC5A54E), // Brass Gold
+      buttonSelectedForeground: const Color(0xFF2C2C34),
+      buttonTextStyle: GoogleFonts.lato(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      cancelButtonColor: const Color(0xFF4A4A52).withOpacity(0.85),
+      cancelButtonForeground: const Color(0xFFF5F0E8),
+      cancelButtonTextStyle: GoogleFonts.lato(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+      submitButtonColor: const Color(0xFFC5A54E).withOpacity(0.85), // Brass Gold
+      submitButtonForeground: const Color(0xFF2C2C34),
+      submitButtonTextStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+    );
+  }
 }

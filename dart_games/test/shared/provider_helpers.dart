@@ -5,6 +5,7 @@ import 'package:dart_games/providers/horse_race_provider.dart';
 import 'package:dart_games/providers/target_tag_provider.dart';
 import 'package:dart_games/providers/monster_mash_provider.dart';
 import 'package:dart_games/providers/reef_royale_provider.dart';
+import 'package:dart_games/providers/clockwork_quest_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/models/player.dart';
@@ -392,6 +393,45 @@ class ProviderHelpers {
     } catch (e) {
       return null;
     }
+  }
+
+  // ==========================================================================
+  // CLOCKWORK QUEST HELPERS
+  // ==========================================================================
+
+  static ClockworkQuestProvider getClockworkQuestProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<ClockworkQuestProvider>(context, listen: false);
+  }
+
+  static int getClockworkQuestPlayerCurrentTarget(WidgetTester tester, String playerId) {
+    return getClockworkQuestProvider(tester).getPlayerCurrentTarget(playerId);
+  }
+
+  static int getClockworkQuestPlayerLapsCompleted(WidgetTester tester, String playerId) {
+    return getClockworkQuestProvider(tester).getPlayerLapsCompleted(playerId);
+  }
+
+  static bool clockworkQuestHasWinner(WidgetTester tester) {
+    return getClockworkQuestProvider(tester).hasWinner;
+  }
+
+  static String? getClockworkQuestCurrentPlayerId(WidgetTester tester) {
+    return getClockworkQuestProvider(tester).getCurrentPlayerId();
+  }
+
+  static bool isClockworkQuestGameActive(WidgetTester tester) {
+    return getClockworkQuestProvider(tester).isGameActive;
+  }
+
+  static int getClockworkQuestCurrentPlayerDartsThrown(WidgetTester tester) {
+    return getClockworkQuestProvider(tester).getCurrentPlayerDartsThrown();
+  }
+
+  static void setClockworkQuestPlayerTarget(WidgetTester tester, String playerId, int target) {
+    final provider = getClockworkQuestProvider(tester);
+    provider.currentGame!.currentTarget[playerId] = target;
+    provider.notifyListeners();
   }
 
   // ==========================================================================

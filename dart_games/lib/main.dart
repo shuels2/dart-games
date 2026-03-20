@@ -7,9 +7,13 @@ import 'providers/horse_race_provider.dart';
 import 'providers/target_tag_provider.dart';
 import 'providers/monster_mash_provider.dart';
 import 'providers/reef_royale_provider.dart';
+import 'providers/clockwork_quest_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/games/clockwork_quest/clockwork_quest_menu_screen.dart';
+import 'screens/games/clockwork_quest/clockwork_quest_game_screen.dart';
+import 'screens/games/clockwork_quest/clockwork_quest_results_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +52,13 @@ Future<void> _preloadFonts() async {
   GoogleFonts.pirataOne();
   // Montserrat already loaded for Carnival Derby
 
+  // Preload Clockwork Quest fonts
+  GoogleFonts.cinzelDecorative(fontWeight: FontWeight.w400);
+  GoogleFonts.cinzelDecorative(fontWeight: FontWeight.w700);
+  GoogleFonts.lato(fontWeight: FontWeight.w400);
+  GoogleFonts.lato(fontWeight: FontWeight.w600);
+  GoogleFonts.lato(fontWeight: FontWeight.w700);
+
   // Wait for all fonts to load
   await GoogleFonts.pendingFonts([
     GoogleFonts.nunito(),
@@ -59,6 +70,8 @@ Future<void> _preloadFonts() async {
     GoogleFonts.fredoka(),
     GoogleFonts.creepster(),
     GoogleFonts.pirataOne(),
+    GoogleFonts.cinzelDecorative(),
+    GoogleFonts.lato(),
   ]);
 }
 
@@ -75,6 +88,7 @@ class DartGamesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TargetTagProvider()),
         ChangeNotifierProvider(create: (_) => MonsterMashProvider()),
         ChangeNotifierProvider(create: (_) => ReefRoyaleProvider()),
+        ChangeNotifierProvider(create: (_) => ClockworkQuestProvider()),
       ],
       child: MaterialApp(
         title: 'Dart Games',
@@ -302,6 +316,9 @@ class DartGamesApp extends StatelessWidget {
           '/': (context) => const SplashScreen(),
           '/dartboard-setup': (context) => const DartboardSetupScreen(),
           '/home': (context) => const HomeScreen(),
+          '/clockwork_quest_menu': (context) => const ClockworkQuestMenuScreen(),
+          '/clockwork_quest_game': (context) => const ClockworkQuestGameScreen(),
+          '/clockwork_quest_results': (context) => const ClockworkQuestResultsScreen(),
         },
       ),
     );

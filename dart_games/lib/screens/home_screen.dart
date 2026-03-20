@@ -11,6 +11,7 @@ import 'games/carnival_horse_race/horse_race_menu_screen.dart';
 import 'games/target_tag/target_tag_menu_screen.dart';
 import 'games/monster_mash/monster_mash_menu_screen.dart';
 import 'games/reef_royale/reef_royale_menu_screen.dart';
+import 'games/clockwork_quest/clockwork_quest_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'reef_royale':
         menuScreen = const ReefRoyaleMenuScreen();
+        break;
+      case 'clockwork_quest':
+        menuScreen = const ClockworkQuestMenuScreen();
         break;
       default:
         return;
@@ -109,6 +113,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                                )
+                          : title == 'Clockwork Quest'
+                              ? GoogleFonts.cinzelDecorative(
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                                  letterSpacing: 1.2,
                                 )
                           : theme.textTheme.titleMedium?.copyWith(
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
@@ -236,6 +247,15 @@ class _HomeScreenState extends State<HomeScreen> {
         'color': const Color(0xFF0B3D91), // Deep Reef Blue
         'onTap': dartboardProvider.canPlayGames
             ? () => _navigateToMenu('reef_royale')
+            : null,
+      },
+      {
+        'title': 'Clockwork Quest',
+        'key': HomeKeys.clockworkQuestCard,
+        'imageAssetPath': 'assets/games/clockwork_quest/icons/icon.png',
+        'color': const Color(0xFF2C2C34), // Dark Iron
+        'onTap': dartboardProvider.canPlayGames
+            ? () => _navigateToMenu('clockwork_quest')
             : null,
       },
       // Add new games here - they will automatically be sorted alphabetically

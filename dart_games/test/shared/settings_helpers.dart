@@ -434,4 +434,43 @@ class SettingsHelpers {
     await openAddPlayerDialog(tester, ElementFinders.getCarnivalDerbyAddPlayerButton());
     await addPlayerViaDialog(tester, playerName);
   }
+
+  /// Generic: Toggle checkbox
+  static Future<void> toggleCheckbox(WidgetTester tester, Finder checkboxFinder) async {
+    expect(checkboxFinder, findsOneWidget);
+    await tester.tap(checkboxFinder);
+    await PumpSequences.simpleUpdate(tester);
+  }
+
+  // ==========================================================================
+  // CLOCKWORK QUEST SETTINGS
+  // ==========================================================================
+
+  /// Clockwork Quest: Toggle Include Bullseye
+  static Future<void> toggleClockworkQuestIncludeBullseye(WidgetTester tester) async {
+    await toggleCheckbox(tester, ElementFinders.getClockworkQuestIncludeBullseyeCheckbox());
+  }
+
+  /// Clockwork Quest: Toggle Speed Mode
+  static Future<void> toggleClockworkQuestSpeedMode(WidgetTester tester) async {
+    await toggleCheckbox(tester, ElementFinders.getClockworkQuestSpeedModeCheckbox());
+  }
+
+  /// Clockwork Quest: Select Number of Laps
+  static Future<void> selectClockworkQuestLaps(
+    WidgetTester tester,
+    int laps,
+  ) async {
+    final dropdownFinder = ElementFinders.getClockworkQuestNumberOfLapsDropdown();
+    await setDropdownValue(tester, dropdownFinder, laps.toString());
+  }
+
+  /// Clockwork Quest: Full flow to add a player
+  static Future<void> addClockworkQuestPlayer(
+    WidgetTester tester,
+    String playerName,
+  ) async {
+    await openAddPlayerDialog(tester, ElementFinders.getClockworkQuestAddPlayerButton());
+    await addPlayerViaDialog(tester, playerName);
+  }
 }

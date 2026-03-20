@@ -101,6 +101,23 @@ class DartboardSectionConfig {
       ),
     );
   }
+
+  factory DartboardSectionConfig.clockworkQuest() {
+    return DartboardSectionConfig(
+      backgroundColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      disabledOverlayBackgroundColor: const Color(0xFF2C2C34).withOpacity(0.95), // Dark Iron
+      disabledOverlayBorderColor: const Color(0xFFC5A54E), // Brass Gold
+      removeButtonBackgroundColor: const Color(0xFFC5A54E), // Brass Gold
+      removeButtonBorderColor: const Color(0xFFB87333), // Copper Rose
+      removeButtonTextStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+        color: const Color(0xFF2C2C34), // Dark Iron
+      ),
+    );
+  }
 }
 
 class DartboardFABConfig {
@@ -157,6 +174,18 @@ class DartboardFABConfig {
       iconColor: const Color(0xFFFFF8F0), // Pearl White
       textColor: const Color(0xFFFFF8F0), // Pearl White
       textStyle: GoogleFonts.fredoka(fontWeight: FontWeight.bold),
+    );
+  }
+
+  factory DartboardFABConfig.clockworkQuest() {
+    return DartboardFABConfig(
+      backgroundColor: const Color(0xFFB87333), // Copper Rose
+      iconColor: const Color(0xFFF5F0E8), // Steam White
+      textColor: const Color(0xFFF5F0E8), // Steam White
+      textStyle: GoogleFonts.cinzelDecorative(
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
     );
   }
 }
