@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'clockwork_quest_menu_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -496,8 +497,24 @@ class _ClockworkQuestResultsScreenState
   void _changeSettings(BuildContext context) {
     final clockworkProvider =
         Provider.of<ClockworkQuestProvider>(context, listen: false);
+    final game = clockworkProvider.currentGame!;
+    final preselectedPlayerIds = List<String>.from(game.playerIds);
+    final includeBullseye = game.includeBullseye;
+    final speedMode = game.speedMode;
+    final numberOfLaps = game.numberOfLaps;
     clockworkProvider.clearGame();
-    Navigator.pushReplacementNamed(context, '/clockwork_quest_menu');
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ClockworkQuestMenuScreen(
+          preselectedPlayerIds: preselectedPlayerIds,
+          initialIncludeBullseye: includeBullseye,
+          initialSpeedMode: speedMode,
+          initialNumberOfLaps: numberOfLaps,
+        ),
+      ),
+      (route) => false,
+    );
   }
 
   void _leaveTower(BuildContext context) {

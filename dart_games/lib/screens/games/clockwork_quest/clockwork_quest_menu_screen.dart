@@ -15,7 +15,18 @@ import '../../../widgets/resume_game_modal/resume_game_modal.dart';
 import '../../../widgets/resume_game_modal/resume_game_modal_config.dart';
 
 class ClockworkQuestMenuScreen extends StatefulWidget {
-  const ClockworkQuestMenuScreen({super.key});
+  final List<String>? preselectedPlayerIds;
+  final bool? initialIncludeBullseye;
+  final bool? initialSpeedMode;
+  final int? initialNumberOfLaps;
+
+  const ClockworkQuestMenuScreen({
+    super.key,
+    this.preselectedPlayerIds,
+    this.initialIncludeBullseye,
+    this.initialSpeedMode,
+    this.initialNumberOfLaps,
+  });
 
   @override
   State<ClockworkQuestMenuScreen> createState() =>
@@ -34,11 +45,25 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
   void initState() {
     super.initState();
 
+    if (widget.initialIncludeBullseye != null) _includeBullseye = widget.initialIncludeBullseye!;
+    if (widget.initialSpeedMode != null) _speedMode = widget.initialSpeedMode!;
+    if (widget.initialNumberOfLaps != null) _numberOfLaps = widget.initialNumberOfLaps!;
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final playerProvider = context.read<PlayerProvider>();
       _playerProvider = playerProvider;
       playerProvider.loadPlayers();
       playerProvider.clearSelection();
+
+      if (widget.preselectedPlayerIds != null) {
+        for (final playerId in widget.preselectedPlayerIds!) {
+          final player = playerProvider.getPlayerById(playerId);
+          if (player != null) {
+            playerProvider.selectPlayer(player, maxPlayers: 8);
+          }
+        }
+        setState(() {});
+      }
 
       // Check for saved games
       final hasSaved = await SaveGameService().hasSavedGames('clockwork_quest');
