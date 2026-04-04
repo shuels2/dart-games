@@ -475,14 +475,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         children: [
           // Inventor character image (separate from avatar)
           if (inventorPath != null)
-            ClipRect(
-              child: Align(
-                alignment: Alignment.topCenter,
-                heightFactor: 0.70,
-                child: Image.asset(inventorPath, width: 620, height: 620,
-                    fit: BoxFit.contain),
-              ),
-            )
+            Image.asset(inventorPath, height: 364, fit: BoxFit.contain)
           // Player photo avatar (fallback when no inventor)
           else if (currentPlayer.photoPath != null)
             CircleAvatar(
