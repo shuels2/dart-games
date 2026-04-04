@@ -652,23 +652,25 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     PlayerProvider playerProvider,
     dynamic game,
   ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tileHeight = constraints.maxHeight / opponentIds.length;
-        // Reserve ~62px per tile for name, gear count, padding, and margin
-        final imageSize = (tileHeight - 62).clamp(60.0, 220.0);
-        return Column(
-          children: [
-            for (final opponentId in opponentIds)
-              SizedBox(
-                height: tileHeight,
-                child: _buildOpponentTile(
-                    opponentId, provider, playerProvider, game,
-                    imageSize: imageSize),
-              ),
-          ],
-        );
-      },
+    // 4 tiles: stretch to fill height so nothing clips
+    if (opponentIds.length >= 4) {
+      return Column(
+        children: [
+          for (final opponentId in opponentIds)
+            Expanded(
+              child: _buildOpponentTile(
+                  opponentId, provider, playerProvider, game),
+            ),
+        ],
+      );
+    }
+    // Fewer tiles: natural sizing, centered vertically
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (final opponentId in opponentIds)
+          _buildOpponentTile(opponentId, provider, playerProvider, game),
+      ],
     );
   }
 
@@ -676,9 +678,8 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     String opponentId,
     ClockworkQuestProvider provider,
     PlayerProvider playerProvider,
-    dynamic game, {
-    double imageSize = 220,
-  }) {
+    dynamic game,
+  ) {
     final opponent = playerProvider.getPlayerById(opponentId);
     if (opponent == null) return const SizedBox();
 
@@ -700,45 +701,55 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
           width: 1,
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Inventor character image
-          if (inventorPath != null)
-            Image.asset(inventorPath, width: imageSize, height: imageSize,
-                fit: BoxFit.contain)
-          else
-            CircleAvatar(
-              radius: imageSize / 2,
-              backgroundColor: const Color(0xFFB87333),
-              child: Text(
-                opponent.name[0].toUpperCase(),
-                style: GoogleFonts.cinzelDecorative(
-                  fontSize: imageSize * 0.325,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2C2C34),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // When inside Expanded (finite height), scale image to fit;
+          // otherwise use default 220px
+          final imgSize = constraints.maxHeight.isFinite
+              ? (constraints.maxHeight - 50).clamp(40.0, 220.0)
+              : 220.0;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Inventor character image
+              if (inventorPath != null)
+                Image.asset(inventorPath, width: imgSize, height: imgSize,
+                    fit: BoxFit.contain)
+              else
+                CircleAvatar(
+                  radius: imgSize / 2,
+                  backgroundColor: const Color(0xFFB87333),
+                  child: Text(
+                    opponent.name[0].toUpperCase(),
+                    style: GoogleFonts.cinzelDecorative(
+                      fontSize: imgSize * 0.325,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2C2C34),
+                    ),
+                  ),
                 ),
+              const SizedBox(height: 6),
+              Text(
+                opponent.name,
+                style: GoogleFonts.lato(
+                  fontSize: 16,
+                  color: const Color(0xFFF5F0E8),
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-          const SizedBox(height: 6),
-          Text(
-            opponent.name,
-            style: GoogleFonts.lato(
-              fontSize: 16,
-              color: const Color(0xFFF5F0E8),
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          Text(
-            '$gearsActivated/$maxTarget',
-            style: GoogleFonts.lato(
-              fontSize: 14,
-              color: const Color(0xFFFFBF00),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+              Text(
+                '$gearsActivated/$maxTarget',
+                style: GoogleFonts.lato(
+                  fontSize: 14,
+                  color: const Color(0xFFFFBF00),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
