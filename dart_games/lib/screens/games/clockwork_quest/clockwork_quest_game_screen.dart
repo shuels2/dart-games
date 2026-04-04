@@ -652,12 +652,23 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     PlayerProvider playerProvider,
     dynamic game,
   ) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        for (final opponentId in opponentIds)
-          _buildOpponentTile(opponentId, provider, playerProvider, game),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tileHeight = constraints.maxHeight / opponentIds.length;
+        // Reserve ~62px per tile for name, gear count, padding, and margin
+        final imageSize = (tileHeight - 62).clamp(60.0, 220.0);
+        return Column(
+          children: [
+            for (final opponentId in opponentIds)
+              SizedBox(
+                height: tileHeight,
+                child: _buildOpponentTile(
+                    opponentId, provider, playerProvider, game,
+                    imageSize: imageSize),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -665,8 +676,9 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     String opponentId,
     ClockworkQuestProvider provider,
     PlayerProvider playerProvider,
-    dynamic game,
-  ) {
+    dynamic game, {
+    double imageSize = 220,
+  }) {
     final opponent = playerProvider.getPlayerById(opponentId);
     if (opponent == null) return const SizedBox();
 
@@ -691,18 +703,18 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Inventor character image at fixed size
+          // Inventor character image
           if (inventorPath != null)
-            Image.asset(inventorPath, width: 220, height: 220,
+            Image.asset(inventorPath, width: imageSize, height: imageSize,
                 fit: BoxFit.contain)
           else
             CircleAvatar(
-              radius: 80,
+              radius: imageSize / 2,
               backgroundColor: const Color(0xFFB87333),
               child: Text(
                 opponent.name[0].toUpperCase(),
                 style: GoogleFonts.cinzelDecorative(
-                  fontSize: 52,
+                  fontSize: imageSize * 0.325,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF2C2C34),
                 ),
