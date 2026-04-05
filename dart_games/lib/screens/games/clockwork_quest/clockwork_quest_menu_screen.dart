@@ -107,7 +107,7 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
             title: Text(
               'CLOCKWORK QUEST SETUP',
               style: GoogleFonts.cinzelDecorative(
-                fontSize: 24,
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFFF5F0E8), // Steam White
                 letterSpacing: 1.5,
@@ -167,7 +167,7 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
                         Text(
                           'HOW TO PLAY',
                           style: GoogleFonts.cinzelDecorative(
-                            fontSize: 26,
+                            fontSize: 39,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFFFFBF00),
                             letterSpacing: 1.5,
@@ -213,7 +213,7 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
                         Text(
                           'OPTIONS:',
                           style: GoogleFonts.cinzelDecorative(
-                            fontSize: 22,
+                            fontSize: 33,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFFC5A54E),
                             letterSpacing: 1.2,
@@ -230,7 +230,7 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          '⚙  Speed Mode — Hit any gear in any order instead of 1→20. Great for a faster, more chaotic game.',
+                          '⚙  Speed Mode — Hit any gear in any order instead of 1 to 20 in numerical order. Great for a faster, more chaotic game.',
                           style: GoogleFonts.lato(
                             fontSize: 19,
                             color: const Color(0xFFF5F0E8).withOpacity(0.85),
@@ -245,6 +245,17 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
                             color: const Color(0xFFF5F0E8).withOpacity(0.85),
                             height: 1.5,
                           ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'The tower awaits — who will master the machine?',
+                          style: GoogleFonts.cinzelDecorative(
+                            fontSize: 23,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFFBF00),
+                            letterSpacing: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),

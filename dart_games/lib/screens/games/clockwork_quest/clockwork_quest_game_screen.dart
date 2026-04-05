@@ -149,7 +149,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         title: Text(
           'CLOCKWORK QUEST',
           style: GoogleFonts.cinzelDecorative(
-            fontSize: 24,
+            fontSize: 26,
             fontWeight: FontWeight.bold,
             color: const Color(0xFFF5F0E8),
             letterSpacing: 1.5,
