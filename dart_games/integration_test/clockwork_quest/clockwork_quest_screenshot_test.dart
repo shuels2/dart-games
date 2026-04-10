@@ -135,12 +135,6 @@ void main() {
       await SettingsHelpers.toggleClockworkQuestIncludeBullseye(tester);
       print('SCREENSHOT: Include Bullseye toggled back off');
 
-      print('SCREENSHOT: Toggling D/T Count...');
-      await SettingsHelpers.toggleClockworkQuestDoubleTriplesCount(tester);
-      await screenshot(binding, tester, '03_menu_dt_count_on');
-      await SettingsHelpers.toggleClockworkQuestDoubleTriplesCount(tester);
-      print('SCREENSHOT: D/T Count toggled back off');
-
       print('SCREENSHOT: Toggling Speed Mode...');
       await SettingsHelpers.toggleClockworkQuestSpeedMode(tester);
       await screenshot(binding, tester, '04_menu_speed_mode_on');

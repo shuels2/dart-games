@@ -118,7 +118,7 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
                 key: ClockworkQuestMenuKeys.resumeGameButton,
                 hasSavedGames: _hasSavedGames,
                 onPressed: () => setState(() => _showResumeModal = true),
-                color: const Color(0xFFC5A54E), // Brass Gold
+                color: const Color(0xFFF5F0E8), // Steam White
               ),
               Padding(
                 padding: const EdgeInsets.only(right: 16.0),

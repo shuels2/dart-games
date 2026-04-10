@@ -89,6 +89,32 @@ void main() {
     }
   }
 
+  /// Throw a miss (score 0) via mock API
+  Future<void> throwMissViaMock(WidgetTester tester) async {
+    final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+    final mockApi = dartboardProvider.apiService;
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 0,
+        multiplier: 'single',
+        playerName: 'Player',
+        baseScore: 0,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Complete a full turn with 3 misses and click darts removed
+  Future<void> completeTurnWithMisses(WidgetTester tester) async {
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await clickDartsRemoved(tester);
+  }
+
   /// Pre-populate a saved game in SharedPreferences
   Future<String> preSaveGame() async {
     final metadata = SavedGameMetadata.create(
@@ -346,15 +372,27 @@ void main() {
       await throwDartViaMock(tester, 3); // advance to 4
       await clickDartsRemoved(tester);
 
-      // Skip Bob's turns and Alice continues advancing
-      final playerId = ProviderHelpers.getClockworkQuestCurrentPlayerId(tester)!;
-      for (int i = 4; i <= 20; i++) {
-        await throwDartViaMock(tester, i);
-        if (i % 3 == 0) {
-          await tester.pump(const Duration(seconds: 4));
-          await tester.pump();
-          await clickDartsRemoved(tester);
+      // Bob's turn: miss all
+      await completeTurnWithMisses(tester);
+
+      // Alice hits targets in groups of 3, with Bob missing between
+      for (int startTarget = 4; startTarget <= 20; startTarget += 3) {
+        for (int t = startTarget; t < startTarget + 3 && t <= 20; t++) {
+          await throwDartViaMock(tester, t);
         }
+        // Fill remaining darts with misses if fewer than 3 targets hit
+        final targetsHit =
+            (startTarget + 2 <= 20) ? 3 : (20 - startTarget + 1);
+        for (int i = targetsHit; i < 3; i++) {
+          await throwMissViaMock(tester);
+        }
+        await clickDartsRemoved(tester);
+
+        // Check if game is over (Alice won after hitting target 20)
+        if (ProviderHelpers.clockworkQuestHasWinner(tester)) break;
+
+        // Bob's turn: miss all
+        await completeTurnWithMisses(tester);
       }
 
       // Wait for results screen navigation

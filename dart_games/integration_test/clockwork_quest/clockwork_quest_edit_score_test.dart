@@ -57,6 +57,14 @@ Future<void> throwMissViaMock(WidgetTester tester) async {
   }
 }
 
+Future<void> clickDartsRemoved(WidgetTester tester) async {
+  final dartsRemovedButton = find.text('DARTS REMOVED');
+  if (dartsRemovedButton.evaluate().isNotEmpty) {
+    await tester.tap(dartsRemovedButton.first);
+    await PumpSequences.simpleUpdate(tester);
+  }
+}
+
 Future<void> setupAndStartGame(
     WidgetTester tester, GameUIConfig config) async {
   await UITestHelpers.navigateToGameMenu(tester, config);
@@ -66,6 +74,26 @@ Future<void> setupAndStartGame(
 
   // Players are auto-selected when added
   await UITestHelpers.startGame(tester, config);
+}
+
+/// Throw 3 darts to trigger takeout prompt (where edit score button appears)
+Future<void> throw3DartsAndWaitForTakeout(WidgetTester tester,
+    {int target1 = 0, int target2 = 0, int target3 = 0}) async {
+  if (target1 > 0) {
+    await throwDartViaMock(tester, target1);
+  } else {
+    await throwMissViaMock(tester);
+  }
+  if (target2 > 0) {
+    await throwDartViaMock(tester, target2);
+  } else {
+    await throwMissViaMock(tester);
+  }
+  if (target3 > 0) {
+    await throwDartViaMock(tester, target3);
+  } else {
+    await throwMissViaMock(tester);
+  }
 }
 
 void main() {
@@ -78,79 +106,98 @@ void main() {
       await SettingsHelpers.initializeSettings();
     });
 
+    // ================================================================
+    // EDIT SCORE BUTTON VISIBILITY
+    // ================================================================
+
     testWidgets('Test 1: Edit score button appears after 3 darts',
         (WidgetTester tester) async {
       await setupAndStartGame(tester, config);
 
-      // Throw 3 darts
+      // Throw 3 darts (hits on targets 1, 2, 3)
       await throwDartViaMock(tester, 1);
       await throwDartViaMock(tester, 2);
       await throwDartViaMock(tester, 3);
 
-      // Wait for takeout prompt
-      await tester.pump(const Duration(seconds: 4));
-      await tester.pump();
-      await tester.pump();
-
-      // Edit score button should be visible
+      // Edit score button should be visible in the takeout prompt
       final editButton = config.getEditScoreButton();
       expect(editButton, findsOneWidget);
     });
 
-    testWidgets('Test 2: Edit score dialog opens with current darts',
+    testWidgets('Test 2: Edit score button not visible before 3 darts',
         (WidgetTester tester) async {
       await setupAndStartGame(tester, config);
 
+      // Throw only 2 darts
       await throwDartViaMock(tester, 1);
       await throwDartViaMock(tester, 2);
-      await throwDartViaMock(tester, 3);
 
-      await tester.pump(const Duration(seconds: 4));
-      await tester.pump();
-      await tester.pump();
-
-      // Tap edit score
+      // Edit score button should NOT be visible yet
       final editButton = config.getEditScoreButton();
-      await tester.tap(editButton);
-      await PumpSequences.dialogOpen(tester);
-
-      // Dialog should be visible
-      expect(ElementFinders.getEditScoreDialog(), findsOneWidget);
+      expect(editButton, findsNothing);
     });
 
-    testWidgets('Test 3: Cancel edit score preserves original target',
+    // ================================================================
+    // EDIT SCORE DIALOG
+    // ================================================================
+
+    testWidgets('Test 3: Edit score dialog opens with all elements',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config);
+
+      await throw3DartsAndWaitForTakeout(tester, target1: 1, target2: 2, target3: 3);
+
+      // Open edit score dialog
+      await EditScoreHelpers.openEditScore(tester, config);
+
+      // Verify dialog has all elements
+      EditScoreHelpers.verifyDialogElements();
+    });
+
+    testWidgets('Test 4: Cancel edit score closes dialog',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config);
+
+      await throw3DartsAndWaitForTakeout(tester, target1: 1, target2: 2, target3: 3);
+
+      await EditScoreHelpers.openEditScore(tester, config);
+      await EditScoreHelpers.cancelEditScore(tester);
+
+      // Dialog should be closed
+      EditScoreHelpers.verifyDialogClosed();
+    });
+
+    // ================================================================
+    // EDIT SCORE PRESERVES/CHANGES TARGET
+    // ================================================================
+
+    testWidgets('Test 5: Cancel edit score preserves target progression',
         (WidgetTester tester) async {
       await setupAndStartGame(tester, config);
 
       final playerId =
           ProviderHelpers.getClockworkQuestCurrentPlayerId(tester)!;
 
+      // Throw 3 hits (advance from target 1 to target 4)
       await throwDartViaMock(tester, 1);
-      final targetBefore =
-          ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId);
-
       await throwDartViaMock(tester, 2);
       await throwDartViaMock(tester, 3);
 
-      await tester.pump(const Duration(seconds: 4));
-      await tester.pump();
-      await tester.pump();
+      final targetAfterHits =
+          ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId);
+      expect(targetAfterHits, 4, reason: 'Should have advanced to target 4');
 
       // Open and cancel edit score
-      final editButton = config.getEditScoreButton();
-      await tester.tap(editButton);
-      await PumpSequences.dialogOpen(tester);
+      await EditScoreHelpers.editScoreAndCancel(tester, config);
 
-      await tester.tap(ElementFinders.getEditScoreCancelButton());
-      await PumpSequences.dialogClose(tester);
-
-      // Target should be unchanged (advanced from 1 to 2)
+      // Target should be unchanged
       expect(
-          ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId),
-          targetBefore);
+        ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId),
+        targetAfterHits,
+      );
     });
 
-    testWidgets('Test 4: Edit score recalculates target progression correctly',
+    testWidgets('Test 6: Edit score changes misses to hits',
         (WidgetTester tester) async {
       await setupAndStartGame(tester, config);
 
@@ -158,30 +205,73 @@ void main() {
           ProviderHelpers.getClockworkQuestCurrentPlayerId(tester)!;
 
       // Throw 3 misses - no advancement
-      await throwMissViaMock(tester);
-      await throwMissViaMock(tester);
-      await throwMissViaMock(tester);
-
-      await tester.pump(const Duration(seconds: 4));
-      await tester.pump();
-      await tester.pump();
+      await throw3DartsAndWaitForTakeout(tester);
 
       // Should still be at target 1
       expect(
           ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId), 1);
 
-      // Open edit score dialog
-      await EditScoreHelpers.openEditScore(tester, config);
+      // Edit: change dart 1 from Miss to S1 (single 1)
+      await EditScoreHelpers.editScoreAndSave(
+        tester, config,
+        dart1: 'S1',
+      );
 
-      // Change dart 1 from Miss to S1 (should advance to target 2)
-      await EditScoreHelpers.setDart1(tester, 'S1');
-
-      // Save
-      await EditScoreHelpers.updateScore(tester);
-
-      // Target should now be 2
+      // Target should now be 2 (advanced by hitting target 1)
       expect(
           ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId), 2);
+    });
+
+    testWidgets('Test 7: Edit score changes hits to misses',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config);
+
+      final playerId =
+          ProviderHelpers.getClockworkQuestCurrentPlayerId(tester)!;
+
+      // Throw 3 hits (targets 1, 2, 3 -> advance to target 4)
+      await throwDartViaMock(tester, 1);
+      await throwDartViaMock(tester, 2);
+      await throwDartViaMock(tester, 3);
+
+      expect(
+          ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId), 4);
+
+      // Edit: change all darts to misses
+      await EditScoreHelpers.editScoreAndSave(
+        tester, config,
+        dart1: 'Miss',
+        dart2: 'Miss',
+        dart3: 'Miss',
+      );
+
+      // Target should be back to 1 (no hits)
+      expect(
+          ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId), 1);
+    });
+
+    testWidgets('Test 8: Edit score with partial changes',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config);
+
+      final playerId =
+          ProviderHelpers.getClockworkQuestCurrentPlayerId(tester)!;
+
+      // Throw 3 misses
+      await throw3DartsAndWaitForTakeout(tester);
+      expect(
+          ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId), 1);
+
+      // Edit: change dart 1 and dart 2 to hits (S1, S2), leave dart 3 as miss
+      await EditScoreHelpers.editScoreAndSave(
+        tester, config,
+        dart1: 'S1',
+        dart2: 'S2',
+      );
+
+      // Target should be 3 (hit 1 and 2)
+      expect(
+          ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId), 3);
     });
   });
 }

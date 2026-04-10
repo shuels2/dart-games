@@ -84,7 +84,9 @@ class _ClockworkQuestResultsScreenState
     final game = clockworkProvider.currentGame;
     if (game == null || game.winnerId == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pop(context);
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          Navigator.pop(context);
+        }
       });
       return const SizedBox();
     }
@@ -502,7 +504,9 @@ class _ClockworkQuestResultsScreenState
     final includeBullseye = game.includeBullseye;
     final speedMode = game.speedMode;
     final numberOfLaps = game.numberOfLaps;
-    clockworkProvider.clearGame();
+    // Navigate first, then clear game — clearing before navigation triggers a
+    // rebuild of the results screen which sees game==null and schedules a pop
+    // that races with the pushAndRemoveUntil.
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -515,12 +519,14 @@ class _ClockworkQuestResultsScreenState
       ),
       (route) => false,
     );
+    clockworkProvider.clearGame();
   }
 
   void _leaveTower(BuildContext context) {
     final clockworkProvider =
         Provider.of<ClockworkQuestProvider>(context, listen: false);
-    clockworkProvider.clearGame();
+    // Navigate first, then clear — same race condition as _changeSettings
     Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+    clockworkProvider.clearGame();
   }
 }
