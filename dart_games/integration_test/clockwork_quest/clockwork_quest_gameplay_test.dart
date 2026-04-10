@@ -82,13 +82,14 @@ Future<void> clickDartsRemoved(WidgetTester tester) async {
   }
 }
 
-/// Set up a 2-player game and start it with configurable options
+/// Set up a game and start it with configurable options and player count
 Future<void> setupAndStartGame(
   WidgetTester tester,
   GameUIConfig config, {
   bool includeBullseye = false,
   bool speedMode = false,
   int laps = 1,
+  List<String>? playerNames,
 }) async {
   await UITestHelpers.navigateToGameMenu(tester, config);
 
@@ -103,11 +104,51 @@ Future<void> setupAndStartGame(
     await SettingsHelpers.selectClockworkQuestLaps(tester, laps);
   }
 
-  await UITestHelpers.addPlayer(tester, 'Player A', config);
-  await UITestHelpers.addPlayer(tester, 'Player B', config);
+  final names = playerNames ?? ['Player A', 'Player B'];
+  for (final name in names) {
+    await UITestHelpers.addPlayer(tester, name, config);
+  }
 
   // Players are auto-selected when added
   await UITestHelpers.startGame(tester, config);
+}
+
+/// Complete a game to victory for the current player (P1).
+/// Handles takeout prompts and opponent turns (all misses).
+Future<void> completeGameToVictory(
+  WidgetTester tester, {
+  int numOpponents = 1,
+  bool includeBullseye = false,
+}) async {
+  final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+
+  for (int target = 1; target <= 20; target++) {
+    await throwDartViaMock(tester, target);
+
+    if (target % 3 == 0 && target < 20) {
+      await clickDartsRemoved(tester);
+      for (int i = 0; i < numOpponents; i++) {
+        await completeTurnWithMisses(tester);
+      }
+    }
+  }
+
+  if (includeBullseye && !provider.hasWinner) {
+    // After hitting 20, need to also handle takeout before bull
+    if (provider.shouldPromptTakeout) {
+      await clickDartsRemoved(tester);
+      for (int i = 0; i < numOpponents; i++) {
+        await completeTurnWithMisses(tester);
+      }
+    }
+    await throwBullseyeViaMock(tester);
+  }
+
+  // Wait for results screen navigation
+  await tester.pump(const Duration(seconds: 4));
+  await tester.pump();
+  await tester.pump();
+  await tester.pump();
 }
 
 /// Complete a full turn: throw 3 darts (misses) and click darts removed
@@ -760,6 +801,138 @@ void main() {
       // Game should be won
       expect(provider.hasWinner, isTrue);
       expect(provider.currentGame!.winnerId, player1);
+    });
+
+    // ================================================================
+    // MULTI-PLAYER GAMES (3+ players)
+    // ================================================================
+
+    testWidgets('Test 32: 3-player game — opponent tiles visible for both opponents',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config,
+          playerNames: ['Alice', 'Bob', 'Carol']);
+
+      final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+      final playerIds = provider.currentGame!.playerIds;
+      final currentPlayerId = provider.getCurrentPlayerId()!;
+
+      // Both non-active players should show as opponent tiles
+      final opponents = playerIds.where((id) => id != currentPlayerId).toList();
+      expect(opponents.length, 2);
+
+      for (final opponentId in opponents) {
+        expect(
+          find.byKey(ClockworkQuestGameKeys.playerTile(opponentId)),
+          findsOneWidget,
+          reason: 'Opponent tile for $opponentId should be visible',
+        );
+      }
+    });
+
+    testWidgets('Test 33: 4-player game — turn cycles through all 4 players',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config,
+          playerNames: ['P1', 'P2', 'P3', 'P4']);
+
+      final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+      final playerIds = provider.currentGame!.playerIds;
+
+      // Verify P1 is active
+      expect(provider.getCurrentPlayerId(), playerIds[0]);
+
+      // P1 turn: 3 misses
+      await completeTurnWithMisses(tester);
+      expect(provider.getCurrentPlayerId(), playerIds[1]);
+
+      // P2 turn: 3 misses
+      await completeTurnWithMisses(tester);
+      expect(provider.getCurrentPlayerId(), playerIds[2]);
+
+      // P3 turn: 3 misses
+      await completeTurnWithMisses(tester);
+      expect(provider.getCurrentPlayerId(), playerIds[3]);
+
+      // P4 turn: 3 misses — back to P1
+      await completeTurnWithMisses(tester);
+      expect(provider.getCurrentPlayerId(), playerIds[0]);
+    });
+
+    // ================================================================
+    // FULL GAME — BULLSEYE END-TO-END
+    // ================================================================
+
+    testWidgets('Test 34: Full game with bullseye — P1 wins after hitting bull',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, includeBullseye: true);
+
+      final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+      final player1 = provider.getCurrentPlayerId()!;
+
+      // P1 hits 1-20 sequentially
+      for (int target = 1; target <= 20; target++) {
+        await throwDartViaMock(tester, target);
+        if (target % 3 == 0 && target < 20) {
+          await clickDartsRemoved(tester);
+          await completeTurnWithMisses(tester);
+        }
+      }
+
+      // After hitting 20, should be at target 21 (bullseye)
+      expect(provider.getPlayerCurrentTarget(player1), 21);
+      expect(provider.hasWinner, isFalse);
+
+      // Handle takeout from the turn that hit 20
+      if (provider.shouldPromptTakeout) {
+        await clickDartsRemoved(tester);
+        await completeTurnWithMisses(tester);
+      }
+
+      // Hit bullseye to win
+      await throwBullseyeViaMock(tester);
+
+      expect(provider.hasWinner, isTrue);
+      expect(provider.currentGame!.winnerId, player1);
+    });
+
+    // ================================================================
+    // FULL GAME — SPEED MODE END-TO-END
+    // ================================================================
+
+    testWidgets('Test 35: Full game with speed mode — P1 wins hitting gears in any order',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, speedMode: true);
+
+      final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+      final player1 = provider.getCurrentPlayerId()!;
+
+      // Hit gears in non-sequential order: 20, 15, 10, 5, 1, ...
+      final order = [20, 15, 10, 5, 1, 19, 14, 9, 4, 2, 18, 13, 8, 3, 17, 12, 7, 6, 16, 11];
+      for (final gear in order) {
+        await throwDartViaMock(tester, gear);
+        if (provider.hasWinner) break;
+        if (provider.shouldPromptTakeout) {
+          await clickDartsRemoved(tester);
+          await completeTurnWithMisses(tester);
+        }
+      }
+
+      expect(provider.hasWinner, isTrue);
+      expect(provider.currentGame!.winnerId, player1);
+    });
+
+    // ================================================================
+    // FULL GAME — 3 PLAYERS TO RESULTS SCREEN
+    // ================================================================
+
+    testWidgets('Test 36: 3-player game completes and shows results',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config,
+          playerNames: ['Alice', 'Bob', 'Carol']);
+
+      await completeGameToVictory(tester, numOpponents: 2);
+
+      // Should be on results screen
+      await UITestHelpers.verifyResultsScreen(tester, config);
     });
   });
 }

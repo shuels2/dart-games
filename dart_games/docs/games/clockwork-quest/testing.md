@@ -2,9 +2,9 @@
 
 ## Test Summary
 
-**Total Tests:** 77 tests
-- **Non-UI Tests:** 29 tests (model, provider, announcements)
-- **UI Automation Tests:** 48 tests (7 test files, ~34 minutes runtime)
+**Total Tests:** 189 tests
+- **Non-UI Tests:** 84 tests (66 game logic + 18 announcements)
+- **UI Automation Tests:** 105 tests (7 test files, ~57 minutes runtime)
 
 ## Non-UI Tests
 
@@ -12,30 +12,31 @@ Location: `test/screens/games/clockwork_quest/`
 
 ### Test Files
 
-#### 1. clockwork_quest_game_test.dart (29 tests)
+#### 1. clockwork_quest_game_test.dart (66 tests)
 Tests the `ClockworkQuestGame` model and core game logic.
 
 **Coverage:**
-- Model initialization with all 4 options
+- Model initialization with all options
 - Target progression logic (sequential 1-20)
 - Bullseye mode (gear 21)
-- D/T Count option (doubles/triples advancing 2/3 gears)
-- Speed mode (2 darts instead of 3)
+- Speed mode (any order hits)
 - Lap tracking and completion
 - Win condition detection
+- Multi-player games (2-8 players)
+- Inventor character assignments
+- Edit score with speed mode and bullseye
+- Full game completion with all option permutations
+- Edge cases (serialization, clearGame, ignored inputs)
 - Serialization (toJson/fromJson)
 
-**Key Test Cases:**
-- `includeBullseye sets maxTarget to 21`
-- `without includeBullseye, maxTarget is 20`
-- `initial state has all players at gear 1`
-- `hitting correct target advances player`
-- `hitting wrong target does not advance`
-- `doubleTriplesCount option allows doubles and triples`
-- `without doubleTriplesCount, only singles count`
-- `completing required laps wins the game`
-- `multiple laps required to win`
-- `speedMode reduces maxDartsPerTurn to 2`
+**Key Test Groups:**
+- Basic mechanics (initialization, target advancement, misses, laps)
+- Multi-player (3-player init, 8-player init, turn cycling, varied winners, 8-player completion)
+- Inventor assignments (unique per player, all 8 assigned, valid image paths, correct type)
+- Edit score in speed mode (restore targets, add new gears, clear on all misses)
+- Edit score with bullseye (restore bullseye target, change miss to bull completes game)
+- Full game completion (bullseye, speed mode, speed+bullseye, 3-lap, 3-lap+bullseye, speed+3-laps, speed+bullseye+2-laps)
+- Edge cases (bull without includeBullseye, speed+bull edges, ignored during takeout/finished, empty sector, future/previous target, clearGame, serialization roundtrip)
 
 #### 2. clockwork_quest_announcement_test.dart (18 tests)
 Tests announcement logic and sound effects.
@@ -71,62 +72,98 @@ Run with: `./run_ui_tests.bat clockwork_quest`
 
 ### Test Files
 
-#### 1. clockwork_quest_add_player_test.dart (6 tests, ~4 min)
-Tests player addition and selection functionality.
+#### 1. clockwork_quest_add_player_test.dart (10 tests, ~4 min)
+Tests player addition, selection, and dialog validation.
 
 **Coverage:**
-- Navigation to menu
-- Add Player dialog operations
-- Player selection/deselection
-- Start button enable/disable states
-- Player name validation
-- Maximum player count (8)
+- Navigation to Clockwork Quest menu
+- Add player with name shows in player list
+- Add multiple players (3 players)
+- Add Player dialog has required UI elements (name field, add/cancel buttons)
+- Add player with empty name is rejected
+- Add player with whitespace-only name is rejected
+- Cancel add player dialog closes without adding
+- Added player can be selected
+- Select and deselect player toggle
+- Remove player from selected list
 
-#### 2. clockwork_quest_menu_and_settings_test.dart (8 tests, ~5 min)
-Tests menu screen and all 4 game settings.
-
-**Coverage:**
-- Include Bullseye toggle
-- D/T Count toggle
-- Speed Mode toggle
-- Number of Laps dropdown (1-5)
-- Settings persistence
-- Start game with various configurations
-- Navigation to game screen
-
-#### 3. clockwork_quest_gameplay_test.dart (14 tests, ~8 min)
-Tests core gameplay mechanics and win conditions.
+#### 2. clockwork_quest_menu_and_settings_test.dart (20 tests, ~7 min)
+Tests menu screen, all game settings, and start game configurations.
 
 **Coverage:**
-- Sequential target advancement (1→2→3...→20)
-- Bullseye mode (must hit gear 21 after 20)
-- D/T Count ON (double advances 2, triple advances 3)
-- D/T Count OFF (only singles count)
-- Speed Mode (2 darts per turn)
-- Multiple laps (reset to gear 1 after completing circuit)
-- Win detection (complete all gears in all laps)
-- Dart processing with mock API
+- Menu screen shows all settings controls (Include Bullseye, Speed Mode, Number of Laps)
+- Default settings are correct (Bullseye OFF, Speed OFF, 1 Lap)
+- Toggle Include Bullseye ON and OFF
+- Toggle Speed Mode ON and OFF
+- Change Number of Laps to 3 and cycle through all values (2-5)
+- Enable Bullseye + Speed Mode together
+- Enable all options (Bullseye + Speed + 5 Laps)
+- Start button disabled with 0 players and 1 player
+- Start button enabled with 2 players
+- Start game with default settings, Bullseye, Speed Mode, 3 Laps, all options
+- Back button returns to home screen
+- Resume game button is present
 
-#### 4. clockwork_quest_edit_score_test.dart (4 tests, ~3 min)
-Tests manual score editing functionality.
-
-**Coverage:**
-- Edit score button appears after 3 darts
-- Edit score dialog opens with current darts
-- Cancel preserves original progress
-- Edit recalculates target progression
-
-#### 5. clockwork_quest_results_test.dart (5 tests, ~4 min)
-Tests results screen and navigation.
+#### 3. clockwork_quest_gameplay_test.dart (36 tests, ~17 min)
+Tests core gameplay mechanics, all options, multi-player, and end-to-end games.
 
 **Coverage:**
-- Results screen shows after game completion
-- Winner name displayed
-- Play Again returns to game screen
-- Change Settings returns to menu
-- Back to Menu returns to home
+- Game starts with correct initial state
+- Hit correct target advances gear, wrong target does not
+- Sequential progression 1 through 3
+- Three darts triggers takeout prompt
+- Turn advances after darts removed
+- Skip turn advances to next player
+- Dart indicators update after each throw
+- Gear widgets transition from inactive to active
+- Opponent tiles visible on game screen
+- Double/Triple on correct target still advances 1 gear (normal mode)
+- Bullseye ON: must hit bull after 20, hitting bull at 21 completes lap
+- Bullseye OFF: hitting 20 wins game
+- Bullseye ON: gear 21 widget shown as inactive
+- Speed mode: any gear number counts, already activated gear ignored
+- Speed mode: completing all gears wins
+- Speed mode with bullseye: must also hit bull
+- 2 laps: completing 1 lap resets target, completing both laps wins
+- Lap counter visible when laps > 1, hidden when laps = 1
+- Full game: P1 wins with sequential hits
+- 3-player game: opponent tiles visible for both opponents
+- 4-player game: turn cycles through all 4 players
+- Full game with bullseye: P1 wins after hitting bull
+- Full game with speed mode: P1 wins hitting gears in any order
+- 3-player game completes and shows results screen
 
-#### 6. clockwork_quest_save_resume_test.dart (10 tests, ~7 min)
+#### 4. clockwork_quest_edit_score_test.dart (11 tests, ~6 min)
+Tests manual score editing with all game modes.
+
+**Coverage:**
+- Edit score button appears after 3 darts, not visible before
+- Edit score dialog opens with all elements
+- Cancel edit score closes dialog
+- Cancel edit score preserves target progression
+- Edit score changes misses to hits (advance target)
+- Edit score changes hits to misses (revert target)
+- Edit score with partial changes (2 hits, 1 miss)
+- Edit score in speed mode changes completed gears
+- Edit score in speed mode adds new gears from misses
+- Edit score at bullseye target changes miss to Bull, completing game
+
+#### 5. clockwork_quest_results_test.dart (11 tests, ~9 min)
+Tests results screen display, navigation, and multi-player results.
+
+**Coverage:**
+- Results screen shows after game completion with all 3 action buttons
+- Winner name and title displayed on results screen
+- Rankings list shows all players with individual rank tiles
+- Play Again returns to game screen with same players
+- Change Settings returns to menu with settings visible
+- Change Settings preserves players from game
+- Leave Tower returns to home screen
+- Results screen after bullseye game shows winner
+- Results screen with 3 players shows all in rankings
+- Results with 3 players — Play Again preserves all 3 players
+
+#### 6. clockwork_quest_save_resume_test.dart (16 tests, ~10 min)
 Tests save/resume game functionality.
 
 **Coverage:**
@@ -140,8 +177,14 @@ Tests save/resume game functionality.
 - Delete individual saved game
 - Delete all saved games
 - Resumed game auto-deletes on completion
+- Save and resume preserves all game settings
+- Save and resume preserves player progress
+- Multiple saved games listed independently
+- Resume game button enabled/disabled states
+- Cancel save modal returns to game
+- Save modal shows correct player names
 
-#### 7. clockwork_quest_screenshot_test.dart (1 test, ~3 min)
+#### 7. clockwork_quest_screenshot_test.dart (1 test, ~4 min)
 Captures 18 screenshots for visual validation.
 
 **Screenshots:**
@@ -204,14 +247,13 @@ flutter drive --driver=test_driver/screenshot_test.dart --target=integration_tes
 
 ### Spec Section 7 Options Coverage
 
-All 4 options have 100% test coverage (non-UI + UI):
+All 3 implemented options have 100% test coverage (non-UI + UI):
 
 | Option | Non-UI Tests | UI Tests |
 |--------|--------------|----------|
-| Include Bullseye | ✓ Model test | ✓ Gameplay test #7 |
-| D/T Count | ✓ Model tests (2) | ✓ Gameplay tests #4-6 |
-| Speed Mode | ✓ Model test | ✓ Menu test #4 |
-| Number of Laps | ✓ Model tests (2) | ✓ Gameplay test #14 |
+| Include Bullseye | ✓ Game logic (multiple) | ✓ Gameplay #15-18, Edit Score #11, Results #9 |
+| Speed Mode | ✓ Game logic (multiple) | ✓ Gameplay #19-22, #35, Edit Score #9-10 |
+| Number of Laps | ✓ Game logic (multiple) | ✓ Gameplay #24-26 |
 
 ### Code Coverage
 
@@ -254,7 +296,7 @@ Location: `integration_test/shared/`
 
 All tests run as part of the build pipeline:
 
-1. **Pre-build:** `flutter test` (all 672 non-UI tests must pass)
+1. **Pre-build:** `flutter test` (all 727 non-UI tests must pass)
 2. **Optional:** UI automation tests can be run selectively
 3. **Pre-deployment:** Manual visual validation via screenshot test
 

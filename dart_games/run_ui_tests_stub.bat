@@ -1331,7 +1331,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: clockwork_quest_add_player_test.dart
     echo Tests: 10 tests
-    echo Expected Duration: ~6 minutes
+    echo Expected Duration: ~4 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -1341,7 +1341,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: clockwork_quest_add_player_test.dart >> integration_test_output\summary.txt
     echo Tests: 10 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~6 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     set _LOG=integration_test_output\24_clockwork_quest_add_player.log
@@ -1384,7 +1384,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: clockwork_quest_menu_and_settings_test.dart
     echo Tests: 20 tests
-    echo Expected Duration: ~12 minutes
+    echo Expected Duration: ~7 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -1394,7 +1394,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: clockwork_quest_menu_and_settings_test.dart >> integration_test_output\summary.txt
     echo Tests: 20 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~12 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~7 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     set _LOG=integration_test_output\25_clockwork_quest_menu_and_settings.log
@@ -1436,8 +1436,8 @@ if "!should_run!"=="1" (
     echo [!test_count!] Clockwork Quest Gameplay Test
     echo ========================================
     echo File: clockwork_quest_gameplay_test.dart
-    echo Tests: 31 tests
-    echo Expected Duration: ~18 minutes
+    echo Tests: 36 tests
+    echo Expected Duration: ~17 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -1446,8 +1446,8 @@ if "!should_run!"=="1" (
     echo [!test_count!] Clockwork Quest Gameplay Test >> integration_test_output\summary.txt
     echo ======================================== >> integration_test_output\summary.txt
     echo File: clockwork_quest_gameplay_test.dart >> integration_test_output\summary.txt
-    echo Tests: 31 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~18 minutes >> integration_test_output\summary.txt
+    echo Tests: 36 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~17 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     set _LOG=integration_test_output\26_clockwork_quest_gameplay.log
@@ -1489,8 +1489,8 @@ if "!should_run!"=="1" (
     echo [!test_count!] Clockwork Quest Edit Score Test
     echo ========================================
     echo File: clockwork_quest_edit_score_test.dart
-    echo Tests: 8 tests
-    echo Expected Duration: ~5 minutes
+    echo Tests: 11 tests
+    echo Expected Duration: ~6 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -1499,8 +1499,8 @@ if "!should_run!"=="1" (
     echo [!test_count!] Clockwork Quest Edit Score Test >> integration_test_output\summary.txt
     echo ======================================== >> integration_test_output\summary.txt
     echo File: clockwork_quest_edit_score_test.dart >> integration_test_output\summary.txt
-    echo Tests: 8 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~5 minutes >> integration_test_output\summary.txt
+    echo Tests: 11 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~6 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     set _LOG=integration_test_output\27_clockwork_quest_edit_score.log
@@ -1542,8 +1542,8 @@ if "!should_run!"=="1" (
     echo [!test_count!] Clockwork Quest Results Test
     echo ========================================
     echo File: clockwork_quest_results_test.dart
-    echo Tests: 8 tests
-    echo Expected Duration: ~6 minutes
+    echo Tests: 11 tests
+    echo Expected Duration: ~9 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -1552,8 +1552,8 @@ if "!should_run!"=="1" (
     echo [!test_count!] Clockwork Quest Results Test >> integration_test_output\summary.txt
     echo ======================================== >> integration_test_output\summary.txt
     echo File: clockwork_quest_results_test.dart >> integration_test_output\summary.txt
-    echo Tests: 8 tests >> integration_test_output\summary.txt
-    echo Expected Duration: ~6 minutes >> integration_test_output\summary.txt
+    echo Tests: 11 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~9 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     set _LOG=integration_test_output\28_clockwork_quest_results.log
@@ -1649,7 +1649,7 @@ if "!should_run!"=="1" (
     echo ========================================
     echo File: clockwork_quest_screenshot_test.dart
     echo Tests: 1 test
-    echo Expected Duration: ~3 minutes
+    echo Expected Duration: ~4 minutes
     echo Start Time: %date% %time%
     echo ========================================
     echo.
@@ -1659,7 +1659,7 @@ if "!should_run!"=="1" (
     echo ======================================== >> integration_test_output\summary.txt
     echo File: clockwork_quest_screenshot_test.dart >> integration_test_output\summary.txt
     echo Tests: 1 test >> integration_test_output\summary.txt
-    echo Expected Duration: ~3 minutes >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     set _LOG=integration_test_output\30_clockwork_quest_screenshot.log
@@ -1774,13 +1774,13 @@ echo  20. carnival_derby_save_resume_test.dart        (9 tests,  ~8 min)
 echo  21. target_tag_save_resume_test.dart            (9 tests,  ~8 min)
 echo  22. monster_mash_save_resume_test.dart          (9 tests,  ~8 min)
 echo  23. reef_royale_save_resume_test.dart           (9 tests,  ~8 min)
-echo  24. clockwork_quest_add_player_test.dart        (10 tests, ~6 min)
-echo  25. clockwork_quest_menu_and_settings_test.dart (20 tests, ~12 min)
-echo  26. clockwork_quest_gameplay_test.dart          (31 tests, ~18 min)
-echo  27. clockwork_quest_edit_score_test.dart        (8 tests,  ~5 min)
-echo  28. clockwork_quest_results_test.dart           (8 tests,  ~6 min)
+echo  24. clockwork_quest_add_player_test.dart        (10 tests, ~4 min)
+echo  25. clockwork_quest_menu_and_settings_test.dart (20 tests, ~7 min)
+echo  26. clockwork_quest_gameplay_test.dart          (36 tests, ~17 min)
+echo  27. clockwork_quest_edit_score_test.dart        (11 tests, ~6 min)
+echo  28. clockwork_quest_results_test.dart           (11 tests, ~9 min)
 echo  29. clockwork_quest_save_resume_test.dart       (16 tests, ~10 min)
-echo  30. clockwork_quest_screenshot_test.dart        (1 test,   ~3 min)
+echo  30. clockwork_quest_screenshot_test.dart        (1 test,   ~4 min)
 echo.
 echo EXAMPLES:
 echo   Run all tests (stub):

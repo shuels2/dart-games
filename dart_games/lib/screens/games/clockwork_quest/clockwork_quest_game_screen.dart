@@ -652,8 +652,8 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     PlayerProvider playerProvider,
     dynamic game,
   ) {
-    // 4 tiles: stretch to fill height so nothing clips
-    if (opponentIds.length >= 4) {
+    // 3+ tiles: stretch to fill height so nothing clips
+    if (opponentIds.length >= 3) {
       return Column(
         children: [
           for (final opponentId in opponentIds)

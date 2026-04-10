@@ -2,7 +2,7 @@
 
 ## Overview
 
-643 non-UI tests validate models, providers, services, widgets, and game logic.
+727 non-UI tests validate models, providers, services, widgets, and game logic.
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -96,6 +96,24 @@
 - Buff-modified announcements (Shadow Walk, Blood Moon, Ancient Bandages, Lab Spark)
 - Edge cases (eliminated opponent hit, bullseye at full health, Max Health text)
 - Combined elimination and hat trick + elimination merged announcements
+
+**Clockwork Quest Game Logic (66 tests)**
+- Basic game mechanics (target advancement, gear activation)
+- Sequential and speed mode progression
+- Bullseye mode (gear 21)
+- Multi-lap completion
+- Multi-player games (2-8 players)
+- Inventor character assignments
+- Edit score with speed mode and bullseye
+- Full game completion with all option permutations
+- Edge cases (serialization, clearGame, ignored inputs)
+
+**Clockwork Quest Announcements (18 tests)**
+- All 14 announcement events
+- Sound effect assignments
+- MAX 2 announcements rule
+- Announcement priority ordering
+- Text generation with player names
 
 ### Shared Component Tests (24 tests)
 

@@ -37,10 +37,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (955 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **672 non-UI + 283 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 672 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 283 UI tests (~207 minutes, optional)
+### 🧪 Testing (1057 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **727 non-UI + 330 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 727 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -69,7 +69,7 @@ Each game has its own unique visual identity while integrating with global syste
 ```bash
 flutter test
 ```
-**Required:** 100% pass rate (672 tests)
+**Required:** 100% pass rate (727 tests)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -77,7 +77,7 @@ flutter test
 cd chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2: Run all UI tests (283 tests, ~207 minutes)
+# Terminal 2: Run all UI tests (330 tests, ~224 minutes)
 ./run_ui_tests.bat
 
 # Or run specific game
@@ -99,8 +99,8 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 955 tests**
-- **Non-UI Tests:** 672 tests (100% pass rate MANDATORY)
+**Total: 1057 tests**
+- **Non-UI Tests:** 727 tests (100% pass rate MANDATORY)
   - Model tests: 40
   - Model serialization tests: 55
   - Provider tests: 44
@@ -115,20 +115,20 @@ flutter test test/screens/games/clockwork_quest/
   - Resume game modal tests: 13
   - Monster Mash announcements: 18
   - Reef Royale game logic + announcements: ~154
-  - Clockwork Quest game logic + announcements: 47 (29 game logic + 18 announcements)
+  - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **UI Automation Tests:** 283 tests (optional, ask before running)
+- **UI Automation Tests:** 330 tests (optional, ask before running)
   - Target Tag: 62 tests (~48 minutes)
   - Carnival Derby: 33 tests (~22 minutes)
   - Monster Mash: 60 tests (~40 minutes)
   - Reef Royale: 70 tests (~37 minutes)
-  - Clockwork Quest: 58 tests (~40 minutes) [48 functional + 10 save/resume]
+  - Clockwork Quest: 105 tests (~57 minutes) [89 functional + 16 save/resume]
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 672 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 727 non-UI tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 

@@ -41,6 +41,22 @@ Future<void> throwDartViaMock(WidgetTester tester, int number,
   }
 }
 
+Future<void> throwBullseyeViaMock(WidgetTester tester) async {
+  final mockApi = getMockApi(tester);
+  if (mockApi != null) {
+    mockApi.simulateDartThrow(
+      score: 50,
+      multiplier: 'bullseye',
+      playerName: 'Player',
+      baseScore: 50,
+      widgetX: 125.0,
+      widgetY: 125.0,
+      widgetSize: 250.0,
+    );
+    await PumpSequences.simpleUpdate(tester);
+  }
+}
+
 Future<void> throwMissViaMock(WidgetTester tester) async {
   final mockApi = getMockApi(tester);
   if (mockApi != null) {
@@ -66,11 +82,21 @@ Future<void> clickDartsRemoved(WidgetTester tester) async {
 }
 
 Future<void> setupAndStartGame(
-    WidgetTester tester, GameUIConfig config) async {
+  WidgetTester tester,
+  GameUIConfig config, {
+  bool includeBullseye = false,
+  List<String>? playerNames,
+}) async {
   await UITestHelpers.navigateToGameMenu(tester, config);
 
-  await UITestHelpers.addPlayer(tester, 'Player A', config);
-  await UITestHelpers.addPlayer(tester, 'Player B', config);
+  if (includeBullseye) {
+    await SettingsHelpers.toggleClockworkQuestIncludeBullseye(tester);
+  }
+
+  final names = playerNames ?? ['Player A', 'Player B'];
+  for (final name in names) {
+    await UITestHelpers.addPlayer(tester, name, config);
+  }
 
   // Players are auto-selected when added
   await UITestHelpers.startGame(tester, config);
@@ -84,35 +110,50 @@ Future<void> completeTurnWithMisses(WidgetTester tester) async {
   await clickDartsRemoved(tester);
 }
 
-/// Complete game: P1 advances through all 20 targets to win
-/// P1 hits 3 targets per turn, P2 misses all turns
-Future<void> completeGameToVictory(WidgetTester tester) async {
+/// Complete game: P1 advances through all targets to win
+/// P1 hits 3 targets per turn, all opponents miss
+Future<void> completeGameToVictory(
+  WidgetTester tester, {
+  int numOpponents = 1,
+  bool includeBullseye = false,
+}) async {
+  final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+
   // P1 hits targets 1-20 in groups of 3 per turn
-  // After each P1 turn, P2 misses
   for (int startTarget = 1; startTarget <= 20; startTarget += 3) {
-    // P1's turn: hit 3 sequential targets
     for (int t = startTarget; t < startTarget + 3 && t <= 20; t++) {
       await throwDartViaMock(tester, t);
     }
-    // If P1 hit fewer than 3 targets (last group might be partial), fill with misses
     final targetsHit = (startTarget + 2 <= 20) ? 3 : (20 - startTarget + 1);
     for (int i = targetsHit; i < 3; i++) {
       await throwMissViaMock(tester);
     }
     await clickDartsRemoved(tester);
 
-    // Check if game is over (P1 won after hitting target 20)
     if (ProviderHelpers.clockworkQuestHasWinner(tester)) break;
 
-    // P2's turn: miss all
-    await completeTurnWithMisses(tester);
+    // All opponents miss
+    for (int i = 0; i < numOpponents; i++) {
+      await completeTurnWithMisses(tester);
+    }
+  }
+
+  // If bullseye is needed, hit it
+  if (includeBullseye && !provider.hasWinner) {
+    if (provider.shouldPromptTakeout) {
+      await clickDartsRemoved(tester);
+      for (int i = 0; i < numOpponents; i++) {
+        await completeTurnWithMisses(tester);
+      }
+    }
+    await throwBullseyeViaMock(tester);
   }
 
   // Wait for results screen navigation
   await tester.pump(const Duration(seconds: 4));
-  await tester.pump(); // Process navigation
-  await tester.pump(); // Build results screen
-  await tester.pump(); // Layout
+  await tester.pump();
+  await tester.pump();
+  await tester.pump();
 }
 
 void main() {
@@ -237,6 +278,63 @@ void main() {
 
       // Should be back on home screen with game card visible
       expect(ElementFinders.getClockworkQuestCard(), findsOneWidget);
+    });
+
+    // ================================================================
+    // RESULTS WITH BULLSEYE GAME
+    // ================================================================
+
+    testWidgets('Test 9: Results screen after bullseye game shows winner',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, includeBullseye: true);
+      await completeGameToVictory(tester, includeBullseye: true);
+
+      // Results screen should have all expected widgets
+      await UITestHelpers.verifyResultsScreen(tester, config);
+
+      // Winner info should be displayed
+      expect(find.byKey(ClockworkQuestResultsKeys.winnerTitle), findsOneWidget);
+      expect(find.byKey(ClockworkQuestResultsKeys.winnerName), findsOneWidget);
+    });
+
+    // ================================================================
+    // RESULTS WITH 3+ PLAYERS
+    // ================================================================
+
+    testWidgets('Test 10: Results screen with 3 players shows all in rankings',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config,
+          playerNames: ['Alice', 'Bob', 'Carol']);
+      await completeGameToVictory(tester, numOpponents: 2);
+
+      await UITestHelpers.verifyResultsScreen(tester, config);
+
+      // Rankings list should be visible
+      expect(find.byKey(ClockworkQuestResultsKeys.rankingsList), findsOneWidget);
+
+      // All 3 players should appear in rankings
+      final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+      for (final playerId in provider.currentGame!.playerIds) {
+        expect(
+          find.byKey(ClockworkQuestResultsKeys.playerRankTile(playerId)),
+          findsOneWidget,
+          reason: 'Player $playerId should appear in rankings',
+        );
+      }
+    });
+
+    testWidgets('Test 11: Results screen with 3 players — Play Again works',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config,
+          playerNames: ['Alice', 'Bob', 'Carol']);
+      await completeGameToVictory(tester, numOpponents: 2);
+
+      await UITestHelpers.clickPlayAgain(tester, config);
+
+      // Should be back on game screen with all 3 players
+      expect(ProviderHelpers.isClockworkQuestGameActive(tester), isTrue);
+      final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+      expect(provider.currentGame!.playerIds.length, 3);
     });
   });
 }

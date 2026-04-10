@@ -11,6 +11,7 @@ Dart Games is a cross-platform (web and tablet) application that provides a fram
 ### Current Games
 
 - **Carnival Derby** - A horse race-style game where players advance by scoring points with darts
+- **Clockwork Quest** - A steampunk gear progression game where players activate sequential gears on a clockwork tower
 - **Monster Mash** - A monster-themed battle game where players attack opponents and heal themselves using target numbers
 - **Reef Royale** - An ocean-themed coral claiming game where players compete for territory on the dartboard
 - **Target Tag** - A strategic elimination game where players build shields and tag opponents to win
@@ -629,10 +630,12 @@ dart_games/
 │       ├── options_screen.dart      # System settings
 │       └── games/
 │           ├── carnival_horse_race/ # Carnival Derby game
+│           ├── clockwork_quest/     # Clockwork Quest game
 │           ├── monster_mash/        # Monster Mash game
+│           ├── reef_royale/         # Reef Royale game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Non-UI test suite (352 tests)
-├── integration_test/                # UI automation tests (128 tests)
+├── test/                            # Non-UI test suite (727 tests)
+├── integration_test/                # UI automation tests (330 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
     │   ├── icons/
@@ -642,7 +645,15 @@ dart_games/
         │   ├── icons/
         │   ├── images/
         │   └── sounds/
+        ├── clockwork_quest/         # Clockwork Quest assets
+        │   ├── icons/
+        │   ├── images/
+        │   └── sounds/
         ├── monster_mash/            # Monster Mash assets
+        │   ├── icons/
+        │   ├── images/
+        │   └── sounds/
+        ├── reef_royale/             # Reef Royale assets
         │   ├── icons/
         │   ├── images/
         │   └── sounds/
@@ -834,10 +845,10 @@ cd dart_games
 # Install dependencies
 flutter pub get
 
-# Run non-UI tests (all 352 tests must pass)
+# Run non-UI tests (all 727 tests must pass)
 flutter test
 
-# Optional: Run UI automation tests (128 tests, ~86 minutes, requires chromedriver)
+# Optional: Run UI automation tests (330 tests, ~224 minutes, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
 
 # Launch in Chrome (web)
@@ -849,42 +860,34 @@ flutter run
 
 ### Testing Requirements
 
-**All 352 non-UI tests must pass before any build or deployment.**
+**All 727 non-UI tests must pass before any build or deployment.**
 
 ```bash
 flutter test
 ```
 
-**Non-UI Test Coverage (352 tests):**
+**Non-UI Test Coverage (727 tests):**
 - Model serialization (40 tests)
+- Model serialization games (55 tests)
 - Provider functionality (44 tests)
+- Provider save/restore (28 tests)
 - Service integration (42 tests)
+- Save game service (13 tests)
 - Game integration - Carnival Derby (43 tests: 26 user management, 17 announcements)
 - Game integration - Target Tag (68 tests: 54 announcements, 14 user management)
 - Game integration - Monster Mash (65 tests: 47 game logic, 18 announcements)
+- Game integration - Reef Royale (~154 tests: game logic + announcements)
+- Game integration - Clockwork Quest (84 tests: 66 game logic, 18 announcements)
+- Save/resume integration (20 tests)
 - Shared test components (24 tests)
-- Widget tests (23 tests)
+- Widget tests (44 tests: 23 dartboard, 8 save modal, 13 resume modal)
 
-**UI Automation Test Coverage (128 tests, ~86 minutes):**
-
-| # | Test File | Tests | Duration |
-|---|-----------|-------|----------|
-| 1 | target_tag_menu_and_mechanics_test.dart | 24 | ~16 min |
-| 2 | target_tag_visual_validation_test.dart | 4 | ~5 min |
-| 3 | target_tag_gameplay_test.dart | 13 | ~9 min |
-| 4 | target_tag_add_player_test.dart | 6 | ~3 min |
-| 5 | target_tag_results_screen_test.dart | 6 | ~7 min |
-| 6 | carnival_derby_ui_test.dart | 24 | ~14 min |
-| 7 | monster_mash_add_player_test.dart | 6 | ~3 min |
-| 8 | monster_mash_menu_and_settings_test.dart | 8 | ~4 min |
-| 9 | monster_mash_gameplay_test.dart | 20 | ~11 min |
-| 10 | monster_mash_edit_score_test.dart | 5 | ~4 min |
-| 11 | monster_mash_results_screen_test.dart | 6 | ~5 min |
-| 12 | monster_mash_visual_validation_test.dart | 6 | ~5 min |
-
-- Target Tag (53 tests, ~40 min): Menu settings, gameplay mechanics, visual validation, add player, results screen
-- Carnival Derby (24 tests, ~14 min): Menu, gameplay, bust mechanics, skip turn, edit score, results screen
-- Monster Mash (51 tests, ~32 min): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation
+**UI Automation Test Coverage (330 tests, ~224 minutes):**
+- Target Tag (62 tests, ~48 min): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
+- Carnival Derby (33 tests, ~22 min): Menu, gameplay, bust mechanics, skip turn, edit score, results screen, save/resume
+- Monster Mash (60 tests, ~40 min): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation, save/resume
+- Reef Royale (70 tests, ~37 min): Add player, menu settings, gameplay, coral claiming, edit score, results screen, visual validation, showcase, save/resume
+- Clockwork Quest (105 tests, ~57 min): Add player, menu settings, gameplay, gear progression, edit score, results screen, save/resume, screenshot
 - Requires chromedriver setup - see [CLAUDE.md](CLAUDE.md) for complete UI testing guide
 
 ### Cross-Platform Compatibility

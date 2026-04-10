@@ -66,8 +66,19 @@ Future<void> clickDartsRemoved(WidgetTester tester) async {
 }
 
 Future<void> setupAndStartGame(
-    WidgetTester tester, GameUIConfig config) async {
+  WidgetTester tester,
+  GameUIConfig config, {
+  bool includeBullseye = false,
+  bool speedMode = false,
+}) async {
   await UITestHelpers.navigateToGameMenu(tester, config);
+
+  if (includeBullseye) {
+    await SettingsHelpers.toggleClockworkQuestIncludeBullseye(tester);
+  }
+  if (speedMode) {
+    await SettingsHelpers.toggleClockworkQuestSpeedMode(tester);
+  }
 
   await UITestHelpers.addPlayer(tester, 'Player A', config);
   await UITestHelpers.addPlayer(tester, 'Player B', config);
@@ -272,6 +283,98 @@ void main() {
       // Target should be 3 (hit 1 and 2)
       expect(
           ProviderHelpers.getClockworkQuestPlayerCurrentTarget(tester, playerId), 3);
+    });
+
+    // ================================================================
+    // EDIT SCORE — SPEED MODE
+    // ================================================================
+
+    testWidgets('Test 9: Edit score in speed mode changes completed gears',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, speedMode: true);
+
+      final playerId =
+          ProviderHelpers.getClockworkQuestCurrentPlayerId(tester)!;
+      final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+
+      // Hit gears 5, 10, 15 (speed mode: any order counts)
+      await throwDartViaMock(tester, 5);
+      await throwDartViaMock(tester, 10);
+      await throwDartViaMock(tester, 15);
+
+      expect(provider.getPlayerCompletedTargets(playerId), containsAll([5, 10, 15]));
+
+      // Edit: change dart 2 from S10 to Miss
+      await EditScoreHelpers.editScoreAndSave(
+        tester, config,
+        dart1: 'S5',
+        dart2: 'Miss',
+        dart3: 'S15',
+      );
+
+      expect(provider.getPlayerCompletedTargets(playerId), containsAll([5, 15]));
+      expect(provider.getPlayerCompletedTargets(playerId), isNot(contains(10)));
+    });
+
+    testWidgets('Test 10: Edit score in speed mode adds new gears',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, speedMode: true);
+
+      final playerId =
+          ProviderHelpers.getClockworkQuestCurrentPlayerId(tester)!;
+      final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+
+      // Throw 3 misses
+      await throw3DartsAndWaitForTakeout(tester);
+      expect(provider.getPlayerCompletedTargets(playerId), isEmpty);
+
+      // Edit: change to 3 hits
+      await EditScoreHelpers.editScoreAndSave(
+        tester, config,
+        dart1: 'S3',
+        dart2: 'S7',
+        dart3: 'S12',
+      );
+
+      expect(provider.getPlayerCompletedTargets(playerId), containsAll([3, 7, 12]));
+    });
+
+    // ================================================================
+    // EDIT SCORE — BULLSEYE MODE
+    // ================================================================
+
+    testWidgets('Test 11: Edit score at bullseye target changes outcome',
+        (WidgetTester tester) async {
+      await setupAndStartGame(tester, config, includeBullseye: true);
+
+      final playerId =
+          ProviderHelpers.getClockworkQuestCurrentPlayerId(tester)!;
+      final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+
+      // Set player to target 21 (bullseye)
+      provider.currentGame!.currentTarget[playerId] = 21;
+      // Update turn start state for edit score
+      provider.currentGame!.turnStartCurrentTarget[playerId] = 21;
+      provider.currentGame!.turnStartLapsCompleted[playerId] = 0;
+      provider.currentGame!.turnStartState = provider.currentGame!.state;
+      provider.currentGame!.turnStartWinnerId = null;
+      provider.currentGame!.turnStartCompletedTargets[playerId] = [];
+      provider.notifyListeners();
+      await PumpSequences.simpleUpdate(tester);
+
+      // Throw 3 misses at bullseye target
+      await throw3DartsAndWaitForTakeout(tester);
+      expect(provider.hasWinner, isFalse);
+
+      // Edit: change dart 1 to Bullseye hit
+      await EditScoreHelpers.editScoreAndSave(
+        tester, config,
+        dart1: 'Bull',
+      );
+
+      // Should now be a winner
+      expect(provider.hasWinner, isTrue);
+      expect(provider.currentGame!.winnerId, playerId);
     });
   });
 }

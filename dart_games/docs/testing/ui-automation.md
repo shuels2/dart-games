@@ -2,10 +2,10 @@
 
 ## Overview
 
-225 UI automation tests validate end-to-end user flows in Chrome browser.
+330 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Execution time:** ~147 minutes
+**Execution time:** ~224 minutes
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
@@ -41,6 +41,15 @@
 7. Showcase: 1 test (~1 min)
 8. Save & Resume: 9 tests (~8 min)
 
+### Clockwork Quest (105 tests, ~57 minutes)
+1. Add Player: 10 tests (~4 min)
+2. Menu and Settings: 20 tests (~7 min)
+3. Gameplay: 36 tests (~17 min)
+4. Edit Score: 11 tests (~6 min)
+5. Results Screen: 11 tests (~9 min)
+6. Save & Resume: 16 tests (~10 min)
+7. Screenshot: 1 test (~4 min)
+
 ## Running UI Automation Tests
 
 ### Step 1: Start ChromeDriver
@@ -64,6 +73,7 @@ Leave this terminal running.
 ./run_ui_tests.bat target_tag
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
+./run_ui_tests.bat clockwork_quest
 
 # Specific test file
 flutter drive --driver=test_driver/integration_test.dart \
