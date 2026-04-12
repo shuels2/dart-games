@@ -5,6 +5,7 @@ import 'package:dart_games/providers/horse_race_provider.dart';
 import 'package:dart_games/providers/target_tag_provider.dart';
 import 'package:dart_games/providers/monster_mash_provider.dart';
 import 'package:dart_games/providers/reef_royale_provider.dart';
+import 'package:dart_games/providers/clockwork_quest_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/models/player.dart';
@@ -356,6 +357,59 @@ class ProviderHelpers {
   static List<String> getReefRoyaleRankedPlayerIds(WidgetTester tester) {
     final provider = getReefRoyaleProvider(tester);
     return provider.getRankedPlayerIds();
+  }
+
+  // ==========================================================================
+  // CLOCKWORK QUEST HELPERS
+  // ==========================================================================
+
+  /// Get Clockwork Quest provider
+  static ClockworkQuestProvider getClockworkQuestProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<ClockworkQuestProvider>(context, listen: false);
+  }
+
+  /// Clockwork Quest: Get player current target
+  static int getClockworkQuestPlayerCurrentTarget(WidgetTester tester, String playerId) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getPlayerCurrentTarget(playerId);
+  }
+
+  /// Clockwork Quest: Get player laps completed
+  static int getClockworkQuestPlayerLapsCompleted(WidgetTester tester, String playerId) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getPlayerLapsCompleted(playerId);
+  }
+
+  /// Clockwork Quest: Check for winner
+  static bool clockworkQuestHasWinner(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Clockwork Quest: Get current player ID
+  static String? getClockworkQuestCurrentPlayerId(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getCurrentPlayerId();
+  }
+
+  /// Clockwork Quest: Check if game is active
+  static bool isClockworkQuestGameActive(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Clockwork Quest: Get current player darts thrown
+  static int getClockworkQuestCurrentPlayerDartsThrown(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getCurrentPlayerDartsThrown();
+  }
+
+  /// Clockwork Quest: Set player target programmatically (for tests)
+  static void setClockworkQuestPlayerTarget(WidgetTester tester, String playerId, int target) {
+    final provider = getClockworkQuestProvider(tester);
+    provider.currentGame!.currentTarget[playerId] = target;
+    provider.notifyListeners();
   }
 
   // ==========================================================================

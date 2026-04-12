@@ -244,7 +244,6 @@ class _DualPlayerListPanelState extends State<DualPlayerListPanel> {
                 itemBuilder: (context, index) {
                   final player = selectedPlayers[index];
                   return PlayerSelectionCard(
-                    key: widget.playerTileKey?.call(player.id),
                     player: player,
                     isSelected: true,
                     compact: false,

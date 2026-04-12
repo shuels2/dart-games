@@ -34,6 +34,7 @@ class HomeKeys {
   static const targetTagCard = Key('home_target_tag_card');
   static const monsterMashCard = Key('home_monster_mash_card');
   static const reefRoyaleCard = Key('home_reef_royale_card');
+  static const clockworkQuestCard = Key('home_clockwork_quest_card');
 }
 
 // ============================================================================
@@ -610,4 +611,78 @@ class DartboardEmulatorKeys {
   static const dartboard = Key('dartboard_emulator_dartboard');
   static const removeDartsButton = Key('dartboard_emulator_remove_darts_button');
   static const toggleFAB = Key('dartboard_emulator_toggle_fab');
+}
+
+// ============================================================================
+// CLOCKWORK QUEST KEYS
+// ============================================================================
+
+class ClockworkQuestMenuKeys {
+  // Navigation
+  static const backButton = Key('cq_menu_back_button');
+
+  // Player selection
+  static const addPlayerButton = Key('cq_menu_add_player_button');
+  static const addPlayerButtonEmptyState = Key('cq_menu_add_player_button_empty_state');
+  static const playerListView = Key('cq_menu_player_list_view');
+  static Key playerTile(String playerId) => Key('cq_menu_player_${playerId}_tile');
+  static Key removePlayerButton(String playerId) => Key('cq_menu_remove_player_${playerId}_button');
+
+  // Settings
+  static const includeBullseyeCheckbox = Key('cq_menu_include_bullseye_checkbox');
+  static const speedModeCheckbox = Key('cq_menu_speed_mode_checkbox');
+  static const numberOfLapsDropdown = Key('cq_menu_number_of_laps_dropdown');
+
+  // Start button
+  static const startButton = Key('cq_menu_start_button');
+
+  // Resume button
+  static const resumeGameButton = Key('cq_menu_resume_game_button');
+}
+
+class ClockworkQuestGameKeys {
+  // Navigation
+  static const backButton = Key('cq_game_back_button');
+
+  // Player panels
+  static const activePlayerPanel = Key('cq_game_active_player_panel');
+  static const playerAvatar = Key('cq_game_player_avatar');
+  static const activePlayerName = Key('cq_game_active_player_name');
+  static const skipTurnButton = Key('cq_game_skip_turn_button');
+
+  // Gear tracker
+  static const gearTracker = Key('cq_game_gear_tracker');
+  static Key gear(int number) => Key('cq_game_gear_$number');
+  static Key gearActive(int number) => Key('cq_game_gear_${number}_active');
+
+  // Progress display
+  static const currentLapText = Key('cq_game_current_lap_text');
+  static const currentTargetText = Key('cq_game_current_target_text');
+
+  // Dartboard emulator
+  static const dartboardSection = Key('cq_game_dartboard_section');
+
+  // Dart indicators
+  static Key dartIndicator(int index) => Key('cq_game_dart_indicator_$index');
+
+  // Opponent progress bar
+  static Key playerTile(String playerId) =>
+      Key('cq_game_player_tile_$playerId');
+
+  // Remove darts modal
+  static const removeDartsModal = Key('cq_game_remove_darts_modal');
+  static const confirmRemovalButton = Key('cq_game_confirm_removal_button');
+  static const editScoreButton = Key('cq_game_edit_score_button');
+}
+
+class ClockworkQuestResultsKeys {
+  static const winnerName = Key('cq_results_winner_name');
+  static const winnerTitle = Key('cq_results_winner_title');
+  static const rankingsList = Key('cq_results_rankings_list');
+  static Key playerRankTile(String playerId) => Key('cq_results_player_${playerId}_rank_tile');
+  static const playAgainButton = Key('cq_results_play_again_button');
+  static const changeSettingsButton = Key('cq_results_change_settings_button');
+  static const leaveTowerButton = Key('cq_results_leave_tower_button');
+  // Alias for back-to-menu button (same as leaveTowerButton)
+  static const backToMenuButton = Key('cq_results_leave_tower_button');
 }

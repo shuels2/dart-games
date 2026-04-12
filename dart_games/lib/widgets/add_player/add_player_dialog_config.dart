@@ -341,6 +341,58 @@ class AddPlayerDialogConfig {
     );
   }
 
+  /// Clockwork Quest theme configuration (steampunk clocktower theme)
+  factory AddPlayerDialogConfig.clockworkQuest() {
+    return AddPlayerDialogConfig(
+      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+      textColor: const Color(0xFFF5F0E8), // Steam White
+      titleStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFC5A54E), // Brass Gold
+        letterSpacing: 1.2,
+      ),
+      inputLabelStyle: GoogleFonts.lato(
+        fontSize: 16,
+        color: const Color(0xFFF5F0E8),
+        fontWeight: FontWeight.w600,
+      ),
+      inputBorderColor: const Color(0xFFB87333), // Copper Rose
+      inputFocusedBorderColor: const Color(0xFFC5A54E), // Brass Gold
+      inputErrorBorderColor: const Color(0xFFFF6B6B),
+      photoLabelStyle: GoogleFonts.lato(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFFF5F0E8),
+      ),
+      photoButtonColor: const Color(0xFFB87333), // Copper Rose
+      photoButtonForegroundColor: const Color(0xFFF5F0E8),
+      photoButtonBorderColor: const Color(0xFFC5A54E),
+      photoButtonTextStyle: GoogleFonts.lato(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8),
+      ),
+      photoButtonWidth: null,
+      addButtonColor: const Color(0xFFC5A54E), // Brass Gold
+      addButtonForegroundColor: const Color(0xFF2C2C34), // Dark Iron
+      addButtonBorderColor: const Color(0xFFC5A54E),
+      addButtonTextStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+      cancelButtonColor: const Color(0xFF4A4A52),
+      cancelButtonForegroundColor: const Color(0xFFF5F0E8),
+      cancelButtonBorderColor: const Color(0xFFB87333),
+      cancelButtonTextStyle: GoogleFonts.lato(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      errorTextColor: const Color(0xFFFF6B6B),
+    );
+  }
+
   /// Options Screen theme configuration (Material Design defaults)
   factory AddPlayerDialogConfig.optionsScreen(BuildContext context) {
     final theme = Theme.of(context);

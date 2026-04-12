@@ -37,10 +37,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (878 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **643 non-UI + 235 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 643 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 235 UI tests (~167 minutes, optional)
+### 🧪 Testing (1057 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **727 non-UI + 330 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 727 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -61,6 +61,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [Target Tag](docs/games/target-tag/) - Shield elimination game (2-10 players)
 - [Monster Mash](docs/games/monster-mash/) - Monster battle game (2-8 players)
 - [Reef Royale](docs/games/reef-royale/) - Coral claiming game (2-8 players)
+- [Clockwork Quest](docs/games/clockwork-quest/) - Steampunk gear progression game (2-8 players)
 
 ## Quick Reference
 
@@ -68,7 +69,7 @@ Each game has its own unique visual identity while integrating with global syste
 ```bash
 flutter test
 ```
-**Required:** 100% pass rate (637 tests)
+**Required:** 100% pass rate (727 tests)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -76,7 +77,7 @@ flutter test
 cd chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2: Run all UI tests (231 tests, ~163 minutes)
+# Terminal 2: Run all UI tests (330 tests, ~224 minutes)
 ./run_ui_tests.bat
 
 # Or run specific game
@@ -84,6 +85,7 @@ cd chromedriver/chromedriver-win64
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
 ./run_ui_tests.bat reef_royale
+./run_ui_tests.bat clockwork_quest
 ```
 
 ### Run Game-Specific Tests
@@ -92,12 +94,13 @@ flutter test test/screens/games/target_tag/
 flutter test test/screens/games/carnival_horse_race/
 flutter test test/screens/games/monster_mash/
 flutter test test/screens/games/reef_royale/
+flutter test test/screens/games/clockwork_quest/
 ```
 
 ## Current Test Counts
 
-**Total: 868 tests**
-- **Non-UI Tests:** 643 tests (100% pass rate MANDATORY)
+**Total: 1057 tests**
+- **Non-UI Tests:** 727 tests (100% pass rate MANDATORY)
   - Model tests: 40
   - Model serialization tests: 55
   - Provider tests: 44
@@ -112,18 +115,20 @@ flutter test test/screens/games/reef_royale/
   - Resume game modal tests: 13
   - Monster Mash announcements: 18
   - Reef Royale game logic + announcements: ~154
+  - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **UI Automation Tests:** 225 tests (optional, ask before running)
+- **UI Automation Tests:** 330 tests (optional, ask before running)
   - Target Tag: 62 tests (~48 minutes)
   - Carnival Derby: 33 tests (~22 minutes)
   - Monster Mash: 60 tests (~40 minutes)
   - Reef Royale: 70 tests (~37 minutes)
+  - Clockwork Quest: 105 tests (~57 minutes) [89 functional + 16 save/resume]
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 643 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 727 non-UI tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -287,6 +292,6 @@ git push origin <branch>        # Push (with permission)
 
 ---
 
-**Last Updated:** 2026-03-04
-**Documentation Version:** 3.1 (Save & Resume)
-**Total Documentation Files:** 69
+**Last Updated:** 2026-03-14
+**Documentation Version:** 3.2 (Clockwork Quest)
+**Total Documentation Files:** 77

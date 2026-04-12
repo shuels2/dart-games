@@ -2,11 +2,11 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 868 total tests:
-- **643 non-UI tests** (models, providers, services, widgets, game logic)
-- **225 UI automation tests** (end-to-end testing with Chrome)
+The Dart Games app has a comprehensive test suite with 1057 total tests:
+- **727 non-UI tests** (models, providers, services, widgets, game logic)
+- **330 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (643 tests)
+## Non-UI Tests (727 tests)
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -49,6 +49,7 @@ The Dart Games app has a comprehensive test suite with 868 total tests:
 - Monster Mash Game Logic + Announcements: 47 tests
 - Monster Mash Announcements: 18 tests
 - Reef Royale Game Logic + Announcements: ~154 tests
+- Clockwork Quest Game Logic + Announcements: 84 tests (66 game logic + 18 announcements)
 
 **Save/Resume Integration Tests (20 tests)**
 - Save trigger conditions: 8 tests
@@ -56,7 +57,7 @@ The Dart Games app has a comprehensive test suite with 868 total tests:
 - Resumed game save overwrites: 5 tests
 - Multiple saves independence: 3 tests
 
-_Note: Some tests span multiple categories. The total (643) is the authoritative count from `flutter test`._
+_Note: Some tests span multiple categories. The total (727) is the authoritative count from `flutter test`._
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
@@ -67,10 +68,10 @@ _Note: Some tests span multiple categories. The total (643) is the authoritative
 - SaveGameModal: 8 tests
 - ResumeGameModal: 13 tests
 
-## UI Automation Tests (225 tests)
+## UI Automation Tests (330 tests)
 
 **Run with:** `./run_ui_tests.bat` or `flutter drive`
-**Execution time:** ~147 minutes
+**Execution time:** ~224 minutes
 **OPTIONAL:** Ask user before running
 
 ### Target Tag (62 tests, ~48 minutes)
@@ -104,10 +105,19 @@ _Note: Some tests span multiple categories. The total (643) is the authoritative
 - Showcase: 1 test (~1 min)
 - Save & Resume: 9 tests (~8 min)
 
+### Clockwork Quest (105 tests, ~57 minutes)
+- Add Player: 10 tests (~4 min)
+- Menu and Settings: 20 tests (~7 min)
+- Gameplay: 36 tests (~17 min)
+- Edit Score: 11 tests (~6 min)
+- Results Screen: 11 tests (~9 min)
+- Save & Resume: 16 tests (~10 min)
+- Screenshot: 1 test (~4 min)
+
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (643 tests)
+✅ Run `flutter test` (727 tests)
 ✅ 100% pass rate MANDATORY
 ✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass
@@ -132,6 +142,7 @@ flutter test test/services/
 flutter test test/screens/games/target_tag/
 flutter test test/screens/games/monster_mash/
 flutter test test/screens/games/reef_royale/
+flutter test test/screens/games/clockwork_quest/
 flutter test test/shared/
 flutter test test/widgets/
 ```
@@ -150,6 +161,7 @@ cd chromedriver/chromedriver-win64
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
 ./run_ui_tests.bat reef_royale
+./run_ui_tests.bat clockwork_quest
 ```
 
 ## Test Expectations
@@ -164,7 +176,7 @@ cd chromedriver/chromedriver-win64
 
 ### UI Automation Tests
 - 100% pass rate when run
-- Execute in ~147 minutes
+- Execute in ~224 minutes
 - Test end-to-end user flows
 - Validate visual elements
 - Test player interactions

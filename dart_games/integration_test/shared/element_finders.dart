@@ -421,6 +421,86 @@ class ElementFinders {
   }
 
   // ==========================================================================
+  // CLOCKWORK QUEST HOME FINDERS
+  // ==========================================================================
+
+  static Finder getClockworkQuestCard() {
+    return find.byKey(HomeKeys.clockworkQuestCard);
+  }
+
+  // ==========================================================================
+  // CLOCKWORK QUEST MENU FINDERS
+  // ==========================================================================
+
+  static Finder getClockworkQuestAddPlayerButton() {
+    return find.byKey(ClockworkQuestMenuKeys.addPlayerButton);
+  }
+
+  static Finder getClockworkQuestAddPlayerButtonEmptyState() {
+    return find.byKey(ClockworkQuestMenuKeys.addPlayerButtonEmptyState);
+  }
+
+  static Finder getClockworkQuestPlayerTile(String playerId) {
+    return find.byKey(ClockworkQuestMenuKeys.playerTile(playerId));
+  }
+
+  static Finder getClockworkQuestIncludeBullseyeCheckbox() {
+    return find.byKey(ClockworkQuestMenuKeys.includeBullseyeCheckbox);
+  }
+
+  static Finder getClockworkQuestSpeedModeCheckbox() {
+    return find.byKey(ClockworkQuestMenuKeys.speedModeCheckbox);
+  }
+
+  static Finder getClockworkQuestNumberOfLapsDropdown() {
+    return find.byKey(ClockworkQuestMenuKeys.numberOfLapsDropdown);
+  }
+
+  static Finder getClockworkQuestStartButton() {
+    return find.byKey(ClockworkQuestMenuKeys.startButton);
+  }
+
+  static Finder getClockworkQuestBackButton() {
+    return find.byKey(ClockworkQuestMenuKeys.backButton);
+  }
+
+  // ==========================================================================
+  // CLOCKWORK QUEST GAME FINDERS
+  // ==========================================================================
+
+  static Finder getClockworkQuestGameBackButton() {
+    return find.byKey(ClockworkQuestGameKeys.backButton);
+  }
+
+  static Finder getClockworkQuestSkipTurnButton() {
+    return find.byKey(ClockworkQuestGameKeys.skipTurnButton);
+  }
+
+  static Finder getClockworkQuestEditScoreButton() {
+    return find.byKey(ClockworkQuestGameKeys.editScoreButton);
+  }
+
+  // ==========================================================================
+  // CLOCKWORK QUEST RESULTS FINDERS
+  // ==========================================================================
+
+  static Finder getClockworkQuestPlayAgainButton() {
+    return find.byKey(ClockworkQuestResultsKeys.playAgainButton);
+  }
+
+  static Finder getClockworkQuestChangeSettingsButton() {
+    return find.byKey(ClockworkQuestResultsKeys.changeSettingsButton);
+  }
+
+  static Finder getClockworkQuestBackToMenuButton() {
+    return find.byKey(ClockworkQuestResultsKeys.backToMenuButton);
+  }
+
+  static Finder getClockworkQuestWinnerName() {
+    return find.byKey(ClockworkQuestResultsKeys.winnerName);
+  }
+
+  // ==========================================================================
   // DIALOG FINDERS
   // ==========================================================================
 

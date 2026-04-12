@@ -1320,6 +1320,377 @@ if "!should_run!"=="1" (
     echo.
 )
 
+REM ----------------------------------------------------------
+REM Test 24: Clockwork Quest Add Player
+REM ----------------------------------------------------------
+call :check_should_run "clockwork_quest_add_player_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Add Player Test
+    echo ========================================
+    echo File: clockwork_quest_add_player_test.dart
+    echo Tests: 10 tests
+    echo Expected Duration: ~4 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Add Player Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_add_player_test.dart >> integration_test_output\summary.txt
+    echo Tests: 10 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\24_clockwork_quest_add_player.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_add_player_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +2: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 25: Clockwork Quest Menu and Settings
+REM ----------------------------------------------------------
+call :check_should_run "clockwork_quest_menu_and_settings_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Menu and Settings Test
+    echo ========================================
+    echo File: clockwork_quest_menu_and_settings_test.dart
+    echo Tests: 20 tests
+    echo Expected Duration: ~7 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Menu and Settings Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_menu_and_settings_test.dart >> integration_test_output\summary.txt
+    echo Tests: 20 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~7 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\25_clockwork_quest_menu_and_settings.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_menu_and_settings_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +2: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 26: Clockwork Quest Gameplay
+REM ----------------------------------------------------------
+call :check_should_run "clockwork_quest_gameplay_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Gameplay Test
+    echo ========================================
+    echo File: clockwork_quest_gameplay_test.dart
+    echo Tests: 36 tests
+    echo Expected Duration: ~17 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Gameplay Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_gameplay_test.dart >> integration_test_output\summary.txt
+    echo Tests: 36 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~17 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\26_clockwork_quest_gameplay.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_gameplay_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +2: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 27: Clockwork Quest Edit Score
+REM ----------------------------------------------------------
+call :check_should_run "clockwork_quest_edit_score_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Edit Score Test
+    echo ========================================
+    echo File: clockwork_quest_edit_score_test.dart
+    echo Tests: 11 tests
+    echo Expected Duration: ~6 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Edit Score Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_edit_score_test.dart >> integration_test_output\summary.txt
+    echo Tests: 11 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~6 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\27_clockwork_quest_edit_score.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_edit_score_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +2: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 28: Clockwork Quest Results
+REM ----------------------------------------------------------
+call :check_should_run "clockwork_quest_results_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Results Test
+    echo ========================================
+    echo File: clockwork_quest_results_test.dart
+    echo Tests: 11 tests
+    echo Expected Duration: ~9 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Results Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_results_test.dart >> integration_test_output\summary.txt
+    echo Tests: 11 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~9 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\28_clockwork_quest_results.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_results_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +2: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 29: Clockwork Quest Save & Resume
+REM ----------------------------------------------------------
+call :check_should_run "clockwork_quest_save_resume_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Save ^& Resume Test
+    echo ========================================
+    echo File: clockwork_quest_save_resume_test.dart
+    echo Tests: 16 tests
+    echo Expected Duration: ~10 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Save ^& Resume Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_save_resume_test.dart >> integration_test_output\summary.txt
+    echo Tests: 16 tests >> integration_test_output\summary.txt
+    echo Expected Duration: ~10 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\29_clockwork_quest_save_resume.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_save_resume_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +2: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
+REM ----------------------------------------------------------
+REM Test 30: Clockwork Quest Screenshot
+REM ----------------------------------------------------------
+call :check_should_run "clockwork_quest_screenshot_test.dart"
+if "!should_run!"=="1" (
+    set /a test_count+=1
+    echo ========================================
+    echo [!test_count!] Clockwork Quest Screenshot Test
+    echo ========================================
+    echo File: clockwork_quest_screenshot_test.dart
+    echo Tests: 1 test
+    echo Expected Duration: ~4 minutes
+    echo Start Time: %date% %time%
+    echo ========================================
+    echo.
+
+    echo ======================================== >> integration_test_output\summary.txt
+    echo [!test_count!] Clockwork Quest Screenshot Test >> integration_test_output\summary.txt
+    echo ======================================== >> integration_test_output\summary.txt
+    echo File: clockwork_quest_screenshot_test.dart >> integration_test_output\summary.txt
+    echo Tests: 1 test >> integration_test_output\summary.txt
+    echo Expected Duration: ~4 minutes >> integration_test_output\summary.txt
+    echo Start Time: %date% %time% >> integration_test_output\summary.txt
+
+    set _LOG=integration_test_output\30_clockwork_quest_screenshot.log
+    set _TARGET=integration_test/clockwork_quest/clockwork_quest_screenshot_test.dart
+    echo [STUB] Simulating: flutter drive --target=!_TARGET!
+    echo Running: !_TARGET! > !_LOG!
+    echo Started at %date% %time% >> !_LOG!
+    echo. >> !_LOG!
+    echo [STUB] Simulating test execution... >> !_LOG!
+    timeout /t 2 /nobreak >nul
+    echo +2: All tests passed! >> !_LOG!
+    cmd /c exit 0
+
+    echo End Time: %date% %time%
+    echo End Time: %date% %time% >> integration_test_output\summary.txt
+    if !errorlevel! equ 0 (
+        echo Result: PASSED
+        echo Result: PASSED >> integration_test_output\summary.txt
+        echo PASSED >> !_LOG! 2>nul
+        set /a pass_count+=1
+    ) else (
+        echo Result: FAILED - Check log file for details
+        echo Result: FAILED >> integration_test_output\summary.txt
+        echo FAILED >> !_LOG! 2>nul
+        set /a fail_count+=1
+    )
+    echo Completed at %date% %time% >> !_LOG! 2>nul
+    echo. >> integration_test_output\summary.txt
+    echo.
+)
+
 REM Generate summary
 echo ========================================
 echo Test Suite Complete
@@ -1403,6 +1774,13 @@ echo  20. carnival_derby_save_resume_test.dart        (9 tests,  ~8 min)
 echo  21. target_tag_save_resume_test.dart            (9 tests,  ~8 min)
 echo  22. monster_mash_save_resume_test.dart          (9 tests,  ~8 min)
 echo  23. reef_royale_save_resume_test.dart           (9 tests,  ~8 min)
+echo  24. clockwork_quest_add_player_test.dart        (10 tests, ~4 min)
+echo  25. clockwork_quest_menu_and_settings_test.dart (20 tests, ~7 min)
+echo  26. clockwork_quest_gameplay_test.dart          (36 tests, ~17 min)
+echo  27. clockwork_quest_edit_score_test.dart        (11 tests, ~6 min)
+echo  28. clockwork_quest_results_test.dart           (11 tests, ~9 min)
+echo  29. clockwork_quest_save_resume_test.dart       (16 tests, ~10 min)
+echo  30. clockwork_quest_screenshot_test.dart        (1 test,   ~4 min)
 echo.
 echo EXAMPLES:
 echo   Run all tests (stub):
@@ -1415,6 +1793,9 @@ echo   Partial file names also work (case-insensitive):
 echo     run_ui_tests_stub.bat menu_and_mechanics
 echo     run_ui_tests_stub.bat gameplay
 echo     run_ui_tests_stub.bat carnival
+echo.
+echo   Run all Clockwork Quest tests:
+echo     run_ui_tests_stub.bat clockwork_quest
 echo.
 echo   Run all Reef Royale tests:
 echo     run_ui_tests_stub.bat reef_royale

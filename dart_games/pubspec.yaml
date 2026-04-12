@@ -155,6 +155,13 @@ flutter:
     - assets/games/target_tag/sounds/TargetTag-Whistle.mp3
     - assets/games/target_tag/sounds/TargetTag-WindUp.mp3
 
+    # Clockwork Quest game assets
+    - assets/games/clockwork_quest/icons/
+    - assets/games/clockwork_quest/images/
+    - assets/games/clockwork_quest/images/characters/
+    - assets/games/clockwork_quest/images/gears/
+    - assets/games/clockwork_quest/sounds/
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

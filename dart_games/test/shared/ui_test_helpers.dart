@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/main.dart' as app;
+import 'package:dart_games/widgets/player_selection_card.dart';
 import 'game_ui_config.dart';
 import 'element_finders.dart';
 import 'pump_sequences.dart';
@@ -146,6 +147,16 @@ class UITestHelpers {
       } else {
         addButton = normalStateButton;
       }
+    } else if (config.gameName == 'Clockwork Quest') {
+      // For Clockwork Quest, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getClockworkQuestAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getClockworkQuestAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
     } else {
       // For other games, use the config method
       addButton = config.getAddPlayerButton();
@@ -167,6 +178,7 @@ class UITestHelpers {
   }
 
   /// Select multiple players from the player list
+  /// Skips players that are already selected to avoid toggling them off
   static Future<void> selectPlayers(
     WidgetTester tester,
     List<String> playerIds,
@@ -174,6 +186,34 @@ class UITestHelpers {
   ) async {
     for (final playerId in playerIds) {
       final playerTile = config.getPlayerTile(playerId);
+      if (playerTile.evaluate().isEmpty) continue;
+
+      // Check if already selected — skip to avoid toggling off
+      final card = tester.widget<PlayerSelectionCard>(playerTile.first);
+      if (card.isSelected) continue;
+
+      await tester.ensureVisible(playerTile.first);
+      await tester.pump();
+      await tester.tap(playerTile.first);
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  /// Deselect multiple players from the player list
+  /// Skips players that are already deselected
+  static Future<void> deselectPlayers(
+    WidgetTester tester,
+    List<String> playerIds,
+    GameUIConfig config,
+  ) async {
+    for (final playerId in playerIds) {
+      final playerTile = config.getPlayerTile(playerId);
+      if (playerTile.evaluate().isEmpty) continue;
+
+      // Check if not selected — skip to avoid toggling on
+      final card = tester.widget<PlayerSelectionCard>(playerTile.first);
+      if (!card.isSelected) continue;
+
       await tester.ensureVisible(playerTile.first);
       await tester.pump();
       await tester.tap(playerTile.first);
@@ -229,6 +269,8 @@ class UITestHelpers {
     GameUIConfig config,
   ) async {
     final changeSettingsButton = config.getChangeSettingsButton();
+    await tester.ensureVisible(changeSettingsButton);
+    await tester.pump();
     await tester.tap(changeSettingsButton);
     await PumpSequences.navigation(tester);
   }
@@ -239,6 +281,8 @@ class UITestHelpers {
     GameUIConfig config,
   ) async {
     final backToMenuButton = config.getBackToMenuButton();
+    await tester.ensureVisible(backToMenuButton);
+    await tester.pump();
     await tester.tap(backToMenuButton);
     await PumpSequences.navigation(tester);
   }
