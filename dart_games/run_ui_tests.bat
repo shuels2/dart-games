@@ -47,6 +47,17 @@ echo Cleaning previous test results...
 del /Q integration_test_output\*.txt 2>nul
 del /Q integration_test_output\*.log 2>nul
 
+REM Ensure ChromeDriver matches installed Chrome version
+echo Verifying ChromeDriver version matches Chrome...
+call update_chromedriver.bat
+if !errorlevel! neq 0 (
+    echo.
+    echo ERROR: ChromeDriver version check failed. Cannot proceed with tests.
+    echo Please resolve the issue above and try again.
+    pause
+    exit /b 1
+)
+
 REM Kill any existing chromedriver/chrome processes
 echo Stopping any existing ChromeDriver and Chrome instances...
 taskkill /F /IM chromedriver.exe >nul 2>&1

@@ -50,11 +50,25 @@
 6. Save & Resume: 16 tests (~10 min)
 7. Screenshot: 1 test (~4 min)
 
+## ChromeDriver Version Sync
+
+ChromeDriver must match the installed Chrome major version. The `update_chromedriver.bat` script handles this automatically:
+
+```bash
+# Check and update ChromeDriver if needed
+./update_chromedriver.bat
+
+# Force re-download even if versions match
+./update_chromedriver.bat --force
+```
+
+**This runs automatically** at the start of `run_ui_tests.bat` and `run_ui_tests_stub.bat` — no manual intervention needed. If Chrome updates and the ChromeDriver version no longer matches, the script downloads the correct version before tests begin.
+
 ## Running UI Automation Tests
 
 ### Step 1: Start ChromeDriver
 
-**CRITICAL:** ChromeDriver must be running BEFORE tests.
+**CRITICAL:** ChromeDriver must be running BEFORE tests. (When running via `run_ui_tests.bat`, ChromeDriver is started automatically per test.)
 
 ```bash
 cd chromedriver/chromedriver-win64
