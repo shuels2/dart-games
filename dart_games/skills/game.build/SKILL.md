@@ -20,14 +20,14 @@ $ARGUMENTS
 
 ---
 
-# PIPELINE: 10 Phases, 5 Hard Gates, 7 Adversarial Reviews
+# PIPELINE: 11 Phases, 7 Gates (5 Hard + 2 Approval), 8 Adversarial Reviews
 
 You MUST execute phases in order. You MUST NOT skip phases. You MUST NOT proceed past a gate until it passes. You MUST execute every adversarial review checkpoint and report the findings before continuing.
 
 At the start of each phase, print:
 ```
-=== Phase X/9: [Phase Name] ===
-Gates passed: X/5 | ARs completed: X/7
+=== Phase X/10: [Phase Name] ===
+Gates passed: X/6 | ARs completed: X/8
 ```
 
 ---
@@ -102,7 +102,100 @@ Report AR-1 findings. Fix any discrepancies before proceeding.
 
 ---
 
-## Phase 2: Core Game Logic
+## Phase 2: Wireframe Mockups
+
+**Goal:** Create HTML/CSS wireframe mockups of all game screens so the user can review the visual design and layout BEFORE any game code is written. This catches layout problems, UX issues, and misunderstandings of the spec early — when changes are free.
+
+### Steps
+
+1. Create a wireframe directory: `temp_wireframes/[game_name]/`
+2. Build an HTML wireframe file for EACH game screen, using the spec's Section 2 (colors, fonts) and Section 10 (screen designs):
+
+   **Menu Screen** (`menu.html`):
+   - AppBar with back button, game title, DartboardConnectionInfo placeholder, ResumeGameButton
+   - Player list panel (Dual or Team per spec Section 1) with sample player entries
+   - All settings controls from Section 7 (toggles, dropdowns, sliders) with labels and default values
+   - Start Game button with enable/disable state
+   - Overall layout proportions matching the container app pattern
+
+   **Game Screen — Early Game** (`game_early.html`):
+   - AppBar with back button, game title, DartboardConnectionInfo placeholder
+   - Game board/play area with all visual elements from Section 10B
+   - Player indicators showing 2-3 sample players at early game state
+   - Score/progress displays
+   - Skip Turn button
+   - Dartboard emulator section at BOTTOM of screen
+   - Show how all option effects from Section 7 appear visually on the game board
+
+   **Game Screen — Mid/Late Game** (`game_midgame.html`):
+   - Same layout as early game but with mid-game state
+   - Show progression (scores advanced, game elements changed)
+   - Demonstrate how the game board evolves during play
+
+   **Game Screen — With Modals** (`game_modals.html`):
+   - Show the game screen with the Remove Darts modal overlay
+   - Include the Edit Score button within the modal
+   - Show the Dartboard Paused modal state
+   - Show the Save Game modal (back button triggered)
+
+   **Results Screen** (`results.html`):
+   - Winner display with character/avatar
+   - Full player rankings with stats
+   - Play Again, Change Settings, Back to Menu buttons
+   - AppBar with game title, DartboardConnectionInfo placeholder
+
+3. Each HTML file MUST:
+   - Use the game's actual color palette from spec Section 2 (exact hex codes)
+   - Use Google Fonts links for the game's typography from spec Section 2
+   - Be self-contained (inline CSS, no external dependencies beyond Google Fonts)
+   - Be responsive (use flexbox/grid, look correct at 1280x800 — the primary target)
+   - Include placeholder content that shows realistic game state (player names, scores, etc.)
+   - Label shared components clearly (e.g., "DartboardEmulatorSection", "RemoveDartsModal")
+   - Show every option from Section 7 and where its visual effect appears on the game screen
+
+4. Create an index page (`index.html`) that links to all wireframes with a brief description of each screen state.
+
+5. Present the wireframes to the user:
+   - List all wireframe files created
+   - Tell the user to open `temp_wireframes/[game_name]/index.html` in their browser
+   - Ask the user to review each screen and provide feedback
+
+### Adversarial Review AR-2: Wireframe Completeness
+
+> "I will now verify my wireframes against the spec before presenting them to the user:
+>
+> (a) Every screen from spec Section 10 has a wireframe (Menu, Game, Results)
+> (b) Every option from Section 7 has a visible control on the menu wireframe AND a visible effect on the game wireframe
+> (c) Every shared component from Section 11 is labeled and positioned on the correct screen
+> (d) The color palette matches spec Section 2 exactly (hex codes match)
+> (e) The typography matches spec Section 2 (correct Google Fonts loaded)
+> (f) The player list panel type (Dual vs Team) matches spec Section 1
+> (g) The game wireframe shows at least two game states (early and mid/late) to demonstrate progression
+> (h) Modal overlays are shown (Remove Darts, Save Game, Dartboard Paused)
+>
+> Wireframe coverage:
+> | Screen/State | Wireframe File | Section 10 Match |
+> |-------------|----------------|------------------|
+> | [screen]    | [file]         | [YES/MISSING]    |
+>
+> Missing elements: [list any gaps]"
+
+Report AR-2 findings. Fix any gaps before presenting to the user.
+
+### WIREFRAME APPROVAL GATE
+
+**STOP and wait for user feedback on the wireframes.**
+
+The user may:
+- **Approve** — proceed to Phase 3
+- **Request changes** — update the wireframes, present again, wait for approval
+- **Request major redesign** — rework the wireframes substantially, present again
+
+Do NOT proceed to Phase 3 until the user explicitly approves the wireframe designs. This is the cheapest place to catch design issues — before any code is written.
+
+---
+
+## Phase 3: Core Game Logic
 
 **Goal:** Create the game model, provider, and core game logic with tests.
 
@@ -121,7 +214,7 @@ Report AR-1 findings. Fix any discrepancies before proceeding.
    - Every test listed in the spec's Section 12A game logic section.
 4. Run `flutter test test/screens/games/[game_name]/` to verify tests pass.
 
-### Adversarial Review AR-2: Options Coverage
+### Adversarial Review AR-3: Options Coverage
 
 > "I will now cross-reference every option from spec Section 7 against the provider code and tests. I will list each option by name and verify:
 > (a) The provider has logic that handles this option (cite the method/line)
@@ -134,7 +227,7 @@ Report AR-1 findings. Fix any discrepancies before proceeding.
 >
 > I will report any option that lacks either provider logic or test coverage."
 
-Report AR-2 findings. Fix any gaps before proceeding.
+Report AR-3 findings. Fix any gaps before proceeding.
 
 ### GATE 1: Core Logic Tests Pass
 
@@ -147,7 +240,7 @@ If FAIL: Fix failures, re-run, repeat until PASS. Do NOT proceed until this gate
 
 ---
 
-## Phase 3: Screens and UI
+## Phase 4: Screens and UI
 
 **Goal:** Create all three screens with full visual theming and shared component integration.
 
@@ -203,7 +296,7 @@ If FAIL: Fix failures, re-run, repeat until PASS. Do NOT proceed until this gate
 8. Add routes to `lib/main.dart`.
 9. Run `flutter test` to verify no regressions.
 
-### Adversarial Review AR-3: Integration Audit
+### Adversarial Review AR-4: Integration Audit
 
 > "I will now act as the Integration Agent. For each item below, I will verify it is actually present in the code — not just planned, but imported AND instantiated:
 >
@@ -223,11 +316,11 @@ If FAIL: Fix failures, re-run, repeat until PASS. Do NOT proceed until this gate
 > For each item I will cite the file and line number, or report MISSING.
 > I will list every gap found."
 
-Report AR-3 findings. Fix any gaps before proceeding.
+Report AR-4 findings. Fix any gaps before proceeding.
 
 ---
 
-## Phase 4: Announcement and Sound System
+## Phase 5: Announcement and Sound System
 
 **Goal:** Implement the full announcement system with stacking prevention.
 
@@ -252,7 +345,7 @@ Report AR-3 findings. Fix any gaps before proceeding.
    - "Remove your darts" always plays test.
 7. Run `flutter test` to verify all tests pass.
 
-### Adversarial Review AR-4: Announcement Stacking Analysis
+### Adversarial Review AR-5: Announcement Stacking Analysis
 
 > "I will now analyze announcement stacking by identifying the worst-case dart throw scenario — the single dart that triggers the most simultaneous events. I will:
 >
@@ -268,23 +361,23 @@ Report AR-3 findings. Fix any gaps before proceeding.
 > Announcements that fire: [count] — [PASS if <=2 / FAIL if >2]
 > 'Remove your darts' suppressed: [YES/NO — must be NO]"
 
-Report AR-4 findings. Fix any issues before proceeding.
+Report AR-5 findings. Fix any issues before proceeding.
 
 ---
 
-## Phase 5: Save/Resume and Data Migration
+## Phase 6: Save/Resume and Data Migration
 
 **Goal:** Ensure save/resume is fully wired and check for migration needs.
 
 ### Steps
 
-1. Verify `toJson()`/`fromJson()` in game model (should exist from Phase 2).
-2. Verify `saveGame()`, `restoreGame()`, `resumedSavedGameId`, `clearResumedSavedGameId()` in provider (should exist from Phase 2).
-3. Verify config factory methods exist for `SaveGameModalConfig` and `ResumeGameModalConfig` (should exist from Phase 3).
-4. Verify SaveGameModal is integrated into game screen with PopScope + Stack (should exist from Phase 3).
-5. Verify ResumeGameModal is integrated into menu screen with Stack (should exist from Phase 3).
-6. Verify auto-delete logic in results screen's player stats update (should exist from Phase 3).
-7. Write serialization tests if not done in Phase 2: `test/models/[game_name]_serialization_test.dart`
+1. Verify `toJson()`/`fromJson()` in game model (should exist from Phase 3).
+2. Verify `saveGame()`, `restoreGame()`, `resumedSavedGameId`, `clearResumedSavedGameId()` in provider (should exist from Phase 3).
+3. Verify config factory methods exist for `SaveGameModalConfig` and `ResumeGameModalConfig` (should exist from Phase 4).
+4. Verify SaveGameModal is integrated into game screen with PopScope + Stack (should exist from Phase 4).
+5. Verify ResumeGameModal is integrated into menu screen with Stack (should exist from Phase 4).
+6. Verify auto-delete logic in results screen's player stats update (should exist from Phase 4).
+7. Write serialization tests if not done in Phase 3: `test/models/[game_name]_serialization_test.dart`
 8. Write provider save/restore tests: `test/providers/[game_name]_save_restore_test.dart`
 9. Check for data migration needs per `docs/development/data-migrations.md`:
    - If the new game only adds new SharedPreferences keys and optional fields with `??` defaults: no migration needed.
@@ -307,7 +400,7 @@ If FAIL:
 
 ---
 
-## Phase 6: UI Automation Tests and Spec Coverage Audit
+## Phase 7: UI Automation Tests and Spec Coverage Audit
 
 **Goal:** Write all UI tests, synchronize shared helpers, run the mandatory spec coverage audit.
 
@@ -349,7 +442,7 @@ If FAIL:
    - Step 5: Write missing tests for any gaps found.
    - Step 6: Re-audit until 100% coverage.
 
-### Adversarial Review AR-5: Spec Coverage Matrix
+### Adversarial Review AR-6: Spec Coverage Matrix
 
 > "I will now act as the Tester Agent from spec Section 13. I will:
 >
@@ -367,7 +460,7 @@ If FAIL:
 > Spec coverage: X% (N/M requirements covered)
 > Missing coverage: [list]"
 
-Report AR-5 findings. Fix any gaps, re-audit until 100%.
+Report AR-6 findings. Fix any gaps, re-audit until 100%.
 
 ### GATE 3: Spec Coverage Audit Clean + Non-UI Tests Pass
 
@@ -381,7 +474,7 @@ If FAIL: Write missing tests, fix failures, re-audit, re-run. Repeat until PASS.
 
 ---
 
-## Phase 7: Visual Validation
+## Phase 8: Visual Validation
 
 **Goal:** Execute the FULL iterative validation cycle from `docs/critical-rules/visual-validation.md`. This phase contains the complete visual + UI + non-UI verification loop.
 
@@ -553,9 +646,9 @@ Proceed to the adversarial review.
 
 ---
 
-### Adversarial Review AR-6: Validation Completeness
+### Adversarial Review AR-7: Validation Completeness
 
-**Before leaving Phase 7, answer every question honestly. If any answer is "no", go back and complete the missing step.**
+**Before leaving Phase 8, answer every question honestly. If any answer is "no", go back and complete the missing step.**
 
 > "(a) Did I actually RUN the screenshot test? (not just write it)
 > (b) Did I actually READ every screenshot image with the Read tool? (not just assume they were fine)
@@ -571,16 +664,16 @@ Proceed to the adversarial review.
 
 ---
 
-## Phase 8: Simultaneous Pass Verification
+## Phase 9: Simultaneous Pass Verification
 
 **Goal:** Confirm all four completion conditions are true at the same time, including the spec coverage audit.
 
 ### Steps
 
-1. Confirm spec coverage audit is still clean (from Phase 6). If any code changed during Phase 7 (likely from visual/test fixes), re-run the spec coverage audit to verify it's still 100%.
-2. Confirm visual validation completed with zero issues (from Phase 7).
-3. Confirm UI automation tests passed in the most recent cycle (from Phase 7).
-4. Confirm non-UI tests passed in the most recent cycle (from Phase 7).
+1. Confirm spec coverage audit is still clean (from Phase 7). If any code changed during Phase 8 (likely from visual/test fixes), re-run the spec coverage audit to verify it's still 100%.
+2. Confirm visual validation completed with zero issues (from Phase 8).
+3. Confirm UI automation tests passed in the most recent cycle (from Phase 8).
+4. Confirm non-UI tests passed in the most recent cycle (from Phase 8).
 
 ### GATE 4: Simultaneous Pass (NON-NEGOTIABLE)
 
@@ -606,7 +699,7 @@ If a check CANNOT be run:
 
 ---
 
-## Phase 9: Documentation and Definition of Done
+## Phase 10: Documentation and Definition of Done
 
 **Goal:** Create all game documentation, update project files, verify Definition of Done.
 
@@ -666,7 +759,7 @@ If a check CANNOT be run:
    - [ ] All 8 game doc files created
    - [ ] Testing docs updated with counts
 
-### Adversarial Review AR-7: Final Full Review
+### Adversarial Review AR-8: Final Full Review
 
 > "I will now do a final adversarial review of the entire game implementation:
 >
@@ -737,8 +830,8 @@ UI tests:          Y (all passing)
 Screenshots:       Z (all evaluated, zero issues)
 Spec coverage:     100%
 Definition of Done: X/X verified
-Gates passed:      5/5
-ARs completed:     7/7
+Gates passed:      5/5 (+ 2 approvals)
+ARs completed:     8/8
 
 Ready for commit and PR.
 ```
