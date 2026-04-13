@@ -2,7 +2,7 @@
 
 ## Overview
 
-727 non-UI tests validate models, providers, services, widgets, and game logic.
+746 non-UI tests validate models, providers, services, widgets, and game logic.
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -40,7 +40,7 @@
 - Total play time calculations
 - Alphabetical sorting
 
-### Service Tests (42 tests)
+### Service Tests (61 tests)
 
 **AppSettings (20 tests)** - `test/services/app_settings_test.dart`
 - Google API key storage
@@ -53,6 +53,18 @@
 - Music file management
 - Random selection
 - Cross-platform file handling
+
+**MigrationRunner (15 tests)** - `test/services/migration_runner_test.dart`
+- Fresh install detection and version stamping
+- Pre-migration data upgrade path
+- Partial upgrade (only pending migrations)
+- Failure handling and retry behavior
+- Version written per migration
+
+**MigrationV1 (4 tests)** - `test/services/migration_v1_test.dart`
+- Version and description validation
+- No-op verification (existing data untouched)
+- Empty prefs handling
 
 ### Integration Tests (163 tests)
 

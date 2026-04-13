@@ -8,6 +8,7 @@ import 'providers/target_tag_provider.dart';
 import 'providers/monster_mash_provider.dart';
 import 'providers/reef_royale_provider.dart';
 import 'providers/clockwork_quest_provider.dart';
+import 'services/migration/migration_runner.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
@@ -17,6 +18,9 @@ import 'screens/games/clockwork_quest/clockwork_quest_results_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Run data migrations before any providers load data
+  await MigrationRunner.runMigrations();
 
   // Preload all Google Fonts used in the app to prevent FOUT (Flash of Unstyled Text)
   await _preloadFonts();

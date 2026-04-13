@@ -562,6 +562,14 @@ if (jsonString != null) {
 }
 ```
 
+### Data Migrations
+
+The app includes a schema versioning system to safely evolve stored data across deployments. A `schema_version` integer in SharedPreferences tracks the current data version. On startup, `MigrationRunner.runMigrations()` runs in `main()` before `runApp()` to execute any pending migrations.
+
+- **Adding optional fields** with `??` defaults in `fromJson()` does NOT require a migration
+- **Breaking changes** (key renames, type changes, restructuring) require a new migration
+- See [Data Migrations](../development/data-migrations.md) for the full guide
+
 ## Cross-Platform Considerations
 
 All shared systems support:
