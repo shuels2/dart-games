@@ -22,7 +22,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [Design System](docs/architecture/design-system.md) - Container app colors, typography, patterns
 
 ### 👨‍💻 Development Guides
-- [Adding New Games](docs/development/adding-games.md) - Complete 18-step guide for creating games
+- [Adding New Games](docs/development/adding-games.md) - Complete 19-step guide for creating games
 - [Game Integration Requirements](docs/development/game-integration.md) - Required integrations checklist
 - [Asset Organization](docs/development/asset-organization.md) - Asset folder structure and naming
 - [Announcement System](docs/development/announcement-system.md) - Audio system integration guide
@@ -35,11 +35,12 @@ Each game has its own unique visual identity while integrating with global syste
 - [Resume Game Button](docs/development/resume-game-button.md) - Shared resume game button component
 - [Save & Resume Game](docs/development/save-resume-game.md) - Save and resume game feature
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
+- [Data Migrations](docs/development/data-migrations.md) - Schema versioning and data migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1057 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **727 non-UI + 330 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 727 non-UI tests (MANDATORY before builds)
+### 🧪 Testing (1076 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **746 non-UI + 330 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 746 non-UI tests (MANDATORY before builds)
 - [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
@@ -69,7 +70,7 @@ Each game has its own unique visual identity while integrating with global syste
 ```bash
 flutter test
 ```
-**Required:** 100% pass rate (727 tests)
+**Required:** 100% pass rate (746 tests)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -99,8 +100,8 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1057 tests**
-- **Non-UI Tests:** 727 tests (100% pass rate MANDATORY)
+**Total: 1076 tests**
+- **Non-UI Tests:** 746 tests (100% pass rate MANDATORY)
   - Model tests: 40
   - Model serialization tests: 55
   - Provider tests: 44
@@ -116,6 +117,7 @@ flutter test test/screens/games/clockwork_quest/
   - Monster Mash announcements: 18
   - Reef Royale game logic + announcements: ~154
   - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
+  - Migration tests: 19 (15 runner + 4 v1)
   - Carnival Derby game logic: 8 (included in integration above)
 
 - **UI Automation Tests:** 330 tests (optional, ask before running)
@@ -128,7 +130,7 @@ flutter test test/screens/games/clockwork_quest/
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 727 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 746 non-UI tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -226,6 +228,7 @@ dart_games/
 │   ├── models/
 │   ├── providers/
 │   ├── services/
+│   │   └── migration/               # Schema versioning and data migrations
 │   ├── widgets/
 │   └── screens/
 │       └── games/

@@ -28,7 +28,8 @@ dart_games/
     │   ├── remove-darts-modal.md     # Remove darts modal component
     │   ├── dartboard-paused-modal.md # Dartboard paused modal component
     │   ├── player-list-panel.md     # Player list panel component
-    │   └── widget-keys.md            # Widget key requirements for testing
+    │   ├── widget-keys.md            # Widget key requirements for testing
+    │   └── data-migrations.md        # Schema versioning and data migration system
     │
     ├── testing/
     │   ├── test-overview.md          # Test suite overview, counts, requirements
@@ -124,6 +125,7 @@ Step-by-step guides and reference documentation for developers building new game
 - `dartboard-paused-modal.md` - Using the shared Dartboard Paused Modal component
 - `player-list-panel.md` - Using the shared Player List Panel component
 - `widget-keys.md` - Widget key naming conventions and requirements
+- `data-migrations.md` - Schema versioning system and how to add data migrations
 
 ### Testing Documentation
 Everything related to testing, from running tests to writing new ones to handling failures.

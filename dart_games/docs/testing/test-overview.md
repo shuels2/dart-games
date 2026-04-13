@@ -2,11 +2,11 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 1057 total tests:
-- **727 non-UI tests** (models, providers, services, widgets, game logic)
+The Dart Games app has a comprehensive test suite with 1076 total tests:
+- **746 non-UI tests** (models, providers, services, widgets, game logic)
 - **330 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (727 tests)
+## Non-UI Tests (746 tests)
 
 **Run with:** `flutter test`
 **Execution time:** Seconds
@@ -41,6 +41,10 @@ The Dart Games app has a comprehensive test suite with 1057 total tests:
 **Save Game Service Tests (13 tests)**
 - SaveGameService CRUD: 13 tests
 
+**Migration Tests (19 tests)**
+- MigrationRunner: 15 tests
+- MigrationV1: 4 tests
+
 **Integration Tests (163 tests)**
 - Carnival Derby User Management: 26 tests
 - Carnival Derby Game Logic + Announcements: 17 tests
@@ -57,7 +61,7 @@ The Dart Games app has a comprehensive test suite with 1057 total tests:
 - Resumed game save overwrites: 5 tests
 - Multiple saves independence: 3 tests
 
-_Note: Some tests span multiple categories. The total (727) is the authoritative count from `flutter test`._
+_Note: Some tests span multiple categories. The total (746) is the authoritative count from `flutter test`._
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
