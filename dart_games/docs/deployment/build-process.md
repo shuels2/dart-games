@@ -17,24 +17,33 @@ flutter test
 ```
 
 **Requirements:**
-- ✅ All 637 non-UI tests must pass (100% pass rate required)
+- ✅ All 1198 non-UI tests must pass (100% pass rate required)
 - ❌ If ANY test fails, DO NOT proceed with build
 - 🔧 Fix all failing tests first, then re-run test suite
 - ✅ Only build after confirming all tests pass
 
 **Test Categories:**
-- Model tests (40 tests)
-- Provider tests (44 tests)
-- Service tests (42 tests)
-- Integration tests (83 tests)
+- Model tests (98 tests)
+- Model serialization tests (74 tests)
+- Provider tests (74 tests)
+- Provider save/restore tests (35 tests)
+- Provider game mechanics tests (233 tests)
+- API client tests (49 tests)
+- Service tests (91 tests)
+- Save game service tests (13 tests)
+- Announcement queue model tests (30 tests)
+- Migration tests (19 tests)
+- Integration tests (163 tests)
+- Save/resume integration tests (20 tests)
+- Utility tests (34 tests)
 - Shared component tests (24 tests)
-- Widget tests (23 tests)
-- Carnival Derby tests (26 tests)
-- Target Tag tests (68 tests)
+- Widget tests (44 tests)
+- Reef Royale game logic + announcements (~154 tests)
+- Clockwork Quest game logic + announcements (84 tests)
 
 ### 2. UI Automation Tests (OPTIONAL)
 
-The 231 UI automation tests take longer to run (~163 minutes) and require chromedriver.
+The 330 UI automation tests take longer to run (~224 minutes) and require chromedriver.
 
 **Before running a build, ASK the user:**
 ```
@@ -47,7 +56,7 @@ Would you like me to run the UI automation tests before this build?
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2 - Run UI tests (231 tests, ~163 minutes)
+# Terminal 2 - Run UI tests (330 tests, ~224 minutes)
 cd dart_games
 ./run_ui_tests.bat
 ```
@@ -106,9 +115,9 @@ flutter build ios
    flutter test
    ```
 
-3. **Verify ALL 637 non-UI tests pass** (100% pass rate required)
+3. **Verify ALL 1198 non-UI tests pass** (100% pass rate required)
 
-4. **OPTIONAL: Ask user if they want to run UI automation tests** (231 tests, ~163 minutes)
+4. **OPTIONAL: Ask user if they want to run UI automation tests** (330 tests, ~224 minutes)
 
 5. **If ANY tests fail:**
    - DO NOT proceed
@@ -275,8 +284,8 @@ flutter build ios --release          # iOS App Store
 
 Before deploying to production:
 
-- [ ] All 506 non-UI tests pass
-- [ ] (Optional) All 231 UI automation tests pass
+- [ ] All 1198 non-UI tests pass
+- [ ] (Optional) All 330 UI automation tests pass
 - [ ] Code has been reviewed
 - [ ] Changes have been committed
 - [ ] User has approved push to remote
@@ -386,9 +395,9 @@ build/ios/iphoneos/Runner.app
 ## Testing Requirements Summary
 
 **CRITICAL REQUIREMENTS:**
-- ✅ All 637 non-UI tests must pass (MANDATORY)
+- ✅ All 1198 non-UI tests must pass (MANDATORY)
 - ✅ 100% pass rate required (no exceptions)
-- ❓ UI automation tests optional (ask user before running)
+- ❓ UI automation tests optional (330 tests, ask user before running)
 - ✅ Manual testing after build
 - ✅ Cross-platform verification
 

@@ -38,9 +38,9 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Schema versioning and data migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1253 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **796 Flutter + 127 server + 330 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 917 non-UI tests (MANDATORY before builds)
+### 🧪 Testing (1655 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1198 Flutter + 127 server + 330 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1325 non-UI tests (MANDATORY before builds)
 - [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
@@ -68,13 +68,13 @@ Each game has its own unique visual identity while integrating with global syste
 
 ### Run All Non-UI Tests (MANDATORY before builds)
 ```bash
-# Flutter tests (796 tests)
+# Flutter tests (1198 tests)
 flutter test
 
 # Server tests (127 tests)
 cd server && dart test
 ```
-**Required:** 100% pass rate (923 tests total)
+**Required:** 100% pass rate (1325 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -104,21 +104,22 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1253 tests**
-- **Flutter Non-UI Tests:** 796 tests (100% pass rate MANDATORY)
+**Total: 1655 tests**
+- **Flutter Non-UI Tests:** 1198 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
-  - Model tests: 40
-  - Model serialization tests: 55
-  - Provider tests: 44
-  - Provider save/restore tests: 28
-  - Service tests: 42
+  - Model tests: 98 (40 core + 58 additional)
+  - Model serialization tests: 74 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19)
+  - Provider tests: 74 (PlayerProvider 44 + DartboardProvider 30)
+  - Provider save/restore tests: 35 (5 games x 7)
+  - Provider game mechanics tests: 233 (HorseRace 50 + ClockworkQuest 49 + MonsterMash 44 + ReefRoyale 45 + TargetTag 45)
+  - Service tests: 91 (AppSettings 20 + VictoryMusicService 22 + StorageService 24 + ApiLoggerService 25)
   - Save game service tests: 13
+  - Announcement queue model tests: 30
   - Integration tests: 163
   - Save/resume integration tests: 20
   - Shared component tests: 24
-  - Widget tests: 23
-  - Save game modal tests: 8
-  - Resume game modal tests: 13
+  - Utility tests: 34 (DartboardLayout)
+  - Widget tests: 44 (23 dartboard + 8 save modal + 13 resume modal)
   - Monster Mash announcements: 18
   - Reef Royale game logic + announcements: ~154
   - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
@@ -144,7 +145,7 @@ flutter test test/screens/games/clockwork_quest/
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 790 Flutter non-UI tests MUST pass
+✅ Run `flutter test` - ALL 1198 Flutter non-UI tests MUST pass
 ✅ Run `cd server && dart test` - ALL 127 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
@@ -262,7 +263,7 @@ dart_games/
 │           ├── monster_mash/
 │           ├── reef_royale/
 │           └── clockwork_quest/
-├── test/                            # Flutter non-UI tests (796 tests)
+├── test/                            # Flutter non-UI tests (1198 tests)
 │   ├── shared/                     # Shared test helpers (MockApiServer, etc.)
 │   ├── services/api/               # API client tests
 │   └── ...
@@ -334,6 +335,6 @@ git push origin <branch>        # Push (with permission)
 
 ---
 
-**Last Updated:** 2026-04-13
-**Documentation Version:** 4.0 (Server-Side Architecture)
+**Last Updated:** 2026-04-14
+**Documentation Version:** 4.1 (Expanded Test Coverage)
 **Total Documentation Files:** 77

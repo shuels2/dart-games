@@ -86,9 +86,9 @@ git commit -m "Updated tests for [feature name]
 
 - Added [N] tests for new functionality
 - Updated [M] tests for changed behavior
-- All 272+ tests passing
+- All 1198+ tests passing
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ```
 
 ## Important Notes

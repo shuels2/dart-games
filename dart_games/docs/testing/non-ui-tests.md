@@ -2,7 +2,7 @@
 
 ## Overview
 
-923 non-UI tests (796 Flutter + 127 server) validate models, providers, services, widgets, game logic, API client, and server routes.
+1325 non-UI tests (1198 Flutter + 127 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
 **Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
@@ -10,7 +10,7 @@
 
 ## Test Categories
 
-### Model Tests (40 tests)
+### Model Tests (98 tests)
 
 **GameHistoryEntry (12 tests)** - `test/models/game_history_entry_test.dart`
 - Factory constructor, JSON serialization
@@ -30,7 +30,25 @@
 - File extensions and formats
 - Data URL sources
 
-### Provider Tests (44 tests)
+**Additional Models (58 tests)** - `test/models/additional_model_tests.dart`
+- Dartboard: 13 tests (creation, JSON serialization, emulator flag)
+- DartboardConnectionProfile: 8 tests (creation, JSON roundtrip, lastUsed sorting)
+- ApiLogEntry: 17 tests (creation, formatting, duration tracking)
+- SavedGameMetadata: 20 tests (creation, JSON serialization, progress info)
+
+### Model Serialization Tests (74 tests)
+
+**HorseRaceGame (10 tests)** - `test/models/horse_race_game_serialization_test.dart`
+**TargetTagGame (13 tests)** - `test/models/target_tag_game_serialization_test.dart`
+**MonsterMashGame (13 tests)** - `test/models/monster_mash_game_serialization_test.dart`
+**ReefRoyaleGame (19 tests)** - `test/models/reef_royale_game_serialization_test.dart`
+**ClockworkQuestGame (19 tests)** - `test/models/clockwork_quest_game_serialization_test.dart`
+- toJson/fromJson roundtrip for all game fields
+- Enum serialization (game states, inventor assignments)
+- Per-player progress maps, dart tracking arrays, turn start state
+- Speed mode, bullseye mode, all game states
+
+### Provider Tests (74 tests)
 
 **PlayerProvider (44 tests)** - `test/providers/player_provider_test.dart`
 - Player CRUD operations
@@ -39,6 +57,79 @@
 - Game history methods
 - Total play time calculations
 - Alphabetical sorting
+
+**DartboardProvider (30 tests)** - `test/providers/dartboard_provider_test.dart`
+- Initial state, emulator mode activation
+- Connection profile CRUD (save, load, delete, upsert by serial)
+- loadConfiguration with emulator config
+- Status checking, clear dartboard/error
+- Change notification verification
+
+### Provider Save/Restore Tests (35 tests)
+
+**HorseRaceProvider (7 tests)** - `test/providers/horse_race_provider_save_restore_test.dart`
+**TargetTagProvider (7 tests)** - `test/providers/target_tag_provider_save_restore_test.dart`
+**MonsterMashProvider (7 tests)** - `test/providers/monster_mash_provider_save_restore_test.dart`
+**ReefRoyaleProvider (7 tests)** - `test/providers/reef_royale_provider_save_restore_test.dart`
+**ClockworkQuestProvider (7 tests)** - `test/providers/clockwork_quest_provider_save_restore_test.dart`
+- Save game metadata creation
+- Full game state restore via SaveGameService
+- Gameplay continuation after restore
+- resumedSavedGameId lifecycle
+
+### Provider Game Mechanics Tests (233 tests)
+
+**HorseRaceProvider (50 tests)** - `test/providers/horse_race_provider_game_test.dart`
+- startGame validation (player count, target score range)
+- processDartThrow (scoring, accumulation, takeout trigger)
+- Exact score mode (bust behavior, exact win)
+- skipTurn (visual markers, takeout trigger)
+- handleTakeoutFinished (player advancement, winner detection)
+- Turn cycling (order, wrap-around, dart reset)
+- editScore / updateAllDartScores (replay, validation)
+- getHorsePosition (fractional progress, clamping)
+- clearGame / endGame / getFinalStandings
+
+**ClockworkQuestProvider (49 tests)** - `test/providers/clockwork_quest_provider_game_test.dart`
+- startGame (player count, inventor assignment, maxTarget)
+- processDartThrow normal mode (hit/miss, wrong target, parsing)
+- processDartThrow speed mode (any uncompleted target, already-completed)
+- Target advancement and laps (bullseye, multi-lap win)
+- Turn management (totalTurns, next player, wrap-around, takeout)
+- skipTurn and editScore
+- Win conditions (single-lap, speed mode)
+- Dart tracking arrays (hitTarget, advanced, completedLap)
+
+**MonsterMashProvider (44 tests)** - `test/providers/monster_mash_provider_game_test.dart`
+- startGame (player count, healthMax validation, unique targets/monsters)
+- processDartThrow (miss, sector parsing, damage calculation)
+- Health mechanics (self-heal, heal cap, opponent damage, bull/bullseye)
+- Elimination (health reaching 0, skip in rotation)
+- handleTakeoutFinished, turn cycling, skipTurn
+- Win detection (last standing, speed play round-limit)
+- editScore (replay, validation)
+- Dart throw tracking (heal amounts, damage dealt)
+
+**ReefRoyaleProvider (45 tests)** - `test/providers/reef_royale_provider_game_test.dart`
+- startGame (player count, zero-initialized marks, game mode)
+- processDartThrow (miss, non-target, takeout, Bull/OuterBull, multipliers)
+- Marks system (single/double/triple, easyClaim, riptideRush buff)
+- Claiming and locking (threshold, easyClaim, all-claimed lock)
+- handleTakeoutFinished, turn cycling, skipTurn
+- editScore (updateDartScore, updateAllDartScores)
+- clearGame / endGame
+- Getters (pearl values, claimed count, ranked players, active buff)
+
+**TargetTagProvider (45 tests)** - `test/providers/target_tag_provider_game_test.dart`
+- startSoloGame / startTeamGame (player count, shieldMax validation)
+- processDartThrow (miss, Bull parsing, takeout trigger)
+- Shield mechanics (single/double/triple, cap, taggedIn, attack)
+- handleTakeoutFinished, turn cycling, skipTurn
+- Elimination (0 shields, last standing wins)
+- editScore (replay, validation, single dart edit)
+- clearGame / endGame
+- Getters (activePlayers, targetNumber, dart tracking)
+- Hero bonus (buff numbers, distinct from targets)
 
 ### API Client Tests (49 tests)
 
@@ -51,7 +142,7 @@
 - Error handling and status codes
 - Request/response serialization
 
-### Service Tests (61 tests)
+### Service Tests (91 tests)
 
 **AppSettings (20 tests)** - `test/services/app_settings_test.dart`
 - Google API key storage
@@ -65,6 +156,18 @@
 - Random selection
 - Server URL playback
 
+**StorageService (24 tests)** - `test/services/storage_service_test.dart`
+- Singleton pattern
+- Bearer token and serial number management
+- Setup complete flag
+- clearAll, hasAuth, hasDartboard
+
+**ApiLoggerService (25 tests)** - `test/services/api_logger_service_test.dart`
+- Start/stop logging
+- addLogEntry, updateNote, clearLogs
+- Log stream
+- Static logApiCall helper
+
 **MigrationRunner (15 tests)** - `test/services/migration_runner_test.dart`
 - Fresh install detection and version stamping
 - Pre-migration data upgrade path
@@ -76,6 +179,19 @@
 - Version and description validation
 - No-op verification (existing data untouched)
 - Empty prefs handling
+
+### Save Game Service Tests (13 tests)
+
+**SaveGameService (13 tests)** - `test/services/save_game_service_test.dart`
+- Save/load/delete CRUD operations
+
+### Announcement Queue Model Tests (30 tests)
+
+**GameAnnouncementQueueService models (30 tests)** - `test/services/game_announcement_queue_service_test.dart`
+- AudioPriority: 8 tests (enum values, ordering)
+- SoundEffectConfig: 7 tests (construction, defaults, const)
+- QueuedAnnouncement: 7 tests (construction, defaults, priority levels)
+- Priority ordering logic: 8 tests (sort comparator, FIFO, mixed priorities)
 
 ### Integration Tests (163 tests)
 
@@ -138,6 +254,14 @@
 - Announcement priority ordering
 - Text generation with player names
 
+### Utility Tests (34 tests)
+
+**DartboardLayout (34 tests)** - `test/utils/dartboard_layout_test.dart`
+- clockwiseOrder validation
+- getNeighbors for all segments
+- isNeighbor relationship testing
+- findNeighborTarget and findAllNeighborTargets
+
 ### Shared Component Tests (24 tests)
 
 **SectorParser (14 tests)** - `test/shared/sector_parser_test.dart`
@@ -145,10 +269,10 @@
 - Score calculation
 - Game-specific formats
 
-**PlayerTestUtils (10 tests)** - `test/shared/player_test_utils.dart`
+**PlayerTestUtils (10 tests)** - `test/shared/player_test_utils_test.dart`
 - Test player creation helpers
 
-### Widget Tests (23 tests)
+### Widget Tests (44 tests)
 
 **InteractiveDartboard (23 tests)** - `test/widgets/interactive_dartboard_test.dart`
 - Dartboard rendering
@@ -156,6 +280,21 @@
 - Ring detection
 - Segment scoring accuracy
 - Dart position persistence
+
+**SaveGameModal (8 tests)** - `test/widgets/save_game_modal_test.dart`
+- Modal rendering and actions
+
+**ResumeGameModal (13 tests)** - `test/widgets/resume_game_modal_test.dart`
+- Saved game listing and selection
+- Game-specific theming
+
+### Save/Resume Integration Tests (20 tests)
+
+**Save/Resume Integration (20 tests)** - `test/integration/save_resume_integration_test.dart`
+- Save trigger conditions: 8 tests
+- Full save-resume-complete cycles: 4 tests
+- Resumed game save overwrites: 5 tests
+- Multiple saves independence: 3 tests
 
 ### Server Tests (127 tests)
 
@@ -200,10 +339,10 @@
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests
+# Flutter tests (1198 tests)
 flutter test
 
-# Server tests
+# Server tests (127 tests)
 cd server && dart test
 ```
 
@@ -211,13 +350,19 @@ cd server && dart test
 ```bash
 flutter test test/models/player_test.dart
 flutter test test/providers/player_provider_test.dart
+flutter test test/providers/horse_race_provider_game_test.dart
 ```
 
 ### Specific Categories
 ```bash
 flutter test test/models/
+flutter test test/providers/
+flutter test test/services/
+flutter test test/utils/
 flutter test test/screens/games/target_tag/
 flutter test test/screens/games/monster_mash/
+flutter test test/screens/games/reef_royale/
+flutter test test/screens/games/clockwork_quest/
 ```
 
 ## Test Patterns

@@ -2,51 +2,70 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 1253 total tests:
-- **796 Flutter non-UI tests** (models, providers, services, widgets, game logic)
+The Dart Games app has a comprehensive test suite with 1655 total tests:
+- **1198 Flutter non-UI tests** (models, providers, services, widgets, game logic)
 - **127 server tests** (database, models, routes)
 - **330 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (796 Flutter + 127 Server = 923 tests)
+## Non-UI Tests (1198 Flutter + 127 Server = 1325 tests)
 
-### Flutter Tests (796 tests)
+### Flutter Tests (1198 tests)
 **Run with:** `flutter test`
 **Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
 
 ### Breakdown by Category
 
-**Model Tests (40 tests)**
+**Model Tests (98 tests)**
 - GameHistoryEntry: 12 tests
 - Player: 16 tests
 - VictoryMusicFile: 12 tests
+- Additional models (Dartboard, DartboardConnectionProfile, ApiLogEntry, SavedGameMetadata): 58 tests
 
-**Model Serialization Tests (55 tests)**
+**Model Serialization Tests (74 tests)**
 - HorseRaceGame serialization: 10 tests
 - TargetTagGame serialization: 13 tests
 - MonsterMashGame serialization: 13 tests
 - ReefRoyaleGame serialization: 19 tests
+- ClockworkQuestGame serialization: 19 tests
 
-**Provider Tests (44 tests)**
+**Provider Tests (74 tests)**
 - PlayerProvider: 44 tests (CRUD, selection, stats, history, sorting)
+- DartboardProvider: 30 tests (emulator mode, profiles, loadConfiguration, status checking)
 
-**Provider Save/Restore Tests (28 tests)**
+**Provider Save/Restore Tests (35 tests)**
 - HorseRaceProvider save/restore: 7 tests
 - TargetTagProvider save/restore: 7 tests
 - MonsterMashProvider save/restore: 7 tests
 - ReefRoyaleProvider save/restore: 7 tests
+- ClockworkQuestProvider save/restore: 7 tests
+
+**Provider Game Mechanics Tests (233 tests)**
+- HorseRaceProvider: 50 tests (startGame, processDartThrow, exact score/bust, skipTurn, editScore, getHorsePosition)
+- ClockworkQuestProvider: 49 tests (normal + speed mode, target advancement, laps, bullseye, editScore, win conditions)
+- MonsterMashProvider: 44 tests (health/damage/healing, elimination, processDartThrow, editScore, speed play)
+- ReefRoyaleProvider: 45 tests (marks/claiming/locking, processDartThrow, editScore, pearl scoring)
+- TargetTagProvider: 45 tests (solo/team modes, shield mechanics, tag-in/out, elimination, hero bonus)
 
 **API Client Tests (49 tests)**
 - ApiConfig: 5 tests
 - ApiClient: 38 tests
 - Voice settings (announcer style, system voice, responsive voice): 6 tests
 
-**Service Tests (42 tests)**
+**Service Tests (91 tests)**
 - AppSettings: 20 tests
 - VictoryMusicService: 22 tests
+- StorageService: 24 tests
+- ApiLoggerService: 25 tests
 
 **Save Game Service Tests (13 tests)**
 - SaveGameService CRUD: 13 tests
+
+**Announcement Queue Model Tests (30 tests)**
+- AudioPriority: 8 tests
+- SoundEffectConfig: 7 tests
+- QueuedAnnouncement: 7 tests
+- Priority ordering logic: 8 tests
 
 **Migration Tests (19 tests)**
 - MigrationRunner: 15 tests
@@ -68,7 +87,10 @@ The Dart Games app has a comprehensive test suite with 1253 total tests:
 - Resumed game save overwrites: 5 tests
 - Multiple saves independence: 3 tests
 
-_Note: Some tests span multiple categories. The total (796) is the authoritative count from `flutter test`._
+**Utility Tests (34 tests)**
+- DartboardLayout: 34 tests (clockwiseOrder, getNeighbors, isNeighbor, findNeighborTarget)
+
+_Note: Some tests span multiple categories. The total (1198) is the authoritative count from `flutter test`._
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
@@ -141,7 +163,7 @@ _Note: Some tests span multiple categories. The total (796) is the authoritative
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (796 tests)
+✅ Run `flutter test` (1198 tests)
 ✅ Run `cd server && dart test` (127 tests)
 ✅ 100% pass rate MANDATORY for both
 ✅ If ANY test fails, DO NOT proceed
@@ -156,10 +178,10 @@ _Note: Some tests span multiple categories. The total (796) is the authoritative
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests
+# Flutter tests (1198 tests)
 flutter test
 
-# Server tests
+# Server tests (127 tests)
 cd server && dart test
 ```
 
@@ -168,6 +190,7 @@ cd server && dart test
 flutter test test/models/
 flutter test test/providers/
 flutter test test/services/
+flutter test test/utils/
 flutter test test/screens/games/target_tag/
 flutter test test/screens/games/monster_mash/
 flutter test test/screens/games/reef_royale/

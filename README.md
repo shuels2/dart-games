@@ -625,7 +625,7 @@ dart_games/
 │   │   ├── models/                  # Server-side models
 │   │   ├── routes/                  # REST API route handlers
 │   │   └── middleware/              # CORS and logging middleware
-│   └── test/                        # Server tests (127 tests)
+│   └── test/                       # Server tests (127 tests)
 ├── lib/
 │   ├── main.dart                    # App entry point
 │   ├── models/                      # Data models
@@ -645,7 +645,7 @@ dart_games/
 │           ├── monster_mash/        # Monster Mash game
 │           ├── reef_royale/         # Reef Royale game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Flutter non-UI tests (796 tests)
+├── test/                            # Flutter non-UI tests (1198 tests)
 ├── integration_test/                # UI automation tests (330 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
@@ -861,8 +861,8 @@ cd server && dart pub get && cd ..
 # Start the backend server
 cd server && dart run bin/server.dart &
 
-# Run non-UI tests (all 923 tests must pass)
-flutter test                  # 796 Flutter tests
+# Run non-UI tests (all 1325 tests must pass)
+flutter test                  # 1198 Flutter tests
 cd server && dart test        # 127 server tests
 
 # Optional: Run UI automation tests (330 tests, ~224 minutes, requires chromedriver)
@@ -877,24 +877,26 @@ flutter run
 
 ### Testing Requirements
 
-**All 923 non-UI tests must pass before any build or deployment.**
+**All 1325 non-UI tests must pass before any build or deployment.**
 
 ```bash
-# Flutter tests (796 tests)
+# Flutter tests (1198 tests)
 flutter test
 
 # Server tests (127 tests)
 cd server && dart test
 ```
 
-**Flutter Test Coverage (796 tests):**
+**Flutter Test Coverage (1198 tests):**
 - API client tests (49 tests: 5 config, 38 client, 6 voice settings)
-- Model serialization (40 tests)
-- Model serialization games (55 tests)
-- Provider functionality (44 tests)
-- Provider save/restore (28 tests)
-- Service integration (42 tests)
+- Model tests (98 tests: 40 core, 58 additional)
+- Model serialization (74 tests: HorseRace 10, TargetTag 13, MonsterMash 13, ReefRoyale 19, ClockworkQuest 19)
+- Provider tests (74 tests: PlayerProvider 44, DartboardProvider 30)
+- Provider save/restore (35 tests: 5 games x 7)
+- Provider game mechanics (233 tests: HorseRace 50, ClockworkQuest 49, MonsterMash 44, ReefRoyale 45, TargetTag 45)
+- Service tests (91 tests: AppSettings 20, VictoryMusic 22, Storage 24, ApiLogger 25)
 - Save game service (13 tests)
+- Announcement queue models (30 tests)
 - Migration tests (19 tests: 15 runner, 4 v1)
 - Game integration - Carnival Derby (43 tests: 26 user management, 17 announcements)
 - Game integration - Target Tag (68 tests: 54 announcements, 14 user management)
@@ -902,6 +904,7 @@ cd server && dart test
 - Game integration - Reef Royale (~154 tests: game logic + announcements)
 - Game integration - Clockwork Quest (84 tests: 66 game logic, 18 announcements)
 - Save/resume integration (20 tests)
+- Utility tests (34 tests: DartboardLayout)
 - Shared test components (24 tests)
 - Widget tests (44 tests: 23 dartboard, 8 save modal, 13 resume modal)
 
