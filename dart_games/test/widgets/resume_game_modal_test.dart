@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dart_games/widgets/resume_game_modal/resume_game_modal.dart';
 import 'package:dart_games/constants/test_keys.dart';
 import 'package:dart_games/models/saved_game_metadata.dart';
 import 'package:dart_games/services/save_game_service.dart';
+import '../shared/mock_api_helpers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ResumeGameModal', () {
+    late MockApiServer mockServer;
     late bool startNewCalled;
     late SavedGameMetadata? resumedGame;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      mockServer = MockApiServer();
       startNewCalled = false;
       resumedGame = null;
     });
 
     Future<void> _seedSavedGames(int count) async {
-      final service = SaveGameService();
+      final service = SaveGameService(mockServer.apiClient);
       for (int i = 0; i < count; i++) {
         await service.saveGame(SavedGameMetadata.create(
           gameType: 'carnival_derby',
@@ -45,6 +46,7 @@ void main() {
                 onStartNewGame: () => startNewCalled = true,
                 onResumeGame: (game) => resumedGame = game,
                 onClose: () {},
+                apiClient: mockServer.apiClient,
               ),
             ],
           ),
@@ -94,7 +96,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Get saved games to find the ID
-      final saved = await SaveGameService().loadSavedGames('carnival_derby');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('carnival_derby');
       final tileKey = ResumeGameModalKeys.savedGameTile(saved[0].id);
 
       await tester.tap(find.byKey(tileKey));
@@ -110,7 +112,7 @@ void main() {
       await tester.pumpWidget(buildModal());
       await tester.pumpAndSettle();
 
-      final saved = await SaveGameService().loadSavedGames('carnival_derby');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('carnival_derby');
       final tileKey = ResumeGameModalKeys.savedGameTile(saved[0].id);
 
       // Select tile
@@ -139,7 +141,7 @@ void main() {
       await tester.pumpWidget(buildModal());
       await tester.pumpAndSettle();
 
-      final saved = await SaveGameService().loadSavedGames('carnival_derby');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('carnival_derby');
       expect(saved, hasLength(2));
 
       // Delete first game
@@ -148,7 +150,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify only 1 tile remains
-      final remaining = await SaveGameService().loadSavedGames('carnival_derby');
+      final remaining = await SaveGameService(mockServer.apiClient).loadSavedGames('carnival_derby');
       expect(remaining, hasLength(1));
     });
 
@@ -179,14 +181,13 @@ void main() {
       await tester.pumpWidget(buildModal());
       await tester.pumpAndSettle();
 
-      final saved = await SaveGameService().loadSavedGames('carnival_derby');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('carnival_derby');
       for (final game in saved) {
         expect(find.byKey(ResumeGameModalKeys.savedGameTile(game.id)), findsOneWidget);
       }
     });
 
     testWidgets('Target Tag config applies theme', (tester) async {
-      SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(buildModal(config: ResumeGameModalConfig.targetTag()));
       await tester.pumpAndSettle();
 
@@ -194,7 +195,6 @@ void main() {
     });
 
     testWidgets('Monster Mash config applies theme', (tester) async {
-      SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(buildModal(config: ResumeGameModalConfig.monsterMash()));
       await tester.pumpAndSettle();
 
@@ -202,7 +202,6 @@ void main() {
     });
 
     testWidgets('Reef Royale config applies theme', (tester) async {
-      SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(buildModal(config: ResumeGameModalConfig.reefRoyale()));
       await tester.pumpAndSettle();
 

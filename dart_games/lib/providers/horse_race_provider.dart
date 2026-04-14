@@ -4,10 +4,14 @@ import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
 import '../services/game_skip_turn_helper.dart';
+import '../services/api/api_client.dart';
 
 class HorseRaceProvider extends ChangeNotifier {
   HorseRaceGame? _currentGame;
   bool _waitingForTakeout = false;
+  ApiClient? _apiClient;
+
+  HorseRaceProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
   HorseRaceGame? get currentGame => _currentGame;
@@ -262,7 +266,7 @@ class HorseRaceProvider extends ChangeNotifier {
       existingId: _resumedSavedGameId,
     );
 
-    await SaveGameService().saveGame(metadata);
+    await SaveGameService(_apiClient).saveGame(metadata);
   }
 
   void restoreGame(SavedGameMetadata savedGame) {

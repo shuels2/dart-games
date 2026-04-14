@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants/test_keys.dart';
 import '../../models/saved_game_metadata.dart';
 import '../../services/save_game_service.dart';
+import '../../services/api/api_client.dart';
 import 'resume_game_modal_config.dart';
 
 export 'resume_game_modal_config.dart';
@@ -12,6 +13,7 @@ class ResumeGameModal extends StatefulWidget {
   final VoidCallback onStartNewGame;
   final void Function(SavedGameMetadata savedGame) onResumeGame;
   final VoidCallback onClose;
+  final ApiClient? apiClient;
 
   const ResumeGameModal({
     super.key,
@@ -20,6 +22,7 @@ class ResumeGameModal extends StatefulWidget {
     required this.onStartNewGame,
     required this.onResumeGame,
     required this.onClose,
+    this.apiClient,
   });
 
   @override
@@ -38,7 +41,7 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
   }
 
   Future<void> _loadSavedGames() async {
-    final games = await SaveGameService().loadSavedGames(widget.gameType);
+    final games = await SaveGameService(widget.apiClient).loadSavedGames(widget.gameType);
     if (mounted) {
       setState(() {
         _savedGames = games;
@@ -48,7 +51,7 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
   }
 
   Future<void> _deleteGame(String id) async {
-    await SaveGameService().deleteSavedGame(widget.gameType, id);
+    await SaveGameService(widget.apiClient).deleteSavedGame(widget.gameType, id);
     if (_selectedGameId == id) {
       _selectedGameId = null;
     }
@@ -56,7 +59,7 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
   }
 
   Future<void> _deleteAllGames() async {
-    await SaveGameService().deleteAllSavedGames(widget.gameType);
+    await SaveGameService(widget.apiClient).deleteAllSavedGames(widget.gameType);
     _selectedGameId = null;
     await _loadSavedGames();
   }

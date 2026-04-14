@@ -2,12 +2,14 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 1076 total tests:
-- **746 non-UI tests** (models, providers, services, widgets, game logic)
+The Dart Games app has a comprehensive test suite with 1253 total tests:
+- **796 Flutter non-UI tests** (models, providers, services, widgets, game logic)
+- **127 server tests** (database, models, routes)
 - **330 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (746 tests)
+## Non-UI Tests (796 Flutter + 127 Server = 923 tests)
 
+### Flutter Tests (796 tests)
 **Run with:** `flutter test`
 **Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
@@ -33,6 +35,11 @@ The Dart Games app has a comprehensive test suite with 1076 total tests:
 - TargetTagProvider save/restore: 7 tests
 - MonsterMashProvider save/restore: 7 tests
 - ReefRoyaleProvider save/restore: 7 tests
+
+**API Client Tests (49 tests)**
+- ApiConfig: 5 tests
+- ApiClient: 38 tests
+- Voice settings (announcer style, system voice, responsive voice): 6 tests
 
 **Service Tests (42 tests)**
 - AppSettings: 20 tests
@@ -61,7 +68,7 @@ The Dart Games app has a comprehensive test suite with 1076 total tests:
 - Resumed game save overwrites: 5 tests
 - Multiple saves independence: 3 tests
 
-_Note: Some tests span multiple categories. The total (746) is the authoritative count from `flutter test`._
+_Note: Some tests span multiple categories. The total (796) is the authoritative count from `flutter test`._
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
@@ -71,6 +78,19 @@ _Note: Some tests span multiple categories. The total (746) is the authoritative
 - InteractiveDartboard: 23 tests
 - SaveGameModal: 8 tests
 - ResumeGameModal: 13 tests
+
+### Server Tests (127 tests)
+**Run with:** `cd server && dart test`
+**Execution time:** Seconds
+**MANDATORY:** Must pass 100% before every build
+
+- Database & helpers: 25 tests
+- Model roundtrips: 32 tests
+- Settings routes: 9 tests
+- Dartboard routes: 10 tests
+- Player routes: 24 tests
+- Saved game routes: 13 tests
+- Victory music routes: 14 tests
 
 ## UI Automation Tests (330 tests)
 
@@ -121,8 +141,9 @@ _Note: Some tests span multiple categories. The total (746) is the authoritative
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (727 tests)
-✅ 100% pass rate MANDATORY
+✅ Run `flutter test` (796 tests)
+✅ Run `cd server && dart test` (127 tests)
+✅ 100% pass rate MANDATORY for both
 ✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass
 
@@ -135,7 +156,11 @@ _Note: Some tests span multiple categories. The total (746) is the authoritative
 
 ### All Non-UI Tests
 ```bash
+# Flutter tests
 flutter test
+
+# Server tests
+cd server && dart test
 ```
 
 ### Specific Categories

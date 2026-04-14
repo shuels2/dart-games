@@ -22,6 +22,7 @@ Dart Games is a cross-platform (web and tablet) application that provides a fram
 
 - **Dartboard Integration** - Seamless connection to Scolia 2 physical dartboards via API
 - **Emulator Mode** - Test games without physical hardware using the built-in dartboard emulator
+- **Server-Side Storage** - Dart Shelf backend server with SQLite for centralized data persistence
 - **Global User Management** - Shared player profiles, statistics, and game history across all games
 - **Global Announcement Queue** - Priority-based announcement system with sound effects for consistent audio experience
 - **Voice Announcer** - Customizable text-to-speech announcements with multiple voice engines and personalities
@@ -98,9 +99,9 @@ final audioQueue = YourGameAnnouncementHelper(globalQueue);
 ```
 
 #### 4. Victory Music Service (`VictoryMusicService`)
-- Custom music file management
+- Custom music file management via backend API
 - Random selection from user's music library
-- Cross-platform support (web data URLs, native file paths)
+- Music uploaded to server as base64, played via server URLs
 
 ```dart
 // Access victory music service
@@ -109,7 +110,7 @@ final musicService = VictoryMusicService();
 // Check if custom music is available
 if (await musicService.hasCustomMusic()) {
   final musicSource = await musicService.getRandomMusicSource();
-  // Play music using appropriate player
+  // Play music via server URL
 }
 ```
 
@@ -528,7 +529,7 @@ ResumeGameModal(
 
 #### 15. Save Game Service (`lib/services/save_game_service.dart`)
 - Shared service for persisting and retrieving saved game state
-- Uses `SharedPreferences` for cross-platform storage
+- Uses the backend API via `ApiClient` for centralized storage
 - Supports saving, loading, listing, and deleting saved games
 - Each game type stores games independently
 
@@ -617,11 +618,21 @@ Dart Games uses a container app architecture:
 
 ```
 dart_games/
+├── server/                          # Dart Shelf backend server
+│   ├── bin/server.dart              # Server entry point
+│   ├── lib/
+│   │   ├── database/                # SQLite database layer
+│   │   ├── models/                  # Server-side models
+│   │   ├── routes/                  # REST API route handlers
+│   │   └── middleware/              # CORS and logging middleware
+│   └── test/                        # Server tests (127 tests)
 ├── lib/
 │   ├── main.dart                    # App entry point
 │   ├── models/                      # Data models
 │   ├── providers/                   # State management
 │   ├── services/                    # Shared services
+│   │   ├── api/                     # API client layer (ApiClient, ApiConfig)
+│   │   └── migration/              # Schema versioning and data migrations
 │   ├── widgets/                     # Reusable widgets
 │   └── screens/
 │       ├── splash_screen.dart       # Initial loading
@@ -634,7 +645,7 @@ dart_games/
 │           ├── monster_mash/        # Monster Mash game
 │           ├── reef_royale/         # Reef Royale game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Non-UI test suite (727 tests)
+├── test/                            # Flutter non-UI tests (796 tests)
 ├── integration_test/                # UI automation tests (330 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
@@ -832,6 +843,7 @@ Update `CLAUDE.md` with new test counts and game-specific notes.
 ### Prerequisites
 
 - Flutter SDK
+- Dart SDK (for the backend server)
 - Scolia 2 dartboard (for production use)
 - Scolia API key (required)
 
@@ -844,9 +856,14 @@ cd dart_games
 
 # Install dependencies
 flutter pub get
+cd server && dart pub get && cd ..
 
-# Run non-UI tests (all 727 tests must pass)
-flutter test
+# Start the backend server
+cd server && dart run bin/server.dart &
+
+# Run non-UI tests (all 923 tests must pass)
+flutter test                  # 796 Flutter tests
+cd server && dart test        # 127 server tests
 
 # Optional: Run UI automation tests (330 tests, ~224 minutes, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
@@ -860,19 +877,25 @@ flutter run
 
 ### Testing Requirements
 
-**All 727 non-UI tests must pass before any build or deployment.**
+**All 923 non-UI tests must pass before any build or deployment.**
 
 ```bash
+# Flutter tests (796 tests)
 flutter test
+
+# Server tests (127 tests)
+cd server && dart test
 ```
 
-**Non-UI Test Coverage (727 tests):**
+**Flutter Test Coverage (796 tests):**
+- API client tests (49 tests: 5 config, 38 client, 6 voice settings)
 - Model serialization (40 tests)
 - Model serialization games (55 tests)
 - Provider functionality (44 tests)
 - Provider save/restore (28 tests)
 - Service integration (42 tests)
 - Save game service (13 tests)
+- Migration tests (19 tests: 15 runner, 4 v1)
 - Game integration - Carnival Derby (43 tests: 26 user management, 17 announcements)
 - Game integration - Target Tag (68 tests: 54 announcements, 14 user management)
 - Game integration - Monster Mash (65 tests: 47 game logic, 18 announcements)
@@ -881,6 +904,15 @@ flutter test
 - Save/resume integration (20 tests)
 - Shared test components (24 tests)
 - Widget tests (44 tests: 23 dartboard, 8 save modal, 13 resume modal)
+
+**Server Test Coverage (127 tests):**
+- Database & helpers (25 tests)
+- Model roundtrips (32 tests)
+- Settings routes (9 tests)
+- Dartboard routes (10 tests)
+- Player routes (24 tests)
+- Saved game routes (13 tests)
+- Victory music routes (14 tests)
 
 **UI Automation Test Coverage (330 tests, ~224 minutes):**
 - Target Tag (62 tests, ~48 min): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
@@ -934,7 +966,7 @@ The app supports two modes:
 This is a private project. Contributions and pull requests are not accepted at this time.
 
 **For internal development:**
-1. **Run all tests** before committing changes (`flutter test`)
+1. **Run all tests** before committing changes (`flutter test` and `cd server && dart test`)
 2. **Maintain cross-platform compatibility** (web and tablet)
 3. **Follow integration requirements** when adding games
 4. **Update documentation** for new features

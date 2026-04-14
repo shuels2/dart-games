@@ -2,9 +2,9 @@
 
 ## Overview
 
-746 non-UI tests validate models, providers, services, widgets, and game logic.
+923 non-UI tests (796 Flutter + 127 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
-**Run with:** `flutter test`
+**Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
 **MANDATORY:** 100% pass rate required before every build
 
@@ -40,19 +40,30 @@
 - Total play time calculations
 - Alphabetical sorting
 
+### API Client Tests (49 tests)
+
+**ApiConfig (5 tests)** - `test/services/api/api_config_test.dart`
+- URL configuration and construction
+- Default and custom base URLs
+
+**ApiClient (38 tests)** - `test/services/api/api_client_test.dart`
+- All endpoint methods (settings, dartboard, players, games, music)
+- Error handling and status codes
+- Request/response serialization
+
 ### Service Tests (61 tests)
 
 **AppSettings (20 tests)** - `test/services/app_settings_test.dart`
 - Google API key storage
 - Voice engine preference
 - Voice selection
-- Settings persistence
+- Settings persistence via API
 
 **VictoryMusicService (22 tests)** - `test/services/victory_music_service_test.dart`
 - Singleton pattern
-- Music file management
+- Music file management via API
 - Random selection
-- Cross-platform file handling
+- Server URL playback
 
 **MigrationRunner (15 tests)** - `test/services/migration_runner_test.dart`
 - Fresh install detection and version stamping
@@ -146,11 +157,54 @@
 - Segment scoring accuracy
 - Dart position persistence
 
+### Server Tests (127 tests)
+
+**Database & Helpers (25 tests)** - `server/test/database_test.dart`
+- Table creation and schema validation
+- CRUD operations for all 7 tables
+- Helper functions (rowToMap, resultSetToList, rowExists, insertRow, executeUpdate)
+- WAL mode and foreign key enforcement
+
+**Model Roundtrips (32 tests)** - `server/test/models_test.dart`
+- ServerPlayer, ServerGameHistoryEntry, ServerDartboard, ServerDartboardProfile
+- ServerSavedGame, ServerVictoryMusic
+- fromDbRow, fromJson, toJson for all models
+
+**Settings Routes (9 tests)** - `server/test/routes/settings_routes_test.dart`
+- GET/PUT/DELETE individual settings
+- Bulk PUT settings
+- 404 for missing keys
+
+**Dartboard Routes (10 tests)** - `server/test/routes/dartboard_routes_test.dart`
+- Singleton dartboard config CRUD
+- Connection profiles CRUD
+- Profile upsert behavior
+
+**Player Routes (24 tests)** - `server/test/routes/player_routes_test.dart`
+- Full player CRUD with game history
+- Photo upload/download (base64)
+- Stats updates and game history recording
+- Cascade delete (player → game_history)
+
+**Saved Game Routes (13 tests)** - `server/test/routes/saved_game_routes_test.dart`
+- Save/load/delete by ID and game type
+- Upsert behavior (same ID overwrites)
+- JSON state serialization
+
+**Victory Music Routes (14 tests)** - `server/test/routes/victory_music_routes_test.dart`
+- Upload/download music (base64 roundtrip)
+- Set/clear current music
+- Delete individual and all music
+
 ## Running Tests
 
 ### All Non-UI Tests
 ```bash
+# Flutter tests
 flutter test
+
+# Server tests
+cd server && dart test
 ```
 
 ### Specific Test Files

@@ -1,7 +1,7 @@
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'app_settings.dart';
 import 'dart_announcer_service.dart';
 
 // Priority levels for announcements (higher = more important)
@@ -68,20 +68,18 @@ class GameAnnouncementQueueService {
   bool _isSpeaking = false;
   bool _isProcessing = false;
 
-  // Load announcer settings from SharedPreferences
+  // Load announcer settings from API via AppSettings
   Future<void> loadSettings() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-
       // Load voice engine
-      final engineStr = prefs.getString('voice_engine') ?? 'responsiveVoice';
+      final engineStr = await AppSettings.getVoiceEngine() ?? 'responsiveVoice';
       final voiceEngine = VoiceEngine.values.firstWhere(
         (e) => e.toString().split('.').last == engineStr,
         orElse: () => VoiceEngine.responsiveVoice,
       );
 
       // Load announcer style
-      final styleStr = prefs.getString('announcer_style') ?? 'professional';
+      final styleStr = await AppSettings.getAnnouncerStyle() ?? 'professional';
       final announcerVoice = AnnouncerVoice.values.firstWhere(
         (e) => e.toString().split('.').last == styleStr,
         orElse: () => AnnouncerVoice.professional,
@@ -92,11 +90,11 @@ class GameAnnouncementQueueService {
       // Configure voice engine
       if (voiceEngine == VoiceEngine.responsiveVoice) {
         _announcer.useResponsiveVoice();
-        final responsiveVoice = prefs.getString('responsive_voice') ?? 'Australian Female';
+        final responsiveVoice = await AppSettings.getResponsiveVoice() ?? 'Australian Female';
         _announcer.setResponsiveVoice(responsiveVoice);
       } else if (voiceEngine == VoiceEngine.browser) {
         _announcer.useBrowserVoices();
-        final systemVoice = prefs.getString('system_voice');
+        final systemVoice = await AppSettings.getSystemVoice();
         if (systemVoice != null) {
           _announcer.setSystemVoice(systemVoice);
         }

@@ -155,15 +155,14 @@ Manage custom victory music files and play random music when a player wins any g
 `lib/services/victory_music_service.dart`
 
 ### Key Responsibilities
-- Store victory music files
+- Upload and store victory music files on the server
 - Random selection from user's library
-- Cross-platform file handling (web data URLs, native file paths)
+- Music playback via server URLs
 - Add/remove music files
-- Persist music library
+- In-memory cache with lazy initialization
 
 ### File Handling
-- **Web:** Data URLs (base64-encoded music data)
-- **Native:** File system paths
+Music files are uploaded to the server as base64 and played back via server URLs (`/api/v1/music/{id}/file`).
 
 ### Usage in Games
 ```dart
@@ -171,17 +170,12 @@ final musicService = VictoryMusicService();
 
 // Check if custom music available
 if (await musicService.hasCustomMusic()) {
-  // Get random music file
+  // Get random music server URL
   final musicSource = await musicService.getRandomMusicSource();
 
   if (musicSource != null) {
-    // Play music using appropriate player
     final player = AudioPlayer();
-    if (kIsWeb) {
-      await player.play(UrlSource(musicSource));
-    } else {
-      await player.play(DeviceFileSource(musicSource));
-    }
+    await player.play(UrlSource(musicSource));
   }
 }
 ```
@@ -538,33 +532,54 @@ When adding a new game:
 
 ## Data Persistence
 
-### SharedPreferences Keys
-- `players` - Player list (JSON)
-- `selected_players` - Currently selected players
-- `dartboard_connected` - Connection state
-- `use_emulator` - Emulator mode preference
-- `voice_enabled` - Announcer enabled/disabled
-- `voice_engine` - Selected voice engine
-- `announcer_personality` - Selected personality
-- `victory_music_files` - Victory music library (JSON)
+### Server-Side Architecture
 
-### Storage Pattern
+All data is persisted via a Dart Shelf backend server with SQLite storage. The Flutter app communicates with the server through a REST API client (`ApiClient`).
+
+#### Server Stack
+- **Framework:** Dart Shelf with shelf_router
+- **Database:** SQLite with WAL mode
+- **Location:** `server/` directory in project root
+- **Entry point:** `server/bin/server.dart`
+
+#### API Endpoints (all under `/api/v1/`)
+- `settings/` - Key-value app settings (voice, announcer, etc.)
+- `dartboard/` - Singleton dartboard configuration + connection profiles
+- `players/` - Player CRUD, photos (base64), game history, stats
+- `games/` - Saved game state (save/resume feature)
+- `music/` - Victory music upload/download/management
+- `health/` - Server health check
+
+#### Flutter API Client
+- **File:** `lib/services/api/api_client.dart`
+- **Config:** `lib/services/api/api_config.dart`
+- Injected into providers via `initialize(ApiClient)` or constructor parameter
+- Tests use `MockApiServer` (`test/shared/mock_api_helpers.dart`) for in-memory API simulation
+
+#### Initialization Pattern
 ```dart
-final prefs = await SharedPreferences.getInstance();
+// In main.dart
+ApiConfig.configure('http://localhost:8080');
+apiClient = ApiClient();
+AppSettings.initialize(apiClient);
+StorageService.initialize(apiClient);
+VictoryMusicService().initializeApi(apiClient);
+```
 
-// Save data
-await prefs.setString('key', jsonEncode(data));
+#### Provider Injection
+```dart
+// Providers that use initialize()
+DartboardProvider()..initialize(apiClient);
+PlayerProvider()..initialize(apiClient);
 
-// Load data
-final jsonString = prefs.getString('key');
-if (jsonString != null) {
-  final data = jsonDecode(jsonString);
-}
+// Providers that accept constructor parameter
+HorseRaceProvider(apiClient: apiClient);
+TargetTagProvider(apiClient: apiClient);
 ```
 
 ### Data Migrations
 
-The app includes a schema versioning system to safely evolve stored data across deployments. A `schema_version` integer in SharedPreferences tracks the current data version. On startup, `MigrationRunner.runMigrations()` runs in `main()` before `runApp()` to execute any pending migrations.
+The app includes a schema versioning system to safely evolve stored data across deployments. On startup, `MigrationRunner.runMigrations()` runs in `main()` before `runApp()` to execute any pending migrations.
 
 - **Adding optional fields** with `??` defaults in `fromJson()` does NOT require a migration
 - **Breaking changes** (key renames, type changes, restructuring) require a new migration

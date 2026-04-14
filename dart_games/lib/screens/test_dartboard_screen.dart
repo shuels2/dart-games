@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/mock_scolia_api_service.dart';
 import '../services/dart_announcer_service.dart';
 import '../services/app_settings.dart';
@@ -58,43 +57,38 @@ class _TestDartboardScreenState extends State<TestDartboardScreen> {
 
   /// Initialize default settings if they don't exist
   Future<void> _initializeDefaults() async {
-    final prefs = await SharedPreferences.getInstance();
+    final existingEngine = await AppSettings.getVoiceEngine();
 
-    // Check if defaults have been set
-    final hasDefaults = prefs.containsKey('voice_engine');
-
-    if (!hasDefaults) {
+    if (existingEngine == null) {
       // Set initial defaults: ResponsiveVoice, Australian Female, Professional
-      await prefs.setString('voice_engine', VoiceEngine.responsiveVoice.name);
-      await prefs.setString('announcer_style', AnnouncerVoice.professional.name);
-      await prefs.setString('responsive_voice', 'Australian Female');
-      await prefs.setString('system_voice', '');
+      await AppSettings.saveVoiceEngine(VoiceEngine.responsiveVoice.name);
+      await AppSettings.saveAnnouncerStyle(AnnouncerVoice.professional.name);
+      await AppSettings.saveResponsiveVoice('Australian Female');
+      await AppSettings.saveSystemVoice('');
     }
   }
 
   /// Load saved settings and apply them to the announcer
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-
     // Load voice engine
-    final engineStr = prefs.getString('voice_engine') ?? 'responsiveVoice';
+    final engineStr = await AppSettings.getVoiceEngine() ?? 'responsiveVoice';
     final voiceEngine = VoiceEngine.values.firstWhere(
       (e) => e.name == engineStr,
       orElse: () => VoiceEngine.responsiveVoice,
     );
 
     // Load announcer style
-    final styleStr = prefs.getString('announcer_style') ?? 'professional';
+    final styleStr = await AppSettings.getAnnouncerStyle() ?? 'professional';
     final announcerStyle = AnnouncerVoice.values.firstWhere(
       (v) => v.name == styleStr,
       orElse: () => AnnouncerVoice.professional,
     );
 
     // Load ResponsiveVoice
-    final responsiveVoice = prefs.getString('responsive_voice') ?? 'Australian Female';
+    final responsiveVoice = await AppSettings.getResponsiveVoice() ?? 'Australian Female';
 
     // Load system voice
-    final systemVoice = prefs.getString('system_voice') ?? '';
+    final systemVoice = await AppSettings.getSystemVoice() ?? '';
 
     // Apply settings to announcer
     widget.announcer.setVoice(announcerStyle);

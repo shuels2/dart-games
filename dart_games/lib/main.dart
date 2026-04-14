@@ -8,6 +8,11 @@ import 'providers/target_tag_provider.dart';
 import 'providers/monster_mash_provider.dart';
 import 'providers/reef_royale_provider.dart';
 import 'providers/clockwork_quest_provider.dart';
+import 'services/api/api_client.dart';
+import 'services/api/api_config.dart';
+import 'services/app_settings.dart';
+import 'services/storage_service.dart';
+import 'services/victory_music_service.dart';
 import 'services/migration/migration_runner.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
@@ -16,8 +21,21 @@ import 'screens/games/clockwork_quest/clockwork_quest_menu_screen.dart';
 import 'screens/games/clockwork_quest/clockwork_quest_game_screen.dart';
 import 'screens/games/clockwork_quest/clockwork_quest_results_screen.dart';
 
+/// Global API client instance, shared across all services.
+late final ApiClient apiClient;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize API client
+  // TODO: Configure from environment or settings screen
+  ApiConfig.configure('http://localhost:8080');
+  apiClient = ApiClient();
+
+  // Initialize services with the API client
+  AppSettings.initialize(apiClient);
+  StorageService.initialize(apiClient);
+  VictoryMusicService().initializeApi(apiClient);
 
   // Run data migrations before any providers load data
   await MigrationRunner.runMigrations();
@@ -86,13 +104,21 @@ class DartGamesApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => DartboardProvider()),
-        ChangeNotifierProvider(create: (_) => PlayerProvider()),
-        ChangeNotifierProvider(create: (_) => HorseRaceProvider()),
-        ChangeNotifierProvider(create: (_) => TargetTagProvider()),
-        ChangeNotifierProvider(create: (_) => MonsterMashProvider()),
-        ChangeNotifierProvider(create: (_) => ReefRoyaleProvider()),
-        ChangeNotifierProvider(create: (_) => ClockworkQuestProvider()),
+        ChangeNotifierProvider(create: (_) {
+          final provider = DartboardProvider();
+          provider.initialize(apiClient);
+          return provider;
+        }),
+        ChangeNotifierProvider(create: (_) {
+          final provider = PlayerProvider();
+          provider.initialize(apiClient);
+          return provider;
+        }),
+        ChangeNotifierProvider(create: (_) => HorseRaceProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => TargetTagProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => MonsterMashProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => ReefRoyaleProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => ClockworkQuestProvider(apiClient: apiClient)),
       ],
       child: MaterialApp(
         title: 'Dart Games',

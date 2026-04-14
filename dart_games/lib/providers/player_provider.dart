@@ -1,12 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/player.dart';
 import '../models/game_history_entry.dart';
 import '../services/photo_service.dart';
+import '../services/api/api_client.dart';
 
 class PlayerProvider extends ChangeNotifier {
-  static const String _storageKey = 'players_roster';
   static const String _lastSortedKey = 'players_last_sorted_at';
 
   List<Player> _allPlayers = [];
@@ -16,6 +14,19 @@ class PlayerProvider extends ChangeNotifier {
   DateTime? _lastSortedAt;
 
   final PhotoService _photoService = PhotoService();
+  ApiClient? _apiClient;
+
+  /// Set the API client. Call once at app startup.
+  void initialize(ApiClient client) {
+    _apiClient = client;
+  }
+
+  ApiClient get _api {
+    if (_apiClient == null) {
+      throw StateError('PlayerProvider not initialized. Call initialize() first.');
+    }
+    return _apiClient!;
+  }
 
   // Getters
   List<Player> get allPlayers => List.unmodifiable(_allPlayers);
@@ -23,27 +34,20 @@ class PlayerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Load players from SharedPreferences
+  // Load players from API
   Future<void> loadPlayers() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final String? playersJson = prefs.getString(_storageKey);
+      final playersJson = await _api.getPlayers();
+      _allPlayers = playersJson.map((json) => Player.fromJson(json)).toList();
 
-      if (playersJson != null) {
-        final List<dynamic> decoded = jsonDecode(playersJson);
-        _allPlayers = decoded.map((json) => Player.fromJson(json)).toList();
-      } else {
-        _allPlayers = [];
-      }
-
-      // Load last sorted timestamp
-      final String? lastSortedJson = prefs.getString(_lastSortedKey);
-      if (lastSortedJson != null) {
-        _lastSortedAt = DateTime.parse(lastSortedJson);
+      // Load last sorted timestamp from settings
+      final lastSortedStr = await _api.getSetting(_lastSortedKey);
+      if (lastSortedStr != null) {
+        _lastSortedAt = DateTime.parse(lastSortedStr);
       }
 
       // Sort players (alphabetically, with new players at bottom)
@@ -80,21 +84,6 @@ class PlayerProvider extends ChangeNotifier {
     _allPlayers = [...oldPlayers, ...newPlayers];
   }
 
-  // Save all players to SharedPreferences
-  Future<void> _savePlayers() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final String encoded = jsonEncode(
-        _allPlayers.map((player) => player.toJson()).toList(),
-      );
-      await prefs.setString(_storageKey, encoded);
-    } catch (e) {
-      _error = 'Failed to save players: $e';
-      print(_error);
-      notifyListeners();
-    }
-  }
-
   // Add or update a player
   Future<void> savePlayer(Player player) async {
     try {
@@ -102,13 +91,18 @@ class PlayerProvider extends ChangeNotifier {
 
       if (index >= 0) {
         // Update existing player
+        await _api.updatePlayer(player.id, {'name': player.name});
         _allPlayers[index] = player;
       } else {
-        // Add new player
+        // Create new player
+        await _api.createPlayer({
+          'id': player.id,
+          'name': player.name,
+          'createdAt': player.createdAt.toIso8601String(),
+        });
         _allPlayers.add(player);
       }
 
-      await _savePlayers();
       notifyListeners();
     } catch (e) {
       _error = 'Failed to save player: $e';
@@ -127,13 +121,12 @@ class PlayerProvider extends ChangeNotifier {
         await _photoService.deletePhoto(player.photoPath!);
       }
 
-      // Remove from all players
-      _allPlayers.removeWhere((p) => p.id == id);
+      // Delete via API (cascades to game_history on server)
+      await _api.deletePlayer(id);
 
-      // Remove from selected players if present
+      _allPlayers.removeWhere((p) => p.id == id);
       _selectedPlayers.removeWhere((p) => p.id == id);
 
-      await _savePlayers();
       notifyListeners();
     } catch (e) {
       _error = 'Failed to delete player: $e';
@@ -172,8 +165,7 @@ class PlayerProvider extends ChangeNotifier {
   Future<void> markPlayersSorted() async {
     try {
       _lastSortedAt = DateTime.now();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_lastSortedKey, _lastSortedAt!.toIso8601String());
+      await _api.putSetting(_lastSortedKey, _lastSortedAt!.toIso8601String());
     } catch (e) {
       print('Failed to save last sorted timestamp: $e');
     }
@@ -199,14 +191,33 @@ class PlayerProvider extends ChangeNotifier {
 
         // If we have game details, add to history (for both winners and losers)
         if (gameName != null && gameDuration != null) {
-          updatedHistory.add(GameHistoryEntry.create(
+          final entry = GameHistoryEntry.create(
             gameName: gameName,
             duration: gameDuration,
             dartThrows: dartThrows,
             turns: turns,
             playerCount: playerCount,
-            metadata: {'won': won}, // Track whether this was a win
-          ));
+            metadata: {'won': won},
+          );
+          updatedHistory.add(entry);
+
+          // Also add to server
+          await _api.addPlayerHistory(playerId, {
+            'gameName': gameName,
+            'timestamp': entry.timestamp.toIso8601String(),
+            'durationMs': gameDuration.inMilliseconds,
+            'metadata': {'won': won},
+            'dartThrows': dartThrows,
+            'turns': turns,
+            'playerCount': playerCount,
+          });
+        } else {
+          // Just update stats on server
+          await _api.updatePlayerStats(
+            playerId,
+            gamesPlayed: player.gamesPlayed + 1,
+            gamesWon: won ? player.gamesWon + 1 : player.gamesWon,
+          );
         }
 
         _allPlayers[index] = player.copyWith(
@@ -215,7 +226,6 @@ class PlayerProvider extends ChangeNotifier {
           gameHistory: updatedHistory,
         );
 
-        await _savePlayers();
         notifyListeners();
       }
     } catch (e) {

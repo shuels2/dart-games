@@ -88,8 +88,8 @@ if "!run_all!"=="1" (
 )
 echo ========================================
 echo.
-echo NOTE: STUB MODE - flutter drive is simulated. Each test
-echo       completes in ~2 seconds with a mocked PASSED result.
+echo NOTE: STUB MODE - flutter drive and Backend Server are simulated.
+echo       Each test completes in ~2 seconds with a mocked PASSED result.
 echo.
 
 REM Skip over helper function definitions
@@ -138,6 +138,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\01_target_tag_menu_and_mechanics.log
     set _TARGET=integration_test/target_tag_menu_and_mechanics_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -191,6 +192,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\02_target_tag_visual_validation.log
     set _TARGET=integration_test/target_tag_visual_validation_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -244,6 +246,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\03_target_tag_gameplay.log
     set _TARGET=integration_test/target_tag_gameplay_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -297,6 +300,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\04_target_tag_add_player.log
     set _TARGET=integration_test/target_tag_add_player_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -350,6 +354,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\05_target_tag_results_screen.log
     set _TARGET=integration_test/target_tag_results_screen_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -403,6 +408,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\06_carnival_derby_ui.log
     set _TARGET=integration_test/carnival_derby_ui_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -456,6 +462,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\07_monster_mash_add_player.log
     set _TARGET=integration_test/monster_mash_add_player_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -509,6 +516,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\08_monster_mash_menu_and_settings.log
     set _TARGET=integration_test/monster_mash_menu_and_settings_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -562,6 +570,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\09_monster_mash_gameplay.log
     set _TARGET=integration_test/monster_mash_gameplay_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -615,6 +624,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\10_monster_mash_edit_score.log
     set _TARGET=integration_test/monster_mash_edit_score_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -668,6 +678,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\11_monster_mash_results_screen.log
     set _TARGET=integration_test/monster_mash_results_screen_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -721,6 +732,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\12_monster_mash_visual_validation.log
     set _TARGET=integration_test/monster_mash_visual_validation_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -774,6 +786,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\13_reef_royale_add_player.log
     set _TARGET=integration_test/reef_royale_add_player_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -827,6 +840,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\14_reef_royale_menu_and_settings.log
     set _TARGET=integration_test/reef_royale_menu_and_settings_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -880,6 +894,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\15_reef_royale_gameplay.log
     set _TARGET=integration_test/reef_royale_gameplay_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -933,6 +948,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\16_reef_royale_edit_score.log
     set _TARGET=integration_test/reef_royale_edit_score_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -986,6 +1002,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\17_reef_royale_results_screen.log
     set _TARGET=integration_test/reef_royale_results_screen_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1039,6 +1056,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\18_reef_royale_visual_validation.log
     set _TARGET=integration_test/reef_royale_visual_validation_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1092,6 +1110,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\19_reef_royale_showcase.log
     set _TARGET=integration_test/reef_royale_showcase_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1145,6 +1164,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\20_carnival_derby_save_resume.log
     set _TARGET=integration_test/carnival_derby/carnival_derby_save_resume_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1198,6 +1218,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\21_target_tag_save_resume.log
     set _TARGET=integration_test/target_tag/target_tag_save_resume_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1251,6 +1272,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\22_monster_mash_save_resume.log
     set _TARGET=integration_test/monster_mash/monster_mash_save_resume_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1304,6 +1326,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\23_reef_royale_save_resume.log
     set _TARGET=integration_test/reef_royale/reef_royale_save_resume_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1357,6 +1380,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\24_clockwork_quest_add_player.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_add_player_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1410,6 +1434,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\25_clockwork_quest_menu_and_settings.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_menu_and_settings_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1463,6 +1488,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\26_clockwork_quest_gameplay.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_gameplay_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1516,6 +1542,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\27_clockwork_quest_edit_score.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_edit_score_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1569,6 +1596,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\28_clockwork_quest_results.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_results_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1622,6 +1650,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\29_clockwork_quest_save_resume.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_save_resume_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1675,6 +1704,7 @@ if "!should_run!"=="1" (
 
     set _LOG=integration_test_output\30_clockwork_quest_screenshot.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_screenshot_test.dart
+    echo [STUB] Starting Backend Server with clean test data...
     echo [STUB] Simulating: flutter drive --target=!_TARGET!
     echo Running: !_TARGET! > !_LOG!
     echo Started at %date% %time% >> !_LOG!
@@ -1751,7 +1781,8 @@ echo.
 echo DESCRIPTION:
 echo   Stub version of run_ui_tests.bat. Tests the full control flow
 echo   (arg parsing, test selection, result tracking, summary output)
-echo   without running actual flutter drive tests. Completes in ~24 seconds.
+echo   without running actual flutter drive tests or Backend Server.
+echo   Completes in ~24 seconds.
 echo.
 echo   To test the FAILED path, edit this file and change
 echo   "cmd /c exit 0" to "cmd /c exit 1" for any test block.

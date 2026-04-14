@@ -1,12 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/app_settings.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../shared/mock_api_helpers.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  late MockApiServer mockServer;
 
-  setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+  setUp(() {
+    mockServer = MockApiServer();
+    AppSettings.client = mockServer.apiClient;
+  });
+
+  tearDown(() {
+    AppSettings.client = null;
   });
 
   group('AppSettings - Google API Key', () {
@@ -169,6 +174,57 @@ void main() {
 
       await AppSettings.saveVoiceEnabled(true);
       expect(await AppSettings.getVoiceEnabled(), isTrue);
+    });
+  });
+
+  group('AppSettings - Announcer Style', () {
+    test('saves and retrieves announcer style', () async {
+      const style = 'excited';
+
+      await AppSettings.saveAnnouncerStyle(style);
+      final retrieved = await AppSettings.getAnnouncerStyle();
+
+      expect(retrieved, style);
+    });
+
+    test('returns null when no style is saved', () async {
+      final retrieved = await AppSettings.getAnnouncerStyle();
+
+      expect(retrieved, isNull);
+    });
+  });
+
+  group('AppSettings - System Voice', () {
+    test('saves and retrieves system voice', () async {
+      const voice = 'Microsoft David Desktop';
+
+      await AppSettings.saveSystemVoice(voice);
+      final retrieved = await AppSettings.getSystemVoice();
+
+      expect(retrieved, voice);
+    });
+
+    test('returns null when no system voice is saved', () async {
+      final retrieved = await AppSettings.getSystemVoice();
+
+      expect(retrieved, isNull);
+    });
+  });
+
+  group('AppSettings - ResponsiveVoice', () {
+    test('saves and retrieves responsive voice', () async {
+      const voice = 'UK English Male';
+
+      await AppSettings.saveResponsiveVoice(voice);
+      final retrieved = await AppSettings.getResponsiveVoice();
+
+      expect(retrieved, voice);
+    });
+
+    test('returns null when no responsive voice is saved', () async {
+      final retrieved = await AppSettings.getResponsiveVoice();
+
+      expect(retrieved, isNull);
     });
   });
 

@@ -4,10 +4,14 @@ import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
 import '../services/game_skip_turn_helper.dart';
+import '../services/api/api_client.dart';
 
 class ClockworkQuestProvider extends ChangeNotifier {
   ClockworkQuestGame? _currentGame;
   bool _waitingForTakeout = false;
+  ApiClient? _apiClient;
+
+  ClockworkQuestProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
   ClockworkQuestGame? get currentGame => _currentGame;
@@ -483,7 +487,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
       existingId: _resumedSavedGameId,
     );
 
-    await SaveGameService().saveGame(metadata);
+    await SaveGameService(_apiClient).saveGame(metadata);
   }
 
   void restoreGame(SavedGameMetadata savedGame) {

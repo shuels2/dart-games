@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/target_tag_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../shared/mock_api_helpers.dart';
 import '../../../mocks/mock_target_tag_audio_queue_service.dart';
 import '../../../helpers/target_tag_test_helper.dart';
 
@@ -10,14 +10,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Target Tag - User Management Integration', () {
+    late MockApiServer mockServer;
     late PlayerProvider playerProvider;
     late TargetTagProvider provider;
     late MockTargetTagAudioQueueService audioQueue;
     late TargetTagTestHelper helper;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      mockServer = MockApiServer();
       playerProvider = PlayerProvider();
+      playerProvider.initialize(mockServer.apiClient);
       provider = TargetTagProvider();
       audioQueue = MockTargetTagAudioQueueService();
       await playerProvider.loadPlayers();
@@ -356,6 +358,7 @@ void main() {
 
         // Create new provider (simulate app restart)
         final newProvider = PlayerProvider();
+        newProvider.initialize(mockServer.apiClient);
         await newProvider.loadPlayers();
 
         // Verify Grace (Winner)

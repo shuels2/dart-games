@@ -1,17 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/models/player.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../shared/mock_api_helpers.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   group('PlayerProvider', () {
+    late MockApiServer mockServer;
     late PlayerProvider provider;
 
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+    setUp(() {
+      mockServer = MockApiServer();
       provider = PlayerProvider();
+      provider.initialize(mockServer.apiClient);
     });
 
     test('initializes with empty player list', () {
@@ -37,8 +37,9 @@ void main() {
       expect(provider.allPlayers.length, 1);
       expect(provider.allPlayers.first.name, 'Test Player');
 
-      // Create new provider instance to test persistence
+      // Create new provider instance to test persistence (same mock server)
       final newProvider = PlayerProvider();
+      newProvider.initialize(mockServer.apiClient);
       await newProvider.loadPlayers();
 
       expect(newProvider.allPlayers.length, 1);
@@ -418,8 +419,9 @@ void main() {
         gameDuration: const Duration(minutes: 5),
       );
 
-      // Create new provider to simulate app restart
+      // Create new provider to simulate app restart (same mock server)
       final newProvider = PlayerProvider();
+      newProvider.initialize(mockServer.apiClient);
       await newProvider.loadPlayers();
 
       final loaded = newProvider.getPlayerById(player.id);
@@ -482,6 +484,7 @@ void main() {
         await provider.markPlayersSorted();
 
         final newProvider = PlayerProvider();
+        newProvider.initialize(mockServer.apiClient);
         await newProvider.loadPlayers();
 
         // Players should be alphabetically sorted
@@ -501,6 +504,7 @@ void main() {
 
         // Reload to get sorted state
         final newProvider = PlayerProvider();
+        newProvider.initialize(mockServer.apiClient);
         await newProvider.loadPlayers();
 
         // Add new player that would alphabetically go in the middle
@@ -524,6 +528,7 @@ void main() {
 
         // Verify timestamp was saved by checking it loads in new provider
         final newProvider = PlayerProvider();
+        newProvider.initialize(mockServer.apiClient);
         await newProvider.loadPlayers();
 
         // Add another player after marking sorted
@@ -545,6 +550,7 @@ void main() {
 
         // Load sorted players
         final provider2 = PlayerProvider();
+        provider2.initialize(mockServer.apiClient);
         await provider2.loadPlayers();
         expect(provider2.allPlayers[0].name, 'Alice');
         expect(provider2.allPlayers[1].name, 'Charlie');
@@ -559,6 +565,7 @@ void main() {
 
         // Reload (simulating returning to screen)
         final provider3 = PlayerProvider();
+        provider3.initialize(mockServer.apiClient);
         await provider3.loadPlayers();
 
         // Now Bob should be alphabetically sorted
@@ -583,6 +590,7 @@ void main() {
         await provider.markPlayersSorted();
 
         final newProvider = PlayerProvider();
+        newProvider.initialize(mockServer.apiClient);
         await newProvider.loadPlayers();
 
         // Should be sorted alphabetically regardless of case
@@ -612,6 +620,7 @@ void main() {
         await provider.markPlayersSorted();
 
         final newProvider = PlayerProvider();
+        newProvider.initialize(mockServer.apiClient);
         await newProvider.loadPlayers();
 
         // Single player should remain

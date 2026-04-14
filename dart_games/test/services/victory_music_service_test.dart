@@ -1,19 +1,21 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/victory_music_service.dart';
 import 'package:dart_games/models/victory_music_file.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../shared/mock_api_helpers.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  late MockApiServer mockServer;
 
   group('VictoryMusicService', () {
     late VictoryMusicService service;
 
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+    setUp(() {
+      mockServer = MockApiServer();
       service = VictoryMusicService();
-      // Reset the singleton state by clearing any cached data
-      await service.clearAllMusic();
+      service.initializeApi(mockServer.apiClient);
+      service.resetForTesting();
     });
 
     test('is a singleton', () {
@@ -52,27 +54,48 @@ void main() {
       )), throwsUnsupportedError);
     });
 
-    test('getMimeType detects mp3 files', () async {
-      // Test via addMusicFile which uses _getMimeType internally
-      // Note: This will fail on native because we can't easily mock file copying
-      // This test is more conceptual to document the expected behavior
-      // Just verify the method exists and can be called
-      expect(service.addMusicFile, isNotNull);
+    test('addMusicFile with fileBytes succeeds', () async {
+      final bytes = Uint8List.fromList([0, 1, 2, 3, 4]);
+      await service.addMusicFile(
+        fileName: 'victory.mp3',
+        fileBytes: bytes,
+      );
+
+      final files = await service.getMusicFiles();
+      expect(files, hasLength(1));
+      expect(files[0].name, 'victory.mp3');
+    });
+
+    test('addMusicFile with dataUrl succeeds', () async {
+      final bytes = Uint8List.fromList([0, 1, 2, 3, 4]);
+      final b64 = base64Encode(bytes);
+      final dataUrl = 'data:audio/mpeg;base64,$b64';
+
+      await service.addMusicFile(
+        fileName: 'victory.mp3',
+        dataUrl: dataUrl,
+      );
+
+      final files = await service.getMusicFiles();
+      expect(files, hasLength(1));
+      expect(files[0].name, 'victory.mp3');
     });
 
     test('throws exception when adding file without data', () async {
       expect(
         () async => await service.addMusicFile(
           fileName: 'test.mp3',
-          // No fileBytes or filePath
+          // No fileBytes or dataUrl
         ),
         throwsException,
       );
     });
 
     test('clearAllMusic clears all files', () async {
-      // Since we can't easily add files in test (requires platform-specific mocking),
-      // we verify the method doesn't throw
+      final bytes = Uint8List.fromList([0, 1, 2]);
+      await service.addMusicFile(fileName: 'song1.mp3', fileBytes: bytes);
+      await service.addMusicFile(fileName: 'song2.mp3', fileBytes: bytes);
+
       await service.clearAllMusic();
       final files = await service.getMusicFiles();
 
@@ -80,18 +103,21 @@ void main() {
     });
 
     test('hasCustomMusic returns true after adding files', () async {
-      // This test validates the logic flow, though actual file addition
-      // would require more complex platform mocking
       final initialState = await service.hasCustomMusic();
       expect(initialState, isFalse);
+
+      final bytes = Uint8List.fromList([0, 1, 2]);
+      await service.addMusicFile(fileName: 'song.mp3', fileBytes: bytes);
+
+      final afterAdd = await service.hasCustomMusic();
+      expect(afterAdd, isTrue);
     });
 
     test('deprecated getMusicSource calls getRandomMusicSource', () async {
-      // Test backward compatibility
+      // Both should return null when no music is available
       final source1 = await service.getMusicSource();
       final source2 = await service.getRandomMusicSource();
 
-      // Both should return null when no music is available
       expect(source1, source2);
     });
 
@@ -102,7 +128,6 @@ void main() {
     });
 
     test('deprecated clearMusic calls clearAllMusic', () async {
-      // Test backward compatibility
       await service.clearMusic();
       final files = await service.getMusicFiles();
 
@@ -122,17 +147,26 @@ void main() {
   group('VictoryMusicService - File Management', () {
     late VictoryMusicService service;
 
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+    setUp(() {
+      mockServer = MockApiServer();
       service = VictoryMusicService();
-      await service.clearAllMusic();
+      service.initializeApi(mockServer.apiClient);
+      service.resetForTesting();
     });
 
-    test('removeMusicFile throws exception for non-existent file', () async {
-      expect(
-        () async => await service.removeMusicFile('non-existent-id'),
-        throwsException,
-      );
+    test('removeMusicFile removes by ID', () async {
+      final bytes = Uint8List.fromList([0, 1, 2]);
+      await service.addMusicFile(fileName: 'song1.mp3', fileBytes: bytes);
+      await service.addMusicFile(fileName: 'song2.mp3', fileBytes: bytes);
+
+      final files = await service.getMusicFiles();
+      expect(files, hasLength(2));
+
+      await service.removeMusicFile(files[0].id);
+
+      final remaining = await service.getMusicFiles();
+      expect(remaining, hasLength(1));
+      expect(remaining[0].name, 'song2.mp3');
     });
 
     test('service persists across multiple get calls', () async {
@@ -146,10 +180,11 @@ void main() {
   group('VictoryMusicService - Backward Compatibility', () {
     late VictoryMusicService service;
 
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+    setUp(() {
+      mockServer = MockApiServer();
       service = VictoryMusicService();
-      await service.clearAllMusic();
+      service.initializeApi(mockServer.apiClient);
+      service.resetForTesting();
     });
 
     test('deprecated saveMusic throws without proper data', () async {
@@ -172,36 +207,47 @@ void main() {
   });
 
   group('VictoryMusicService - Random Selection', () {
-    test('getRandomMusicSource with single file returns that file', () async {
-      SharedPreferences.setMockInitialValues({});
-      final service = VictoryMusicService();
-      await service.clearAllMusic();
+    late VictoryMusicService service;
 
-      // We can't easily add files in test without platform mocking,
-      // but we can verify the logic by checking empty state
+    setUp(() {
+      mockServer = MockApiServer();
+      service = VictoryMusicService();
+      service.initializeApi(mockServer.apiClient);
+      service.resetForTesting();
+    });
+
+    test('getRandomMusicSource with single file returns that file', () async {
+      final bytes = Uint8List.fromList([0, 1, 2]);
+      await service.addMusicFile(fileName: 'only.mp3', fileBytes: bytes);
+
       final source = await service.getRandomMusicSource();
-      expect(source, isNull);
+      expect(source, isNotNull);
+      expect(source, contains('/api/v1/music/'));
     });
 
     test('getRandomMusicSource returns one of multiple files', () async {
-      // This would require adding multiple files and verifying
-      // that random selection picks one of them.
-      // Requires platform-specific mocking which is complex in unit tests.
-      // Integration tests would be better for this.
+      final bytes = Uint8List.fromList([0, 1, 2]);
+      await service.addMusicFile(fileName: 'song1.mp3', fileBytes: bytes);
+      await service.addMusicFile(fileName: 'song2.mp3', fileBytes: bytes);
+      await service.addMusicFile(fileName: 'song3.mp3', fileBytes: bytes);
+
+      final source = await service.getRandomMusicSource();
+      expect(source, isNotNull);
+      expect(source, contains('/api/v1/music/'));
     });
   });
 
   group('VictoryMusicService - Error Handling', () {
     late VictoryMusicService service;
 
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+    setUp(() {
+      mockServer = MockApiServer();
       service = VictoryMusicService();
-      await service.clearAllMusic();
+      service.initializeApi(mockServer.apiClient);
+      service.resetForTesting();
     });
 
-    test('handles SharedPreferences errors gracefully', () async {
-      // Service should handle storage errors without crashing
+    test('handles empty storage gracefully', () async {
       await service.initialize();
 
       // Should not throw
@@ -217,11 +263,16 @@ void main() {
   });
 
   group('VictoryMusicService - Data Persistence', () {
-    test('service maintains state across calls', () async {
-      SharedPreferences.setMockInitialValues({});
-      final service = VictoryMusicService();
-      await service.clearAllMusic();
+    late VictoryMusicService service;
 
+    setUp(() {
+      mockServer = MockApiServer();
+      service = VictoryMusicService();
+      service.initializeApi(mockServer.apiClient);
+      service.resetForTesting();
+    });
+
+    test('service maintains state across calls', () async {
       final files1 = await service.getMusicFiles();
       final files2 = await service.getMusicFiles();
 
@@ -229,8 +280,8 @@ void main() {
     });
 
     test('clearAllMusic resets state', () async {
-      SharedPreferences.setMockInitialValues({});
-      final service = VictoryMusicService();
+      final bytes = Uint8List.fromList([0, 1, 2]);
+      await service.addMusicFile(fileName: 'song.mp3', fileBytes: bytes);
 
       await service.clearAllMusic();
       final files = await service.getMusicFiles();

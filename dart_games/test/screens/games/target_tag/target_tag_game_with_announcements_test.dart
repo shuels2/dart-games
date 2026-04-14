@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/providers/target_tag_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../shared/mock_api_helpers.dart';
 import '../../../mocks/mock_target_tag_audio_queue_service.dart';
 import '../../../helpers/target_tag_test_helper.dart';
 
@@ -23,7 +23,7 @@ void main() {
     late List<Player> players;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
       provider = TargetTagProvider();
       audioQueue = MockTargetTagAudioQueueService();
     });
@@ -437,7 +437,7 @@ void main() {
     late List<Player> players;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
       provider = TargetTagProvider();
       audioQueue = MockTargetTagAudioQueueService();
     });
@@ -858,7 +858,7 @@ void main() {
     late List<Player> players;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
       provider = TargetTagProvider();
       audioQueue = MockTargetTagAudioQueueService();
     });
@@ -1025,7 +1025,7 @@ void main() {
     late List<Player> players;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
       provider = TargetTagProvider();
       audioQueue = MockTargetTagAudioQueueService();
     });
@@ -1140,7 +1140,7 @@ void main() {
     late List<Player> players;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
       provider = TargetTagProvider();
       audioQueue = MockTargetTagAudioQueueService();
     });
@@ -1406,7 +1406,7 @@ void main() {
     late List<Player> players;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
       provider = TargetTagProvider();
       audioQueue = MockTargetTagAudioQueueService();
     });
@@ -1912,7 +1912,7 @@ void main() {
     late List<Player> players;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
       provider = TargetTagProvider();
     });
 
@@ -2300,7 +2300,7 @@ void main() {
     late List<Player> players;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
       provider = TargetTagProvider();
       audioQueue = MockTargetTagAudioQueueService();
     });

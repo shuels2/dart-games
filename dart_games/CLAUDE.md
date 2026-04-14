@@ -38,9 +38,9 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Schema versioning and data migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1076 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **746 non-UI + 330 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 746 non-UI tests (MANDATORY before builds)
+### 🧪 Testing (1253 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **796 Flutter + 127 server + 330 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 917 non-UI tests (MANDATORY before builds)
 - [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
@@ -68,9 +68,13 @@ Each game has its own unique visual identity while integrating with global syste
 
 ### Run All Non-UI Tests (MANDATORY before builds)
 ```bash
+# Flutter tests (796 tests)
 flutter test
+
+# Server tests (127 tests)
+cd server && dart test
 ```
-**Required:** 100% pass rate (746 tests)
+**Required:** 100% pass rate (923 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -100,8 +104,9 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1076 tests**
-- **Non-UI Tests:** 746 tests (100% pass rate MANDATORY)
+**Total: 1253 tests**
+- **Flutter Non-UI Tests:** 796 tests (100% pass rate MANDATORY)
+  - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 40
   - Model serialization tests: 55
   - Provider tests: 44
@@ -120,6 +125,15 @@ flutter test test/screens/games/clockwork_quest/
   - Migration tests: 19 (15 runner + 4 v1)
   - Carnival Derby game logic: 8 (included in integration above)
 
+- **Server Tests:** 127 tests (100% pass rate MANDATORY)
+  - Database & helpers: 25
+  - Model roundtrips: 32
+  - Settings routes: 9
+  - Dartboard routes: 10
+  - Player routes: 24
+  - Saved game routes: 13
+  - Victory music routes: 14
+
 - **UI Automation Tests:** 330 tests (optional, ask before running)
   - Target Tag: 62 tests (~48 minutes)
   - Carnival Derby: 33 tests (~22 minutes)
@@ -130,7 +144,8 @@ flutter test test/screens/games/clockwork_quest/
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 746 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 790 Flutter non-UI tests MUST pass
+✅ Run `cd server && dart test` - ALL 127 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -223,33 +238,49 @@ dart_games/
 │       ├── target-tag/              # Target Tag docs (8 files)
 │       ├── monster-mash/            # Monster Mash docs (8 files)
 │       └── reef-royale/            # Reef Royale docs (8 files)
-├── lib/                             # Source code
+├── server/                          # Dart Shelf backend server
+│   ├── bin/server.dart             # Entry point
+│   ├── lib/
+│   │   ├── database/               # SQLite database layer
+│   │   ├── models/                 # Server-side models
+│   │   ├── routes/                 # REST API route handlers
+│   │   └── middleware/             # CORS and logging middleware
+│   └── test/                       # Server tests (127 tests)
+│       └── routes/                 # Route-level tests
+├── lib/                             # Flutter source code
 │   ├── main.dart
 │   ├── models/
 │   ├── providers/
 │   ├── services/
-│   │   └── migration/               # Schema versioning and data migrations
+│   │   ├── api/                    # API client layer (ApiClient, ApiConfig)
+│   │   └── migration/             # Schema versioning and data migrations
 │   ├── widgets/
 │   └── screens/
 │       └── games/
 │           ├── carnival_horse_race/
 │           ├── target_tag/
 │           ├── monster_mash/
-│           └── reef_royale/
-├── test/                            # Non-UI tests (637 tests)
-├── integration_test/                # UI automation tests (195 tests)
+│           ├── reef_royale/
+│           └── clockwork_quest/
+├── test/                            # Flutter non-UI tests (796 tests)
+│   ├── shared/                     # Shared test helpers (MockApiServer, etc.)
+│   ├── services/api/               # API client tests
+│   └── ...
+├── integration_test/                # UI automation tests (330 tests)
 │   ├── shared/                     # Shared test helpers
-│   ├── target_tag/                 # Target Tag UI tests (5 files)
-│   ├── carnival_derby/             # Carnival Derby UI tests (1 file)
-│   ├── monster_mash/               # Monster Mash UI tests (6 files)
-│   └── reef_royale/                # Reef Royale UI tests (8 files)
+│   ├── target_tag/                 # Target Tag UI tests
+│   ├── carnival_derby/             # Carnival Derby UI tests
+│   ├── monster_mash/               # Monster Mash UI tests
+│   ├── reef_royale/                # Reef Royale UI tests
+│   └── clockwork_quest/            # Clockwork Quest UI tests
 └── assets/                          # Game assets
     ├── common/
     └── games/
         ├── carnival_derby/
         ├── target_tag/
         ├── monster_mash/
-        └── reef_royale/
+        ├── reef_royale/
+        └── clockwork_quest/
 ```
 
 ## Platform Support
@@ -266,9 +297,17 @@ All features must work on all platforms. See [Cross-Platform](docs/critical-rule
 ### Flutter Commands
 ```bash
 flutter run -d chrome          # Run on web
-flutter test                    # Run all non-UI tests
+flutter test                    # Run all Flutter non-UI tests
 flutter build web               # Build for web
 flutter doctor                  # Check Flutter setup
+```
+
+### Server Commands
+```bash
+cd server && dart run bin/server.dart  # Start server (default port 8080)
+cd server && dart test                  # Run all server tests
+cd server && dart run bin/server.dart --port 9090  # Custom port
+cd server && dart run bin/server.dart --data-dir /path/to/data  # Custom data dir
 ```
 
 ### Git Commands
@@ -295,6 +334,6 @@ git push origin <branch>        # Push (with permission)
 
 ---
 
-**Last Updated:** 2026-03-14
-**Documentation Version:** 3.2 (Clockwork Quest)
+**Last Updated:** 2026-04-13
+**Documentation Version:** 4.0 (Server-Side Architecture)
 **Total Documentation Files:** 77
