@@ -4,6 +4,8 @@ import 'api/api_client.dart';
 class SaveGameService {
   ApiClient? _client;
 
+  /// Creates a SaveGameService. If no [ApiClient] is provided, a default
+  /// one is created using the current [ApiConfig] base URL.
   SaveGameService([this._client]);
 
   /// Set the API client. Supports late initialization.
@@ -11,12 +13,7 @@ class SaveGameService {
     _client = client;
   }
 
-  ApiClient get _api {
-    if (_client == null) {
-      throw StateError('SaveGameService not initialized. Call initialize() first.');
-    }
-    return _client!;
-  }
+  ApiClient get _api => _client ??= ApiClient();
 
   Future<void> saveGame(SavedGameMetadata metadata) async {
     await _api.saveGame(metadata.toJson());
