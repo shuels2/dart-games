@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart' show Slider;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'package:dart_games/models/player.dart';
+import 'package:dart_games/services/api/api_config.dart';
 import 'element_finders.dart';
 import 'pump_sequences.dart';
 
@@ -11,21 +13,30 @@ class SettingsHelpers {
   // TEST INITIALIZATION HELPERS
   // ==========================================================================
 
-  /// Initialize SharedPreferences for tests (clears data, sets emulator mode)
+  /// Initialize test settings via the backend API.
   ///
-  /// NOTE: For integration tests, we need to actually set values in SharedPreferences
-  /// (which persists to browser's IndexedDB), not use setMockInitialValues which
-  /// only works in widget tests.
+  /// Configures the dartboard for emulator mode by calling the backend server
+  /// API. The server must be running before tests start (handled by run_ui_tests.bat).
   static Future<void> initializeSettings({
     bool useEmulator = true,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-
-    // Set emulator mode and mock dartboard info for integration tests
-    await prefs.setBool('use_emulator', useEmulator);
-    await prefs.setString('dartboard_name', 'Test Dartboard');
-    await prefs.setString('dartboard_serial', 'TEST-001');
+    // Configure dartboard via the backend API
+    final url = Uri.parse(ApiConfig.url('/api/v1/dartboard'));
+    final response = await http.put(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': 'Test Dartboard',
+        'serialNumber': 'TEST-001',
+        'useEmulator': useEmulator,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to initialize dartboard settings via API '
+        '(status ${response.statusCode}): ${response.body}',
+      );
+    }
   }
 
   /// Create test players with IDs and names
@@ -39,11 +50,26 @@ class SettingsHelpers {
         .toList();
   }
 
-  /// Save players to SharedPreferences for test setup
-  static Future<void> savePlayersToPrefs(List<Player> players) async {
-    final prefs = await SharedPreferences.getInstance();
-    final playersJson = players.map((p) => p.toJson()).toList();
-    await prefs.setString('players_roster', playersJson.toString());
+  /// Save players via the backend API for test setup.
+  ///
+  /// Creates each player via POST /api/v1/players.
+  static Future<void> savePlayersToApi(List<Player> players) async {
+    for (final player in players) {
+      final url = Uri.parse(ApiConfig.url('/api/v1/players'));
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': player.name,
+        }),
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(
+          'Failed to create player "${player.name}" via API '
+          '(status ${response.statusCode}): ${response.body}',
+        );
+      }
+    }
   }
 
   // ==========================================================================
