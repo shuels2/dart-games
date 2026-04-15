@@ -27,9 +27,10 @@ class UITestHelpers {
     await SettingsHelpers.initializeSettings();
     print('UITestHelpers.navigateToGameMenu: initializeSettings complete');
 
-    // Launch app
+    // Launch app (await ensures runApp() fires before pumps start,
+    // so the widget tree is fully replaced with fresh providers)
     print('UITestHelpers.navigateToGameMenu: Launching app...');
-    app.main();
+    await app.main();
     print('UITestHelpers.navigateToGameMenu: App launched, pumping...');
 
     // NOTE: Do NOT use pumpAndSettle() here — the splash screen has a
@@ -293,7 +294,7 @@ class UITestHelpers {
 
   /// Launch app and navigate to home screen (settings must be initialized first)
   static Future<void> navigateToHomeScreen(WidgetTester tester) async {
-    app.main();
+    await app.main();
     // Same pump sequence as navigateToGameMenu but stop at home screen
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));

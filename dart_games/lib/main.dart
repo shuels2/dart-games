@@ -24,7 +24,7 @@ import 'screens/games/clockwork_quest/clockwork_quest_results_screen.dart';
 /// Global API client instance, shared across all services.
 late ApiClient apiClient;
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize API client
@@ -43,7 +43,11 @@ void main() async {
   // Preload all Google Fonts used in the app to prevent FOUT (Flash of Unstyled Text)
   await _preloadFonts();
 
-  runApp(const DartGamesApp());
+  // UniqueKey forces Flutter to create a fresh element tree (and fresh
+  // providers) each time runApp() is called.  Without it, runApp() with a
+  // const widget reuses the existing elements via canUpdate(), which leaks
+  // in-memory provider state across integration-test runs.
+  runApp(DartGamesApp(key: UniqueKey()));
 }
 
 Future<void> _preloadFonts() async {
