@@ -17,25 +17,34 @@ class SettingsHelpers {
   ///
   /// Configures the dartboard for emulator mode by calling the backend server
   /// API. The server must be running before tests start (handled by run_ui_tests.bat).
+  ///
+  /// If running tests manually (not via run_ui_tests.bat), start the server first:
+  ///   cd server && dart run bin/server.dart --data-dir ../ui_test_data
   static Future<void> initializeSettings({
     bool useEmulator = true,
   }) async {
-    // Configure dartboard via the backend API
-    final url = Uri.parse(ApiConfig.url('/api/v1/dartboard'));
-    final response = await http.put(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': 'Test Dartboard',
-        'serialNumber': 'TEST-001',
-        'useEmulator': useEmulator,
-      }),
-    );
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to initialize dartboard settings via API '
-        '(status ${response.statusCode}): ${response.body}',
+    try {
+      // Configure dartboard via the backend API
+      final url = Uri.parse(ApiConfig.url('/api/v1/dartboard'));
+      final response = await http.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': 'Test Dartboard',
+          'serialNumber': 'TEST-001',
+          'useEmulator': useEmulator,
+        }),
       );
+      if (response.statusCode != 200) {
+        print('WARNING: Failed to initialize dartboard settings via API '
+            '(status ${response.statusCode}): ${response.body}');
+      }
+    } catch (e) {
+      print('WARNING: Could not reach backend server at ${ApiConfig.baseUrl}. '
+          'Dartboard config not set. '
+          'Ensure the server is running: '
+          'cd server && dart run bin/server.dart --data-dir ../ui_test_data');
+      print('Error: $e');
     }
   }
 

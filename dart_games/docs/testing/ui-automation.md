@@ -66,7 +66,18 @@ ChromeDriver must match the installed Chrome major version. The `update_chromedr
 
 ## Running UI Automation Tests
 
-### Step 1: Start ChromeDriver
+### Step 1: Start Backend Server
+
+**CRITICAL:** The backend server must be running BEFORE tests. All providers read from the API. (When running via `run_ui_tests.bat`, the server is started automatically per test.)
+
+```bash
+cd server
+dart run bin/server.dart --data-dir ../ui_test_data
+```
+
+Leave this terminal running.
+
+### Step 2: Start ChromeDriver
 
 **CRITICAL:** ChromeDriver must be running BEFORE tests. (When running via `run_ui_tests.bat`, ChromeDriver is started automatically per test.)
 
@@ -77,7 +88,7 @@ cd chromedriver/chromedriver-win64
 
 Leave this terminal running.
 
-### Step 2: Run Tests
+### Step 3: Run Tests
 
 ```bash
 # All tests
@@ -95,10 +106,12 @@ flutter drive --driver=test_driver/integration_test.dart \
   -d chrome
 ```
 
-### Step 3: Stop ChromeDriver
+### Step 5: Stop ChromeDriver and Server
 
 ```bash
 taskkill /F /IM chromedriver.exe
+# Stop the server with Ctrl+C in its terminal, or:
+taskkill /F /FI "WINDOWTITLE eq dart*server*" 2>nul
 ```
 
 ## Test Drivers
