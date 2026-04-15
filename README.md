@@ -625,14 +625,14 @@ dart_games/
 │   │   ├── models/                  # Server-side models
 │   │   ├── routes/                  # REST API route handlers
 │   │   └── middleware/              # CORS and logging middleware
-│   └── test/                       # Server tests (133 tests)
+│   └── test/                       # Server tests (156 tests)
 ├── lib/
 │   ├── main.dart                    # App entry point
 │   ├── models/                      # Data models
 │   ├── providers/                   # State management
 │   ├── services/                    # Shared services
 │   │   ├── api/                     # API client layer (ApiClient, ApiConfig)
-│   │   └── migration/              # Schema versioning and data migrations
+│   │   └── game_skip_turn_helper.dart  # Shared skip turn logic
 │   ├── widgets/                     # Reusable widgets
 │   └── screens/
 │       ├── splash_screen.dart       # Initial loading
@@ -645,7 +645,7 @@ dart_games/
 │           ├── monster_mash/        # Monster Mash game
 │           ├── reef_royale/         # Reef Royale game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Flutter non-UI tests (1198 tests)
+├── test/                            # Flutter non-UI tests (1179 tests)
 ├── integration_test/                # UI automation tests (330 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
@@ -861,9 +861,9 @@ cd server && dart pub get && cd ..
 # Start the backend server
 cd server && dart run bin/server.dart &
 
-# Run non-UI tests (all 1331 tests must pass)
-flutter test                  # 1198 Flutter tests
-cd server && dart test        # 133 server tests
+# Run non-UI tests (all 1335 tests must pass)
+flutter test                  # 1179 Flutter tests
+cd server && dart test        # 156 server tests
 
 # Optional: Run UI automation tests (330 tests, ~224 minutes, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
@@ -877,17 +877,17 @@ flutter run
 
 ### Testing Requirements
 
-**All 1331 non-UI tests must pass before any build or deployment.**
+**All 1335 non-UI tests must pass before any build or deployment.**
 
 ```bash
-# Flutter tests (1198 tests)
+# Flutter tests (1179 tests)
 flutter test
 
-# Server tests (133 tests)
+# Server tests (156 tests)
 cd server && dart test
 ```
 
-**Flutter Test Coverage (1198 tests):**
+**Flutter Test Coverage (1179 tests):**
 - API client tests (49 tests: 5 config, 38 client, 6 voice settings)
 - Model tests (98 tests: 40 core, 58 additional)
 - Model serialization (74 tests: HorseRace 10, TargetTag 13, MonsterMash 13, ReefRoyale 19, ClockworkQuest 19)
@@ -897,7 +897,6 @@ cd server && dart test
 - Service tests (91 tests: AppSettings 20, VictoryMusic 22, Storage 24, ApiLogger 25)
 - Save game service (13 tests)
 - Announcement queue models (30 tests)
-- Migration tests (19 tests: 15 runner, 4 v1)
 - Game integration - Carnival Derby (43 tests: 26 user management, 17 announcements)
 - Game integration - Target Tag (68 tests: 54 announcements, 14 user management)
 - Game integration - Monster Mash (65 tests: 47 game logic, 18 announcements)
@@ -908,9 +907,10 @@ cd server && dart test
 - Shared test components (24 tests)
 - Widget tests (44 tests: 23 dartboard, 8 save modal, 13 resume modal)
 
-**Server Test Coverage (133 tests):**
+**Server Test Coverage (156 tests):**
 - Database & helpers (25 tests)
 - Model roundtrips (32 tests)
+- Migration runner & V1 baseline (23 tests)
 - Settings routes (9 tests)
 - Dartboard routes (10 tests)
 - Player routes (24 tests)

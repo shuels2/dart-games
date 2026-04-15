@@ -35,12 +35,12 @@ Each game has its own unique visual identity while integrating with global syste
 - [Resume Game Button](docs/development/resume-game-button.md) - Shared resume game button component
 - [Save & Resume Game](docs/development/save-resume-game.md) - Save and resume game feature
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
-- [Data Migrations](docs/development/data-migrations.md) - Schema versioning and data migration system
+- [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1661 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **1198 Flutter + 133 server + 330 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1325 non-UI tests (MANDATORY before builds)
+### 🧪 Testing (1665 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 156 server + 330 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1335 non-UI tests (MANDATORY before builds)
 - [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
@@ -68,13 +68,13 @@ Each game has its own unique visual identity while integrating with global syste
 
 ### Run All Non-UI Tests (MANDATORY before builds)
 ```bash
-# Flutter tests (1198 tests)
+# Flutter tests (1179 tests)
 flutter test
 
-# Server tests (133 tests)
+# Server tests (156 tests)
 cd server && dart test
 ```
-**Required:** 100% pass rate (1331 tests total)
+**Required:** 100% pass rate (1335 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -104,8 +104,8 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1661 tests**
-- **Flutter Non-UI Tests:** 1198 tests (100% pass rate MANDATORY)
+**Total: 1665 tests**
+- **Flutter Non-UI Tests:** 1179 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
   - Model serialization tests: 74 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19)
@@ -123,12 +123,12 @@ flutter test test/screens/games/clockwork_quest/
   - Monster Mash announcements: 18
   - Reef Royale game logic + announcements: ~154
   - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
-  - Migration tests: 19 (15 runner + 4 v1)
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **Server Tests:** 133 tests (100% pass rate MANDATORY)
+- **Server Tests:** 156 tests (100% pass rate MANDATORY)
   - Database & helpers: 25
   - Model roundtrips: 32
+  - Migration runner & V1 baseline: 23
   - Settings routes: 9
   - Dartboard routes: 10
   - Player routes: 24
@@ -146,8 +146,8 @@ flutter test test/screens/games/clockwork_quest/
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 1198 Flutter non-UI tests MUST pass
-✅ Run `cd server && dart test` - ALL 133 server tests MUST pass
+✅ Run `flutter test` - ALL 1179 Flutter non-UI tests MUST pass
+✅ Run `cd server && dart test` - ALL 156 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -243,19 +243,18 @@ dart_games/
 ├── server/                          # Dart Shelf backend server
 │   ├── bin/server.dart             # Entry point
 │   ├── lib/
-│   │   ├── database/               # SQLite database layer
+│   │   ├── database/               # SQLite database layer + migrations
 │   │   ├── models/                 # Server-side models
 │   │   ├── routes/                 # REST API route handlers
 │   │   └── middleware/             # CORS and logging middleware
-│   └── test/                       # Server tests (127 tests)
+│   └── test/                       # Server tests (156 tests)
 │       └── routes/                 # Route-level tests
 ├── lib/                             # Flutter source code
 │   ├── main.dart
 │   ├── models/
 │   ├── providers/
 │   ├── services/
-│   │   ├── api/                    # API client layer (ApiClient, ApiConfig)
-│   │   └── migration/             # Schema versioning and data migrations
+│   │   └── api/                    # API client layer (ApiClient, ApiConfig)
 │   ├── widgets/
 │   └── screens/
 │       └── games/
@@ -336,6 +335,6 @@ git push origin <branch>        # Push (with permission)
 
 ---
 
-**Last Updated:** 2026-04-14
-**Documentation Version:** 4.1 (Expanded Test Coverage)
+**Last Updated:** 2026-04-15
+**Documentation Version:** 4.2 (Server-Side Migrations)
 **Total Documentation Files:** 77

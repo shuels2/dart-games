@@ -13,7 +13,6 @@ import 'services/api/api_config.dart';
 import 'services/app_settings.dart';
 import 'services/storage_service.dart';
 import 'services/victory_music_service.dart';
-import 'services/migration/migration_runner.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
@@ -36,9 +35,6 @@ Future<void> main() async {
   AppSettings.initialize(apiClient);
   StorageService.initialize(apiClient);
   VictoryMusicService().initializeApi(apiClient);
-
-  // Run data migrations before any providers load data
-  await MigrationRunner.runMigrations();
 
   // Preload all Google Fonts used in the app to prevent FOUT (Flash of Unstyled Text)
   await _preloadFonts();

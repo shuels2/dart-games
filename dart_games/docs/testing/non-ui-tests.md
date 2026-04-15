@@ -168,18 +168,6 @@
 - Log stream
 - Static logApiCall helper
 
-**MigrationRunner (15 tests)** - `test/services/migration_runner_test.dart`
-- Fresh install detection and version stamping
-- Pre-migration data upgrade path
-- Partial upgrade (only pending migrations)
-- Failure handling and retry behavior
-- Version written per migration
-
-**MigrationV1 (4 tests)** - `test/services/migration_v1_test.dart`
-- Version and description validation
-- No-op verification (existing data untouched)
-- Empty prefs handling
-
 ### Save Game Service Tests (13 tests)
 
 **SaveGameService (13 tests)** - `test/services/save_game_service_test.dart`

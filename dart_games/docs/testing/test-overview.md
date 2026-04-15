@@ -2,14 +2,14 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 1661 total tests:
-- **1198 Flutter non-UI tests** (models, providers, services, widgets, game logic)
-- **133 server tests** (database, models, routes)
+The Dart Games app has a comprehensive test suite with 1665 total tests:
+- **1179 Flutter non-UI tests** (models, providers, services, widgets, game logic)
+- **156 server tests** (database, models, routes, migrations)
 - **330 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (1198 Flutter + 133 Server = 1331 tests)
+## Non-UI Tests (1179 Flutter + 156 Server = 1335 tests)
 
-### Flutter Tests (1198 tests)
+### Flutter Tests (1179 tests)
 **Run with:** `flutter test`
 **Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
@@ -67,10 +67,6 @@ The Dart Games app has a comprehensive test suite with 1661 total tests:
 - QueuedAnnouncement: 7 tests
 - Priority ordering logic: 8 tests
 
-**Migration Tests (19 tests)**
-- MigrationRunner: 15 tests
-- MigrationV1: 4 tests
-
 **Integration Tests (163 tests)**
 - Carnival Derby User Management: 26 tests
 - Carnival Derby Game Logic + Announcements: 17 tests
@@ -90,7 +86,7 @@ The Dart Games app has a comprehensive test suite with 1661 total tests:
 **Utility Tests (34 tests)**
 - DartboardLayout: 34 tests (clockwiseOrder, getNeighbors, isNeighbor, findNeighborTarget)
 
-_Note: Some tests span multiple categories. The total (1198) is the authoritative count from `flutter test`._
+_Note: Some tests span multiple categories. The total (1179) is the authoritative count from `flutter test`._
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
@@ -101,13 +97,14 @@ _Note: Some tests span multiple categories. The total (1198) is the authoritativ
 - SaveGameModal: 8 tests
 - ResumeGameModal: 13 tests
 
-### Server Tests (133 tests)
+### Server Tests (156 tests)
 **Run with:** `cd server && dart test`
 **Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
 
 - Database & helpers: 25 tests
 - Model roundtrips: 32 tests
+- Migration runner & V1 baseline: 23 tests
 - Settings routes: 9 tests
 - Dartboard routes: 10 tests
 - Player routes: 24 tests
@@ -164,8 +161,8 @@ _Note: Some tests span multiple categories. The total (1198) is the authoritativ
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (1198 tests)
-✅ Run `cd server && dart test` (133 tests)
+✅ Run `flutter test` (1179 tests)
+✅ Run `cd server && dart test` (156 tests)
 ✅ 100% pass rate MANDATORY for both
 ✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass
@@ -179,10 +176,10 @@ _Note: Some tests span multiple categories. The total (1198) is the authoritativ
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests (1198 tests)
+# Flutter tests (1179 tests)
 flutter test
 
-# Server tests (133 tests)
+# Server tests (156 tests)
 cd server && dart test
 ```
 
