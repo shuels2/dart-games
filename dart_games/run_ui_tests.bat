@@ -170,16 +170,20 @@ REM ============================================================
 REM Polls the health endpoint up to 15 times (1 second apart).
 REM Exits /b 0 on success, /b 1 on timeout.
 :wait_for_server
-for /L %%i in (1,1,15) do (
-    powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:8080/api/v1/health/' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo   Backend server is ready.
-        exit /b 0
-    )
-    timeout /t 1 /nobreak >nul
+set "_wfs_count=0"
+:wait_for_server_loop
+set /a _wfs_count+=1
+if !_wfs_count! gtr 15 (
+    echo   ERROR: Backend server did not start in time.
+    exit /b 1
 )
-echo   ERROR: Backend server did not start in time.
-exit /b 1
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8080/api/v1/health/' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>&1
+if !errorlevel! equ 0 (
+    echo   Backend server is ready.
+    exit /b 0
+)
+timeout /t 1 /nobreak >nul
+goto :wait_for_server_loop
 
 :start_tests
 REM ----------------------------------------------------------
