@@ -42,6 +42,28 @@ class SettingsHelpers {
         );
       }
 
+      // Verify the reset took effect by fetching players.  This serves two
+      // purposes: (1) confirms the database is actually empty, and (2)
+      // primes the browser's HTTP cache with the empty-list response so the
+      // app's subsequent GET /players won't receive a stale cached list
+      // from a previous test run.
+      final verifyResponse = await http.get(
+        Uri.parse(ApiConfig.url('/api/v1/players')),
+      );
+      if (verifyResponse.statusCode != 200) {
+        throw Exception(
+          'Player verification after reset failed '
+          '(status ${verifyResponse.statusCode}): ${verifyResponse.body}',
+        );
+      }
+      final verifyBody = jsonDecode(verifyResponse.body) as List<dynamic>;
+      if (verifyBody.isNotEmpty) {
+        throw Exception(
+          'Test reset did not clear players: '
+          '${verifyBody.length} player(s) still present',
+        );
+      }
+
       // Configure dartboard for emulator mode
       final response = await http.put(
         Uri.parse(ApiConfig.url('/api/v1/dartboard')),

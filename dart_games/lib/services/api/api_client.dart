@@ -29,7 +29,7 @@ class ApiClient {
 
   /// GET /api/v1/settings/<key> - Returns a single setting.
   Future<String?> getSetting(String key) async {
-    final response = await _client.get(Uri.parse(ApiConfig.url('/api/v1/settings/$key')));
+    final response = await _client.get(_bustCache('/api/v1/settings/$key'));
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -105,7 +105,7 @@ class ApiClient {
 
   /// GET /api/v1/players/<id> - Get a single player.
   Future<Map<String, dynamic>?> getPlayer(String id) async {
-    final response = await _client.get(Uri.parse(ApiConfig.url('/api/v1/players/$id')));
+    final response = await _client.get(_bustCache('/api/v1/players/$id'));
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -140,7 +140,7 @@ class ApiClient {
 
   /// GET /api/v1/players/<id>/photo - Get player photo bytes.
   Future<Uint8List?> getPlayerPhoto(String id) async {
-    final response = await _client.get(Uri.parse(ApiConfig.url('/api/v1/players/$id/photo')));
+    final response = await _client.get(_bustCache('/api/v1/players/$id/photo'));
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     return response.bodyBytes;
@@ -219,7 +219,7 @@ class ApiClient {
 
   /// GET /api/v1/music/current - Get current music info.
   Future<Map<String, dynamic>?> getCurrentMusic() async {
-    final response = await _client.get(Uri.parse(ApiConfig.url('/api/v1/music/current')));
+    final response = await _client.get(_bustCache('/api/v1/music/current'));
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -241,7 +241,7 @@ class ApiClient {
 
   /// GET /api/v1/music/<id>/file - Download music file bytes.
   Future<Uint8List?> getMusicFile(String id) async {
-    final response = await _client.get(Uri.parse(ApiConfig.url('/api/v1/music/$id/file')));
+    final response = await _client.get(_bustCache('/api/v1/music/$id/file'));
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     return response.bodyBytes;
@@ -271,8 +271,23 @@ class ApiClient {
   // HTTP helpers
   // ---------------------------------------------------------------------------
 
+  /// Build a cache-busting URI for GET requests.
+  ///
+  /// Appends a unique `_=<timestamp>` query parameter so every GET request
+  /// has a distinct URL.  This prevents the browser from serving stale
+  /// cached responses via XMLHttpRequest/fetch — even when `Cache-Control`
+  /// request headers are set, some browsers still honour cached entries for
+  /// the same URL.  A unique URL guarantees a fresh server round-trip.
+  static Uri _bustCache(String path) {
+    final base = Uri.parse(ApiConfig.url(path));
+    return base.replace(queryParameters: {
+      ...base.queryParameters,
+      '_': DateTime.now().microsecondsSinceEpoch.toString(),
+    });
+  }
+
   Future<http.Response> _get(String path) async {
-    final response = await _client.get(Uri.parse(ApiConfig.url(path)));
+    final response = await _client.get(_bustCache(path));
     _checkResponse(response);
     return response;
   }
