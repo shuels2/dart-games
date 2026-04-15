@@ -246,8 +246,13 @@ class PlayerRoutes {
     final photosDir = _photosDir();
     final filePath = p.join(photosDir, '$id$ext');
 
-    // Decode base64 and write to disk.
-    final bytes = base64Decode(photoData);
+    // Normalize and decode base64 (pad if needed, strip whitespace).
+    var normalized = photoData.replaceAll(RegExp(r'\s+'), '');
+    final remainder = normalized.length % 4;
+    if (remainder != 0) {
+      normalized = normalized.padRight(normalized.length + (4 - remainder), '=');
+    }
+    final bytes = base64Decode(normalized);
     File(filePath).writeAsBytesSync(bytes);
 
     // Update the player's photo_path in the database.

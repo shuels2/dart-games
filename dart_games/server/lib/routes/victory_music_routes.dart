@@ -94,8 +94,13 @@ class VictoryMusicRoutes {
       dir.createSync(recursive: true);
     }
 
-    // Decode base64 and write file
-    final bytes = base64Decode(fileData);
+    // Normalize and decode base64 (pad if needed, strip whitespace)
+    var normalized = fileData.replaceAll(RegExp(r'\s+'), '');
+    final remainder = normalized.length % 4;
+    if (remainder != 0) {
+      normalized = normalized.padRight(normalized.length + (4 - remainder), '=');
+    }
+    final bytes = base64Decode(normalized);
     File(filePath).writeAsBytesSync(bytes);
 
     // Insert into database
