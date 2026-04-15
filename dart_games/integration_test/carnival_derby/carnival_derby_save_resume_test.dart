@@ -107,7 +107,7 @@ void main() {
     }
   }
 
-  /// Pre-populate a saved game in SharedPreferences (for resume modal tests)
+  /// Pre-populate a saved game via server API (for resume modal tests)
   Future<String> preSaveGame() async {
     final metadata = SavedGameMetadata.create(
       gameType: gameType,

@@ -82,7 +82,7 @@ class HorseRaceGame {
 **State Management:**
 - Uses `PlayerProvider` for player list management
 - Local state for target score and exact mode settings
-- SharedPreferences persistence for last-used settings
+- Server API persistence for last-used settings
 
 #### Game Screen
 **File:** `lib/screens/games/carnival_horse_race/horse_race_game_screen.dart`
@@ -374,7 +374,7 @@ DartboardEmulatorSection(
 **Serialization:** `HorseRaceGame` has `toJson()` and `fromJson()` methods for potential future persistence
 
 ### Player Stats
-**Storage:** SharedPreferences via `PlayerProvider`
+**Storage:** Server API via `PlayerProvider`
 
 **Data Tracked:**
 - Games played: Incremented for all players in game
@@ -384,7 +384,7 @@ DartboardEmulatorSection(
 - Timestamp: Game completion time
 
 ### Settings Persistence
-**Storage:** SharedPreferences in menu screen
+**Storage:** Server API via `ApiClient`
 
 **Persisted Settings:**
 - Target score (int)
@@ -393,15 +393,14 @@ DartboardEmulatorSection(
 **Implementation:**
 ```dart
 // Save settings when changed
-final prefs = await SharedPreferences.getInstance();
-await prefs.setInt('horse_race_target_score', targetScore);
-await prefs.setBool('horse_race_exact_score_mode', exactScoreMode);
+await apiClient.saveSetting('horse_race_target_score', targetScore);
+await apiClient.saveSetting('horse_race_exact_score_mode', exactScoreMode);
 
 // Load settings on menu screen init
-final prefs = await SharedPreferences.getInstance();
+final settings = await apiClient.getSettings();
 setState(() {
-  _targetScore = prefs.getInt('horse_race_target_score') ?? 100;
-  _exactScoreMode = prefs.getBool('horse_race_exact_score_mode') ?? false;
+  _targetScore = settings['horse_race_target_score'] ?? 100;
+  _exactScoreMode = settings['horse_race_exact_score_mode'] ?? false;
 });
 ```
 
@@ -507,4 +506,4 @@ setState(() {
 ### External Resources
 - Flutter Provider package: https://pub.dev/packages/provider
 - Google Fonts package: https://pub.dev/packages/google_fonts
-- SharedPreferences package: https://pub.dev/packages/shared_preferences
+- Dart Shelf server: https://pub.dev/packages/shelf

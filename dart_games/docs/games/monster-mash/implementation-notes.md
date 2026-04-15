@@ -264,4 +264,4 @@ Monster Mash tracks per-player statistics:
 ### External Resources
 - Flutter Provider package: https://pub.dev/packages/provider
 - Google Fonts package: https://pub.dev/packages/google_fonts
-- SharedPreferences package: https://pub.dev/packages/shared_preferences
+- Dart Shelf server: https://pub.dev/packages/shelf

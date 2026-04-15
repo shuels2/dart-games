@@ -380,8 +380,8 @@ Report AR-5 findings. Fix any issues before proceeding.
 7. Write serialization tests if not done in Phase 3: `test/models/[game_name]_serialization_test.dart`
 8. Write provider save/restore tests: `test/providers/[game_name]_save_restore_test.dart`
 9. Check for data migration needs per `docs/development/data-migrations.md`:
-   - If the new game only adds new SharedPreferences keys and optional fields with `??` defaults: no migration needed.
-   - If any existing keys or field shapes change: create a migration.
+   - If the new game only adds new tables/columns and optional fields with defaults: no migration needed.
+   - If any existing columns or table shapes change: create a migration.
    - Document the decision in the output.
 10. Run `flutter test` (the FULL suite, not just the new game).
 

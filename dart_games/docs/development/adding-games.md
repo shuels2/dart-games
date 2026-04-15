@@ -402,7 +402,7 @@ Fill out all 8 template files:
 
 ### 16. Check for Data Migration Needs
 
-If your game changes the shape of any existing SharedPreferences data (renaming keys, changing field types in shared models like Player or SavedGameMetadata), you must add a data migration. Adding new keys or new optional fields with `??` defaults does NOT require a migration.
+If your game changes the shape of any existing server-side SQLite schema (renaming columns, changing field types in shared models like Player or SavedGameMetadata), you must add a data migration. Adding new columns or new optional fields with defaults does NOT require a migration.
 
 See [Data Migrations](data-migrations.md) for how to add one.
 

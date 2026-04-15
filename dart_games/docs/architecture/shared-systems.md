@@ -579,10 +579,10 @@ TargetTagProvider(apiClient: apiClient);
 
 ### Data Migrations
 
-The app includes a schema versioning system to safely evolve stored data across deployments. On startup, `MigrationRunner.runMigrations()` runs in `main()` before `runApp()` to execute any pending migrations.
+The app uses a server-side SQLite migration system. Migrations run automatically when the server's `Database` constructor is called, managed by `MigrationRunner.run(db)` in `server/lib/database/migration.dart`.
 
-- **Adding optional fields** with `??` defaults in `fromJson()` does NOT require a migration
-- **Breaking changes** (key renames, type changes, restructuring) require a new migration
+- **Adding optional columns** with defaults does NOT require a migration
+- **Breaking changes** (column renames, type changes, table restructuring) require a new migration
 - See [Data Migrations](../development/data-migrations.md) for the full guide
 
 ## Cross-Platform Considerations

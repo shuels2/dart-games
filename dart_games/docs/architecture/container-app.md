@@ -190,7 +190,7 @@ User creates player
     ↓
 PlayerProvider.savePlayer()
     ↓
-SharedPreferences (persistence)
+Server API (persistence)
     ↓
 Available in all games
     ↓
@@ -198,7 +198,7 @@ Games update player stats
     ↓
 PlayerProvider.updatePlayerStats()
     ↓
-SharedPreferences (persistence)
+Server API (persistence)
 ```
 
 ### Game Flow
@@ -244,7 +244,6 @@ dependencies:
   flutter:
     sdk: flutter
   provider: ^6.0.0           # State management
-  shared_preferences: ^2.0.0  # Data persistence
   http: ^0.13.0              # Dartboard API
   audioplayers: ^5.0.0       # Victory music, sound effects
   google_fonts: ^6.0.0       # Typography
@@ -268,7 +267,7 @@ Games can add their own dependencies but should prefer using container-provided 
   - `MonsterMashProvider` - Monster Mash game state
 
 ### State Persistence
-- **SharedPreferences:** Settings, player data, game history
+- **Server API (SQLite):** Settings, player data, game history
 - **In-memory:** Active game state (not persisted)
 
 ## Benefits of Container Architecture

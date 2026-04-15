@@ -29,7 +29,7 @@ class PumpSequences {
 
   /// Async data loading pump sequence
   ///
-  /// Use after operations that load data from SharedPreferences or other async sources
+  /// Use after operations that load data from the server or other async sources
   ///
   /// Example:
   /// ```dart

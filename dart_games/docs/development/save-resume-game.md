@@ -7,8 +7,8 @@ The save/resume feature allows players to save in-progress games and resume them
 ## Architecture
 
 ### Storage
-- **SharedPreferences** — Saved games are persisted as JSON string lists
-- **Key pattern:** `saved_games_{game_type}` (e.g., `saved_games_carnival_derby`)
+- **Server API** — Saved games are persisted on the server via `ApiClient` calls to the saved games REST endpoint
+- **Organized by game type** (e.g., `carnival_derby`, `target_tag`)
 - **No limit** on number of saved games per game type
 - **Auto-delete:** Saved games are automatically deleted when a resumed game finishes
 
@@ -17,7 +17,7 @@ The save/resume feature allows players to save in-progress games and resume them
 | File | Purpose |
 |------|---------|
 | `lib/models/saved_game_metadata.dart` | Data model for saved game entries |
-| `lib/services/save_game_service.dart` | CRUD operations for SharedPreferences |
+| `lib/services/save_game_service.dart` | CRUD operations via server API |
 | `lib/widgets/save_game_modal/save_game_modal.dart` | Save confirmation modal (back button) |
 | `lib/widgets/save_game_modal/save_game_modal_config.dart` | Per-game theming for save modal |
 | `lib/widgets/resume_game_modal/resume_game_modal.dart` | Resume/new game modal (menu screen) |

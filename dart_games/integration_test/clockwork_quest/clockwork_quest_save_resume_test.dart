@@ -115,7 +115,7 @@ void main() {
     await clickDartsRemoved(tester);
   }
 
-  /// Pre-populate a saved game in SharedPreferences
+  /// Pre-populate a saved game via server API
   Future<String> preSaveGame() async {
     final metadata = SavedGameMetadata.create(
       gameType: gameType,

@@ -101,7 +101,7 @@ class TargetTagGame {
 - Uses `PlayerProvider` for player list management
 - Local state for game settings (mode, shield max, Hero Bonus)
 - Local state for team assignments
-- SharedPreferences persistence for last-used settings
+- Server API persistence for last-used settings
 
 #### Game Screen
 **File:** `lib/screens/games/target_tag/target_tag_game_screen.dart`
@@ -400,7 +400,7 @@ _audioQueue?.dispose();
 **Serialization:** `TargetTagGame` has `toJson()` and `fromJson()` methods for potential future persistence
 
 ### Player Stats
-**Storage:** SharedPreferences via `PlayerProvider`
+**Storage:** Server API via `PlayerProvider`
 
 **Data Tracked:**
 - Games played: Incremented for all players
@@ -410,7 +410,7 @@ _audioQueue?.dispose();
 - Timestamp: Game completion time
 
 ### Settings Persistence
-**Storage:** SharedPreferences in menu screen
+**Storage:** Server API via `ApiClient`
 
 **Persisted Settings:**
 - Game mode (solo/team)
@@ -519,4 +519,4 @@ _audioQueue?.dispose();
 ### External Resources
 - Flutter Provider package: https://pub.dev/packages/provider
 - Google Fonts package: https://pub.dev/packages/google_fonts
-- SharedPreferences package: https://pub.dev/packages/shared_preferences
+- Dart Shelf server: https://pub.dev/packages/shelf

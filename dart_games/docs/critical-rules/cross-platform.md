@@ -27,20 +27,9 @@ When implementing new features or modifying existing code, ensure:
 
 **Pattern:**
 ```dart
-import 'package:flutter/foundation.dart' show kIsWeb;
-
-Future<void> saveData(String key, String value) async {
-  if (kIsWeb) {
-    // Use IndexedDB or SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, value);
-  } else {
-    // Use file system
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/$key.txt');
-    await file.writeAsString(value);
-  }
-}
+// All data is stored on the server via API calls — no platform-specific storage needed
+final apiClient = ApiClient(config: ApiConfig());
+await apiClient.saveSettings(key, value);
 ```
 
 ### Audio Playback
@@ -161,8 +150,8 @@ At minimum, test on:
 
 **Issue 3: Storage**
 - Web has limited file system access
-- Use SharedPreferences for settings
-- Use IndexedDB for larger data on web
+- All settings are stored on the server via API calls
+- No client-side storage needed
 
 **Issue 4: Permissions**
 - Camera/microphone permissions different on web vs native
@@ -178,7 +167,7 @@ At minimum, test on:
 ## Current Cross-Platform Features
 
 ### Working Cross-Platform
-✅ Player management (SharedPreferences)
+✅ Player management (server API)
 ✅ Dartboard connection (API-based)
 ✅ Victory music (audioplayers package)
 ✅ Announcer system (web_speech_api for web, flutter_tts for native)
