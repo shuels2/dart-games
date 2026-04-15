@@ -52,7 +52,7 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final playerProvider = context.read<PlayerProvider>();
       _playerProvider = playerProvider;
-      playerProvider.loadPlayers();
+      await playerProvider.loadPlayers();
       playerProvider.clearSelection();
 
       if (widget.preselectedPlayerIds != null) {
