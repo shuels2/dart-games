@@ -22,7 +22,7 @@ import 'screens/games/clockwork_quest/clockwork_quest_game_screen.dart';
 import 'screens/games/clockwork_quest/clockwork_quest_results_screen.dart';
 
 /// Global API client instance, shared across all services.
-late final ApiClient apiClient;
+late ApiClient apiClient;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
