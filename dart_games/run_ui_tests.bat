@@ -164,6 +164,23 @@ REM ============================================================
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr "LISTENING" ^| findstr ":8080 "') do taskkill /F /PID %%a >nul 2>&1
 exit /b
 
+REM ============================================================
+REM Helper function to wait for backend server to be ready
+REM ============================================================
+REM Polls the health endpoint up to 15 times (1 second apart).
+REM Exits /b 0 on success, /b 1 on timeout.
+:wait_for_server
+for /L %%i in (1,1,15) do (
+    powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:8080/api/v1/health/' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo   Backend server is ready.
+        exit /b 0
+    )
+    timeout /t 1 /nobreak >nul
+)
+echo   ERROR: Backend server did not start in time.
+exit /b 1
+
 :start_tests
 REM ----------------------------------------------------------
 REM Test 1: Target Tag Menu and Mechanics
@@ -195,7 +212,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\01_target_tag_menu_and_mechanics.log
     set _TARGET=integration_test/target_tag/target_tag_menu_and_mechanics_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -256,7 +273,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\02_target_tag_visual_validation.log
     set _TARGET=integration_test/target_tag/target_tag_visual_validation_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -317,7 +334,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\03_target_tag_gameplay.log
     set _TARGET=integration_test/target_tag/target_tag_gameplay_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -378,7 +395,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\04_target_tag_add_player.log
     set _TARGET=integration_test/target_tag/target_tag_add_player_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -439,7 +456,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\05_target_tag_results_screen.log
     set _TARGET=integration_test/target_tag/target_tag_results_screen_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -500,7 +517,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\06_carnival_derby_ui.log
     set _TARGET=integration_test/carnival_derby/carnival_derby_ui_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -556,7 +573,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\07_monster_mash_add_player.log
     set _TARGET=integration_test/monster_mash/monster_mash_add_player_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -617,7 +634,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\08_monster_mash_menu_and_settings.log
     set _TARGET=integration_test/monster_mash/monster_mash_menu_and_settings_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -678,7 +695,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\09_monster_mash_gameplay.log
     set _TARGET=integration_test/monster_mash/monster_mash_gameplay_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -739,7 +756,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\10_monster_mash_edit_score.log
     set _TARGET=integration_test/monster_mash/monster_mash_edit_score_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -800,7 +817,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\11_monster_mash_results_screen.log
     set _TARGET=integration_test/monster_mash/monster_mash_results_screen_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -861,7 +878,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\12_monster_mash_visual_validation.log
     set _TARGET=integration_test/monster_mash/monster_mash_visual_validation_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -922,7 +939,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\13_reef_royale_add_player.log
     set _TARGET=integration_test/reef_royale/reef_royale_add_player_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -983,7 +1000,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\14_reef_royale_menu_and_settings.log
     set _TARGET=integration_test/reef_royale/reef_royale_menu_and_settings_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1044,7 +1061,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\15_reef_royale_gameplay.log
     set _TARGET=integration_test/reef_royale/reef_royale_gameplay_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1105,7 +1122,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\16_reef_royale_edit_score.log
     set _TARGET=integration_test/reef_royale/reef_royale_edit_score_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1166,7 +1183,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\17_reef_royale_results_screen.log
     set _TARGET=integration_test/reef_royale/reef_royale_results_screen_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1227,7 +1244,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\18_reef_royale_visual_validation.log
     set _TARGET=integration_test/reef_royale/reef_royale_visual_validation_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1288,7 +1305,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\19_reef_royale_showcase.log
     set _TARGET=integration_test/reef_royale/reef_royale_showcase_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1344,7 +1361,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\20_carnival_derby_save_resume.log
     set _TARGET=integration_test/carnival_derby/carnival_derby_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1405,7 +1422,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\21_target_tag_save_resume.log
     set _TARGET=integration_test/target_tag/target_tag_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1466,7 +1483,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\22_monster_mash_save_resume.log
     set _TARGET=integration_test/monster_mash/monster_mash_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1527,7 +1544,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\23_reef_royale_save_resume.log
     set _TARGET=integration_test/reef_royale/reef_royale_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1584,7 +1601,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\24_clockwork_quest_add_player.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_add_player_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1637,7 +1654,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\25_clockwork_quest_menu_and_settings.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_menu_and_settings_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1690,7 +1707,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\26_clockwork_quest_gameplay.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_gameplay_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1743,7 +1760,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\27_clockwork_quest_edit_score.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_edit_score_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1796,7 +1813,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\28_clockwork_quest_results.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_results_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1849,7 +1866,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\29_clockwork_quest_save_resume.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1902,7 +1919,7 @@ if "!should_run!"=="1" (
     if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    timeout /t 8 /nobreak >nul
+    call :wait_for_server
     set _LOG=integration_test_output\30_clockwork_quest_screenshot.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_screenshot_test.dart
     echo Running: !_TARGET! > !_LOG!
