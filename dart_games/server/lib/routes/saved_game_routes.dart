@@ -24,6 +24,9 @@ class SavedGameRoutes {
     // POST /api/v1/games - Save/upsert a game (uses id from body)
     router.post('/', _save);
 
+    // DELETE /api/v1/games - Delete all saved games
+    router.delete('/', _deleteAll);
+
     // DELETE /api/v1/games/<id> - Delete saved game by id
     router.delete('/<id>', _delete);
 
@@ -93,6 +96,11 @@ class SavedGameRoutes {
       jsonEncode(game.toJson()),
       headers: {'content-type': 'application/json'},
     );
+  }
+
+  Future<Response> _deleteAll(Request request) async {
+    executeUpdate(_db, 'DELETE FROM saved_games;', []);
+    return Response(204);
   }
 
   Future<Response> _delete(Request request, String id) async {

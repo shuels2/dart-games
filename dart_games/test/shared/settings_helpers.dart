@@ -24,11 +24,16 @@ class SettingsHelpers {
     bool useEmulator = true,
   }) async {
     try {
-      // Configure dartboard via the backend API
-      final url = Uri.parse(ApiConfig.url('/api/v1/dartboard'));
+      final headers = {'Content-Type': 'application/json'};
+
+      // Clear all data from previous test run
+      await http.delete(Uri.parse(ApiConfig.url('/api/v1/players')));
+      await http.delete(Uri.parse(ApiConfig.url('/api/v1/games')));
+
+      // Configure dartboard for emulator mode
       final response = await http.put(
-        url,
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse(ApiConfig.url('/api/v1/dartboard')),
+        headers: headers,
         body: jsonEncode({
           'name': 'Test Dartboard',
           'serialNumber': 'TEST-001',

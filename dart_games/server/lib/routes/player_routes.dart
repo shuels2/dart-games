@@ -35,6 +35,9 @@ class PlayerRoutes {
     // PUT /api/v1/players/<id> - Update player
     router.put('/<id>', _update);
 
+    // DELETE /api/v1/players - Delete all players (cascades to history)
+    router.delete('/', _deleteAll);
+
     // DELETE /api/v1/players/<id> - Delete player (cascades to history)
     router.delete('/<id>', _delete);
 
@@ -184,6 +187,26 @@ class PlayerRoutes {
       jsonEncode(player.toJson()),
       headers: _jsonHeaders,
     );
+  }
+
+  /// DELETE / - Delete all players, their photos, and game history.
+  Future<Response> _deleteAll(Request request) async {
+    // Delete all photo files.
+    final rows = _db.select('SELECT photo_path FROM players WHERE photo_path IS NOT NULL;');
+    for (final row in resultSetToList(rows)) {
+      final photoPath = row['photo_path'] as String?;
+      if (photoPath != null) {
+        final file = File(photoPath);
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+      }
+    }
+
+    // CASCADE will handle game_history deletion.
+    executeUpdate(_db, 'DELETE FROM players;', []);
+
+    return Response(204);
   }
 
   /// DELETE /<id> - Delete a player and their photo file.
