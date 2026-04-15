@@ -66,6 +66,23 @@ if not exist "server\bin\server.dart" (
     exit /b 1
 )
 
+REM Ensure server dependencies are installed
+if not exist "server\.dart_tool\package_config.json" (
+    echo Installing server dependencies...
+    pushd server
+    dart pub get
+    if !errorlevel! neq 0 (
+        echo ERROR: Failed to install server dependencies.
+        popd
+        pause
+        exit /b 1
+    )
+    popd
+    echo Server dependencies installed.
+) else (
+    echo Server dependencies already installed.
+)
+
 REM Kill any existing chromedriver/chrome/server processes
 echo Stopping any existing ChromeDriver, Chrome, and Backend Server instances...
 taskkill /F /IM chromedriver.exe >nul 2>&1
