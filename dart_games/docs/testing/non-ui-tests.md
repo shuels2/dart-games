@@ -2,7 +2,7 @@
 
 ## Overview
 
-1325 non-UI tests (1198 Flutter + 127 server) validate models, providers, services, widgets, game logic, API client, and server routes.
+1331 non-UI tests (1198 Flutter + 133 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
 **Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
@@ -296,7 +296,7 @@
 - Resumed game save overwrites: 5 tests
 - Multiple saves independence: 3 tests
 
-### Server Tests (127 tests)
+### Server Tests (133 tests)
 
 **Database & Helpers (25 tests)** - `server/test/database_test.dart`
 - Table creation and schema validation
@@ -335,6 +335,12 @@
 - Set/clear current music
 - Delete individual and all music
 
+**Test Routes (6 tests)** - `server/test/routes/test_routes_test.dart`
+- Atomic reset of all user data (players, games, history, music)
+- Correct deletion counts returned
+- Idempotency (second reset returns zeros)
+- Combined reset of all tables simultaneously
+
 ## Running Tests
 
 ### All Non-UI Tests
@@ -342,7 +348,7 @@
 # Flutter tests (1198 tests)
 flutter test
 
-# Server tests (127 tests)
+# Server tests (133 tests)
 cd server && dart test
 ```
 

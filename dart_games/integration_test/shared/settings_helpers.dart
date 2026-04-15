@@ -15,8 +15,11 @@ class SettingsHelpers {
 
   /// Initialize test settings via the backend API.
   ///
-  /// Configures the dartboard for emulator mode by calling the backend server
-  /// API. The server must be running before tests start (handled by run_ui_tests.bat).
+  /// Atomically resets all user data (players, saved games, game history,
+  /// victory music) via a single POST /api/v1/test/reset call, then
+  /// configures the dartboard for emulator mode.
+  ///
+  /// The server must be running before tests start (handled by run_ui_tests.bat).
   ///
   /// If running tests manually (not via run_ui_tests.bat), start the server first:
   ///   cd server && dart run bin/server.dart --data-dir ../ui_test_data
@@ -26,9 +29,18 @@ class SettingsHelpers {
     try {
       final headers = {'Content-Type': 'application/json'};
 
-      // Clear all data from previous test run
-      await http.delete(Uri.parse(ApiConfig.url('/api/v1/players')));
-      await http.delete(Uri.parse(ApiConfig.url('/api/v1/games')));
+      // Atomically clear all user data in a single server-side transaction.
+      // This replaces separate DELETE /players + DELETE /games calls which
+      // could race with the app's data loading or fail independently.
+      final resetResponse = await http.post(
+        Uri.parse(ApiConfig.url('/api/v1/test/reset')),
+      );
+      if (resetResponse.statusCode != 200) {
+        throw Exception(
+          'Test reset failed (status ${resetResponse.statusCode}): '
+          '${resetResponse.body}',
+        );
+      }
 
       // Configure dartboard for emulator mode
       final response = await http.put(
@@ -46,7 +58,7 @@ class SettingsHelpers {
       }
     } catch (e) {
       print('WARNING: Could not reach backend server at ${ApiConfig.baseUrl}. '
-          'Dartboard config not set. '
+          'Test reset / dartboard config failed. '
           'Ensure the server is running: '
           'cd server && dart run bin/server.dart --data-dir ../ui_test_data');
       print('Error: $e');

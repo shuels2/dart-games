@@ -2,12 +2,12 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 1655 total tests:
+The Dart Games app has a comprehensive test suite with 1661 total tests:
 - **1198 Flutter non-UI tests** (models, providers, services, widgets, game logic)
-- **127 server tests** (database, models, routes)
+- **133 server tests** (database, models, routes)
 - **330 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (1198 Flutter + 127 Server = 1325 tests)
+## Non-UI Tests (1198 Flutter + 133 Server = 1331 tests)
 
 ### Flutter Tests (1198 tests)
 **Run with:** `flutter test`
@@ -101,7 +101,7 @@ _Note: Some tests span multiple categories. The total (1198) is the authoritativ
 - SaveGameModal: 8 tests
 - ResumeGameModal: 13 tests
 
-### Server Tests (127 tests)
+### Server Tests (133 tests)
 **Run with:** `cd server && dart test`
 **Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
@@ -113,6 +113,7 @@ _Note: Some tests span multiple categories. The total (1198) is the authoritativ
 - Player routes: 24 tests
 - Saved game routes: 13 tests
 - Victory music routes: 14 tests
+- Test routes: 6 tests
 
 ## UI Automation Tests (330 tests)
 
@@ -164,7 +165,7 @@ _Note: Some tests span multiple categories. The total (1198) is the authoritativ
 
 ### Before Every Build
 ✅ Run `flutter test` (1198 tests)
-✅ Run `cd server && dart test` (127 tests)
+✅ Run `cd server && dart test` (133 tests)
 ✅ 100% pass rate MANDATORY for both
 ✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass
@@ -181,7 +182,7 @@ _Note: Some tests span multiple categories. The total (1198) is the authoritativ
 # Flutter tests (1198 tests)
 flutter test
 
-# Server tests (127 tests)
+# Server tests (133 tests)
 cd server && dart test
 ```
 

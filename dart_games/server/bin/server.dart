@@ -13,6 +13,7 @@ import 'package:dart_games_server/routes/health_routes.dart';
 import 'package:dart_games_server/routes/player_routes.dart';
 import 'package:dart_games_server/routes/saved_game_routes.dart';
 import 'package:dart_games_server/routes/settings_routes.dart';
+import 'package:dart_games_server/routes/test_routes.dart';
 import 'package:dart_games_server/routes/victory_music_routes.dart';
 
 void main(List<String> args) async {
@@ -46,6 +47,7 @@ void main(List<String> args) async {
   app.mount('/api/v1/players', PlayerRoutes(db, dataDir).router.call);
   app.mount('/api/v1/games', SavedGameRoutes(db).router.call);
   app.mount('/api/v1/music', VictoryMusicRoutes(db, dataDir).router.call);
+  app.mount('/api/v1/test', TestRoutes(db, dataDir).router.call);
 
   // Apply middleware.
   final handler = const Pipeline()

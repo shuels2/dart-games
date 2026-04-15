@@ -38,8 +38,8 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Schema versioning and data migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1655 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **1198 Flutter + 127 server + 330 UI tests**
+### 🧪 Testing (1661 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1198 Flutter + 133 server + 330 UI tests**
 - [Non-UI Tests](docs/testing/non-ui-tests.md) - 1325 non-UI tests (MANDATORY before builds)
 - [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
@@ -71,10 +71,10 @@ Each game has its own unique visual identity while integrating with global syste
 # Flutter tests (1198 tests)
 flutter test
 
-# Server tests (127 tests)
+# Server tests (133 tests)
 cd server && dart test
 ```
-**Required:** 100% pass rate (1325 tests total)
+**Required:** 100% pass rate (1331 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -104,7 +104,7 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1655 tests**
+**Total: 1661 tests**
 - **Flutter Non-UI Tests:** 1198 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
@@ -126,7 +126,7 @@ flutter test test/screens/games/clockwork_quest/
   - Migration tests: 19 (15 runner + 4 v1)
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **Server Tests:** 127 tests (100% pass rate MANDATORY)
+- **Server Tests:** 133 tests (100% pass rate MANDATORY)
   - Database & helpers: 25
   - Model roundtrips: 32
   - Settings routes: 9
@@ -134,6 +134,7 @@ flutter test test/screens/games/clockwork_quest/
   - Player routes: 24
   - Saved game routes: 13
   - Victory music routes: 14
+  - Test routes: 6
 
 - **UI Automation Tests:** 330 tests (optional, ask before running)
   - Target Tag: 62 tests (~48 minutes)
@@ -146,7 +147,7 @@ flutter test test/screens/games/clockwork_quest/
 
 ### Before Any Build
 ✅ Run `flutter test` - ALL 1198 Flutter non-UI tests MUST pass
-✅ Run `cd server && dart test` - ALL 127 server tests MUST pass
+✅ Run `cd server && dart test` - ALL 133 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
