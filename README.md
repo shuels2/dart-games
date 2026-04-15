@@ -625,7 +625,7 @@ dart_games/
 │   │   ├── models/                  # Server-side models
 │   │   ├── routes/                  # REST API route handlers
 │   │   └── middleware/              # CORS and logging middleware
-│   └── test/                       # Server tests (127 tests)
+│   └── test/                       # Server tests (133 tests)
 ├── lib/
 │   ├── main.dart                    # App entry point
 │   ├── models/                      # Data models
@@ -861,9 +861,9 @@ cd server && dart pub get && cd ..
 # Start the backend server
 cd server && dart run bin/server.dart &
 
-# Run non-UI tests (all 1325 tests must pass)
+# Run non-UI tests (all 1331 tests must pass)
 flutter test                  # 1198 Flutter tests
-cd server && dart test        # 127 server tests
+cd server && dart test        # 133 server tests
 
 # Optional: Run UI automation tests (330 tests, ~224 minutes, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
@@ -877,13 +877,13 @@ flutter run
 
 ### Testing Requirements
 
-**All 1325 non-UI tests must pass before any build or deployment.**
+**All 1331 non-UI tests must pass before any build or deployment.**
 
 ```bash
 # Flutter tests (1198 tests)
 flutter test
 
-# Server tests (127 tests)
+# Server tests (133 tests)
 cd server && dart test
 ```
 
@@ -908,7 +908,7 @@ cd server && dart test
 - Shared test components (24 tests)
 - Widget tests (44 tests: 23 dartboard, 8 save modal, 13 resume modal)
 
-**Server Test Coverage (127 tests):**
+**Server Test Coverage (133 tests):**
 - Database & helpers (25 tests)
 - Model roundtrips (32 tests)
 - Settings routes (9 tests)
@@ -916,6 +916,7 @@ cd server && dart test
 - Player routes (24 tests)
 - Saved game routes (13 tests)
 - Victory music routes (14 tests)
+- Test routes (6 tests)
 
 **UI Automation Test Coverage (330 tests, ~224 minutes):**
 - Target Tag (62 tests, ~48 min): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
