@@ -17,7 +17,7 @@ flutter test
 ```
 
 **Requirements:**
-- ✅ All 1198 non-UI tests must pass (100% pass rate required)
+- ✅ All 1179 Flutter + 168 server tests must pass (100% pass rate required)
 - ❌ If ANY test fails, DO NOT proceed with build
 - 🔧 Fix all failing tests first, then re-run test suite
 - ✅ Only build after confirming all tests pass
@@ -32,7 +32,7 @@ flutter test
 - Service tests (91 tests)
 - Save game service tests (13 tests)
 - Announcement queue model tests (30 tests)
-- Migration tests (19 tests)
+- Migration tests (29 tests: runner + V1 baseline + V2 failed_stats)
 - Integration tests (163 tests)
 - Save/resume integration tests (20 tests)
 - Utility tests (34 tests)
@@ -115,7 +115,7 @@ flutter build ios
    flutter test
    ```
 
-3. **Verify ALL 1198 non-UI tests pass** (100% pass rate required)
+3. **Verify ALL 1347 non-UI tests pass** (100% pass rate required)
 
 4. **OPTIONAL: Ask user if they want to run UI automation tests** (330 tests, ~224 minutes)
 
@@ -395,7 +395,7 @@ build/ios/iphoneos/Runner.app
 ## Testing Requirements Summary
 
 **CRITICAL REQUIREMENTS:**
-- ✅ All 1198 non-UI tests must pass (MANDATORY)
+- ✅ All 1179 Flutter + 168 server tests must pass (MANDATORY)
 - ✅ 100% pass rate required (no exceptions)
 - ❓ UI automation tests optional (330 tests, ask user before running)
 - ✅ Manual testing after build

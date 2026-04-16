@@ -22,7 +22,7 @@ Dart Games is a cross-platform (web and tablet) application that provides a fram
 
 - **Dartboard Integration** - Seamless connection to Scolia 2 physical dartboards via API
 - **Emulator Mode** - Test games without physical hardware using the built-in dartboard emulator
-- **Server-Side Storage** - Dart Shelf backend server with SQLite for centralized data persistence
+- **Server-Side Storage** - Dart Shelf backend server with SQLite for centralized data persistence, schema migrations, and failed stats logging
 - **Global User Management** - Shared player profiles, statistics, and game history across all games
 - **Global Announcement Queue** - Priority-based announcement system with sound effects for consistent audio experience
 - **Voice Announcer** - Customizable text-to-speech announcements with multiple voice engines and personalities
@@ -80,6 +80,8 @@ await playerProvider.updatePlayerStats(
   playerCount: game.getPlayerCount(),                 // Total players in the game
 );
 ```
+
+**Failed Stats Handling:** If a stats update fails (e.g. player deleted mid-game, server 404, network error), `PlayerProvider` automatically logs the failure to the server's `failed_stats` table via `POST /api/v1/stats/failed`. This preserves the failure payload for later investigation or replay. Failed entries can be retrieved with `GET /api/v1/stats/failed` and cleared with `DELETE /api/v1/stats/failed`.
 
 #### 3. Announcer Service (`DartAnnouncerService`)
 - Text-to-speech for game events
@@ -621,11 +623,11 @@ dart_games/
 ├── server/                          # Dart Shelf backend server
 │   ├── bin/server.dart              # Server entry point
 │   ├── lib/
-│   │   ├── database/                # SQLite database layer
+│   │   ├── database/                # SQLite database layer + migrations
 │   │   ├── models/                  # Server-side models
 │   │   ├── routes/                  # REST API route handlers
 │   │   └── middleware/              # CORS and logging middleware
-│   └── test/                       # Server tests (156 tests)
+│   └── test/                       # Server tests (168 tests)
 ├── lib/
 │   ├── main.dart                    # App entry point
 │   ├── models/                      # Data models
@@ -861,9 +863,9 @@ cd server && dart pub get && cd ..
 # Start the backend server
 cd server && dart run bin/server.dart &
 
-# Run non-UI tests (all 1335 tests must pass)
+# Run non-UI tests (all 1347 tests must pass)
 flutter test                  # 1179 Flutter tests
-cd server && dart test        # 156 server tests
+cd server && dart test        # 168 server tests
 
 # Optional: Run UI automation tests (330 tests, ~224 minutes, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
@@ -877,13 +879,13 @@ flutter run
 
 ### Testing Requirements
 
-**All 1335 non-UI tests must pass before any build or deployment.**
+**All 1347 non-UI tests must pass before any build or deployment.**
 
 ```bash
 # Flutter tests (1179 tests)
 flutter test
 
-# Server tests (156 tests)
+# Server tests (168 tests)
 cd server && dart test
 ```
 
@@ -907,15 +909,16 @@ cd server && dart test
 - Shared test components (24 tests)
 - Widget tests (44 tests: 23 dartboard, 8 save modal, 13 resume modal)
 
-**Server Test Coverage (156 tests):**
+**Server Test Coverage (168 tests):**
 - Database & helpers (25 tests)
 - Model roundtrips (32 tests)
-- Migration runner & V1 baseline (23 tests)
+- Migration runner, V1 baseline & V2 failed_stats (29 tests)
 - Settings routes (9 tests)
 - Dartboard routes (10 tests)
 - Player routes (24 tests)
 - Saved game routes (13 tests)
 - Victory music routes (14 tests)
+- Failed stats routes (6 tests)
 - Test routes (6 tests)
 
 **UI Automation Test Coverage (330 tests, ~224 minutes):**

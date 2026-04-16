@@ -2,7 +2,7 @@
 
 ## Overview
 
-1331 non-UI tests (1198 Flutter + 133 server) validate models, providers, services, widgets, game logic, API client, and server routes.
+1347 non-UI tests (1179 Flutter + 168 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
 **Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
@@ -284,7 +284,7 @@
 - Resumed game save overwrites: 5 tests
 - Multiple saves independence: 3 tests
 
-### Server Tests (133 tests)
+### Server Tests (168 tests)
 
 **Database & Helpers (25 tests)** - `server/test/database_test.dart`
 - Table creation and schema validation
@@ -296,6 +296,14 @@
 - ServerPlayer, ServerGameHistoryEntry, ServerDartboard, ServerDartboardProfile
 - ServerSavedGame, ServerVictoryMusic
 - fromDbRow, fromJson, toJson for all models
+
+**Migration Runner, V1 Baseline & V2 Failed Stats (29 tests)** - `server/test/migration_test.dart`
+- MigrationRunner: schema_version table creation, version tracking, idempotent re-runs
+- Migration execution: runs all on fresh DB, skips applied, runs pending only, order verification
+- Transaction safety: rollback on failure, partial schema rollback, exception rethrow
+- Edge cases: empty migrations list, currentVersion reflects highest version
+- MigrationV1Baseline: creates all 7 application tables, default dartboard row, column defaults, FK cascades
+- MigrationV2FailedStats: creates failed_stats table, full row insert, nullable optional fields
 
 **Settings Routes (9 tests)** - `server/test/routes/settings_routes_test.dart`
 - GET/PUT/DELETE individual settings
@@ -323,8 +331,15 @@
 - Set/clear current music
 - Delete individual and all music
 
+**Failed Stats Routes (6 tests)** - `server/test/routes/failed_stats_routes_test.dart`
+- GET returns empty list initially
+- POST creates entry with full and minimal fields
+- Entries appear in GET after creation
+- DELETE all clears entries (204)
+- DELETE by ID removes single entry, 404 for unknown ID
+
 **Test Routes (6 tests)** - `server/test/routes/test_routes_test.dart`
-- Atomic reset of all user data (players, games, history, music)
+- Atomic reset of all user data (players, games, history, music, failed stats)
 - Correct deletion counts returned
 - Idempotency (second reset returns zeros)
 - Combined reset of all tables simultaneously
@@ -333,10 +348,10 @@
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests (1198 tests)
+# Flutter tests (1179 tests)
 flutter test
 
-# Server tests (133 tests)
+# Server tests (168 tests)
 cd server && dart test
 ```
 

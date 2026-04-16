@@ -14,7 +14,7 @@ server/lib/database/
   migration.dart             # Migration base class + MigrationRunner
   migrations/
     migration_v1.dart        # Baseline schema (7 tables + defaults)
-    migration_v2.dart        # (future)
+    migration_v2.dart        # Failed stats table for logging player stats update failures
 ```
 
 ### How It Works
@@ -35,21 +35,37 @@ Each migration runs inside its own `BEGIN`/`COMMIT` transaction. If the migratio
 
 SQLite supports transactional DDL (unlike many other databases), so `CREATE TABLE`, `ALTER TABLE`, etc. are all safely rolled back on failure.
 
+## Current Migrations
+
+### V1 — Baseline Schema (`MigrationV1Baseline`)
+Creates the 7 core application tables: `settings`, `dartboard`, `dartboard_profiles`, `players`, `game_history`, `saved_games`, `victory_music`. Seeds a default dartboard row with `id=1`.
+
+### V2 — Failed Stats Table (`MigrationV2FailedStats`)
+Creates the `failed_stats` table for persistently logging player stats update failures. When `PlayerProvider.updatePlayerStats()` fails (e.g. player deleted mid-game, server 404, network error), the failure payload is POSTed to `/api/v1/stats/failed` and stored in this table for later investigation or replay.
+
+**Columns:** `id` (PK), `player_id`, `player_name`, `game_name`, `won`, `duration_ms`, `dart_throws`, `turns`, `player_count`, `error_message`, `created_at`
+
+**API endpoints** (mounted at `/api/v1/stats`):
+- `GET /failed` — List all failed stats entries
+- `POST /failed` — Log a new failure (requires `playerId` and `errorMessage`)
+- `DELETE /failed` — Clear all entries
+- `DELETE /failed/<id>` — Delete a single entry
+
 ## Adding a New Migration
 
 Follow these steps when you need to change the database schema.
 
 ### Step 1: Create the Migration File
 
-Create `server/lib/database/migrations/migration_vN.dart`:
+Create `server/lib/database/migrations/migration_vN.dart` (next version is V3):
 
 ```dart
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import '../migration.dart';
 
-class MigrationV2AddPlayerEmail extends Migration {
+class MigrationV3AddPlayerEmail extends Migration {
   @override
-  int get version => 2;
+  int get version => 3;
 
   @override
   String get description => 'Add email column to players';
@@ -68,11 +84,13 @@ Add it to the `migrations` list in `migration.dart`:
 ```dart
 import 'migrations/migration_v1.dart';
 import 'migrations/migration_v2.dart';
+import 'migrations/migration_v3.dart';
 
 class MigrationRunner {
   static final List<Migration> migrations = [
     MigrationV1Baseline(),
-    MigrationV2AddPlayerEmail(),  // <-- add at the end
+    MigrationV2FailedStats(),
+    MigrationV3AddPlayerEmail(),  // <-- add at the end
   ];
 ```
 
@@ -81,17 +99,18 @@ class MigrationRunner {
 Add tests in `server/test/migration_test.dart`:
 
 ```dart
-group('MigrationV2AddPlayerEmail', () {
-  test('has version 2', () {
-    expect(MigrationV2AddPlayerEmail().version, 2);
+group('MigrationV3AddPlayerEmail', () {
+  test('has version 3', () {
+    expect(MigrationV3AddPlayerEmail().version, 3);
   });
 
   test('adds email column to players', () {
-    // Run V1 first to create the tables.
+    // Run V1 + V2 first so the baseline schema exists.
     MigrationV1Baseline().migrate(db);
+    MigrationV2FailedStats().migrate(db);
 
-    // Run V2.
-    MigrationV2AddPlayerEmail().migrate(db);
+    // Run V3.
+    MigrationV3AddPlayerEmail().migrate(db);
 
     // Verify the column exists.
     db.execute(
