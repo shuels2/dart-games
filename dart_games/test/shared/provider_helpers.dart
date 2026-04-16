@@ -360,6 +360,59 @@ class ProviderHelpers {
   }
 
   // ==========================================================================
+  // CLOCKWORK QUEST HELPERS
+  // ==========================================================================
+
+  /// Get Clockwork Quest provider
+  static ClockworkQuestProvider getClockworkQuestProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<ClockworkQuestProvider>(context, listen: false);
+  }
+
+  /// Clockwork Quest: Get player current target
+  static int getClockworkQuestPlayerCurrentTarget(WidgetTester tester, String playerId) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getPlayerCurrentTarget(playerId);
+  }
+
+  /// Clockwork Quest: Get player laps completed
+  static int getClockworkQuestPlayerLapsCompleted(WidgetTester tester, String playerId) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getPlayerLapsCompleted(playerId);
+  }
+
+  /// Clockwork Quest: Check for winner
+  static bool clockworkQuestHasWinner(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Clockwork Quest: Get current player ID
+  static String? getClockworkQuestCurrentPlayerId(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getCurrentPlayerId();
+  }
+
+  /// Clockwork Quest: Check if game is active
+  static bool isClockworkQuestGameActive(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Clockwork Quest: Get current player darts thrown
+  static int getClockworkQuestCurrentPlayerDartsThrown(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getCurrentPlayerDartsThrown();
+  }
+
+  /// Clockwork Quest: Set player target programmatically (for tests)
+  static void setClockworkQuestPlayerTarget(WidgetTester tester, String playerId, int target) {
+    final provider = getClockworkQuestProvider(tester);
+    provider.currentGame!.currentTarget[playerId] = target;
+    provider.notifyListeners();
+  }
+
+  // ==========================================================================
   // PLAYER PROVIDER HELPERS
   // ==========================================================================
 
@@ -393,45 +446,6 @@ class ProviderHelpers {
     } catch (e) {
       return null;
     }
-  }
-
-  // ==========================================================================
-  // CLOCKWORK QUEST HELPERS
-  // ==========================================================================
-
-  static ClockworkQuestProvider getClockworkQuestProvider(WidgetTester tester) {
-    final context = getContext(tester);
-    return Provider.of<ClockworkQuestProvider>(context, listen: false);
-  }
-
-  static int getClockworkQuestPlayerCurrentTarget(WidgetTester tester, String playerId) {
-    return getClockworkQuestProvider(tester).getPlayerCurrentTarget(playerId);
-  }
-
-  static int getClockworkQuestPlayerLapsCompleted(WidgetTester tester, String playerId) {
-    return getClockworkQuestProvider(tester).getPlayerLapsCompleted(playerId);
-  }
-
-  static bool clockworkQuestHasWinner(WidgetTester tester) {
-    return getClockworkQuestProvider(tester).hasWinner;
-  }
-
-  static String? getClockworkQuestCurrentPlayerId(WidgetTester tester) {
-    return getClockworkQuestProvider(tester).getCurrentPlayerId();
-  }
-
-  static bool isClockworkQuestGameActive(WidgetTester tester) {
-    return getClockworkQuestProvider(tester).isGameActive;
-  }
-
-  static int getClockworkQuestCurrentPlayerDartsThrown(WidgetTester tester) {
-    return getClockworkQuestProvider(tester).getCurrentPlayerDartsThrown();
-  }
-
-  static void setClockworkQuestPlayerTarget(WidgetTester tester, String playerId, int target) {
-    final provider = getClockworkQuestProvider(tester);
-    provider.currentGame!.currentTarget[playerId] = target;
-    provider.notifyListeners();
   }
 
   // ==========================================================================
