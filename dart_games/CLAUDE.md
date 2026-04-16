@@ -71,10 +71,10 @@ Each game has its own unique visual identity while integrating with global syste
 # Flutter tests (1179 tests)
 flutter test
 
-# Server tests (156 tests)
+# Server tests (168 tests)
 cd server && dart test
 ```
-**Required:** 100% pass rate (1335 tests total)
+**Required:** 100% pass rate (1347 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -104,7 +104,7 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1665 tests**
+**Total: 1677 tests**
 - **Flutter Non-UI Tests:** 1179 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
@@ -125,15 +125,16 @@ flutter test test/screens/games/clockwork_quest/
   - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **Server Tests:** 156 tests (100% pass rate MANDATORY)
+- **Server Tests:** 168 tests (100% pass rate MANDATORY)
   - Database & helpers: 25
   - Model roundtrips: 32
-  - Migration runner & V1 baseline: 23
+  - Migration runner, V1 baseline & V2 failed_stats: 29
   - Settings routes: 9
   - Dartboard routes: 10
   - Player routes: 24
   - Saved game routes: 13
   - Victory music routes: 14
+  - Failed stats routes: 6
   - Test routes: 6
 
 - **UI Automation Tests:** 330 tests (optional, ask before running)
@@ -247,7 +248,7 @@ dart_games/
 │   │   ├── models/                 # Server-side models
 │   │   ├── routes/                 # REST API route handlers
 │   │   └── middleware/             # CORS and logging middleware
-│   └── test/                       # Server tests (156 tests)
+│   └── test/                       # Server tests (168 tests)
 │       └── routes/                 # Route-level tests
 ├── lib/                             # Flutter source code
 │   ├── main.dart

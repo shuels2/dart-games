@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/services/api/api_config.dart';
+import 'package:dart_games/services/victory_music_service.dart';
 import 'element_finders.dart';
 import 'pump_sequences.dart';
 
@@ -23,15 +24,49 @@ class SettingsHelpers {
   ///
   /// If running tests manually (not via run_ui_tests.bat), start the server first:
   ///   cd server && dart run bin/server.dart --data-dir ../ui_test_data
+  /// Verify the server is reachable.  Returns true if the health
+  /// endpoint responds with 200, false otherwise.
+  static Future<bool> _checkServerHealth() async {
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConfig.url('/api/v1/health/')),
+      ).timeout(const Duration(seconds: 3));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Wait for the server to be reachable, retrying up to [maxAttempts]
+  /// times with a 1-second pause between attempts.
+  static Future<void> _waitForServer({int maxAttempts = 10}) async {
+    for (var i = 1; i <= maxAttempts; i++) {
+      if (await _checkServerHealth()) return;
+      print('  Server health check attempt $i/$maxAttempts failed, retrying...');
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    throw Exception(
+      'Server at ${ApiConfig.baseUrl} did not become reachable '
+      'after $maxAttempts attempts',
+    );
+  }
+
   static Future<void> initializeSettings({
     bool useEmulator = true,
   }) async {
     try {
+      // ── Step 0: Verify server is reachable ──────────────────────────
+      await _waitForServer();
+
       final headers = {'Content-Type': 'application/json'};
 
-      // Atomically clear all user data in a single server-side transaction.
-      // This replaces separate DELETE /players + DELETE /games calls which
-      // could race with the app's data loading or fail independently.
+      // ── Step 1: Reset client-side singleton caches ──────────────────
+      // VictoryMusicService is a singleton that caches data in-memory.
+      // Without this reset, a subsequent test sees stale music files
+      // from the previous test.
+      VictoryMusicService().resetForTesting();
+
+      // ── Step 2: Atomically clear all server-side user data ──────────
       final resetResponse = await http.post(
         Uri.parse(ApiConfig.url('/api/v1/test/reset')),
       );
@@ -42,11 +77,11 @@ class SettingsHelpers {
         );
       }
 
-      // Verify the reset took effect by fetching players.  This serves two
-      // purposes: (1) confirms the database is actually empty, and (2)
-      // primes the browser's HTTP cache with the empty-list response so the
-      // app's subsequent GET /players won't receive a stale cached list
-      // from a previous test run.
+      // ── Step 3: Verify the reset took effect ────────────────────────
+      // Fetching players serves two purposes: (1) confirms the database
+      // is actually empty, and (2) primes the browser's HTTP cache with
+      // the empty-list response so the app's subsequent GET /players
+      // won't receive a stale cached list from a previous test run.
       final verifyResponse = await http.get(
         Uri.parse(ApiConfig.url('/api/v1/players')),
       );
@@ -64,7 +99,7 @@ class SettingsHelpers {
         );
       }
 
-      // Configure dartboard for emulator mode
+      // ── Step 4: Configure dartboard for emulator mode ───────────────
       final response = await http.put(
         Uri.parse(ApiConfig.url('/api/v1/dartboard')),
         headers: headers,
@@ -84,6 +119,7 @@ class SettingsHelpers {
           'Ensure the server is running: '
           'cd server && dart run bin/server.dart --data-dir ../ui_test_data');
       print('Error: $e');
+      rethrow;
     }
   }
 
@@ -108,7 +144,9 @@ class SettingsHelpers {
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
+          'id': player.id,
           'name': player.name,
+          'createdAt': player.createdAt.toIso8601String(),
         }),
       );
       if (response.statusCode != 200 && response.statusCode != 201) {

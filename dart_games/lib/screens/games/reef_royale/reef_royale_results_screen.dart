@@ -162,6 +162,9 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     }
 
     final allPlayers = playerProvider.allPlayers;
+    if (allPlayers.isEmpty) {
+      return const Scaffold(body: Center(child: Text('No player data')));
+    }
     final rankedIds = currentGame.getRankedPlayerIds();
     final winnerIds = currentGame.winnerIds ?? [];
     final winners = winnerIds.isEmpty
@@ -575,6 +578,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
         border: Border.all(color: _seafoamGreen.withOpacity(0.3)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: List.generate(rankedIds.length, (index) {
           final playerId = rankedIds[index];
           final player = allPlayers.firstWhere(

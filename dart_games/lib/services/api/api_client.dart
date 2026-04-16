@@ -258,6 +258,22 @@ class ApiClient {
   }
 
   // ---------------------------------------------------------------------------
+  // Failed Stats
+  // ---------------------------------------------------------------------------
+
+  /// GET /api/v1/stats/failed - List all failed stats entries.
+  Future<List<Map<String, dynamic>>> getFailedStats() async {
+    final response = await _get('/api/v1/stats/failed');
+    final list = jsonDecode(response.body) as List<dynamic>;
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  /// POST /api/v1/stats/failed - Log a failed stats update.
+  Future<void> logFailedStats(Map<String, dynamic> entry) async {
+    await _post('/api/v1/stats/failed', entry);
+  }
+
+  // ---------------------------------------------------------------------------
   // Health
   // ---------------------------------------------------------------------------
 

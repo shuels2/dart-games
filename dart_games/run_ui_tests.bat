@@ -88,7 +88,9 @@ echo Stopping any existing ChromeDriver, Chrome, and Backend Server instances...
 taskkill /F /IM chromedriver.exe >nul 2>&1
 taskkill /F /IM chrome.exe >nul 2>&1
 call :kill_server
+REM Clean up stale data from previous runs
 if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+for /d %%d in ("integration_test_output\test_data_*") do rmdir /S /Q "%%d" >nul 2>&1
 timeout /t 2 /nobreak >nul
 
 REM Verify chromedriver exists
@@ -213,7 +215,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -274,7 +276,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -335,7 +337,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -396,7 +398,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -457,7 +459,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -518,7 +520,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -574,7 +576,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -635,7 +637,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -696,7 +698,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -757,7 +759,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -818,7 +820,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -879,7 +881,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -940,7 +942,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1001,7 +1003,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1062,7 +1064,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1123,7 +1125,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1184,7 +1186,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1245,7 +1247,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1306,7 +1308,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1362,7 +1364,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1423,7 +1425,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1484,7 +1486,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1545,7 +1547,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1602,7 +1604,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1655,7 +1657,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1708,7 +1710,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1761,7 +1763,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1814,7 +1816,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1867,7 +1869,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1920,7 +1922,7 @@ if "!should_run!"=="1" (
 
     echo Starting ChromeDriver and Backend Server...
     call :kill_server
-    if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+    if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
     start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
     call :wait_for_server
@@ -1976,7 +1978,9 @@ echo.
 echo Stopping ChromeDriver and Backend Server...
 taskkill /F /IM chromedriver.exe >nul 2>&1
 call :kill_server
-if exist "ui_test_data" rmdir /S /Q "ui_test_data" >nul 2>&1
+REM Preserve last test's data for investigation
+set /a _last_test=!test_count!+1
+if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!_last_test!_final" >nul 2>&1
 echo ChromeDriver and Backend Server stopped
 echo.
 

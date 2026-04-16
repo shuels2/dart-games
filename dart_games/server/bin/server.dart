@@ -9,6 +9,7 @@ import 'package:dart_games_server/database/database.dart';
 import 'package:dart_games_server/middleware/cors_middleware.dart';
 import 'package:dart_games_server/middleware/logging_middleware.dart';
 import 'package:dart_games_server/routes/dartboard_routes.dart';
+import 'package:dart_games_server/routes/failed_stats_routes.dart';
 import 'package:dart_games_server/routes/health_routes.dart';
 import 'package:dart_games_server/routes/player_routes.dart';
 import 'package:dart_games_server/routes/saved_game_routes.dart';
@@ -47,6 +48,7 @@ void main(List<String> args) async {
   app.mount('/api/v1/players', PlayerRoutes(db, dataDir).router.call);
   app.mount('/api/v1/games', SavedGameRoutes(db).router.call);
   app.mount('/api/v1/music', VictoryMusicRoutes(db, dataDir).router.call);
+  app.mount('/api/v1/stats', FailedStatsRoutes(db).router.call);
   app.mount('/api/v1/test', TestRoutes(db, dataDir).router.call);
 
   // Apply middleware.

@@ -3,6 +3,7 @@ import 'package:test/test.dart';
 import 'package:dart_games_server/database/database.dart';
 import 'package:dart_games_server/database/migration.dart';
 import 'package:dart_games_server/database/migrations/migration_v1.dart';
+import 'package:dart_games_server/database/migrations/migration_v2.dart';
 
 /// A test migration that records whether it ran.
 class _TestMigration extends Migration {
@@ -304,7 +305,7 @@ void main() {
       });
 
       test('currentVersion reflects highest migration version', () {
-        expect(MigrationRunner.currentVersion, 1);
+        expect(MigrationRunner.currentVersion, 2);
       });
 
       test('currentVersion is 0 with no migrations', () {
@@ -426,6 +427,76 @@ void main() {
     });
   });
 
+  group('MigrationV2FailedStats', () {
+    late sqlite3.Database db;
+
+    setUp(() {
+      db = sqlite3.sqlite3.openInMemory();
+      db.execute('PRAGMA foreign_keys = ON;');
+      // Run V1 first so the baseline schema exists.
+      MigrationV1Baseline().migrate(db);
+    });
+
+    tearDown(() {
+      db.dispose();
+    });
+
+    test('has version 2', () {
+      expect(MigrationV2FailedStats().version, 2);
+    });
+
+    test('has a description', () {
+      expect(MigrationV2FailedStats().description, isNotEmpty);
+    });
+
+    test('creates failed_stats table', () {
+      MigrationV2FailedStats().migrate(db);
+
+      final tables = db.select(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='failed_stats';",
+      );
+      expect(tables.length, 1);
+    });
+
+    test('failed_stats table accepts full row', () {
+      MigrationV2FailedStats().migrate(db);
+
+      db.execute(
+        '''INSERT INTO failed_stats
+           (id, player_id, player_name, game_name, won, duration_ms,
+            dart_throws, turns, player_count, error_message, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);''',
+        [
+          'fs-1', 'p-1', 'Alice', 'Target Tag', 1, 120000,
+          42, 7, 3, 'ApiException(404)', '2026-04-16T00:00:00Z',
+        ],
+      );
+
+      final rows = db.select('SELECT * FROM failed_stats;');
+      expect(rows.length, 1);
+      expect(rows.first['player_id'], 'p-1');
+      expect(rows.first['player_name'], 'Alice');
+      expect(rows.first['game_name'], 'Target Tag');
+      expect(rows.first['error_message'], 'ApiException(404)');
+    });
+
+    test('failed_stats allows null optional fields', () {
+      MigrationV2FailedStats().migrate(db);
+
+      db.execute(
+        '''INSERT INTO failed_stats
+           (id, player_id, error_message, created_at)
+           VALUES (?, ?, ?, ?);''',
+        ['fs-2', 'p-2', 'not found', '2026-04-16T00:00:00Z'],
+      );
+
+      final rows = db.select('SELECT * FROM failed_stats;');
+      expect(rows.length, 1);
+      expect(rows.first['player_name'], isNull);
+      expect(rows.first['game_name'], isNull);
+    });
+  });
+
   group('Database integration', () {
     late Database database;
 
@@ -444,10 +515,10 @@ void main() {
       expect(tables.length, 1);
     });
 
-    test('schema version is 1 after initialization', () {
+    test('schema version is 2 after initialization', () {
       final result = database.rawDb.select('SELECT version FROM schema_version;');
       expect(result.length, 1);
-      expect(result.first['version'], 1);
+      expect(result.first['version'], 2);
     });
   });
 }

@@ -292,6 +292,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     final currentPlayerId = reefProvider.getCurrentPlayerId();
     if (currentPlayerId == null) return;
 
+    if (playerProvider.allPlayers.isEmpty) return;
     final player = playerProvider.allPlayers.firstWhere(
       (p) => p.id == currentPlayerId,
       orElse: () => playerProvider.allPlayers.first,
@@ -312,7 +313,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
     final allPlayers = playerProvider.allPlayers;
     final currentPlayerId = reefProvider.getCurrentPlayerId();
-    final currentPlayer = currentPlayerId != null
+    final currentPlayer = currentPlayerId != null && allPlayers.isNotEmpty
         ? allPlayers.firstWhere((p) => p.id == currentPlayerId, orElse: () => allPlayers.first)
         : null;
     final shouldPromptTakeout = reefProvider.shouldPromptTakeout;

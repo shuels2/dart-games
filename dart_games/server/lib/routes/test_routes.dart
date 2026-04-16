@@ -56,6 +56,9 @@ class TestRoutes {
         _db.execute('DELETE FROM victory_music;');
         final musicCount = _db.updatedRows;
 
+        _db.execute('DELETE FROM failed_stats;');
+        final failedStatsCount = _db.updatedRows;
+
         _db.execute('DELETE FROM players;');
         final playersCount = _db.updatedRows;
 
@@ -65,6 +68,11 @@ class TestRoutes {
         );
 
         _db.execute('COMMIT;');
+
+        // Force a WAL checkpoint so the on-disk database file is fully
+        // up-to-date. This prevents a subsequent read from seeing stale
+        // data from a pre-reset WAL frame.
+        _db.execute('PRAGMA wal_checkpoint(TRUNCATE);');
 
         // Delete photo files after the transaction succeeds.
         for (final path in photoPaths) {
@@ -82,6 +90,7 @@ class TestRoutes {
               'game_history': historyCount,
               'saved_games': savedGamesCount,
               'victory_music': musicCount,
+              'failed_stats': failedStatsCount,
               'photos': photoPaths.length,
             },
           }),
