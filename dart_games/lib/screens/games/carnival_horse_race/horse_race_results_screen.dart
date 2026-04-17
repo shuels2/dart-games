@@ -114,71 +114,87 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   }
 
   void _updatePlayerStats() async {
-    // Prevent duplicate stats updates
-    if (_statsUpdated) return;
-    _statsUpdated = true;
+    try {
+      // Prevent duplicate stats updates
+      if (_statsUpdated) return;
+      _statsUpdated = true;
 
-    final horseRaceProvider = context.read<HorseRaceProvider>();
-    final playerProvider = context.read<PlayerProvider>();
-    final currentGame = horseRaceProvider.currentGame;
+      final horseRaceProvider = context.read<HorseRaceProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final currentGame = horseRaceProvider.currentGame;
 
-    if (currentGame == null) return;
+      if (currentGame == null) return;
 
-    // Calculate game duration
-    final gameDuration = DateTime.now().difference(currentGame.startedAt);
+      // Calculate game duration
+      final gameDuration = DateTime.now().difference(currentGame.startedAt);
 
-    // Get player count
-    final playerCount = currentGame.getPlayerCount();
+      // Get player count
+      final playerCount = currentGame.getPlayerCount();
 
-    // Update stats for all players (both winners and losers get duration)
-    for (final playerId in currentGame.playerIds) {
-      final isWinner = playerId == currentGame.winnerId;
-      final dartThrows = currentGame.getTotalDartsThrown(playerId);
-      final turns = currentGame.getTotalTurns(playerId);
+      // Update stats for all players (both winners and losers get duration)
+      for (final playerId in currentGame.playerIds) {
+        if (!mounted) return;
+        final isWinner = playerId == currentGame.winnerId;
+        final dartThrows = currentGame.getTotalDartsThrown(playerId);
+        final turns = currentGame.getTotalTurns(playerId);
 
-      await playerProvider.updatePlayerStats(
-        playerId,
-        won: isWinner,
-        gameName: 'Carnival Derby',
-        gameDuration: gameDuration,
-        dartThrows: dartThrows,
-        turns: turns,
-        playerCount: playerCount,
-      );
-    }
+        await playerProvider.updatePlayerStats(
+          playerId,
+          won: isWinner,
+          gameName: 'Carnival Derby',
+          gameDuration: gameDuration,
+          dartThrows: dartThrows,
+          turns: turns,
+          playerCount: playerCount,
+        );
+      }
 
-    // Auto-delete saved game if this was a resumed game
-    final savedGameId = horseRaceProvider.resumedSavedGameId;
-    if (savedGameId != null) {
-      await SaveGameService().deleteSavedGame('carnival_derby', savedGameId);
-      horseRaceProvider.clearResumedSavedGameId();
+      if (!mounted) return;
+
+      // Auto-delete saved game if this was a resumed game
+      final savedGameId = horseRaceProvider.resumedSavedGameId;
+      if (savedGameId != null) {
+        await SaveGameService().deleteSavedGame('carnival_derby', savedGameId);
+        if (!mounted) return;
+        horseRaceProvider.clearResumedSavedGameId();
+      }
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
     }
   }
 
   void _announceGameCompletion() async {
-    // Initialize global announcement queue with Carnival Derby helper
-    final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings();
-    _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
+    try {
+      // Initialize global announcement queue with Carnival Derby helper
+      final globalQueue = GameAnnouncementQueueService();
+      await globalQueue.loadSettings();
+      if (!mounted) return;
+      _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
 
-    final horseRaceProvider = context.read<HorseRaceProvider>();
-    final playerProvider = context.read<PlayerProvider>();
+      final horseRaceProvider = context.read<HorseRaceProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final currentGame = horseRaceProvider.currentGame;
 
-    final players = horseRaceProvider.currentGame!.playerIds
-        .map((id) => playerProvider.getPlayerById(id))
-        .whereType<Player>()
-        .toList();
+      if (currentGame == null) return;
 
-    final winner = horseRaceProvider.getWinner(players);
+      final players = currentGame.playerIds
+          .map((id) => playerProvider.getPlayerById(id))
+          .whereType<Player>()
+          .toList();
 
-    if (winner != null) {
-      // Announce game completion first
-      _audioQueue?.announceGameComplete();
+      final winner = horseRaceProvider.getWinner(players);
 
-      // Then announce the winner after a delay (longer to ensure first announcement finishes)
-      Future.delayed(const Duration(milliseconds: 3000), () {
-        _audioQueue?.announceWinner(winner.name);
-      });
+      if (winner != null) {
+        // Announce game completion first
+        _audioQueue?.announceGameComplete();
+
+        // Then announce the winner after a delay (longer to ensure first announcement finishes)
+        Future.delayed(const Duration(milliseconds: 3000), () {
+          if (mounted) _audioQueue?.announceWinner(winner.name);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error announcing game completion: $e');
     }
   }
 

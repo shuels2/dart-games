@@ -125,41 +125,49 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
   }
 
   void _updatePlayerStats() async {
-    if (_statsUpdated) return;
-    _statsUpdated = true;
+    try {
+      if (_statsUpdated) return;
+      _statsUpdated = true;
 
-    final monsterMashProvider = context.read<MonsterMashProvider>();
-    final playerProvider = context.read<PlayerProvider>();
-    final currentGame = monsterMashProvider.currentGame;
+      final monsterMashProvider = context.read<MonsterMashProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final currentGame = monsterMashProvider.currentGame;
 
-    if (currentGame == null) return;
+      if (currentGame == null) return;
 
-    final gameDuration = DateTime.now().difference(currentGame.startedAt);
-    final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
-    final winnerIds = winners.map((p) => p.id).toSet();
-    final playerCount = currentGame.getPlayerCount();
+      final gameDuration = DateTime.now().difference(currentGame.startedAt);
+      final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
+      final winnerIds = winners.map((p) => p.id).toSet();
+      final playerCount = currentGame.getPlayerCount();
 
-    for (final playerId in currentGame.playerIds) {
-      final isWinner = winnerIds.contains(playerId);
-      final dartThrows = currentGame.getTotalDartsThrown(playerId);
-      final turns = currentGame.getTotalTurns(playerId);
+      for (final playerId in currentGame.playerIds) {
+        if (!mounted) return;
+        final isWinner = winnerIds.contains(playerId);
+        final dartThrows = currentGame.getTotalDartsThrown(playerId);
+        final turns = currentGame.getTotalTurns(playerId);
 
-      await playerProvider.updatePlayerStats(
-        playerId,
-        won: isWinner,
-        gameName: 'Monster Mash',
-        gameDuration: gameDuration,
-        dartThrows: dartThrows,
-        turns: turns,
-        playerCount: playerCount,
-      );
-    }
+        await playerProvider.updatePlayerStats(
+          playerId,
+          won: isWinner,
+          gameName: 'Monster Mash',
+          gameDuration: gameDuration,
+          dartThrows: dartThrows,
+          turns: turns,
+          playerCount: playerCount,
+        );
+      }
 
-    // Auto-delete saved game if this was a resumed game
-    final savedGameId = monsterMashProvider.resumedSavedGameId;
-    if (savedGameId != null) {
-      await SaveGameService().deleteSavedGame('monster_mash', savedGameId);
-      monsterMashProvider.clearResumedSavedGameId();
+      if (!mounted) return;
+
+      // Auto-delete saved game if this was a resumed game
+      final savedGameId = monsterMashProvider.resumedSavedGameId;
+      if (savedGameId != null) {
+        await SaveGameService().deleteSavedGame('monster_mash', savedGameId);
+        if (!mounted) return;
+        monsterMashProvider.clearResumedSavedGameId();
+      }
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
     }
   }
 

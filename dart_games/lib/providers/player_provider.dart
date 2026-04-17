@@ -307,9 +307,10 @@ class PlayerProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      _error = 'Failed to update player stats: $e';
-      print(_error);
-      notifyListeners();
+      // Log only — this runs as fire-and-forget from results screens,
+      // so setting _error and calling notifyListeners() can cascade-throw
+      // if the provider or listening widgets have been disposed.
+      print('Failed to update player stats: $e');
     }
   }
 

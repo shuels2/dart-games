@@ -90,48 +90,56 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
   }
 
   void _updatePlayerStats() async {
-    // Prevent duplicate stats updates
-    if (_statsUpdated) return;
-    _statsUpdated = true;
+    try {
+      // Prevent duplicate stats updates
+      if (_statsUpdated) return;
+      _statsUpdated = true;
 
-    final targetTagProvider = context.read<TargetTagProvider>();
-    final playerProvider = context.read<PlayerProvider>();
-    final currentGame = targetTagProvider.currentGame;
+      final targetTagProvider = context.read<TargetTagProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final currentGame = targetTagProvider.currentGame;
 
-    if (currentGame == null) return;
+      if (currentGame == null) return;
 
-    // Calculate game duration
-    final gameDuration = DateTime.now().difference(currentGame.startedAt);
+      // Calculate game duration
+      final gameDuration = DateTime.now().difference(currentGame.startedAt);
 
-    // Get winners
-    final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
-    final winnerIds = winners.map((p) => p.id).toSet();
+      // Get winners
+      final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
+      final winnerIds = winners.map((p) => p.id).toSet();
 
-    // Get player count
-    final playerCount = currentGame.getPlayerCount();
+      // Get player count
+      final playerCount = currentGame.getPlayerCount();
 
-    // Update stats for all players (both winners and losers get duration)
-    for (final playerId in currentGame.playerIds) {
-      final isWinner = winnerIds.contains(playerId);
-      final dartThrows = currentGame.getTotalDartsThrown(playerId);
-      final turns = currentGame.getTotalTurns(playerId);
+      // Update stats for all players (both winners and losers get duration)
+      for (final playerId in currentGame.playerIds) {
+        if (!mounted) return;
+        final isWinner = winnerIds.contains(playerId);
+        final dartThrows = currentGame.getTotalDartsThrown(playerId);
+        final turns = currentGame.getTotalTurns(playerId);
 
-      await playerProvider.updatePlayerStats(
-        playerId,
-        won: isWinner,
-        gameName: 'Target Tag',
-        gameDuration: gameDuration,
-        dartThrows: dartThrows,
-        turns: turns,
-        playerCount: playerCount,
-      );
-    }
+        await playerProvider.updatePlayerStats(
+          playerId,
+          won: isWinner,
+          gameName: 'Target Tag',
+          gameDuration: gameDuration,
+          dartThrows: dartThrows,
+          turns: turns,
+          playerCount: playerCount,
+        );
+      }
 
-    // Auto-delete saved game if this was a resumed game
-    final savedGameId = targetTagProvider.resumedSavedGameId;
-    if (savedGameId != null) {
-      await SaveGameService().deleteSavedGame('target_tag', savedGameId);
-      targetTagProvider.clearResumedSavedGameId();
+      if (!mounted) return;
+
+      // Auto-delete saved game if this was a resumed game
+      final savedGameId = targetTagProvider.resumedSavedGameId;
+      if (savedGameId != null) {
+        await SaveGameService().deleteSavedGame('target_tag', savedGameId);
+        if (!mounted) return;
+        targetTagProvider.clearResumedSavedGameId();
+      }
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
     }
   }
 

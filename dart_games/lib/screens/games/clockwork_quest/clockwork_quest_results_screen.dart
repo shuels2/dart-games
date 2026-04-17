@@ -35,13 +35,18 @@ class _ClockworkQuestResultsScreenState
   }
 
   Future<void> _autoDeleteSavedGame() async {
-    if (!mounted) return;
-    final clockworkProvider =
-        Provider.of<ClockworkQuestProvider>(context, listen: false);
-    final savedGameId = clockworkProvider.resumedSavedGameId;
-    if (savedGameId != null) {
-      await SaveGameService().deleteSavedGame('clockwork_quest', savedGameId);
-      clockworkProvider.clearResumedSavedGameId();
+    try {
+      if (!mounted) return;
+      final clockworkProvider =
+          Provider.of<ClockworkQuestProvider>(context, listen: false);
+      final savedGameId = clockworkProvider.resumedSavedGameId;
+      if (savedGameId != null) {
+        await SaveGameService().deleteSavedGame('clockwork_quest', savedGameId);
+        if (!mounted) return;
+        clockworkProvider.clearResumedSavedGameId();
+      }
+    } catch (e) {
+      debugPrint('Error auto-deleting saved game: $e');
     }
   }
 

@@ -30,10 +30,19 @@ class GameAnnouncementQueueService {
   final AudioPlayer _soundEffectPlayer = AudioPlayer();
   bool _isSpeaking = false;
   bool _isProcessing = false;
+  bool _disposed = false;
 
   // Load announcer settings from API via AppSettings
   Future<void> loadSettings() async {
     try {
+      // Check if voice is enabled
+      final voiceEnabled = await AppSettings.getVoiceEnabled();
+      if (!voiceEnabled) {
+        _announcer.setEnabled(false);
+        debugPrint('Game announcement queue disabled (voice_enabled=false)');
+        return;
+      }
+
       // Load voice engine
       final engineStr = await AppSettings.getVoiceEngine() ?? 'responsiveVoice';
       final voiceEngine = VoiceEngine.values.firstWhere(
@@ -71,7 +80,7 @@ class GameAnnouncementQueueService {
 
   // Add announcement to queue with priority and optional sound effect
   void announce(String text, AudioPriority priority, {SoundEffectConfig? soundEffect}) {
-    if (text.isEmpty) return;
+    if (text.isEmpty || _disposed || !_announcer.enabled) return;
 
     final announcement = QueuedAnnouncement(
       text: text,
@@ -93,67 +102,76 @@ class GameAnnouncementQueueService {
     if (_isProcessing) return;
     _isProcessing = true;
 
-    while (_queue.isNotEmpty) {
-      // Wait if currently speaking
-      while (_isSpeaking) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-
-      // Sort queue by priority (high to low), then by timestamp (FIFO)
-      final sortedQueue = _queue.toList()
-        ..sort((a, b) {
-          final priorityCompare = b.priority.value.compareTo(a.priority.value);
-          if (priorityCompare != 0) return priorityCompare;
-          return a.queuedAt.compareTo(b.queuedAt);
-        });
-
-      // Get highest priority item
-      final announcement = sortedQueue.first;
-      _queue.remove(announcement);
-
-      // Speak the announcement and play sound effect simultaneously
-      _isSpeaking = true;
-      debugPrint('Speaking (${announcement.priority.name}): ${announcement.text}');
-
-      // Play sound effect if provided
-      if (announcement.soundEffect != null) {
-        try {
-          final sfx = announcement.soundEffect!;
-          await _soundEffectPlayer.stop(); // Stop any previous sound effect
-
-          // Set release mode to stop (don't loop or release)
-          await _soundEffectPlayer.setReleaseMode(ReleaseMode.stop);
-
-          // Play from start position
-          await _soundEffectPlayer.play(
-            AssetSource(sfx.assetPath),
-            position: Duration(milliseconds: (sfx.startSeconds * 1000).toInt()),
-          );
-
-          debugPrint('Playing sound effect: ${sfx.assetPath} (start: ${sfx.startSeconds}s, end: ${sfx.endSeconds != null ? "${sfx.endSeconds}s" : "end of file"})');
-
-          // If there's an end time, schedule stopping the audio
-          if (sfx.endSeconds != null) {
-            final duration = sfx.endSeconds! - sfx.startSeconds;
-            Future.delayed(Duration(milliseconds: (duration * 1000).toInt()), () {
-              _soundEffectPlayer.stop();
-            });
-          }
-        } catch (e) {
-          debugPrint('Error playing sound effect: $e');
+    try {
+      while (_queue.isNotEmpty && !_disposed) {
+        // Wait if currently speaking
+        while (_isSpeaking && !_disposed) {
+          await Future.delayed(const Duration(milliseconds: 100));
         }
+        if (_disposed) break;
+
+        // Sort queue by priority (high to low), then by timestamp (FIFO)
+        final sortedQueue = _queue.toList()
+          ..sort((a, b) {
+            final priorityCompare = b.priority.value.compareTo(a.priority.value);
+            if (priorityCompare != 0) return priorityCompare;
+            return a.queuedAt.compareTo(b.queuedAt);
+          });
+
+        // Get highest priority item
+        final announcement = sortedQueue.first;
+        _queue.remove(announcement);
+
+        // Speak the announcement and play sound effect simultaneously
+        _isSpeaking = true;
+        debugPrint('Speaking (${announcement.priority.name}): ${announcement.text}');
+
+        // Play sound effect if provided
+        if (announcement.soundEffect != null && !_disposed) {
+          try {
+            final sfx = announcement.soundEffect!;
+            await _soundEffectPlayer.stop(); // Stop any previous sound effect
+
+            // Set release mode to stop (don't loop or release)
+            await _soundEffectPlayer.setReleaseMode(ReleaseMode.stop);
+
+            // Play from start position
+            await _soundEffectPlayer.play(
+              AssetSource(sfx.assetPath),
+              position: Duration(milliseconds: (sfx.startSeconds * 1000).toInt()),
+            );
+
+            debugPrint('Playing sound effect: ${sfx.assetPath} (start: ${sfx.startSeconds}s, end: ${sfx.endSeconds != null ? "${sfx.endSeconds}s" : "end of file"})');
+
+            // If there's an end time, schedule stopping the audio
+            if (sfx.endSeconds != null && !_disposed) {
+              final duration = sfx.endSeconds! - sfx.startSeconds;
+              Future.delayed(Duration(milliseconds: (duration * 1000).toInt()), () {
+                if (!_disposed) _soundEffectPlayer.stop();
+              });
+            }
+          } catch (e) {
+            debugPrint('Error playing sound effect: $e');
+          }
+        }
+
+        if (_disposed) break;
+
+        // Speak the announcement (happens simultaneously with sound effect)
+        await _announcer.speak(announcement.text);
+
+        if (_disposed) break;
+
+        // Wait for speech to complete with generous buffer
+        // Speech takes approximately 500ms per word + extra time for pauses
+        final wordCount = announcement.text.split(' ').length;
+        final estimatedDuration = Duration(milliseconds: wordCount * 500 + 1500);
+        await Future.delayed(estimatedDuration);
+
+        _isSpeaking = false;
       }
-
-      // Speak the announcement (happens simultaneously with sound effect)
-      await _announcer.speak(announcement.text);
-
-      // Wait for speech to complete with generous buffer
-      // Speech takes approximately 500ms per word + extra time for pauses
-      final wordCount = announcement.text.split(' ').length;
-      final estimatedDuration = Duration(milliseconds: wordCount * 500 + 1500);
-      await Future.delayed(estimatedDuration);
-
-      _isSpeaking = false;
+    } catch (e) {
+      debugPrint('Announcement queue processing stopped: $e');
     }
 
     _isProcessing = false;
@@ -171,6 +189,7 @@ class GameAnnouncementQueueService {
 
   // Dispose resources
   void dispose() {
+    _disposed = true;
     _queue.clear();
     _isSpeaking = false;
     _isProcessing = false;

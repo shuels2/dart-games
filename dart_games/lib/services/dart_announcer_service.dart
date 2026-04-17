@@ -148,6 +148,9 @@ class DartAnnouncerService {
     _updateVoiceSettings();
   }
 
+  /// Whether announcements are enabled
+  bool get enabled => _enabled;
+
   /// Enable or disable announcements
   void setEnabled(bool enabled) {
     _enabled = enabled;

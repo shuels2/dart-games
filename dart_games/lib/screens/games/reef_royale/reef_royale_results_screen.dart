@@ -92,40 +92,48 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
   }
 
   void _updatePlayerStats() async {
-    if (_statsUpdated) return;
-    _statsUpdated = true;
+    try {
+      if (_statsUpdated) return;
+      _statsUpdated = true;
 
-    final reefProvider = context.read<ReefRoyaleProvider>();
-    final playerProvider = context.read<PlayerProvider>();
-    final currentGame = reefProvider.currentGame;
+      final reefProvider = context.read<ReefRoyaleProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final currentGame = reefProvider.currentGame;
 
-    if (currentGame == null) return;
+      if (currentGame == null) return;
 
-    final gameDuration = DateTime.now().difference(currentGame.startedAt);
-    final winnerIds = currentGame.winnerIds ?? [];
-    final playerCount = currentGame.getPlayerCount();
+      final gameDuration = DateTime.now().difference(currentGame.startedAt);
+      final winnerIds = currentGame.winnerIds ?? [];
+      final playerCount = currentGame.getPlayerCount();
 
-    for (final playerId in currentGame.playerIds) {
-      final isWinner = winnerIds.contains(playerId);
-      final dartThrows = currentGame.totalDartsThrown[playerId] ?? 0;
-      final turns = currentGame.totalTurns[playerId] ?? 0;
+      for (final playerId in currentGame.playerIds) {
+        if (!mounted) return;
+        final isWinner = winnerIds.contains(playerId);
+        final dartThrows = currentGame.totalDartsThrown[playerId] ?? 0;
+        final turns = currentGame.totalTurns[playerId] ?? 0;
 
-      await playerProvider.updatePlayerStats(
-        playerId,
-        won: isWinner,
-        gameName: 'Reef Royale',
-        gameDuration: gameDuration,
-        dartThrows: dartThrows,
-        turns: turns,
-        playerCount: playerCount,
-      );
-    }
+        await playerProvider.updatePlayerStats(
+          playerId,
+          won: isWinner,
+          gameName: 'Reef Royale',
+          gameDuration: gameDuration,
+          dartThrows: dartThrows,
+          turns: turns,
+          playerCount: playerCount,
+        );
+      }
 
-    // Auto-delete saved game if this was a resumed game
-    final savedGameId = reefProvider.resumedSavedGameId;
-    if (savedGameId != null) {
-      await SaveGameService().deleteSavedGame('reef_royale', savedGameId);
-      reefProvider.clearResumedSavedGameId();
+      if (!mounted) return;
+
+      // Auto-delete saved game if this was a resumed game
+      final savedGameId = reefProvider.resumedSavedGameId;
+      if (savedGameId != null) {
+        await SaveGameService().deleteSavedGame('reef_royale', savedGameId);
+        if (!mounted) return;
+        reefProvider.clearResumedSavedGameId();
+      }
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
     }
   }
 
