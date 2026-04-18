@@ -13,6 +13,26 @@ import 'settings_helpers.dart';
 /// All operations use widget keys for reliable element finding.
 class UITestHelpers {
   // ==========================================================================
+  // STATE RESET HELPERS
+  // ==========================================================================
+
+  /// Reset server + client state between tests.
+  ///
+  /// Call this from `setUp()` in every UI test file so each `testWidgets`
+  /// starts with a clean database (no leftover players, saved games,
+  /// game history, or victory music from a prior test).
+  ///
+  /// Without this, tests that depend on empty-state UI (e.g. the "NEW
+  /// PLAYER" button, or the resume modal) fail because earlier tests in
+  /// the same file leaked state.
+  ///
+  /// This is a thin wrapper over [SettingsHelpers.initializeSettings] that
+  /// makes the intent explicit in test files' `setUp`.
+  static Future<void> resetServerState({bool useEmulator = true}) async {
+    await SettingsHelpers.initializeSettings(useEmulator: useEmulator);
+  }
+
+  // ==========================================================================
   // NAVIGATION HELPERS
   // ==========================================================================
 

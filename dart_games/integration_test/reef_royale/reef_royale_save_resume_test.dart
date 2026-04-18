@@ -7,7 +7,6 @@ import 'package:dart_games/services/save_game_service.dart';
 
 import '../shared/ui_test_helpers.dart';
 import '../shared/element_finders.dart';
-import '../shared/settings_helpers.dart';
 import '../shared/game_ui_config.dart';
 import '../shared/provider_helpers.dart';
 import '../shared/pump_sequences.dart';
@@ -177,6 +176,10 @@ void main() {
   // ==================== SAVE GAME MODAL TESTS ====================
 
   group('Save Game Modal', () {
+    setUp(() async {
+      await UITestHelpers.resetServerState();
+    });
+
     testWidgets('back button with 0 darts navigates without save modal',
         (tester) async {
       await navigateToGameScreen(tester);
@@ -226,9 +229,12 @@ void main() {
   // ==================== RESUME GAME MODAL TESTS ====================
 
   group('Resume Game Modal', () {
+    setUp(() async {
+      await UITestHelpers.resetServerState();
+    });
+
     testWidgets('tapping game with saved games shows resume modal',
         (tester) async {
-      await SettingsHelpers.initializeSettings();
       await preSaveGame();
 
       await UITestHelpers.navigateToHomeScreen(tester);
@@ -293,7 +299,6 @@ void main() {
     });
 
     testWidgets('Start New Game dismisses modal and shows menu', (tester) async {
-      await SettingsHelpers.initializeSettings();
       await preSaveGame();
 
       await UITestHelpers.navigateToHomeScreen(tester);
@@ -307,7 +312,6 @@ void main() {
     });
 
     testWidgets('delete individual saved game removes it', (tester) async {
-      await SettingsHelpers.initializeSettings();
       final ids = await preSaveTwoGames();
 
       await UITestHelpers.navigateToHomeScreen(tester);
@@ -329,7 +333,6 @@ void main() {
     });
 
     testWidgets('delete all saved games shows empty state', (tester) async {
-      await SettingsHelpers.initializeSettings();
       await preSaveTwoGames();
 
       await UITestHelpers.navigateToHomeScreen(tester);
@@ -462,6 +465,10 @@ void main() {
   // ==================== RESUME GAME BUTTON TESTS ====================
 
   group('Resume Game Button', () {
+    setUp(() async {
+      await UITestHelpers.resetServerState();
+    });
+
     testWidgets('button is disabled when no saved games exist', (tester) async {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
