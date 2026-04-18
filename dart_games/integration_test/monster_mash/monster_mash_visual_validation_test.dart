@@ -89,7 +89,7 @@ void main() {
 
   group('Monster Mash - Visual Validation Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Health bar color gradient thresholds - Full health = green, ~70% = yellow shift, ~30% = red shift via provider healthPercentage', (WidgetTester tester) async {

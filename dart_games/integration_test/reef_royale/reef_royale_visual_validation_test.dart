@@ -101,7 +101,7 @@ void main() {
 
   group('Reef Royale - Visual Validation Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     tearDown(() async {

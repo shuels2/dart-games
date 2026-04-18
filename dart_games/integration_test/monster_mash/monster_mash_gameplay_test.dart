@@ -144,7 +144,7 @@ void main() {
 
   group('Monster Mash - Core Gameplay Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Healing - hit own number - Throw single at own target -> healAmount=1, health increases', (WidgetTester tester) async {
@@ -801,7 +801,7 @@ void main() {
 
   group('Monster Mash - Buff Effect Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 17: Buff - Blood Moon doubles attack damage - Set activeBuff = bloodMoon, throw single -> verify damage = 2', (WidgetTester tester) async {

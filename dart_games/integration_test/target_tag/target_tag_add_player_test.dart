@@ -37,7 +37,7 @@ void main() {
   group('Target Tag - Add Player Dialog Integration Tests', () {
     setUp(() async {
       // Initialize settings with emulator mode
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Navigation and Initial Player Setup - Validates app launch, game navigation, and basic player addition workflow with two players', (WidgetTester tester) async {

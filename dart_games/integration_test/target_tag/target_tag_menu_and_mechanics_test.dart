@@ -148,7 +148,7 @@ void main() {
 
   group('Target Tag - Menu & Game Mechanics Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // ==========================================================================

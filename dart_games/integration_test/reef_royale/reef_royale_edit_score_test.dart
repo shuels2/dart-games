@@ -75,7 +75,7 @@ void main() {
 
   group('Reef Royale - Edit Score Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     tearDown(() async {

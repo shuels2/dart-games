@@ -22,7 +22,7 @@ void main() {
 
   group('Reef Royale - Add Player Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Add player via dialog shows player in list',

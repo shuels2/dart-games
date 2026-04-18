@@ -127,7 +127,7 @@ void main() {
 
   group('Monster Mash - Results Screen Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Results content - single winner - Winner name via key, all 3 action buttons visible', (WidgetTester tester) async {

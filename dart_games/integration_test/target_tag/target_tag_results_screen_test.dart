@@ -301,7 +301,7 @@ void main() {
   group('Target Tag - Results Screen Tests', () {
     setUp(() async {
       // Initialize settings with emulator mode
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 1: Results Screen Content - Solo Mode Victory Display
