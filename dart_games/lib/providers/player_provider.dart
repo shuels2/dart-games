@@ -126,6 +126,13 @@ class PlayerProvider extends ChangeNotifier {
             'name': player.name,
             'createdAt': player.createdAt.toIso8601String(),
           });
+          // A concurrent loadPlayers() may have replaced _allPlayers while
+          // the API call was in flight, clobbering the optimistic add.
+          // Re-add if the player is no longer present.
+          if (!_allPlayers.any((p) => p.id == player.id)) {
+            _allPlayers.add(player);
+            notifyListeners();
+          }
         } catch (e) {
           // Roll back the optimistic add on server failure
           _allPlayers.removeWhere((p) => p.id == player.id);

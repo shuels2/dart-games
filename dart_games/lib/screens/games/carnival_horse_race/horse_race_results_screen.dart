@@ -83,21 +83,23 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
       await _audioPlayer.setVolume(0.7);
 
       if (customMusicSource != null && customMusicSource.isNotEmpty) {
-        // Check if it's a data URL (from web file picker) or a file path
         if (customMusicSource.startsWith('data:')) {
-          // Play from data URL (web)
-          await _audioPlayer.play(UrlSource(customMusicSource));
-          debugPrint('Playing random custom victory music from data URL');
+          await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => debugPrint('Audio playback timed out'),
+          );
         } else {
-          // Play from file path (native platforms)
-          await _audioPlayer.play(DeviceFileSource(customMusicSource));
-          debugPrint('Playing random custom victory music: $customMusicSource');
+          await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => debugPrint('Audio playback timed out'),
+          );
         }
       } else {
-        // Play default victory fanfare
         await _audioPlayer.play(UrlSource(
-            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'));
-        debugPrint('Playing default victory music');
+            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3')).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => debugPrint('Audio playback timed out'),
+        );
       }
     } catch (e) {
       debugPrint('Error playing victory music: $e');

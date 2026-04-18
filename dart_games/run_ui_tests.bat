@@ -167,6 +167,16 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr "LISTENING" ^| findstr ":8080
 exit /b
 
 REM ============================================================
+REM Helper function to kill all services (chromedriver + chrome + server)
+REM ============================================================
+:kill_services
+taskkill /F /IM chromedriver.exe >nul 2>&1
+taskkill /F /IM chrome.exe >nul 2>&1
+call :kill_server
+timeout /t 2 /nobreak >nul
+exit /b
+
+REM ============================================================
 REM Helper function to wait for backend server to be ready
 REM ============================================================
 REM Polls the health endpoint up to 15 times (1 second apart).
@@ -186,6 +196,58 @@ if !errorlevel! equ 0 (
 )
 timeout /t 1 /nobreak >nul
 goto :wait_for_server_loop
+
+REM ============================================================
+REM Helper function to wait for ChromeDriver to be ready
+REM ============================================================
+REM Polls the /status endpoint up to 10 times (1 second apart).
+REM Exits /b 0 on success, /b 1 on timeout.
+:wait_for_chromedriver
+set "_wfc_count=0"
+:wait_for_chromedriver_loop
+set /a _wfc_count+=1
+if !_wfc_count! gtr 10 (
+    echo   ERROR: ChromeDriver did not start in time.
+    exit /b 1
+)
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:4444/status' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>&1
+if !errorlevel! equ 0 (
+    echo   ChromeDriver is ready.
+    exit /b 0
+)
+timeout /t 1 /nobreak >nul
+goto :wait_for_chromedriver_loop
+
+REM ============================================================
+REM Helper function to start services with retry
+REM ============================================================
+REM Starts chromedriver and server. If either fails health check,
+REM kills both and retries (up to 3 attempts).
+:start_services
+set "_ss_attempt=0"
+:start_services_loop
+set /a _ss_attempt+=1
+if !_ss_attempt! gtr 3 (
+    echo   ERROR: Failed to start services after 3 attempts.
+    exit /b 1
+)
+if !_ss_attempt! gtr 1 (
+    echo   Retry attempt !_ss_attempt!/3...
+    call :kill_services
+)
+start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
+start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
+call :wait_for_chromedriver
+if !errorlevel! neq 0 (
+    echo   ChromeDriver failed to start, retrying...
+    goto :start_services_loop
+)
+call :wait_for_server
+if !errorlevel! neq 0 (
+    echo   Backend server failed to start, retrying...
+    goto :start_services_loop
+)
+exit /b 0
 
 :start_tests
 REM ----------------------------------------------------------
@@ -214,11 +276,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\01_target_tag_menu_and_mechanics.log
     set _TARGET=integration_test/target_tag/target_tag_menu_and_mechanics_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -243,9 +302,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -275,11 +332,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\02_target_tag_visual_validation.log
     set _TARGET=integration_test/target_tag/target_tag_visual_validation_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -304,9 +358,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -336,11 +388,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\03_target_tag_gameplay.log
     set _TARGET=integration_test/target_tag/target_tag_gameplay_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -365,9 +414,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -397,11 +444,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\04_target_tag_add_player.log
     set _TARGET=integration_test/target_tag/target_tag_add_player_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -426,9 +470,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -458,11 +500,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\05_target_tag_results_screen.log
     set _TARGET=integration_test/target_tag/target_tag_results_screen_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -487,9 +526,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -519,11 +556,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\06_carnival_derby_ui.log
     set _TARGET=integration_test/carnival_derby/carnival_derby_ui_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -575,11 +609,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\07_monster_mash_add_player.log
     set _TARGET=integration_test/monster_mash/monster_mash_add_player_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -604,9 +635,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -636,11 +665,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\08_monster_mash_menu_and_settings.log
     set _TARGET=integration_test/monster_mash/monster_mash_menu_and_settings_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -665,9 +691,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -697,11 +721,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\09_monster_mash_gameplay.log
     set _TARGET=integration_test/monster_mash/monster_mash_gameplay_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -726,9 +747,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -758,11 +777,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\10_monster_mash_edit_score.log
     set _TARGET=integration_test/monster_mash/monster_mash_edit_score_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -787,9 +803,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -819,11 +833,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\11_monster_mash_results_screen.log
     set _TARGET=integration_test/monster_mash/monster_mash_results_screen_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -848,9 +859,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -880,11 +889,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\12_monster_mash_visual_validation.log
     set _TARGET=integration_test/monster_mash/monster_mash_visual_validation_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -909,9 +915,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -941,11 +945,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\13_reef_royale_add_player.log
     set _TARGET=integration_test/reef_royale/reef_royale_add_player_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -970,9 +971,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -1002,11 +1001,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\14_reef_royale_menu_and_settings.log
     set _TARGET=integration_test/reef_royale/reef_royale_menu_and_settings_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1031,9 +1027,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -1063,11 +1057,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\15_reef_royale_gameplay.log
     set _TARGET=integration_test/reef_royale/reef_royale_gameplay_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1092,9 +1083,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -1124,11 +1113,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\16_reef_royale_edit_score.log
     set _TARGET=integration_test/reef_royale/reef_royale_edit_score_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1153,9 +1139,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -1185,11 +1169,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\17_reef_royale_results_screen.log
     set _TARGET=integration_test/reef_royale/reef_royale_results_screen_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1214,9 +1195,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -1246,11 +1225,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\18_reef_royale_visual_validation.log
     set _TARGET=integration_test/reef_royale/reef_royale_visual_validation_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1275,9 +1251,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -1307,11 +1281,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\19_reef_royale_showcase.log
     set _TARGET=integration_test/reef_royale/reef_royale_showcase_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1363,11 +1334,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\20_carnival_derby_save_resume.log
     set _TARGET=integration_test/carnival_derby/carnival_derby_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1392,9 +1360,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -1424,11 +1390,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\21_target_tag_save_resume.log
     set _TARGET=integration_test/target_tag/target_tag_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1453,9 +1416,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -1485,11 +1446,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\22_monster_mash_save_resume.log
     set _TARGET=integration_test/monster_mash/monster_mash_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1514,9 +1472,7 @@ if "!should_run!"=="1" (
     echo. >> integration_test_output\summary.txt
     echo.
     echo Restarting ChromeDriver and Backend Server for next test...
-    taskkill /F /IM chromedriver.exe >nul 2>&1
-    call :kill_server
-    timeout /t 3 /nobreak >nul
+    call :kill_services
     echo.
 )
 
@@ -1546,11 +1502,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\23_reef_royale_save_resume.log
     set _TARGET=integration_test/reef_royale/reef_royale_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1603,11 +1556,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\24_clockwork_quest_add_player.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_add_player_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1656,11 +1606,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\25_clockwork_quest_menu_and_settings.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_menu_and_settings_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1709,11 +1656,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\26_clockwork_quest_gameplay.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_gameplay_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1762,11 +1706,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\27_clockwork_quest_edit_score.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_edit_score_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1815,11 +1756,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\28_clockwork_quest_results.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_results_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1868,11 +1806,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\29_clockwork_quest_save_resume.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_save_resume_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1921,11 +1856,8 @@ if "!should_run!"=="1" (
     echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
     echo Starting ChromeDriver and Backend Server...
-    call :kill_server
     if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!test_count!" >nul 2>&1
-    start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=4444 >nul 2>&1
-    start /B "" cmd /C "cd server && dart run bin/server.dart --data-dir ../ui_test_data >> ../integration_test_output/server.log 2>&1"
-    call :wait_for_server
+    call :start_services
     set _LOG=integration_test_output\30_clockwork_quest_screenshot.log
     set _TARGET=integration_test/clockwork_quest/clockwork_quest_screenshot_test.dart
     echo Running: !_TARGET! > !_LOG!
@@ -1975,9 +1907,8 @@ echo Results saved to integration_test_output folder
 echo Summary: integration_test_output\summary.txt
 echo.
 
-echo Stopping ChromeDriver and Backend Server...
-taskkill /F /IM chromedriver.exe >nul 2>&1
-call :kill_server
+echo Stopping ChromeDriver, Chrome, and Backend Server...
+call :kill_services
 REM Preserve last test's data for investigation
 set /a _last_test=!test_count!+1
 if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_!_last_test!_final" >nul 2>&1

@@ -372,6 +372,7 @@ class TargetTagProvider extends ChangeNotifier {
     );
 
     await SaveGameService(_apiClient).saveGame(metadata);
+    _resumedSavedGameId = metadata.id;
   }
 
   void restoreGame(SavedGameMetadata savedGame) {
