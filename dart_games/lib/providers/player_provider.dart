@@ -18,6 +18,12 @@ class PlayerProvider extends ChangeNotifier {
   /// firing a second GET that could clobber a freshly-saved player.
   Future<void>? _activeLoad;
 
+  /// Monotonically increasing counter.  Incremented by [resetForTesting]
+  /// so that any in-flight [_doLoadPlayers] HTTP response that was issued
+  /// before the reset is silently discarded instead of overwriting the
+  /// now-empty list.
+  int _generation = 0;
+
   final PhotoService _photoService = PhotoService();
   ApiClient? _apiClient;
 
@@ -31,6 +37,23 @@ class PlayerProvider extends ChangeNotifier {
       throw StateError('PlayerProvider not initialized. Call initialize() first.');
     }
     return _apiClient!;
+  }
+
+  /// Reset all client-side player state.  Call this from test helpers
+  /// *after* the server-side reset so that both sides are in sync.
+  ///
+  /// Incrementing [_generation] ensures that any in-flight GET /players
+  /// response (sent before the reset) is silently discarded when it
+  /// finally arrives, instead of repopulating the list with stale data.
+  void resetForTesting() {
+    _generation++;
+    _allPlayers = [];
+    _selectedPlayers = [];
+    _activeLoad = null;
+    _isLoading = false;
+    _error = null;
+    _lastSortedAt = null;
+    notifyListeners();
   }
 
   // Getters
@@ -56,13 +79,29 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   Future<void> _doLoadPlayers() async {
+    final loadGeneration = _generation;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       final playersJson = await _api.getPlayers();
-      _allPlayers = playersJson.map((json) => Player.fromJson(json)).toList();
+
+      // If a resetForTesting() was called while the GET was in flight,
+      // discard this (now stale) response entirely.
+      if (_generation != loadGeneration) return;
+
+      final serverPlayers =
+          playersJson.map((json) => Player.fromJson(json)).toList();
+
+      // Merge: start with the server's authoritative list, then preserve
+      // any locally-known players that the server doesn't have yet
+      // (optimistic adds whose POST is still in flight).
+      final serverIds = serverPlayers.map((p) => p.id).toSet();
+      final localOnly =
+          _allPlayers.where((p) => !serverIds.contains(p.id)).toList();
+      _allPlayers = [...serverPlayers, ...localOnly];
 
       // Load last sorted timestamp from settings
       final lastSortedStr = await _api.getSetting(_lastSortedKey);

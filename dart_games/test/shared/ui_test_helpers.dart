@@ -3,6 +3,7 @@ import 'package:dart_games/main.dart' as app;
 import 'package:dart_games/widgets/player_selection_card.dart';
 import 'game_ui_config.dart';
 import 'element_finders.dart';
+import 'provider_helpers.dart';
 import 'pump_sequences.dart';
 import 'settings_helpers.dart';
 
@@ -59,6 +60,13 @@ class UITestHelpers {
     // Check for splash screen
     final splashText = find.text('DARTS');
     print('UITestHelpers.navigateToGameMenu: Splash screen found: ${splashText.evaluate().length}');
+
+    // Reset client-side player state so any in-flight loadPlayers() from
+    // a prior test (or the menu screen's addPostFrameCallback) is
+    // discarded via the generation counter rather than repopulating the
+    // list with stale data.
+    ProviderHelpers.getPlayerProvider(tester).resetForTesting();
+    print('UITestHelpers.navigateToGameMenu: PlayerProvider reset');
 
     // Wait for home screen cards to load (async operation)
     await tester.pump(const Duration(seconds: 2));
