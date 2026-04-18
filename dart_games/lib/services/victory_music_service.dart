@@ -19,6 +19,7 @@ class VictoryMusicService {
   // In-memory cache
   List<VictoryMusicFile> _musicFiles = [];
   bool _initialized = false;
+  Future<void>? _activeInit;
   final Random _random = Random();
 
   ApiClient? _apiClient;
@@ -40,12 +41,28 @@ class VictoryMusicService {
   void resetForTesting() {
     _musicFiles = [];
     _initialized = false;
+    _activeInit = null;
   }
 
   /// Initialize the service and load stored music from the server.
   Future<void> initialize() async {
     if (_initialized) return;
 
+    // Deduplicate concurrent initialize() calls so only one fetch runs.
+    if (_activeInit != null) {
+      await _activeInit;
+      return;
+    }
+
+    _activeInit = _doInitialize();
+    try {
+      await _activeInit;
+    } finally {
+      _activeInit = null;
+    }
+  }
+
+  Future<void> _doInitialize() async {
     final musicList = await _api.getMusic();
     _musicFiles = musicList.map((json) {
       return VictoryMusicFile(
