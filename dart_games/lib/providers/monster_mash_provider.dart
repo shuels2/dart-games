@@ -329,6 +329,7 @@ class MonsterMashProvider extends ChangeNotifier {
   // --- Save/Restore ---
 
   String? _resumedSavedGameId;
+  bool _saving = false;
   String? get resumedSavedGameId => _resumedSavedGameId;
 
   void clearResumedSavedGameId() {
@@ -336,7 +337,9 @@ class MonsterMashProvider extends ChangeNotifier {
   }
 
   Future<void> saveGame(List<Player> players) async {
-    if (_currentGame == null) return;
+    if (_currentGame == null || _saving) return;
+    _saving = true;
+    try {
     final game = _currentGame!;
 
     // Find leading player (most health)
@@ -369,6 +372,9 @@ class MonsterMashProvider extends ChangeNotifier {
 
     await SaveGameService(_apiClient).saveGame(metadata);
     _resumedSavedGameId = metadata.id;
+    } finally {
+      _saving = false;
+    }
   }
 
   void restoreGame(SavedGameMetadata savedGame) {
