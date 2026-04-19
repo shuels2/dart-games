@@ -45,6 +45,14 @@ class TestRoutes {
       }
 
       // Delete all user data in a single transaction.
+      // Log saved games before reset for debugging
+      final preResetGames = _db.select('SELECT id, game_type FROM saved_games;');
+      final preResetIds = <String>[];
+      for (final row in preResetGames) {
+        preResetIds.add('${row['id']}(${row['game_type']})');
+      }
+      print('[TestRoutes] _reset — saved_games BEFORE delete: ${preResetIds.length} $preResetIds');
+
       _db.execute('BEGIN;');
       try {
         _db.execute('DELETE FROM game_history;');
@@ -73,6 +81,10 @@ class TestRoutes {
         // up-to-date. This prevents a subsequent read from seeing stale
         // data from a pre-reset WAL frame.
         _db.execute('PRAGMA wal_checkpoint(TRUNCATE);');
+
+        // Verify deletion took effect
+        final postResetCount = _db.select('SELECT COUNT(*) as cnt FROM saved_games;');
+        print('[TestRoutes] _reset — saved_games AFTER delete+checkpoint: ${postResetCount.first['cnt']}');
 
         // Delete photo files after the transaction succeeds.
         for (final path in photoPaths) {

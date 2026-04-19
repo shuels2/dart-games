@@ -51,6 +51,16 @@ class SettingsHelpers {
     );
   }
 
+  /// Build a cache-busting URI so the browser never serves a stale
+  /// cached response for verification GETs after a reset.
+  static Uri _bustCache(String path) {
+    final base = Uri.parse(ApiConfig.url(path));
+    return base.replace(queryParameters: {
+      ...base.queryParameters,
+      '_': DateTime.now().microsecondsSinceEpoch.toString(),
+    });
+  }
+
   static Future<void> initializeSettings({
     bool useEmulator = true,
   }) async {
@@ -85,7 +95,7 @@ class SettingsHelpers {
       // the empty-list response so the app's subsequent GET won't receive
       // a stale cached list from a previous test run.
       final verifyResponse = await http.get(
-        Uri.parse(ApiConfig.url('/api/v1/players')),
+        _bustCache('/api/v1/players'),
       );
       if (verifyResponse.statusCode != 200) {
         throw Exception(
@@ -102,7 +112,7 @@ class SettingsHelpers {
       }
 
       final verifySavedGamesResponse = await http.get(
-        Uri.parse(ApiConfig.url('/api/v1/games')),
+        _bustCache('/api/v1/games'),
       );
       if (verifySavedGamesResponse.statusCode != 200) {
         throw Exception(
