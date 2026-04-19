@@ -81,6 +81,14 @@ class UITestHelpers {
     final splashText = find.text('DARTS');
     print('UITestHelpers.navigateToGameMenu: Splash screen found: ${splashText.evaluate().length}');
 
+    // The pump sequence above processes pending async callbacks from any
+    // previous test (fire-and-forget HTTP requests from button handlers).
+    // Those callbacks may have sent POST requests that created unexpected
+    // data on the server.  Re-reset the server to clear that data.
+    print('UITestHelpers.navigateToGameMenu: Second reset to clear lingering async data...');
+    await SettingsHelpers.initializeSettings();
+    print('UITestHelpers.navigateToGameMenu: Second reset complete');
+
     // Reset client-side player state so any in-flight loadPlayers() from
     // a prior test (or the menu screen's addPostFrameCallback) is
     // discarded via the generation counter rather than repopulating the
@@ -333,6 +341,18 @@ class UITestHelpers {
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    // The pump sequence above processes pending async callbacks from any
+    // previous test (fire-and-forget HTTP requests from button handlers).
+    // Those callbacks may have sent POST requests that created unexpected
+    // data on the server.  Re-reset the server to clear that data.
+    await SettingsHelpers.initializeSettings();
+    ProviderHelpers.getPlayerProvider(tester).resetForTesting();
+
+    // Let home screen rebuild with clean state
+    await tester.pump(const Duration(seconds: 1));
     await tester.pump();
     await tester.pump();
   }

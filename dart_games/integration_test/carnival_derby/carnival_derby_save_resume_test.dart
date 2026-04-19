@@ -211,9 +211,8 @@ void main() {
 
     testWidgets('tapping game with saved games shows resume modal',
         (tester) async {
-      await preSaveGame();
-
       await UITestHelpers.navigateToHomeScreen(tester);
+      await preSaveGame();
 
       // Tap game card — navigates to menu screen
       await tester.tap(config.getGameCard());
@@ -269,9 +268,8 @@ void main() {
     });
 
     testWidgets('Start New Game dismisses modal and shows menu', (tester) async {
-      await preSaveGame();
-
       await UITestHelpers.navigateToHomeScreen(tester);
+      await preSaveGame();
       await tester.tap(config.getGameCard());
       await PumpSequences.navigation(tester);
       await PumpSequences.asyncDataLoad(tester);
@@ -282,9 +280,8 @@ void main() {
     });
 
     testWidgets('delete individual saved game removes it', (tester) async {
-      final ids = await preSaveTwoGames();
-
       await UITestHelpers.navigateToHomeScreen(tester);
+      final ids = await preSaveTwoGames();
       await tester.tap(config.getGameCard());
       await PumpSequences.navigation(tester);
       await PumpSequences.asyncDataLoad(tester);
@@ -306,9 +303,8 @@ void main() {
     });
 
     testWidgets('delete all saved games shows empty state', (tester) async {
-      await preSaveTwoGames();
-
       await UITestHelpers.navigateToHomeScreen(tester);
+      await preSaveTwoGames();
       await tester.tap(config.getGameCard());
       await PumpSequences.navigation(tester);
       await PumpSequences.asyncDataLoad(tester);

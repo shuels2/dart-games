@@ -57,8 +57,6 @@ class SavedGameRoutes {
     final games = resultSetToList(results)
         .map((row) => ServerSavedGame.fromDbRow(row).toJson())
         .toList();
-    final ids = games.map((g) => g['id']).toList();
-    print('[SavedGameRoutes] _getByType($gameType) returning ${games.length} games — ids=$ids');
     return Response.ok(
       jsonEncode(games),
       headers: {'content-type': 'application/json'},
@@ -69,16 +67,6 @@ class SavedGameRoutes {
     final body = await request.readAsString();
     final json = jsonDecode(body) as Map<String, dynamic>;
     final game = ServerSavedGame.fromJson(json);
-
-    print('[SavedGameRoutes] _save called — id=${game.id}, type=${game.gameType}');
-
-    // Log current count before insert
-    final beforeCount = _db.select(
-      'SELECT COUNT(*) as cnt FROM saved_games WHERE game_type = ?;',
-      [game.gameType],
-    );
-    final countBefore = beforeCount.first['cnt'] as int;
-    print('[SavedGameRoutes] saved_games count for ${game.gameType} BEFORE insert: $countBefore');
 
     final stmt = _db.prepare('''
       INSERT OR REPLACE INTO saved_games
@@ -103,14 +91,6 @@ class SavedGameRoutes {
     } finally {
       stmt.dispose();
     }
-
-    // Log count after insert
-    final afterCount = _db.select(
-      'SELECT COUNT(*) as cnt FROM saved_games WHERE game_type = ?;',
-      [game.gameType],
-    );
-    final countAfter = afterCount.first['cnt'] as int;
-    print('[SavedGameRoutes] saved_games count for ${game.gameType} AFTER insert: $countAfter');
 
     return Response.ok(
       jsonEncode(game.toJson()),
