@@ -337,7 +337,11 @@ class MonsterMashProvider extends ChangeNotifier {
   }
 
   Future<void> saveGame(List<Player> players) async {
-    if (_currentGame == null || _saving) return;
+    debugPrint('[MonsterMashProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
+    if (_currentGame == null || _saving) {
+      debugPrint('[MonsterMashProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
+      return;
+    }
     _saving = true;
     try {
     final game = _currentGame!;
@@ -370,8 +374,10 @@ class MonsterMashProvider extends ChangeNotifier {
       existingId: _resumedSavedGameId,
     );
 
+    debugPrint('[MonsterMashProvider] saving with id=${metadata.id}');
     await SaveGameService(_apiClient).saveGame(metadata);
     _resumedSavedGameId = metadata.id;
+    debugPrint('[MonsterMashProvider] saveGame completed — resumedId=$_resumedSavedGameId');
     } finally {
       _saving = false;
     }

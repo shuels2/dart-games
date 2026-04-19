@@ -242,7 +242,11 @@ class HorseRaceProvider extends ChangeNotifier {
   }
 
   Future<void> saveGame(List<Player> players) async {
-    if (_currentGame == null || _saving) return;
+    debugPrint('[HorseRaceProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
+    if (_currentGame == null || _saving) {
+      debugPrint('[HorseRaceProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
+      return;
+    }
     _saving = true;
     try {
     final game = _currentGame!;
@@ -269,8 +273,10 @@ class HorseRaceProvider extends ChangeNotifier {
       existingId: _resumedSavedGameId,
     );
 
+    debugPrint('[HorseRaceProvider] saving with id=${metadata.id}');
     await SaveGameService(_apiClient).saveGame(metadata);
     _resumedSavedGameId = metadata.id;
+    debugPrint('[HorseRaceProvider] saveGame completed — resumedId=$_resumedSavedGameId');
     } finally {
       _saving = false;
     }

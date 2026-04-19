@@ -366,7 +366,11 @@ class ReefRoyaleProvider extends ChangeNotifier {
   }
 
   Future<void> saveGame(List<Player> players) async {
-    if (_currentGame == null || _saving) return;
+    debugPrint('[ReefRoyaleProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
+    if (_currentGame == null || _saving) {
+      debugPrint('[ReefRoyaleProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
+      return;
+    }
     _saving = true;
     try {
     final game = _currentGame!;
@@ -393,8 +397,10 @@ class ReefRoyaleProvider extends ChangeNotifier {
       existingId: _resumedSavedGameId,
     );
 
+    debugPrint('[ReefRoyaleProvider] saving with id=${metadata.id}');
     await SaveGameService(_apiClient).saveGame(metadata);
     _resumedSavedGameId = metadata.id;
+    debugPrint('[ReefRoyaleProvider] saveGame completed — resumedId=$_resumedSavedGameId');
     } finally {
       _saving = false;
     }

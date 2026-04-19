@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/saved_game_metadata.dart';
 import 'api/api_client.dart';
 
@@ -16,7 +17,9 @@ class SaveGameService {
   ApiClient get _api => _client ??= ApiClient();
 
   Future<void> saveGame(SavedGameMetadata metadata) async {
+    debugPrint('[SaveGameService] saveGame called — id=${metadata.id}, type=${metadata.gameType}');
     await _api.saveGame(metadata.toJson());
+    debugPrint('[SaveGameService] saveGame completed — id=${metadata.id}');
   }
 
   Future<List<SavedGameMetadata>> loadSavedGames(String gameType) async {
