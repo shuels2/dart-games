@@ -23,7 +23,7 @@ void main() {
 
   group('Clockwork Quest - Add Player Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // ================================================================

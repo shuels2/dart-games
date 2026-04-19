@@ -17,7 +17,7 @@ void main() {
 
   group('Reef Royale - Menu and Settings Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Menu screen shows all 8 game options',

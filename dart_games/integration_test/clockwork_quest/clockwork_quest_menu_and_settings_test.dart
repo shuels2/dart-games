@@ -17,7 +17,7 @@ void main() {
 
   group('Clockwork Quest - Menu and Settings Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // ================================================================

@@ -88,7 +88,7 @@ void main() {
 
   group('Monster Mash - Edit Score Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Edit score dialog opens - 3 darts -> takeout modal -> tap Edit Player Score -> dialog opens with dart dropdowns', (WidgetTester tester) async {

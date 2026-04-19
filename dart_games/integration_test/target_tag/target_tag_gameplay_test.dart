@@ -191,7 +191,7 @@ void main() {
 
   group('Target Tag - Hero Buff & Opponent Targets Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Hero Bonus Toggle and Display - Validates hero bonus OFF shows no buff label, hero bonus ON displays buff label and value in solo mode, hero bonus displays correctly in team mode with random assignment, buff numbers and multipliers shown correctly', (WidgetTester tester) async {
@@ -650,7 +650,7 @@ void main() {
 
   group('Target Tag - D1/D2/D3 Dart Highlighting Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 9: Dart Highlighting - All Three Darts Hit Target - Validates all three dart indicators show green borders when all darts hit the target number, D1/D2/D3 all display 0xFF00FFA3 green border color, visual feedback correctly indicates successful shield building', (WidgetTester tester) async {
@@ -716,7 +716,7 @@ void main() {
 
   group('Target Tag - Game Settings Panel Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 11: Game Settings Panel - All Settings Visible - Validates game settings panel displays all configuration options, Shield Max slider is present and functional, Team mode toggle is present, Hero Bonus toggle is present, all settings controls are interactive', (WidgetTester tester) async {
@@ -747,7 +747,7 @@ void main() {
 
   group('Target Tag - Victory Screen Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 12: Complete Solo Mode Game to Victory - Validates complete game flow from start to victory screen, 2-player solo mode game starts correctly, Player 1 builds shields to max and gets tagged in, Player 2 builds partial shields, Player 1 attacks Player 2 target repeatedly until elimination, victory screen appears after opponent elimination, winner displayed correctly on victory screen', (WidgetTester tester) async {

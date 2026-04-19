@@ -159,7 +159,7 @@ void main() {
 
   group('Reef Royale - Results Screen Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Results screen shows after game completion',

@@ -148,7 +148,7 @@ void main() {
 
   group('Target Tag - Menu & Game Mechanics Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // ==========================================================================
@@ -491,8 +491,8 @@ void main() {
       expect(isTaggedIn, isFalse);
 
       // Get opponent player
-      final allPlayers = ProviderHelpers.getAllPlayers(tester);
-      final opponentPlayer = allPlayers.firstWhere((p) => p.id != currentPlayerId);
+      final selectedPlayers = ProviderHelpers.getSelectedPlayers(tester);
+      final opponentPlayer = selectedPlayers.firstWhere((p) => p.id != currentPlayerId);
       final opponentTarget = ProviderHelpers.getTargetTagPlayerTarget(tester, opponentPlayer.id);
       expect(opponentTarget, isNotNull);
 
@@ -625,7 +625,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Player 2 builds partial shields
-      final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
+      final player2 = ProviderHelpers.getSelectedPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
       await throwDartViaMock(tester, player2Target!);
@@ -706,7 +706,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Player 2 builds 1 shield
-      final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
+      final player2 = ProviderHelpers.getSelectedPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
       await throwDartViaMock(tester, player2Target!);
@@ -794,7 +794,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Player 2 builds partial shields
-      final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
+      final player2 = ProviderHelpers.getSelectedPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
       await throwDartViaMock(tester, player2Target!);
@@ -1018,9 +1018,9 @@ void main() {
       await UITestHelpers.startGame(tester, config);
 
       // Get player IDs
-      final allPlayers = ProviderHelpers.getAllPlayers(tester);
-      final player1 = allPlayers.firstWhere((p) => p.name == 'HeroSolo1');
-      final player2 = allPlayers.firstWhere((p) => p.name == 'HeroSolo2');
+      final selectedPlayers = ProviderHelpers.getSelectedPlayers(tester);
+      final player1 = selectedPlayers.firstWhere((p) => p.name == 'HeroSolo1');
+      final player2 = selectedPlayers.firstWhere((p) => p.name == 'HeroSolo2');
 
       // Get hero buffs for each player
       final targetTagProvider = ProviderHelpers.getTargetTagProvider(tester);
@@ -1093,7 +1093,7 @@ void main() {
       // Remove darts to advance turn to Player 2
       await clickDartsRemoved(tester);
 
-      final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
+      final player2 = ProviderHelpers.getSelectedPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
       await throwDartViaMock(tester, player2Target!, multiplier: 'triple');
@@ -1265,7 +1265,7 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Player 2 builds partial shields
-      final player2 = ProviderHelpers.getAllPlayers(tester).firstWhere((p) => p.id != player1Id);
+      final player2 = ProviderHelpers.getSelectedPlayers(tester).firstWhere((p) => p.id != player1Id);
       final player2Target = ProviderHelpers.getTargetTagPlayerTarget(tester, player2.id);
 
       await throwDartViaMock(tester, player2Target!);

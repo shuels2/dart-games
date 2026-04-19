@@ -121,7 +121,7 @@ void main() {
 
   /// Navigate to Carnival Derby menu using shared helper
   Future<void> navigateToCarnivalDerbyMenu(WidgetTester tester) async {
-    await SettingsHelpers.initializeSettings();
+    await UITestHelpers.resetServerState();
     await UITestHelpers.navigateToGameMenu(tester, config);
 
     // Verify we're on the menu screen
@@ -350,7 +350,7 @@ void main() {
 
   group('Section 1: Menu - Player Selection', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 1: Menu - Player Selection & Auto-Selection
@@ -425,7 +425,7 @@ void main() {
 
   group('Section 2: Menu - Target Score Settings', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 3: Menu - Target Score Slider Range
@@ -474,7 +474,7 @@ void main() {
 
   group('Section 3: Game - Basic Race Mechanics (Normal Mode)', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 5: Game - Single Player Quick Win (Normal Mode)
@@ -634,7 +634,7 @@ void main() {
 
   group('Section 4: Game - Perfect Finish Mode (Bust Mechanics)', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 8: Game - Perfect Finish Mode: Simple Bust
@@ -795,7 +795,7 @@ void main() {
 
   group('Section 5: Game - Skip Turn Functionality', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 12: Game - Skip Turn with No Darts (Immediate Turn Advance)
@@ -909,7 +909,7 @@ void main() {
 
   group('Section 6: Game - Edit Score Functionality', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 15: Game - Edit Score to Change Rings (Normal Mode)
@@ -995,7 +995,7 @@ void main() {
 
   group('Section 7: Game - Multi-Player Race', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 17: Game - 4-Player Race with Leaderboard Changes
@@ -1119,7 +1119,7 @@ void main() {
 
   group('Section 8: Edge Cases', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 19: Game - Minimum Target Score (20 points)
@@ -1217,7 +1217,7 @@ void main() {
 
   group('Section 9: Results Screen', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 22: Results - Results Screen Display & Content

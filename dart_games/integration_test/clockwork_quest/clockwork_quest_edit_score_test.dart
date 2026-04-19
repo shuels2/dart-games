@@ -114,7 +114,7 @@ void main() {
 
   group('Clockwork Quest - Edit Score Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // ================================================================

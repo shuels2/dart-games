@@ -184,7 +184,7 @@ void main() {
 
   group('Clockwork Quest - Gameplay Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // ================================================================

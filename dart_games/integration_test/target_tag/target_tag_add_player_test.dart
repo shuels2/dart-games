@@ -37,7 +37,7 @@ void main() {
   group('Target Tag - Add Player Dialog Integration Tests', () {
     setUp(() async {
       // Initialize settings with emulator mode
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Navigation and Initial Player Setup - Validates app launch, game navigation, and basic player addition workflow with two players', (WidgetTester tester) async {
@@ -134,6 +134,7 @@ void main() {
 
       // Find and tap "NEW PLAYER" button (empty state since no players yet)
       final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
+      expect(addButton, findsAtLeastNWidgets(1));
       await tester.tap(addButton.first);
       await PumpSequences.dialogOpen(tester);
 
@@ -171,6 +172,7 @@ void main() {
 
       // Find and tap "NEW PLAYER" button (empty state since no players yet)
       final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
+      expect(addButton, findsAtLeastNWidgets(1));
       await tester.tap(addButton.first);
       await PumpSequences.dialogOpen(tester);
 
@@ -213,6 +215,7 @@ void main() {
 
       // Find and tap "NEW PLAYER" button (empty state since no players yet)
       final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
+      expect(addButton, findsAtLeastNWidgets(1));
       await tester.tap(addButton.first);
       await PumpSequences.dialogOpen(tester);
 
@@ -239,6 +242,7 @@ void main() {
 
       // Find and tap "NEW PLAYER" button (empty state since no players yet)
       final addButton = ElementFinders.getTargetTagAddPlayerButtonEmptyState();
+      expect(addButton, findsAtLeastNWidgets(1));
       await tester.tap(addButton.first);
       await PumpSequences.dialogOpen(tester);
 

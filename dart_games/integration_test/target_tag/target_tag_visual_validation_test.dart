@@ -417,7 +417,7 @@ void main() {
 
   group('Section 1: Visual Validation Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Test 1: Current Player Shows Badge When Tagged In

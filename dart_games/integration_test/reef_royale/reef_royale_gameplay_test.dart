@@ -177,7 +177,7 @@ void main() {
 
   group('Reef Royale - Gameplay Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Game starts with correct initial state',

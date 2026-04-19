@@ -163,7 +163,7 @@ void main() {
 
   group('Clockwork Quest - Results Screen Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // ================================================================

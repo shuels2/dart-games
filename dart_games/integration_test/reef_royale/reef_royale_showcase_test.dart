@@ -105,7 +105,7 @@ void main() {
 
   group('Reef Royale - Showcase Test', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Showcase: Full game with Easy Claim, Neighbors, and Buffs',

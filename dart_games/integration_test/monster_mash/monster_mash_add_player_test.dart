@@ -39,7 +39,7 @@ void main() {
 
   group('Monster Mash - Add Player Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Navigation and initial player setup - Navigate from home card to Monster Mash menu, add 2 players via empty-state then normal button', (WidgetTester tester) async {

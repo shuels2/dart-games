@@ -41,7 +41,7 @@ void main() {
 
   group('Monster Mash - Menu and Settings Tests', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     testWidgets('Test 1: Menu screen initial state - Health slider present (default 20), Bonus Buffs OFF, Speed Play OFF, Round Limit disabled, Start disabled, back button present', (WidgetTester tester) async {
