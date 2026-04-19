@@ -20,7 +20,7 @@ void main() {
             children: [
               SaveGameModal(
                 config: config ?? SaveGameModalConfig.carnivalDerby(),
-                onSave: () => savedCalled = true,
+                onSave: () async { savedCalled = true; },
                 onDontSave: () => dontSaveCalled = true,
               ),
             ],
