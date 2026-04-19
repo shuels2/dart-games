@@ -429,22 +429,40 @@ class ProviderHelpers {
   }
 
   /// Find player by ID
+  ///
+  /// Prefers selectedPlayers (players active in the current game) to avoid
+  /// returning stale leaked players from allPlayers that have different UUIDs
+  /// than the IDs stored in the game's state maps (e.g., targetNumbers).
+  /// Falls back to allPlayers if not found in selectedPlayers.
   static Player? findPlayerById(WidgetTester tester, String playerId) {
     final provider = getPlayerProvider(tester);
     try {
-      return provider.allPlayers.firstWhere((p) => p.id == playerId);
-    } catch (e) {
-      return null;
+      return provider.selectedPlayers.firstWhere((p) => p.id == playerId);
+    } catch (_) {
+      try {
+        return provider.allPlayers.firstWhere((p) => p.id == playerId);
+      } catch (_) {
+        return null;
+      }
     }
   }
 
   /// Find player by name
+  ///
+  /// Prefers selectedPlayers (players active in the current game) to avoid
+  /// returning stale leaked players from allPlayers that have different UUIDs
+  /// than the IDs stored in the game's state maps (e.g., targetNumbers).
+  /// Falls back to allPlayers if not found in selectedPlayers.
   static Player? findPlayerByName(WidgetTester tester, String name) {
     final provider = getPlayerProvider(tester);
     try {
-      return provider.allPlayers.firstWhere((p) => p.name == name);
-    } catch (e) {
-      return null;
+      return provider.selectedPlayers.firstWhere((p) => p.name == name);
+    } catch (_) {
+      try {
+        return provider.allPlayers.firstWhere((p) => p.name == name);
+      } catch (_) {
+        return null;
+      }
     }
   }
 
