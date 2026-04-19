@@ -67,6 +67,7 @@ class SettingsHelpers {
       VictoryMusicService().resetForTesting();
 
       // ── Step 2: Atomically clear all server-side user data ──────────
+      print('[initializeSettings] POSTing /api/v1/test/reset...');
       final resetResponse = await http.post(
         Uri.parse(ApiConfig.url('/api/v1/test/reset')),
       );
@@ -76,12 +77,13 @@ class SettingsHelpers {
           '${resetResponse.body}',
         );
       }
+      print('[initializeSettings] /api/v1/test/reset returned ${resetResponse.statusCode}');
 
       // ── Step 3: Verify the reset took effect ────────────────────────
-      // Fetching players serves two purposes: (1) confirms the database
+      // Fetching players/games serves two purposes: (1) confirms the database
       // is actually empty, and (2) primes the browser's HTTP cache with
-      // the empty-list response so the app's subsequent GET /players
-      // won't receive a stale cached list from a previous test run.
+      // the empty-list response so the app's subsequent GET won't receive
+      // a stale cached list from a previous test run.
       final verifyResponse = await http.get(
         Uri.parse(ApiConfig.url('/api/v1/players')),
       );
@@ -96,6 +98,24 @@ class SettingsHelpers {
         throw Exception(
           'Test reset did not clear players: '
           '${verifyBody.length} player(s) still present',
+        );
+      }
+
+      final verifySavedGamesResponse = await http.get(
+        Uri.parse(ApiConfig.url('/api/v1/games')),
+      );
+      if (verifySavedGamesResponse.statusCode != 200) {
+        throw Exception(
+          'Saved games verification after reset failed '
+          '(status ${verifySavedGamesResponse.statusCode}): ${verifySavedGamesResponse.body}',
+        );
+      }
+      final verifySavedGamesBody =
+          jsonDecode(verifySavedGamesResponse.body) as List<dynamic>;
+      if (verifySavedGamesBody.isNotEmpty) {
+        throw Exception(
+          'Test reset did not clear saved games: '
+          '${verifySavedGamesBody.length} saved game(s) still present',
         );
       }
 
