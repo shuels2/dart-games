@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/main.dart' as app;
 import 'package:dart_games/widgets/player_selection_card.dart';
@@ -43,6 +44,12 @@ class UITestHelpers {
   ) async {
     print('UITestHelpers.navigateToGameMenu: START');
 
+    // Quiesce any widget tree left over from a prior test.  Replacing the
+    // root with an empty widget disposes the previous Element tree, which
+    // cancels pending postFrameCallbacks and Provider listeners that would
+    // otherwise fire HTTP requests against the just-reset server.
+    await tester.pumpWidget(const SizedBox.shrink());
+
     // Set up emulator mode
     print('UITestHelpers.navigateToGameMenu: Calling initializeSettings...');
     await SettingsHelpers.initializeSettings();
@@ -81,18 +88,13 @@ class UITestHelpers {
     final splashText = find.text('DARTS');
     print('UITestHelpers.navigateToGameMenu: Splash screen found: ${splashText.evaluate().length}');
 
-    // The pump sequence above processes pending async callbacks from any
-    // previous test (fire-and-forget HTTP requests from button handlers).
-    // Those callbacks may have sent POST requests that created unexpected
-    // data on the server.  Re-reset the server to clear that data.
-    print('UITestHelpers.navigateToGameMenu: Second reset to clear lingering async data...');
-    await SettingsHelpers.initializeSettings();
-    print('UITestHelpers.navigateToGameMenu: Second reset complete');
-
     // Reset client-side player state so any in-flight loadPlayers() from
     // a prior test (or the menu screen's addPostFrameCallback) is
     // discarded via the generation counter rather than repopulating the
-    // list with stale data.
+    // list with stale data.  We intentionally do NOT re-POST /test/reset
+    // here: a second reset after app.main() opens a race window where a
+    // just-saved game (from a later test) could be wiped by a lingering
+    // async callback still holding a reference to this helper.
     ProviderHelpers.getPlayerProvider(tester).resetForTesting();
     print('UITestHelpers.navigateToGameMenu: PlayerProvider reset');
 
@@ -330,6 +332,9 @@ class UITestHelpers {
 
   /// Launch app and navigate to home screen (settings must be initialized first)
   static Future<void> navigateToHomeScreen(WidgetTester tester) async {
+    // Quiesce any widget tree left over from a prior test.  See
+    // navigateToGameMenu for details.
+    await tester.pumpWidget(const SizedBox.shrink());
     await app.main();
     // Same pump sequence as navigateToGameMenu but stop at home screen
     await tester.pump();
@@ -344,11 +349,10 @@ class UITestHelpers {
     await tester.pump();
     await tester.pump();
 
-    // The pump sequence above processes pending async callbacks from any
-    // previous test (fire-and-forget HTTP requests from button handlers).
-    // Those callbacks may have sent POST requests that created unexpected
-    // data on the server.  Re-reset the server to clear that data.
-    await SettingsHelpers.initializeSettings();
+    // Reset client-side player state.  We intentionally do NOT re-POST
+    // /test/reset here — doing so after app.main() opens a race window
+    // where a just-saved game could be wiped by a lingering async
+    // callback from a previous test.
     ProviderHelpers.getPlayerProvider(tester).resetForTesting();
 
     // Let home screen rebuild with clean state
@@ -414,12 +418,15 @@ class UITestHelpers {
   /// Delete a saved game tile on resume modal
   static Future<void> deleteSavedGameTile(WidgetTester tester, String id) async {
     await tester.tap(ElementFinders.getResumeGameModalDeleteButton(id));
-    await PumpSequences.simpleUpdate(tester);
+    // Delete roundtrips through HTTP (DELETE /games/{id}) and triggers a
+    // provider reload (GET /games) before the modal rebuilds.  simpleUpdate
+    // (2 zero-duration pumps) is too short — asyncDataLoad waits 5s.
+    await PumpSequences.asyncDataLoad(tester);
   }
 
   /// Delete all saved games on resume modal
   static Future<void> deleteAllSavedGames(WidgetTester tester) async {
     await tester.tap(ElementFinders.getResumeGameModalDeleteAllButton());
-    await PumpSequences.simpleUpdate(tester);
+    await PumpSequences.asyncDataLoad(tester);
   }
 }

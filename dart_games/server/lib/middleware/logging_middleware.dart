@@ -12,8 +12,10 @@ Middleware loggingMiddleware() {
       final path = request.requestedUri.path;
       final status = response.statusCode;
       final ms = stopwatch.elapsedMilliseconds;
+      final requestId = request.headers['x-request-id'];
+      final idSuffix = requestId != null ? ' [id=$requestId]' : '';
 
-      print('$method $path -> $status (${ms}ms)');
+      print('$method $path -> $status (${ms}ms)$idSuffix');
       return response;
     };
   };

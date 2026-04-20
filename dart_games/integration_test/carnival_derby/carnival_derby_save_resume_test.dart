@@ -167,6 +167,12 @@ void main() {
 
       // Save modal should appear
       UITestHelpers.verifySaveGameModal();
+
+      // Dismiss the modal so this test leaves no widget tree state that
+      // could bleed into the next test (lingering provider listeners and
+      // postFrameCallbacks would otherwise fire against the next test's
+      // freshly-reset server and corrupt its state).
+      await UITestHelpers.tapDontSaveButton(tester);
     });
 
     testWidgets('Don\'t Save navigates back without saving', (tester) async {

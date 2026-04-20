@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart' show Slider;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -51,6 +52,16 @@ class SettingsHelpers {
     );
   }
 
+  /// Generate an opaque request ID for correlating client POSTs with
+  /// server-side log entries.  Good enough for test diagnostics — not a
+  /// cryptographic nonce.
+  static final Random _rng = Random();
+  static String _generateRequestId() {
+    final ts = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+    final rnd = _rng.nextInt(0xFFFFFF).toRadixString(16).padLeft(6, '0');
+    return '$ts-$rnd';
+  }
+
   /// Build a cache-busting URI so the browser never serves a stale
   /// cached response for verification GETs after a reset.
   static Uri _bustCache(String path) {
@@ -77,9 +88,14 @@ class SettingsHelpers {
       VictoryMusicService().resetForTesting();
 
       // ── Step 2: Atomically clear all server-side user data ──────────
-      print('[initializeSettings] POSTing /api/v1/test/reset...');
+      // Stamp every reset with a unique X-Request-Id so the server log
+      // can distinguish intentional resets from duplicates (HTTP retries,
+      // service-worker replays, or stray callers).
+      final requestId = _generateRequestId();
+      print('[initializeSettings] POSTing /api/v1/test/reset (id=$requestId)...');
       final resetResponse = await http.post(
         Uri.parse(ApiConfig.url('/api/v1/test/reset')),
+        headers: {'X-Request-Id': requestId},
       );
       if (resetResponse.statusCode != 200) {
         throw Exception(
@@ -87,7 +103,7 @@ class SettingsHelpers {
           '${resetResponse.body}',
         );
       }
-      print('[initializeSettings] /api/v1/test/reset returned ${resetResponse.statusCode}');
+      print('[initializeSettings] /api/v1/test/reset (id=$requestId) returned ${resetResponse.statusCode}');
 
       // ── Step 3: Verify the reset took effect ────────────────────────
       // Fetching players/games serves two purposes: (1) confirms the database
