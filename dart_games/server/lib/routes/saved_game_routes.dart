@@ -68,6 +68,17 @@ class SavedGameRoutes {
     final json = jsonDecode(body) as Map<String, dynamic>;
     final game = ServerSavedGame.fromJson(json);
 
+    // Diagnostic: log every save so we can trace leaked requests from
+    // prior integration-test runs that arrive after a server reset.
+    final existingCount = _db.select(
+      'SELECT COUNT(*) as cnt FROM saved_games WHERE game_type = ?;',
+      [game.gameType],
+    );
+    final before = existingCount.first['cnt'] as int;
+    print('[SavedGameRoutes] POST /games  id=${game.id}  '
+        'type=${game.gameType}  players=${game.playerNames}  '
+        'existing_${game.gameType}_count=$before');
+
     final stmt = _db.prepare('''
       INSERT OR REPLACE INTO saved_games
         (id, game_type, saved_at, player_names, progress_info,

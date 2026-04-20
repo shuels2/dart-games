@@ -73,6 +73,21 @@ class UITestHelpers {
     await tester.pump(); // Paint
     print('UITestHelpers.navigateToGameMenu: Manual pump sequence complete');
 
+    // ── Second reset ──────────────────────────────────────────────────
+    // During the pump sequence above (6+ seconds of real wall-clock time
+    // in IntegrationTestWidgetsFlutterBinding), lingering HTTP requests
+    // from the PREVIOUS test may have completed and created data on the
+    // server (e.g. a fire-and-forget POST /games or POST /players from a
+    // disposed widget tree whose ApiClient was still alive).
+    //
+    // main.dart now disposes the old ApiClient (aborting pending
+    // XMLHttpRequests), but any request whose response was already in
+    // transit when dispose() fired will still be processed server-side.
+    // This second reset catches that leaked data.
+    print('UITestHelpers.navigateToGameMenu: Second reset to catch leaked requests...');
+    await SettingsHelpers.initializeSettings();
+    print('UITestHelpers.navigateToGameMenu: Second reset complete');
+
     // Debug: Check what screen we're on
     print('UITestHelpers.navigateToGameMenu: Checking which screen is displayed...');
 
@@ -91,10 +106,7 @@ class UITestHelpers {
     // Reset client-side player state so any in-flight loadPlayers() from
     // a prior test (or the menu screen's addPostFrameCallback) is
     // discarded via the generation counter rather than repopulating the
-    // list with stale data.  We intentionally do NOT re-POST /test/reset
-    // here: a second reset after app.main() opens a race window where a
-    // just-saved game (from a later test) could be wiped by a lingering
-    // async callback still holding a reference to this helper.
+    // list with stale data.
     ProviderHelpers.getPlayerProvider(tester).resetForTesting();
     print('UITestHelpers.navigateToGameMenu: PlayerProvider reset');
 
@@ -332,6 +344,8 @@ class UITestHelpers {
 
   /// Launch app and navigate to home screen (settings must be initialized first)
   static Future<void> navigateToHomeScreen(WidgetTester tester) async {
+    print('UITestHelpers.navigateToHomeScreen: START');
+
     // Quiesce any widget tree left over from a prior test.  See
     // navigateToGameMenu for details.
     await tester.pumpWidget(const SizedBox.shrink());
@@ -348,17 +362,24 @@ class UITestHelpers {
     await tester.pump();
     await tester.pump();
     await tester.pump();
+    print('UITestHelpers.navigateToHomeScreen: Pump sequence complete');
 
-    // Reset client-side player state.  We intentionally do NOT re-POST
-    // /test/reset here — doing so after app.main() opens a race window
-    // where a just-saved game could be wiped by a lingering async
-    // callback from a previous test.
+    // ── Second reset ──────────────────────────────────────────────────
+    // Same rationale as navigateToGameMenu: the pump sequence above gave
+    // real wall-clock time for lingering HTTP requests from the prior
+    // test to complete.  This reset clears any data they created.
+    print('UITestHelpers.navigateToHomeScreen: Second reset to catch leaked requests...');
+    await SettingsHelpers.initializeSettings();
+    print('UITestHelpers.navigateToHomeScreen: Second reset complete');
+
+    // Reset client-side player state.
     ProviderHelpers.getPlayerProvider(tester).resetForTesting();
 
     // Let home screen rebuild with clean state
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
     await tester.pump();
+    print('UITestHelpers.navigateToHomeScreen: COMPLETE');
   }
 
   /// Tap back button on game screen (uses widget key via config)

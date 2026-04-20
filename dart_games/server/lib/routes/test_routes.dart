@@ -33,6 +33,8 @@ class TestRoutes {
   /// Also deletes photo files from disk. Returns counts of deleted rows
   /// so the caller can verify the reset succeeded.
   Future<Response> _reset(Request request) async {
+    final requestId = request.headers['x-request-id'] ?? 'no-id';
+    print('[TestRoutes] POST /test/reset  request_id=$requestId');
     try {
       // Collect photo paths before deleting rows.
       final photoRows = _db.select(
@@ -81,6 +83,11 @@ class TestRoutes {
             file.deleteSync();
           }
         }
+
+        print('[TestRoutes] Reset complete  request_id=$requestId  '
+            'deleted: players=$playersCount  saved_games=$savedGamesCount  '
+            'history=$historyCount  music=$musicCount  '
+            'failed_stats=$failedStatsCount  photos=${photoPaths.length}');
 
         return Response.ok(
           jsonEncode({

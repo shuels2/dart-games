@@ -21,15 +21,27 @@ import 'screens/games/clockwork_quest/clockwork_quest_game_screen.dart';
 import 'screens/games/clockwork_quest/clockwork_quest_results_screen.dart';
 
 /// Global API client instance, shared across all services.
+///
+/// Tracked via [_previousApiClient] so that each [main] call can dispose
+/// the old client before creating a fresh one.  On the web this calls
+/// `XMLHttpRequest.abort()` on every pending request, preventing stale
+/// POST/PUT calls from a prior integration-test run from completing and
+/// writing data to the server after it has been reset.
+ApiClient? _previousApiClient;
 late ApiClient apiClient;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Dispose previous ApiClient to cancel any in-flight HTTP requests
+  // from a prior integration-test run or hot restart.
+  _previousApiClient?.dispose();
+
   // Initialize API client
   // TODO: Configure from environment or settings screen
   ApiConfig.configure('http://localhost:8080');
   apiClient = ApiClient();
+  _previousApiClient = apiClient;
 
   // Initialize services with the API client
   AppSettings.initialize(apiClient);
