@@ -103,7 +103,17 @@ class SettingsHelpers {
           '${resetResponse.body}',
         );
       }
-      print('[initializeSettings] /api/v1/test/reset (id=$requestId) returned ${resetResponse.statusCode}');
+
+      // Parse the server's test epoch from the reset response and store it
+      // in ApiConfig.  All subsequent POST/PUT requests from ApiClient will
+      // include this epoch via the X-Test-Epoch header.  The server rejects
+      // writes whose epoch doesn't match the current one — this prevents
+      // stale in-flight requests from a previous test from polluting the
+      // database after a reset.
+      final resetBody = jsonDecode(resetResponse.body) as Map<String, dynamic>;
+      final testEpoch = resetBody['test_epoch'] as int?;
+      ApiConfig.setTestEpoch(testEpoch);
+      print('[initializeSettings] /api/v1/test/reset (id=$requestId) returned ${resetResponse.statusCode}, epoch=$testEpoch');
 
       // ── Step 3: Verify the reset took effect ────────────────────────
       // Fetching players/games serves two purposes: (1) confirms the database

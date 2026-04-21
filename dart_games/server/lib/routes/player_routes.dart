@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../database/database_helpers.dart';
 import '../models/game_history_model.dart';
 import '../models/player_model.dart';
+import 'test_routes.dart';
 
 const _jsonHeaders = {'content-type': 'application/json'};
 
@@ -145,6 +146,18 @@ class PlayerRoutes {
 
   /// POST / - Create a new player.
   Future<Response> _create(Request request) async {
+    // Reject stale writes from a previous test epoch.
+    final requestEpoch = int.tryParse(request.headers['x-test-epoch'] ?? '');
+    if (requestEpoch != null && requestEpoch != TestRoutes.currentTestEpoch) {
+      print('[PlayerRoutes] REJECTED stale POST /players — '
+          'request epoch=$requestEpoch, '
+          'current=${TestRoutes.currentTestEpoch}');
+      return Response(409,
+        body: jsonEncode({'error': 'Stale test epoch'}),
+        headers: _jsonHeaders,
+      );
+    }
+
     final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     final id = body['id'] as String;
     final name = body['name'] as String;

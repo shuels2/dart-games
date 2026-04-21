@@ -19,6 +19,22 @@ class ApiConfig {
         : baseUrl;
   }
 
+  // ---------------------------------------------------------------------------
+  // Test epoch (integration tests only)
+  // ---------------------------------------------------------------------------
+
+  /// Current test epoch, set by [SettingsHelpers.initializeSettings] after
+  /// each POST /test/reset.  The server increments its own epoch counter on
+  /// every reset and returns the new value.  All subsequent POST/PUT requests
+  /// include this epoch via `X-Test-Epoch` so the server can reject stale
+  /// writes from a prior test whose HTTP requests were still in-flight when
+  /// the reset occurred.
+  ///
+  /// `null` in production (no header is sent, server accepts all writes).
+  static int? _testEpoch;
+  static int? get testEpoch => _testEpoch;
+  static void setTestEpoch(int? epoch) => _testEpoch = epoch;
+
   /// Full URL for the given API path.
   ///
   /// Example: `ApiConfig.url('/api/v1/players')` → `http://localhost:8080/api/v1/players`

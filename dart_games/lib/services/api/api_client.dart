@@ -114,6 +114,7 @@ class ApiClient {
   /// POST /api/v1/players - Create a player.
   Future<Map<String, dynamic>> createPlayer(Map<String, dynamic> player) async {
     final response = await _post('/api/v1/players', player);
+    if (response.statusCode == 409) return {};
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
@@ -193,6 +194,7 @@ class ApiClient {
   /// POST /api/v1/games - Save/upsert a game.
   Future<Map<String, dynamic>> saveGame(Map<String, dynamic> game) async {
     final response = await _post('/api/v1/games', game);
+    if (response.statusCode == 409) return {};
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
@@ -309,21 +311,39 @@ class ApiClient {
   }
 
   Future<http.Response> _post(String path, Map<String, dynamic> body) async {
+    final headers = <String, String>{'content-type': 'application/json'};
+    final epoch = ApiConfig.testEpoch;
+    if (epoch != null) {
+      headers['X-Test-Epoch'] = epoch.toString();
+    }
     final response = await _client.post(
       Uri.parse(ApiConfig.url(path)),
-      headers: {'content-type': 'application/json'},
+      headers: headers,
       body: jsonEncode(body),
     );
+    // Silently accept 409 from the server's test epoch guard — the server
+    // correctly rejected a stale request from a prior test epoch.
+    if (response.statusCode == 409 && epoch != null) {
+      return response;
+    }
     _checkResponse(response);
     return response;
   }
 
   Future<http.Response> _put(String path, Map<String, dynamic> body) async {
+    final headers = <String, String>{'content-type': 'application/json'};
+    final epoch = ApiConfig.testEpoch;
+    if (epoch != null) {
+      headers['X-Test-Epoch'] = epoch.toString();
+    }
     final response = await _client.put(
       Uri.parse(ApiConfig.url(path)),
-      headers: {'content-type': 'application/json'},
+      headers: headers,
       body: jsonEncode(body),
     );
+    if (response.statusCode == 409 && epoch != null) {
+      return response;
+    }
     _checkResponse(response);
     return response;
   }

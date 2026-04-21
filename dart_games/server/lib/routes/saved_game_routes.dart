@@ -6,6 +6,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 import '../database/database_helpers.dart';
 import '../models/saved_game_model.dart';
+import 'test_routes.dart';
 
 class SavedGameRoutes {
   final sqlite3.Database _db;
@@ -64,6 +65,18 @@ class SavedGameRoutes {
   }
 
   Future<Response> _save(Request request) async {
+    // Reject stale writes from a previous test epoch.
+    final requestEpoch = int.tryParse(request.headers['x-test-epoch'] ?? '');
+    if (requestEpoch != null && requestEpoch != TestRoutes.currentTestEpoch) {
+      print('[SavedGameRoutes] REJECTED stale POST /games — '
+          'request epoch=$requestEpoch, '
+          'current=${TestRoutes.currentTestEpoch}');
+      return Response(409,
+        body: jsonEncode({'error': 'Stale test epoch'}),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+
     final body = await request.readAsString();
     final json = jsonDecode(body) as Map<String, dynamic>;
     final game = ServerSavedGame.fromJson(json);

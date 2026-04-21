@@ -16,6 +16,15 @@ class TestRoutes {
   final sqlite3.Database _db;
   final String _dataDir;
 
+  /// Monotonically-increasing epoch counter.  Incremented on every
+  /// POST /test/reset so the server can reject stale writes that were
+  /// already in-flight when the reset happened.
+  static int _testEpoch = 0;
+
+  /// Current epoch — checked by write-path routes (saved games, players)
+  /// against the `X-Test-Epoch` header sent by ApiClient.
+  static int get currentTestEpoch => _testEpoch;
+
   TestRoutes(this._db, this._dataDir);
 
   Router get router {
@@ -76,6 +85,11 @@ class TestRoutes {
         // data from a pre-reset WAL frame.
         _db.execute('PRAGMA wal_checkpoint(TRUNCATE);');
 
+        // Advance the epoch so stale writes from the previous test are
+        // rejected.  Must happen after COMMIT so the new epoch is only
+        // visible once the database is actually clean.
+        _testEpoch++;
+
         // Delete photo files after the transaction succeeds.
         for (final path in photoPaths) {
           final file = File(path);
@@ -85,6 +99,7 @@ class TestRoutes {
         }
 
         print('[TestRoutes] Reset complete  request_id=$requestId  '
+            'epoch=$_testEpoch  '
             'deleted: players=$playersCount  saved_games=$savedGamesCount  '
             'history=$historyCount  music=$musicCount  '
             'failed_stats=$failedStatsCount  photos=${photoPaths.length}');
@@ -92,6 +107,7 @@ class TestRoutes {
         return Response.ok(
           jsonEncode({
             'status': 'ok',
+            'test_epoch': _testEpoch,
             'deleted': {
               'players': playersCount,
               'game_history': historyCount,
