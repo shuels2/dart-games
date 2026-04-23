@@ -324,36 +324,13 @@ class ApiClient {
     if (epoch != null) {
       headers['X-Test-Epoch'] = epoch.toString();
     }
-    var response = await _client.post(
+    final response = await _client.post(
       Uri.parse(ApiConfig.url(path)),
       headers: headers,
       body: jsonEncode(body),
     );
-    // On 409 from the epoch guard, refresh the epoch and retry once.
-    // Phantom resets can advance the epoch during a test's execution;
-    // the current test's writes are still valid, just epoch-stale.
     if (response.statusCode == 409 && epoch != null) {
-      try {
-        final rejectBody =
-            jsonDecode(response.body) as Map<String, dynamic>;
-        final currentEpoch = rejectBody['current_epoch'] as int?;
-        if (currentEpoch != null) {
-          ApiConfig.setTestEpoch(currentEpoch);
-          headers['X-Test-Epoch'] = currentEpoch.toString();
-          response = await _client.post(
-            Uri.parse(ApiConfig.url(path)),
-            headers: headers,
-            body: jsonEncode(body),
-          );
-          if (response.statusCode == 409) {
-            return response;
-          }
-        } else {
-          return response;
-        }
-      } catch (_) {
-        return response;
-      }
+      return response;
     }
     _checkResponse(response);
     return response;

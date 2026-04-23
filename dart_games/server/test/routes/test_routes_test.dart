@@ -215,7 +215,7 @@ void main() {
         expect(TestRoutes.currentTestEpoch, equals(initialEpoch + 1));
       });
 
-      test('idempotent: duplicate X-Target-Epoch returns 200 without DB wipe', () async {
+      test('idempotent: duplicate X-Target-Epoch still wipes DB but does not advance epoch', () async {
         final initialEpoch = TestRoutes.currentTestEpoch;
         final target = initialEpoch + 1;
 
@@ -233,15 +233,15 @@ void main() {
         expect(response1.statusCode, equals(200));
         expect(TestRoutes.currentTestEpoch, equals(target));
 
-        // Create a player after the first reset
+        // Create a player after the first reset (simulates phantom write)
         await playerHandler(_jsonRequest('POST', '/', {
           'id': 'p1',
           'name': 'Alice',
           'createdAt': '2026-04-14T12:00:00.000Z',
         }));
 
-        // Phantom duplicate with same target epoch → 200 idempotent
-        // (DB must NOT be wiped — Alice should still exist)
+        // Duplicate with same target epoch → 200, DB IS wiped
+        // (catches phantom writes that landed between the two resets)
         final response2 = await testHandler(
           Request(
             'POST',
@@ -254,18 +254,16 @@ void main() {
         );
         final body2 = await _readJson(response2) as Map<String, dynamic>;
         expect(response2.statusCode, equals(200));
-        expect(body2['idempotent'], isTrue);
-        expect(body2['deleted']['players'], equals(0));
+        expect(body2['deleted']['players'], equals(1));
         // Epoch must NOT have changed — still at target
         expect(TestRoutes.currentTestEpoch, equals(target));
 
-        // Verify player still exists (DB was not wiped)
+        // Verify player was wiped
         final listResponse = await playerHandler(
           Request('GET', Uri.parse('http://localhost/')),
         );
         final players = await _readJson(listResponse) as List;
-        expect(players, hasLength(1));
-        expect((players[0] as Map)['name'], equals('Alice'));
+        expect(players, isEmpty);
       });
 
       test('rate-limits phantom resets within cooldown window', () async {

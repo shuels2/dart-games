@@ -60,37 +60,28 @@ class TestRoutes {
   Future<Response> _reset(Request request) async {
     final requestId = request.headers['x-request-id'] ?? 'no-id';
 
-    // Idempotent check: if X-Target-Epoch already matches the current
-    // server epoch, another request (phantom or legitimate) already
-    // advanced to this target.  Return success without wiping the DB.
+    // Idempotent epoch check: if X-Target-Epoch already matches the
+    // current server epoch, skip the epoch advance but still wipe the
+    // DB.  A phantom reset may have raced ahead and advanced the epoch;
+    // the legitimate reset must still clean up any phantom writes that
+    // landed between the two requests.
     final targetEpochHeader = request.headers['x-target-epoch'];
+    bool skipEpochAdvance = false;
     if (targetEpochHeader != null) {
       final targetEpoch = int.tryParse(targetEpochHeader);
       if (targetEpoch != null && targetEpoch == _testEpoch) {
-        print('[TestRoutes] IDEMPOTENT duplicate — target=$targetEpoch '
-            'already matches current epoch  request_id=$requestId');
-        return Response.ok(
-          jsonEncode({
-            'status': 'ok',
-            'test_epoch': _testEpoch,
-            'idempotent': true,
-            'deleted': {
-              'players': 0,
-              'game_history': 0,
-              'saved_games': 0,
-              'victory_music': 0,
-              'failed_stats': 0,
-              'photos': 0,
-            },
-          }),
-          headers: _jsonHeaders,
-        );
+        print('[TestRoutes] IDEMPOTENT epoch (target=$targetEpoch already '
+            'matches current) — will still wipe DB  request_id=$requestId');
+        skipEpochAdvance = true;
       }
     }
 
     // Guard against stale resets from previous tests.
+    // Skip this check for idempotent wipes — the client's epoch may
+    // look stale because a phantom already advanced it, but the target
+    // is correct so the wipe should proceed.
     final epochHeader = request.headers['x-test-epoch'];
-    if (epochHeader != null) {
+    if (epochHeader != null && !skipEpochAdvance) {
       final requestEpoch = int.tryParse(epochHeader);
       if (requestEpoch != null && requestEpoch != _testEpoch) {
         print('[TestRoutes] REJECTED stale POST /test/reset — '
@@ -114,7 +105,8 @@ class TestRoutes {
     // Rate-limit epoch-advancing resets to catch phantom requests.
     // Legitimate setUp calls are 10+ seconds apart; phantom bursts
     // from the same Dart isolate arrive within milliseconds.
-    if (targetEpochHeader != null && _lastEpochAdvance != null) {
+    // Skip this check for idempotent wipes — those must always proceed.
+    if (targetEpochHeader != null && _lastEpochAdvance != null && !skipEpochAdvance) {
       final elapsed = DateTime.now().difference(_lastEpochAdvance!);
       if (elapsed < _epochCooldown) {
         print('[TestRoutes] RATE-LIMITED phantom reset — '
@@ -184,24 +176,17 @@ class TestRoutes {
         // rejected.  Must happen after COMMIT so the new epoch is only
         // visible once the database is actually clean.
         //
-        // The client controls the target value via `X-Target-Epoch`.
-        // The server SETs (not increments) to that value.  This makes
-        // the operation idempotent: if phantom duplicate resets arrive
-        // with the same target, the epoch is set to the same value —
-        // no drift.  Without this header the epoch stays unchanged.
-        if (targetEpochHeader != null) {
+        // Skip the advance if the epoch already matches (idempotent):
+        // the DB was wiped but the epoch stays put so legitimate writes
+        // from the current test remain valid.
+        if (targetEpochHeader != null && !skipEpochAdvance) {
           final targetEpoch = int.tryParse(targetEpochHeader);
           if (targetEpoch != null) {
             final previousEpoch = _testEpoch;
             _testEpoch = targetEpoch;
-            if (targetEpoch != previousEpoch) {
-              _lastEpochAdvance = DateTime.now();
-              print('[TestRoutes] Epoch ADVANCED: $previousEpoch → $targetEpoch  '
-                  'request_id=$requestId');
-            } else {
-              print('[TestRoutes] Epoch UNCHANGED (idempotent duplicate): '
-                  '$previousEpoch → $targetEpoch  request_id=$requestId');
-            }
+            _lastEpochAdvance = DateTime.now();
+            print('[TestRoutes] Epoch ADVANCED: $previousEpoch → $targetEpoch  '
+                'request_id=$requestId');
           }
         }
 
