@@ -153,7 +153,10 @@ class PlayerRoutes {
           'request epoch=$requestEpoch, '
           'current=${TestRoutes.currentTestEpoch}');
       return Response(409,
-        body: jsonEncode({'error': 'Stale test epoch'}),
+        body: jsonEncode({
+          'error': 'Stale test epoch',
+          'current_epoch': TestRoutes.currentTestEpoch,
+        }),
         headers: _jsonHeaders,
       );
     }
