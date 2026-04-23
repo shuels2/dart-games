@@ -69,17 +69,18 @@ if not exist "server\bin\server.dart" (
 REM Ensure Flutter dependencies are resolved (always run — fast when cached,
 REM but catches stale paths from other machines or after pub cache clean)
 echo Resolving Flutter dependencies...
-flutter pub get
+call flutter pub get
 if !errorlevel! neq 0 (
     echo ERROR: Failed to resolve Flutter dependencies.
     pause
     exit /b 1
 )
+echo Flutter dependencies resolved.
 
 REM Ensure server dependencies are resolved
 echo Resolving server dependencies...
 pushd server
-dart pub get
+call dart pub get
 if !errorlevel! neq 0 (
     echo ERROR: Failed to resolve server dependencies.
     popd
@@ -87,6 +88,7 @@ if !errorlevel! neq 0 (
     exit /b 1
 )
 popd
+echo Server dependencies resolved.
 
 REM Kill any existing chromedriver/chrome/server processes
 echo Stopping any existing ChromeDriver, Chrome, and Backend Server instances...
