@@ -66,36 +66,27 @@ if not exist "server\bin\server.dart" (
     exit /b 1
 )
 
-REM Ensure Flutter dependencies are installed
-if not exist ".dart_tool\package_config.json" (
-    echo Installing Flutter dependencies...
-    flutter pub get
-    if !errorlevel! neq 0 (
-        echo ERROR: Failed to install Flutter dependencies.
-        pause
-        exit /b 1
-    )
-    echo Flutter dependencies installed.
-) else (
-    echo Flutter dependencies already installed.
+REM Ensure Flutter dependencies are resolved (always run — fast when cached,
+REM but catches stale paths from other machines or after pub cache clean)
+echo Resolving Flutter dependencies...
+flutter pub get
+if !errorlevel! neq 0 (
+    echo ERROR: Failed to resolve Flutter dependencies.
+    pause
+    exit /b 1
 )
 
-REM Ensure server dependencies are installed
-if not exist "server\.dart_tool\package_config.json" (
-    echo Installing server dependencies...
-    pushd server
-    dart pub get
-    if !errorlevel! neq 0 (
-        echo ERROR: Failed to install server dependencies.
-        popd
-        pause
-        exit /b 1
-    )
+REM Ensure server dependencies are resolved
+echo Resolving server dependencies...
+pushd server
+dart pub get
+if !errorlevel! neq 0 (
+    echo ERROR: Failed to resolve server dependencies.
     popd
-    echo Server dependencies installed.
-) else (
-    echo Server dependencies already installed.
+    pause
+    exit /b 1
 )
+popd
 
 REM Kill any existing chromedriver/chrome/server processes
 echo Stopping any existing ChromeDriver, Chrome, and Backend Server instances...
