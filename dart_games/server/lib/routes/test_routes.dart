@@ -60,6 +60,34 @@ class TestRoutes {
   Future<Response> _reset(Request request) async {
     final requestId = request.headers['x-request-id'] ?? 'no-id';
 
+    // Idempotent check: if X-Target-Epoch already matches the current
+    // server epoch, another request (phantom or legitimate) already
+    // advanced to this target.  Return success without wiping the DB.
+    final targetEpochHeader = request.headers['x-target-epoch'];
+    if (targetEpochHeader != null) {
+      final targetEpoch = int.tryParse(targetEpochHeader);
+      if (targetEpoch != null && targetEpoch == _testEpoch) {
+        print('[TestRoutes] IDEMPOTENT duplicate — target=$targetEpoch '
+            'already matches current epoch  request_id=$requestId');
+        return Response.ok(
+          jsonEncode({
+            'status': 'ok',
+            'test_epoch': _testEpoch,
+            'idempotent': true,
+            'deleted': {
+              'players': 0,
+              'game_history': 0,
+              'saved_games': 0,
+              'victory_music': 0,
+              'failed_stats': 0,
+              'photos': 0,
+            },
+          }),
+          headers: _jsonHeaders,
+        );
+      }
+    }
+
     // Guard against stale resets from previous tests.
     final epochHeader = request.headers['x-test-epoch'];
     if (epochHeader != null) {
@@ -78,16 +106,15 @@ class TestRoutes {
       }
     }
 
-    final targetEpochHeaderEarly = request.headers['x-target-epoch'];
     print('[TestRoutes] POST /test/reset  request_id=$requestId  '
         'client_epoch=${epochHeader ?? "none"}  '
-        'target_epoch=${targetEpochHeaderEarly ?? "none"}  '
+        'target_epoch=${targetEpochHeader ?? "none"}  '
         'server_epoch=$_testEpoch');
 
     // Rate-limit epoch-advancing resets to catch phantom requests.
     // Legitimate setUp calls are 10+ seconds apart; phantom bursts
     // from the same Dart isolate arrive within milliseconds.
-    if (targetEpochHeaderEarly != null && _lastEpochAdvance != null) {
+    if (targetEpochHeader != null && _lastEpochAdvance != null) {
       final elapsed = DateTime.now().difference(_lastEpochAdvance!);
       if (elapsed < _epochCooldown) {
         print('[TestRoutes] RATE-LIMITED phantom reset — '
@@ -162,7 +189,6 @@ class TestRoutes {
         // the operation idempotent: if phantom duplicate resets arrive
         // with the same target, the epoch is set to the same value —
         // no drift.  Without this header the epoch stays unchanged.
-        final targetEpochHeader = request.headers['x-target-epoch'];
         if (targetEpochHeader != null) {
           final targetEpoch = int.tryParse(targetEpochHeader);
           if (targetEpoch != null) {

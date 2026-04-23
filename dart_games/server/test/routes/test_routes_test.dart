@@ -215,7 +215,7 @@ void main() {
         expect(TestRoutes.currentTestEpoch, equals(initialEpoch + 1));
       });
 
-      test('idempotent: duplicate X-Target-Epoch does not drift', () async {
+      test('idempotent: duplicate X-Target-Epoch returns 200 without DB wipe', () async {
         final initialEpoch = TestRoutes.currentTestEpoch;
         final target = initialEpoch + 1;
 
@@ -233,7 +233,15 @@ void main() {
         expect(response1.statusCode, equals(200));
         expect(TestRoutes.currentTestEpoch, equals(target));
 
-        // Phantom duplicate: same X-Test-Epoch (stale) → 409
+        // Create a player after the first reset
+        await playerHandler(_jsonRequest('POST', '/', {
+          'id': 'p1',
+          'name': 'Alice',
+          'createdAt': '2026-04-14T12:00:00.000Z',
+        }));
+
+        // Phantom duplicate with same target epoch → 200 idempotent
+        // (DB must NOT be wiped — Alice should still exist)
         final response2 = await testHandler(
           Request(
             'POST',
@@ -244,9 +252,20 @@ void main() {
             },
           ),
         );
-        expect(response2.statusCode, equals(409));
+        final body2 = await _readJson(response2) as Map<String, dynamic>;
+        expect(response2.statusCode, equals(200));
+        expect(body2['idempotent'], isTrue);
+        expect(body2['deleted']['players'], equals(0));
         // Epoch must NOT have changed — still at target
         expect(TestRoutes.currentTestEpoch, equals(target));
+
+        // Verify player still exists (DB was not wiped)
+        final listResponse = await playerHandler(
+          Request('GET', Uri.parse('http://localhost/')),
+        );
+        final players = await _readJson(listResponse) as List;
+        expect(players, hasLength(1));
+        expect((players[0] as Map)['name'], equals('Alice'));
       });
 
       test('rate-limits phantom resets within cooldown window', () async {
