@@ -39,6 +39,7 @@ class SettingsHelpers {
   /// internal implementation.  All epoch logic stays within this class
   /// to avoid cross-module parameter passing issues with DDC.
   static Future<void> resetServerState({bool useEmulator = true}) async {
+    _epochBumpCompleted = false;
     final token = ++_epochBumpToken;
     await _initializeSettingsImpl(
       useEmulator: useEmulator,

@@ -38,6 +38,7 @@ class SettingsHelpers {
 
   /// Full server reset with epoch bump.  Used by test setUp.
   static Future<void> resetServerState({bool useEmulator = true}) async {
+    _epochBumpCompleted = false;
     final token = ++_epochBumpToken;
     await _initializeSettingsImpl(
       useEmulator: useEmulator,
