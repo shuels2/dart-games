@@ -18,8 +18,14 @@ class SaveGameService {
 
   Future<void> saveGame(SavedGameMetadata metadata) async {
     debugPrint('[SaveGameService] saveGame called — id=${metadata.id}, type=${metadata.gameType}');
-    await _api.saveGame(metadata.toJson());
-    debugPrint('[SaveGameService] saveGame completed — id=${metadata.id}');
+    final result = await _api.saveGame(metadata.toJson());
+    if (result.isEmpty) {
+      debugPrint('[SaveGameService] saveGame REJECTED (409) — '
+          'id=${metadata.id}, type=${metadata.gameType}. '
+          'Server rejected stale epoch; save did NOT persist.');
+    } else {
+      debugPrint('[SaveGameService] saveGame completed — id=${metadata.id}');
+    }
   }
 
   Future<List<SavedGameMetadata>> loadSavedGames(String gameType) async {

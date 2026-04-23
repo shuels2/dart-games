@@ -30,7 +30,7 @@ class UITestHelpers {
   /// This is a thin wrapper over [SettingsHelpers.initializeSettings] that
   /// makes the intent explicit in test files' `setUp`.
   static Future<void> resetServerState({bool useEmulator = true}) async {
-    await SettingsHelpers.initializeSettings(useEmulator: useEmulator);
+    await SettingsHelpers.resetServerState(useEmulator: useEmulator);
   }
 
   // ==========================================================================
@@ -50,7 +50,7 @@ class UITestHelpers {
     // otherwise fire HTTP requests against the just-reset server.
     await tester.pumpWidget(const SizedBox.shrink());
 
-    // Set up emulator mode
+    // Set up emulator mode (cleanup only — don't bump epoch)
     print('UITestHelpers.navigateToGameMenu: Calling initializeSettings...');
     await SettingsHelpers.initializeSettings();
     print('UITestHelpers.navigateToGameMenu: initializeSettings complete');

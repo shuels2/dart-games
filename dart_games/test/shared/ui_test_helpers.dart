@@ -30,7 +30,7 @@ class UITestHelpers {
   /// This is a thin wrapper over [SettingsHelpers.initializeSettings] that
   /// makes the intent explicit in test files' `setUp`.
   static Future<void> resetServerState({bool useEmulator = true}) async {
-    await SettingsHelpers.initializeSettings(useEmulator: useEmulator);
+    await SettingsHelpers.resetServerState(useEmulator: useEmulator);
   }
 
   // ==========================================================================

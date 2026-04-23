@@ -37,6 +37,7 @@ void main() {
   setUp(() {
     database = Database(':memory:');
     dataDir = Directory.systemTemp.createTempSync('test_routes_test_').path;
+    TestRoutes.resetRateLimitState();
     testHandler = TestRoutes(database.rawDb, dataDir).router.call;
     playerHandler = PlayerRoutes(database.rawDb, dataDir).router.call;
     savedGameHandler = SavedGameRoutes(database.rawDb).router.call;
@@ -185,6 +186,183 @@ void main() {
         expect(body2['deleted']['players'], equals(0));
         expect(body2['deleted']['game_history'], equals(0));
         expect(body2['deleted']['saved_games'], equals(0));
+      });
+
+      test('does not change epoch without X-Target-Epoch header', () async {
+        final initialEpoch = TestRoutes.currentTestEpoch;
+
+        final response = await testHandler(
+          Request('POST', Uri.parse('http://localhost/reset')),
+        );
+        final body = await _readJson(response) as Map<String, dynamic>;
+        expect(response.statusCode, equals(200));
+        expect(body['test_epoch'], equals(initialEpoch));
+        expect(TestRoutes.currentTestEpoch, equals(initialEpoch));
+      });
+
+      test('sets epoch to X-Target-Epoch value', () async {
+        final initialEpoch = TestRoutes.currentTestEpoch;
+
+        final response = await testHandler(
+          Request(
+            'POST',
+            Uri.parse('http://localhost/reset'),
+            headers: {'x-target-epoch': (initialEpoch + 1).toString()},
+          ),
+        );
+        final body = await _readJson(response) as Map<String, dynamic>;
+        expect(body['test_epoch'], equals(initialEpoch + 1));
+        expect(TestRoutes.currentTestEpoch, equals(initialEpoch + 1));
+      });
+
+      test('idempotent: duplicate X-Target-Epoch does not drift', () async {
+        final initialEpoch = TestRoutes.currentTestEpoch;
+        final target = initialEpoch + 1;
+
+        // First reset sets epoch to target
+        final response1 = await testHandler(
+          Request(
+            'POST',
+            Uri.parse('http://localhost/reset'),
+            headers: {
+              'x-test-epoch': initialEpoch.toString(),
+              'x-target-epoch': target.toString(),
+            },
+          ),
+        );
+        expect(response1.statusCode, equals(200));
+        expect(TestRoutes.currentTestEpoch, equals(target));
+
+        // Phantom duplicate: same X-Test-Epoch (stale) → 409
+        final response2 = await testHandler(
+          Request(
+            'POST',
+            Uri.parse('http://localhost/reset'),
+            headers: {
+              'x-test-epoch': initialEpoch.toString(),
+              'x-target-epoch': target.toString(),
+            },
+          ),
+        );
+        expect(response2.statusCode, equals(409));
+        // Epoch must NOT have changed — still at target
+        expect(TestRoutes.currentTestEpoch, equals(target));
+      });
+
+      test('rate-limits phantom resets within cooldown window', () async {
+        final initialEpoch = TestRoutes.currentTestEpoch;
+
+        // Create a player so we can verify DB isn't wiped
+        await playerHandler(_jsonRequest('POST', '/', {
+          'id': 'p1',
+          'name': 'Alice',
+          'createdAt': '2026-04-14T12:00:00.000Z',
+        }));
+
+        // First reset advances the epoch (sets _lastEpochAdvance)
+        final response1 = await testHandler(
+          Request(
+            'POST',
+            Uri.parse('http://localhost/reset'),
+            headers: {'x-target-epoch': (initialEpoch + 1).toString()},
+          ),
+        );
+        expect(response1.statusCode, equals(200));
+        expect(TestRoutes.currentTestEpoch, equals(initialEpoch + 1));
+
+        // Re-create a player after the reset wiped it
+        await playerHandler(_jsonRequest('POST', '/', {
+          'id': 'p2',
+          'name': 'Bob',
+          'createdAt': '2026-04-14T12:00:00.000Z',
+        }));
+
+        // Phantom reset arrives immediately with a new target epoch
+        // Should be rate-limited: 200 OK but no DB wipe, no epoch advance
+        final response2 = await testHandler(
+          Request(
+            'POST',
+            Uri.parse('http://localhost/reset'),
+            headers: {
+              'x-test-epoch': (initialEpoch + 1).toString(),
+              'x-target-epoch': (initialEpoch + 2).toString(),
+            },
+          ),
+        );
+        final body2 = await _readJson(response2) as Map<String, dynamic>;
+        expect(response2.statusCode, equals(200));
+        expect(body2['rate_limited'], isTrue);
+        expect(body2['deleted']['players'], equals(0));
+        // Epoch must NOT have advanced
+        expect(TestRoutes.currentTestEpoch, equals(initialEpoch + 1));
+
+        // Player should still exist (DB not wiped)
+        final listResponse = await playerHandler(
+          Request('GET', Uri.parse('http://localhost/')),
+        );
+        final players = await _readJson(listResponse) as List;
+        expect(players, hasLength(1));
+        expect((players[0] as Map)['name'], equals('Bob'));
+      });
+
+      test('rejects stale reset with mismatched X-Test-Epoch header', () async {
+        // Advance the epoch
+        final initialEpoch = TestRoutes.currentTestEpoch;
+        await testHandler(
+          Request(
+            'POST',
+            Uri.parse('http://localhost/reset'),
+            headers: {'x-target-epoch': (initialEpoch + 1).toString()},
+          ),
+        );
+        final currentEpoch = TestRoutes.currentTestEpoch;
+
+        // Send a stale reset with an old epoch
+        final staleResponse = await testHandler(
+          Request(
+            'POST',
+            Uri.parse('http://localhost/reset'),
+            headers: {'x-test-epoch': '0'},
+          ),
+        );
+        final staleBody =
+            await _readJson(staleResponse) as Map<String, dynamic>;
+
+        expect(staleResponse.statusCode, equals(409));
+        expect(staleBody['error'], equals('Stale test reset'));
+        expect(staleBody['current_epoch'], equals(currentEpoch));
+
+        // Epoch should NOT have advanced
+        expect(TestRoutes.currentTestEpoch, equals(currentEpoch));
+      });
+
+      test('accepts reset with matching X-Test-Epoch header', () async {
+        final currentEpoch = TestRoutes.currentTestEpoch;
+
+        final response = await testHandler(
+          Request(
+            'POST',
+            Uri.parse('http://localhost/reset'),
+            headers: {'x-test-epoch': currentEpoch.toString()},
+          ),
+        );
+        final body = await _readJson(response) as Map<String, dynamic>;
+
+        expect(response.statusCode, equals(200));
+        // No X-Target-Epoch header → epoch should NOT have changed
+        expect(body['test_epoch'], equals(currentEpoch));
+      });
+
+      test('accepts reset without X-Test-Epoch header (backwards compat)', () async {
+        final currentEpoch = TestRoutes.currentTestEpoch;
+
+        final response = await testHandler(
+          Request('POST', Uri.parse('http://localhost/reset')),
+        );
+
+        expect(response.statusCode, equals(200));
+        // No X-Target-Epoch header → epoch should NOT have changed
+        expect(TestRoutes.currentTestEpoch, equals(currentEpoch));
       });
 
       test('clears everything together', () async {

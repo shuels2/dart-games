@@ -114,7 +114,11 @@ class ApiClient {
   /// POST /api/v1/players - Create a player.
   Future<Map<String, dynamic>> createPlayer(Map<String, dynamic> player) async {
     final response = await _post('/api/v1/players', player);
-    if (response.statusCode == 409) return {};
+    if (response.statusCode == 409) {
+      print('[ApiClient] createPlayer REJECTED (409) — '
+          'id=${player['id']}, epoch=${ApiConfig.testEpoch}');
+      return {};
+    }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
@@ -194,7 +198,11 @@ class ApiClient {
   /// POST /api/v1/games - Save/upsert a game.
   Future<Map<String, dynamic>> saveGame(Map<String, dynamic> game) async {
     final response = await _post('/api/v1/games', game);
-    if (response.statusCode == 409) return {};
+    if (response.statusCode == 409) {
+      print('[ApiClient] saveGame REJECTED (409) — '
+          'id=${game['id']}, epoch=${ApiConfig.testEpoch}');
+      return {};
+    }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 

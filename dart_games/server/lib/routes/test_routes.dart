@@ -25,6 +25,17 @@ class TestRoutes {
   /// against the `X-Test-Epoch` header sent by ApiClient.
   static int get currentTestEpoch => _testEpoch;
 
+  /// Reset rate-limit state so unit tests don't interfere with each other.
+  static void resetRateLimitState() {
+    _lastEpochAdvance = null;
+  }
+
+  /// Timestamp of the last epoch-advancing reset.  Used to rate-limit
+  /// phantom resets: legitimate setUp calls are 10+ seconds apart,
+  /// while phantom bursts arrive within milliseconds.
+  static DateTime? _lastEpochAdvance;
+  static const _epochCooldown = Duration(seconds: 8);
+
   TestRoutes(this._db, this._dataDir);
 
   Router get router {
@@ -41,9 +52,66 @@ class TestRoutes {
   ///
   /// Also deletes photo files from disk. Returns counts of deleted rows
   /// so the caller can verify the reset succeeded.
+  ///
+  /// If the request carries an `X-Test-Epoch` header, the server checks
+  /// that it matches the current epoch.  A mismatch means this is a stale
+  /// reset from a previous test that arrived late — reject it with 409
+  /// so it doesn't bump the epoch and invalidate the current test's writes.
   Future<Response> _reset(Request request) async {
     final requestId = request.headers['x-request-id'] ?? 'no-id';
-    print('[TestRoutes] POST /test/reset  request_id=$requestId');
+
+    // Guard against stale resets from previous tests.
+    final epochHeader = request.headers['x-test-epoch'];
+    if (epochHeader != null) {
+      final requestEpoch = int.tryParse(epochHeader);
+      if (requestEpoch != null && requestEpoch != _testEpoch) {
+        print('[TestRoutes] REJECTED stale POST /test/reset — '
+            'request epoch=$requestEpoch, current=$_testEpoch  '
+            'request_id=$requestId');
+        return Response(409,
+          body: jsonEncode({
+            'error': 'Stale test reset',
+            'current_epoch': _testEpoch,
+          }),
+          headers: _jsonHeaders,
+        );
+      }
+    }
+
+    final targetEpochHeaderEarly = request.headers['x-target-epoch'];
+    print('[TestRoutes] POST /test/reset  request_id=$requestId  '
+        'client_epoch=${epochHeader ?? "none"}  '
+        'target_epoch=${targetEpochHeaderEarly ?? "none"}  '
+        'server_epoch=$_testEpoch');
+
+    // Rate-limit epoch-advancing resets to catch phantom requests.
+    // Legitimate setUp calls are 10+ seconds apart; phantom bursts
+    // from the same Dart isolate arrive within milliseconds.
+    if (targetEpochHeaderEarly != null && _lastEpochAdvance != null) {
+      final elapsed = DateTime.now().difference(_lastEpochAdvance!);
+      if (elapsed < _epochCooldown) {
+        print('[TestRoutes] RATE-LIMITED phantom reset — '
+            '${elapsed.inMilliseconds}ms since last epoch advance  '
+            'request_id=$requestId');
+        return Response.ok(
+          jsonEncode({
+            'status': 'ok',
+            'test_epoch': _testEpoch,
+            'rate_limited': true,
+            'deleted': {
+              'players': 0,
+              'game_history': 0,
+              'saved_games': 0,
+              'victory_music': 0,
+              'failed_stats': 0,
+              'photos': 0,
+            },
+          }),
+          headers: _jsonHeaders,
+        );
+      }
+    }
+
     try {
       // Collect photo paths before deleting rows.
       final photoRows = _db.select(
@@ -88,7 +156,28 @@ class TestRoutes {
         // Advance the epoch so stale writes from the previous test are
         // rejected.  Must happen after COMMIT so the new epoch is only
         // visible once the database is actually clean.
-        _testEpoch++;
+        //
+        // The client controls the target value via `X-Target-Epoch`.
+        // The server SETs (not increments) to that value.  This makes
+        // the operation idempotent: if phantom duplicate resets arrive
+        // with the same target, the epoch is set to the same value —
+        // no drift.  Without this header the epoch stays unchanged.
+        final targetEpochHeader = request.headers['x-target-epoch'];
+        if (targetEpochHeader != null) {
+          final targetEpoch = int.tryParse(targetEpochHeader);
+          if (targetEpoch != null) {
+            final previousEpoch = _testEpoch;
+            _testEpoch = targetEpoch;
+            if (targetEpoch != previousEpoch) {
+              _lastEpochAdvance = DateTime.now();
+              print('[TestRoutes] Epoch ADVANCED: $previousEpoch → $targetEpoch  '
+                  'request_id=$requestId');
+            } else {
+              print('[TestRoutes] Epoch UNCHANGED (idempotent duplicate): '
+                  '$previousEpoch → $targetEpoch  request_id=$requestId');
+            }
+          }
+        }
 
         // Delete photo files after the transaction succeeds.
         for (final path in photoPaths) {
