@@ -66,6 +66,20 @@ if not exist "server\bin\server.dart" (
     exit /b 1
 )
 
+REM Ensure Flutter dependencies are installed
+if not exist ".dart_tool\package_config.json" (
+    echo Installing Flutter dependencies...
+    flutter pub get
+    if !errorlevel! neq 0 (
+        echo ERROR: Failed to install Flutter dependencies.
+        pause
+        exit /b 1
+    )
+    echo Flutter dependencies installed.
+) else (
+    echo Flutter dependencies already installed.
+)
+
 REM Ensure server dependencies are installed
 if not exist "server\.dart_tool\package_config.json" (
     echo Installing server dependencies...
