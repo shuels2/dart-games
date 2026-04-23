@@ -158,93 +158,93 @@ class SettingsHelpers {
       VictoryMusicService().resetForTesting();
 
       // ── Step 2: Atomically clear all server-side user data ──────────
-      final requestId = _generateRequestId();
-      final currentEpoch = ApiConfig.testEpoch ?? 0;
-      final targetEpoch = bumpEpoch ? currentEpoch + 1 : null;
-      final resetHeaders = <String, String>{
-        'X-Request-Id': requestId,
-        'X-Test-Epoch': currentEpoch.toString(),
-      };
-      if (targetEpoch != null) {
-        resetHeaders['X-Target-Epoch'] = targetEpoch.toString();
-      }
-      const resetPath = '/api/v1/test/reset';
-      print('[initializeSettings] POSTing $resetPath (id=$requestId, '
-          'gen=$myGen, epoch=$currentEpoch, '
-          'target=${targetEpoch ?? "none"}, bump=$bumpEpoch)...');
-      final resetResponse = await http.post(
-        Uri.parse(ApiConfig.url(resetPath)),
-        headers: resetHeaders,
-      );
-      if (_superseded()) { _logAbort('reset POST'); return; }
-
-      if (resetResponse.statusCode == 409) {
-        final rejectBody = jsonDecode(resetResponse.body) as Map<String, dynamic>;
-        final serverEpoch = rejectBody['current_epoch'] as int?;
-        if (serverEpoch != null && !_superseded()) {
-          ApiConfig.setTestEpoch(serverEpoch);
-        }
-        print('[initializeSettings] STALE RESET REJECTED (id=$requestId, '
-            'gen=$myGen) — sent epoch=$currentEpoch, server at $serverEpoch. Skipping.');
-        return;
-      }
-
-      if (resetResponse.statusCode != 200) {
-        throw Exception(
-          'Test reset failed (status ${resetResponse.statusCode}): '
-          '${resetResponse.body}',
-        );
-      }
-
-      final resetBody = jsonDecode(resetResponse.body) as Map<String, dynamic>;
-      final testEpoch = resetBody['test_epoch'] as int?;
-      if (!_superseded()) {
-        ApiConfig.setTestEpoch(testEpoch);
-      }
+      // Only resetServerState() (bumpEpoch=true) wipes the database.
+      // Cleanup-only calls skip the reset POST to avoid phantom resets
+      // wiping data that the current test just created.
       if (bumpEpoch) {
+        final requestId = _generateRequestId();
+        final currentEpoch = ApiConfig.testEpoch ?? 0;
+        final targetEpoch = currentEpoch + 1;
+        final resetHeaders = <String, String>{
+          'X-Request-Id': requestId,
+          'X-Test-Epoch': currentEpoch.toString(),
+          'X-Target-Epoch': targetEpoch.toString(),
+        };
+        const resetPath = '/api/v1/test/reset';
+        print('[initializeSettings] POSTing $resetPath (id=$requestId, '
+            'gen=$myGen, epoch=$currentEpoch, target=$targetEpoch)...');
+        final resetResponse = await http.post(
+          Uri.parse(ApiConfig.url(resetPath)),
+          headers: resetHeaders,
+        );
+        if (_superseded()) { _logAbort('reset POST'); return; }
+
+        if (resetResponse.statusCode == 409) {
+          final rejectBody = jsonDecode(resetResponse.body) as Map<String, dynamic>;
+          final serverEpoch = rejectBody['current_epoch'] as int?;
+          if (serverEpoch != null && !_superseded()) {
+            ApiConfig.setTestEpoch(serverEpoch);
+          }
+          print('[initializeSettings] STALE RESET REJECTED (id=$requestId, '
+              'gen=$myGen) — sent epoch=$currentEpoch, server at $serverEpoch. Skipping.');
+          return;
+        }
+
+        if (resetResponse.statusCode != 200) {
+          throw Exception(
+            'Test reset failed (status ${resetResponse.statusCode}): '
+            '${resetResponse.body}',
+          );
+        }
+
+        final resetBody = jsonDecode(resetResponse.body) as Map<String, dynamic>;
+        final testEpoch = resetBody['test_epoch'] as int?;
+        if (!_superseded()) {
+          ApiConfig.setTestEpoch(testEpoch);
+        }
         _epochBumpCompleted = true;
-      }
-      print('[initializeSettings] Reset OK (id=$requestId, gen=$myGen, '
-          'epoch=$testEpoch, bump=$bumpEpoch)');
+        print('[initializeSettings] Reset OK (id=$requestId, gen=$myGen, '
+            'epoch=$testEpoch)');
 
-      // ── Step 3: Verify the reset took effect ────────────────────────
-      if (_superseded()) { _logAbort('pre-verify'); return; }
+        // ── Step 3: Verify the reset took effect ────────────────────
+        if (_superseded()) { _logAbort('pre-verify'); return; }
 
-      final verifyResponse = await http.get(
-        _bustCache('/api/v1/players'),
-      );
-      if (_superseded()) { _logAbort('verify players'); return; }
-      if (verifyResponse.statusCode != 200) {
-        throw Exception(
-          'Player verification after reset failed '
-          '(status ${verifyResponse.statusCode}): ${verifyResponse.body}',
+        final verifyResponse = await http.get(
+          _bustCache('/api/v1/players'),
         );
-      }
-      final verifyBody = jsonDecode(verifyResponse.body) as List<dynamic>;
-      if (verifyBody.isNotEmpty) {
-        throw Exception(
-          'Test reset did not clear players: '
-          '${verifyBody.length} player(s) still present',
-        );
-      }
+        if (_superseded()) { _logAbort('verify players'); return; }
+        if (verifyResponse.statusCode != 200) {
+          throw Exception(
+            'Player verification after reset failed '
+            '(status ${verifyResponse.statusCode}): ${verifyResponse.body}',
+          );
+        }
+        final verifyBody = jsonDecode(verifyResponse.body) as List<dynamic>;
+        if (verifyBody.isNotEmpty) {
+          throw Exception(
+            'Test reset did not clear players: '
+            '${verifyBody.length} player(s) still present',
+          );
+        }
 
-      final verifySavedGamesResponse = await http.get(
-        _bustCache('/api/v1/games'),
-      );
-      if (_superseded()) { _logAbort('verify games'); return; }
-      if (verifySavedGamesResponse.statusCode != 200) {
-        throw Exception(
-          'Saved games verification after reset failed '
-          '(status ${verifySavedGamesResponse.statusCode}): ${verifySavedGamesResponse.body}',
+        final verifySavedGamesResponse = await http.get(
+          _bustCache('/api/v1/games'),
         );
-      }
-      final verifySavedGamesBody =
-          jsonDecode(verifySavedGamesResponse.body) as List<dynamic>;
-      if (verifySavedGamesBody.isNotEmpty) {
-        throw Exception(
-          'Test reset did not clear saved games: '
-          '${verifySavedGamesBody.length} saved game(s) still present',
-        );
+        if (_superseded()) { _logAbort('verify games'); return; }
+        if (verifySavedGamesResponse.statusCode != 200) {
+          throw Exception(
+            'Saved games verification after reset failed '
+            '(status ${verifySavedGamesResponse.statusCode}): ${verifySavedGamesResponse.body}',
+          );
+        }
+        final verifySavedGamesBody =
+            jsonDecode(verifySavedGamesResponse.body) as List<dynamic>;
+        if (verifySavedGamesBody.isNotEmpty) {
+          throw Exception(
+            'Test reset did not clear saved games: '
+            '${verifySavedGamesBody.length} saved game(s) still present',
+          );
+        }
       }
 
       // ── Step 4: Configure dartboard for emulator mode ───────────────
