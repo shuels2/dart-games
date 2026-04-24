@@ -1,10 +1,8 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/main.dart' as app;
 import 'package:dart_games/widgets/player_selection_card.dart';
 import 'game_ui_config.dart';
 import 'element_finders.dart';
-import 'provider_helpers.dart';
 import 'pump_sequences.dart';
 import 'settings_helpers.dart';
 
@@ -44,20 +42,7 @@ class UITestHelpers {
   ) async {
     print('UITestHelpers.navigateToGameMenu: START');
 
-    // Quiesce any widget tree left over from a prior test.  Replacing the
-    // root with an empty widget disposes the previous Element tree, which
-    // cancels pending postFrameCallbacks and Provider listeners that would
-    // otherwise fire HTTP requests against the just-reset server.
-    await tester.pumpWidget(const SizedBox.shrink());
-
-    // Set up emulator mode (cleanup only — don't bump epoch)
-    print('UITestHelpers.navigateToGameMenu: Calling initializeSettings...');
-    await SettingsHelpers.initializeSettings();
-    print('UITestHelpers.navigateToGameMenu: initializeSettings complete');
-
-    // Launch app (await ensures runApp() fires before pumps start,
-    // so the widget tree is fully replaced with fresh providers)
-    print('UITestHelpers.navigateToGameMenu: Launching app...');
+    // Launch app
     await app.main();
     print('UITestHelpers.navigateToGameMenu: App launched, pumping...');
 
@@ -73,43 +58,6 @@ class UITestHelpers {
     await tester.pump(); // Paint
     print('UITestHelpers.navigateToGameMenu: Manual pump sequence complete');
 
-    // ── Second reset ──────────────────────────────────────────────────
-    // During the pump sequence above (6+ seconds of real wall-clock time
-    // in IntegrationTestWidgetsFlutterBinding), lingering HTTP requests
-    // from the PREVIOUS test may have completed and created data on the
-    // server (e.g. a fire-and-forget POST /games or POST /players from a
-    // disposed widget tree whose ApiClient was still alive).
-    //
-    // main.dart now disposes the old ApiClient (aborting pending
-    // XMLHttpRequests), but any request whose response was already in
-    // transit when dispose() fired will still be processed server-side.
-    // This second reset catches that leaked data.
-    print('UITestHelpers.navigateToGameMenu: Second reset to catch leaked requests...');
-    await SettingsHelpers.initializeSettings();
-    print('UITestHelpers.navigateToGameMenu: Second reset complete');
-
-    // Debug: Check what screen we're on
-    print('UITestHelpers.navigateToGameMenu: Checking which screen is displayed...');
-
-    // Check for home screen
-    final homeScreenText = find.text('Let\'s play some Dart Games');
-    print('UITestHelpers.navigateToGameMenu: Home screen found: ${homeScreenText.evaluate().length}');
-
-    // Check for setup screen
-    final setupText = find.text('Scolia Dartboard Setup');
-    print('UITestHelpers.navigateToGameMenu: Setup screen found: ${setupText.evaluate().length}');
-
-    // Check for splash screen
-    final splashText = find.text('DARTS');
-    print('UITestHelpers.navigateToGameMenu: Splash screen found: ${splashText.evaluate().length}');
-
-    // Reset client-side player state so any in-flight loadPlayers() from
-    // a prior test (or the menu screen's addPostFrameCallback) is
-    // discarded via the generation counter rather than repopulating the
-    // list with stale data.
-    ProviderHelpers.getPlayerProvider(tester).resetForTesting();
-    print('UITestHelpers.navigateToGameMenu: PlayerProvider reset');
-
     // Wait for home screen cards to load (async operation)
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
@@ -118,15 +66,10 @@ class UITestHelpers {
     print('UITestHelpers.navigateToGameMenu: Waited for cards to load');
 
     // Tap game card
-    print('UITestHelpers.navigateToGameMenu: Looking for game card...');
     final gameCard = config.getGameCard();
-    print('UITestHelpers.navigateToGameMenu: Game card finder created, checking...');
-
     print('UITestHelpers.navigateToGameMenu: Found ${gameCard.evaluate().length} game cards');
 
     expect(gameCard, findsOneWidget);
-    print('UITestHelpers.navigateToGameMenu: Game card found, tapping...');
-
     await tester.tap(gameCard);
 
     // Wait for navigation
@@ -346,9 +289,6 @@ class UITestHelpers {
   static Future<void> navigateToHomeScreen(WidgetTester tester) async {
     print('UITestHelpers.navigateToHomeScreen: START');
 
-    // Quiesce any widget tree left over from a prior test.  See
-    // navigateToGameMenu for details.
-    await tester.pumpWidget(const SizedBox.shrink());
     await app.main();
     // Same pump sequence as navigateToGameMenu but stop at home screen
     await tester.pump();
@@ -364,18 +304,7 @@ class UITestHelpers {
     await tester.pump();
     print('UITestHelpers.navigateToHomeScreen: Pump sequence complete');
 
-    // ── Second reset ──────────────────────────────────────────────────
-    // Same rationale as navigateToGameMenu: the pump sequence above gave
-    // real wall-clock time for lingering HTTP requests from the prior
-    // test to complete.  This reset clears any data they created.
-    print('UITestHelpers.navigateToHomeScreen: Second reset to catch leaked requests...');
-    await SettingsHelpers.initializeSettings();
-    print('UITestHelpers.navigateToHomeScreen: Second reset complete');
-
-    // Reset client-side player state.
-    ProviderHelpers.getPlayerProvider(tester).resetForTesting();
-
-    // Let home screen rebuild with clean state
+    // Let home screen rebuild
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
     await tester.pump();

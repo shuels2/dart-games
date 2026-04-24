@@ -1,0 +1,23 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+
+import '../../shared/ui_test_helpers.dart';
+import '../../shared/provider_helpers.dart';
+import '_helpers.dart';
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('Test 23: Speed mode - hitting out-of-range number does not count',
+      (WidgetTester tester) async {
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, config, speedMode: true);
+
+    final provider = ProviderHelpers.getClockworkQuestProvider(tester);
+    final playerId = provider.getCurrentPlayerId()!;
+
+    // Miss should not add any completed targets
+    await throwMissViaMock(tester);
+    expect(provider.getPlayerCompletedTargets(playerId), isEmpty);
+  });
+}

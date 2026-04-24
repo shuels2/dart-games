@@ -25,17 +25,6 @@ class TestRoutes {
   /// against the `X-Test-Epoch` header sent by ApiClient.
   static int get currentTestEpoch => _testEpoch;
 
-  /// Reset rate-limit state so unit tests don't interfere with each other.
-  static void resetRateLimitState() {
-    _lastEpochAdvance = null;
-  }
-
-  /// Timestamp of the last epoch-advancing reset.  Used to rate-limit
-  /// phantom resets: legitimate setUp calls are 10+ seconds apart,
-  /// while phantom bursts arrive within milliseconds.
-  static DateTime? _lastEpochAdvance;
-  static const _epochCooldown = Duration(seconds: 8);
-
   TestRoutes(this._db, this._dataDir);
 
   Router get router {
@@ -55,33 +44,13 @@ class TestRoutes {
   ///
   /// If the request carries an `X-Test-Epoch` header, the server checks
   /// that it matches the current epoch.  A mismatch means this is a stale
-  /// reset from a previous test that arrived late — reject it with 409
-  /// so it doesn't bump the epoch and invalidate the current test's writes.
+  /// reset from a previous test that arrived late — reject it with 409.
   Future<Response> _reset(Request request) async {
     final requestId = request.headers['x-request-id'] ?? 'no-id';
 
-    // Idempotent epoch check: if X-Target-Epoch already matches the
-    // current server epoch, skip the epoch advance but still wipe the
-    // DB.  A phantom reset may have raced ahead and advanced the epoch;
-    // the legitimate reset must still clean up any phantom writes that
-    // landed between the two requests.
-    final targetEpochHeader = request.headers['x-target-epoch'];
-    bool skipEpochAdvance = false;
-    if (targetEpochHeader != null) {
-      final targetEpoch = int.tryParse(targetEpochHeader);
-      if (targetEpoch != null && targetEpoch == _testEpoch) {
-        print('[TestRoutes] IDEMPOTENT epoch (target=$targetEpoch already '
-            'matches current) — will still wipe DB  request_id=$requestId');
-        skipEpochAdvance = true;
-      }
-    }
-
     // Guard against stale resets from previous tests.
-    // Skip this check for idempotent wipes — the client's epoch may
-    // look stale because a phantom already advanced it, but the target
-    // is correct so the wipe should proceed.
     final epochHeader = request.headers['x-test-epoch'];
-    if (epochHeader != null && !skipEpochAdvance) {
+    if (epochHeader != null) {
       final requestEpoch = int.tryParse(epochHeader);
       if (requestEpoch != null && requestEpoch != _testEpoch) {
         print('[TestRoutes] REJECTED stale POST /test/reset — '
@@ -99,37 +68,7 @@ class TestRoutes {
 
     print('[TestRoutes] POST /test/reset  request_id=$requestId  '
         'client_epoch=${epochHeader ?? "none"}  '
-        'target_epoch=${targetEpochHeader ?? "none"}  '
         'server_epoch=$_testEpoch');
-
-    // Rate-limit epoch-advancing resets to catch phantom requests.
-    // Legitimate setUp calls are 10+ seconds apart; phantom bursts
-    // from the same Dart isolate arrive within milliseconds.
-    // Skip this check for idempotent wipes — those must always proceed.
-    if (targetEpochHeader != null && _lastEpochAdvance != null && !skipEpochAdvance) {
-      final elapsed = DateTime.now().difference(_lastEpochAdvance!);
-      if (elapsed < _epochCooldown) {
-        print('[TestRoutes] RATE-LIMITED phantom reset — '
-            '${elapsed.inMilliseconds}ms since last epoch advance  '
-            'request_id=$requestId');
-        return Response.ok(
-          jsonEncode({
-            'status': 'ok',
-            'test_epoch': _testEpoch,
-            'rate_limited': true,
-            'deleted': {
-              'players': 0,
-              'game_history': 0,
-              'saved_games': 0,
-              'victory_music': 0,
-              'failed_stats': 0,
-              'photos': 0,
-            },
-          }),
-          headers: _jsonHeaders,
-        );
-      }
-    }
 
     try {
       // Collect photo paths before deleting rows.
@@ -168,27 +107,15 @@ class TestRoutes {
         _db.execute('COMMIT;');
 
         // Force a WAL checkpoint so the on-disk database file is fully
-        // up-to-date. This prevents a subsequent read from seeing stale
-        // data from a pre-reset WAL frame.
+        // up-to-date.
         _db.execute('PRAGMA wal_checkpoint(TRUNCATE);');
 
         // Advance the epoch so stale writes from the previous test are
-        // rejected.  Must happen after COMMIT so the new epoch is only
-        // visible once the database is actually clean.
-        //
-        // Skip the advance if the epoch already matches (idempotent):
-        // the DB was wiped but the epoch stays put so legitimate writes
-        // from the current test remain valid.
-        if (targetEpochHeader != null && !skipEpochAdvance) {
-          final targetEpoch = int.tryParse(targetEpochHeader);
-          if (targetEpoch != null) {
-            final previousEpoch = _testEpoch;
-            _testEpoch = targetEpoch;
-            _lastEpochAdvance = DateTime.now();
-            print('[TestRoutes] Epoch ADVANCED: $previousEpoch → $targetEpoch  '
-                'request_id=$requestId');
-          }
-        }
+        // rejected.
+        final previousEpoch = _testEpoch;
+        _testEpoch++;
+        print('[TestRoutes] Epoch ADVANCED: $previousEpoch → $_testEpoch  '
+            'request_id=$requestId');
 
         // Delete photo files after the transaction succeeds.
         for (final path in photoPaths) {

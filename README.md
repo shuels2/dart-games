@@ -627,7 +627,7 @@ dart_games/
 │   │   ├── models/                  # Server-side models
 │   │   ├── routes/                  # REST API route handlers
 │   │   └── middleware/              # CORS and logging middleware
-│   └── test/                       # Server tests (168 tests)
+│   └── test/                       # Server tests (171 tests)
 ├── lib/
 │   ├── main.dart                    # App entry point
 │   ├── models/                      # Data models
@@ -648,7 +648,7 @@ dart_games/
 │           ├── reef_royale/         # Reef Royale game
 │           └── target_tag/          # Target Tag game
 ├── test/                            # Flutter non-UI tests (1179 tests)
-├── integration_test/                # UI automation tests (330 tests)
+├── integration_test/                # UI automation tests (364 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
     │   ├── icons/
@@ -863,11 +863,11 @@ cd server && dart pub get && cd ..
 # Start the backend server
 cd server && dart run bin/server.dart &
 
-# Run non-UI tests (all 1347 tests must pass)
+# Run non-UI tests (all 1350 tests must pass)
 flutter test                  # 1179 Flutter tests
-cd server && dart test        # 168 server tests
+cd server && dart test        # 171 server tests
 
-# Optional: Run UI automation tests (330 tests, ~224 minutes, requires chromedriver)
+# Optional: Run UI automation tests (364 tests, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
 
 # Launch in Chrome (web)
@@ -879,13 +879,13 @@ flutter run
 
 ### Testing Requirements
 
-**All 1347 non-UI tests must pass before any build or deployment.**
+**All 1350 non-UI tests must pass before any build or deployment.**
 
 ```bash
 # Flutter tests (1179 tests)
 flutter test
 
-# Server tests (168 tests)
+# Server tests (171 tests)
 cd server && dart test
 ```
 
@@ -909,7 +909,7 @@ cd server && dart test
 - Shared test components (24 tests)
 - Widget tests (44 tests: 23 dartboard, 8 save modal, 13 resume modal)
 
-**Server Test Coverage (168 tests):**
+**Server Test Coverage (171 tests):**
 - Database & helpers (25 tests)
 - Model roundtrips (32 tests)
 - Migration runner, V1 baseline & V2 failed_stats (29 tests)
@@ -919,14 +919,15 @@ cd server && dart test
 - Saved game routes (13 tests)
 - Victory music routes (14 tests)
 - Failed stats routes (6 tests)
-- Test routes (6 tests)
+- Test routes (9 tests)
 
-**UI Automation Test Coverage (330 tests, ~224 minutes):**
-- Target Tag (62 tests, ~48 min): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
-- Carnival Derby (33 tests, ~22 min): Menu, gameplay, bust mechanics, skip turn, edit score, results screen, save/resume
-- Monster Mash (60 tests, ~40 min): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation, save/resume
-- Reef Royale (70 tests, ~37 min): Add player, menu settings, gameplay, coral claiming, edit score, results screen, visual validation, showcase, save/resume
-- Clockwork Quest (105 tests, ~57 min): Add player, menu settings, gameplay, gear progression, edit score, results screen, save/resume, screenshot
+**UI Automation Test Coverage (364 tests, one-test-per-process architecture):**
+- Each test runs in its own `flutter drive` process for full isolate-level isolation
+- Target Tag (69 tests): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
+- Carnival Derby (40 tests): Menu, gameplay, bust mechanics, skip turn, edit score, results screen, save/resume
+- Monster Mash (67 tests): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation, save/resume
+- Reef Royale (83 tests): Add player, menu settings, gameplay, coral claiming, edit score, results screen, visual validation, showcase, screenshot, save/resume
+- Clockwork Quest (105 tests): Add player, menu settings, gameplay, gear progression, edit score, results screen, save/resume, screenshot
 - Requires chromedriver setup - see [CLAUDE.md](CLAUDE.md) for complete UI testing guide
 
 ### Cross-Platform Compatibility
