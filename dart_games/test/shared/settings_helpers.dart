@@ -26,13 +26,11 @@ class SettingsHelpers {
 
     // Wipe all server-side user data
     final requestId = _generateRequestId();
-    final currentEpoch = ApiConfig.testEpoch ?? 0;
     final resetResponse = await http.post(
       Uri.parse(ApiConfig.url('/api/v1/test/reset')),
       headers: {
         'Content-Type': 'application/json',
         'X-Request-Id': requestId,
-        'X-Test-Epoch': currentEpoch.toString(),
       },
     );
 
