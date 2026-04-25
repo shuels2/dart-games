@@ -274,9 +274,11 @@ class HorseRaceProvider extends ChangeNotifier {
     );
 
     debugPrint('[HorseRaceProvider] saving with id=${metadata.id}');
-    await SaveGameService(_apiClient).saveGame(metadata);
-    _resumedSavedGameId = metadata.id;
-    debugPrint('[HorseRaceProvider] saveGame completed — resumedId=$_resumedSavedGameId');
+    final saved = await SaveGameService(_apiClient).saveGame(metadata);
+    if (saved) {
+      _resumedSavedGameId = metadata.id;
+    }
+    debugPrint('[HorseRaceProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
     } finally {
       _saving = false;
     }

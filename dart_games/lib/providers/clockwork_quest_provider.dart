@@ -495,9 +495,11 @@ class ClockworkQuestProvider extends ChangeNotifier {
     );
 
     debugPrint('[ClockworkQuestProvider] saving with id=${metadata.id}');
-    await SaveGameService(_apiClient).saveGame(metadata);
-    _resumedSavedGameId = metadata.id;
-    debugPrint('[ClockworkQuestProvider] saveGame completed — resumedId=$_resumedSavedGameId');
+    final saved = await SaveGameService(_apiClient).saveGame(metadata);
+    if (saved) {
+      _resumedSavedGameId = metadata.id;
+    }
+    debugPrint('[ClockworkQuestProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
     } finally {
       _saving = false;
     }

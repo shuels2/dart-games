@@ -160,11 +160,16 @@ class PlayerProvider extends ChangeNotifier {
         _allPlayers.add(player);
         notifyListeners();
         try {
-          await _api.createPlayer({
+          final result = await _api.createPlayer({
             'id': player.id,
             'name': player.name,
             'createdAt': player.createdAt.toIso8601String(),
           });
+          if (result.isEmpty) {
+            _allPlayers.removeWhere((p) => p.id == player.id);
+            notifyListeners();
+            return;
+          }
           // A concurrent loadPlayers() may have replaced _allPlayers while
           // the API call was in flight, clobbering the optimistic add.
           // Re-add if the player is no longer present.

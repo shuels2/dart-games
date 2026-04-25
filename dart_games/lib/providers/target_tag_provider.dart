@@ -379,9 +379,11 @@ class TargetTagProvider extends ChangeNotifier {
     );
 
     debugPrint('[TargetTagProvider] saving with id=${metadata.id}');
-    await SaveGameService(_apiClient).saveGame(metadata);
-    _resumedSavedGameId = metadata.id;
-    debugPrint('[TargetTagProvider] saveGame completed — resumedId=$_resumedSavedGameId');
+    final saved = await SaveGameService(_apiClient).saveGame(metadata);
+    if (saved) {
+      _resumedSavedGameId = metadata.id;
+    }
+    debugPrint('[TargetTagProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
     } finally {
       _saving = false;
     }

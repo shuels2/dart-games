@@ -151,6 +151,13 @@ class PlayerRoutes {
     final name = body['name'] as String;
     final createdAt = body['createdAt'] as String;
 
+    if (rowExists(_db, 'players', 'id = ?', [id])) {
+      return Response(409,
+        body: jsonEncode({'error': 'Player already exists', 'id': id}),
+        headers: _jsonHeaders,
+      );
+    }
+
     insertRow(
       _db,
       'INSERT INTO players (id, name, created_at) VALUES (?, ?, ?);',
