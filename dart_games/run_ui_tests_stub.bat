@@ -17,12 +17,27 @@ if "%1"=="--help" goto :show_help
 REM ============================================================
 REM Parse command line arguments
 REM ============================================================
-set "filter="
+REM Filters are path fragments matched against the full test file path.
+REM Each arg is matched independently (OR logic). Backslashes are normalised
+REM to forward slashes; the .dart extension is optional.
+REM Examples:
+REM   carnival_derby                              -> all carnival derby tests
+REM   carnival_derby\save_resume                  -> all save/resume tests
+REM   carnival_derby\save_resume\resume_modal_loads_game_test -> one file
+REM   carnival_derby\save_resume\resume_modal_loads_game_test carnival_derby\save_resume\resume_modal_resave_overwrites_test -> two files
+REM ============================================================
 set "run_all=1"
+set "token_count=0"
 
 if not "%~1"=="" (
     set "run_all=0"
-    set "filter=%*"
+    for %%T in (%*) do (
+        set /a token_count+=1
+        set "_nt=%%T"
+        set "_nt=!_nt:\=/!"
+        set "_nt=!_nt:.dart=!"
+        set "tok!token_count!=!_nt!"
+    )
 )
 
 REM ============================================================
@@ -63,7 +78,8 @@ echo ========================================
 if "!run_all!"=="1" (
     echo Running All UI Automation Tests ^(STUB^)
 ) else (
-    echo Running Filtered UI Automation Tests ^(STUB^): !filter!
+    echo Running Filtered UI Automation Tests ^(STUB^):
+    for /l %%i in (1,1,!token_count!) do echo   [%%i] !tok%%i!
 )
 echo ========================================
 echo.
@@ -80,6 +96,9 @@ REM ============================================================
 set "_RST_TARGET=%~1"
 set /a test_count+=1
 
+set /a _RST_PORT=9000+test_count
+set "_RST_DATADIR=integration_test_output\test_data_!test_count!"
+
 set "_RST_LOGNAME=%_RST_TARGET:integration_test/=%"
 set "_RST_LOGNAME=%_RST_LOGNAME:/=_%"
 set "_RST_LOGNAME=%_RST_LOGNAME:\=_%"
@@ -88,15 +107,19 @@ set "_RST_LOG=integration_test_output\%_RST_LOGNAME%.log"
 
 echo ----------------------------------------
 echo [!test_count!] !_RST_TARGET!
+echo   Server port: !_RST_PORT!  Data dir: !_RST_DATADIR!
 echo Start: %time%
 
 echo ---------------------------------------- >> integration_test_output\summary.txt
 echo [!test_count!] !_RST_TARGET! >> integration_test_output\summary.txt
 echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
-echo [STUB] Simulating: flutter drive --target=!_RST_TARGET! > "!_RST_LOG!"
+echo [STUB] Simulating: flutter drive --target=!_RST_TARGET! --dart-define=SERVER_PORT=!_RST_PORT! > "!_RST_LOG!"
 echo Started at %date% %time% >> "!_RST_LOG!"
+echo Server port: !_RST_PORT! >> "!_RST_LOG!"
 echo. >> "!_RST_LOG!"
+
+echo [STUB] Starting server on port !_RST_PORT! with data dir !_RST_DATADIR!...
 timeout /t 1 /nobreak >nul
 echo +1: All tests passed! >> "!_RST_LOG!"
 
@@ -107,9 +130,13 @@ if defined STUB_FAIL (
     cmd /c exit 0
 )
 
+if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
+
+echo [STUB] Stopping server on port !_RST_PORT!.
+
 echo End: %time%
 echo End Time: %date% %time% >> integration_test_output\summary.txt
-if !errorlevel! equ 0 (
+if "!_RST_PASS!"=="1" (
     echo Result: PASSED
     echo Result: PASSED >> integration_test_output\summary.txt
     echo PASSED >> "!_RST_LOG!" 2>nul
@@ -135,11 +162,22 @@ for %%G in (%GAMES%) do (
     set "_GAME=%%G"
     set "_GAME_DIR=integration_test\%%G"
 
+    REM A game matches when run_all=1, OR when at least one token either:
+    REM   (a) is a substring of the game name  (e.g. "carnival" matches "carnival_derby")
+    REM   (b) contains the game name            (e.g. "carnival_derby/save_resume" contains "carnival_derby")
     set "_game_matches=0"
     if "!run_all!"=="1" set "_game_matches=1"
     if "!_game_matches!"=="0" (
-        echo %%G | findstr /i "!filter!" >nul 2>&1
-        if !errorlevel! equ 0 set "_game_matches=1"
+        for /l %%i in (1,1,!token_count!) do (
+            if "!_game_matches!"=="0" (
+                echo %%G | findstr /i /C:"!tok%%i!" >nul 2>&1
+                if !errorlevel! equ 0 set "_game_matches=1"
+            )
+            if "!_game_matches!"=="0" (
+                echo !tok%%i! | findstr /i /C:"%%G" >nul 2>&1
+                if !errorlevel! equ 0 set "_game_matches=1"
+            )
+        )
     )
 
     if "!_game_matches!"=="1" (
@@ -153,18 +191,24 @@ for %%G in (%GAMES%) do (
         echo Game: %%G >> integration_test_output\summary.txt
         echo ======================================== >> integration_test_output\summary.txt
 
-        echo [STUB] Starting services for %%G...
+        echo [STUB] Starting ChromeDriver for %%G...
+        echo [STUB] (Backend server will start fresh per test on a unique port)
 
         REM Run test files directly in the game directory
         for %%F in ("!_GAME_DIR!\*_test.dart") do (
             set "_test_path=%%F"
             set "_test_path=!_test_path:\=/!"
 
+            REM A file matches when run_all=1 OR any token is a substring of its path
             set "_file_matches=0"
             if "!run_all!"=="1" set "_file_matches=1"
             if "!_file_matches!"=="0" (
-                echo !_test_path! | findstr /i "!filter!" >nul 2>&1
-                if !errorlevel! equ 0 set "_file_matches=1"
+                for /l %%i in (1,1,!token_count!) do (
+                    if "!_file_matches!"=="0" (
+                        echo !_test_path! | findstr /i /C:"!tok%%i!" >nul 2>&1
+                        if !errorlevel! equ 0 set "_file_matches=1"
+                    )
+                )
             )
 
             if "!_file_matches!"=="1" (
@@ -174,44 +218,29 @@ for %%G in (%GAMES%) do (
 
         REM Run test files in subdirectories
         for /d %%D in ("!_GAME_DIR!\*") do (
-            set "_subdir_name=%%~nxD"
+            for %%F in ("%%D\*_test.dart") do (
+                set "_test_path=%%F"
+                set "_test_path=!_test_path:\=/!"
 
-            set "_subdir_matches=0"
-            if "!run_all!"=="1" set "_subdir_matches=1"
-            if "!_subdir_matches!"=="0" (
-                echo %%G/!_subdir_name! | findstr /i "!filter!" >nul 2>&1
-                if !errorlevel! equ 0 set "_subdir_matches=1"
-            )
-            if "!_game_matches!"=="1" if "!run_all!"=="0" (
-                echo %%G | findstr /i "!filter!" >nul 2>&1
-                if !errorlevel! equ 0 set "_subdir_matches=1"
-            )
-
-            if "!_subdir_matches!"=="1" (
-                for %%F in ("%%D\*_test.dart") do (
-                    set "_test_path=%%F"
-                    set "_test_path=!_test_path:\=/!"
-
-                    set "_file_matches=0"
-                    if "!run_all!"=="1" set "_file_matches=1"
-                    if "!_file_matches!"=="0" (
-                        echo !_test_path! | findstr /i "!filter!" >nul 2>&1
-                        if !errorlevel! equ 0 set "_file_matches=1"
+                set "_file_matches=0"
+                if "!run_all!"=="1" set "_file_matches=1"
+                if "!_file_matches!"=="0" (
+                    for /l %%i in (1,1,!token_count!) do (
+                        if "!_file_matches!"=="0" (
+                            echo !_test_path! | findstr /i /C:"!tok%%i!" >nul 2>&1
+                            if !errorlevel! equ 0 set "_file_matches=1"
+                        )
                     )
-                    if "!_subdir_matches!"=="1" if "!run_all!"=="0" (
-                        echo %%G/!_subdir_name! | findstr /i "!filter!" >nul 2>&1
-                        if !errorlevel! equ 0 set "_file_matches=1"
-                    )
+                )
 
-                    if "!_file_matches!"=="1" (
-                        call :run_single_test "!_test_path!"
-                    )
+                if "!_file_matches!"=="1" (
+                    call :run_single_test "!_test_path!"
                 )
             )
         )
 
         echo.
-        echo [STUB] Services stopped for %%G.
+        echo [STUB] ChromeDriver stopped for %%G.
     )
 )
 
@@ -246,7 +275,7 @@ if !fail_count! gtr 0 (
     echo WARNING: !fail_count! test file^(s^) failed. Check log files for details.
     exit /b 1
 ) else if !test_count! equ 0 (
-    echo WARNING: No test files matched the filter "!filter!"
+    echo WARNING: No test files matched the specified filter(s)
     exit /b 1
 ) else (
     echo SUCCESS: All !pass_count! test files passed!
@@ -279,7 +308,9 @@ echo     run_ui_tests_stub.bat
 echo.
 echo FILTERING:
 echo   Without arguments, runs ALL test files.
-echo   With arguments, runs only files whose path matches any filter.
+echo   Each argument is a path fragment matched against the full test path.
+echo   Backslashes and forward slashes both work; .dart extension is optional.
+echo   Multiple arguments are combined with OR logic.
 echo.
 echo EXAMPLES:
 echo   Run all tests (stub):
@@ -288,11 +319,14 @@ echo.
 echo   Run all Target Tag tests:
 echo     run_ui_tests_stub.bat target_tag
 echo.
-echo   Run only save/resume tests:
-echo     run_ui_tests_stub.bat save_resume
+echo   Run only carnival save/resume tests:
+echo     run_ui_tests_stub.bat carnival_derby\save_resume
 echo.
-echo   Run a specific category:
-echo     run_ui_tests_stub.bat reef_royale/gameplay
+echo   Run a specific file:
+echo     run_ui_tests_stub.bat carnival_derby\save_resume\resume_modal_loads_game_test
+echo.
+echo   Run two specific files:
+echo     run_ui_tests_stub.bat carnival_derby\save_resume\resume_modal_loads_game_test carnival_derby\save_resume\resume_modal_resave_overwrites_test
 echo.
 echo NOTES:
 echo   - Test results saved to integration_test_output\

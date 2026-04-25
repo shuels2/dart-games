@@ -37,9 +37,9 @@ Future<void> main() async {
   // from a prior integration-test run or hot restart.
   _previousApiClient?.dispose();
 
-  // Initialize API client
-  // TODO: Configure from environment or settings screen
-  ApiConfig.configure('http://localhost:8080');
+  // Initialize API client — port comes from --dart-define=SERVER_PORT (tests)
+  // or falls back to 8080 (production).
+  ApiConfig.configure(ApiConfig.baseUrl);
   apiClient = ApiClient();
   _previousApiClient = apiClient;
 

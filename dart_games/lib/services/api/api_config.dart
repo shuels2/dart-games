@@ -3,7 +3,9 @@
 /// The server URL defaults to the same host as the web app on port 8080.
 /// For production, configure via [ApiConfig.configure].
 class ApiConfig {
-  static String _baseUrl = 'http://localhost:8080';
+  static const _defaultPort =
+      String.fromEnvironment('SERVER_PORT', defaultValue: '8080');
+  static String _baseUrl = 'http://localhost:$_defaultPort';
 
   /// The base URL for all API requests.
   static String get baseUrl => _baseUrl;

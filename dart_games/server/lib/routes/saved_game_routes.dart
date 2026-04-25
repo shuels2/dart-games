@@ -65,21 +65,6 @@ class SavedGameRoutes {
   }
 
   Future<Response> _save(Request request) async {
-    // Reject stale writes from a previous test epoch.
-    final requestEpoch = int.tryParse(request.headers['x-test-epoch'] ?? '');
-    if (requestEpoch != null && requestEpoch != TestRoutes.currentTestEpoch) {
-      print('[SavedGameRoutes] REJECTED stale POST /games — '
-          'request epoch=$requestEpoch, '
-          'current=${TestRoutes.currentTestEpoch}');
-      return Response(409,
-        body: jsonEncode({
-          'error': 'Stale test epoch',
-          'current_epoch': TestRoutes.currentTestEpoch,
-        }),
-        headers: {'content-type': 'application/json'},
-      );
-    }
-
     final body = await request.readAsString();
     final json = jsonDecode(body) as Map<String, dynamic>;
     final game = ServerSavedGame.fromJson(json);

@@ -146,21 +146,6 @@ class PlayerRoutes {
 
   /// POST / - Create a new player.
   Future<Response> _create(Request request) async {
-    // Reject stale writes from a previous test epoch.
-    final requestEpoch = int.tryParse(request.headers['x-test-epoch'] ?? '');
-    if (requestEpoch != null && requestEpoch != TestRoutes.currentTestEpoch) {
-      print('[PlayerRoutes] REJECTED stale POST /players — '
-          'request epoch=$requestEpoch, '
-          'current=${TestRoutes.currentTestEpoch}');
-      return Response(409,
-        body: jsonEncode({
-          'error': 'Stale test epoch',
-          'current_epoch': TestRoutes.currentTestEpoch,
-        }),
-        headers: _jsonHeaders,
-      );
-    }
-
     final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     final id = body['id'] as String;
     final name = body['name'] as String;
