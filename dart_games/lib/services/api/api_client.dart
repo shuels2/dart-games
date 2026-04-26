@@ -29,7 +29,10 @@ class ApiClient {
 
   /// GET /api/v1/settings/<key> - Returns a single setting.
   Future<String?> getSetting(String key) async {
-    final response = await _client.get(_bustCache('/api/v1/settings/$key'));
+    final response = await _client.get(
+      _bustCache('/api/v1/settings/$key'),
+      headers: _sessionHeaders(),
+    );
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -105,7 +108,10 @@ class ApiClient {
 
   /// GET /api/v1/players/<id> - Get a single player.
   Future<Map<String, dynamic>?> getPlayer(String id) async {
-    final response = await _client.get(_bustCache('/api/v1/players/$id'));
+    final response = await _client.get(
+      _bustCache('/api/v1/players/$id'),
+      headers: _sessionHeaders(),
+    );
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -114,11 +120,6 @@ class ApiClient {
   /// POST /api/v1/players - Create a player.
   Future<Map<String, dynamic>> createPlayer(Map<String, dynamic> player) async {
     final response = await _post('/api/v1/players', player);
-    if (response.statusCode == 409) {
-      print('[ApiClient] createPlayer REJECTED (409) — '
-          'id=${player['id']}, epoch=${ApiConfig.testEpoch}');
-      return {};
-    }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
@@ -145,7 +146,10 @@ class ApiClient {
 
   /// GET /api/v1/players/<id>/photo - Get player photo bytes.
   Future<Uint8List?> getPlayerPhoto(String id) async {
-    final response = await _client.get(_bustCache('/api/v1/players/$id/photo'));
+    final response = await _client.get(
+      _bustCache('/api/v1/players/$id/photo'),
+      headers: _sessionHeaders(),
+    );
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     return response.bodyBytes;
@@ -198,11 +202,6 @@ class ApiClient {
   /// POST /api/v1/games - Save/upsert a game.
   Future<Map<String, dynamic>> saveGame(Map<String, dynamic> game) async {
     final response = await _post('/api/v1/games', game);
-    if (response.statusCode == 409) {
-      print('[ApiClient] saveGame REJECTED (409) — '
-          'id=${game['id']}, epoch=${ApiConfig.testEpoch}');
-      return {};
-    }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
@@ -229,7 +228,10 @@ class ApiClient {
 
   /// GET /api/v1/music/current - Get current music info.
   Future<Map<String, dynamic>?> getCurrentMusic() async {
-    final response = await _client.get(_bustCache('/api/v1/music/current'));
+    final response = await _client.get(
+      _bustCache('/api/v1/music/current'),
+      headers: _sessionHeaders(),
+    );
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -251,7 +253,10 @@ class ApiClient {
 
   /// GET /api/v1/music/<id>/file - Download music file bytes.
   Future<Uint8List?> getMusicFile(String id) async {
-    final response = await _client.get(_bustCache('/api/v1/music/$id/file'));
+    final response = await _client.get(
+      _bustCache('/api/v1/music/$id/file'),
+      headers: _sessionHeaders(),
+    );
     if (response.statusCode == 404) return null;
     _checkResponse(response);
     return response.bodyBytes;
@@ -312,50 +317,58 @@ class ApiClient {
     });
   }
 
+  /// Returns headers with X-DB-Session if a session is active.
+  static Map<String, String>? _sessionHeaders() {
+    final session = ApiConfig.dbSession;
+    if (session == null) return null;
+    return {'X-DB-Session': session};
+  }
+
+  /// Merges content-type, optional session header, into a single map.
+  static Map<String, String> _jsonHeaders() {
+    final headers = <String, String>{'content-type': 'application/json'};
+    final session = ApiConfig.dbSession;
+    if (session != null) {
+      headers['X-DB-Session'] = session;
+    }
+    return headers;
+  }
+
   Future<http.Response> _get(String path) async {
-    final response = await _client.get(_bustCache(path));
+    final response = await _client.get(
+      _bustCache(path),
+      headers: _sessionHeaders(),
+    );
     _checkResponse(response);
     return response;
   }
 
   Future<http.Response> _post(String path, Map<String, dynamic> body) async {
-    final headers = <String, String>{'content-type': 'application/json'};
-    final epoch = ApiConfig.testEpoch;
-    if (epoch != null) {
-      headers['X-Test-Epoch'] = epoch.toString();
-    }
     final response = await _client.post(
       Uri.parse(ApiConfig.url(path)),
-      headers: headers,
+      headers: _jsonHeaders(),
       body: jsonEncode(body),
     );
-    if (response.statusCode == 409 && epoch != null) {
-      return response;
-    }
     _checkResponse(response);
     return response;
   }
 
   Future<http.Response> _put(String path, Map<String, dynamic> body) async {
-    final headers = <String, String>{'content-type': 'application/json'};
-    final epoch = ApiConfig.testEpoch;
-    if (epoch != null) {
-      headers['X-Test-Epoch'] = epoch.toString();
-    }
     final response = await _client.put(
       Uri.parse(ApiConfig.url(path)),
-      headers: headers,
+      headers: _jsonHeaders(),
       body: jsonEncode(body),
     );
-    if (response.statusCode == 409 && epoch != null) {
-      return response;
-    }
     _checkResponse(response);
     return response;
   }
 
   Future<http.Response> _delete(String path) async {
-    final response = await _client.delete(Uri.parse(ApiConfig.url(path)));
+    final headers = _sessionHeaders();
+    final response = await _client.delete(
+      Uri.parse(ApiConfig.url(path)),
+      headers: headers,
+    );
     _checkResponse(response);
     return response;
   }

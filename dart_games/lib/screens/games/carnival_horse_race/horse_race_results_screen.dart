@@ -58,6 +58,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
 
     // Update player stats and announce winner
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deleteResumedSavedGame();
       _updatePlayerStats();
       _announceGameCompletion();
       // Start confetti after a short delay
@@ -151,9 +152,14 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
         );
       }
 
-      if (!mounted) return;
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
+    }
+  }
 
-      // Auto-delete saved game if this was a resumed game
+  void _deleteResumedSavedGame() async {
+    try {
+      final horseRaceProvider = context.read<HorseRaceProvider>();
       final savedGameId = horseRaceProvider.resumedSavedGameId;
       if (savedGameId != null) {
         await SaveGameService().deleteSavedGame('carnival_derby', savedGameId);
@@ -161,7 +167,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
         horseRaceProvider.clearResumedSavedGameId();
       }
     } catch (e) {
-      debugPrint('Error updating player stats: $e');
+      debugPrint('Error deleting resumed saved game: $e');
     }
   }
 

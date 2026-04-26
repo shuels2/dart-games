@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/main.dart' as app;
+import 'package:dart_games/services/api/api_config.dart';
 import 'package:dart_games/widgets/player_selection_card.dart';
 import 'game_ui_config.dart';
 import 'element_finders.dart';
@@ -28,6 +29,10 @@ class UITestHelpers {
   /// This is a thin wrapper over [SettingsHelpers.initializeSettings] that
   /// makes the intent explicit in test files' `setUp`.
   static Future<void> resetServerState({bool useEmulator = true}) async {
+    if (ApiConfig.dbSession == null) {
+      final sessionId = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+      ApiConfig.setDbSession('session-$sessionId');
+    }
     await SettingsHelpers.resetServerState(useEmulator: useEmulator);
   }
 

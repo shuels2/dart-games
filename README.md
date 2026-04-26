@@ -22,7 +22,7 @@ Dart Games is a cross-platform (web and tablet) application that provides a fram
 
 - **Dartboard Integration** - Seamless connection to Scolia 2 physical dartboards via API
 - **Emulator Mode** - Test games without physical hardware using the built-in dartboard emulator
-- **Server-Side Storage** - Dart Shelf backend server with SQLite for centralized data persistence, schema migrations, and failed stats logging
+- **Server-Side Storage** - Dart Shelf backend server with SQLite for centralized data persistence, schema migrations, failed stats logging, and per-session database isolation for UI test parallelism
 - **Global User Management** - Shared player profiles, statistics, and game history across all games
 - **Global Announcement Queue** - Priority-based announcement system with sound effects for consistent audio experience
 - **Voice Announcer** - Customizable text-to-speech announcements with multiple voice engines and personalities
@@ -623,11 +623,11 @@ dart_games/
 ├── server/                          # Dart Shelf backend server
 │   ├── bin/server.dart              # Server entry point
 │   ├── lib/
-│   │   ├── database/                # SQLite database layer + migrations
+│   │   ├── database/                # SQLite database layer, migrations, per-session DB registry
 │   │   ├── models/                  # Server-side models
 │   │   ├── routes/                  # REST API route handlers
 │   │   └── middleware/              # CORS and logging middleware
-│   └── test/                       # Server tests (171 tests)
+│   └── test/                       # Server tests (178 tests)
 ├── lib/
 │   ├── main.dart                    # App entry point
 │   ├── models/                      # Data models
@@ -863,7 +863,7 @@ cd server && dart pub get && cd ..
 # Start the backend server
 cd server && dart run bin/server.dart &
 
-# Run non-UI tests (all 1350 tests must pass)
+# Run non-UI tests (all 1357 tests must pass)
 flutter test                  # 1179 Flutter tests
 cd server && dart test        # 171 server tests
 
@@ -885,7 +885,7 @@ flutter run
 # Flutter tests (1179 tests)
 flutter test
 
-# Server tests (171 tests)
+# Server tests (178 tests)
 cd server && dart test
 ```
 
@@ -909,8 +909,9 @@ cd server && dart test
 - Shared test components (24 tests)
 - Widget tests (44 tests: 23 dartboard, 8 save modal, 13 resume modal)
 
-**Server Test Coverage (171 tests):**
+**Server Test Coverage (178 tests):**
 - Database & helpers (25 tests)
+- Database registry & session middleware (10 tests)
 - Model roundtrips (32 tests)
 - Migration runner, V1 baseline & V2 failed_stats (29 tests)
 - Settings routes (9 tests)
@@ -919,7 +920,11 @@ cd server && dart test
 - Saved game routes (13 tests)
 - Victory music routes (14 tests)
 - Failed stats routes (6 tests)
-- Test routes (9 tests)
+- Test routes (6 tests)
+
+**Per-Session Database Isolation (UI Tests):**
+
+Flutter bug [#67090](https://github.com/flutter/flutter/issues/67090) causes `flutter drive -d chrome` to spawn two browser instances. Both execute the test code, which previously caused duplicate game saves and other data collisions. To solve this, each browser instance generates a unique session ID and sends it via `X-DB-Session` HTTP header on every request. The server's `DatabaseRegistry` lazily creates isolated SQLite databases per session (stored in `data/sessions/`), routed via `dbSessionMiddleware` using Dart's Zone system. Production traffic (no header) uses the single default database — zero behavior change for non-test usage.
 
 **UI Automation Test Coverage (364 tests, one-test-per-process architecture):**
 - Each test runs in its own `flutter drive` process for full isolate-level isolation

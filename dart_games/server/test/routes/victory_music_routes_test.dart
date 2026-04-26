@@ -51,7 +51,7 @@ void main() {
   setUp(() {
     database = Database(':memory:');
     dataDir = Directory.systemTemp.createTempSync('music_test_').path;
-    final routes = VictoryMusicRoutes(database.rawDb, dataDir);
+    final routes = VictoryMusicRoutes(dataDir, database.rawDb);
     handler = routes.router.call;
   });
 

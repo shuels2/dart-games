@@ -6,6 +6,7 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 
 import 'package:dart_games_server/database/database.dart';
+import 'package:dart_games_server/database/database_registry.dart';
 import 'package:dart_games_server/middleware/cors_middleware.dart';
 import 'package:dart_games_server/middleware/logging_middleware.dart';
 import 'package:dart_games_server/routes/dartboard_routes.dart';
@@ -33,9 +34,10 @@ void main(List<String> args) async {
   Directory('$dataDir/music').createSync(recursive: true);
   Directory('$dataDir/photos').createSync(recursive: true);
 
-  // Initialize database.
+  // Initialize database and registry.
   final database = Database(dbPath);
-  final db = database.rawDb;
+  final registry = DatabaseRegistry(database, dataDir);
+  DatabaseRegistry.initialize(registry);
   print('Database initialized at $dbPath');
 
   // Build the router.
@@ -43,18 +45,19 @@ void main(List<String> args) async {
 
   // Mount route groups.
   app.mount('/api/v1/health', HealthRoutes().router.call);
-  app.mount('/api/v1/settings', SettingsRoutes(db).router.call);
-  app.mount('/api/v1/dartboard', DartboardRoutes(db).router.call);
-  app.mount('/api/v1/players', PlayerRoutes(db, dataDir).router.call);
-  app.mount('/api/v1/games', SavedGameRoutes(db).router.call);
-  app.mount('/api/v1/music', VictoryMusicRoutes(db, dataDir).router.call);
-  app.mount('/api/v1/stats', FailedStatsRoutes(db).router.call);
-  app.mount('/api/v1/test', TestRoutes(db, dataDir).router.call);
+  app.mount('/api/v1/settings', SettingsRoutes().router.call);
+  app.mount('/api/v1/dartboard', DartboardRoutes().router.call);
+  app.mount('/api/v1/players', PlayerRoutes(dataDir).router.call);
+  app.mount('/api/v1/games', SavedGameRoutes().router.call);
+  app.mount('/api/v1/music', VictoryMusicRoutes(dataDir).router.call);
+  app.mount('/api/v1/stats', FailedStatsRoutes().router.call);
+  app.mount('/api/v1/test', TestRoutes(dataDir).router.call);
 
   // Apply middleware.
   final handler = const Pipeline()
       .addMiddleware(loggingMiddleware())
       .addMiddleware(corsMiddleware())
+      .addMiddleware(dbSessionMiddleware())
       .addHandler(app.call);
 
   // Start server.
@@ -64,7 +67,7 @@ void main(List<String> args) async {
   // Handle shutdown.
   ProcessSignal.sigint.watch().listen((_) {
     print('\nShutting down...');
-    database.close();
+    registry.closeAll();
     server.close();
     exit(0);
   });

@@ -6,6 +6,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:uuid/uuid.dart';
 
 import '../database/database_helpers.dart';
+import '../database/database_registry.dart';
 
 const _jsonHeaders = {'content-type': 'application/json'};
 
@@ -15,9 +16,10 @@ const _jsonHeaders = {'content-type': 'application/json'};
 /// was deleted), the client POSTs the original payload here so it can
 /// be investigated or replayed later.
 class FailedStatsRoutes {
-  final sqlite3.Database _db;
+  final sqlite3.Database? _testDb;
+  sqlite3.Database get _db => _testDb ?? DatabaseRegistry.current;
 
-  FailedStatsRoutes(this._db);
+  FailedStatsRoutes([this._testDb]);
 
   Router get router {
     final router = Router();

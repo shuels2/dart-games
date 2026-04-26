@@ -4,10 +4,10 @@
 
 The Dart Games app has a comprehensive test suite with 1677 total tests:
 - **1179 Flutter non-UI tests** (models, providers, services, widgets, game logic)
-- **168 server tests** (database, models, routes, migrations)
+- **178 server tests** (database, models, routes, migrations)
 - **330 UI automation tests** (end-to-end testing with Chrome)
 
-## Non-UI Tests (1179 Flutter + 168 Server = 1347 tests)
+## Non-UI Tests (1179 Flutter + 178 Server = 1357 tests)
 
 ### Flutter Tests (1179 tests)
 **Run with:** `flutter test`
@@ -103,6 +103,7 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 **MANDATORY:** Must pass 100% before every build
 
 - Database & helpers: 25 tests
+- Database registry & session middleware: 10 tests
 - Model roundtrips: 32 tests
 - Migration runner, V1 baseline & V2 failed_stats: 29 tests
 - Settings routes: 9 tests

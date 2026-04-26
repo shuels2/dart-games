@@ -5,6 +5,8 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
+import '../database/database_registry.dart';
+
 const _jsonHeaders = {'content-type': 'application/json'};
 
 /// Routes for test-only operations.
@@ -13,19 +15,11 @@ const _jsonHeaders = {'content-type': 'application/json'};
 /// in one transaction — more reliable than multiple independent DELETE
 /// calls which can fail silently or race with the app's data loading.
 class TestRoutes {
-  final sqlite3.Database _db;
   final String _dataDir;
+  final sqlite3.Database? _testDb;
+  sqlite3.Database get _db => _testDb ?? DatabaseRegistry.current;
 
-  /// Monotonically-increasing epoch counter.  Incremented on every
-  /// POST /test/reset so the server can reject stale writes that were
-  /// already in-flight when the reset happened.
-  static int _testEpoch = 0;
-
-  /// Current epoch — checked by write-path routes (saved games, players)
-  /// against the `X-Test-Epoch` header sent by ApiClient.
-  static int get currentTestEpoch => _testEpoch;
-
-  TestRoutes(this._db, this._dataDir);
+  TestRoutes(this._dataDir, [this._testDb]);
 
   Router get router {
     final router = Router();
@@ -41,34 +35,10 @@ class TestRoutes {
   ///
   /// Also deletes photo files from disk. Returns counts of deleted rows
   /// so the caller can verify the reset succeeded.
-  ///
-  /// If the request carries an `X-Test-Epoch` header, the server checks
-  /// that it matches the current epoch.  A mismatch means this is a stale
-  /// reset from a previous test that arrived late — reject it with 409.
   Future<Response> _reset(Request request) async {
     final requestId = request.headers['x-request-id'] ?? 'no-id';
 
-    // Guard against stale resets from previous tests.
-    final epochHeader = request.headers['x-test-epoch'];
-    if (epochHeader != null) {
-      final requestEpoch = int.tryParse(epochHeader);
-      if (requestEpoch != null && requestEpoch != _testEpoch) {
-        print('[TestRoutes] REJECTED stale POST /test/reset — '
-            'request epoch=$requestEpoch, current=$_testEpoch  '
-            'request_id=$requestId');
-        return Response(409,
-          body: jsonEncode({
-            'error': 'Stale test reset',
-            'current_epoch': _testEpoch,
-          }),
-          headers: _jsonHeaders,
-        );
-      }
-    }
-
-    print('[TestRoutes] POST /test/reset  request_id=$requestId  '
-        'client_epoch=${epochHeader ?? "none"}  '
-        'server_epoch=$_testEpoch');
+    print('[TestRoutes] POST /test/reset  request_id=$requestId');
 
     try {
       // Collect photo paths before deleting rows.
@@ -110,13 +80,6 @@ class TestRoutes {
         // up-to-date.
         _db.execute('PRAGMA wal_checkpoint(TRUNCATE);');
 
-        // Advance the epoch so stale writes from the previous test are
-        // rejected.
-        final previousEpoch = _testEpoch;
-        _testEpoch++;
-        print('[TestRoutes] Epoch ADVANCED: $previousEpoch → $_testEpoch  '
-            'request_id=$requestId');
-
         // Delete photo files after the transaction succeeds.
         for (final path in photoPaths) {
           final file = File(path);
@@ -126,7 +89,6 @@ class TestRoutes {
         }
 
         print('[TestRoutes] Reset complete  request_id=$requestId  '
-            'epoch=$_testEpoch  '
             'deleted: players=$playersCount  saved_games=$savedGamesCount  '
             'history=$historyCount  music=$musicCount  '
             'failed_stats=$failedStatsCount  photos=${photoPaths.length}');
@@ -134,7 +96,6 @@ class TestRoutes {
         return Response.ok(
           jsonEncode({
             'status': 'ok',
-            'test_epoch': _testEpoch,
             'deleted': {
               'players': playersCount,
               'game_history': historyCount,

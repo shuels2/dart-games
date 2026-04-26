@@ -5,13 +5,14 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 import '../database/database_helpers.dart';
+import '../database/database_registry.dart';
 import '../models/saved_game_model.dart';
-import 'test_routes.dart';
 
 class SavedGameRoutes {
-  final sqlite3.Database _db;
+  final sqlite3.Database? _testDb;
+  sqlite3.Database get _db => _testDb ?? DatabaseRegistry.current;
 
-  SavedGameRoutes(this._db);
+  SavedGameRoutes([this._testDb]);
 
   Router get router {
     final router = Router();

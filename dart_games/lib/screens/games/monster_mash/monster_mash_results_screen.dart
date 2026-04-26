@@ -99,6 +99,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
     _animationController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deleteResumedSavedGame();
       _updatePlayerStats();
 
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -157,9 +158,14 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
         );
       }
 
-      if (!mounted) return;
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
+    }
+  }
 
-      // Auto-delete saved game if this was a resumed game
+  void _deleteResumedSavedGame() async {
+    try {
+      final monsterMashProvider = context.read<MonsterMashProvider>();
       final savedGameId = monsterMashProvider.resumedSavedGameId;
       if (savedGameId != null) {
         await SaveGameService().deleteSavedGame('monster_mash', savedGameId);
@@ -167,7 +173,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
         monsterMashProvider.clearResumedSavedGameId();
       }
     } catch (e) {
-      debugPrint('Error updating player stats: $e');
+      debugPrint('Error deleting resumed saved game: $e');
     }
   }
 

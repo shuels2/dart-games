@@ -70,6 +70,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     _animationController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deleteResumedSavedGame();
       _updatePlayerStats();
 
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -123,9 +124,14 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
         );
       }
 
-      if (!mounted) return;
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
+    }
+  }
 
-      // Auto-delete saved game if this was a resumed game
+  void _deleteResumedSavedGame() async {
+    try {
+      final reefProvider = context.read<ReefRoyaleProvider>();
       final savedGameId = reefProvider.resumedSavedGameId;
       if (savedGameId != null) {
         await SaveGameService().deleteSavedGame('reef_royale', savedGameId);
@@ -133,7 +139,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
         reefProvider.clearResumedSavedGameId();
       }
     } catch (e) {
-      debugPrint('Error updating player stats: $e');
+      debugPrint('Error deleting resumed saved game: $e');
     }
   }
 

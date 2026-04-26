@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart' show Slider;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/services/api/api_config.dart';
 import 'package:dart_games/services/victory_music_service.dart';
@@ -15,11 +16,20 @@ class SettingsHelpers {
   // TEST INITIALIZATION HELPERS
   // ==========================================================================
 
-  /// Full server reset: wipes all data, advances epoch, configures dartboard.
+  /// Full server reset: assigns a unique DB session, wipes data, configures
+  /// dartboard.
   ///
-  /// With one-test-per-process architecture, each test gets its own Dart
-  /// isolate — no phantom callbacks, no epoch token gating needed.
+  /// Each browser instance gets its own isolated database via the
+  /// `X-DB-Session` header, so the duplicate browser spawned by Flutter
+  /// bug #67090 cannot create duplicate saves.
   static Future<void> resetServerState({bool useEmulator = true}) async {
+    // Generate a unique session ID so this browser instance gets its
+    // own isolated database on the server.
+    if (ApiConfig.dbSession == null) {
+      final sessionId = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+      ApiConfig.setDbSession('session-$sessionId');
+    }
+
     await _waitForServer();
 
     VictoryMusicService().resetForTesting();
@@ -30,9 +40,9 @@ class SettingsHelpers {
       'Content-Type': 'application/json',
       'X-Request-Id': requestId,
     };
-    final currentEpoch = ApiConfig.testEpoch;
-    if (currentEpoch != null) {
-      headers['X-Test-Epoch'] = currentEpoch.toString();
+    final session = ApiConfig.dbSession;
+    if (session != null) {
+      headers['X-DB-Session'] = session;
     }
     final resetResponse = await http.post(
       Uri.parse(ApiConfig.url('/api/v1/test/reset')),
@@ -46,13 +56,12 @@ class SettingsHelpers {
       );
     }
 
-    final resetBody = jsonDecode(resetResponse.body) as Map<String, dynamic>;
-    ApiConfig.setTestEpoch(resetBody['test_epoch'] as int?);
-    print('[resetServerState] Reset OK (id=$requestId, '
-        'epoch=${resetBody['test_epoch']})');
-
     // Verify the reset took effect
-    final verifyResponse = await http.get(_bustCache('/api/v1/players'));
+    final sessionHeaders = _sessionHeaders();
+    final verifyResponse = await http.get(
+      _bustCache('/api/v1/players'),
+      headers: sessionHeaders,
+    );
     if (verifyResponse.statusCode != 200) {
       throw Exception(
         'Player verification after reset failed '
@@ -69,6 +78,7 @@ class SettingsHelpers {
 
     final verifySavedGamesResponse = await http.get(
       _bustCache('/api/v1/games'),
+      headers: sessionHeaders,
     );
     if (verifySavedGamesResponse.statusCode != 200) {
       throw Exception(
@@ -87,9 +97,13 @@ class SettingsHelpers {
     }
 
     // Configure dartboard for emulator mode
+    final dartboardHeaders = <String, String>{'Content-Type': 'application/json'};
+    if (session != null) {
+      dartboardHeaders['X-DB-Session'] = session;
+    }
     final dartboardResponse = await http.put(
       Uri.parse(ApiConfig.url('/api/v1/dartboard')),
-      headers: {'Content-Type': 'application/json'},
+      headers: dartboardHeaders,
       body: jsonEncode({
         'name': 'Test Dartboard',
         'serialNumber': 'TEST-001',
@@ -133,6 +147,12 @@ class SettingsHelpers {
     return '$ts-$rnd';
   }
 
+  static Map<String, String>? _sessionHeaders() {
+    final session = ApiConfig.dbSession;
+    if (session == null) return null;
+    return {'X-DB-Session': session};
+  }
+
   static Uri _bustCache(String path) {
     final base = Uri.parse(ApiConfig.url(path));
     return base.replace(queryParameters: {
@@ -159,9 +179,9 @@ class SettingsHelpers {
     for (final player in players) {
       final url = Uri.parse(ApiConfig.url('/api/v1/players'));
       final headers = <String, String>{'Content-Type': 'application/json'};
-      final epoch = ApiConfig.testEpoch;
-      if (epoch != null) {
-        headers['X-Test-Epoch'] = epoch.toString();
+      final session = ApiConfig.dbSession;
+      if (session != null) {
+        headers['X-DB-Session'] = session;
       }
       final response = await http.post(
         url,
@@ -172,11 +192,6 @@ class SettingsHelpers {
           'createdAt': player.createdAt.toIso8601String(),
         }),
       );
-      if (response.statusCode == 409) {
-        print('[savePlayersToApi] Player "${player.name}" REJECTED (409) — '
-            'stale epoch=$epoch');
-        continue;
-      }
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception(
           'Failed to create player "${player.name}" via API '

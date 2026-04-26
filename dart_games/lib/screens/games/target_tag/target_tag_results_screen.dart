@@ -64,6 +64,7 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
 
     // Update stats, celebrate, and play music
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deleteResumedSavedGame();
       _updatePlayerStats();
 
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -129,9 +130,14 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
         );
       }
 
-      if (!mounted) return;
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
+    }
+  }
 
-      // Auto-delete saved game if this was a resumed game
+  void _deleteResumedSavedGame() async {
+    try {
+      final targetTagProvider = context.read<TargetTagProvider>();
       final savedGameId = targetTagProvider.resumedSavedGameId;
       if (savedGameId != null) {
         await SaveGameService().deleteSavedGame('target_tag', savedGameId);
@@ -139,7 +145,7 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
         targetTagProvider.clearResumedSavedGameId();
       }
     } catch (e) {
-      debugPrint('Error updating player stats: $e');
+      debugPrint('Error deleting resumed saved game: $e');
     }
   }
 

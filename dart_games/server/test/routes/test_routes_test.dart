@@ -37,8 +37,8 @@ void main() {
   setUp(() {
     database = Database(':memory:');
     dataDir = Directory.systemTemp.createTempSync('test_routes_test_').path;
-    testHandler = TestRoutes(database.rawDb, dataDir).router.call;
-    playerHandler = PlayerRoutes(database.rawDb, dataDir).router.call;
+    testHandler = TestRoutes(dataDir, database.rawDb).router.call;
+    playerHandler = PlayerRoutes(dataDir, database.rawDb).router.call;
     savedGameHandler = SavedGameRoutes(database.rawDb).router.call;
   });
 
@@ -185,60 +185,6 @@ void main() {
         expect(body2['deleted']['players'], equals(0));
         expect(body2['deleted']['game_history'], equals(0));
         expect(body2['deleted']['saved_games'], equals(0));
-      });
-
-      test('rejects stale reset with mismatched X-Test-Epoch header', () async {
-        // Advance the epoch by doing a reset
-        await testHandler(
-          Request('POST', Uri.parse('http://localhost/reset')),
-        );
-        final currentEpoch = TestRoutes.currentTestEpoch;
-
-        // Send a stale reset with an old epoch
-        final staleResponse = await testHandler(
-          Request(
-            'POST',
-            Uri.parse('http://localhost/reset'),
-            headers: {'x-test-epoch': '0'},
-          ),
-        );
-        final staleBody =
-            await _readJson(staleResponse) as Map<String, dynamic>;
-
-        expect(staleResponse.statusCode, equals(409));
-        expect(staleBody['error'], equals('Stale test reset'));
-        expect(staleBody['current_epoch'], equals(currentEpoch));
-
-        // Epoch should NOT have advanced
-        expect(TestRoutes.currentTestEpoch, equals(currentEpoch));
-      });
-
-      test('accepts reset with matching X-Test-Epoch header', () async {
-        final currentEpoch = TestRoutes.currentTestEpoch;
-
-        final response = await testHandler(
-          Request(
-            'POST',
-            Uri.parse('http://localhost/reset'),
-            headers: {'x-test-epoch': currentEpoch.toString()},
-          ),
-        );
-
-        expect(response.statusCode, equals(200));
-        // Epoch should have advanced by 1
-        expect(TestRoutes.currentTestEpoch, equals(currentEpoch + 1));
-      });
-
-      test('accepts reset without X-Test-Epoch header (backwards compat)', () async {
-        final currentEpoch = TestRoutes.currentTestEpoch;
-
-        final response = await testHandler(
-          Request('POST', Uri.parse('http://localhost/reset')),
-        );
-
-        expect(response.statusCode, equals(200));
-        // Epoch should have advanced by 1
-        expect(TestRoutes.currentTestEpoch, equals(currentEpoch + 1));
       });
 
       test('clears everything together', () async {

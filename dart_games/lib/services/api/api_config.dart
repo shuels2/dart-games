@@ -22,20 +22,16 @@ class ApiConfig {
   }
 
   // ---------------------------------------------------------------------------
-  // Test epoch (integration tests only)
+  // Database session (UI automation tests only)
   // ---------------------------------------------------------------------------
 
-  /// Current test epoch, set by [SettingsHelpers.initializeSettings] after
-  /// each POST /test/reset.  The server increments its own epoch counter on
-  /// every reset and returns the new value.  All subsequent POST/PUT requests
-  /// include this epoch via `X-Test-Epoch` so the server can reject stale
-  /// writes from a prior test whose HTTP requests were still in-flight when
-  /// the reset occurred.
-  ///
-  /// `null` in production (no header is sent, server accepts all writes).
-  static int? _testEpoch;
-  static int? get testEpoch => _testEpoch;
-  static void setTestEpoch(int? epoch) => _testEpoch = epoch;
+  /// Unique session ID set by each browser instance during UI tests.
+  /// Sent via `X-DB-Session` header so the server routes requests to
+  /// an isolated per-session database.  `null` in production (no header
+  /// is sent, server uses the default database).
+  static String? _dbSession;
+  static String? get dbSession => _dbSession;
+  static void setDbSession(String id) => _dbSession = id;
 
   /// Full URL for the given API path.
   ///

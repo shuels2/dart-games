@@ -38,7 +38,7 @@ void main() {
   setUp(() {
     database = Database(':memory:');
     dataDir = Directory.systemTemp.createTempSync('player_test_').path;
-    final routes = PlayerRoutes(database.rawDb, dataDir);
+    final routes = PlayerRoutes(dataDir, database.rawDb);
     handler = routes.router.call;
   });
 

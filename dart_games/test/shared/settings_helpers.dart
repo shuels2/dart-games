@@ -15,10 +15,7 @@ class SettingsHelpers {
   // TEST INITIALIZATION HELPERS
   // ==========================================================================
 
-  /// Full server reset: wipes all data, advances epoch, configures dartboard.
-  ///
-  /// With one-test-per-process architecture, each test gets its own Dart
-  /// isolate — no phantom callbacks, no epoch token gating needed.
+  /// Full server reset: wipes all data and configures dartboard.
   static Future<void> resetServerState({bool useEmulator = true}) async {
     await _waitForServer();
 
@@ -29,11 +26,8 @@ class SettingsHelpers {
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'X-Request-Id': requestId,
+      ..._sessionHeaders(),
     };
-    final currentEpoch = ApiConfig.testEpoch;
-    if (currentEpoch != null) {
-      headers['X-Test-Epoch'] = currentEpoch.toString();
-    }
     final resetResponse = await http.post(
       Uri.parse(ApiConfig.url('/api/v1/test/reset')),
       headers: headers,
@@ -46,13 +40,11 @@ class SettingsHelpers {
       );
     }
 
-    final resetBody = jsonDecode(resetResponse.body) as Map<String, dynamic>;
-    ApiConfig.setTestEpoch(resetBody['test_epoch'] as int?);
-    print('[resetServerState] Reset OK (id=$requestId, '
-        'epoch=${resetBody['test_epoch']})');
-
     // Verify the reset took effect
-    final verifyResponse = await http.get(_bustCache('/api/v1/players'));
+    final verifyResponse = await http.get(
+      _bustCache('/api/v1/players'),
+      headers: _sessionHeaders(),
+    );
     if (verifyResponse.statusCode != 200) {
       throw Exception(
         'Player verification after reset failed '
@@ -69,6 +61,7 @@ class SettingsHelpers {
 
     final verifySavedGamesResponse = await http.get(
       _bustCache('/api/v1/games'),
+      headers: _sessionHeaders(),
     );
     if (verifySavedGamesResponse.statusCode != 200) {
       throw Exception(
@@ -87,9 +80,13 @@ class SettingsHelpers {
     }
 
     // Configure dartboard for emulator mode
+    final dartboardHeaders = <String, String>{
+      'Content-Type': 'application/json',
+      ..._sessionHeaders(),
+    };
     final dartboardResponse = await http.put(
       Uri.parse(ApiConfig.url('/api/v1/dartboard')),
-      headers: {'Content-Type': 'application/json'},
+      headers: dartboardHeaders,
       body: jsonEncode({
         'name': 'Test Dartboard',
         'serialNumber': 'TEST-001',
@@ -133,6 +130,12 @@ class SettingsHelpers {
     return '$ts-$rnd';
   }
 
+  static Map<String, String> _sessionHeaders() {
+    final session = ApiConfig.dbSession;
+    if (session == null) return {};
+    return {'X-DB-Session': session};
+  }
+
   static Uri _bustCache(String path) {
     final base = Uri.parse(ApiConfig.url(path));
     return base.replace(queryParameters: {
@@ -158,11 +161,10 @@ class SettingsHelpers {
   static Future<void> savePlayersToApi(List<Player> players) async {
     for (final player in players) {
       final url = Uri.parse(ApiConfig.url('/api/v1/players'));
-      final headers = <String, String>{'Content-Type': 'application/json'};
-      final epoch = ApiConfig.testEpoch;
-      if (epoch != null) {
-        headers['X-Test-Epoch'] = epoch.toString();
-      }
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        ..._sessionHeaders(),
+      };
       final response = await http.post(
         url,
         headers: headers,
@@ -172,11 +174,6 @@ class SettingsHelpers {
           'createdAt': player.createdAt.toIso8601String(),
         }),
       );
-      if (response.statusCode == 409) {
-        print('[savePlayersToApi] Player "${player.name}" REJECTED (409) — '
-            'stale epoch=$epoch');
-        continue;
-      }
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception(
           'Failed to create player "${player.name}" via API '

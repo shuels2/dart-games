@@ -151,11 +151,12 @@ AppBar(
 
 ## Auto-Delete on Completion
 
-When a resumed game reaches the results screen:
-1. `_updatePlayerStats()` completes stats saving
-2. Check `provider.resumedSavedGameId`
-3. If set → `SaveGameService.deleteSavedGame()` removes the save
-4. `provider.clearResumedSavedGameId()` clears tracking
+When a resumed game reaches the results screen, `_deleteResumedSavedGame()` fires independently as its own async call from `addPostFrameCallback`:
+1. Check `provider.resumedSavedGameId`
+2. If set → `SaveGameService.deleteSavedGame()` removes the save
+3. `provider.clearResumedSavedGameId()` clears tracking
+
+The delete runs concurrently with `_updatePlayerStats()`, not sequentially after it. This ensures the saved game is removed promptly without waiting for all player stats HTTP calls to complete.
 
 ## Widget Keys
 
@@ -203,6 +204,6 @@ Each UI test file covers:
 3. Add factory methods to `SaveGameModalConfig` and `ResumeGameModalConfig`
 4. Integrate `SaveGameModal` into the game screen (back button + PopScope + Stack)
 5. Add `ResumeGameModal` to the menu screen (imports, `_showResumeModal` state, `initState` check, `_resumeGame` method, Stack overlay)
-6. Add auto-delete logic in the results screen's `_updatePlayerStats()`
+6. Add `_deleteResumedSavedGame()` as a separate async call in the results screen's `addPostFrameCallback`
 7. Add widget keys to `test_keys.dart`
 8. Write serialization, provider save/restore, and integration tests

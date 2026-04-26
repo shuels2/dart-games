@@ -9,17 +9,18 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:uuid/uuid.dart';
 
 import '../database/database_helpers.dart';
+import '../database/database_registry.dart';
 import '../models/game_history_model.dart';
 import '../models/player_model.dart';
-import 'test_routes.dart';
 
 const _jsonHeaders = {'content-type': 'application/json'};
 
 class PlayerRoutes {
-  final sqlite3.Database _db;
   final String _dataDir;
+  final sqlite3.Database? _testDb;
+  sqlite3.Database get _db => _testDb ?? DatabaseRegistry.current;
 
-  PlayerRoutes(this._db, this._dataDir);
+  PlayerRoutes(this._dataDir, [this._testDb]);
 
   Router get router {
     final router = Router();

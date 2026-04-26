@@ -5,11 +5,13 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 import '../database/database_helpers.dart';
+import '../database/database_registry.dart';
 
 class SettingsRoutes {
-  final sqlite3.Database _db;
+  final sqlite3.Database? _testDb;
+  sqlite3.Database get _db => _testDb ?? DatabaseRegistry.current;
 
-  SettingsRoutes(this._db);
+  SettingsRoutes([this._testDb]);
 
   Router get router {
     final router = Router();

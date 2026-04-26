@@ -2,7 +2,7 @@
 
 ## Overview
 
-1347 non-UI tests (1179 Flutter + 168 server) validate models, providers, services, widgets, game logic, API client, and server routes.
+1347 non-UI tests (1179 Flutter + 178 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
 **Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
@@ -284,13 +284,17 @@
 - Resumed game save overwrites: 5 tests
 - Multiple saves independence: 3 tests
 
-### Server Tests (168 tests)
+### Server Tests (178 tests)
 
 **Database & Helpers (25 tests)** - `server/test/database_test.dart`
 - Table creation and schema validation
 - CRUD operations for all 7 tables
 - Helper functions (rowToMap, resultSetToList, rowExists, insertRow, executeUpdate)
 - WAL mode and foreign key enforcement
+
+**Database Registry & Session Middleware (10 tests)** - `server/test/database_registry_test.dart`
+- DatabaseRegistry: default DB handle, current getter (default vs session), session isolation, session identity, closeAll cleanup, session file creation
+- dbSessionMiddleware: no header uses default DB, X-DB-Session header routes to session DB, empty header uses default DB
 
 **Model Roundtrips (32 tests)** - `server/test/models_test.dart`
 - ServerPlayer, ServerGameHistoryEntry, ServerDartboard, ServerDartboardProfile

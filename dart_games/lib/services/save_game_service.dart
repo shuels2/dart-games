@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../models/saved_game_metadata.dart';
 import 'api/api_client.dart';
 
@@ -17,15 +16,10 @@ class SaveGameService {
   ApiClient get _api => _client ??= ApiClient();
 
   Future<bool> saveGame(SavedGameMetadata metadata) async {
-    debugPrint('[SaveGameService] saveGame called — id=${metadata.id}, type=${metadata.gameType}');
     final result = await _api.saveGame(metadata.toJson());
     if (result.isEmpty) {
-      debugPrint('[SaveGameService] saveGame REJECTED (409) — '
-          'id=${metadata.id}, type=${metadata.gameType}. '
-          'Server rejected stale epoch; save did NOT persist.');
       return false;
     }
-    debugPrint('[SaveGameService] saveGame completed — id=${metadata.id}');
     return true;
   }
 

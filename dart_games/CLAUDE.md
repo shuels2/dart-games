@@ -38,7 +38,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1665 tests total)
+### 🧪 Testing (1687 tests total)
 - [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 156 server + 330 UI tests**
 - [Non-UI Tests](docs/testing/non-ui-tests.md) - 1335 non-UI tests (MANDATORY before builds)
 - [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
@@ -71,10 +71,10 @@ Each game has its own unique visual identity while integrating with global syste
 # Flutter tests (1179 tests)
 flutter test
 
-# Server tests (168 tests)
+# Server tests (178 tests)
 cd server && dart test
 ```
-**Required:** 100% pass rate (1347 tests total)
+**Required:** 100% pass rate (1357 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -104,7 +104,7 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1677 tests**
+**Total: 1687 tests**
 - **Flutter Non-UI Tests:** 1179 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
@@ -125,8 +125,9 @@ flutter test test/screens/games/clockwork_quest/
   - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **Server Tests:** 168 tests (100% pass rate MANDATORY)
+- **Server Tests:** 178 tests (100% pass rate MANDATORY)
   - Database & helpers: 25
+  - Database registry & middleware: 10
   - Model roundtrips: 32
   - Migration runner, V1 baseline & V2 failed_stats: 29
   - Settings routes: 9
@@ -148,7 +149,7 @@ flutter test test/screens/games/clockwork_quest/
 
 ### Before Any Build
 ✅ Run `flutter test` - ALL 1179 Flutter non-UI tests MUST pass
-✅ Run `cd server && dart test` - ALL 156 server tests MUST pass
+✅ Run `cd server && dart test` - ALL 178 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -244,11 +245,11 @@ dart_games/
 ├── server/                          # Dart Shelf backend server
 │   ├── bin/server.dart             # Entry point
 │   ├── lib/
-│   │   ├── database/               # SQLite database layer + migrations
+│   │   ├── database/               # SQLite database layer, migrations, per-session DB registry
 │   │   ├── models/                 # Server-side models
 │   │   ├── routes/                 # REST API route handlers
 │   │   └── middleware/             # CORS and logging middleware
-│   └── test/                       # Server tests (168 tests)
+│   └── test/                       # Server tests (178 tests)
 │       └── routes/                 # Route-level tests
 ├── lib/                             # Flutter source code
 │   ├── main.dart
