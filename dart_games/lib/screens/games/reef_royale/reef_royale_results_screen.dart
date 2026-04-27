@@ -594,7 +594,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
 
   Widget _buildRankingColumn(List<String> rankedIds, List<Player> allPlayers, ReefRoyaleGame game, int startIndex) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _deepReefBlue.withOpacity(0.8),
         borderRadius: BorderRadius.circular(12),
