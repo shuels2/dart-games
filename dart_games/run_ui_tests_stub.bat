@@ -73,6 +73,7 @@ echo. >> integration_test_output\summary.txt
 set test_count=0
 set pass_count=0
 set fail_count=0
+set retry_count=0
 
 echo ========================================
 if "!run_all!"=="1" (
@@ -254,6 +255,7 @@ echo ========================================
 echo.
 echo Total Test Files: !test_count!
 echo Passed: !pass_count!
+if !retry_count! gtr 0 echo Passed ^(on retry^): !retry_count!
 echo Failed: !fail_count!
 echo.
 
@@ -264,6 +266,7 @@ echo Completed at %date% %time% >> integration_test_output\summary.txt
 echo. >> integration_test_output\summary.txt
 echo Total Test Files: !test_count! >> integration_test_output\summary.txt
 echo Passed: !pass_count! >> integration_test_output\summary.txt
+if !retry_count! gtr 0 echo Passed ^(on retry^): !retry_count! >> integration_test_output\summary.txt
 echo Failed: !fail_count! >> integration_test_output\summary.txt
 echo. >> integration_test_output\summary.txt
 
