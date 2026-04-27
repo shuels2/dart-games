@@ -38,6 +38,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
   final DartboardEmulatorController _dartboardEmulatorController =
       DartboardEmulatorController();
   bool _showSaveModal = false;
+  bool _gameCompleted = false;
 
   @override
   void initState() {
@@ -95,6 +96,14 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     setState(() {});
   }
 
+  void _handleGameWon() {
+    if (_gameCompleted) return;
+    _gameCompleted = true;
+
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/clockwork_quest_results');
+  }
+
   @override
   Widget build(BuildContext context) {
     final clockworkProvider = Provider.of<ClockworkQuestProvider>(context);
@@ -121,7 +130,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     // Check for winner
     if (clockworkProvider.hasWinner) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(context, '/clockwork_quest_results');
+        _handleGameWon();
       });
     }
 
