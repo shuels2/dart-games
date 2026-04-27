@@ -281,7 +281,7 @@ if !_RST_ATTEMPT! gtr 1 (
         set "_RST_PASS=0"
         goto :run_single_test_done
     )
-    powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:!_CAT_PORT!/api/v1/health/' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>&1
+    call :wait_for_server_port !_CAT_PORT!
     if !errorlevel! neq 0 (
         echo   Backend server also down - restarting...
         call :kill_server_port !_CAT_PORT!
