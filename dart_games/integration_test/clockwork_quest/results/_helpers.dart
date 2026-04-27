@@ -149,4 +149,5 @@ Future<void> completeGameToVictory(
   await tester.pump();
   await tester.pump();
   await tester.pump();
+  await PumpSequences.fullRebuild(tester);
 }

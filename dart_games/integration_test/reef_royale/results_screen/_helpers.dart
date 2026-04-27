@@ -144,4 +144,5 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   await tester.pump(); // Process navigation
   await tester.pump(); // Build results screen
   await tester.pump(); // Layout
+  await PumpSequences.fullRebuild(tester);
 }
