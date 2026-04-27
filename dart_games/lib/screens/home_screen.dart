@@ -351,23 +351,57 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(12.0),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: games.map((game) {
-                return SizedBox(
-                  width: 360,
-                  height: 400,
-                  child: _buildGameCard(
-                    context: context,
-                    key: game['key'] as Key?,
-                    imageAssetPath: game['imageAssetPath'] as String?,
-                    title: game['title'] as String,
-                    color: game['color'] as Color,
-                    onTap: game['onTap'] as VoidCallback?,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const tileWidth = 360.0;
+                const minSpacing = 12.0;
+                final availableWidth = constraints.maxWidth;
+
+                int itemsPerRow = ((availableWidth + minSpacing) / (tileWidth + minSpacing)).floor();
+                itemsPerRow = itemsPerRow.clamp(1, games.length);
+
+                final justifiedSpacing = itemsPerRow > 1
+                    ? (availableWidth - (itemsPerRow * tileWidth)) / (itemsPerRow - 1)
+                    : 0.0;
+
+                final rows = <List<Map<String, dynamic>>>[];
+                for (var i = 0; i < games.length; i += itemsPerRow) {
+                  rows.add(games.sublist(i, (i + itemsPerRow).clamp(0, games.length)));
+                }
+
+                return SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
+                        if (rowIndex > 0) const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: rows[rowIndex].length == itemsPerRow
+                              ? MainAxisAlignment.spaceBetween
+                              : MainAxisAlignment.start,
+                          children: [
+                            for (var i = 0; i < rows[rowIndex].length; i++) ...[
+                              if (i > 0 && rows[rowIndex].length < itemsPerRow)
+                                SizedBox(width: justifiedSpacing),
+                              SizedBox(
+                                width: tileWidth,
+                                height: 400,
+                                child: _buildGameCard(
+                                  context: context,
+                                  key: rows[rowIndex][i]['key'] as Key?,
+                                  imageAssetPath: rows[rowIndex][i]['imageAssetPath'] as String?,
+                                  title: rows[rowIndex][i]['title'] as String,
+                                  color: rows[rowIndex][i]['color'] as Color,
+                                  onTap: rows[rowIndex][i]['onTap'] as VoidCallback?,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 );
-              }).toList(),
+              },
             ),
           ),
         ],

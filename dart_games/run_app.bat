@@ -3,16 +3,13 @@
 REM ============================================================
 REM Dart Games - Full App Launcher
 REM ============================================================
-REM Starts a fresh backend server with a clean database, waits
-REM for it to be ready, then launches the Flutter app in Chrome.
-REM
-REM Each launch starts with a blank database so the app behaves
-REM like a first-time install (dartboard setup screen first).
+REM Starts the backend server and launches the Flutter app in Chrome.
 REM
 REM Usage:
-REM   run_app.bat                   Launch with defaults (port 8080)
+REM   run_app.bat                   Launch with default database (persistent)
+REM   run_app.bat --fresh           Clear default database and start clean
+REM   run_app.bat --temp            Use a temporary database (deleted on exit)
 REM   run_app.bat --port 9090       Launch server on custom port
-REM   run_app.bat --keep-data       Preserve database between runs
 REM
 REM Press q in the Flutter console to quit. The server is cleaned
 REM up automatically on exit.
@@ -24,8 +21,7 @@ echo  Dart Games Launcher
 echo ============================================================
 
 set SERVER_PORT=8080
-set KEEP_DATA=0
-set DATA_DIR=playground_data
+set MODE=default
 
 REM Parse arguments
 :parse_args
@@ -36,8 +32,13 @@ if "%~1"=="--port" (
     shift
     goto parse_args
 )
-if "%~1"=="--keep-data" (
-    set KEEP_DATA=1
+if "%~1"=="--fresh" (
+    set MODE=fresh
+    shift
+    goto parse_args
+)
+if "%~1"=="--temp" (
+    set MODE=temp
     shift
     goto parse_args
 )
@@ -46,20 +47,29 @@ goto parse_args
 :done_args
 
 set SERVER_URL=http://localhost:%SERVER_PORT%
+
+REM Set data directory based on mode
+if "%MODE%"=="temp" (
+    set DATA_DIR=temp_data_%RANDOM%
+) else (
+    set DATA_DIR=data
+)
 set DB_PATH=%DATA_DIR%\dart_games.db
 
 REM Kill any existing server on this port
 call :kill_port %SERVER_PORT%
 
-REM Clean the database for a fresh start (unless --keep-data)
-if "%KEEP_DATA%"=="0" (
+REM Handle database based on mode
+if "%MODE%"=="fresh" (
     if exist "server\%DATA_DIR%" (
-        echo Clearing previous database for fresh start...
+        echo Clearing default database for fresh start...
         rmdir /s /q "server\%DATA_DIR%"
     )
     echo Starting with clean database.
+) else if "%MODE%"=="temp" (
+    echo Using temporary database (will be deleted on exit^).
 ) else (
-    echo Keeping existing database.
+    echo Using default database.
 )
 
 REM Create data directory
@@ -129,17 +139,39 @@ echo.
 echo ============================================================
 echo  Launching Dart Games in Chrome...
 echo  Server:   %SERVER_URL%
+echo  Mode:     %MODE%
 echo  Database: server/%DB_PATH%
-echo  Press q in this window to quit the app.
+echo  Type Q and press Enter in this window to stop the server and exit.
 echo ============================================================
 echo.
 
 flutter run -d chrome
 
-REM After Flutter exits, kill the server
+echo.
+echo ============================================================
+echo  App is running in Chrome.
+echo  Type Q and press Enter to shut down the server and exit...
+echo ============================================================
+:wait_quit
+set /p "QUIT_INPUT=> "
+if /i "%QUIT_INPUT%"=="q" goto do_shutdown
+echo Type Q to quit.
+goto wait_quit
+:do_shutdown
+
+REM After user presses a key, kill the server
 echo.
 echo Shutting down server...
 call :kill_port %SERVER_PORT%
+
+REM Clean up temp database if using --temp mode
+if "%MODE%"=="temp" (
+    if exist "server\%DATA_DIR%" (
+        echo Removing temporary database...
+        rmdir /s /q "server\%DATA_DIR%"
+    )
+)
+
 echo Done.
 exit /b 0
 

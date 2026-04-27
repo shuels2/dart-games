@@ -6,7 +6,9 @@ REM Dart Games UI Automation Test Runner (Dynamic File Scanner)
 REM ============================================================
 REM Automatically discovers and runs all *_test.dart files under
 REM integration_test/. Each test file runs in its own flutter
-REM drive process for full isolate-level isolation.
+REM drive process. ChromeDriver and backend server are shared per
+REM game category. Per-session database isolation (X-DB-Session)
+REM ensures tests cannot pollute each other's data.
 REM ============================================================
 
 REM Check for help request
@@ -115,6 +117,7 @@ echo. >> integration_test_output\summary.txt
 set test_count=0
 set pass_count=0
 set fail_count=0
+set cat_count=0
 
 echo ========================================
 if "!run_all!"=="1" (
@@ -125,8 +128,9 @@ if "!run_all!"=="1" (
 )
 echo ========================================
 echo.
-echo NOTE: Services are restarted between game categories.
+echo NOTE: ChromeDriver and backend server are shared per game category.
 echo       Chrome is killed after each test ^(GCM thread hang fix^).
+echo       Per-session DB isolation ensures no cross-test pollution.
 echo.
 
 REM Skip over helper function definitions
@@ -201,7 +205,7 @@ if !errorlevel! equ 0 (
 timeout /t 1 /nobreak >nul
 goto :wait_for_chromedriver_loop
 
-REM Start ChromeDriver only (backend server is started per-test in run_single_test)
+REM Start ChromeDriver only (backend server is started per-category in the game loop)
 :start_services
 set "_ss_attempt=0"
 :start_services_loop
@@ -225,9 +229,9 @@ exit /b 0
 
 REM ============================================================
 REM Run a single test file
-REM Each test gets its own backend server on a unique port with a
-REM fresh data directory, so no in-flight requests from a previous
-REM test can ever reach the new server.
+REM Uses the category-level backend server (shared across all
+REM tests in the category). Per-session DB isolation via
+REM X-DB-Session header ensures no cross-test pollution.
 REM %1 = test file path (e.g. integration_test/target_tag/gameplay/hero_bonus_test.dart)
 REM %2 = test driver (integration_test.dart or screenshot_test.dart)
 REM ============================================================
@@ -236,21 +240,16 @@ set "_RST_TARGET=%~1"
 set "_RST_DRIVER=%~2"
 set /a test_count+=1
 
-REM Unique port and data directory for this test (ports start at 9001)
-set /a _RST_PORT=9000+test_count
-set "_RST_DATADIR=integration_test_output\test_data_!test_count!"
-
 REM Build log filename from path: replace / and \ with _
 set "_RST_LOGNAME=%_RST_TARGET:integration_test/=%"
 set "_RST_LOGNAME=%_RST_LOGNAME:/=_%"
 set "_RST_LOGNAME=%_RST_LOGNAME:\=_%"
 set "_RST_LOGNAME=%_RST_LOGNAME:.dart=%"
 set "_RST_LOG=integration_test_output\%_RST_LOGNAME%.log"
-set "_RST_SERVER_LOG=integration_test_output\server_!test_count!.log"
 
 echo ----------------------------------------
 echo [!test_count!] !_RST_TARGET!
-echo   Server port: !_RST_PORT!  Data dir: !_RST_DATADIR!
+echo   Server port: !_CAT_PORT!
 echo Start: %time%
 
 echo ---------------------------------------- >> integration_test_output\summary.txt
@@ -259,33 +258,14 @@ echo Start Time: %date% %time% >> integration_test_output\summary.txt
 
 echo Running: !_RST_TARGET! > "!_RST_LOG!"
 echo Started at %date% %time% >> "!_RST_LOG!"
-echo Server port: !_RST_PORT! >> "!_RST_LOG!"
+echo Server port: !_CAT_PORT! >> "!_RST_LOG!"
 echo. >> "!_RST_LOG!"
 
-REM Start a fresh backend server on the unique port with its own data directory
-if not exist "!_RST_DATADIR!" mkdir "!_RST_DATADIR!"
-start /B "" cmd /C "cd server && dart run bin/server.dart --port !_RST_PORT! --data-dir ..\!_RST_DATADIR! >> ..\!_RST_SERVER_LOG! 2>&1"
-call :wait_for_server_port !_RST_PORT!
-if !errorlevel! neq 0 (
-    echo   ERROR: Backend server failed to start on port !_RST_PORT!.
-    echo Result: FAILED >> integration_test_output\summary.txt
-    echo FAILED >> "!_RST_LOG!" 2>nul
-    echo Completed at %date% %time% >> "!_RST_LOG!" 2>nul
-    echo. >> integration_test_output\summary.txt
-    set /a fail_count+=1
-    exit /b
-)
-
-start /B "" cmd /C "flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --dart-define=SERVER_PORT=!_RST_PORT! >> "!_RST_LOG!" 2>&1"
+start /B "" cmd /C "flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --dart-define=SERVER_PORT=!_CAT_PORT! >> "!_RST_LOG!" 2>&1"
 
 powershell -NoProfile -Command "$log='!_RST_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 
-REM Capture result before killing the server (kill resets errorlevel)
 if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
-
-REM Shut down this test's backend server
-call :kill_server_port !_RST_PORT!
-timeout /t 1 /nobreak >nul
 
 echo End: %time%
 echo End Time: %date% %time% >> integration_test_output\summary.txt
@@ -335,9 +315,15 @@ for %%G in (%GAMES%) do (
     )
 
     if "!_game_matches!"=="1" (
+        set /a cat_count+=1
+        set /a _CAT_PORT=9000+cat_count
+        set "_CAT_DATADIR=integration_test_output\test_data_%%G"
+        set "_CAT_SERVER_LOG=integration_test_output\server_%%G.log"
+
         echo.
         echo ========================================
         echo Game: %%G
+        echo   Server port: !_CAT_PORT!  Data dir: !_CAT_DATADIR!
         echo ========================================
 
         echo. >> integration_test_output\summary.txt
@@ -347,6 +333,17 @@ for %%G in (%GAMES%) do (
 
         echo Starting ChromeDriver...
         call :start_services
+
+        echo Starting backend server for %%G on port !_CAT_PORT!...
+        if not exist "!_CAT_DATADIR!" mkdir "!_CAT_DATADIR!"
+        start /B "" cmd /C "cd server && dart run bin/server.dart --port !_CAT_PORT! --data-dir ..\!_CAT_DATADIR! >> ..\!_CAT_SERVER_LOG! 2>&1"
+        call :wait_for_server_port !_CAT_PORT!
+        if !errorlevel! neq 0 (
+            echo   ERROR: Backend server failed to start on port !_CAT_PORT! for %%G. Skipping category.
+            echo Server failed to start >> integration_test_output\summary.txt
+            call :kill_services
+            goto :next_game
+        )
 
         REM Run test files directly in the game directory (screenshot/showcase tests)
         for %%F in ("!_GAME_DIR!\*_test.dart") do (
@@ -402,9 +399,12 @@ for %%G in (%GAMES%) do (
         )
 
         echo.
-        echo Stopping ChromeDriver for next game...
+        echo Stopping backend server and ChromeDriver for next game...
+        call :kill_server_port !_CAT_PORT!
+        timeout /t 1 /nobreak >nul
         call :kill_services
     )
+    :next_game
 )
 
 REM ============================================================
@@ -434,7 +434,7 @@ echo Results saved to integration_test_output folder
 echo Summary: integration_test_output\summary.txt
 echo.
 
-echo Stopping ChromeDriver, Chrome, and Backend Server...
+echo Stopping any remaining ChromeDriver and Chrome...
 call :kill_services
 if exist "ui_test_data" move "ui_test_data" "integration_test_output\test_data_final" >nul 2>&1
 echo Services stopped.
@@ -495,8 +495,9 @@ echo.
 echo NOTES:
 echo   - ChromeDriver must be at chromedriver\chromedriver-win64\chromedriver.exe
 echo   - Results saved to integration_test_output\
-echo   - Services restart between game categories
+echo   - ChromeDriver and backend server restart between game categories
 echo   - Chrome killed after each test (GCM thread hang fix)
+echo   - Per-session DB isolation (X-DB-Session) prevents cross-test pollution
 echo   - Summary saved to integration_test_output\summary.txt
 echo.
 exit /b 0
