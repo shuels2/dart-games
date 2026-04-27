@@ -141,13 +141,25 @@ echo  Launching Dart Games in Chrome...
 echo  Server:   %SERVER_URL%
 echo  Mode:     %MODE%
 echo  Database: server/%DB_PATH%
-echo  Press q in this window to quit the app.
+echo  Type Q and press Enter in this window to stop the server and exit.
 echo ============================================================
 echo.
 
 flutter run -d chrome
 
-REM After Flutter exits, kill the server
+echo.
+echo ============================================================
+echo  App is running in Chrome.
+echo  Type Q and press Enter to shut down the server and exit...
+echo ============================================================
+:wait_quit
+set /p "QUIT_INPUT=> "
+if /i "%QUIT_INPUT%"=="q" goto do_shutdown
+echo Type Q to quit.
+goto wait_quit
+:do_shutdown
+
+REM After user presses a key, kill the server
 echo.
 echo Shutting down server...
 call :kill_port %SERVER_PORT%
