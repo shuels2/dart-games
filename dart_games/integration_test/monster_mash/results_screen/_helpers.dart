@@ -90,4 +90,5 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(seconds: 1));
   await tester.pump();
+  await PumpSequences.fullRebuild(tester);
 }
