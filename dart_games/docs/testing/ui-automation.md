@@ -69,7 +69,7 @@ ChromeDriver must match the installed Chrome major version. The `update_chromedr
 
 ### Step 1: Start Backend Server
 
-**CRITICAL:** The backend server must be running BEFORE tests. All providers read from the API. (When running via `run_ui_tests.bat`, the server is started automatically per test.)
+**CRITICAL:** The backend server must be running BEFORE tests. All providers read from the API. (When running via `run_ui_tests.bat`, the server is started automatically per game category.)
 
 ```bash
 cd server
@@ -80,7 +80,7 @@ Leave this terminal running.
 
 ### Step 2: Start ChromeDriver
 
-**CRITICAL:** ChromeDriver must be running BEFORE tests. (When running via `run_ui_tests.bat`, ChromeDriver is started automatically per test.)
+**CRITICAL:** ChromeDriver must be running BEFORE tests. (When running via `run_ui_tests.bat`, ChromeDriver is started automatically per game category.)
 
 ```bash
 cd chromedriver/chromedriver-win64
@@ -277,6 +277,28 @@ Screenshots are saved to `temp_screenshots/`. Read each one and evaluate against
 ### Widget Not Found
 **Cause:** Not pumping enough frames after async operations
 **Solution:** Add more `pump()` calls after async waits
+
+### Phantom Behavior (Duplicate Saves, Duplicate Data, Unexplained Test Pollution)
+
+**First thing to check:** Flutter bug [#67090](https://github.com/flutter/flutter/issues/67090) causes `flutter drive -d chrome` to spawn **two browser instances** in headless mode. Both execute the test code and hit the same server. Chrome's `--headless=new` mode makes the two instances indistinguishable at the client level.
+
+**Symptoms:**
+- Duplicate game saves appearing in the database
+- Player data created twice
+- Tests failing due to unexpected extra records
+- Flaky assertions on record counts or list lengths
+- "Phantom" players or games that no test explicitly created
+
+**Current mitigation:** Per-session database isolation (`X-DB-Session` header). Each browser instance generates a unique session ID in `resetServerState()`, and the server's `DatabaseRegistry` routes each session to its own isolated SQLite database. This prevents the duplicate browser from interfering with test data.
+
+**If phantom behavior returns:**
+1. Verify `resetServerState()` is called at the start of every `testWidgets` block
+2. Check that `ApiConfig.dbSession` is being set (inspect the `X-DB-Session` header in server logs)
+3. Confirm the server's `dbSessionMiddleware` is active and routing to session databases
+4. Check server logs for requests without `X-DB-Session` — these hit the default database and could be from the phantom browser instance
+5. As a last resort, check if Flutter has changed headless Chrome launch behavior in the current Flutter version
+
+**History:** This bug was the root cause of extensive debugging during the server-side updates branch. Initial investigation incorrectly suspected test cleanup issues, leading to per-test-file server isolation. The actual fix was per-session database isolation, which allowed safely sharing one server per game category.
 
 ## Related Documentation
 

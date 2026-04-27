@@ -928,6 +928,8 @@ Flutter bug [#67090](https://github.com/flutter/flutter/issues/67090) causes `fl
 
 **UI Automation Test Coverage (364 tests, one-test-per-process architecture):**
 - Each test runs in its own `flutter drive` process for full isolate-level isolation
+- ChromeDriver and backend server are shared per game category (restarted between categories)
+- Per-session database isolation (`X-DB-Session` header) prevents cross-test data pollution
 - Target Tag (69 tests): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
 - Carnival Derby (40 tests): Menu, gameplay, bust mechanics, skip turn, edit score, results screen, save/resume
 - Monster Mash (67 tests): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation, save/resume
