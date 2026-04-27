@@ -38,10 +38,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1687 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 156 server + 330 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1335 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
+### 🧪 Testing (1721 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 178 server + 364 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1357 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 364 UI tests (~620 minutes, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -82,7 +82,7 @@ cd server && dart test
 cd chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2: Run all UI tests (330 tests, ~224 minutes)
+# Terminal 2: Run all UI tests (364 tests, ~620 minutes)
 ./run_ui_tests.bat
 
 # Or run specific game
@@ -104,7 +104,7 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1687 tests**
+**Total: 1721 tests**
 - **Flutter Non-UI Tests:** 1179 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
@@ -138,12 +138,13 @@ flutter test test/screens/games/clockwork_quest/
   - Failed stats routes: 6
   - Test routes: 6
 
-- **UI Automation Tests:** 330 tests (optional, ask before running)
-  - Target Tag: 62 tests (~48 minutes)
-  - Carnival Derby: 33 tests (~22 minutes)
-  - Monster Mash: 60 tests (~40 minutes)
-  - Reef Royale: 70 tests (~37 minutes)
-  - Clockwork Quest: 105 tests (~57 minutes) [89 functional + 16 save/resume]
+- **UI Automation Tests:** 364 tests (~620 minutes, optional, ask before running)
+  - Target Tag: 69 tests (~124 minutes)
+  - Carnival Derby: 40 tests (~69 minutes)
+  - Monster Mash: 67 tests (~112 minutes)
+  - Reef Royale: 83 tests (~140 minutes)
+  - Clockwork Quest: 105 tests (~174 minutes) [89 functional + 16 save/resume]
+  - **Overall: ~620 minutes (~10h 20m)**
 
 ## Critical Reminders
 
@@ -269,7 +270,7 @@ dart_games/
 │   ├── shared/                     # Shared test helpers (MockApiServer, etc.)
 │   ├── services/api/               # API client tests
 │   └── ...
-├── integration_test/                # UI automation tests (330 tests)
+├── integration_test/                # UI automation tests (364 tests)
 │   ├── shared/                     # Shared test helpers
 │   ├── target_tag/                 # Target Tag UI tests
 │   ├── carnival_derby/             # Carnival Derby UI tests

@@ -4,6 +4,7 @@ import 'package:dart_games/constants/test_keys.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/pump_sequences.dart';
 import '_helpers.dart';
 
 void main() {
@@ -24,6 +25,7 @@ void main() {
     await tester.pump();
 
     await UITestHelpers.clickSkipTurn(tester, config);
+    await PumpSequences.fullRebuild(tester);
 
     // Show dartboard emulator for DARTS REMOVED button
     await tester.tap(find.byKey(DartboardEmulatorKeys.toggleFAB));

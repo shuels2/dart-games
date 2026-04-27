@@ -879,7 +879,7 @@ flutter run
 
 ### Testing Requirements
 
-**All 1350 non-UI tests must pass before any build or deployment.**
+**All 1357 non-UI tests must pass before any build or deployment.**
 
 ```bash
 # Flutter tests (1179 tests)

@@ -29,13 +29,16 @@ void main() {
 
     // Skip to Player 2's turn to get their target
     await skipTurn(tester);
+    await PumpSequences.fullRebuild(tester);
     final player2Target = getCurrentPlayerTargetNumber(tester);
 
     // Skip to Player 3's turn
     await skipTurn(tester);
+    await PumpSequences.fullRebuild(tester);
 
     // Skip back to Player 1's turn
     await skipTurn(tester);
+    await PumpSequences.fullRebuild(tester);
 
     // ===== Step 2: Player 1 eliminates Player 2 in ONE turn =====
     // D1: Hit triple of own target (tagged in instantly)
@@ -66,6 +69,7 @@ void main() {
     // ===== Step 5: Verify Player 2 no longer gets current player border =====
     // Skip turn should cycle back to Player 1 from Player 3
     await skipTurn(tester);
+    await PumpSequences.fullRebuild(tester);
 
     // Player 1 should be current (pink border)
     verifyPlayerTileBorderColor(tester, 'Eliminated 1', colorPinkBorder, borderWidthCurrent, shouldExist: true);

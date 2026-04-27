@@ -2,53 +2,54 @@
 
 ## Overview
 
-330 UI automation tests validate end-to-end user flows in Chrome browser.
+364 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Execution time:** ~224 minutes
+**Execution time:** ~620 minutes (~10h 20m)
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
 
-### Target Tag (62 tests, ~48 minutes)
-1. Menu and Mechanics: 24 tests (~16 min)
-2. Visual Validation: 4 tests (~5 min)
-3. Gameplay: 13 tests (~9 min)
-4. Add Player: 6 tests (~3 min)
-5. Results Screen: 6 tests (~7 min)
-6. Save & Resume: 9 tests (~8 min)
+### Target Tag (69 tests, ~124 minutes)
+1. Menu and Mechanics: 24 tests
+2. Gameplay: 13 tests
+3. Add Player: 6 tests
+4. Results Screen: 6 tests
+5. Visual Validation: 4 tests
+6. Save & Resume: 16 tests
 
-### Carnival Derby (33 tests, ~22 minutes)
-- Complete UI test coverage: 24 tests (~14 min)
-- Save & Resume: 9 tests (~8 min)
+### Carnival Derby (40 tests, ~69 minutes)
+1. Complete UI test coverage: 24 tests
+2. Save & Resume: 16 tests
 
-### Monster Mash (60 tests, ~40 minutes)
-1. Add Player: 6 tests (~3 min)
-2. Menu and Settings: 8 tests (~4 min)
-3. Gameplay: 20 tests (~11 min)
-4. Edit Score: 5 tests (~4 min)
-5. Results Screen: 6 tests (~5 min)
-6. Visual Validation: 6 tests (~5 min)
-7. Save & Resume: 9 tests (~8 min)
+### Monster Mash (67 tests, ~112 minutes)
+1. Add Player: 6 tests
+2. Menu and Settings: 8 tests
+3. Gameplay: 20 tests
+4. Edit Score: 5 tests
+5. Results Screen: 6 tests
+6. Visual Validation: 6 tests
+7. Save & Resume: 16 tests
 
-### Reef Royale (70 tests, ~37 minutes)
-1. Add Player: 6 tests (~2 min)
-2. Menu and Settings: 10 tests (~3 min)
-3. Gameplay: 25 tests (~12 min)
-4. Edit Score: 6 tests (~4 min)
-5. Results Screen: 6 tests (~4 min)
-6. Visual Validation: 7 tests (~3 min)
-7. Showcase: 1 test (~1 min)
-8. Save & Resume: 9 tests (~8 min)
+### Reef Royale (83 tests, ~140 minutes)
+1. Add Player: 6 tests
+2. Menu and Settings: 10 tests
+3. Gameplay: 30 tests
+4. Edit Score: 6 tests
+5. Results Screen: 6 tests
+6. Visual Validation: 7 tests
+7. Showcase: 1 test
+8. Screenshot: 1 test
+9. Save & Resume: 16 tests
 
-### Clockwork Quest (105 tests, ~57 minutes)
-1. Add Player: 10 tests (~4 min)
-2. Menu and Settings: 20 tests (~7 min)
-3. Gameplay: 36 tests (~17 min)
-4. Edit Score: 11 tests (~6 min)
-5. Results Screen: 11 tests (~9 min)
-6. Save & Resume: 16 tests (~10 min)
-7. Screenshot: 1 test (~4 min)
+### Clockwork Quest (105 tests, ~174 minutes)
+1. Add Player: 10 tests
+2. Menu and Settings: 20 tests
+3. Gameplay: 36 tests
+4. Edit Score: 11 tests
+5. Results Screen: 11 tests
+6. Save & Resume: 16 tests
+7. Screenshot: 1 test
 
 ## ChromeDriver Version Sync
 

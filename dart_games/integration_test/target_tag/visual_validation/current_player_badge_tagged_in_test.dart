@@ -48,6 +48,7 @@ void main() {
     // ===== Step 6: Advance turn (removes pink border, keeps badge + glow) =====
     await clickDartsRemoved(tester);
     await skipTurn(tester);
+    await PumpSequences.fullRebuild(tester);
 
     // ===== Step 7: Verify badge persists, pink border gone, green glow persists =====
     verifyTaggedInBadge(tester, 'Badge 1', shouldExist: true);

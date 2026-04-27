@@ -2,10 +2,10 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 1677 total tests:
+The Dart Games app has a comprehensive test suite with 1721 total tests:
 - **1179 Flutter non-UI tests** (models, providers, services, widgets, game logic)
 - **178 server tests** (database, models, routes, migrations)
-- **330 UI automation tests** (end-to-end testing with Chrome)
+- **364 UI automation tests** (end-to-end testing with Chrome)
 
 ## Non-UI Tests (1179 Flutter + 178 Server = 1357 tests)
 
@@ -97,7 +97,7 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - SaveGameModal: 8 tests
 - ResumeGameModal: 13 tests
 
-### Server Tests (168 tests)
+### Server Tests (178 tests)
 **Run with:** `cd server && dart test`
 **Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
@@ -114,64 +114,65 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - Failed stats routes: 6 tests
 - Test routes: 6 tests
 
-## UI Automation Tests (330 tests)
+## UI Automation Tests (364 tests)
 
 **Run with:** `./run_ui_tests.bat` or `flutter drive`
-**Execution time:** ~224 minutes
+**Execution time:** ~620 minutes (~10h 20m)
 **OPTIONAL:** Ask user before running
 
-### Target Tag (62 tests, ~48 minutes)
-- Menu and Mechanics: 24 tests (~16 min)
-- Visual Validation: 4 tests (~5 min)
-- Gameplay: 13 tests (~9 min)
-- Add Player: 6 tests (~3 min)
-- Results Screen: 6 tests (~7 min)
-- Save & Resume: 9 tests (~8 min)
+### Target Tag (69 tests, ~124 minutes)
+- Menu and Mechanics: 24 tests
+- Gameplay: 13 tests
+- Add Player: 6 tests
+- Results Screen: 6 tests
+- Visual Validation: 4 tests
+- Save & Resume: 16 tests
 
-### Carnival Derby (33 tests, ~22 minutes)
-- Complete UI test suite: 24 tests (~14 min)
-- Save & Resume: 9 tests (~8 min)
+### Carnival Derby (40 tests, ~69 minutes)
+- Complete UI test suite: 24 tests
+- Save & Resume: 16 tests
 
-### Monster Mash (60 tests, ~40 minutes)
-- Add Player: 6 tests (~3 min)
-- Menu and Settings: 8 tests (~4 min)
-- Gameplay: 20 tests (~11 min)
-- Edit Score: 5 tests (~4 min)
-- Results Screen: 6 tests (~5 min)
-- Visual Validation: 6 tests (~5 min)
-- Save & Resume: 9 tests (~8 min)
+### Monster Mash (67 tests, ~112 minutes)
+- Add Player: 6 tests
+- Menu and Settings: 8 tests
+- Gameplay: 20 tests
+- Edit Score: 5 tests
+- Results Screen: 6 tests
+- Visual Validation: 6 tests
+- Save & Resume: 16 tests
 
-### Reef Royale (70 tests, ~37 minutes)
-- Add Player: 6 tests (~2 min)
-- Menu and Settings: 10 tests (~3 min)
-- Gameplay: 25 tests (~12 min)
-- Edit Score: 6 tests (~4 min)
-- Results Screen: 6 tests (~4 min)
-- Visual Validation: 7 tests (~3 min)
-- Showcase: 1 test (~1 min)
-- Save & Resume: 9 tests (~8 min)
+### Reef Royale (83 tests, ~140 minutes)
+- Add Player: 6 tests
+- Menu and Settings: 10 tests
+- Gameplay: 30 tests
+- Edit Score: 6 tests
+- Results Screen: 6 tests
+- Visual Validation: 7 tests
+- Showcase: 1 test
+- Screenshot: 1 test
+- Save & Resume: 16 tests
 
-### Clockwork Quest (105 tests, ~57 minutes)
-- Add Player: 10 tests (~4 min)
-- Menu and Settings: 20 tests (~7 min)
-- Gameplay: 36 tests (~17 min)
-- Edit Score: 11 tests (~6 min)
-- Results Screen: 11 tests (~9 min)
-- Save & Resume: 16 tests (~10 min)
-- Screenshot: 1 test (~4 min)
+### Clockwork Quest (105 tests, ~174 minutes)
+- Add Player: 10 tests
+- Menu and Settings: 20 tests
+- Gameplay: 36 tests
+- Edit Score: 11 tests
+- Results Screen: 11 tests
+- Save & Resume: 16 tests
+- Screenshot: 1 test
 
 ## Test Requirements
 
 ### Before Every Build
 ✅ Run `flutter test` (1179 tests)
-✅ Run `cd server && dart test` (168 tests)
+✅ Run `cd server && dart test` (178 tests)
 ✅ 100% pass rate MANDATORY for both
 ✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass
 
 ### UI Automation Tests
 ❓ Ask user: "Would you like me to run UI automation tests?"
-✅ If yes: Run `./run_ui_tests.bat`
+✅ If yes: Run `./run_ui_tests.bat` (364 tests, ~620 minutes)
 ✅ If no: Proceed with build after non-UI tests pass
 
 ## Running Tests
@@ -181,7 +182,7 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 # Flutter tests (1179 tests)
 flutter test
 
-# Server tests (168 tests)
+# Server tests (178 tests)
 cd server && dart test
 ```
 
@@ -228,7 +229,7 @@ cd chromedriver/chromedriver-win64
 
 ### UI Automation Tests
 - 100% pass rate when run
-- Execute in ~224 minutes
+- Execute in ~620 minutes (~10h 20m)
 - Test end-to-end user flows
 - Validate visual elements
 - Test player interactions

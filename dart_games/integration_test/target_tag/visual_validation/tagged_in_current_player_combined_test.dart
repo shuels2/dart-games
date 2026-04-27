@@ -39,6 +39,7 @@ void main() {
     // ===== Step 3: Advance to Player 2 =====
     await clickDartsRemoved(tester);
     await skipTurn(tester);
+    await PumpSequences.fullRebuild(tester);
 
     // ===== Step 4: Verify Player 1 non-current but tagged in (green glow + badge, NO pink) =====
     verifyTaggedInBadge(tester, 'Combined 1', shouldExist: true);
@@ -50,6 +51,7 @@ void main() {
 
     // ===== Step 5: Cycle back to Player 1 (skip Player 2's turn) =====
     await skipTurn(tester);
+    await PumpSequences.fullRebuild(tester);
 
     // ===== Step 6: Verify Player 1 current + tagged in again (pink + glow + badge) =====
     verifyTaggedInBadge(tester, 'Combined 1', shouldExist: true);

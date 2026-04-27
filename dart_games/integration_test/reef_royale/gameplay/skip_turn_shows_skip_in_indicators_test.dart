@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
 
 import '../../shared/ui_test_helpers.dart';
+import '../../shared/pump_sequences.dart';
 import '_helpers.dart';
 
 void main() {
@@ -25,6 +26,7 @@ void main() {
 
     // Skip remaining darts
     await UITestHelpers.clickSkipTurn(tester, config);
+    await PumpSequences.fullRebuild(tester);
 
     // Verify all 3 dart indicators exist
     final d0Finder = find.byKey(ReefRoyaleGameKeys.dartIndicator(0));

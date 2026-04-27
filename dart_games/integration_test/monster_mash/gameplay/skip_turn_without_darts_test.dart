@@ -4,6 +4,7 @@ import 'package:dart_games/constants/test_keys.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/pump_sequences.dart';
 import '_helpers.dart';
 
 void main() {
@@ -28,11 +29,7 @@ void main() {
 
     // Skip turn without throwing darts
     await UITestHelpers.clickSkipTurn(tester, config);
-
-    // Wait for auto-advance (500ms delay in game screen for 0-dart skip)
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump();
-    await tester.pump();
+    await PumpSequences.fullRebuild(tester);
 
     // Verify advanced to next player
     final player2Id = ProviderHelpers.getMonsterMashCurrentPlayerId(tester)!;

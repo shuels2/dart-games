@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
+import '../../shared/pump_sequences.dart';
 import '_helpers.dart';
 
 void main() {
@@ -30,6 +31,7 @@ void main() {
 
     // Click SKIP TURN
     await UITestHelpers.clickSkipTurn(tester, config);
+    await PumpSequences.fullRebuild(tester);
 
     // Verify dart display: D1=20, D2=Skip, D3=Skip (remaining darts marked as Skip)
     verifyDartDisplay(tester, '20', 'Skip', 'Skip');

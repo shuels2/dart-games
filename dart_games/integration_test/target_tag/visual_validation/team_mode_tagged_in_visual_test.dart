@@ -62,8 +62,7 @@ void main() {
     // ===== Step 7: Advance turn to see both teams =====
     await clickDartsRemoved(tester);
     await skipTurn(tester);
-
-    await PumpSequences.simpleUpdate(tester);
+    await PumpSequences.fullRebuild(tester);
 
     // ===== Step 8: Verify tagged-in team has glow, other team doesn't =====
     // With manual team assignment:
