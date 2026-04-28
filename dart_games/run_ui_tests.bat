@@ -316,24 +316,19 @@ if "!_RST_RETRY!"=="1" goto :run_single_test_attempt
 :run_single_test_done
 echo End: %time%
 echo End Time: %date% %time% >> integration_test_output\summary.txt
-if "!_RST_PASS!"=="1" (
-    if !_RST_ATTEMPT! gtr 1 (
-        echo Result: PASSED ^(on retry^)
-        echo Result: PASSED (on retry) >> integration_test_output\summary.txt
-        echo PASSED (on retry) >> "!_RST_LOG!" 2>nul
-        set /a retry_count+=1
-    ) else (
-        echo Result: PASSED
-        echo Result: PASSED >> integration_test_output\summary.txt
-        echo PASSED >> "!_RST_LOG!" 2>nul
-    )
-    set /a pass_count+=1
-) else (
-    echo Result: FAILED
-    echo Result: FAILED >> integration_test_output\summary.txt
-    echo FAILED >> "!_RST_LOG!" 2>nul
-    set /a fail_count+=1
-)
+
+set "_RST_RESULT=FAILED"
+if "!_RST_PASS!"=="1" set "_RST_RESULT=PASSED"
+if "!_RST_PASS!"=="1" if !_RST_ATTEMPT! gtr 1 set "_RST_RESULT=PASSED (on retry)"
+
+echo Result: !_RST_RESULT!
+echo Result: !_RST_RESULT! >> integration_test_output\summary.txt
+echo !_RST_RESULT! >> "!_RST_LOG!" 2>nul
+
+if "!_RST_PASS!"=="1" if !_RST_ATTEMPT! gtr 1 set /a retry_count+=1
+if "!_RST_PASS!"=="1" set /a pass_count+=1
+if not "!_RST_PASS!"=="1" set /a fail_count+=1
+
 echo Completed at %date% %time% >> "!_RST_LOG!" 2>nul
 echo. >> integration_test_output\summary.txt
 exit /b
