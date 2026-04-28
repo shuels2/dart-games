@@ -116,8 +116,8 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 
 ## UI Automation Tests (364 tests)
 
-**Run with:** `./run_ui_tests.bat` or `flutter drive`
-**Execution time:** ~620 minutes (~10h 20m)
+**Run with:** `./run_ui_tests.bat` (sequential) or `./run_ui_tests_parallel.bat` (parallel)
+**Execution time:** ~620 minutes sequential, ~174 minutes parallel
 **OPTIONAL:** Ask user before running
 
 ### Target Tag (69 tests, ~124 minutes)
@@ -202,19 +202,13 @@ flutter test test/widgets/
 
 ### UI Automation Tests
 ```bash
-# Terminal 1: Start chromedriver
-cd chromedriver/chromedriver-win64
-./chromedriver.exe --port=4444
+# Sequential runner (all infrastructure managed automatically)
+./run_ui_tests.bat                    # All tests (~620 min)
+./run_ui_tests.bat target_tag         # Specific game
 
-# Terminal 2: Run all UI tests
-./run_ui_tests.bat
-
-# Or run specific game
-./run_ui_tests.bat target_tag
-./run_ui_tests.bat carnival
-./run_ui_tests.bat monster_mash
-./run_ui_tests.bat reef_royale
-./run_ui_tests.bat clockwork_quest
+# Parallel runner (~3.5x faster, 5 games simultaneously)
+./run_ui_tests_parallel.bat           # All tests (~174 min)
+./run_ui_tests_parallel.bat target_tag monster_mash  # Specific games
 ```
 
 ## Test Expectations

@@ -425,6 +425,10 @@ flutter test
 ./run_ui_tests.bat your_game
 ```
 
+**Update parallel test runner:**
+Add your game name to the `GAMES` variable in `run_ui_tests_parallel.bat`.
+Ports are assigned automatically. See [UI Automation - Adding a New Game](../testing/ui-automation.md#adding-a-new-game-to-parallel-tests).
+
 **Manual testing:**
 - Test on web
 - Test on tablet (if available)

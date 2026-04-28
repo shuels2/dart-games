@@ -78,19 +78,19 @@ cd server && dart test
 
 ### Run UI Automation Tests (Optional)
 ```bash
-# Terminal 1: Start chromedriver
-cd chromedriver/chromedriver-win64
-./chromedriver.exe --port=4444
-
-# Terminal 2: Run all UI tests (364 tests, ~620 minutes)
-./run_ui_tests.bat
-
-# Or run specific game
-./run_ui_tests.bat target_tag
+# Sequential runner (all infrastructure managed automatically)
+./run_ui_tests.bat                          # All tests (~620 min)
+./run_ui_tests.bat target_tag               # Specific game
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
 ./run_ui_tests.bat reef_royale
 ./run_ui_tests.bat clockwork_quest
+
+# Parallel runner (~3.5x faster, 5 games simultaneously, ~174 min)
+./run_ui_tests_parallel.bat                          # All games
+./run_ui_tests_parallel.bat target_tag monster_mash  # Specific games
+./run_ui_tests_parallel.bat save_resume              # Filter by test type
+./run_ui_tests_parallel.bat reef_royale/gameplay     # Game + subfolder
 ```
 
 ### Run Game-Specific Tests

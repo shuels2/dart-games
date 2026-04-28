@@ -163,6 +163,93 @@ Use with: `flutter drive --driver=test_driver/screenshot_test.dart`
 | No | `test_driver/integration_test.dart` |
 | Yes | `test_driver/screenshot_test.dart` |
 
+## Running UI Tests in Parallel
+
+The parallel runner executes all 5 game categories simultaneously, reducing wall-clock time from ~620 minutes to ~174 minutes (~3.5x speedup). Each game gets its own ChromeDriver and backend server instance.
+
+### Quick Start
+
+```bash
+# Run all tests in parallel (~174 minutes)
+./run_ui_tests_parallel.bat
+
+# Run specific game(s)
+./run_ui_tests_parallel.bat target_tag
+./run_ui_tests_parallel.bat target_tag monster_mash
+
+# Filter by test type across all games
+./run_ui_tests_parallel.bat save_resume
+
+# Game + subfolder filter
+./run_ui_tests_parallel.bat reef_royale/gameplay
+```
+
+### Port Assignments
+
+Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_parallel.bat` (Server = 9000+N, ChromeDriver = 4443+N):
+
+| Game | Server Port | ChromeDriver Port |
+|------|------------|-------------------|
+| target_tag | 9001 | 4444 |
+| carnival_derby | 9002 | 4445 |
+| monster_mash | 9003 | 4446 |
+| reef_royale | 9004 | 4447 |
+| clockwork_quest | 9005 | 4448 |
+
+### Infrastructure Isolation
+
+- Each game runs in its own worker process with a dedicated ChromeDriver and backend server
+- PID-scoped Chrome killing ensures one worker's cleanup doesn't affect others
+- Per-session database isolation (`X-DB-Session`) prevents cross-test data pollution
+- Workers handle their own retry logic (restart ChromeDriver/server on infrastructure failures)
+
+### Output
+
+Results are saved to `integration_test_output/parallel/`:
+- Per-test log files: `<test_name>.log`
+- Per-game result summaries: `<game>_results.txt`
+- Combined summary: `summary.txt`
+
+### System Requirements
+
+- 16GB+ RAM recommended for all games simultaneously
+- Use filters to run fewer games if resources are limited
+
+### When to Use Parallel vs Sequential
+
+| Scenario | Runner |
+|----------|--------|
+| Full test suite run | `run_ui_tests_parallel.bat` |
+| Debugging a single test | `run_ui_tests.bat <test>` |
+| CI/CD pipeline | `run_ui_tests_parallel.bat` |
+| Investigating flaky test | `run_ui_tests.bat <test>` |
+
+### Stub Testing
+
+Test the parallel orchestration without real infrastructure:
+
+```bash
+# All games (simulated)
+./run_ui_tests_parallel_stub.bat
+
+# With filters
+./run_ui_tests_parallel_stub.bat target_tag
+
+# Simulate failures
+set STUB_FAIL=1
+./run_ui_tests_parallel_stub.bat
+```
+
+### Adding a New Game to Parallel Tests
+
+When adding a new game to Dart Games, include it in the parallel test runner:
+
+1. Add the game name to the `GAMES` variable in `run_ui_tests_parallel.bat` (near the top of the file)
+2. Ensure `integration_test/<game_name>/` exists with `*_test.dart` files
+3. Update the port assignments table above with the next sequential ports
+
+Ports are auto-assigned by position: Server = 9000+N, ChromeDriver = 4443+N. The help text and cleanup routines are fully dynamic — no other script changes needed.
+
 ## Critical Rule: Continuous Animations
 
 **NEVER use `pumpAndSettle()` in integration tests.**
