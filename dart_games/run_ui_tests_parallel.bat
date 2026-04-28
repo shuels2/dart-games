@@ -213,7 +213,7 @@ set "_wfsp_port=%~1"
 set "_wfsp_count=0"
 :wait_for_server_port_loop
 set /a _wfsp_count+=1
-if !_wfsp_count! gtr 15 (
+if !_wfsp_count! gtr 30 (
     echo   ERROR: Backend server did not start on port !_wfsp_port! in time.
     exit /b 1
 )
