@@ -268,6 +268,7 @@ echo. >> "!_RST_LOG!"
 :run_single_test_attempt
 set /a _RST_ATTEMPT+=1
 
+set "_RST_ABORT=0"
 if !_RST_ATTEMPT! gtr 1 (
     echo   Infrastructure failure detected ^(attempt !_RST_ATTEMPT!/2^) - restarting ChromeDriver and server...
     echo. >> "!_RST_LOG!"
@@ -279,21 +280,24 @@ if !_RST_ATTEMPT! gtr 1 (
     if !errorlevel! neq 0 (
         echo   ERROR: ChromeDriver failed to restart. Marking test as failed.
         set "_RST_PASS=0"
-        goto :run_single_test_done
+        set "_RST_ABORT=1"
     )
-    call :wait_for_server_port !_CAT_PORT!
-    if !errorlevel! neq 0 (
-        echo   Backend server also down - restarting...
-        call :kill_server_port !_CAT_PORT!
-        start /B "" cmd /C "cd server && dart run bin/server.dart --port !_CAT_PORT! --data-dir ..\!_CAT_DATADIR! >> ..\!_CAT_SERVER_LOG! 2>&1"
+    if "!_RST_ABORT!"=="0" (
         call :wait_for_server_port !_CAT_PORT!
         if !errorlevel! neq 0 (
-            echo   ERROR: Backend server failed to restart. Marking test as failed.
-            set "_RST_PASS=0"
-            goto :run_single_test_done
+            echo   Backend server also down - restarting...
+            call :kill_server_port !_CAT_PORT!
+            start /B "" cmd /C "cd server && dart run bin/server.dart --port !_CAT_PORT! --data-dir ..\!_CAT_DATADIR! >> ..\!_CAT_SERVER_LOG! 2>&1"
+            call :wait_for_server_port !_CAT_PORT!
+            if !errorlevel! neq 0 (
+                echo   ERROR: Backend server failed to restart. Marking test as failed.
+                set "_RST_PASS=0"
+                set "_RST_ABORT=1"
+            )
         )
     )
 )
+if "!_RST_ABORT!"=="1" goto :run_single_test_done
 
 start /B "" cmd /C "flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --dart-define=SERVER_PORT=!_CAT_PORT! >> "!_RST_LOG!" 2>&1"
 
@@ -302,12 +306,12 @@ powershell -NoProfile -Command "$log='!_RST_LOG!';$done=$false;$elapsed=0;while(
 if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
 
 REM On first failure, check for infrastructure errors and retry once
-if "!_RST_PASS!"=="0" (
-    if !_RST_ATTEMPT! lss 2 (
-        findstr /C:"AppConnectionException" /C:"SocketException" "!_RST_LOG!" >nul 2>&1
-        if !errorlevel! equ 0 goto :run_single_test_attempt
-    )
+set "_RST_RETRY=0"
+if "!_RST_PASS!"=="0" if !_RST_ATTEMPT! lss 2 (
+    findstr /C:"AppConnectionException" /C:"SocketException" "!_RST_LOG!" >nul 2>&1
+    if !errorlevel! equ 0 set "_RST_RETRY=1"
 )
+if "!_RST_RETRY!"=="1" goto :run_single_test_attempt
 
 :run_single_test_done
 echo End: %time%
@@ -388,45 +392,21 @@ for %%G in (%GAMES%) do (
         if not exist "!_CAT_DATADIR!" mkdir "!_CAT_DATADIR!"
         start /B "" cmd /C "cd server && dart run bin/server.dart --port !_CAT_PORT! --data-dir ..\!_CAT_DATADIR! >> ..\!_CAT_SERVER_LOG! 2>&1"
         call :wait_for_server_port !_CAT_PORT!
+        set "_cat_ok=1"
         if !errorlevel! neq 0 (
             echo   ERROR: Backend server failed to start on port !_CAT_PORT! for %%G. Skipping category.
             echo Server failed to start >> integration_test_output\summary.txt
             call :kill_services
-            goto :next_game
+            set "_cat_ok=0"
         )
 
-        REM Run test files directly in the game directory (screenshot/showcase tests)
-        for %%F in ("!_GAME_DIR!\*_test.dart") do (
-            set "_test_path=%%F"
-            set "_test_path=!_test_path:\=/!"
-
-            REM A file matches when run_all=1 OR any token is a substring of its path
-            set "_file_matches=0"
-            if "!run_all!"=="1" set "_file_matches=1"
-            if "!_file_matches!"=="0" (
-                for /l %%i in (1,1,!token_count!) do (
-                    if "!_file_matches!"=="0" (
-                        echo !_test_path! | findstr /i /C:"!tok%%i!" >nul 2>&1
-                        if !errorlevel! equ 0 set "_file_matches=1"
-                    )
-                )
-            )
-
-            if "!_file_matches!"=="1" (
-                set "_driver=integration_test.dart"
-                echo %%~nF | findstr /i "screenshot" >nul 2>&1
-                if !errorlevel! equ 0 set "_driver=screenshot_test.dart"
-
-                call :run_single_test "!_test_path!" "!_driver!"
-            )
-        )
-
-        REM Run test files in subdirectories
-        for /d %%D in ("!_GAME_DIR!\*") do (
-            for %%F in ("%%D\*_test.dart") do (
+        if "!_cat_ok!"=="1" (
+            REM Run test files directly in the game directory (screenshot/showcase tests)
+            for %%F in ("!_GAME_DIR!\*_test.dart") do (
                 set "_test_path=%%F"
                 set "_test_path=!_test_path:\=/!"
 
+                REM A file matches when run_all=1 OR any token is a substring of its path
                 set "_file_matches=0"
                 if "!run_all!"=="1" set "_file_matches=1"
                 if "!_file_matches!"=="0" (
@@ -446,15 +426,41 @@ for %%G in (%GAMES%) do (
                     call :run_single_test "!_test_path!" "!_driver!"
                 )
             )
-        )
 
-        echo.
-        echo Stopping backend server and ChromeDriver for next game...
-        call :kill_server_port !_CAT_PORT!
-        timeout /t 1 /nobreak >nul
-        call :kill_services
+            REM Run test files in subdirectories
+            for /d %%D in ("!_GAME_DIR!\*") do (
+                for %%F in ("%%D\*_test.dart") do (
+                    set "_test_path=%%F"
+                    set "_test_path=!_test_path:\=/!"
+
+                    set "_file_matches=0"
+                    if "!run_all!"=="1" set "_file_matches=1"
+                    if "!_file_matches!"=="0" (
+                        for /l %%i in (1,1,!token_count!) do (
+                            if "!_file_matches!"=="0" (
+                                echo !_test_path! | findstr /i /C:"!tok%%i!" >nul 2>&1
+                                if !errorlevel! equ 0 set "_file_matches=1"
+                            )
+                        )
+                    )
+
+                    if "!_file_matches!"=="1" (
+                        set "_driver=integration_test.dart"
+                        echo %%~nF | findstr /i "screenshot" >nul 2>&1
+                        if !errorlevel! equ 0 set "_driver=screenshot_test.dart"
+
+                        call :run_single_test "!_test_path!" "!_driver!"
+                    )
+                )
+            )
+
+            echo.
+            echo Stopping backend server and ChromeDriver for next game...
+            call :kill_server_port !_CAT_PORT!
+            timeout /t 1 /nobreak >nul
+            call :kill_services
+        )
     )
-    :next_game
 )
 
 REM ============================================================
