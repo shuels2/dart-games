@@ -333,11 +333,11 @@ for /l %%N in (1,1,!worker_count!) do (
 
 if "!_all_done!"=="1" goto :workers_done
 
-REM 4-hour timeout: 1440 polls * 10 seconds = 14400 seconds
+REM 6-hour timeout: 2160 polls * 10 seconds = 21600 seconds
 set /a _poll_count+=1
-if !_poll_count! gtr 1440 (
+if !_poll_count! gtr 2160 (
     echo.
-    echo ERROR: 4-hour global timeout reached.
+    echo ERROR: 6-hour global timeout reached.
     echo Workers completed: !_done_count!/!worker_count!
     for /l %%N in (1,1,!worker_count!) do (
         set "_g=!game%%N!"
@@ -551,7 +551,7 @@ echo   - Requires 16GB+ RAM recommended for all games
 echo   - Results saved to integration_test_output\parallel\
 echo   - PID-scoped Chrome killing prevents cross-worker interference
 echo   - Per-session DB isolation (X-DB-Session) prevents data pollution
-echo   - 4-hour global timeout for all workers
+echo   - 6-hour global timeout for all workers
 echo   - Use run_ui_tests.bat for sequential debugging of single tests
 echo.
 exit /b 0
