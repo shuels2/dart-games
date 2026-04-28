@@ -101,6 +101,14 @@ if !errorlevel! neq 0 (
 )
 popd
 
+echo Pre-building Flutter web app to warm compiler cache...
+call flutter build web
+if !errorlevel! neq 0 (
+    echo ERROR: Flutter web pre-build failed.
+    pause
+    exit /b 1
+)
+
 echo Stopping any existing ChromeDriver, Chrome, and Backend Server instances...
 taskkill /F /IM chromedriver.exe >nul 2>&1
 taskkill /F /IM dart.exe >nul 2>&1
