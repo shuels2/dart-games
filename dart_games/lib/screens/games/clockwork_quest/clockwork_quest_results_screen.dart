@@ -151,39 +151,46 @@ class _ClockworkQuestResultsScreenState
             ),
           ),
 
-          Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 800),
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Winner Section
-              _buildWinnerSection(winner, clockworkProvider),
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final availableHeight = constraints.maxHeight;
+                final inventorMaxHeight = (availableHeight * 0.30).clamp(100.0, 280.0);
 
-              const SizedBox(height: 40),
+                return Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Winner Section
+                      _buildWinnerSection(winner, clockworkProvider, maxSize: inventorMaxHeight),
 
-              // Rankings List
-              _buildRankingsList(
-                  rankedPlayerIds, playerProvider, clockworkProvider),
+                      const SizedBox(height: 16),
 
-              const SizedBox(height: 40),
+                      // Rankings
+                      Flexible(child: _buildRankings(
+                          rankedPlayerIds, playerProvider, clockworkProvider)),
 
-              // Action Buttons
-              _buildActionButtons(context),
-            ],
+                      const SizedBox(height: 16),
+
+                      // Action Buttons
+                      _buildActionButtons(context),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-      ),
         ],
       ),
     );
   }
 
   Widget _buildWinnerSection(
-      dynamic winner, ClockworkQuestProvider provider) {
+      dynamic winner, ClockworkQuestProvider provider, {double? maxSize}) {
     final winnerId = provider.currentGame!.winnerId!;
     final lapsCompleted = provider.getPlayerLapsCompleted(winnerId);
+    final inventorSize = maxSize ?? 280.0;
 
     return Column(
       children: [
@@ -194,27 +201,27 @@ class _ClockworkQuestResultsScreenState
           style: GoogleFonts.cinzelDecorative(
             fontSize: 32,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFFFFBF00), // Amber Glow
+            color: const Color(0xFFFFBF00),
             letterSpacing: 2.0,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
 
-        // Inventor character image — separate from player avatar
+        // Inventor character image
         if (provider.getInventorImagePath(winnerId) != null)
           Image.asset(
             provider.getInventorImagePath(winnerId)!,
-            width: 120,
-            height: 120,
+            width: inventorSize,
+            height: inventorSize,
             fit: BoxFit.contain,
           ),
 
-        // Player photo avatar (photo or initials only — not character image)
+        // Player photo avatar fallback
         if (provider.getInventorImagePath(winnerId) == null)
           if (winner.photoPath != null)
             CircleAvatar(
-              radius: 60,
+              radius: inventorSize / 2.5,
               backgroundImage: winner.photoPath!.startsWith('data:')
                   ? MemoryImage(
                       base64Decode(winner.photoPath!.split(',')[1]))
@@ -222,18 +229,18 @@ class _ClockworkQuestResultsScreenState
             )
           else
             CircleAvatar(
-              radius: 60,
+              radius: inventorSize / 2.5,
               backgroundColor: const Color(0xFFC5A54E),
               child: Text(
                 winner.name[0].toUpperCase(),
                 style: GoogleFonts.cinzelDecorative(
-                  fontSize: 48,
+                  fontSize: inventorSize / 3,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF2C2C34),
                 ),
               ),
             ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         // Winner name
         Text(
@@ -247,7 +254,7 @@ class _ClockworkQuestResultsScreenState
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
         // Winner stats
         Text(
@@ -264,148 +271,170 @@ class _ClockworkQuestResultsScreenState
     );
   }
 
-  Widget _buildRankingsList(
+  Widget _buildRankings(
     List<String> rankedPlayerIds,
     PlayerProvider playerProvider,
     ClockworkQuestProvider clockworkProvider,
   ) {
-    return Expanded(
-      child: Container(
+    if (rankedPlayerIds.length > 4) {
+      return Row(
         key: ClockworkQuestResultsKeys.rankingsList,
-        decoration: BoxDecoration(
-          color: const Color(0xFF2C2C34).withOpacity(0.6),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFB87333).withOpacity(0.3),
-            width: 2,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _buildRankingColumn(
+                rankedPlayerIds.take(4).toList(), playerProvider, clockworkProvider, 0),
           ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _buildRankingColumn(
+                rankedPlayerIds.skip(4).toList(), playerProvider, clockworkProvider, 4),
+          ),
+        ],
+      );
+    }
+
+    return _buildRankingColumn(
+      rankedPlayerIds, playerProvider, clockworkProvider, 0,
+      key: ClockworkQuestResultsKeys.rankingsList,
+    );
+  }
+
+  Widget _buildRankingColumn(
+    List<String> rankedPlayerIds,
+    PlayerProvider playerProvider,
+    ClockworkQuestProvider clockworkProvider,
+    int startIndex, {
+    Key? key,
+  }) {
+    return Container(
+      key: key,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C34).withOpacity(0.6),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFB87333).withOpacity(0.3),
+          width: 2,
         ),
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: rankedPlayerIds.length,
-          itemBuilder: (context, index) {
-            final playerId = rankedPlayerIds[index];
-            final player = playerProvider.getPlayerById(playerId);
-            if (player == null) return const SizedBox();
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(rankedPlayerIds.length, (index) {
+          final playerId = rankedPlayerIds[index];
+          final player = playerProvider.getPlayerById(playerId);
+          if (player == null) return const SizedBox();
 
-            final laps = clockworkProvider.getPlayerLapsCompleted(playerId);
-            final target =
-                clockworkProvider.getPlayerCurrentTarget(playerId);
-            final isWinner =
-                playerId == clockworkProvider.currentGame!.winnerId;
+          final globalIndex = startIndex + index;
+          final laps = clockworkProvider.getPlayerLapsCompleted(playerId);
+          final target = clockworkProvider.getPlayerCurrentTarget(playerId);
+          final isWinner = playerId == clockworkProvider.currentGame!.winnerId;
 
-            return Container(
-              key: ClockworkQuestResultsKeys.playerRankTile(playerId),
-              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: index % 2 == 0
-                    ? const Color(0xFF2C2C34)
-                    : const Color(0xFF3C3C44),
-                borderRadius: BorderRadius.circular(8),
-                border: isWinner
-                    ? Border.all(color: const Color(0xFFFFBF00), width: 2)
-                    : null,
-              ),
-              child: Row(
-                children: [
-                  // Rank
-                  SizedBox(
-                    width: 40,
-                    child: Text(
-                      '${index + 1}.',
-                      style: GoogleFonts.cinzelDecorative(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFC5A54E),
-                      ),
+          return Container(
+            key: ClockworkQuestResultsKeys.playerRankTile(playerId),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: globalIndex % 2 == 0
+                  ? const Color(0xFF2C2C34)
+                  : const Color(0xFF3C3C44),
+              borderRadius: BorderRadius.circular(8),
+              border: isWinner
+                  ? Border.all(color: const Color(0xFFFFBF00), width: 2)
+                  : null,
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  child: Text(
+                    '${globalIndex + 1}.',
+                    style: GoogleFonts.cinzelDecorative(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFC5A54E),
                     ),
                   ),
-
-                  // Inventor image or player avatar — character image separate from CircleAvatar
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: clockworkProvider.getInventorImagePath(playerId) != null
-                        ? Image.asset(
-                            clockworkProvider.getInventorImagePath(playerId)!,
-                            fit: BoxFit.contain,
-                          )
-                        : player.photoPath != null
-                            ? CircleAvatar(
-                                radius: 20,
-                                backgroundImage: player.photoPath!.startsWith('data:')
-                                    ? MemoryImage(base64Decode(
-                                        player.photoPath!.split(',')[1]))
-                                    : NetworkImage(player.photoPath!)
-                                        as ImageProvider,
-                              )
-                            : CircleAvatar(
-                                radius: 20,
-                                backgroundColor: const Color(0xFFB87333),
-                                child: Text(
-                                  player.name[0].toUpperCase(),
-                                  style: GoogleFonts.cinzelDecorative(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF2C2C34),
-                                  ),
+                ),
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: clockworkProvider.getInventorImagePath(playerId) != null
+                      ? Image.asset(
+                          clockworkProvider.getInventorImagePath(playerId)!,
+                          fit: BoxFit.contain,
+                        )
+                      : player.photoPath != null
+                          ? CircleAvatar(
+                              radius: 20,
+                              backgroundImage: player.photoPath!.startsWith('data:')
+                                  ? MemoryImage(base64Decode(
+                                      player.photoPath!.split(',')[1]))
+                                  : NetworkImage(player.photoPath!)
+                                      as ImageProvider,
+                            )
+                          : CircleAvatar(
+                              radius: 20,
+                              backgroundColor: const Color(0xFFB87333),
+                              child: Text(
+                                player.name[0].toUpperCase(),
+                                style: GoogleFonts.cinzelDecorative(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF2C2C34),
                                 ),
                               ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Name
-                  Expanded(
-                    child: Text(
-                      player.name,
-                      style: GoogleFonts.lato(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFFF5F0E8),
-                      ),
-                    ),
-                  ),
-
-                  // Progress — show gears activated (target - 1), winner clamped to maxTarget
-                  Text(
-                    () {
-                      final maxTarget =
-                          clockworkProvider.currentGame!.maxTarget;
-                      final gearsActivated = isWinner
-                          ? maxTarget
-                          : (target - 1).clamp(0, maxTarget);
-                      return 'Gear $gearsActivated/$maxTarget${clockworkProvider.currentGame!.numberOfLaps > 1 ? " (Lap ${laps + 1})" : ""}';
-                    }(),
+                            ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    player.name,
                     style: GoogleFonts.lato(
-                      fontSize: 14,
-                      color: const Color(0xFFF5F0E8).withOpacity(0.7),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFF5F0E8),
                     ),
                   ),
-                ],
-              ),
-            );
-          },
-        ),
+                ),
+                Text(
+                  () {
+                    final maxTarget = clockworkProvider.currentGame!.maxTarget;
+                    final gearsActivated = isWinner
+                        ? maxTarget
+                        : (target - 1).clamp(0, maxTarget);
+                    return 'Gear $gearsActivated/$maxTarget${clockworkProvider.currentGame!.numberOfLaps > 1 ? " (Lap ${laps + 1})" : ""}';
+                  }(),
+                  style: GoogleFonts.lato(
+                    fontSize: 14,
+                    color: const Color(0xFFF5F0E8).withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Wind Again
         SizedBox(
-          width: double.infinity,
+          width: 280,
+          height: 56,
           child: ElevatedButton(
             key: ClockworkQuestResultsKeys.playAgainButton,
             onPressed: () => _playAgain(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43B3AE), // Verdigris Green
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: const Color(0xFF43B3AE),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
+              elevation: 6,
             ),
             child: Text(
               'WIND AGAIN',
@@ -418,20 +447,21 @@ class _ClockworkQuestResultsScreenState
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(width: 16),
 
         // Change Settings
         SizedBox(
-          width: double.infinity,
+          width: 280,
+          height: 56,
           child: ElevatedButton(
             key: ClockworkQuestResultsKeys.changeSettingsButton,
             onPressed: () => _changeSettings(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFC5A54E), // Brass Gold
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: const Color(0xFFC5A54E),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
+              elevation: 6,
             ),
             child: Text(
               'CHANGE SETTINGS',
@@ -444,20 +474,21 @@ class _ClockworkQuestResultsScreenState
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(width: 16),
 
         // Leave Tower
         SizedBox(
-          width: double.infinity,
+          width: 280,
+          height: 56,
           child: OutlinedButton(
             key: ClockworkQuestResultsKeys.leaveTowerButton,
             onPressed: () => _leaveTower(context),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
               side: const BorderSide(color: Color(0xFFB87333), width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
+              elevation: 6,
             ),
             child: Text(
               'LEAVE TOWER',

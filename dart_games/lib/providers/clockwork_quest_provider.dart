@@ -342,7 +342,8 @@ class ClockworkQuestProvider extends ChangeNotifier {
       },
     );
 
-    advanceTurn();
+    _waitingForTakeout = true;
+    notifyListeners();
   }
 
   // Edit score (restore to turn start, then apply new throws)

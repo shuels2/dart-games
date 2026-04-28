@@ -346,9 +346,9 @@ void main() {
     test('skipping with 0 darts thrown adds 3 skip markers', () {
       provider.skipTurn();
 
-      // After skip, turn advances to p2; check p1 turn darts were set before advance
-      // After advanceTurn, p1's currentTurnDarts are cleared, so
-      // we verify the turn advanced
+      // Skip now sets waitingForTakeout; confirm to advance
+      expect(provider.shouldPromptTakeout, true);
+      provider.confirmDartsRemoved();
       expect(provider.getCurrentPlayerId(), 'p2');
     });
 
@@ -356,6 +356,8 @@ void main() {
       provider.processDartThrow('Miss');
       provider.skipTurn();
 
+      expect(provider.shouldPromptTakeout, true);
+      provider.confirmDartsRemoved();
       expect(provider.getCurrentPlayerId(), 'p2');
     });
 
