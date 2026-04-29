@@ -101,14 +101,6 @@ if !errorlevel! neq 0 (
 )
 popd
 
-echo Pre-building Flutter web app to warm compiler cache...
-call flutter build web
-if !errorlevel! neq 0 (
-    echo ERROR: Flutter web pre-build failed.
-    pause
-    exit /b 1
-)
-
 echo Stopping any existing ChromeDriver, Chrome, and Backend Server instances...
 taskkill /F /IM chromedriver.exe >nul 2>&1
 taskkill /F /IM dart.exe >nul 2>&1
@@ -185,6 +177,8 @@ for /l %%N in (1,1,!worker_count!) do (
 )
 echo.
 
+set "_WORKTREE_BASE=integration_test_output\parallel\worktrees"
+
 REM Skip helper functions
 goto :start_infrastructure
 
@@ -246,6 +240,56 @@ REM ============================================================
 
 if defined STUB_MODE goto :skip_infrastructure
 
+REM ============================================================
+REM Create worker worktrees (one per game for build isolation)
+REM Each worktree gets its own build/ and .dart_tool/ so workers
+REM never fight over the Flutter build cache or build/web/ output.
+REM ============================================================
+echo ========================================
+echo Creating Worker Worktrees
+echo ========================================
+echo.
+
+REM Remove any leftover worktrees from a previous failed run
+if exist "!_WORKTREE_BASE!" (
+    echo Cleaning up previous worker worktrees...
+    for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest) do (
+        git worktree remove --force "!_WORKTREE_BASE!\%%G" >nul 2>&1
+    )
+    git worktree prune >nul 2>&1
+    rmdir /S /Q "!_WORKTREE_BASE!" >nul 2>&1
+)
+if not exist "!_WORKTREE_BASE!" mkdir "!_WORKTREE_BASE!"
+
+set "_wt_ok=1"
+for /l %%N in (1,1,!worker_count!) do (
+    if "!_wt_ok!"=="1" (
+        set "_g=!game%%N!"
+        set "_wt=!_WORKTREE_BASE!\!_g!"
+        echo [%%N/!worker_count!] Creating worktree for !_g!...
+        git worktree add "!_wt!" HEAD >nul 2>&1
+        if !errorlevel! neq 0 (
+            echo ERROR: Failed to create worktree for !_g!. Aborting.
+            set "_wt_ok=0"
+        )
+        if "!_wt_ok!"=="1" (
+            pushd "!_wt!"
+            echo   Resolving dependencies...
+            call flutter pub get >nul 2>&1
+            echo   Pre-building Flutter web app ^(warms compiler cache^)...
+            call flutter build web >nul 2>&1
+            popd
+            set "worktree%%N=!_wt!"
+            echo   Ready.
+        )
+    )
+)
+if "!_wt_ok!"=="0" goto :cleanup
+echo.
+echo All worktrees ready.
+echo.
+
+REM ============================================================
 echo ========================================
 echo Starting Infrastructure
 echo ========================================
@@ -313,9 +357,11 @@ for /l %%N in (1,1,!worker_count!) do (
     set "_g=!game%%N!"
     set /a "_cd_port=4443+%%N"
     set /a "_srv_port=9000+%%N"
+    set "_wt=!worktree%%N!"
+    if "!_wt!"=="" set "_wt=stub"
 
     echo Launching worker for !_g! ^(CD=!_cd_port! SRV=!_srv_port!^)...
-    start "Worker: !_g!" cmd /C "run_ui_tests_parallel_worker.bat !_g! !_cd_port! !_srv_port! %_PARALLEL_DIR% !filter_args!"
+    start "Worker: !_g!" cmd /C "run_ui_tests_parallel_worker.bat !_g! !_cd_port! !_srv_port! %_PARALLEL_DIR% !_wt! !filter_args!"
 )
 
 echo.
@@ -486,6 +532,14 @@ taskkill /F /IM chromedriver.exe >nul 2>&1
 
 :skip_cleanup
 
+echo Removing worker worktrees...
+for /l %%N in (1,1,!worker_count!) do (
+    set "_g=!game%%N!"
+    git worktree remove --force "!_WORKTREE_BASE!\!_g!" >nul 2>&1
+)
+git worktree prune >nul 2>&1
+if exist "!_WORKTREE_BASE!" rmdir /S /Q "!_WORKTREE_BASE!" >nul 2>&1
+
 echo Infrastructure stopped.
 echo.
 
@@ -516,8 +570,10 @@ echo   run_ui_tests_parallel.bat /?
 echo.
 echo DESCRIPTION:
 echo   Runs UI automation tests for all game categories in parallel,
-echo   reducing wall-clock time from ~620 minutes to ~174 minutes.
-echo   Each game gets its own ChromeDriver and backend server instance.
+echo   reducing wall-clock time from ~588 minutes to ~170 minutes.
+echo   Each game gets its own ChromeDriver, backend server, and git
+echo   worktree so Flutter builds are fully isolated (no shared
+echo   build cache or build/web/ output directory conflicts).
 echo.
 echo PORT ASSIGNMENTS (auto-assigned by position in GAMES list):
 set "_help_n=0"

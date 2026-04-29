@@ -24,6 +24,7 @@ set "_GAME=%~1"
 set "_CD_PORT=%~2"
 set "_SERVER_PORT=%~3"
 set "_OUTPUT_DIR=%~4"
+set "_WORKTREE_PATH=%~5"
 
 if "%_GAME%"=="" (
     echo ERROR: Game name is required.
@@ -42,14 +43,18 @@ if "%_OUTPUT_DIR%"=="" (
     echo ERROR: Output directory is required.
     exit /b 1
 )
+if "%_WORKTREE_PATH%"=="" (
+    echo ERROR: Worktree path is required.
+    exit /b 1
+)
 
-REM Parse optional filter tokens (args 5+)
+REM Parse optional filter tokens (args 6+)
 set "run_all=1"
 set "token_count=0"
 set "_argnum=0"
 for %%T in (%*) do (
     set /a _argnum+=1
-    if !_argnum! gtr 4 (
+    if !_argnum! gtr 5 (
         set "run_all=0"
         set /a token_count+=1
         set "_nt=%%T"
@@ -58,6 +63,13 @@ for %%T in (%*) do (
         set "tok!token_count!=!_nt!"
     )
 )
+
+REM Compute absolute output dir so log paths work when flutter drive
+REM runs from a different directory (the worktree).
+if not exist "%_OUTPUT_DIR%" mkdir "%_OUTPUT_DIR%"
+pushd "%_OUTPUT_DIR%"
+set "_OUTPUT_DIR_ABS=%CD%"
+popd
 
 REM Initialize
 set "_GAME_DIR=integration_test\%_GAME%"
@@ -80,6 +92,7 @@ if defined STUB_MODE echo          [STUB MODE]
 echo   ChromeDriver port: %_CD_PORT%
 echo   Server port: %_SERVER_PORT%
 echo   Output: %_OUTPUT_DIR%
+if not defined STUB_MODE echo   Worktree: %_WORKTREE_PATH%
 if "!run_all!"=="0" (
     echo   Filters:
     for /l %%i in (1,1,!token_count!) do echo     [%%i] !tok%%i!
@@ -152,12 +165,12 @@ set "_RST_DRIVER=%~2"
 set /a test_count+=1
 set "_RST_ATTEMPT=0"
 
-REM Build log filename from path
+REM Build log filename from path (absolute so it works from the worktree dir)
 set "_RST_LOGNAME=%_RST_TARGET:integration_test/=%"
 set "_RST_LOGNAME=%_RST_LOGNAME:/=_%"
 set "_RST_LOGNAME=%_RST_LOGNAME:\=_%"
 set "_RST_LOGNAME=%_RST_LOGNAME:.dart=%"
-set "_RST_LOG=%_OUTPUT_DIR%\%_RST_LOGNAME%.log"
+set "_RST_LOG=%_OUTPUT_DIR_ABS%\%_RST_LOGNAME%.log"
 
 echo ----------------------------------------
 echo [%_GAME% !test_count!] !_RST_TARGET!
@@ -219,13 +232,16 @@ if defined STUB_MODE (
         set "_RST_PASS=1"
     )
 ) else (
-    REM Real mode: run flutter drive with PID-scoped Chrome killing
+    REM Real mode: run flutter drive from the isolated worktree directory.
+    REM Each worker has its own worktree with its own build/ and .dart_tool/
+    REM so builds never conflict across parallel workers.
     echo Running: !_RST_TARGET! > "!_RST_LOG!"
     echo Started at %date% %time% >> "!_RST_LOG!"
     echo Driver port: %_CD_PORT%  Server port: %_SERVER_PORT% >> "!_RST_LOG!"
+    echo Worktree: %_WORKTREE_PATH% >> "!_RST_LOG!"
     echo. >> "!_RST_LOG!"
 
-    start /B "" cmd /C "flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --driver-port=%_CD_PORT% --dart-define=SERVER_PORT=%_SERVER_PORT% >> "!_RST_LOG!" 2>&1"
+    start /B "" cmd /C "cd /d %_WORKTREE_PATH% && flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --driver-port=%_CD_PORT% --dart-define=SERVER_PORT=%_SERVER_PORT% >> "!_RST_LOG!" 2>&1"
 
     powershell -NoProfile -Command "$log='!_RST_LOG!';$cdPort=!_CD_PORT!;$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;$cdPid=(Get-NetTCPConnection -LocalPort $cdPort -State Listen -ErrorAction SilentlyContinue).OwningProcess|Select-Object -First 1;if($cdPid){Get-CimInstance Win32_Process|Where-Object{$_.ParentProcessId -eq $cdPid -and $_.Name -eq 'chrome.exe'}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}};Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 
@@ -347,7 +363,7 @@ echo FAILED=!fail_count!
 echo RETRIED=!retry_count!
 echo DURATION=!_DURATION!
 echo FAILED_TESTS=!failed_tests!
-) > "%_OUTPUT_DIR%\%_GAME%_results.txt"
+) > "%_OUTPUT_DIR_ABS%\%_GAME%_results.txt"
 
 if !fail_count! gtr 0 exit /b 1
 if !test_count! equ 0 exit /b 1
