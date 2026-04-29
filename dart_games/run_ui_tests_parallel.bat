@@ -177,8 +177,9 @@ echo.
 echo Port Assignments:
 for /l %%N in (1,1,!worker_count!) do (
     set /a "_cd_port=4443+%%N"
+    set /a "_web_port=_cd_port+36000"
     set /a "_srv_port=9000+%%N"
-    echo   !game%%N!: ChromeDriver=!_cd_port! Server=!_srv_port!
+    echo   !game%%N!: ChromeDriver=!_cd_port! Web=!_web_port! Server=!_srv_port!
 )
 echo.
 
