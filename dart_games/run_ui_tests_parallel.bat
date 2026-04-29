@@ -383,7 +383,14 @@ for /l %%N in (1,1,!worker_count!) do (
 )
 
 echo.
-echo All !worker_count! workers launched. Waiting for completion...
+REM Capture the wall-clock start time (seconds since midnight)
+for /f "tokens=1-4 delims=:." %%a in ("%time: =0%") do (
+    set /a "_start_s=%%a*3600 + %%b*60 + %%c"
+)
+set "_start_stamp=%date% %time%"
+
+echo All !worker_count! workers launched at !_start_stamp!
+echo Waiting for completion...
 echo.
 
 REM ============================================================
@@ -431,8 +438,28 @@ powershell -NoProfile -Command "Start-Sleep 10" >nul 2>&1
 goto :poll_workers
 
 :workers_done
+
+REM Capture the wall-clock end time and compute elapsed duration
+for /f "tokens=1-4 delims=:." %%a in ("%time: =0%") do (
+    set /a "_end_s=%%a*3600 + %%b*60 + %%c"
+)
+set "_end_stamp=%date% %time%"
+set /a "_wall_s=_end_s - _start_s"
+if !_wall_s! lss 0 set /a "_wall_s+=86400"
+set /a "_wall_h=_wall_s / 3600"
+set /a "_wall_m=(_wall_s %% 3600) / 60"
+set /a "_wall_sec=_wall_s %% 60"
+
 echo.
 echo All workers completed.
+echo.
+echo ========================================
+echo Wall-Clock Duration
+echo ========================================
+echo   Started:  !_start_stamp!
+echo   Finished: !_end_stamp!
+echo   Elapsed:  !_wall_h!h !_wall_m!m !_wall_sec!s
+echo ========================================
 echo.
 
 REM ============================================================
@@ -447,6 +474,7 @@ set "_total_total=0"
 set "_total_passed=0"
 set "_total_failed=0"
 set "_total_retried=0"
+set "_total_duration=0"
 set "_any_failure=0"
 
 REM Initialize summary file
@@ -454,7 +482,9 @@ echo ======================================== > "%_PARALLEL_DIR%\summary.txt"
 echo Dart Games UI Automation Test Results [PARALLEL] >> "%_PARALLEL_DIR%\summary.txt"
 if defined STUB_MODE echo [STUB MODE] >> "%_PARALLEL_DIR%\summary.txt"
 echo ======================================== >> "%_PARALLEL_DIR%\summary.txt"
-echo Completed at %date% %time% >> "%_PARALLEL_DIR%\summary.txt"
+echo Started:   !_start_stamp! >> "%_PARALLEL_DIR%\summary.txt"
+echo Finished:  !_end_stamp! >> "%_PARALLEL_DIR%\summary.txt"
+echo Wall-Clock: !_wall_h!h !_wall_m!m !_wall_sec!s >> "%_PARALLEL_DIR%\summary.txt"
 echo. >> "%_PARALLEL_DIR%\summary.txt"
 
 for /l %%N in (1,1,!worker_count!) do (
@@ -493,6 +523,7 @@ for /l %%N in (1,1,!worker_count!) do (
         set /a _total_passed+=_g_passed
         set /a _total_failed+=_g_failed
         set /a _total_retried+=_g_retried
+        set /a _total_duration+=_g_duration
         if !_g_failed! gtr 0 set "_any_failure=1"
     ) else (
         echo   !_g!: NO RESULTS - worker timed out or crashed
@@ -503,12 +534,19 @@ for /l %%N in (1,1,!worker_count!) do (
     )
 )
 
+set /a "_cum_h=_total_duration / 3600"
+set /a "_cum_m=(_total_duration %% 3600) / 60"
+set /a "_cum_sec=_total_duration %% 60"
+
 echo.
 echo ========================================
 echo Total: !_total_total! tests
 echo Passed: !_total_passed!
 if !_total_retried! gtr 0 echo Passed ^(on retry^): !_total_retried!
 echo Failed: !_total_failed!
+echo ----------------------------------------
+echo Wall-Clock Time:  !_wall_h!h !_wall_m!m !_wall_sec!s
+echo Cumulative Time:  !_cum_h!h !_cum_m!m !_cum_sec!s
 echo ========================================
 
 echo ======================================== >> "%_PARALLEL_DIR%\summary.txt"
@@ -518,6 +556,9 @@ echo Total: !_total_total! >> "%_PARALLEL_DIR%\summary.txt"
 echo Passed: !_total_passed! >> "%_PARALLEL_DIR%\summary.txt"
 if !_total_retried! gtr 0 echo Retried: !_total_retried! >> "%_PARALLEL_DIR%\summary.txt"
 echo Failed: !_total_failed! >> "%_PARALLEL_DIR%\summary.txt"
+echo. >> "%_PARALLEL_DIR%\summary.txt"
+echo Wall-Clock Time:  !_wall_h!h !_wall_m!m !_wall_sec!s >> "%_PARALLEL_DIR%\summary.txt"
+echo Cumulative Time:  !_cum_h!h !_cum_m!m !_cum_sec!s >> "%_PARALLEL_DIR%\summary.txt"
 echo. >> "%_PARALLEL_DIR%\summary.txt"
 
 echo.
