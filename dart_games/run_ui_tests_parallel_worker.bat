@@ -71,9 +71,13 @@ pushd "%_OUTPUT_DIR%"
 set "_OUTPUT_DIR_ABS=%CD%"
 popd
 
-REM Derive a unique web-server port from the ChromeDriver port so parallel
-REM flutter drive instances don't fight over the default web port.
+REM Derive unique ports from the ChromeDriver port so parallel flutter drive
+REM instances don't fight over the default web port or Chrome debug port.
+REM Flutter drive launches Chrome directly (runner Chrome) AND via ChromeDriver
+REM (test Chrome). The runner Chrome uses --web-browser-debug-port; without a
+REM unique value, findFreePort() race-conditions across parallel workers.
 set /a "_WEB_PORT=%_CD_PORT%+36000"
+set /a "_BROWSER_DEBUG_PORT=%_CD_PORT%+10000"
 
 REM Initialize
 set "_GAME_DIR=integration_test\%_GAME%"
@@ -95,6 +99,7 @@ echo [WORKER] Game: %_GAME%
 if defined STUB_MODE echo          [STUB MODE]
 echo   ChromeDriver port: %_CD_PORT%
 echo   Web port: %_WEB_PORT%
+echo   Browser debug port: %_BROWSER_DEBUG_PORT%
 echo   Server port: %_SERVER_PORT%
 echo   Output: %_OUTPUT_DIR%
 if not defined STUB_MODE echo   Worktree: %_WORKTREE_PATH%
@@ -179,7 +184,7 @@ set "_RST_LOG=%_OUTPUT_DIR_ABS%\%_RST_LOGNAME%.log"
 
 echo ----------------------------------------
 echo [%_GAME% !test_count!] !_RST_TARGET!
-echo   Driver port: %_CD_PORT%  Server port: %_SERVER_PORT%
+echo   Driver port: %_CD_PORT%  Debug port: %_BROWSER_DEBUG_PORT%  Server port: %_SERVER_PORT%
 echo Start: %time%
 
 :run_single_test_attempt
@@ -242,11 +247,11 @@ if defined STUB_MODE (
     REM so builds never conflict across parallel workers.
     echo Running: !_RST_TARGET! > "!_RST_LOG!"
     echo Started at %date% %time% >> "!_RST_LOG!"
-    echo Driver port: %_CD_PORT%  Server port: %_SERVER_PORT% >> "!_RST_LOG!"
+    echo Driver port: %_CD_PORT%  Web port: %_WEB_PORT%  Debug port: %_BROWSER_DEBUG_PORT%  Server port: %_SERVER_PORT% >> "!_RST_LOG!"
     echo Worktree: %_WORKTREE_PATH% >> "!_RST_LOG!"
     echo. >> "!_RST_LOG!"
 
-    start /B "" cmd /C "cd /d %_WORKTREE_PATH% && flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --driver-port=%_CD_PORT% --web-port=%_WEB_PORT% --dart-define=SERVER_PORT=%_SERVER_PORT% >> "!_RST_LOG!" 2>&1"
+    start /B "" cmd /C "cd /d %_WORKTREE_PATH% && flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --driver-port=%_CD_PORT% --web-port=%_WEB_PORT% --web-browser-debug-port=%_BROWSER_DEBUG_PORT% --dart-define=SERVER_PORT=%_SERVER_PORT% >> "!_RST_LOG!" 2>&1"
 
     powershell -NoProfile -Command "$log='!_RST_LOG!';$cdPort=!_CD_PORT!;$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;$cdPid=(Get-NetTCPConnection -LocalPort $cdPort -State Listen -ErrorAction SilentlyContinue).OwningProcess|Select-Object -First 1;if($cdPid){Get-CimInstance Win32_Process|Where-Object{$_.ParentProcessId -eq $cdPid -and $_.Name -eq 'chrome.exe'}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}};Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 
