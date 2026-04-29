@@ -14,6 +14,11 @@ REM ============================================================
 
 set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest"
 
+REM Strip trailing backslash from script directory to avoid \" quoting
+REM issues when paths contain spaces (e.g. /D "path\" breaks start).
+set "_SCRIPT_DIR=%~dp0"
+if "!_SCRIPT_DIR:~-1!"=="\" set "_SCRIPT_DIR=!_SCRIPT_DIR:~0,-1!"
+
 REM Check for help request
 if "%1"=="/?" goto :show_help
 if "%1"=="/help" goto :show_help
@@ -361,7 +366,7 @@ for /l %%N in (1,1,!worker_count!) do (
     if "!_wt!"=="" set "_wt=stub"
 
     echo Launching worker for !_g! ^(CD=!_cd_port! SRV=!_srv_port!^)...
-    start "Worker: !_g!" /D "%~dp0" cmd /C "run_ui_tests_parallel_worker.bat !_g! !_cd_port! !_srv_port! %_PARALLEL_DIR% !_wt! !filter_args!"
+    start "Worker: !_g!" /D "!_SCRIPT_DIR!" cmd /C ""!_SCRIPT_DIR!\run_ui_tests_parallel_worker.bat" !_g! !_cd_port! !_srv_port! %_PARALLEL_DIR% !_wt! !filter_args!"
 )
 
 echo.
