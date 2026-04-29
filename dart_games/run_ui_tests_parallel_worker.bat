@@ -153,10 +153,10 @@ if !errorlevel! equ 0 (
 timeout /t 1 /nobreak >nul 2>&1
 goto :wait_for_server_port_loop
 
-REM Kill Chrome processes that are children of ChromeDriver on port %1
+REM Kill Chrome processes for this worker: ChromeDriver children + runner Chrome
 :kill_chrome_for_port
 set "_kcfp_port=%~1"
-powershell -NoProfile -Command "$cdPid=(Get-NetTCPConnection -LocalPort !_kcfp_port! -State Listen -ErrorAction SilentlyContinue).OwningProcess|Select-Object -First 1;if($cdPid){Get-CimInstance Win32_Process|Where-Object{$_.ParentProcessId -eq $cdPid -and $_.Name -eq 'chrome.exe'}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}}"
+powershell -NoProfile -Command "$cdPid=(Get-NetTCPConnection -LocalPort !_kcfp_port! -State Listen -ErrorAction SilentlyContinue).OwningProcess|Select-Object -First 1;if($cdPid){Get-CimInstance Win32_Process|Where-Object{$_.ParentProcessId -eq $cdPid -and $_.Name -eq 'chrome.exe'}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}};Get-CimInstance Win32_Process -Filter ""Name='chrome.exe'""|Where-Object{$_.CommandLine -match ""--remote-debugging-port=%_BROWSER_DEBUG_PORT%""}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}"
 exit /b
 
 REM Kill process listening on port %1
@@ -253,7 +253,7 @@ if defined STUB_MODE (
 
     start /B "" cmd /C "cd /d %_WORKTREE_PATH% && flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --driver-port=%_CD_PORT% --web-port=%_WEB_PORT% --web-browser-debug-port=%_BROWSER_DEBUG_PORT% --dart-define=SERVER_PORT=%_SERVER_PORT% >> "!_RST_LOG!" 2>&1"
 
-    powershell -NoProfile -Command "$log='!_RST_LOG!';$cdPort=!_CD_PORT!;$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;$cdPid=(Get-NetTCPConnection -LocalPort $cdPort -State Listen -ErrorAction SilentlyContinue).OwningProcess|Select-Object -First 1;if($cdPid){Get-CimInstance Win32_Process|Where-Object{$_.ParentProcessId -eq $cdPid -and $_.Name -eq 'chrome.exe'}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}};Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    powershell -NoProfile -Command "$log='!_RST_LOG!';$cdPort=!_CD_PORT!;$dbgPort=!_BROWSER_DEBUG_PORT!;$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;$cdPid=(Get-NetTCPConnection -LocalPort $cdPort -State Listen -ErrorAction SilentlyContinue).OwningProcess|Select-Object -First 1;if($cdPid){Get-CimInstance Win32_Process|Where-Object{$_.ParentProcessId -eq $cdPid -and $_.Name -eq 'chrome.exe'}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}};Get-CimInstance Win32_Process -Filter ""Name='chrome.exe'""|Where-Object{$_.CommandLine -match ""--remote-debugging-port=$dbgPort""}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue};Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 
     if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
 )
