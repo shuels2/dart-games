@@ -2,15 +2,15 @@
 
 ## Overview
 
-364 UI automation tests validate end-to-end user flows in Chrome browser.
+366 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Execution time:** ~620 minutes (~10h 20m)
+**Execution time:** ~588 minutes (~9h 48m)
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
 
-### Target Tag (69 tests, ~124 minutes)
+### Target Tag (69 tests, ~116 minutes)
 1. Menu and Mechanics: 24 tests
 2. Gameplay: 13 tests
 3. Add Player: 6 tests
@@ -18,11 +18,11 @@
 5. Visual Validation: 4 tests
 6. Save & Resume: 16 tests
 
-### Carnival Derby (40 tests, ~69 minutes)
+### Carnival Derby (40 tests, ~66 minutes)
 1. Complete UI test coverage: 24 tests
 2. Save & Resume: 16 tests
 
-### Monster Mash (67 tests, ~112 minutes)
+### Monster Mash (67 tests, ~107 minutes)
 1. Add Player: 6 tests
 2. Menu and Settings: 8 tests
 3. Gameplay: 20 tests
@@ -31,7 +31,7 @@
 6. Visual Validation: 6 tests
 7. Save & Resume: 16 tests
 
-### Reef Royale (83 tests, ~140 minutes)
+### Reef Royale (83 tests, ~132 minutes)
 1. Add Player: 6 tests
 2. Menu and Settings: 10 tests
 3. Gameplay: 30 tests
@@ -42,10 +42,10 @@
 8. Screenshot: 1 test
 9. Save & Resume: 16 tests
 
-### Clockwork Quest (105 tests, ~174 minutes)
+### Clockwork Quest (107 tests, ~168 minutes)
 1. Add Player: 10 tests
 2. Menu and Settings: 20 tests
-3. Gameplay: 36 tests
+3. Gameplay: 38 tests
 4. Edit Score: 11 tests
 5. Results Screen: 11 tests
 6. Save & Resume: 16 tests

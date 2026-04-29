@@ -79,14 +79,14 @@ cd server && dart test
 ### Run UI Automation Tests (Optional)
 ```bash
 # Sequential runner (all infrastructure managed automatically)
-./run_ui_tests.bat                          # All tests (~620 min)
+./run_ui_tests.bat                          # All tests (~588 min)
 ./run_ui_tests.bat target_tag               # Specific game
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
 ./run_ui_tests.bat reef_royale
 ./run_ui_tests.bat clockwork_quest
 
-# Parallel runner (~3.5x faster, 5 games simultaneously, ~174 min)
+# Parallel runner (~3.5x faster, 5 games simultaneously, ~170 min)
 ./run_ui_tests_parallel.bat                          # All games
 ./run_ui_tests_parallel.bat target_tag monster_mash  # Specific games
 ./run_ui_tests_parallel.bat save_resume              # Filter by test type
@@ -104,7 +104,7 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1721 tests**
+**Total: 1723 tests**
 - **Flutter Non-UI Tests:** 1179 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
@@ -138,13 +138,13 @@ flutter test test/screens/games/clockwork_quest/
   - Failed stats routes: 6
   - Test routes: 6
 
-- **UI Automation Tests:** 364 tests (~620 minutes, optional, ask before running)
-  - Target Tag: 69 tests (~124 minutes)
-  - Carnival Derby: 40 tests (~69 minutes)
-  - Monster Mash: 67 tests (~112 minutes)
-  - Reef Royale: 83 tests (~140 minutes)
-  - Clockwork Quest: 105 tests (~174 minutes) [89 functional + 16 save/resume]
-  - **Overall: ~620 minutes (~10h 20m)**
+- **UI Automation Tests:** 366 tests (~588 minutes, optional, ask before running)
+  - Target Tag: 69 tests (~116 minutes)
+  - Carnival Derby: 40 tests (~66 minutes)
+  - Monster Mash: 67 tests (~107 minutes)
+  - Reef Royale: 83 tests (~132 minutes)
+  - Clockwork Quest: 107 tests (~168 minutes) [91 functional + 16 save/resume]
+  - **Overall: ~588 minutes (~9h 48m)**
 
 ## Critical Reminders
 

@@ -648,7 +648,7 @@ dart_games/
 │           ├── reef_royale/         # Reef Royale game
 │           └── target_tag/          # Target Tag game
 ├── test/                            # Flutter non-UI tests (1179 tests)
-├── integration_test/                # UI automation tests (364 tests)
+├── integration_test/                # UI automation tests (366 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
     │   ├── icons/
@@ -867,7 +867,7 @@ cd server && dart run bin/server.dart &
 flutter test                  # 1179 Flutter tests
 cd server && dart test        # 171 server tests
 
-# Optional: Run UI automation tests (364 tests, requires chromedriver)
+# Optional: Run UI automation tests (366 tests, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
 
 # Launch in Chrome (web)
@@ -926,16 +926,16 @@ cd server && dart test
 
 Flutter bug [#67090](https://github.com/flutter/flutter/issues/67090) causes `flutter drive -d chrome` to spawn two browser instances. Both execute the test code, which previously caused duplicate game saves and other data collisions. To solve this, each browser instance generates a unique session ID and sends it via `X-DB-Session` HTTP header on every request. The server's `DatabaseRegistry` lazily creates isolated SQLite databases per session (stored in `data/sessions/`), routed via `dbSessionMiddleware` using Dart's Zone system. Production traffic (no header) uses the single default database — zero behavior change for non-test usage.
 
-**UI Automation Test Coverage (364 tests, one-test-per-process architecture):**
+**UI Automation Test Coverage (366 tests, one-test-per-process architecture):**
 - Each test runs in its own `flutter drive` process for full isolate-level isolation
-- **Sequential runner** (`run_ui_tests.bat`): One game at a time, ~620 minutes. Best for debugging.
-- **Parallel runner** (`run_ui_tests_parallel.bat`): All 5 games simultaneously, ~174 minutes (~3.5x faster). Each game gets its own ChromeDriver (ports 4444-4448) and backend server (ports 9001-9005). Requires 16GB+ RAM.
+- **Sequential runner** (`run_ui_tests.bat`): One game at a time, ~588 minutes. Best for debugging.
+- **Parallel runner** (`run_ui_tests_parallel.bat`): All 5 games simultaneously, ~170 minutes (~3.5x faster). Each game gets its own ChromeDriver (ports 4444-4448) and backend server (ports 9001-9005). Requires 16GB+ RAM.
 - Per-session database isolation (`X-DB-Session` header) prevents cross-test data pollution
 - Target Tag (69 tests): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
 - Carnival Derby (40 tests): Menu, gameplay, bust mechanics, skip turn, edit score, results screen, save/resume
 - Monster Mash (67 tests): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation, save/resume
 - Reef Royale (83 tests): Add player, menu settings, gameplay, coral claiming, edit score, results screen, visual validation, showcase, screenshot, save/resume
-- Clockwork Quest (105 tests): Add player, menu settings, gameplay, gear progression, edit score, results screen, save/resume, screenshot
+- Clockwork Quest (107 tests): Add player, menu settings, gameplay, gear progression, edit score, results screen, save/resume, screenshot
 - Requires chromedriver setup - see [CLAUDE.md](CLAUDE.md) for complete UI testing guide
 
 ### Cross-Platform Compatibility

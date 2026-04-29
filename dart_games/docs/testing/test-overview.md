@@ -2,10 +2,10 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 1721 total tests:
+The Dart Games app has a comprehensive test suite with 1723 total tests:
 - **1179 Flutter non-UI tests** (models, providers, services, widgets, game logic)
 - **178 server tests** (database, models, routes, migrations)
-- **364 UI automation tests** (end-to-end testing with Chrome)
+- **366 UI automation tests** (end-to-end testing with Chrome)
 
 ## Non-UI Tests (1179 Flutter + 178 Server = 1357 tests)
 
@@ -114,13 +114,13 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - Failed stats routes: 6 tests
 - Test routes: 6 tests
 
-## UI Automation Tests (364 tests)
+## UI Automation Tests (366 tests)
 
 **Run with:** `./run_ui_tests.bat` (sequential) or `./run_ui_tests_parallel.bat` (parallel)
-**Execution time:** ~620 minutes sequential, ~174 minutes parallel
+**Execution time:** ~588 minutes sequential, ~170 minutes parallel
 **OPTIONAL:** Ask user before running
 
-### Target Tag (69 tests, ~124 minutes)
+### Target Tag (69 tests, ~116 minutes)
 - Menu and Mechanics: 24 tests
 - Gameplay: 13 tests
 - Add Player: 6 tests
@@ -128,11 +128,11 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - Visual Validation: 4 tests
 - Save & Resume: 16 tests
 
-### Carnival Derby (40 tests, ~69 minutes)
+### Carnival Derby (40 tests, ~66 minutes)
 - Complete UI test suite: 24 tests
 - Save & Resume: 16 tests
 
-### Monster Mash (67 tests, ~112 minutes)
+### Monster Mash (67 tests, ~107 minutes)
 - Add Player: 6 tests
 - Menu and Settings: 8 tests
 - Gameplay: 20 tests
@@ -141,7 +141,7 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - Visual Validation: 6 tests
 - Save & Resume: 16 tests
 
-### Reef Royale (83 tests, ~140 minutes)
+### Reef Royale (83 tests, ~132 minutes)
 - Add Player: 6 tests
 - Menu and Settings: 10 tests
 - Gameplay: 30 tests
@@ -152,10 +152,10 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - Screenshot: 1 test
 - Save & Resume: 16 tests
 
-### Clockwork Quest (105 tests, ~174 minutes)
+### Clockwork Quest (107 tests, ~168 minutes)
 - Add Player: 10 tests
 - Menu and Settings: 20 tests
-- Gameplay: 36 tests
+- Gameplay: 38 tests
 - Edit Score: 11 tests
 - Results Screen: 11 tests
 - Save & Resume: 16 tests
@@ -172,7 +172,7 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 
 ### UI Automation Tests
 ❓ Ask user: "Would you like me to run UI automation tests?"
-✅ If yes: Run `./run_ui_tests.bat` (364 tests, ~620 minutes)
+✅ If yes: Run `./run_ui_tests.bat` (366 tests, ~588 minutes)
 ✅ If no: Proceed with build after non-UI tests pass
 
 ## Running Tests
@@ -223,7 +223,7 @@ flutter test test/widgets/
 
 ### UI Automation Tests
 - 100% pass rate when run
-- Execute in ~620 minutes (~10h 20m)
+- Execute in ~588 minutes (~9h 48m)
 - Test end-to-end user flows
 - Validate visual elements
 - Test player interactions
