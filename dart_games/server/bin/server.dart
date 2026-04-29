@@ -22,12 +22,12 @@ void main(List<String> args) async {
   final parser = ArgParser()
     ..addOption('port', abbr: 'p', defaultsTo: '8080')
     ..addOption('data-dir', abbr: 'd', defaultsTo: 'data')
-    ..addOption('db-path', defaultsTo: 'data/dart_games.db');
+    ..addOption('db-path');
 
   final results = parser.parse(args);
   final port = int.parse(results['port'] as String);
   final dataDir = results['data-dir'] as String;
-  final dbPath = results['db-path'] as String;
+  final dbPath = (results['db-path'] as String?) ?? '$dataDir/dart_games.db';
 
   // Ensure data directories exist.
   Directory(dataDir).createSync(recursive: true);
