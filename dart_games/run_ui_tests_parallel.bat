@@ -106,7 +106,7 @@ taskkill /F /IM chromedriver.exe >nul 2>&1
 taskkill /F /IM dart.exe >nul 2>&1
 for /l %%P in (9001,1,9010) do call :kill_port %%P
 for /l %%P in (4444,1,4453) do call :kill_port %%P
-timeout /t 2 /nobreak >nul
+powershell -NoProfile -Command "Start-Sleep 2" >nul 2>&1
 
 if not exist "chromedriver\chromedriver-win64\chromedriver.exe" (
     echo ERROR: ChromeDriver not found at chromedriver\chromedriver-win64\chromedriver.exe
@@ -206,7 +206,7 @@ if !errorlevel! equ 0 (
     echo   ChromeDriver ready on port !_wfcp_port!.
     exit /b 0
 )
-timeout /t 1 /nobreak >nul
+powershell -NoProfile -Command "Start-Sleep 1" >nul 2>&1
 goto :wait_for_chromedriver_port_loop
 
 REM Wait for backend server on port %1
@@ -224,7 +224,7 @@ if !errorlevel! equ 0 (
     echo   Backend server ready on port !_wfsp_port!.
     exit /b 0
 )
-timeout /t 1 /nobreak >nul
+powershell -NoProfile -Command "Start-Sleep 1" >nul 2>&1
 goto :wait_for_server_port_loop
 
 REM Kill Chrome children of ChromeDriver on port %1
@@ -361,7 +361,7 @@ for /l %%N in (1,1,!worker_count!) do (
     if "!_wt!"=="" set "_wt=stub"
 
     echo Launching worker for !_g! ^(CD=!_cd_port! SRV=!_srv_port!^)...
-    start "Worker: !_g!" cmd /C "run_ui_tests_parallel_worker.bat !_g! !_cd_port! !_srv_port! %_PARALLEL_DIR% !_wt! !filter_args!"
+    start "Worker: !_g!" /D "%~dp0" cmd /C "run_ui_tests_parallel_worker.bat !_g! !_cd_port! !_srv_port! %_PARALLEL_DIR% !_wt! !filter_args!"
 )
 
 echo.
@@ -409,7 +409,7 @@ if !_poll_mod! equ 0 (
     echo   [!_elapsed_min!m] Workers completed: !_done_count!/!worker_count!
 )
 
-timeout /t 10 /nobreak >nul
+powershell -NoProfile -Command "Start-Sleep 10" >nul 2>&1
 goto :poll_workers
 
 :workers_done

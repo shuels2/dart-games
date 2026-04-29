@@ -122,7 +122,7 @@ if !errorlevel! equ 0 (
     echo   ChromeDriver ready on port !_wfcp_port!.
     exit /b 0
 )
-timeout /t 1 /nobreak >nul
+timeout /t 1 /nobreak >nul 2>&1
 goto :wait_for_chromedriver_port_loop
 
 REM Wait for backend server on port %1
@@ -140,7 +140,7 @@ if !errorlevel! equ 0 (
     echo   Backend server ready on port !_wfsp_port!.
     exit /b 0
 )
-timeout /t 1 /nobreak >nul
+timeout /t 1 /nobreak >nul 2>&1
 goto :wait_for_server_port_loop
 
 REM Kill Chrome processes that are children of ChromeDriver on port %1
@@ -191,7 +191,7 @@ if !_RST_ATTEMPT! gtr 1 (
 
     REM Restart this worker's ChromeDriver
     call :kill_port %_CD_PORT%
-    timeout /t 3 /nobreak >nul
+    timeout /t 3 /nobreak >nul 2>&1
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=%_CD_PORT% >nul 2>&1
     call :wait_for_chromedriver_port %_CD_PORT%
     if !errorlevel! neq 0 (
@@ -222,7 +222,7 @@ if defined STUB_MODE (
     REM Stub mode: simulate test execution
     echo [STUB] Simulating: flutter drive --target=!_RST_TARGET! --driver-port=%_CD_PORT% --dart-define=SERVER_PORT=%_SERVER_PORT% > "!_RST_LOG!"
     echo Started at %date% %time% >> "!_RST_LOG!"
-    timeout /t 1 /nobreak >nul
+    timeout /t 1 /nobreak >nul 2>&1
 
     if defined STUB_FAIL (
         echo Some tests failed >> "!_RST_LOG!"
