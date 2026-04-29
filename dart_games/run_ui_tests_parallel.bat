@@ -184,6 +184,16 @@ echo.
 
 set "_WORKTREE_BASE=integration_test_output\parallel\worktrees"
 
+REM Detect subdirectory offset from git root to the Flutter project.
+REM Worktrees mirror the full repo; flutter commands must run from
+REM the project subdirectory inside each worktree (e.g. worktree\dart_games).
+set "_GIT_PREFIX="
+for /f "delims=" %%r in ('git rev-parse --show-prefix 2^>nul') do set "_GIT_PREFIX=%%r"
+if not "!_GIT_PREFIX!"=="" (
+    set "_GIT_PREFIX=!_GIT_PREFIX:/=\!"
+    if "!_GIT_PREFIX:~-1!"=="\" set "_GIT_PREFIX=!_GIT_PREFIX:~0,-1!"
+)
+
 REM Skip helper functions
 goto :start_infrastructure
 
@@ -278,13 +288,15 @@ for /l %%N in (1,1,!worker_count!) do (
             set "_wt_ok=0"
         )
         if "!_wt_ok!"=="1" (
-            pushd "!_wt!"
+            set "_wt_proj=!_wt!"
+            if not "!_GIT_PREFIX!"=="" set "_wt_proj=!_wt!\!_GIT_PREFIX!"
+            pushd "!_wt_proj!"
             echo   Resolving dependencies...
             call flutter pub get >nul 2>&1
             echo   Pre-building Flutter web app ^(warms compiler cache^)...
             call flutter build web >nul 2>&1
             popd
-            set "worktree%%N=!_wt!"
+            set "worktree%%N=!_wt_proj!"
             echo   Ready.
         )
     )
