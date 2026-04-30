@@ -38,10 +38,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1721 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 178 server + 364 UI tests**
+### 🧪 Testing (1730 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 178 server + 373 UI tests**
 - [Non-UI Tests](docs/testing/non-ui-tests.md) - 1357 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 366 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
+- [UI Automation](docs/testing/ui-automation.md) - 373 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -104,7 +104,7 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1723 tests**
+**Total: 1730 tests**
 - **Flutter Non-UI Tests:** 1179 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
@@ -138,14 +138,14 @@ flutter test test/screens/games/clockwork_quest/
   - Failed stats routes: 6
   - Test routes: 6
 
-- **UI Automation Tests:** 366 tests (optional, ask before running)
-  - Target Tag: 69 tests (~101 minutes)
-  - Carnival Derby: 40 tests (~56 minutes)
-  - Monster Mash: 67 tests (~93 minutes)
-  - Reef Royale: 83 tests (~114 minutes)
-  - Clockwork Quest: 107 tests (~143 minutes) [91 functional + 16 save/resume]
-  - **Sequential (`run_ui_tests.bat`): ~507 minutes (~8h 27m) — interactive Chrome sessions**
-  - **Parallel (`run_ui_tests_parallel.bat`): ~143 minutes (~2h 23m) — fully headless, no visible Chrome**
+- **UI Automation Tests:** 373 tests (optional, ask before running)
+  - Target Tag: 71 tests (~104 minutes)
+  - Carnival Derby: 42 tests (~59 minutes)
+  - Monster Mash: 68 tests (~95 minutes)
+  - Reef Royale: 84 tests (~116 minutes)
+  - Clockwork Quest: 108 tests (~145 minutes) [92 functional + 16 save/resume]
+  - **Sequential (`run_ui_tests.bat`): ~519 minutes (~8h 39m) — interactive Chrome sessions**
+  - **Parallel (`run_ui_tests_parallel.bat`): ~145 minutes (~2h 25m) — fully headless, no visible Chrome**
 
 ## Critical Reminders
 
