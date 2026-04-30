@@ -350,11 +350,16 @@ class PlayerProvider extends ChangeNotifier {
       final currentIndex = _allPlayers.indexWhere((p) => p.id == playerId);
       if (currentIndex >= 0) {
         final currentPlayer = _allPlayers[currentIndex];
-        _allPlayers[currentIndex] = currentPlayer.copyWith(
+        final updated = currentPlayer.copyWith(
           gamesPlayed: currentPlayer.gamesPlayed + 1,
           gamesWon: won ? currentPlayer.gamesWon + 1 : currentPlayer.gamesWon,
           gameHistory: updatedHistory,
         );
+        _allPlayers[currentIndex] = updated;
+        final selectedIndex = _selectedPlayers.indexWhere((p) => p.id == playerId);
+        if (selectedIndex >= 0) {
+          _selectedPlayers[selectedIndex] = updated;
+        }
         notifyListeners();
       }
     } catch (e) {
