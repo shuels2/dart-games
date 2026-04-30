@@ -24,6 +24,7 @@ class _ClockworkQuestResultsScreenState
     extends State<ClockworkQuestResultsScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _musicPlayed = false;
+  bool _statsUpdated = false;
 
   @override
   void initState() {
@@ -31,6 +32,7 @@ class _ClockworkQuestResultsScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _playVictoryMusic();
       _autoDeleteSavedGame();
+      _updatePlayerStats();
     });
   }
 
@@ -47,6 +49,39 @@ class _ClockworkQuestResultsScreenState
       }
     } catch (e) {
       debugPrint('Error auto-deleting saved game: $e');
+    }
+  }
+
+  Future<void> _updatePlayerStats() async {
+    if (_statsUpdated) return;
+    _statsUpdated = true;
+
+    if (!mounted) return;
+    final clockworkProvider =
+        Provider.of<ClockworkQuestProvider>(context, listen: false);
+    final playerProvider =
+        Provider.of<PlayerProvider>(context, listen: false);
+
+    final game = clockworkProvider.currentGame;
+    if (game == null) return;
+
+    final gameDuration = DateTime.now().difference(game.startedAt);
+    final playerCount = game.playerIds.length;
+
+    for (final playerId in game.playerIds) {
+      final isWinner = playerId == game.winnerId;
+      final dartThrows = game.totalDartsThrown[playerId] ?? 0;
+      final turns = game.totalTurns[playerId] ?? 0;
+
+      await playerProvider.updatePlayerStats(
+        playerId,
+        won: isWinner,
+        gameName: 'Clockwork Quest',
+        gameDuration: gameDuration,
+        dartThrows: dartThrows,
+        turns: turns,
+        playerCount: playerCount,
+      );
     }
   }
 
@@ -570,8 +605,7 @@ class _ClockworkQuestResultsScreenState
   void _leaveTower(BuildContext context) {
     final clockworkProvider =
         Provider.of<ClockworkQuestProvider>(context, listen: false);
-    // Navigate first, then clear — same race condition as _changeSettings
-    Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
     clockworkProvider.clearGame();
+    Navigator.popUntil(context, (route) => route.isFirst);
   }
 }
