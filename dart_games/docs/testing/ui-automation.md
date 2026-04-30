@@ -5,12 +5,13 @@
 366 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Execution time:** ~588 minutes (~9h 48m)
+**Sequential time:** ~507 minutes (~8h 27m) — `run_ui_tests.bat`, interactive Chrome sessions visible
+**Parallel time:** ~143 minutes (~2h 23m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
 
-### Target Tag (69 tests, ~116 minutes)
+### Target Tag (69 tests, ~101 minutes)
 1. Menu and Mechanics: 24 tests
 2. Gameplay: 13 tests
 3. Add Player: 6 tests
@@ -18,11 +19,11 @@
 5. Visual Validation: 4 tests
 6. Save & Resume: 16 tests
 
-### Carnival Derby (40 tests, ~66 minutes)
+### Carnival Derby (40 tests, ~56 minutes)
 1. Complete UI test coverage: 24 tests
 2. Save & Resume: 16 tests
 
-### Monster Mash (67 tests, ~107 minutes)
+### Monster Mash (67 tests, ~93 minutes)
 1. Add Player: 6 tests
 2. Menu and Settings: 8 tests
 3. Gameplay: 20 tests
@@ -31,7 +32,7 @@
 6. Visual Validation: 6 tests
 7. Save & Resume: 16 tests
 
-### Reef Royale (83 tests, ~132 minutes)
+### Reef Royale (83 tests, ~114 minutes)
 1. Add Player: 6 tests
 2. Menu and Settings: 10 tests
 3. Gameplay: 30 tests
@@ -42,7 +43,7 @@
 8. Screenshot: 1 test
 9. Save & Resume: 16 tests
 
-### Clockwork Quest (107 tests, ~168 minutes)
+### Clockwork Quest (107 tests, ~143 minutes)
 1. Add Player: 10 tests
 2. Menu and Settings: 20 tests
 3. Gameplay: 38 tests
@@ -165,12 +166,12 @@ Use with: `flutter drive --driver=test_driver/screenshot_test.dart`
 
 ## Running UI Tests in Parallel
 
-The parallel runner executes all 5 game categories simultaneously, reducing wall-clock time from ~620 minutes to ~174 minutes (~3.5x speedup). Each game gets its own ChromeDriver and backend server instance.
+The parallel runner executes all 5 game categories simultaneously, reducing wall-clock time from ~507 minutes to ~143 minutes (~3.5x speedup). Each game gets its own ChromeDriver and backend server instance. All Chrome sessions run **fully headless** — no interactive browser windows are launched.
 
 ### Quick Start
 
 ```bash
-# Run all tests in parallel (~174 minutes)
+# Run all tests in parallel (~143 minutes, fully headless)
 ./run_ui_tests_parallel.bat
 
 # Run specific game(s)

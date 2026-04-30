@@ -17,7 +17,7 @@ flutter test
 ```
 
 **Requirements:**
-- ✅ All 1179 Flutter + 168 server tests must pass (100% pass rate required)
+- ✅ All 1179 Flutter + 178 server tests must pass (100% pass rate required)
 - ❌ If ANY test fails, DO NOT proceed with build
 - 🔧 Fix all failing tests first, then re-run test suite
 - ✅ Only build after confirming all tests pass
@@ -43,7 +43,7 @@ flutter test
 
 ### 2. UI Automation Tests (OPTIONAL)
 
-The 330 UI automation tests take longer to run (~224 minutes) and require chromedriver.
+The 366 UI automation tests take longer to run and require chromedriver. Use the parallel runner (~143 min, headless) for full runs; use the sequential runner (~507 min, interactive Chrome) for debugging.
 
 **Before running a build, ASK the user:**
 ```
@@ -56,9 +56,10 @@ Would you like me to run the UI automation tests before this build?
 cd dart_games/chromedriver/chromedriver-win64
 ./chromedriver.exe --port=4444
 
-# Terminal 2 - Run UI tests (330 tests, ~224 minutes)
+# Terminal 2 - Run UI tests (366 tests)
 cd dart_games
-./run_ui_tests.bat
+./run_ui_tests_parallel.bat   # ~143 min, headless (recommended)
+# or: ./run_ui_tests.bat      # ~507 min, interactive Chrome (debugging)
 ```
 
 **If the user says no:**
@@ -115,9 +116,9 @@ flutter build ios
    flutter test
    ```
 
-3. **Verify ALL 1347 non-UI tests pass** (100% pass rate required)
+3. **Verify ALL 1357 non-UI tests pass** (100% pass rate required)
 
-4. **OPTIONAL: Ask user if they want to run UI automation tests** (330 tests, ~224 minutes)
+4. **OPTIONAL: Ask user if they want to run UI automation tests** (366 tests, ~143 min parallel / ~507 min sequential)
 
 5. **If ANY tests fail:**
    - DO NOT proceed
@@ -284,8 +285,8 @@ flutter build ios --release          # iOS App Store
 
 Before deploying to production:
 
-- [ ] All 1198 non-UI tests pass
-- [ ] (Optional) All 330 UI automation tests pass
+- [ ] All 1357 non-UI tests pass
+- [ ] (Optional) All 366 UI automation tests pass
 - [ ] Code has been reviewed
 - [ ] Changes have been committed
 - [ ] User has approved push to remote
@@ -395,9 +396,9 @@ build/ios/iphoneos/Runner.app
 ## Testing Requirements Summary
 
 **CRITICAL REQUIREMENTS:**
-- ✅ All 1179 Flutter + 168 server tests must pass (MANDATORY)
+- ✅ All 1179 Flutter + 178 server tests must pass (MANDATORY)
 - ✅ 100% pass rate required (no exceptions)
-- ❓ UI automation tests optional (330 tests, ask user before running)
+- ❓ UI automation tests optional (366 tests, ask user before running)
 - ✅ Manual testing after build
 - ✅ Cross-platform verification
 

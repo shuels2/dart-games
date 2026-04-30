@@ -117,10 +117,11 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 ## UI Automation Tests (366 tests)
 
 **Run with:** `./run_ui_tests.bat` (sequential) or `./run_ui_tests_parallel.bat` (parallel)
-**Execution time:** ~588 minutes sequential, ~170 minutes parallel
+**Sequential time:** ~507 minutes (~8h 27m) — interactive Chrome sessions visible
+**Parallel time:** ~143 minutes (~2h 23m) — fully headless, no visible Chrome sessions
 **OPTIONAL:** Ask user before running
 
-### Target Tag (69 tests, ~116 minutes)
+### Target Tag (69 tests, ~101 minutes)
 - Menu and Mechanics: 24 tests
 - Gameplay: 13 tests
 - Add Player: 6 tests
@@ -128,11 +129,11 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - Visual Validation: 4 tests
 - Save & Resume: 16 tests
 
-### Carnival Derby (40 tests, ~66 minutes)
+### Carnival Derby (40 tests, ~56 minutes)
 - Complete UI test suite: 24 tests
 - Save & Resume: 16 tests
 
-### Monster Mash (67 tests, ~107 minutes)
+### Monster Mash (67 tests, ~93 minutes)
 - Add Player: 6 tests
 - Menu and Settings: 8 tests
 - Gameplay: 20 tests
@@ -141,7 +142,7 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - Visual Validation: 6 tests
 - Save & Resume: 16 tests
 
-### Reef Royale (83 tests, ~132 minutes)
+### Reef Royale (83 tests, ~114 minutes)
 - Add Player: 6 tests
 - Menu and Settings: 10 tests
 - Gameplay: 30 tests
@@ -152,7 +153,7 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - Screenshot: 1 test
 - Save & Resume: 16 tests
 
-### Clockwork Quest (107 tests, ~168 minutes)
+### Clockwork Quest (107 tests, ~143 minutes)
 - Add Player: 10 tests
 - Menu and Settings: 20 tests
 - Gameplay: 38 tests
@@ -172,7 +173,7 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 
 ### UI Automation Tests
 ❓ Ask user: "Would you like me to run UI automation tests?"
-✅ If yes: Run `./run_ui_tests.bat` (366 tests, ~588 minutes)
+✅ If yes: Run `./run_ui_tests_parallel.bat` (~143 min) or `./run_ui_tests.bat` (~507 min)
 ✅ If no: Proceed with build after non-UI tests pass
 
 ## Running Tests
@@ -202,12 +203,12 @@ flutter test test/widgets/
 
 ### UI Automation Tests
 ```bash
-# Sequential runner (all infrastructure managed automatically)
-./run_ui_tests.bat                    # All tests (~620 min)
+# Sequential runner — interactive Chrome, one game at a time
+./run_ui_tests.bat                    # All tests (~507 min)
 ./run_ui_tests.bat target_tag         # Specific game
 
-# Parallel runner (~3.5x faster, 5 games simultaneously)
-./run_ui_tests_parallel.bat           # All tests (~174 min)
+# Parallel runner — fully headless, 5 games simultaneously (~3.5x faster)
+./run_ui_tests_parallel.bat           # All tests (~143 min)
 ./run_ui_tests_parallel.bat target_tag monster_mash  # Specific games
 ```
 
@@ -223,7 +224,7 @@ flutter test test/widgets/
 
 ### UI Automation Tests
 - 100% pass rate when run
-- Execute in ~588 minutes (~9h 48m)
+- Sequential: ~507 minutes (~8h 27m) with interactive Chrome; Parallel: ~143 minutes (~2h 23m) headless
 - Test end-to-end user flows
 - Validate visual elements
 - Test player interactions

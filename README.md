@@ -865,7 +865,7 @@ cd server && dart run bin/server.dart &
 
 # Run non-UI tests (all 1357 tests must pass)
 flutter test                  # 1179 Flutter tests
-cd server && dart test        # 171 server tests
+cd server && dart test        # 178 server tests
 
 # Optional: Run UI automation tests (366 tests, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
@@ -928,8 +928,8 @@ Flutter bug [#67090](https://github.com/flutter/flutter/issues/67090) causes `fl
 
 **UI Automation Test Coverage (366 tests, one-test-per-process architecture):**
 - Each test runs in its own `flutter drive` process for full isolate-level isolation
-- **Sequential runner** (`run_ui_tests.bat`): One game at a time, ~588 minutes. Best for debugging.
-- **Parallel runner** (`run_ui_tests_parallel.bat`): All 5 games simultaneously, ~170 minutes (~3.5x faster). Each game gets its own ChromeDriver (ports 4444-4448) and backend server (ports 9001-9005). Requires 16GB+ RAM.
+- **Sequential runner** (`run_ui_tests.bat`): One game at a time, ~507 minutes (~8h 27m). Interactive Chrome sessions visible. Best for debugging.
+- **Parallel runner** (`run_ui_tests_parallel.bat`): All 5 games simultaneously, ~143 minutes (~2h 23m, ~3.5x faster). Fully headless — no visible Chrome sessions. Each game gets its own ChromeDriver (ports 4444-4448) and backend server (ports 9001-9005). Requires 16GB+ RAM.
 - Per-session database isolation (`X-DB-Session` header) prevents cross-test data pollution
 - Target Tag (69 tests): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
 - Carnival Derby (40 tests): Menu, gameplay, bust mechanics, skip turn, edit score, results screen, save/resume

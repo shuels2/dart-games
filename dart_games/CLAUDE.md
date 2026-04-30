@@ -41,7 +41,7 @@ Each game has its own unique visual identity while integrating with global syste
 ### 🧪 Testing (1721 tests total)
 - [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 178 server + 364 UI tests**
 - [Non-UI Tests](docs/testing/non-ui-tests.md) - 1357 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 364 UI tests (~620 minutes, optional)
+- [UI Automation](docs/testing/ui-automation.md) - 366 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -79,14 +79,14 @@ cd server && dart test
 ### Run UI Automation Tests (Optional)
 ```bash
 # Sequential runner (all infrastructure managed automatically)
-./run_ui_tests.bat                          # All tests (~588 min)
+./run_ui_tests.bat                          # All tests (~507 min, interactive Chrome)
 ./run_ui_tests.bat target_tag               # Specific game
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
 ./run_ui_tests.bat reef_royale
 ./run_ui_tests.bat clockwork_quest
 
-# Parallel runner (~3.5x faster, 5 games simultaneously, ~170 min)
+# Parallel runner (~3.5x faster, 5 games simultaneously, ~143 min, fully headless)
 ./run_ui_tests_parallel.bat                          # All games
 ./run_ui_tests_parallel.bat target_tag monster_mash  # Specific games
 ./run_ui_tests_parallel.bat save_resume              # Filter by test type
@@ -138,13 +138,14 @@ flutter test test/screens/games/clockwork_quest/
   - Failed stats routes: 6
   - Test routes: 6
 
-- **UI Automation Tests:** 366 tests (~588 minutes, optional, ask before running)
-  - Target Tag: 69 tests (~116 minutes)
-  - Carnival Derby: 40 tests (~66 minutes)
-  - Monster Mash: 67 tests (~107 minutes)
-  - Reef Royale: 83 tests (~132 minutes)
-  - Clockwork Quest: 107 tests (~168 minutes) [91 functional + 16 save/resume]
-  - **Overall: ~588 minutes (~9h 48m)**
+- **UI Automation Tests:** 366 tests (optional, ask before running)
+  - Target Tag: 69 tests (~101 minutes)
+  - Carnival Derby: 40 tests (~56 minutes)
+  - Monster Mash: 67 tests (~93 minutes)
+  - Reef Royale: 83 tests (~114 minutes)
+  - Clockwork Quest: 107 tests (~143 minutes) [91 functional + 16 save/resume]
+  - **Sequential (`run_ui_tests.bat`): ~507 minutes (~8h 27m) — interactive Chrome sessions**
+  - **Parallel (`run_ui_tests_parallel.bat`): ~143 minutes (~2h 23m) — fully headless, no visible Chrome**
 
 ## Critical Reminders
 
@@ -266,7 +267,7 @@ dart_games/
 │           ├── monster_mash/
 │           ├── reef_royale/
 │           └── clockwork_quest/
-├── test/                            # Flutter non-UI tests (1198 tests)
+├── test/                            # Flutter non-UI tests (1179 tests)
 │   ├── shared/                     # Shared test helpers (MockApiServer, etc.)
 │   ├── services/api/               # API client tests
 │   └── ...

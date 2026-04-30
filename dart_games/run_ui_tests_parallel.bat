@@ -384,9 +384,7 @@ for /l %%N in (1,1,!worker_count!) do (
 
 echo.
 REM Capture the wall-clock start time (seconds since midnight)
-for /f "tokens=1-4 delims=:." %%a in ("%time: =0%") do (
-    set /a "_start_s=%%a*3600 + %%b*60 + %%c"
-)
+for /f %%T in ('powershell -NoProfile -Command "$n=Get-Date; $n.Hour*3600+$n.Minute*60+$n.Second"') do set "_start_s=%%T"
 set "_start_stamp=%date% %time%"
 
 echo All !worker_count! workers launched at !_start_stamp!
@@ -440,9 +438,7 @@ goto :poll_workers
 :workers_done
 
 REM Capture the wall-clock end time and compute elapsed duration
-for /f "tokens=1-4 delims=:." %%a in ("%time: =0%") do (
-    set /a "_end_s=%%a*3600 + %%b*60 + %%c"
-)
+for /f %%T in ('powershell -NoProfile -Command "$n=Get-Date; $n.Hour*3600+$n.Minute*60+$n.Second"') do set "_end_s=%%T"
 set "_end_stamp=%date% %time%"
 set /a "_wall_s=_end_s - _start_s"
 if !_wall_s! lss 0 set /a "_wall_s+=86400"
