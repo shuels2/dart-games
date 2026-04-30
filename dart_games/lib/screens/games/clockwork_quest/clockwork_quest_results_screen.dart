@@ -155,12 +155,12 @@ class _ClockworkQuestResultsScreenState
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final availableHeight = constraints.maxHeight;
-                final inventorMaxHeight = (availableHeight * 0.30).clamp(100.0, 280.0);
+                final inventorMaxHeight = (availableHeight * 0.42).clamp(140.0, 350.0);
 
                 return Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       // Winner Section
                       _buildWinnerSection(winner, clockworkProvider, maxSize: inventorMaxHeight),
@@ -199,7 +199,7 @@ class _ClockworkQuestResultsScreenState
           'THE CLOCKWORK CROWN!',
           key: ClockworkQuestResultsKeys.winnerTitle,
           style: GoogleFonts.cinzelDecorative(
-            fontSize: 32,
+            fontSize: 44,
             fontWeight: FontWeight.bold,
             color: const Color(0xFFFFBF00),
             letterSpacing: 2.0,
@@ -247,7 +247,7 @@ class _ClockworkQuestResultsScreenState
           winner.name,
           key: ClockworkQuestResultsKeys.winnerName,
           style: GoogleFonts.cinzelDecorative(
-            fontSize: 28,
+            fontSize: 40,
             fontWeight: FontWeight.bold,
             color: const Color(0xFFF5F0E8),
             letterSpacing: 1.5,
@@ -262,7 +262,7 @@ class _ClockworkQuestResultsScreenState
               ? 'Lap ${lapsCompleted + 1}/${provider.currentGame!.numberOfLaps}'
               : 'All gears activated!',
           style: GoogleFonts.cinzelDecorative(
-            fontSize: 18,
+            fontSize: 26,
             color: const Color(0xFFFFBF00),
             letterSpacing: 1.0,
           ),
