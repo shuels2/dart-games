@@ -196,12 +196,13 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   await clickDartsRemoved(tester);
 
   // Extended wait for victory screen and confetti animation
-  await tester.pump(const Duration(seconds: 3)); // Wait for victory announcements
+  await tester.pump(const Duration(seconds: 4)); // Wait for victory announcements
   await tester.pump();
-  await tester.pump(const Duration(seconds: 2)); // Wait for navigation to results screen
+  await tester.pump(const Duration(seconds: 3)); // Wait for navigation to results screen
   await tester.pump();
-  await tester.pump(const Duration(seconds: 1)); // Wait for confetti controller to initialize
+  await tester.pump(const Duration(seconds: 2)); // Wait for confetti controller to initialize
   await tester.pump();
+  await PumpSequences.fullRebuild(tester);
 }
 
 /// Complete a team mode game and reach results screen

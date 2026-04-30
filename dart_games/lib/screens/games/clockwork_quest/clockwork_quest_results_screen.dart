@@ -203,8 +203,10 @@ class _ClockworkQuestResultsScreenState
                       const SizedBox(height: 16),
 
                       // Rankings
-                      Flexible(child: _buildRankings(
-                          rankedPlayerIds, playerProvider, clockworkProvider)),
+                      Flexible(child: SingleChildScrollView(
+                        child: _buildRankings(
+                          rankedPlayerIds, playerProvider, clockworkProvider),
+                      )),
 
                       const SizedBox(height: 16),
 

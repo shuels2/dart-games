@@ -15,6 +15,8 @@ void main() {
     await UITestHelpers.resetServerState();
     await UITestHelpers.navigateToGameMenu(tester, config);
 
+    await setShieldMax(tester, 3);
+
     await UITestHelpers.addPlayer(tester, 'Player A', config);
     await UITestHelpers.addPlayer(tester, 'Player B', config);
     await UITestHelpers.startGame(tester, config);
@@ -22,7 +24,9 @@ void main() {
     await completeGameToVictory(tester, 'Player A', 'Player B');
 
     // Extra pumps to let _updatePlayerStats async API calls complete
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    await tester.pump();
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
 

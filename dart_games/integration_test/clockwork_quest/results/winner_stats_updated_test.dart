@@ -18,7 +18,9 @@ void main() {
     await completeGameToVictory(tester, numOpponents: 1);
 
     // Extra pumps to let _updatePlayerStats async API calls complete
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    await tester.pump();
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
 

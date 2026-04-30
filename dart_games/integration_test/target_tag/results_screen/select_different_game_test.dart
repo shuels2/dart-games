@@ -13,6 +13,8 @@ void main() {
     await UITestHelpers.resetServerState();
     await UITestHelpers.navigateToGameMenu(tester, config);
 
+    await setShieldMax(tester, 3);
+
     await UITestHelpers.addPlayer(tester, 'Player A', config);
     await UITestHelpers.addPlayer(tester, 'Player B', config);
     await UITestHelpers.startGame(tester, config);
