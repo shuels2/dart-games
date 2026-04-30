@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../services/dart_announcer_service.dart';
@@ -67,8 +66,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
     _scrollController.addListener(_onScroll);
 
     // Load players when screen opens (ensures alphabetical sorting)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PlayerProvider>().loadPlayers();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<PlayerProvider>().loadPlayers();
     });
   }
 
@@ -155,29 +154,31 @@ class _OptionsScreenState extends State<OptionsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    // Load voice engine
+    final engineStr = await AppSettings.getVoiceEngine() ?? 'responsiveVoice';
+    final voiceEngine = VoiceEngine.values.firstWhere(
+      (e) => e.name == engineStr,
+      orElse: () => VoiceEngine.responsiveVoice,
+    );
+
+    // Load announcer style
+    final styleStr = await AppSettings.getAnnouncerStyle() ?? 'professional';
+    final selectedVoice = AnnouncerVoice.values.firstWhere(
+      (v) => v.name == styleStr,
+      orElse: () => AnnouncerVoice.professional,
+    );
+
+    // Load system voice
+    final systemVoice = await AppSettings.getSystemVoice() ?? '';
+
+    // Load ResponsiveVoice
+    final responsiveVoice = await AppSettings.getResponsiveVoice() ?? 'Australian Female';
 
     setState(() {
-      // Load voice engine
-      final engineStr = prefs.getString('voice_engine') ?? 'responsiveVoice';
-      _voiceEngine = VoiceEngine.values.firstWhere(
-        (e) => e.name == engineStr,
-        orElse: () => VoiceEngine.responsiveVoice,
-      );
-
-      // Load announcer style
-      final styleStr = prefs.getString('announcer_style') ?? 'professional';
-      _selectedVoice = AnnouncerVoice.values.firstWhere(
-        (v) => v.name == styleStr,
-        orElse: () => AnnouncerVoice.professional,
-      );
-
-      // Load system voice
-      _selectedSystemVoice = prefs.getString('system_voice') ?? '';
-
-      // Load ResponsiveVoice
-      _selectedResponsiveVoice = prefs.getString('responsive_voice') ?? 'Australian Female';
-
+      _voiceEngine = voiceEngine;
+      _selectedVoice = selectedVoice;
+      _selectedSystemVoice = systemVoice;
+      _selectedResponsiveVoice = responsiveVoice;
     });
 
     // Load victory music files from service
@@ -197,11 +198,10 @@ class _OptionsScreenState extends State<OptionsScreen> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('voice_engine', _voiceEngine.name);
-      await prefs.setString('announcer_style', _selectedVoice.name);
-      await prefs.setString('system_voice', _selectedSystemVoice);
-      await prefs.setString('responsive_voice', _selectedResponsiveVoice);
+      await AppSettings.saveVoiceEngine(_voiceEngine.name);
+      await AppSettings.saveAnnouncerStyle(_selectedVoice.name);
+      await AppSettings.saveSystemVoice(_selectedSystemVoice);
+      await AppSettings.saveResponsiveVoice(_selectedResponsiveVoice);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

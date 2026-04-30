@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:confetti/confetti.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -59,6 +58,7 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
 
     // Update player stats and announce winner
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deleteResumedSavedGame();
       _updatePlayerStats();
       _announceGameCompletion();
       // Start confetti after a short delay
@@ -84,21 +84,23 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
       await _audioPlayer.setVolume(0.7);
 
       if (customMusicSource != null && customMusicSource.isNotEmpty) {
-        // Check if it's a data URL (from web file picker) or a file path
         if (customMusicSource.startsWith('data:')) {
-          // Play from data URL (web)
-          await _audioPlayer.play(UrlSource(customMusicSource));
-          debugPrint('Playing random custom victory music from data URL');
+          await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => debugPrint('Audio playback timed out'),
+          );
         } else {
-          // Play from file path (native platforms)
-          await _audioPlayer.play(DeviceFileSource(customMusicSource));
-          debugPrint('Playing random custom victory music: $customMusicSource');
+          await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => debugPrint('Audio playback timed out'),
+          );
         }
       } else {
-        // Play default victory fanfare
         await _audioPlayer.play(UrlSource(
-            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'));
-        debugPrint('Playing default victory music');
+            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3')).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => debugPrint('Audio playback timed out'),
+        );
       }
     } catch (e) {
       debugPrint('Error playing victory music: $e');
@@ -115,71 +117,92 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   }
 
   void _updatePlayerStats() async {
-    // Prevent duplicate stats updates
-    if (_statsUpdated) return;
-    _statsUpdated = true;
+    try {
+      // Prevent duplicate stats updates
+      if (_statsUpdated) return;
+      _statsUpdated = true;
 
-    final horseRaceProvider = context.read<HorseRaceProvider>();
-    final playerProvider = context.read<PlayerProvider>();
-    final currentGame = horseRaceProvider.currentGame;
+      final horseRaceProvider = context.read<HorseRaceProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final currentGame = horseRaceProvider.currentGame;
 
-    if (currentGame == null) return;
+      if (currentGame == null) return;
 
-    // Calculate game duration
-    final gameDuration = DateTime.now().difference(currentGame.startedAt);
+      // Calculate game duration
+      final gameDuration = DateTime.now().difference(currentGame.startedAt);
 
-    // Get player count
-    final playerCount = currentGame.getPlayerCount();
+      // Get player count
+      final playerCount = currentGame.getPlayerCount();
 
-    // Update stats for all players (both winners and losers get duration)
-    for (final playerId in currentGame.playerIds) {
-      final isWinner = playerId == currentGame.winnerId;
-      final dartThrows = currentGame.getTotalDartsThrown(playerId);
-      final turns = currentGame.getTotalTurns(playerId);
+      // Update stats for all players (both winners and losers get duration)
+      for (final playerId in currentGame.playerIds) {
+        if (!mounted) return;
+        final isWinner = playerId == currentGame.winnerId;
+        final dartThrows = currentGame.getTotalDartsThrown(playerId);
+        final turns = currentGame.getTotalTurns(playerId);
 
-      await playerProvider.updatePlayerStats(
-        playerId,
-        won: isWinner,
-        gameName: 'Carnival Derby',
-        gameDuration: gameDuration,
-        dartThrows: dartThrows,
-        turns: turns,
-        playerCount: playerCount,
-      );
+        await playerProvider.updatePlayerStats(
+          playerId,
+          won: isWinner,
+          gameName: 'Carnival Derby',
+          gameDuration: gameDuration,
+          dartThrows: dartThrows,
+          turns: turns,
+          playerCount: playerCount,
+        );
+      }
+
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
     }
+  }
 
-    // Auto-delete saved game if this was a resumed game
-    final savedGameId = horseRaceProvider.resumedSavedGameId;
-    if (savedGameId != null) {
-      await SaveGameService().deleteSavedGame('carnival_derby', savedGameId);
-      horseRaceProvider.clearResumedSavedGameId();
+  void _deleteResumedSavedGame() async {
+    try {
+      final horseRaceProvider = context.read<HorseRaceProvider>();
+      final savedGameId = horseRaceProvider.resumedSavedGameId;
+      if (savedGameId != null) {
+        await SaveGameService().deleteSavedGame('carnival_derby', savedGameId);
+        if (!mounted) return;
+        horseRaceProvider.clearResumedSavedGameId();
+      }
+    } catch (e) {
+      debugPrint('Error deleting resumed saved game: $e');
     }
   }
 
   void _announceGameCompletion() async {
-    // Initialize global announcement queue with Carnival Derby helper
-    final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings();
-    _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
+    try {
+      // Initialize global announcement queue with Carnival Derby helper
+      final globalQueue = GameAnnouncementQueueService();
+      await globalQueue.loadSettings();
+      if (!mounted) return;
+      _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
 
-    final horseRaceProvider = context.read<HorseRaceProvider>();
-    final playerProvider = context.read<PlayerProvider>();
+      final horseRaceProvider = context.read<HorseRaceProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final currentGame = horseRaceProvider.currentGame;
 
-    final players = horseRaceProvider.currentGame!.playerIds
-        .map((id) => playerProvider.getPlayerById(id))
-        .whereType<Player>()
-        .toList();
+      if (currentGame == null) return;
 
-    final winner = horseRaceProvider.getWinner(players);
+      final players = currentGame.playerIds
+          .map((id) => playerProvider.getPlayerById(id))
+          .whereType<Player>()
+          .toList();
 
-    if (winner != null) {
-      // Announce game completion first
-      _audioQueue?.announceGameComplete();
+      final winner = horseRaceProvider.getWinner(players);
 
-      // Then announce the winner after a delay (longer to ensure first announcement finishes)
-      Future.delayed(const Duration(milliseconds: 3000), () {
-        _audioQueue?.announceWinner(winner.name);
-      });
+      if (winner != null) {
+        // Announce game completion first
+        _audioQueue?.announceGameComplete();
+
+        // Then announce the winner after a delay (longer to ensure first announcement finishes)
+        Future.delayed(const Duration(milliseconds: 3000), () {
+          if (mounted) _audioQueue?.announceWinner(winner.name);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error announcing game completion: $e');
     }
   }
 

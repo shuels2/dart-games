@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/main.dart' as app;
+import 'package:dart_games/services/api/api_config.dart';
 import 'package:dart_games/widgets/player_selection_card.dart';
 import 'game_ui_config.dart';
 import 'element_finders.dart';
@@ -12,6 +13,30 @@ import 'settings_helpers.dart';
 /// All operations use widget keys for reliable element finding.
 class UITestHelpers {
   // ==========================================================================
+  // STATE RESET HELPERS
+  // ==========================================================================
+
+  /// Reset server + client state between tests.
+  ///
+  /// Call this from `setUp()` in every UI test file so each `testWidgets`
+  /// starts with a clean database (no leftover players, saved games,
+  /// game history, or victory music from a prior test).
+  ///
+  /// Without this, tests that depend on empty-state UI (e.g. the "NEW
+  /// PLAYER" button, or the resume modal) fail because earlier tests in
+  /// the same file leaked state.
+  ///
+  /// This is a thin wrapper over [SettingsHelpers.initializeSettings] that
+  /// makes the intent explicit in test files' `setUp`.
+  static Future<void> resetServerState({bool useEmulator = true}) async {
+    if (ApiConfig.dbSession == null) {
+      final sessionId = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+      ApiConfig.setDbSession('session-$sessionId');
+    }
+    await SettingsHelpers.resetServerState(useEmulator: useEmulator);
+  }
+
+  // ==========================================================================
   // NAVIGATION HELPERS
   // ==========================================================================
 
@@ -22,14 +47,8 @@ class UITestHelpers {
   ) async {
     print('UITestHelpers.navigateToGameMenu: START');
 
-    // Set up emulator mode
-    print('UITestHelpers.navigateToGameMenu: Calling initializeSettings...');
-    await SettingsHelpers.initializeSettings();
-    print('UITestHelpers.navigateToGameMenu: initializeSettings complete');
-
     // Launch app
-    print('UITestHelpers.navigateToGameMenu: Launching app...');
-    app.main();
+    await app.main();
     print('UITestHelpers.navigateToGameMenu: App launched, pumping...');
 
     // NOTE: Do NOT use pumpAndSettle() here — the splash screen has a
@@ -44,21 +63,6 @@ class UITestHelpers {
     await tester.pump(); // Paint
     print('UITestHelpers.navigateToGameMenu: Manual pump sequence complete');
 
-    // Debug: Check what screen we're on
-    print('UITestHelpers.navigateToGameMenu: Checking which screen is displayed...');
-
-    // Check for home screen
-    final homeScreenText = find.text('Let\'s play some Dart Games');
-    print('UITestHelpers.navigateToGameMenu: Home screen found: ${homeScreenText.evaluate().length}');
-
-    // Check for setup screen
-    final setupText = find.text('Scolia Dartboard Setup');
-    print('UITestHelpers.navigateToGameMenu: Setup screen found: ${setupText.evaluate().length}');
-
-    // Check for splash screen
-    final splashText = find.text('DARTS');
-    print('UITestHelpers.navigateToGameMenu: Splash screen found: ${splashText.evaluate().length}');
-
     // Wait for home screen cards to load (async operation)
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
@@ -67,15 +71,10 @@ class UITestHelpers {
     print('UITestHelpers.navigateToGameMenu: Waited for cards to load');
 
     // Tap game card
-    print('UITestHelpers.navigateToGameMenu: Looking for game card...');
     final gameCard = config.getGameCard();
-    print('UITestHelpers.navigateToGameMenu: Game card finder created, checking...');
-
     print('UITestHelpers.navigateToGameMenu: Found ${gameCard.evaluate().length} game cards');
 
     expect(gameCard, findsOneWidget);
-    print('UITestHelpers.navigateToGameMenu: Game card found, tapping...');
-
     await tester.tap(gameCard);
 
     // Wait for navigation
@@ -293,7 +292,9 @@ class UITestHelpers {
 
   /// Launch app and navigate to home screen (settings must be initialized first)
   static Future<void> navigateToHomeScreen(WidgetTester tester) async {
-    app.main();
+    print('UITestHelpers.navigateToHomeScreen: START');
+
+    await app.main();
     // Same pump sequence as navigateToGameMenu but stop at home screen
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
@@ -306,6 +307,13 @@ class UITestHelpers {
     await tester.pump();
     await tester.pump();
     await tester.pump();
+    print('UITestHelpers.navigateToHomeScreen: Pump sequence complete');
+
+    // Let home screen rebuild
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    await tester.pump();
+    print('UITestHelpers.navigateToHomeScreen: COMPLETE');
   }
 
   /// Tap back button on game screen (uses widget key via config)
@@ -365,12 +373,15 @@ class UITestHelpers {
   /// Delete a saved game tile on resume modal
   static Future<void> deleteSavedGameTile(WidgetTester tester, String id) async {
     await tester.tap(ElementFinders.getResumeGameModalDeleteButton(id));
-    await PumpSequences.simpleUpdate(tester);
+    // Delete roundtrips through HTTP (DELETE /games/{id}) and triggers a
+    // provider reload (GET /games) before the modal rebuilds.  simpleUpdate
+    // (2 zero-duration pumps) is too short — asyncDataLoad waits 5s.
+    await PumpSequences.asyncDataLoad(tester);
   }
 
   /// Delete all saved games on resume modal
   static Future<void> deleteAllSavedGames(WidgetTester tester) async {
     await tester.tap(ElementFinders.getResumeGameModalDeleteAllButton());
-    await PumpSequences.simpleUpdate(tester);
+    await PumpSequences.asyncDataLoad(tester);
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/dartboard.dart';
@@ -8,6 +7,7 @@ import '../models/dartboard_connection_profile.dart';
 import '../services/mock_scolia_api_service.dart';
 import '../services/scolia_websocket_service.dart';
 import '../services/api_logger_service.dart';
+import '../services/api/api_client.dart';
 
 enum DartboardConnectionStatus {
   disconnected,
@@ -29,6 +29,18 @@ class DartboardProvider with ChangeNotifier {
   ScoliaWebSocketService? _webSocketService;
 
   List<DartboardConnectionProfile> _savedProfiles = [];
+
+  ApiClient? _apiClient;
+
+  /// Inject the ApiClient instance. Must be called before loadConfiguration().
+  void initialize(ApiClient client) {
+    _apiClient = client;
+  }
+
+  ApiClient get _api {
+    assert(_apiClient != null, 'DartboardProvider.initialize() must be called before use');
+    return _apiClient!;
+  }
 
   static const String _scoliaBaseUrl = 'https://game.scoliadarts.com';
 
@@ -53,22 +65,15 @@ class DartboardProvider with ChangeNotifier {
     return _mockApiService?.eventStream;
   }
 
-  // Storage keys
-  static const String _keyDartboardName = 'dartboard_name';
-  static const String _keySerialNumber = 'dartboard_serial';
-  static const String _keyApiKey = 'dartboard_api_key';
-  static const String _keyUseEmulator = 'use_emulator';
-  static const String _keySavedProfiles = 'saved_dartboard_profiles';
-
-  // Load dartboard configuration from storage
+  // Load dartboard configuration from API
   Future<void> loadConfiguration() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
       await loadSavedProfiles();
-      final name = prefs.getString(_keyDartboardName);
-      final serial = prefs.getString(_keySerialNumber);
-      final apiKey = prefs.getString(_keyApiKey);
-      final useEmulator = prefs.getBool(_keyUseEmulator) ?? false;
+      final config = await _api.getDartboard();
+      final name = config['name'] as String?;
+      final serial = config['serialNumber'] as String?;
+      final apiKey = config['apiKey'] as String?;
+      final useEmulator = config['useEmulator'] as bool? ?? false;
 
       if (name != null && serial != null) {
         _dartboard = Dartboard(
@@ -243,20 +248,19 @@ class DartboardProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Save configuration to storage
+  // Save configuration to API
   Future<void> _saveConfiguration(
     String name,
     String serialNumber,
     String? apiKey,
     bool useEmulator,
   ) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyDartboardName, name);
-    await prefs.setString(_keySerialNumber, serialNumber);
-    if (apiKey != null) {
-      await prefs.setString(_keyApiKey, apiKey);
-    }
-    await prefs.setBool(_keyUseEmulator, useEmulator);
+    await _api.updateDartboard({
+      'name': name,
+      'serialNumber': serialNumber,
+      if (apiKey != null) 'apiKey': apiKey,
+      'useEmulator': useEmulator,
+    });
 
     // Save connection profile for non-emulator connections
     if (!useEmulator && apiKey != null) {
@@ -268,11 +272,7 @@ class DartboardProvider with ChangeNotifier {
   Future<void> clearDartboard() async {
     stopStatusChecking();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyDartboardName);
-    await prefs.remove(_keySerialNumber);
-    await prefs.remove(_keyApiKey);
-    await prefs.remove(_keyUseEmulator);
+    await _api.clearDartboard();
 
     _dartboard = null;
     _apiKey = null;
@@ -393,19 +393,15 @@ class DartboardProvider with ChangeNotifier {
     _statusCheckTimer = null;
   }
 
-  // Load saved connection profiles from storage
+  // Load saved connection profiles from API
   Future<void> loadSavedProfiles() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonString = prefs.getString(_keySavedProfiles);
-      if (jsonString != null) {
-        final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
-        _savedProfiles = jsonList
-            .map((item) => DartboardConnectionProfile.fromJson(item as Map<String, dynamic>))
-            .toList();
-        // Sort by lastUsed descending (most recent first)
-        _savedProfiles.sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
-      }
+      final profilesList = await _api.getDartboardProfiles();
+      _savedProfiles = profilesList
+          .map((item) => DartboardConnectionProfile.fromJson(item))
+          .toList();
+      // Sort by lastUsed descending (most recent first)
+      _savedProfiles.sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
     } catch (e) {
       print('Error loading saved profiles: $e');
       _savedProfiles = [];
@@ -414,33 +410,34 @@ class DartboardProvider with ChangeNotifier {
 
   // Save or update a connection profile (upserts by serial number)
   Future<void> saveConnectionProfile(String name, String serialNumber, String apiKey) async {
-    // Remove existing profile with same serial number
+    final now = DateTime.now();
+
+    // Remove existing profile with same serial number from local list
     _savedProfiles.removeWhere((p) => p.serialNumber == serialNumber);
 
-    // Add new/updated profile
+    // Add new/updated profile locally
     _savedProfiles.insert(0, DartboardConnectionProfile(
       name: name,
       serialNumber: serialNumber,
       apiKey: apiKey,
-      lastUsed: DateTime.now(),
+      lastUsed: now,
     ));
 
-    await _persistProfiles();
+    // Persist to API
+    await _api.upsertDartboardProfile(serialNumber, {
+      'name': name,
+      'serialNumber': serialNumber,
+      'apiKey': apiKey,
+      'lastUsed': now.toIso8601String(),
+    });
     notifyListeners();
   }
 
   // Delete a connection profile by serial number
   Future<void> deleteConnectionProfile(String serialNumber) async {
     _savedProfiles.removeWhere((p) => p.serialNumber == serialNumber);
-    await _persistProfiles();
+    await _api.deleteDartboardProfile(serialNumber);
     notifyListeners();
-  }
-
-  // Persist profiles to SharedPreferences
-  Future<void> _persistProfiles() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = json.encode(_savedProfiles.map((p) => p.toJson()).toList());
-    await prefs.setString(_keySavedProfiles, jsonString);
   }
 
   @override

@@ -1,52 +1,72 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'api/api_client.dart';
 
+/// Storage service for dartboard credentials and setup state.
+///
+/// Uses the backend API via [ApiClient] for persistent storage.
+/// Can be used via constructor injection or the static [initialize]/[instance] pattern.
 class StorageService {
-  static const String _bearerTokenKey = 'bearer_token';
-  static const String _serialNumberKey = 'serial_number';
-  static const String _setupCompleteKey = 'setup_complete';
+  final ApiClient _api;
 
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  StorageService(this._api);
 
-  // Save bearer token securely
+  // Static singleton for code that creates without constructor injection.
+  static StorageService? _instance;
+
+  /// Initialize the static singleton. Call once at app startup.
+  static void initialize(ApiClient client) {
+    _instance = StorageService(client);
+  }
+
+  /// Get the static singleton instance.
+  static StorageService get instance {
+    if (_instance == null) {
+      throw StateError(
+          'StorageService not initialized. Call StorageService.initialize() first.');
+    }
+    return _instance!;
+  }
+
+  /// For testing: allow setting the singleton directly.
+  static set testInstance(StorageService? service) => _instance = service;
+
+  // Save bearer token (Scolia dartboard API token)
   Future<void> saveBearerToken(String token) async {
-    await _secureStorage.write(key: _bearerTokenKey, value: token);
+    await _api.putSetting('bearer_token', token);
   }
 
   // Get bearer token
   Future<String?> getBearerToken() async {
-    return await _secureStorage.read(key: _bearerTokenKey);
+    return await _api.getSetting('bearer_token');
   }
 
   // Save serial number
   Future<void> saveSerialNumber(String serialNumber) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_serialNumberKey, serialNumber);
+    await _api.putSetting('serial_number', serialNumber);
   }
 
   // Get serial number
   Future<String?> getSerialNumber() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_serialNumberKey);
+    return await _api.getSetting('serial_number');
   }
 
   // Mark setup as complete
   Future<void> setSetupComplete(bool complete) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_setupCompleteKey, complete);
+    await _api.putSetting('setup_complete', complete.toString());
   }
 
-  // Check if setup is complete
+  // Check if setup is complete (defaults to false if not set)
   Future<bool> isSetupComplete() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_setupCompleteKey) ?? false;
+    final value = await _api.getSetting('setup_complete');
+    if (value == null) return false;
+    return value == 'true';
   }
 
   // Clear all stored data
   Future<void> clearAll() async {
-    await _secureStorage.deleteAll();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    final settings = await _api.getSettings();
+    for (final key in settings.keys) {
+      await _api.deleteSetting(key);
+    }
   }
 
   // Check if user has authentication credentials

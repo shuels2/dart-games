@@ -1,18 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dart_games/providers/target_tag_provider.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/services/save_game_service.dart';
+import '../shared/mock_api_helpers.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
+  late MockApiServer mockServer;
   late TargetTagProvider provider;
   late List<Player> players;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
-    provider = TargetTagProvider();
+    mockServer = MockApiServer();
+    provider = TargetTagProvider(apiClient: mockServer.apiClient);
     players = [
       Player(id: 'p1', name: 'Alice', createdAt: DateTime.now()),
       Player(id: 'p2', name: 'Bob', createdAt: DateTime.now()),
@@ -33,7 +32,7 @@ void main() {
 
       await provider.saveGame(players);
 
-      final saved = await SaveGameService().loadSavedGames('target_tag');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('target_tag');
       expect(saved, hasLength(1));
       expect(saved[0].gameType, 'target_tag');
       expect(saved[0].playerNames, ['Alice', 'Bob', 'Charlie']);
@@ -51,9 +50,9 @@ void main() {
       provider.processDartThrow(doubleSector(p1Target));
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('target_tag');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('target_tag');
 
-      final newProvider = TargetTagProvider();
+      final newProvider = TargetTagProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
 
       expect(newProvider.currentGame, isNotNull);
@@ -71,9 +70,9 @@ void main() {
       expect(provider.shouldPromptTakeout, true);
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('target_tag');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('target_tag');
 
-      final newProvider = TargetTagProvider();
+      final newProvider = TargetTagProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
       expect(newProvider.shouldPromptTakeout, true);
     });
@@ -84,7 +83,7 @@ void main() {
           provider.currentGame!.targetNumbers['p1']!));
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('target_tag');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('target_tag');
 
       provider.restoreGame(saved[0]);
       expect(provider.resumedSavedGameId, saved[0].id);
@@ -105,9 +104,9 @@ void main() {
       provider.processDartThrow(singleSector(p2Target));
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('target_tag');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('target_tag');
 
-      final newProvider = TargetTagProvider();
+      final newProvider = TargetTagProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
 
       expect(newProvider.currentGame!.totalDartsThrown['p1'], 3);
@@ -122,9 +121,9 @@ void main() {
       provider.processDartThrow(singleSector(p1Target));
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('target_tag');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('target_tag');
 
-      final newProvider = TargetTagProvider();
+      final newProvider = TargetTagProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
 
       final restoredTarget = newProvider.currentGame!.targetNumbers['p1']!;
@@ -146,9 +145,9 @@ void main() {
       provider.processDartThrow(singleSector(firstTarget));
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('target_tag');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('target_tag');
 
-      final newProvider = TargetTagProvider();
+      final newProvider = TargetTagProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
 
       expect(newProvider.currentGame!.playerToTeam, isNotNull);

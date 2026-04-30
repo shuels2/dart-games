@@ -1,19 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dart_games/providers/reef_royale_provider.dart';
 import 'package:dart_games/models/reef_royale_game.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/services/save_game_service.dart';
+import '../shared/mock_api_helpers.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
+  late MockApiServer mockServer;
   late ReefRoyaleProvider provider;
   late List<Player> players;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
-    provider = ReefRoyaleProvider();
+    mockServer = MockApiServer();
+    provider = ReefRoyaleProvider(apiClient: mockServer.apiClient);
     players = [
       Player(id: 'p1', name: 'Alice', createdAt: DateTime.now()),
       Player(id: 'p2', name: 'Bob', createdAt: DateTime.now()),
@@ -40,7 +39,7 @@ void main() {
 
       await provider.saveGame(players);
 
-      final saved = await SaveGameService().loadSavedGames('reef_royale');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('reef_royale');
       expect(saved, hasLength(1));
       expect(saved[0].gameType, 'reef_royale');
       expect(saved[0].playerNames, ['Alice', 'Bob', 'Charlie']);
@@ -69,9 +68,9 @@ void main() {
       provider.processDartThrow('D20');
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('reef_royale');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('reef_royale');
 
-      final newProvider = ReefRoyaleProvider();
+      final newProvider = ReefRoyaleProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
 
       expect(newProvider.currentGame, isNotNull);
@@ -93,9 +92,9 @@ void main() {
       expect(provider.shouldPromptTakeout, true);
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('reef_royale');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('reef_royale');
 
-      final newProvider = ReefRoyaleProvider();
+      final newProvider = ReefRoyaleProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
       expect(newProvider.shouldPromptTakeout, true);
     });
@@ -109,7 +108,7 @@ void main() {
       provider.processDartThrow('S20');
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('reef_royale');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('reef_royale');
 
       provider.restoreGame(saved[0]);
       expect(provider.resumedSavedGameId, saved[0].id);
@@ -132,9 +131,9 @@ void main() {
       provider.processDartThrow('S20');
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('reef_royale');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('reef_royale');
 
-      final newProvider = ReefRoyaleProvider();
+      final newProvider = ReefRoyaleProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
 
       expect(newProvider.currentGame!.totalDartsThrown['p1'], 3);
@@ -152,9 +151,9 @@ void main() {
       provider.processDartThrow('S20');
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('reef_royale');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('reef_royale');
 
-      final newProvider = ReefRoyaleProvider();
+      final newProvider = ReefRoyaleProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
 
       newProvider.processDartThrow('S19');
@@ -172,9 +171,9 @@ void main() {
       provider.processDartThrow('T20');
 
       await provider.saveGame(players);
-      final saved = await SaveGameService().loadSavedGames('reef_royale');
+      final saved = await SaveGameService(mockServer.apiClient).loadSavedGames('reef_royale');
 
-      final newProvider = ReefRoyaleProvider();
+      final newProvider = ReefRoyaleProvider(apiClient: mockServer.apiClient);
       newProvider.restoreGame(saved[0]);
 
       expect(newProvider.currentGame!.claimed['p1']!.contains(20), true);

@@ -109,38 +109,38 @@ Report AR-1 findings. Fix any discrepancies before proceeding.
 ### Steps
 
 1. Create a wireframe directory: `temp_wireframes/[game_name]/`
-2. Build an HTML wireframe file for EACH game screen, using the spec's Section 2 (colors, fonts) and Section 10 (screen designs):
+2. Build HTML wireframe files for EACH game screen, using the spec's Section 2 (colors, fonts) and Section 10 (screen designs). **Each screen must be shown at multiple player counts** to validate the layout scales correctly — at minimum the game's minimum players, maximum players, and at least one count in between (e.g., for a 2-8 player game: 2, 4-5, and 8 players). Use separate HTML files per player count variant (e.g., `game_early_2p.html`, `game_early_5p.html`, `game_early_8p.html`).
 
-   **Menu Screen** (`menu.html`):
+   **Menu Screen** (`menu_Xp.html` per player count):
    - AppBar with back button, game title, DartboardConnectionInfo placeholder, ResumeGameButton
-   - Player list panel (Dual or Team per spec Section 1) with sample player entries
+   - Player list panel (Dual or Team per spec Section 1) populated with the appropriate number of sample player entries for that variant
    - All settings controls from Section 7 (toggles, dropdowns, sliders) with labels and default values
    - Start Game button with enable/disable state
    - Overall layout proportions matching the container app pattern
 
-   **Game Screen — Early Game** (`game_early.html`):
+   **Game Screen — Early Game** (`game_early_Xp.html` per player count):
    - AppBar with back button, game title, DartboardConnectionInfo placeholder
    - Game board/play area with all visual elements from Section 10B
-   - Player indicators showing 2-3 sample players at early game state
+   - Player indicators showing the appropriate number of players at early game state
    - Score/progress displays
    - Skip Turn button
    - Dartboard emulator section at BOTTOM of screen
    - Show how all option effects from Section 7 appear visually on the game board
 
-   **Game Screen — Mid/Late Game** (`game_midgame.html`):
+   **Game Screen — Mid/Late Game** (`game_midgame_Xp.html` per player count):
    - Same layout as early game but with mid-game state
    - Show progression (scores advanced, game elements changed)
    - Demonstrate how the game board evolves during play
 
-   **Game Screen — With Modals** (`game_modals.html`):
+   **Game Screen — With Modals** (`game_modals.html` — one file is sufficient):
    - Show the game screen with the Remove Darts modal overlay
    - Include the Edit Score button within the modal
    - Show the Dartboard Paused modal state
    - Show the Save Game modal (back button triggered)
 
-   **Results Screen** (`results.html`):
+   **Results Screen** (`results_Xp.html` per player count):
    - Winner display with character/avatar
-   - Full player rankings with stats
+   - Full player rankings with stats for all players at that count
    - Play Again, Change Settings, Back to Menu buttons
    - AppBar with game title, DartboardConnectionInfo placeholder
 
@@ -172,11 +172,12 @@ Report AR-1 findings. Fix any discrepancies before proceeding.
 > (f) The player list panel type (Dual vs Team) matches spec Section 1
 > (g) The game wireframe shows at least two game states (early and mid/late) to demonstrate progression
 > (h) Modal overlays are shown (Remove Darts, Save Game, Dartboard Paused)
+> (i) Every screen type (Menu, Game Early, Game Mid/Late, Results) has wireframes at the minimum player count, maximum player count, AND at least one count in between — verifying that layouts scale correctly across the full player range
 >
 > Wireframe coverage:
-> | Screen/State | Wireframe File | Section 10 Match |
-> |-------------|----------------|------------------|
-> | [screen]    | [file]         | [YES/MISSING]    |
+> | Screen/State | Wireframe File | Section 10 Match | Player Counts Shown |
+> |-------------|----------------|------------------|---------------------|
+> | [screen]    | [file]         | [YES/MISSING]    | [e.g., 2, 5, 8]    |
 >
 > Missing elements: [list any gaps]"
 
@@ -380,8 +381,8 @@ Report AR-5 findings. Fix any issues before proceeding.
 7. Write serialization tests if not done in Phase 3: `test/models/[game_name]_serialization_test.dart`
 8. Write provider save/restore tests: `test/providers/[game_name]_save_restore_test.dart`
 9. Check for data migration needs per `docs/development/data-migrations.md`:
-   - If the new game only adds new SharedPreferences keys and optional fields with `??` defaults: no migration needed.
-   - If any existing keys or field shapes change: create a migration.
+   - If the new game only adds new tables/columns and optional fields with defaults: no migration needed.
+   - If any existing columns or table shapes change: create a migration.
    - Document the decision in the output.
 10. Run `flutter test` (the FULL suite, not just the new game).
 

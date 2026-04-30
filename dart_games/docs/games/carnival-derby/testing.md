@@ -210,7 +210,7 @@ flutter drive --driver=test_driver/integration_test.dart \
    - Key assertions: Winner has gamesWon++, losers have gamesPlayed++ only, all have same duration
 
 3. **Test 10-15: Stats Persistence**
-   - Validates: Stats survive app restart via SharedPreferences
+   - Validates: Stats survive app restart via server persistence
    - Key assertions: Stats reload correctly, accumulate across sessions
 
 4. **Test 16-20: Max Players and Selection**

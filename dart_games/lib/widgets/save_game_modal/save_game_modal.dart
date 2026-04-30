@@ -4,9 +4,9 @@ import 'save_game_modal_config.dart';
 
 export 'save_game_modal_config.dart';
 
-class SaveGameModal extends StatelessWidget {
+class SaveGameModal extends StatefulWidget {
   final SaveGameModalConfig config;
-  final VoidCallback onSave;
+  final Future<void> Function() onSave;
   final VoidCallback onDontSave;
 
   const SaveGameModal({
@@ -15,6 +15,13 @@ class SaveGameModal extends StatelessWidget {
     required this.onSave,
     required this.onDontSave,
   });
+
+  @override
+  State<SaveGameModal> createState() => _SaveGameModalState();
+}
+
+class _SaveGameModalState extends State<SaveGameModal> {
+  bool _saving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +37,7 @@ class SaveGameModal extends StatelessWidget {
   }
 
   Widget _buildModalContent() {
+    final config = widget.config;
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: config.maxWidth),
       child: Container(
@@ -79,7 +87,10 @@ class SaveGameModal extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 key: SaveGameModalKeys.saveButton,
-                onPressed: onSave,
+                onPressed: _saving ? null : () async {
+                  setState(() => _saving = true);
+                  await widget.onSave();
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: config.saveButtonColor,
                   foregroundColor: config.saveButtonTextColor,
@@ -96,7 +107,7 @@ class SaveGameModal extends StatelessWidget {
               width: double.infinity,
               child: TextButton(
                 key: SaveGameModalKeys.dontSaveButton,
-                onPressed: onDontSave,
+                onPressed: widget.onDontSave,
                 style: TextButton.styleFrom(
                   foregroundColor: config.dontSaveButtonTextColor,
                   padding: config.dontSaveButtonPadding,

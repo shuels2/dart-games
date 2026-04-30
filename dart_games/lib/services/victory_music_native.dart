@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
-// Native platform stub - not used since we use SharedPreferences directly
+// Native platform stub - not used since music is now handled by the backend API
 // These functions exist only to satisfy the conditional import
 
 Future<void> storeMusic(String fileName, String dataUrl) async {
@@ -18,11 +18,11 @@ Future<void> clearStoredMusic() async {
 }
 
 Future<void> storeMusicFiles(List<Map<String, dynamic>> filesJson) async {
-  // Not used - handled by SharedPreferences in main service
+  // Not used - handled by the backend API
 }
 
 Future<List<Map<String, dynamic>>?> loadStoredMusicFiles() async {
-  // Not used - handled by SharedPreferences in main service
+  // Not used - handled by the backend API
   return null;
 }
 

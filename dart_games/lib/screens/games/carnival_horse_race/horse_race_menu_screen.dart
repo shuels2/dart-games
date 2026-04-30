@@ -47,7 +47,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
     // Load players when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _playerProvider = context.read<PlayerProvider>();
-      _playerProvider!.loadPlayers();
+      await _playerProvider!.loadPlayers();
       _playerProvider!.clearSelection();
 
       // Preselect players if provided

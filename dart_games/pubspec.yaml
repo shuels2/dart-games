@@ -44,9 +44,6 @@ dependencies:
   # Secure storage for bearer token
   flutter_secure_storage: ^9.0.0
 
-  # Simple local storage
-  shared_preferences: ^2.2.2
-
   # URL launcher for OAuth redirect
   url_launcher: ^6.2.2
 

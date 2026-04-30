@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'player_test_utils.dart';
 import 'package:dart_games/models/player.dart';
+import 'mock_api_helpers.dart';
 
 void main() {
   group('PlayerTestUtils', () {
@@ -24,8 +24,9 @@ void main() {
     });
 
     test('creates and saves players to provider', () async {
-      SharedPreferences.setMockInitialValues({});
+      final mockServer = MockApiServer();
       final provider = PlayerProvider();
+      provider.initialize(mockServer.apiClient);
       await provider.loadPlayers();
 
       final players = await PlayerTestUtils.createAndSavePlayers(provider, 2);
@@ -69,8 +70,9 @@ void main() {
     });
 
     test('finds player by ID from provider', () async {
-      SharedPreferences.setMockInitialValues({});
+      final mockServer = MockApiServer();
       final provider = PlayerProvider();
+      provider.initialize(mockServer.apiClient);
       await provider.loadPlayers();
 
       final players = await PlayerTestUtils.createAndSavePlayers(provider, 2);
@@ -82,8 +84,9 @@ void main() {
     });
 
     test('reloads and gets player', () async {
-      SharedPreferences.setMockInitialValues({});
+      final mockServer = MockApiServer();
       final provider = PlayerProvider();
+      provider.initialize(mockServer.apiClient);
       await provider.loadPlayers();
 
       final players = await PlayerTestUtils.createAndSavePlayers(provider, 1);
@@ -91,6 +94,7 @@ void main() {
 
       // Simulate app restart
       final newProvider = PlayerProvider();
+      newProvider.initialize(mockServer.apiClient);
       final reloadedPlayer = await PlayerTestUtils.reloadAndGetPlayer(newProvider, playerId);
 
       expect(reloadedPlayer, isNotNull);
@@ -119,8 +123,9 @@ void main() {
     });
 
     test('returns null when player ID not found', () async {
-      SharedPreferences.setMockInitialValues({});
+      final mockServer = MockApiServer();
       final provider = PlayerProvider();
+      provider.initialize(mockServer.apiClient);
       await provider.loadPlayers();
 
       final foundPlayer = PlayerTestUtils.getPlayerById(provider, 'nonexistent-id');
@@ -129,8 +134,9 @@ void main() {
     });
 
     test('returns null when reloading nonexistent player', () async {
-      SharedPreferences.setMockInitialValues({});
+      final mockServer = MockApiServer();
       final provider = PlayerProvider();
+      provider.initialize(mockServer.apiClient);
 
       final reloadedPlayer = await PlayerTestUtils.reloadAndGetPlayer(provider, 'nonexistent-id');
 

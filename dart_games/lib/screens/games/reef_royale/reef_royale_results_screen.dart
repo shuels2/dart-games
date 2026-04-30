@@ -70,6 +70,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     _animationController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deleteResumedSavedGame();
       _updatePlayerStats();
 
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -92,40 +93,53 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
   }
 
   void _updatePlayerStats() async {
-    if (_statsUpdated) return;
-    _statsUpdated = true;
+    try {
+      if (_statsUpdated) return;
+      _statsUpdated = true;
 
-    final reefProvider = context.read<ReefRoyaleProvider>();
-    final playerProvider = context.read<PlayerProvider>();
-    final currentGame = reefProvider.currentGame;
+      final reefProvider = context.read<ReefRoyaleProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final currentGame = reefProvider.currentGame;
 
-    if (currentGame == null) return;
+      if (currentGame == null) return;
 
-    final gameDuration = DateTime.now().difference(currentGame.startedAt);
-    final winnerIds = currentGame.winnerIds ?? [];
-    final playerCount = currentGame.getPlayerCount();
+      final gameDuration = DateTime.now().difference(currentGame.startedAt);
+      final winnerIds = currentGame.winnerIds ?? [];
+      final playerCount = currentGame.getPlayerCount();
 
-    for (final playerId in currentGame.playerIds) {
-      final isWinner = winnerIds.contains(playerId);
-      final dartThrows = currentGame.totalDartsThrown[playerId] ?? 0;
-      final turns = currentGame.totalTurns[playerId] ?? 0;
+      for (final playerId in currentGame.playerIds) {
+        if (!mounted) return;
+        final isWinner = winnerIds.contains(playerId);
+        final dartThrows = currentGame.totalDartsThrown[playerId] ?? 0;
+        final turns = currentGame.totalTurns[playerId] ?? 0;
 
-      await playerProvider.updatePlayerStats(
-        playerId,
-        won: isWinner,
-        gameName: 'Reef Royale',
-        gameDuration: gameDuration,
-        dartThrows: dartThrows,
-        turns: turns,
-        playerCount: playerCount,
-      );
+        await playerProvider.updatePlayerStats(
+          playerId,
+          won: isWinner,
+          gameName: 'Reef Royale',
+          gameDuration: gameDuration,
+          dartThrows: dartThrows,
+          turns: turns,
+          playerCount: playerCount,
+        );
+      }
+
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
     }
+  }
 
-    // Auto-delete saved game if this was a resumed game
-    final savedGameId = reefProvider.resumedSavedGameId;
-    if (savedGameId != null) {
-      await SaveGameService().deleteSavedGame('reef_royale', savedGameId);
-      reefProvider.clearResumedSavedGameId();
+  void _deleteResumedSavedGame() async {
+    try {
+      final reefProvider = context.read<ReefRoyaleProvider>();
+      final savedGameId = reefProvider.resumedSavedGameId;
+      if (savedGameId != null) {
+        await SaveGameService().deleteSavedGame('reef_royale', savedGameId);
+        if (!mounted) return;
+        reefProvider.clearResumedSavedGameId();
+      }
+    } catch (e) {
+      debugPrint('Error deleting resumed saved game: $e');
     }
   }
 
@@ -138,13 +152,22 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
 
       if (customMusicSource != null && customMusicSource.isNotEmpty) {
         if (customMusicSource.startsWith('data:')) {
-          await _audioPlayer.play(UrlSource(customMusicSource));
+          await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => debugPrint('Audio playback timed out'),
+          );
         } else {
-          await _audioPlayer.play(DeviceFileSource(customMusicSource));
+          await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => debugPrint('Audio playback timed out'),
+          );
         }
       } else {
         await _audioPlayer.play(UrlSource(
-            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'));
+            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3')).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => debugPrint('Audio playback timed out'),
+        );
       }
     } catch (e) {
       debugPrint('Error playing victory music: $e');
@@ -162,6 +185,9 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     }
 
     final allPlayers = playerProvider.allPlayers;
+    if (allPlayers.isEmpty) {
+      return const Scaffold(body: Center(child: Text('No player data')));
+    }
     final rankedIds = currentGame.getRankedPlayerIds();
     final winnerIds = currentGame.winnerIds ?? [];
     final winners = winnerIds.isEmpty
@@ -568,13 +594,14 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
 
   Widget _buildRankingColumn(List<String> rankedIds, List<Player> allPlayers, ReefRoyaleGame game, int startIndex) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _deepReefBlue.withOpacity(0.8),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _seafoamGreen.withOpacity(0.3)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: List.generate(rankedIds.length, (index) {
           final playerId = rankedIds[index];
           final player = allPlayers.firstWhere(

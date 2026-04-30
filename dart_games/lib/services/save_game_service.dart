@@ -1,60 +1,43 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/saved_game_metadata.dart';
+import 'api/api_client.dart';
 
 class SaveGameService {
-  static String _storageKey(String gameType) => 'saved_games_$gameType';
+  ApiClient? _client;
 
-  Future<void> saveGame(SavedGameMetadata metadata) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _storageKey(metadata.gameType);
-    final existing = prefs.getStringList(key) ?? [];
+  /// Creates a SaveGameService. If no [ApiClient] is provided, a default
+  /// one is created using the current [ApiConfig] base URL.
+  SaveGameService([this._client]);
 
-    // Check if a save with this ID already exists (resumed game being re-saved)
-    final existingIndex = existing.indexWhere((s) {
-      final json = jsonDecode(s);
-      return json['id'] == metadata.id;
-    });
+  /// Set the API client. Supports late initialization.
+  void initialize(ApiClient client) {
+    _client = client;
+  }
 
-    final encoded = jsonEncode(metadata.toJson());
-    if (existingIndex >= 0) {
-      existing[existingIndex] = encoded;
-    } else {
-      existing.add(encoded);
+  ApiClient get _api => _client ??= ApiClient();
+
+  Future<bool> saveGame(SavedGameMetadata metadata) async {
+    final result = await _api.saveGame(metadata.toJson());
+    if (result.isEmpty) {
+      return false;
     }
-    await prefs.setStringList(key, existing);
+    return true;
   }
 
   Future<List<SavedGameMetadata>> loadSavedGames(String gameType) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _storageKey(gameType);
-    final saved = prefs.getStringList(key) ?? [];
-    return saved
-        .map((s) => SavedGameMetadata.fromJson(jsonDecode(s)))
-        .toList();
+    final games = await _api.getSavedGamesByType(gameType);
+    return games.map((json) => SavedGameMetadata.fromJson(json)).toList();
   }
 
   Future<void> deleteSavedGame(String gameType, String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _storageKey(gameType);
-    final saved = prefs.getStringList(key) ?? [];
-    final filtered = saved.where((s) {
-      final json = jsonDecode(s);
-      return json['id'] != id;
-    }).toList();
-    await prefs.setStringList(key, filtered);
+    await _api.deleteSavedGame(id);
   }
 
   Future<void> deleteAllSavedGames(String gameType) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _storageKey(gameType);
-    await prefs.remove(key);
+    await _api.deleteSavedGamesByType(gameType);
   }
 
   Future<bool> hasSavedGames(String gameType) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _storageKey(gameType);
-    final saved = prefs.getStringList(key) ?? [];
-    return saved.isNotEmpty;
+    final games = await _api.getSavedGamesByType(gameType);
+    return games.isNotEmpty;
   }
 }

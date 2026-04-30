@@ -1,16 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dart_games/services/save_game_service.dart';
 import 'package:dart_games/models/saved_game_metadata.dart';
+import '../shared/mock_api_helpers.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
+  late MockApiServer mockServer;
   late SaveGameService service;
 
-  setUp(() async {
-    SharedPreferences.setMockInitialValues({});
-    service = SaveGameService();
+  setUp(() {
+    mockServer = MockApiServer();
+    service = SaveGameService(mockServer.apiClient);
   });
 
   SavedGameMetadata _createMetadata({

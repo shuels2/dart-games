@@ -7,8 +7,8 @@ The save/resume feature allows players to save in-progress games and resume them
 ## Architecture
 
 ### Storage
-- **SharedPreferences** — Saved games are persisted as JSON string lists
-- **Key pattern:** `saved_games_{game_type}` (e.g., `saved_games_carnival_derby`)
+- **Server API** — Saved games are persisted on the server via `ApiClient` calls to the saved games REST endpoint
+- **Organized by game type** (e.g., `carnival_derby`, `target_tag`)
 - **No limit** on number of saved games per game type
 - **Auto-delete:** Saved games are automatically deleted when a resumed game finishes
 
@@ -17,7 +17,7 @@ The save/resume feature allows players to save in-progress games and resume them
 | File | Purpose |
 |------|---------|
 | `lib/models/saved_game_metadata.dart` | Data model for saved game entries |
-| `lib/services/save_game_service.dart` | CRUD operations for SharedPreferences |
+| `lib/services/save_game_service.dart` | CRUD operations via server API |
 | `lib/widgets/save_game_modal/save_game_modal.dart` | Save confirmation modal (back button) |
 | `lib/widgets/save_game_modal/save_game_modal_config.dart` | Per-game theming for save modal |
 | `lib/widgets/resume_game_modal/resume_game_modal.dart` | Resume/new game modal (menu screen) |
@@ -151,11 +151,12 @@ AppBar(
 
 ## Auto-Delete on Completion
 
-When a resumed game reaches the results screen:
-1. `_updatePlayerStats()` completes stats saving
-2. Check `provider.resumedSavedGameId`
-3. If set → `SaveGameService.deleteSavedGame()` removes the save
-4. `provider.clearResumedSavedGameId()` clears tracking
+When a resumed game reaches the results screen, `_deleteResumedSavedGame()` fires independently as its own async call from `addPostFrameCallback`:
+1. Check `provider.resumedSavedGameId`
+2. If set → `SaveGameService.deleteSavedGame()` removes the save
+3. `provider.clearResumedSavedGameId()` clears tracking
+
+The delete runs concurrently with `_updatePlayerStats()`, not sequentially after it. This ensures the saved game is removed promptly without waiting for all player stats HTTP calls to complete.
 
 ## Widget Keys
 
@@ -203,6 +204,6 @@ Each UI test file covers:
 3. Add factory methods to `SaveGameModalConfig` and `ResumeGameModalConfig`
 4. Integrate `SaveGameModal` into the game screen (back button + PopScope + Stack)
 5. Add `ResumeGameModal` to the menu screen (imports, `_showResumeModal` state, `initState` check, `_resumeGame` method, Stack overlay)
-6. Add auto-delete logic in the results screen's `_updatePlayerStats()`
+6. Add `_deleteResumedSavedGame()` as a separate async call in the results screen's `addPostFrameCallback`
 7. Add widget keys to `test_keys.dart`
 8. Write serialization, provider save/restore, and integration tests

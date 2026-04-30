@@ -8,7 +8,11 @@ import 'providers/target_tag_provider.dart';
 import 'providers/monster_mash_provider.dart';
 import 'providers/reef_royale_provider.dart';
 import 'providers/clockwork_quest_provider.dart';
-import 'services/migration/migration_runner.dart';
+import 'services/api/api_client.dart';
+import 'services/api/api_config.dart';
+import 'services/app_settings.dart';
+import 'services/storage_service.dart';
+import 'services/victory_music_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
@@ -16,16 +20,42 @@ import 'screens/games/clockwork_quest/clockwork_quest_menu_screen.dart';
 import 'screens/games/clockwork_quest/clockwork_quest_game_screen.dart';
 import 'screens/games/clockwork_quest/clockwork_quest_results_screen.dart';
 
-void main() async {
+/// Global API client instance, shared across all services.
+///
+/// Tracked via [_previousApiClient] so that each [main] call can dispose
+/// the old client before creating a fresh one.  On the web this calls
+/// `XMLHttpRequest.abort()` on every pending request, preventing stale
+/// POST/PUT calls from a prior integration-test run from completing and
+/// writing data to the server after it has been reset.
+ApiClient? _previousApiClient;
+late ApiClient apiClient;
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Run data migrations before any providers load data
-  await MigrationRunner.runMigrations();
+  // Dispose previous ApiClient to cancel any in-flight HTTP requests
+  // from a prior integration-test run or hot restart.
+  _previousApiClient?.dispose();
+
+  // Initialize API client — port comes from --dart-define=SERVER_PORT (tests)
+  // or falls back to 8080 (production).
+  ApiConfig.configure(ApiConfig.baseUrl);
+  apiClient = ApiClient();
+  _previousApiClient = apiClient;
+
+  // Initialize services with the API client
+  AppSettings.initialize(apiClient);
+  StorageService.initialize(apiClient);
+  VictoryMusicService().initializeApi(apiClient);
 
   // Preload all Google Fonts used in the app to prevent FOUT (Flash of Unstyled Text)
   await _preloadFonts();
 
-  runApp(const DartGamesApp());
+  // UniqueKey forces Flutter to create a fresh element tree (and fresh
+  // providers) each time runApp() is called.  Without it, runApp() with a
+  // const widget reuses the existing elements via canUpdate(), which leaks
+  // in-memory provider state across integration-test runs.
+  runApp(DartGamesApp(key: UniqueKey()));
 }
 
 Future<void> _preloadFonts() async {
@@ -86,13 +116,21 @@ class DartGamesApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => DartboardProvider()),
-        ChangeNotifierProvider(create: (_) => PlayerProvider()),
-        ChangeNotifierProvider(create: (_) => HorseRaceProvider()),
-        ChangeNotifierProvider(create: (_) => TargetTagProvider()),
-        ChangeNotifierProvider(create: (_) => MonsterMashProvider()),
-        ChangeNotifierProvider(create: (_) => ReefRoyaleProvider()),
-        ChangeNotifierProvider(create: (_) => ClockworkQuestProvider()),
+        ChangeNotifierProvider(create: (_) {
+          final provider = DartboardProvider();
+          provider.initialize(apiClient);
+          return provider;
+        }),
+        ChangeNotifierProvider(create: (_) {
+          final provider = PlayerProvider();
+          provider.initialize(apiClient);
+          return provider;
+        }),
+        ChangeNotifierProvider(create: (_) => HorseRaceProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => TargetTagProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => MonsterMashProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => ReefRoyaleProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => ClockworkQuestProvider(apiClient: apiClient)),
       ],
       child: MaterialApp(
         title: 'Dart Games',

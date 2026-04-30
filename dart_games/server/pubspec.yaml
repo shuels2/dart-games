@@ -1,0 +1,21 @@
+name: dart_games_server
+description: Backend server for Dart Games - replaces browser-local storage with server-side persistence
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  shelf: ^1.4.1
+  shelf_router: ^1.1.4
+  shelf_static: ^1.1.2
+  sqlite3: ^2.4.6
+  path: ^1.9.0
+  uuid: ^4.4.2
+  mime: ^1.0.6
+  args: ^2.5.0
+
+dev_dependencies:
+  test: ^1.25.8
+  http: ^1.2.2

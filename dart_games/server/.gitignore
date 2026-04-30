@@ -1,0 +1,10 @@
+# Dependencies
+.dart_tool/
+.packages
+pubspec.lock
+
+# Runtime data
+data/
+*.db
+*.db-wal
+*.db-shm

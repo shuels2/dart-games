@@ -4,10 +4,14 @@ import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
 import '../services/game_skip_turn_helper.dart';
+import '../services/api/api_client.dart';
 
 class TargetTagProvider extends ChangeNotifier {
   TargetTagGame? _currentGame;
   bool _waitingForTakeout = false;
+  ApiClient? _apiClient;
+
+  TargetTagProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
   TargetTagGame? get currentGame => _currentGame;
@@ -311,6 +315,7 @@ class TargetTagProvider extends ChangeNotifier {
   // --- Save/Restore ---
 
   String? _resumedSavedGameId;
+  bool _saving = false;
   String? get resumedSavedGameId => _resumedSavedGameId;
 
   void clearResumedSavedGameId() {
@@ -318,7 +323,13 @@ class TargetTagProvider extends ChangeNotifier {
   }
 
   Future<void> saveGame(List<Player> players) async {
-    if (_currentGame == null) return;
+    debugPrint('[TargetTagProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
+    if (_currentGame == null || _saving) {
+      debugPrint('[TargetTagProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
+      return;
+    }
+    _saving = true;
+    try {
     final game = _currentGame!;
 
     // Count non-eliminated entities
@@ -367,7 +378,15 @@ class TargetTagProvider extends ChangeNotifier {
       existingId: _resumedSavedGameId,
     );
 
-    await SaveGameService().saveGame(metadata);
+    debugPrint('[TargetTagProvider] saving with id=${metadata.id}');
+    final saved = await SaveGameService(_apiClient).saveGame(metadata);
+    if (saved) {
+      _resumedSavedGameId = metadata.id;
+    }
+    debugPrint('[TargetTagProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
+    } finally {
+      _saving = false;
+    }
   }
 
   void restoreGame(SavedGameMetadata savedGame) {

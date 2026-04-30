@@ -1,12 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/player.dart';
 import '../models/game_history_entry.dart';
 import '../services/photo_service.dart';
+import '../services/api/api_client.dart';
 
 class PlayerProvider extends ChangeNotifier {
-  static const String _storageKey = 'players_roster';
   static const String _lastSortedKey = 'players_last_sorted_at';
 
   List<Player> _allPlayers = [];
@@ -15,7 +13,48 @@ class PlayerProvider extends ChangeNotifier {
   String? _error;
   DateTime? _lastSortedAt;
 
+  /// Guard against concurrent loadPlayers() calls.  If a load is already
+  /// in flight, subsequent callers await the same future instead of
+  /// firing a second GET that could clobber a freshly-saved player.
+  Future<void>? _activeLoad;
+
+  /// Monotonically increasing counter.  Incremented by [resetForTesting]
+  /// so that any in-flight [_doLoadPlayers] HTTP response that was issued
+  /// before the reset is silently discarded instead of overwriting the
+  /// now-empty list.
+  int _generation = 0;
+
   final PhotoService _photoService = PhotoService();
+  ApiClient? _apiClient;
+
+  /// Set the API client. Call once at app startup.
+  void initialize(ApiClient client) {
+    _apiClient = client;
+  }
+
+  ApiClient get _api {
+    if (_apiClient == null) {
+      throw StateError('PlayerProvider not initialized. Call initialize() first.');
+    }
+    return _apiClient!;
+  }
+
+  /// Reset all client-side player state.  Call this from test helpers
+  /// *after* the server-side reset so that both sides are in sync.
+  ///
+  /// Incrementing [_generation] ensures that any in-flight GET /players
+  /// response (sent before the reset) is silently discarded when it
+  /// finally arrives, instead of repopulating the list with stale data.
+  void resetForTesting() {
+    _generation++;
+    _allPlayers = [];
+    _selectedPlayers = [];
+    _activeLoad = null;
+    _isLoading = false;
+    _error = null;
+    _lastSortedAt = null;
+    notifyListeners();
+  }
 
   // Getters
   List<Player> get allPlayers => List.unmodifiable(_allPlayers);
@@ -23,27 +62,51 @@ class PlayerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Load players from SharedPreferences
+  // Load players from API
   Future<void> loadPlayers() async {
+    // If a load is already in progress, piggy-back on it instead of
+    // starting a second concurrent GET that could clobber local state.
+    if (_activeLoad != null) {
+      await _activeLoad;
+      return;
+    }
+    _activeLoad = _doLoadPlayers();
+    try {
+      await _activeLoad;
+    } finally {
+      _activeLoad = null;
+    }
+  }
+
+  Future<void> _doLoadPlayers() async {
+    final loadGeneration = _generation;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final String? playersJson = prefs.getString(_storageKey);
+      final playersJson = await _api.getPlayers();
 
-      if (playersJson != null) {
-        final List<dynamic> decoded = jsonDecode(playersJson);
-        _allPlayers = decoded.map((json) => Player.fromJson(json)).toList();
-      } else {
-        _allPlayers = [];
-      }
+      // If a resetForTesting() was called while the GET was in flight,
+      // discard this (now stale) response entirely.
+      if (_generation != loadGeneration) return;
 
-      // Load last sorted timestamp
-      final String? lastSortedJson = prefs.getString(_lastSortedKey);
-      if (lastSortedJson != null) {
-        _lastSortedAt = DateTime.parse(lastSortedJson);
+      final serverPlayers =
+          playersJson.map((json) => Player.fromJson(json)).toList();
+
+      // Merge: start with the server's authoritative list, then preserve
+      // any locally-known players that the server doesn't have yet
+      // (optimistic adds whose POST is still in flight).
+      final serverIds = serverPlayers.map((p) => p.id).toSet();
+      final localOnly =
+          _allPlayers.where((p) => !serverIds.contains(p.id)).toList();
+      _allPlayers = [...serverPlayers, ...localOnly];
+
+      // Load last sorted timestamp from settings
+      final lastSortedStr = await _api.getSetting(_lastSortedKey);
+      if (lastSortedStr != null) {
+        _lastSortedAt = DateTime.parse(lastSortedStr);
       }
 
       // Sort players (alphabetically, with new players at bottom)
@@ -80,21 +143,6 @@ class PlayerProvider extends ChangeNotifier {
     _allPlayers = [...oldPlayers, ...newPlayers];
   }
 
-  // Save all players to SharedPreferences
-  Future<void> _savePlayers() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final String encoded = jsonEncode(
-        _allPlayers.map((player) => player.toJson()).toList(),
-      );
-      await prefs.setString(_storageKey, encoded);
-    } catch (e) {
-      _error = 'Failed to save players: $e';
-      print(_error);
-      notifyListeners();
-    }
-  }
-
   // Add or update a player
   Future<void> savePlayer(Player player) async {
     try {
@@ -103,13 +151,39 @@ class PlayerProvider extends ChangeNotifier {
       if (index >= 0) {
         // Update existing player
         _allPlayers[index] = player;
+        notifyListeners();
+        await _api.updatePlayer(player.id, {'name': player.name});
       } else {
-        // Add new player
+        // Optimistically add to the local list before the server round-trip.
+        // This prevents a concurrent loadPlayers() from returning a list
+        // that is missing the just-created player.
         _allPlayers.add(player);
+        notifyListeners();
+        try {
+          final result = await _api.createPlayer({
+            'id': player.id,
+            'name': player.name,
+            'createdAt': player.createdAt.toIso8601String(),
+          });
+          if (result.isEmpty) {
+            _allPlayers.removeWhere((p) => p.id == player.id);
+            notifyListeners();
+            return;
+          }
+          // A concurrent loadPlayers() may have replaced _allPlayers while
+          // the API call was in flight, clobbering the optimistic add.
+          // Re-add if the player is no longer present.
+          if (!_allPlayers.any((p) => p.id == player.id)) {
+            _allPlayers.add(player);
+            notifyListeners();
+          }
+        } catch (e) {
+          // Roll back the optimistic add on server failure
+          _allPlayers.removeWhere((p) => p.id == player.id);
+          notifyListeners();
+          rethrow;
+        }
       }
-
-      await _savePlayers();
-      notifyListeners();
     } catch (e) {
       _error = 'Failed to save player: $e';
       print(_error);
@@ -127,13 +201,12 @@ class PlayerProvider extends ChangeNotifier {
         await _photoService.deletePhoto(player.photoPath!);
       }
 
-      // Remove from all players
-      _allPlayers.removeWhere((p) => p.id == id);
+      // Delete via API (cascades to game_history on server)
+      await _api.deletePlayer(id);
 
-      // Remove from selected players if present
+      _allPlayers.removeWhere((p) => p.id == id);
       _selectedPlayers.removeWhere((p) => p.id == id);
 
-      await _savePlayers();
       notifyListeners();
     } catch (e) {
       _error = 'Failed to delete player: $e';
@@ -172,8 +245,7 @@ class PlayerProvider extends ChangeNotifier {
   Future<void> markPlayersSorted() async {
     try {
       _lastSortedAt = DateTime.now();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_lastSortedKey, _lastSortedAt!.toIso8601String());
+      await _api.putSetting(_lastSortedKey, _lastSortedAt!.toIso8601String());
     } catch (e) {
       print('Failed to save last sorted timestamp: $e');
     }
@@ -191,37 +263,137 @@ class PlayerProvider extends ChangeNotifier {
   }) async {
     try {
       final index = _allPlayers.indexWhere((p) => p.id == playerId);
-      if (index >= 0) {
-        final player = _allPlayers[index];
+      if (index < 0) {
+        // Player no longer exists locally (e.g. cleared by a test reset).
+        print('updatePlayerStats: player $playerId not found locally, skipping');
+        await _logFailedStatsToServer(
+          playerId: playerId,
+          won: won,
+          gameName: gameName,
+          gameDuration: gameDuration,
+          dartThrows: dartThrows,
+          turns: turns,
+          playerCount: playerCount,
+          errorMessage: 'Player not found in local list',
+        );
+        return;
+      }
 
-        // Create new game history list
-        final updatedHistory = List<GameHistoryEntry>.from(player.gameHistory);
+      final player = _allPlayers[index];
 
-        // If we have game details, add to history (for both winners and losers)
-        if (gameName != null && gameDuration != null) {
-          updatedHistory.add(GameHistoryEntry.create(
+      // Create new game history list
+      final updatedHistory = List<GameHistoryEntry>.from(player.gameHistory);
+
+      // If we have game details, add to history (for both winners and losers)
+      if (gameName != null && gameDuration != null) {
+        final entry = GameHistoryEntry.create(
+          gameName: gameName,
+          duration: gameDuration,
+          dartThrows: dartThrows,
+          turns: turns,
+          playerCount: playerCount,
+          metadata: {'won': won},
+        );
+        updatedHistory.add(entry);
+
+        // Persist to server — tolerate 404 if the player was deleted
+        // between game-end and stats-update (e.g. by a test reset).
+        try {
+          await _api.addPlayerHistory(playerId, {
+            'gameName': gameName,
+            'timestamp': entry.timestamp.toIso8601String(),
+            'durationMs': gameDuration.inMilliseconds,
+            'metadata': {'won': won},
+            'dartThrows': dartThrows,
+            'turns': turns,
+            'playerCount': playerCount,
+          });
+        } catch (e) {
+          print('updatePlayerStats: server rejected history for $playerId: $e');
+          await _logFailedStatsToServer(
+            playerId: playerId,
+            playerName: player.name,
+            won: won,
             gameName: gameName,
-            duration: gameDuration,
+            gameDuration: gameDuration,
             dartThrows: dartThrows,
             turns: turns,
             playerCount: playerCount,
-            metadata: {'won': won}, // Track whether this was a win
-          ));
+            errorMessage: e.toString(),
+          );
         }
+      } else {
+        try {
+          await _api.updatePlayerStats(
+            playerId,
+            gamesPlayed: player.gamesPlayed + 1,
+            gamesWon: won ? player.gamesWon + 1 : player.gamesWon,
+          );
+        } catch (e) {
+          print('updatePlayerStats: server rejected stats for $playerId: $e');
+          await _logFailedStatsToServer(
+            playerId: playerId,
+            playerName: player.name,
+            won: won,
+            gameName: gameName,
+            gameDuration: gameDuration,
+            dartThrows: dartThrows,
+            turns: turns,
+            playerCount: playerCount,
+            errorMessage: e.toString(),
+          );
+        }
+      }
 
-        _allPlayers[index] = player.copyWith(
-          gamesPlayed: player.gamesPlayed + 1,
-          gamesWon: won ? player.gamesWon + 1 : player.gamesWon,
+      // Re-check index in case _allPlayers was modified by a concurrent
+      // loadPlayers() while we were awaiting the server call.
+      final currentIndex = _allPlayers.indexWhere((p) => p.id == playerId);
+      if (currentIndex >= 0) {
+        final currentPlayer = _allPlayers[currentIndex];
+        _allPlayers[currentIndex] = currentPlayer.copyWith(
+          gamesPlayed: currentPlayer.gamesPlayed + 1,
+          gamesWon: won ? currentPlayer.gamesWon + 1 : currentPlayer.gamesWon,
           gameHistory: updatedHistory,
         );
-
-        await _savePlayers();
         notifyListeners();
       }
     } catch (e) {
-      _error = 'Failed to update player stats: $e';
-      print(_error);
-      notifyListeners();
+      // Log only — this runs as fire-and-forget from results screens,
+      // so setting _error and calling notifyListeners() can cascade-throw
+      // if the provider or listening widgets have been disposed.
+      print('Failed to update player stats: $e');
+    }
+  }
+
+  /// Best-effort POST to /api/v1/stats/failed so the failure is
+  /// persisted in the database for later investigation or replay.
+  Future<void> _logFailedStatsToServer({
+    required String playerId,
+    String? playerName,
+    required bool won,
+    String? gameName,
+    Duration? gameDuration,
+    int? dartThrows,
+    int? turns,
+    int? playerCount,
+    required String errorMessage,
+  }) async {
+    try {
+      await _api.logFailedStats({
+        'playerId': playerId,
+        'playerName': playerName,
+        'gameName': gameName,
+        'won': won,
+        'durationMs': gameDuration?.inMilliseconds,
+        'dartThrows': dartThrows,
+        'turns': turns,
+        'playerCount': playerCount,
+        'errorMessage': errorMessage,
+      });
+    } catch (e) {
+      // If even the failure log fails (e.g. server is down),
+      // there's nothing more we can do — just print.
+      print('Failed to log stats failure to server: $e');
     }
   }
 

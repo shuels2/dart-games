@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart' show Slider;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'package:dart_games/models/player.dart';
+import 'package:dart_games/services/api/api_config.dart';
+import 'package:dart_games/services/victory_music_service.dart';
 import 'element_finders.dart';
 import 'pump_sequences.dart';
 
@@ -11,21 +15,133 @@ class SettingsHelpers {
   // TEST INITIALIZATION HELPERS
   // ==========================================================================
 
-  /// Initialize SharedPreferences for tests (clears data, sets emulator mode)
-  ///
-  /// NOTE: For integration tests, we need to actually set values in SharedPreferences
-  /// (which persists to browser's IndexedDB), not use setMockInitialValues which
-  /// only works in widget tests.
-  static Future<void> initializeSettings({
-    bool useEmulator = true,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+  /// Full server reset: wipes all data and configures dartboard.
+  static Future<void> resetServerState({bool useEmulator = true}) async {
+    await _waitForServer();
 
-    // Set emulator mode and mock dartboard info for integration tests
-    await prefs.setBool('use_emulator', useEmulator);
-    await prefs.setString('dartboard_name', 'Test Dartboard');
-    await prefs.setString('dartboard_serial', 'TEST-001');
+    VictoryMusicService().resetForTesting();
+
+    // Wipe all server-side user data
+    final requestId = _generateRequestId();
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'X-Request-Id': requestId,
+      ..._sessionHeaders(),
+    };
+    final resetResponse = await http.post(
+      Uri.parse(ApiConfig.url('/api/v1/test/reset')),
+      headers: headers,
+    );
+
+    if (resetResponse.statusCode != 200) {
+      throw Exception(
+        'Test reset failed (status ${resetResponse.statusCode}): '
+        '${resetResponse.body}',
+      );
+    }
+
+    // Verify the reset took effect
+    final verifyResponse = await http.get(
+      _bustCache('/api/v1/players'),
+      headers: _sessionHeaders(),
+    );
+    if (verifyResponse.statusCode != 200) {
+      throw Exception(
+        'Player verification after reset failed '
+        '(status ${verifyResponse.statusCode}): ${verifyResponse.body}',
+      );
+    }
+    final verifyBody = jsonDecode(verifyResponse.body) as List<dynamic>;
+    if (verifyBody.isNotEmpty) {
+      throw Exception(
+        'Test reset did not clear players: '
+        '${verifyBody.length} player(s) still present',
+      );
+    }
+
+    final verifySavedGamesResponse = await http.get(
+      _bustCache('/api/v1/games'),
+      headers: _sessionHeaders(),
+    );
+    if (verifySavedGamesResponse.statusCode != 200) {
+      throw Exception(
+        'Saved games verification after reset failed '
+        '(status ${verifySavedGamesResponse.statusCode}): '
+        '${verifySavedGamesResponse.body}',
+      );
+    }
+    final verifySavedGamesBody =
+        jsonDecode(verifySavedGamesResponse.body) as List<dynamic>;
+    if (verifySavedGamesBody.isNotEmpty) {
+      throw Exception(
+        'Test reset did not clear saved games: '
+        '${verifySavedGamesBody.length} saved game(s) still present',
+      );
+    }
+
+    // Configure dartboard for emulator mode
+    final dartboardHeaders = <String, String>{
+      'Content-Type': 'application/json',
+      ..._sessionHeaders(),
+    };
+    final dartboardResponse = await http.put(
+      Uri.parse(ApiConfig.url('/api/v1/dartboard')),
+      headers: dartboardHeaders,
+      body: jsonEncode({
+        'name': 'Test Dartboard',
+        'serialNumber': 'TEST-001',
+        'useEmulator': useEmulator,
+      }),
+    );
+    if (dartboardResponse.statusCode != 200) {
+      print('WARNING: Failed to initialize dartboard settings via API '
+          '(status ${dartboardResponse.statusCode}): '
+          '${dartboardResponse.body}');
+    }
+  }
+
+  static Future<bool> _checkServerHealth() async {
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConfig.url('/api/v1/health/')),
+      ).timeout(const Duration(seconds: 3));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> _waitForServer({int maxAttempts = 10}) async {
+    for (var i = 1; i <= maxAttempts; i++) {
+      if (await _checkServerHealth()) return;
+      print('  Server health check attempt $i/$maxAttempts failed, retrying...');
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    throw Exception(
+      'Server at ${ApiConfig.baseUrl} did not become reachable '
+      'after $maxAttempts attempts',
+    );
+  }
+
+  static final Random _rng = Random();
+  static String _generateRequestId() {
+    final ts = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+    final rnd = _rng.nextInt(0xFFFFFF).toRadixString(16).padLeft(6, '0');
+    return '$ts-$rnd';
+  }
+
+  static Map<String, String> _sessionHeaders() {
+    final session = ApiConfig.dbSession;
+    if (session == null) return {};
+    return {'X-DB-Session': session};
+  }
+
+  static Uri _bustCache(String path) {
+    final base = Uri.parse(ApiConfig.url(path));
+    return base.replace(queryParameters: {
+      ...base.queryParameters,
+      '_': DateTime.now().microsecondsSinceEpoch.toString(),
+    });
   }
 
   /// Create test players with IDs and names
@@ -39,11 +155,32 @@ class SettingsHelpers {
         .toList();
   }
 
-  /// Save players to SharedPreferences for test setup
-  static Future<void> savePlayersToPrefs(List<Player> players) async {
-    final prefs = await SharedPreferences.getInstance();
-    final playersJson = players.map((p) => p.toJson()).toList();
-    await prefs.setString('players_roster', playersJson.toString());
+  /// Save players via the backend API for test setup.
+  ///
+  /// Creates each player via POST /api/v1/players.
+  static Future<void> savePlayersToApi(List<Player> players) async {
+    for (final player in players) {
+      final url = Uri.parse(ApiConfig.url('/api/v1/players'));
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        ..._sessionHeaders(),
+      };
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          'id': player.id,
+          'name': player.name,
+          'createdAt': player.createdAt.toIso8601String(),
+        }),
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(
+          'Failed to create player "${player.name}" via API '
+          '(status ${response.statusCode}): ${response.body}',
+        );
+      }
+    }
   }
 
   // ==========================================================================
@@ -54,6 +191,13 @@ class SettingsHelpers {
   static Future<void> toggleSwitch(WidgetTester tester, Finder switchFinder) async {
     expect(switchFinder, findsOneWidget);
     await tester.tap(switchFinder);
+    await PumpSequences.simpleUpdate(tester);
+  }
+
+  /// Generic: Toggle checkbox
+  static Future<void> toggleCheckbox(WidgetTester tester, Finder checkboxFinder) async {
+    expect(checkboxFinder, findsOneWidget);
+    await tester.tap(checkboxFinder);
     await PumpSequences.simpleUpdate(tester);
   }
 
@@ -250,6 +394,38 @@ class SettingsHelpers {
   }
 
   // ==========================================================================
+  // CLOCKWORK QUEST SETTINGS
+  // ==========================================================================
+
+  /// Clockwork Quest: Toggle Include Bullseye
+  static Future<void> toggleClockworkQuestIncludeBullseye(WidgetTester tester) async {
+    await toggleCheckbox(tester, ElementFinders.getClockworkQuestIncludeBullseyeCheckbox());
+  }
+
+  /// Clockwork Quest: Toggle Speed Mode
+  static Future<void> toggleClockworkQuestSpeedMode(WidgetTester tester) async {
+    await toggleCheckbox(tester, ElementFinders.getClockworkQuestSpeedModeCheckbox());
+  }
+
+  /// Clockwork Quest: Select Number of Laps
+  static Future<void> selectClockworkQuestLaps(
+    WidgetTester tester,
+    int laps,
+  ) async {
+    final dropdownFinder = ElementFinders.getClockworkQuestNumberOfLapsDropdown();
+    await setDropdownValue(tester, dropdownFinder, laps.toString());
+  }
+
+  /// Clockwork Quest: Full flow to add a player
+  static Future<void> addClockworkQuestPlayer(
+    WidgetTester tester,
+    String playerName,
+  ) async {
+    await openAddPlayerDialog(tester, ElementFinders.getClockworkQuestAddPlayerButton());
+    await addPlayerViaDialog(tester, playerName);
+  }
+
+  // ==========================================================================
   // DROPDOWN HELPERS
   // ==========================================================================
 
@@ -432,45 +608,6 @@ class SettingsHelpers {
     String playerName,
   ) async {
     await openAddPlayerDialog(tester, ElementFinders.getCarnivalDerbyAddPlayerButton());
-    await addPlayerViaDialog(tester, playerName);
-  }
-
-  /// Generic: Toggle checkbox
-  static Future<void> toggleCheckbox(WidgetTester tester, Finder checkboxFinder) async {
-    expect(checkboxFinder, findsOneWidget);
-    await tester.tap(checkboxFinder);
-    await PumpSequences.simpleUpdate(tester);
-  }
-
-  // ==========================================================================
-  // CLOCKWORK QUEST SETTINGS
-  // ==========================================================================
-
-  /// Clockwork Quest: Toggle Include Bullseye
-  static Future<void> toggleClockworkQuestIncludeBullseye(WidgetTester tester) async {
-    await toggleCheckbox(tester, ElementFinders.getClockworkQuestIncludeBullseyeCheckbox());
-  }
-
-  /// Clockwork Quest: Toggle Speed Mode
-  static Future<void> toggleClockworkQuestSpeedMode(WidgetTester tester) async {
-    await toggleCheckbox(tester, ElementFinders.getClockworkQuestSpeedModeCheckbox());
-  }
-
-  /// Clockwork Quest: Select Number of Laps
-  static Future<void> selectClockworkQuestLaps(
-    WidgetTester tester,
-    int laps,
-  ) async {
-    final dropdownFinder = ElementFinders.getClockworkQuestNumberOfLapsDropdown();
-    await setDropdownValue(tester, dropdownFinder, laps.toString());
-  }
-
-  /// Clockwork Quest: Full flow to add a player
-  static Future<void> addClockworkQuestPlayer(
-    WidgetTester tester,
-    String playerName,
-  ) async {
-    await openAddPlayerDialog(tester, ElementFinders.getClockworkQuestAddPlayerButton());
     await addPlayerViaDialog(tester, playerName);
   }
 }

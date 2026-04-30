@@ -2,53 +2,55 @@
 
 ## Overview
 
-330 UI automation tests validate end-to-end user flows in Chrome browser.
+366 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Execution time:** ~224 minutes
+**Sequential time:** ~507 minutes (~8h 27m) — `run_ui_tests.bat`, interactive Chrome sessions visible
+**Parallel time:** ~143 minutes (~2h 23m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
 
-### Target Tag (62 tests, ~48 minutes)
-1. Menu and Mechanics: 24 tests (~16 min)
-2. Visual Validation: 4 tests (~5 min)
-3. Gameplay: 13 tests (~9 min)
-4. Add Player: 6 tests (~3 min)
-5. Results Screen: 6 tests (~7 min)
-6. Save & Resume: 9 tests (~8 min)
+### Target Tag (69 tests, ~101 minutes)
+1. Menu and Mechanics: 24 tests
+2. Gameplay: 13 tests
+3. Add Player: 6 tests
+4. Results Screen: 6 tests
+5. Visual Validation: 4 tests
+6. Save & Resume: 16 tests
 
-### Carnival Derby (33 tests, ~22 minutes)
-- Complete UI test coverage: 24 tests (~14 min)
-- Save & Resume: 9 tests (~8 min)
+### Carnival Derby (40 tests, ~56 minutes)
+1. Complete UI test coverage: 24 tests
+2. Save & Resume: 16 tests
 
-### Monster Mash (60 tests, ~40 minutes)
-1. Add Player: 6 tests (~3 min)
-2. Menu and Settings: 8 tests (~4 min)
-3. Gameplay: 20 tests (~11 min)
-4. Edit Score: 5 tests (~4 min)
-5. Results Screen: 6 tests (~5 min)
-6. Visual Validation: 6 tests (~5 min)
-7. Save & Resume: 9 tests (~8 min)
+### Monster Mash (67 tests, ~93 minutes)
+1. Add Player: 6 tests
+2. Menu and Settings: 8 tests
+3. Gameplay: 20 tests
+4. Edit Score: 5 tests
+5. Results Screen: 6 tests
+6. Visual Validation: 6 tests
+7. Save & Resume: 16 tests
 
-### Reef Royale (70 tests, ~37 minutes)
-1. Add Player: 6 tests (~2 min)
-2. Menu and Settings: 10 tests (~3 min)
-3. Gameplay: 25 tests (~12 min)
-4. Edit Score: 6 tests (~4 min)
-5. Results Screen: 6 tests (~4 min)
-6. Visual Validation: 7 tests (~3 min)
-7. Showcase: 1 test (~1 min)
-8. Save & Resume: 9 tests (~8 min)
+### Reef Royale (83 tests, ~114 minutes)
+1. Add Player: 6 tests
+2. Menu and Settings: 10 tests
+3. Gameplay: 30 tests
+4. Edit Score: 6 tests
+5. Results Screen: 6 tests
+6. Visual Validation: 7 tests
+7. Showcase: 1 test
+8. Screenshot: 1 test
+9. Save & Resume: 16 tests
 
-### Clockwork Quest (105 tests, ~57 minutes)
-1. Add Player: 10 tests (~4 min)
-2. Menu and Settings: 20 tests (~7 min)
-3. Gameplay: 36 tests (~17 min)
-4. Edit Score: 11 tests (~6 min)
-5. Results Screen: 11 tests (~9 min)
-6. Save & Resume: 16 tests (~10 min)
-7. Screenshot: 1 test (~4 min)
+### Clockwork Quest (107 tests, ~143 minutes)
+1. Add Player: 10 tests
+2. Menu and Settings: 20 tests
+3. Gameplay: 38 tests
+4. Edit Score: 11 tests
+5. Results Screen: 11 tests
+6. Save & Resume: 16 tests
+7. Screenshot: 1 test
 
 ## ChromeDriver Version Sync
 
@@ -66,9 +68,20 @@ ChromeDriver must match the installed Chrome major version. The `update_chromedr
 
 ## Running UI Automation Tests
 
-### Step 1: Start ChromeDriver
+### Step 1: Start Backend Server
 
-**CRITICAL:** ChromeDriver must be running BEFORE tests. (When running via `run_ui_tests.bat`, ChromeDriver is started automatically per test.)
+**CRITICAL:** The backend server must be running BEFORE tests. All providers read from the API. (When running via `run_ui_tests.bat`, the server is started automatically per game category.)
+
+```bash
+cd server
+dart run bin/server.dart --data-dir ../ui_test_data
+```
+
+Leave this terminal running.
+
+### Step 2: Start ChromeDriver
+
+**CRITICAL:** ChromeDriver must be running BEFORE tests. (When running via `run_ui_tests.bat`, ChromeDriver is started automatically per game category.)
 
 ```bash
 cd chromedriver/chromedriver-win64
@@ -77,7 +90,7 @@ cd chromedriver/chromedriver-win64
 
 Leave this terminal running.
 
-### Step 2: Run Tests
+### Step 3: Run Tests
 
 ```bash
 # All tests
@@ -95,10 +108,12 @@ flutter drive --driver=test_driver/integration_test.dart \
   -d chrome
 ```
 
-### Step 3: Stop ChromeDriver
+### Step 5: Stop ChromeDriver and Server
 
 ```bash
 taskkill /F /IM chromedriver.exe
+# Stop the server with Ctrl+C in its terminal, or:
+taskkill /F /FI "WINDOWTITLE eq dart*server*" 2>nul
 ```
 
 ## Test Drivers
@@ -148,6 +163,93 @@ Use with: `flutter drive --driver=test_driver/screenshot_test.dart`
 |-------------------------------|---------------|
 | No | `test_driver/integration_test.dart` |
 | Yes | `test_driver/screenshot_test.dart` |
+
+## Running UI Tests in Parallel
+
+The parallel runner executes all 5 game categories simultaneously, reducing wall-clock time from ~507 minutes to ~143 minutes (~3.5x speedup). Each game gets its own ChromeDriver and backend server instance. All Chrome sessions run **fully headless** — no interactive browser windows are launched.
+
+### Quick Start
+
+```bash
+# Run all tests in parallel (~143 minutes, fully headless)
+./run_ui_tests_parallel.bat
+
+# Run specific game(s)
+./run_ui_tests_parallel.bat target_tag
+./run_ui_tests_parallel.bat target_tag monster_mash
+
+# Filter by test type across all games
+./run_ui_tests_parallel.bat save_resume
+
+# Game + subfolder filter
+./run_ui_tests_parallel.bat reef_royale/gameplay
+```
+
+### Port Assignments
+
+Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_parallel.bat` (Server = 9000+N, ChromeDriver = 4443+N):
+
+| Game | Server Port | ChromeDriver Port |
+|------|------------|-------------------|
+| target_tag | 9001 | 4444 |
+| carnival_derby | 9002 | 4445 |
+| monster_mash | 9003 | 4446 |
+| reef_royale | 9004 | 4447 |
+| clockwork_quest | 9005 | 4448 |
+
+### Infrastructure Isolation
+
+- Each game runs in its own worker process with a dedicated ChromeDriver and backend server
+- PID-scoped Chrome killing ensures one worker's cleanup doesn't affect others
+- Per-session database isolation (`X-DB-Session`) prevents cross-test data pollution
+- Workers handle their own retry logic (restart ChromeDriver/server on infrastructure failures)
+
+### Output
+
+Results are saved to `integration_test_output/parallel/`:
+- Per-test log files: `<test_name>.log`
+- Per-game result summaries: `<game>_results.txt`
+- Combined summary: `summary.txt`
+
+### System Requirements
+
+- 16GB+ RAM recommended for all games simultaneously
+- Use filters to run fewer games if resources are limited
+
+### When to Use Parallel vs Sequential
+
+| Scenario | Runner |
+|----------|--------|
+| Full test suite run | `run_ui_tests_parallel.bat` |
+| Debugging a single test | `run_ui_tests.bat <test>` |
+| CI/CD pipeline | `run_ui_tests_parallel.bat` |
+| Investigating flaky test | `run_ui_tests.bat <test>` |
+
+### Stub Testing
+
+Test the parallel orchestration without real infrastructure:
+
+```bash
+# All games (simulated)
+./run_ui_tests_parallel_stub.bat
+
+# With filters
+./run_ui_tests_parallel_stub.bat target_tag
+
+# Simulate failures
+set STUB_FAIL=1
+./run_ui_tests_parallel_stub.bat
+```
+
+### Adding a New Game to Parallel Tests
+
+When adding a new game to Dart Games, include it in the parallel test runner:
+
+1. Add the game name to the `GAMES` variable in `run_ui_tests_parallel.bat` (near the top of the file)
+2. Ensure `integration_test/<game_name>/` exists with `*_test.dart` files
+3. Update the port assignments table above with the next sequential ports
+
+Ports are auto-assigned by position: Server = 9000+N, ChromeDriver = 4443+N. The help text and cleanup routines are fully dynamic — no other script changes needed.
 
 ## Critical Rule: Continuous Animations
 
@@ -263,6 +365,28 @@ Screenshots are saved to `temp_screenshots/`. Read each one and evaluate against
 ### Widget Not Found
 **Cause:** Not pumping enough frames after async operations
 **Solution:** Add more `pump()` calls after async waits
+
+### Phantom Behavior (Duplicate Saves, Duplicate Data, Unexplained Test Pollution)
+
+**First thing to check:** Flutter bug [#67090](https://github.com/flutter/flutter/issues/67090) causes `flutter drive -d chrome` to spawn **two browser instances** in headless mode. Both execute the test code and hit the same server. Chrome's `--headless=new` mode makes the two instances indistinguishable at the client level.
+
+**Symptoms:**
+- Duplicate game saves appearing in the database
+- Player data created twice
+- Tests failing due to unexpected extra records
+- Flaky assertions on record counts or list lengths
+- "Phantom" players or games that no test explicitly created
+
+**Current mitigation:** Per-session database isolation (`X-DB-Session` header). Each browser instance generates a unique session ID in `resetServerState()`, and the server's `DatabaseRegistry` routes each session to its own isolated SQLite database. This prevents the duplicate browser from interfering with test data.
+
+**If phantom behavior returns:**
+1. Verify `resetServerState()` is called at the start of every `testWidgets` block
+2. Check that `ApiConfig.dbSession` is being set (inspect the `X-DB-Session` header in server logs)
+3. Confirm the server's `dbSessionMiddleware` is active and routing to session databases
+4. Check server logs for requests without `X-DB-Session` — these hit the default database and could be from the phantom browser instance
+5. As a last resort, check if Flutter has changed headless Chrome launch behavior in the current Flutter version
+
+**History:** This bug was the root cause of extensive debugging during the server-side updates branch. Initial investigation incorrectly suspected test cleanup issues, leading to per-test-file server isolation. The actual fix was per-session database isolation, which allowed safely sharing one server per game category.
 
 ## Related Documentation
 

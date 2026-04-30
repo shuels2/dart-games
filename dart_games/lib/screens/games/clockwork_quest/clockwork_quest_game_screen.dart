@@ -38,6 +38,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
   final DartboardEmulatorController _dartboardEmulatorController =
       DartboardEmulatorController();
   bool _showSaveModal = false;
+  bool _gameCompleted = false;
 
   @override
   void initState() {
@@ -95,6 +96,14 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     setState(() {});
   }
 
+  void _handleGameWon() {
+    if (_gameCompleted) return;
+    _gameCompleted = true;
+
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/clockwork_quest_results');
+  }
+
   @override
   Widget build(BuildContext context) {
     final clockworkProvider = Provider.of<ClockworkQuestProvider>(context);
@@ -121,7 +130,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     // Check for winner
     if (clockworkProvider.hasWinner) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(context, '/clockwork_quest_results');
+        _handleGameWon();
       });
     }
 
@@ -155,6 +164,22 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             letterSpacing: 1.5,
           ),
         ),
+        flexibleSpace: game.numberOfLaps > 1 && currentPlayerId != null
+            ? SafeArea(
+                child: Center(
+                  child: Text(
+                    'Lap ${clockworkProvider.getPlayerLapsCompleted(currentPlayerId!) + 1} / ${game.numberOfLaps}',
+                    key: ClockworkQuestGameKeys.currentLapText,
+                    style: GoogleFonts.cinzelDecorative(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFBF00),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              )
+            : null,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
@@ -194,10 +219,6 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
 
               return Column(
                 children: [
-                  // Lap counter (if multiple laps)
-                  if (game.numberOfLaps > 1)
-                    _buildLapCounter(clockworkProvider, currentPlayerId),
-
                   Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -304,34 +325,6 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     );
   }
 
-  Widget _buildLapCounter(
-      ClockworkQuestProvider provider, String? currentPlayerId) {
-    if (currentPlayerId == null) return const SizedBox();
-    final currentLap = provider.getPlayerLapsCompleted(currentPlayerId) + 1;
-    final totalLaps = provider.currentGame!.numberOfLaps;
-
-    return Container(
-      key: ClockworkQuestGameKeys.currentLapText,
-      padding: const EdgeInsets.all(8),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFC5A54E).withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFC5A54E), width: 2),
-      ),
-      child: Text(
-        'Lap $currentLap/$totalLaps',
-        style: GoogleFonts.cinzelDecorative(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: const Color(0xFFFFBF00),
-          letterSpacing: 1.2,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-
   // Clock-face layout: player at center, gears in a circle around them
   Widget _buildClockFace(
     ClockworkQuestProvider provider,
@@ -363,8 +356,10 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               final cx = w / 2;
               final cy = h / 2;
               final gearRadius = size * 0.43;
-              final gearSize = (size * 0.157).clamp(78.0, 123.0);
-              final currentGearSize = gearSize * 1.25;
+              // Max arc spacing between 20 gear centres = size * 0.135.
+              // Keep gear width comfortably below that so they never touch.
+              final gearSize = (size * 0.1645).clamp(40.0, 132.0);
+              final currentGearSize = gearSize * 1.20;
 
               return Stack(
                 key: ClockworkQuestGameKeys.gearTracker,
@@ -389,7 +384,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                     alignment: const Alignment(0, -0.28),
                     child: _buildClockCenterPanel(
                         provider, currentPlayer, currentPlayerId,
-                        currentTarget, game),
+                        currentTarget, game, size),
                   ),
                 ],
               );
@@ -463,24 +458,33 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     String? currentPlayerId,
     int currentTarget,
     dynamic game,
+    double clockSize,
   ) {
     final inventorPath = provider.getInventorImagePath(currentPlayerId!);
     final maxTarget = game.maxTarget as int;
 
+    // All sizes derived from clockSize so the panel always fits inside the gear ring.
+    final characterSize = (clockSize * 0.4125).clamp(83.0, 358.0);
+    final panelMaxWidth = (clockSize * 0.56).clamp(130.0, 460.0);
+    final nameFontSize = (clockSize * 0.032).clamp(11.0, 24.0);
+    final targetFontSize = (clockSize * 0.065).clamp(22.0, 52.0);
+    final labelFontSize = (clockSize * 0.026).clamp(10.0, 18.0);
+    final avatarRadius = (characterSize / 2).clamp(30.0, 100.0);
+
     return Container(
       key: ClockworkQuestGameKeys.activePlayerPanel,
-      constraints: const BoxConstraints(maxWidth: 520),
+      constraints: BoxConstraints(maxWidth: panelMaxWidth),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Inventor character image (separate from avatar)
           if (inventorPath != null)
-            Image.asset(inventorPath, height: 364, fit: BoxFit.contain)
+            Image.asset(inventorPath, height: characterSize, fit: BoxFit.contain)
           // Player photo avatar (fallback when no inventor)
           else if (currentPlayer.photoPath != null)
             CircleAvatar(
               key: ClockworkQuestGameKeys.playerAvatar,
-              radius: 100,
+              radius: avatarRadius,
               backgroundImage: currentPlayer.photoPath!.startsWith('data:')
                   ? MemoryImage(
                       base64Decode(currentPlayer.photoPath!.split(',')[1]))
@@ -489,12 +493,12 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
           else
             CircleAvatar(
               key: ClockworkQuestGameKeys.playerAvatar,
-              radius: 100,
+              radius: avatarRadius,
               backgroundColor: const Color(0xFFC5A54E),
               child: Text(
                 currentPlayer.name[0].toUpperCase(),
                 style: GoogleFonts.cinzelDecorative(
-                  fontSize: 80,
+                  fontSize: avatarRadius * 0.8,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF2C2C34),
                 ),
@@ -508,7 +512,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             currentPlayer.name,
             key: ClockworkQuestGameKeys.activePlayerName,
             style: GoogleFonts.cinzelDecorative(
-              fontSize: 24,
+              fontSize: nameFontSize,
               fontWeight: FontWeight.bold,
               color: const Color(0xFFF5F0E8),
               letterSpacing: 0.8,
@@ -523,7 +527,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             Text(
               'Activate Any Gear!',
               style: GoogleFonts.lato(
-                fontSize: 18,
+                fontSize: labelFontSize,
                 color: const Color(0xFFF5F0E8).withOpacity(0.6),
               ),
               textAlign: TextAlign.center,
@@ -532,7 +536,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               '${currentTarget - 1}/$maxTarget',
               key: ClockworkQuestGameKeys.currentTargetText,
               style: GoogleFonts.cinzelDecorative(
-                fontSize: 52,
+                fontSize: targetFontSize,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFFFFBF00),
               ),
@@ -540,7 +544,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             Text(
               'gears activated',
               style: GoogleFonts.lato(
-                fontSize: 16,
+                fontSize: labelFontSize,
                 color: const Color(0xFFF5F0E8).withOpacity(0.5),
               ),
             ),
@@ -548,7 +552,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             Text(
               'Target',
               style: GoogleFonts.lato(
-                fontSize: 18,
+                fontSize: labelFontSize,
                 color: const Color(0xFFF5F0E8).withOpacity(0.6),
               ),
             ),
@@ -556,7 +560,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               currentTarget == 21 ? 'BULL' : '$currentTarget',
               key: ClockworkQuestGameKeys.currentTargetText,
               style: GoogleFonts.cinzelDecorative(
-                fontSize: 52,
+                fontSize: targetFontSize,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFFFFBF00),
               ),
@@ -564,7 +568,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             Text(
               '$currentTarget/$maxTarget',
               style: GoogleFonts.lato(
-                fontSize: 16,
+                fontSize: labelFontSize,
                 color: const Color(0xFFF5F0E8).withOpacity(0.5),
               ),
             ),

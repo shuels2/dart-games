@@ -45,7 +45,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/models/monster_mash_game.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/providers/monster_mash_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../shared/mock_api_helpers.dart';
 import '../../../mocks/mock_monster_mash_audio_queue_service.dart';
 import '../../../helpers/monster_mash_test_helper.dart';
 
@@ -121,7 +121,7 @@ void main() {
     late List<Player> players;
 
     setUp(() {
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
     });
 
     // =========================================================================

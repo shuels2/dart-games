@@ -153,7 +153,7 @@ void main() {
 
   group('Reef Royale - Screenshot Capture', () {
     setUp(() async {
-      await SettingsHelpers.initializeSettings();
+      await UITestHelpers.resetServerState();
     });
 
     // Single continuous E2E flow: menu → game → results → options game

@@ -4,10 +4,14 @@ import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
 import '../services/game_skip_turn_helper.dart';
+import '../services/api/api_client.dart';
 
 class MonsterMashProvider extends ChangeNotifier {
   MonsterMashGame? _currentGame;
   bool _waitingForTakeout = false;
+  ApiClient? _apiClient;
+
+  MonsterMashProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
   MonsterMashGame? get currentGame => _currentGame;
@@ -325,6 +329,7 @@ class MonsterMashProvider extends ChangeNotifier {
   // --- Save/Restore ---
 
   String? _resumedSavedGameId;
+  bool _saving = false;
   String? get resumedSavedGameId => _resumedSavedGameId;
 
   void clearResumedSavedGameId() {
@@ -332,7 +337,13 @@ class MonsterMashProvider extends ChangeNotifier {
   }
 
   Future<void> saveGame(List<Player> players) async {
-    if (_currentGame == null) return;
+    debugPrint('[MonsterMashProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
+    if (_currentGame == null || _saving) {
+      debugPrint('[MonsterMashProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
+      return;
+    }
+    _saving = true;
+    try {
     final game = _currentGame!;
 
     // Find leading player (most health)
@@ -363,7 +374,15 @@ class MonsterMashProvider extends ChangeNotifier {
       existingId: _resumedSavedGameId,
     );
 
-    await SaveGameService().saveGame(metadata);
+    debugPrint('[MonsterMashProvider] saving with id=${metadata.id}');
+    final saved = await SaveGameService(_apiClient).saveGame(metadata);
+    if (saved) {
+      _resumedSavedGameId = metadata.id;
+    }
+    debugPrint('[MonsterMashProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
+    } finally {
+      _saving = false;
+    }
   }
 
   void restoreGame(SavedGameMetadata savedGame) {

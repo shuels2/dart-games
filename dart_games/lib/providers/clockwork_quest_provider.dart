@@ -4,10 +4,14 @@ import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
 import '../services/game_skip_turn_helper.dart';
+import '../services/api/api_client.dart';
 
 class ClockworkQuestProvider extends ChangeNotifier {
   ClockworkQuestGame? _currentGame;
   bool _waitingForTakeout = false;
+  ApiClient? _apiClient;
+
+  ClockworkQuestProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
   ClockworkQuestGame? get currentGame => _currentGame;
@@ -338,7 +342,8 @@ class ClockworkQuestProvider extends ChangeNotifier {
       },
     );
 
-    advanceTurn();
+    _waitingForTakeout = true;
+    notifyListeners();
   }
 
   // Edit score (restore to turn start, then apply new throws)
@@ -437,6 +442,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
 
   // Save/Resume functionality
   String? _resumedSavedGameId;
+  bool _saving = false;
   String? get resumedSavedGameId => _resumedSavedGameId;
 
   void clearResumedSavedGameId() {
@@ -445,7 +451,13 @@ class ClockworkQuestProvider extends ChangeNotifier {
   }
 
   Future<void> saveGame(List<Player> players) async {
-    if (_currentGame == null) return;
+    debugPrint('[ClockworkQuestProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
+    if (_currentGame == null || _saving) {
+      debugPrint('[ClockworkQuestProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
+      return;
+    }
+    _saving = true;
+    try {
     final game = _currentGame!;
 
     // Find leading player (furthest along in laps)
@@ -483,7 +495,15 @@ class ClockworkQuestProvider extends ChangeNotifier {
       existingId: _resumedSavedGameId,
     );
 
-    await SaveGameService().saveGame(metadata);
+    debugPrint('[ClockworkQuestProvider] saving with id=${metadata.id}');
+    final saved = await SaveGameService(_apiClient).saveGame(metadata);
+    if (saved) {
+      _resumedSavedGameId = metadata.id;
+    }
+    debugPrint('[ClockworkQuestProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
+    } finally {
+      _saving = false;
+    }
   }
 
   void restoreGame(SavedGameMetadata savedGame) {

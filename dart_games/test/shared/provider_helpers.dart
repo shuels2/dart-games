@@ -360,6 +360,59 @@ class ProviderHelpers {
   }
 
   // ==========================================================================
+  // CLOCKWORK QUEST HELPERS
+  // ==========================================================================
+
+  /// Get Clockwork Quest provider
+  static ClockworkQuestProvider getClockworkQuestProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<ClockworkQuestProvider>(context, listen: false);
+  }
+
+  /// Clockwork Quest: Get player current target
+  static int getClockworkQuestPlayerCurrentTarget(WidgetTester tester, String playerId) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getPlayerCurrentTarget(playerId);
+  }
+
+  /// Clockwork Quest: Get player laps completed
+  static int getClockworkQuestPlayerLapsCompleted(WidgetTester tester, String playerId) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getPlayerLapsCompleted(playerId);
+  }
+
+  /// Clockwork Quest: Check for winner
+  static bool clockworkQuestHasWinner(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Clockwork Quest: Get current player ID
+  static String? getClockworkQuestCurrentPlayerId(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getCurrentPlayerId();
+  }
+
+  /// Clockwork Quest: Check if game is active
+  static bool isClockworkQuestGameActive(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Clockwork Quest: Get current player darts thrown
+  static int getClockworkQuestCurrentPlayerDartsThrown(WidgetTester tester) {
+    final provider = getClockworkQuestProvider(tester);
+    return provider.getCurrentPlayerDartsThrown();
+  }
+
+  /// Clockwork Quest: Set player target programmatically (for tests)
+  static void setClockworkQuestPlayerTarget(WidgetTester tester, String playerId, int target) {
+    final provider = getClockworkQuestProvider(tester);
+    provider.currentGame!.currentTarget[playerId] = target;
+    provider.notifyListeners();
+  }
+
+  // ==========================================================================
   // PLAYER PROVIDER HELPERS
   // ==========================================================================
 
@@ -376,62 +429,41 @@ class ProviderHelpers {
   }
 
   /// Find player by ID
+  ///
+  /// Prefers selectedPlayers (players active in the current game) to avoid
+  /// returning stale leaked players from allPlayers that have different UUIDs
+  /// than the IDs stored in the game's state maps (e.g., targetNumbers).
+  /// Falls back to allPlayers if not found in selectedPlayers.
   static Player? findPlayerById(WidgetTester tester, String playerId) {
     final provider = getPlayerProvider(tester);
     try {
-      return provider.allPlayers.firstWhere((p) => p.id == playerId);
-    } catch (e) {
-      return null;
+      return provider.selectedPlayers.firstWhere((p) => p.id == playerId);
+    } catch (_) {
+      try {
+        return provider.allPlayers.firstWhere((p) => p.id == playerId);
+      } catch (_) {
+        return null;
+      }
     }
   }
 
   /// Find player by name
+  ///
+  /// Prefers selectedPlayers (players active in the current game) to avoid
+  /// returning stale leaked players from allPlayers that have different UUIDs
+  /// than the IDs stored in the game's state maps (e.g., targetNumbers).
+  /// Falls back to allPlayers if not found in selectedPlayers.
   static Player? findPlayerByName(WidgetTester tester, String name) {
     final provider = getPlayerProvider(tester);
     try {
-      return provider.allPlayers.firstWhere((p) => p.name == name);
-    } catch (e) {
-      return null;
+      return provider.selectedPlayers.firstWhere((p) => p.name == name);
+    } catch (_) {
+      try {
+        return provider.allPlayers.firstWhere((p) => p.name == name);
+      } catch (_) {
+        return null;
+      }
     }
-  }
-
-  // ==========================================================================
-  // CLOCKWORK QUEST HELPERS
-  // ==========================================================================
-
-  static ClockworkQuestProvider getClockworkQuestProvider(WidgetTester tester) {
-    final context = getContext(tester);
-    return Provider.of<ClockworkQuestProvider>(context, listen: false);
-  }
-
-  static int getClockworkQuestPlayerCurrentTarget(WidgetTester tester, String playerId) {
-    return getClockworkQuestProvider(tester).getPlayerCurrentTarget(playerId);
-  }
-
-  static int getClockworkQuestPlayerLapsCompleted(WidgetTester tester, String playerId) {
-    return getClockworkQuestProvider(tester).getPlayerLapsCompleted(playerId);
-  }
-
-  static bool clockworkQuestHasWinner(WidgetTester tester) {
-    return getClockworkQuestProvider(tester).hasWinner;
-  }
-
-  static String? getClockworkQuestCurrentPlayerId(WidgetTester tester) {
-    return getClockworkQuestProvider(tester).getCurrentPlayerId();
-  }
-
-  static bool isClockworkQuestGameActive(WidgetTester tester) {
-    return getClockworkQuestProvider(tester).isGameActive;
-  }
-
-  static int getClockworkQuestCurrentPlayerDartsThrown(WidgetTester tester) {
-    return getClockworkQuestProvider(tester).getCurrentPlayerDartsThrown();
-  }
-
-  static void setClockworkQuestPlayerTarget(WidgetTester tester, String playerId, int target) {
-    final provider = getClockworkQuestProvider(tester);
-    provider.currentGame!.currentTarget[playerId] = target;
-    provider.notifyListeners();
   }
 
   // ==========================================================================

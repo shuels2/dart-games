@@ -99,6 +99,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
     _animationController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deleteResumedSavedGame();
       _updatePlayerStats();
 
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -125,41 +126,54 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
   }
 
   void _updatePlayerStats() async {
-    if (_statsUpdated) return;
-    _statsUpdated = true;
+    try {
+      if (_statsUpdated) return;
+      _statsUpdated = true;
 
-    final monsterMashProvider = context.read<MonsterMashProvider>();
-    final playerProvider = context.read<PlayerProvider>();
-    final currentGame = monsterMashProvider.currentGame;
+      final monsterMashProvider = context.read<MonsterMashProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final currentGame = monsterMashProvider.currentGame;
 
-    if (currentGame == null) return;
+      if (currentGame == null) return;
 
-    final gameDuration = DateTime.now().difference(currentGame.startedAt);
-    final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
-    final winnerIds = winners.map((p) => p.id).toSet();
-    final playerCount = currentGame.getPlayerCount();
+      final gameDuration = DateTime.now().difference(currentGame.startedAt);
+      final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
+      final winnerIds = winners.map((p) => p.id).toSet();
+      final playerCount = currentGame.getPlayerCount();
 
-    for (final playerId in currentGame.playerIds) {
-      final isWinner = winnerIds.contains(playerId);
-      final dartThrows = currentGame.getTotalDartsThrown(playerId);
-      final turns = currentGame.getTotalTurns(playerId);
+      for (final playerId in currentGame.playerIds) {
+        if (!mounted) return;
+        final isWinner = winnerIds.contains(playerId);
+        final dartThrows = currentGame.getTotalDartsThrown(playerId);
+        final turns = currentGame.getTotalTurns(playerId);
 
-      await playerProvider.updatePlayerStats(
-        playerId,
-        won: isWinner,
-        gameName: 'Monster Mash',
-        gameDuration: gameDuration,
-        dartThrows: dartThrows,
-        turns: turns,
-        playerCount: playerCount,
-      );
+        await playerProvider.updatePlayerStats(
+          playerId,
+          won: isWinner,
+          gameName: 'Monster Mash',
+          gameDuration: gameDuration,
+          dartThrows: dartThrows,
+          turns: turns,
+          playerCount: playerCount,
+        );
+      }
+
+    } catch (e) {
+      debugPrint('Error updating player stats: $e');
     }
+  }
 
-    // Auto-delete saved game if this was a resumed game
-    final savedGameId = monsterMashProvider.resumedSavedGameId;
-    if (savedGameId != null) {
-      await SaveGameService().deleteSavedGame('monster_mash', savedGameId);
-      monsterMashProvider.clearResumedSavedGameId();
+  void _deleteResumedSavedGame() async {
+    try {
+      final monsterMashProvider = context.read<MonsterMashProvider>();
+      final savedGameId = monsterMashProvider.resumedSavedGameId;
+      if (savedGameId != null) {
+        await SaveGameService().deleteSavedGame('monster_mash', savedGameId);
+        if (!mounted) return;
+        monsterMashProvider.clearResumedSavedGameId();
+      }
+    } catch (e) {
+      debugPrint('Error deleting resumed saved game: $e');
     }
   }
 
@@ -172,13 +186,22 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
 
       if (customMusicSource != null && customMusicSource.isNotEmpty) {
         if (customMusicSource.startsWith('data:')) {
-          await _audioPlayer.play(UrlSource(customMusicSource));
+          await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => debugPrint('Audio playback timed out'),
+          );
         } else {
-          await _audioPlayer.play(DeviceFileSource(customMusicSource));
+          await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => debugPrint('Audio playback timed out'),
+          );
         }
       } else {
         await _audioPlayer.play(UrlSource(
-            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'));
+            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3')).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => debugPrint('Audio playback timed out'),
+        );
       }
     } catch (e) {
       debugPrint('Error playing victory music: $e');

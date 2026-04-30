@@ -252,7 +252,7 @@ void main() {
         provider.processDartThrow('S$i');
         if (provider.shouldPromptTakeout) {
           provider.confirmDartsRemoved(); // advance to p2
-          provider.skipTurn(); // p2 skips
+          provider.skipTurn(); provider.confirmDartsRemoved(); // p2 skips
         }
       }
 
@@ -282,8 +282,8 @@ void main() {
       // Hit all targets 1-20: one hit per turn, skip remaining darts, skip p2
       for (int i = 1; i <= 20; i++) {
         provider.processDartThrow('S$i');
-        provider.skipTurn(); // p1 done, advances to p2
-        provider.skipTurn(); // p2 skips, back to p1
+        provider.skipTurn(); provider.confirmDartsRemoved(); // p1 done, advances to p2
+        provider.skipTurn(); provider.confirmDartsRemoved(); // p2 skips, back to p1
       }
 
       expect(provider.getPlayerCurrentTarget(currentPlayerId), 1);
@@ -299,8 +299,8 @@ void main() {
 
       for (int i = 1; i <= 20; i++) {
         provider.processDartThrow('S$i');
-        provider.skipTurn();
-        provider.skipTurn();
+        provider.skipTurn(); provider.confirmDartsRemoved();
+        provider.skipTurn(); provider.confirmDartsRemoved();
       }
 
       expect(provider.hasWinner, true);
@@ -376,6 +376,7 @@ void main() {
       expect(provider.getCurrentPlayerDartsThrown(), 1);
 
       provider.skipTurn();
+      provider.confirmDartsRemoved();
 
       // Should have advanced to next player
       expect(provider.getCurrentPlayerId(), 'p2');
@@ -446,8 +447,8 @@ void main() {
       // Complete first lap
       for (int i = 1; i <= 20; i++) {
         provider.processDartThrow('S$i');
-        provider.skipTurn();
-        provider.skipTurn();
+        provider.skipTurn(); provider.confirmDartsRemoved();
+        provider.skipTurn(); provider.confirmDartsRemoved();
       }
 
       expect(provider.getPlayerLapsCompleted(currentPlayerId), 1);
@@ -456,8 +457,8 @@ void main() {
       // Complete second lap
       for (int i = 1; i <= 20; i++) {
         provider.processDartThrow('S$i');
-        provider.skipTurn();
-        provider.skipTurn();
+        provider.skipTurn(); provider.confirmDartsRemoved();
+        provider.skipTurn(); provider.confirmDartsRemoved();
       }
 
       expect(provider.getPlayerLapsCompleted(currentPlayerId), 2);
@@ -529,8 +530,8 @@ void main() {
       provider.startGame(players, false, false, 1);
 
       // Skip to p3's turn
-      provider.skipTurn(); // p1 -> p2
-      provider.skipTurn(); // p2 -> p3
+      provider.skipTurn(); provider.confirmDartsRemoved(); // p1 -> p2
+      provider.skipTurn(); provider.confirmDartsRemoved(); // p2 -> p3
 
       final p3 = provider.getCurrentPlayerId()!;
       expect(p3, 'p3');
@@ -541,9 +542,9 @@ void main() {
         if (provider.hasWinner) break;
         if (provider.shouldPromptTakeout) {
           provider.confirmDartsRemoved(); // p3 -> p4
-          provider.skipTurn(); // p4 -> p1
-          provider.skipTurn(); // p1 -> p2
-          provider.skipTurn(); // p2 -> p3
+          provider.skipTurn(); provider.confirmDartsRemoved(); // p4 -> p1
+          provider.skipTurn(); provider.confirmDartsRemoved(); // p1 -> p2
+          provider.skipTurn(); provider.confirmDartsRemoved(); // p2 -> p3
         }
       }
 
@@ -569,7 +570,7 @@ void main() {
           provider.confirmDartsRemoved();
           // Skip 7 other players
           for (int j = 0; j < 7; j++) {
-            provider.skipTurn();
+            provider.skipTurn(); provider.confirmDartsRemoved();
           }
         }
       }
@@ -807,7 +808,7 @@ void main() {
         provider.processDartThrow('S$i');
         if (provider.shouldPromptTakeout) {
           provider.confirmDartsRemoved();
-          provider.skipTurn(); // p2 skips
+          provider.skipTurn(); provider.confirmDartsRemoved(); // p2 skips
         }
       }
 
@@ -837,7 +838,7 @@ void main() {
         if (provider.hasWinner) break;
         if (provider.shouldPromptTakeout) {
           provider.confirmDartsRemoved();
-          provider.skipTurn();
+          provider.skipTurn(); provider.confirmDartsRemoved();
         }
       }
 
@@ -857,7 +858,7 @@ void main() {
         provider.processDartThrow('S$i');
         if (provider.shouldPromptTakeout) {
           provider.confirmDartsRemoved();
-          provider.skipTurn();
+          provider.skipTurn(); provider.confirmDartsRemoved();
         }
       }
 
@@ -883,7 +884,7 @@ void main() {
           if (provider.hasWinner) break;
           if (provider.shouldPromptTakeout) {
             provider.confirmDartsRemoved();
-            provider.skipTurn();
+            provider.skipTurn(); provider.confirmDartsRemoved();
           }
         }
 
@@ -913,7 +914,7 @@ void main() {
           provider.processDartThrow('S$i');
           if (provider.shouldPromptTakeout) {
             provider.confirmDartsRemoved();
-            provider.skipTurn();
+            provider.skipTurn(); provider.confirmDartsRemoved();
           }
         }
         expect(provider.getPlayerCurrentTarget(pid), 21);
@@ -923,7 +924,7 @@ void main() {
         if (provider.hasWinner) break;
         if (provider.shouldPromptTakeout) {
           provider.confirmDartsRemoved();
-          provider.skipTurn();
+          provider.skipTurn(); provider.confirmDartsRemoved();
         }
       }
 
@@ -944,7 +945,7 @@ void main() {
           if (provider.hasWinner) break;
           if (provider.shouldPromptTakeout) {
             provider.confirmDartsRemoved();
-            provider.skipTurn();
+            provider.skipTurn(); provider.confirmDartsRemoved();
           }
         }
 
@@ -973,7 +974,7 @@ void main() {
           provider.processDartThrow('S$i');
           if (provider.shouldPromptTakeout) {
             provider.confirmDartsRemoved();
-            provider.skipTurn();
+            provider.skipTurn(); provider.confirmDartsRemoved();
           }
         }
         // Hit bullseye
@@ -981,7 +982,7 @@ void main() {
         if (provider.hasWinner) break;
         if (provider.shouldPromptTakeout) {
           provider.confirmDartsRemoved();
-          provider.skipTurn();
+          provider.skipTurn(); provider.confirmDartsRemoved();
         }
       }
 

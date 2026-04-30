@@ -150,12 +150,13 @@ class GameUIConfig {
       getStartButton: ElementFinders.getClockworkQuestStartButton,
       getSkipTurnButton: ElementFinders.getClockworkQuestSkipTurnButton,
       getEditScoreButton: ElementFinders.getClockworkQuestEditScoreButton,
-      getDartButton: (String multiplier, int number) => find.text('Not used in Clockwork Quest'),
+      getDartButton: (multiplier, number) => find.text('Not used in Clockwork Quest'),
       getBullseyeButton: () => find.text('Not used in Clockwork Quest'),
       getOuterBullButton: () => find.text('Not used in Clockwork Quest'),
       getMissButton: () => find.text('Not used in Clockwork Quest'),
       getPlayAgainButton: ElementFinders.getClockworkQuestPlayAgainButton,
-      getChangeSettingsButton: ElementFinders.getClockworkQuestChangeSettingsButton,
+      getChangeSettingsButton:
+          ElementFinders.getClockworkQuestChangeSettingsButton,
       getBackToMenuButton: ElementFinders.getClockworkQuestBackToMenuButton,
       getGameBackButton: ElementFinders.getClockworkQuestGameBackButton,
     );

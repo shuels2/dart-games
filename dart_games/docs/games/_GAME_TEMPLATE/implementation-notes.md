@@ -186,7 +186,7 @@ class [GameName]Game {
 **Serialization:** [How game state is serialized]
 
 ### Player Stats
-**Storage:** SharedPreferences via PlayerProvider
+**Storage:** Server API via PlayerProvider
 
 **Data Tracked:**
 - Games played: [How tracked]

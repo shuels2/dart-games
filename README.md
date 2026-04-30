@@ -22,6 +22,7 @@ Dart Games is a cross-platform (web and tablet) application that provides a fram
 
 - **Dartboard Integration** - Seamless connection to Scolia 2 physical dartboards via API
 - **Emulator Mode** - Test games without physical hardware using the built-in dartboard emulator
+- **Server-Side Storage** - Dart Shelf backend server with SQLite for centralized data persistence, schema migrations, failed stats logging, and per-session database isolation for UI test parallelism
 - **Global User Management** - Shared player profiles, statistics, and game history across all games
 - **Global Announcement Queue** - Priority-based announcement system with sound effects for consistent audio experience
 - **Voice Announcer** - Customizable text-to-speech announcements with multiple voice engines and personalities
@@ -80,6 +81,8 @@ await playerProvider.updatePlayerStats(
 );
 ```
 
+**Failed Stats Handling:** If a stats update fails (e.g. player deleted mid-game, server 404, network error), `PlayerProvider` automatically logs the failure to the server's `failed_stats` table via `POST /api/v1/stats/failed`. This preserves the failure payload for later investigation or replay. Failed entries can be retrieved with `GET /api/v1/stats/failed` and cleared with `DELETE /api/v1/stats/failed`.
+
 #### 3. Announcer Service (`DartAnnouncerService`)
 - Text-to-speech for game events
 - Multiple voice engines (Browser Voices, ResponsiveVoice)
@@ -98,9 +101,9 @@ final audioQueue = YourGameAnnouncementHelper(globalQueue);
 ```
 
 #### 4. Victory Music Service (`VictoryMusicService`)
-- Custom music file management
+- Custom music file management via backend API
 - Random selection from user's music library
-- Cross-platform support (web data URLs, native file paths)
+- Music uploaded to server as base64, played via server URLs
 
 ```dart
 // Access victory music service
@@ -109,7 +112,7 @@ final musicService = VictoryMusicService();
 // Check if custom music is available
 if (await musicService.hasCustomMusic()) {
   final musicSource = await musicService.getRandomMusicSource();
-  // Play music using appropriate player
+  // Play music via server URL
 }
 ```
 
@@ -528,7 +531,7 @@ ResumeGameModal(
 
 #### 15. Save Game Service (`lib/services/save_game_service.dart`)
 - Shared service for persisting and retrieving saved game state
-- Uses `SharedPreferences` for cross-platform storage
+- Uses the backend API via `ApiClient` for centralized storage
 - Supports saving, loading, listing, and deleting saved games
 - Each game type stores games independently
 
@@ -617,11 +620,21 @@ Dart Games uses a container app architecture:
 
 ```
 dart_games/
+├── server/                          # Dart Shelf backend server
+│   ├── bin/server.dart              # Server entry point
+│   ├── lib/
+│   │   ├── database/                # SQLite database layer, migrations, per-session DB registry
+│   │   ├── models/                  # Server-side models
+│   │   ├── routes/                  # REST API route handlers
+│   │   └── middleware/              # CORS and logging middleware
+│   └── test/                       # Server tests (178 tests)
 ├── lib/
 │   ├── main.dart                    # App entry point
 │   ├── models/                      # Data models
 │   ├── providers/                   # State management
 │   ├── services/                    # Shared services
+│   │   ├── api/                     # API client layer (ApiClient, ApiConfig)
+│   │   └── game_skip_turn_helper.dart  # Shared skip turn logic
 │   ├── widgets/                     # Reusable widgets
 │   └── screens/
 │       ├── splash_screen.dart       # Initial loading
@@ -634,8 +647,8 @@ dart_games/
 │           ├── monster_mash/        # Monster Mash game
 │           ├── reef_royale/         # Reef Royale game
 │           └── target_tag/          # Target Tag game
-├── test/                            # Non-UI test suite (727 tests)
-├── integration_test/                # UI automation tests (330 tests)
+├── test/                            # Flutter non-UI tests (1179 tests)
+├── integration_test/                # UI automation tests (366 tests)
 └── assets/
     ├── common/                      # Shared assets (logo, app icon)
     │   ├── icons/
@@ -832,6 +845,7 @@ Update `CLAUDE.md` with new test counts and game-specific notes.
 ### Prerequisites
 
 - Flutter SDK
+- Dart SDK (for the backend server)
 - Scolia 2 dartboard (for production use)
 - Scolia API key (required)
 
@@ -844,11 +858,16 @@ cd dart_games
 
 # Install dependencies
 flutter pub get
+cd server && dart pub get && cd ..
 
-# Run non-UI tests (all 727 tests must pass)
-flutter test
+# Start the backend server
+cd server && dart run bin/server.dart &
 
-# Optional: Run UI automation tests (330 tests, ~224 minutes, requires chromedriver)
+# Run non-UI tests (all 1357 tests must pass)
+flutter test                  # 1179 Flutter tests
+cd server && dart test        # 178 server tests
+
+# Optional: Run UI automation tests (366 tests, requires chromedriver)
 # See CLAUDE.md for complete UI testing guide
 
 # Launch in Chrome (web)
@@ -860,34 +879,63 @@ flutter run
 
 ### Testing Requirements
 
-**All 727 non-UI tests must pass before any build or deployment.**
+**All 1357 non-UI tests must pass before any build or deployment.**
 
 ```bash
+# Flutter tests (1179 tests)
 flutter test
+
+# Server tests (178 tests)
+cd server && dart test
 ```
 
-**Non-UI Test Coverage (727 tests):**
-- Model serialization (40 tests)
-- Model serialization games (55 tests)
-- Provider functionality (44 tests)
-- Provider save/restore (28 tests)
-- Service integration (42 tests)
+**Flutter Test Coverage (1179 tests):**
+- API client tests (49 tests: 5 config, 38 client, 6 voice settings)
+- Model tests (98 tests: 40 core, 58 additional)
+- Model serialization (74 tests: HorseRace 10, TargetTag 13, MonsterMash 13, ReefRoyale 19, ClockworkQuest 19)
+- Provider tests (74 tests: PlayerProvider 44, DartboardProvider 30)
+- Provider save/restore (35 tests: 5 games x 7)
+- Provider game mechanics (233 tests: HorseRace 50, ClockworkQuest 49, MonsterMash 44, ReefRoyale 45, TargetTag 45)
+- Service tests (91 tests: AppSettings 20, VictoryMusic 22, Storage 24, ApiLogger 25)
 - Save game service (13 tests)
+- Announcement queue models (30 tests)
 - Game integration - Carnival Derby (43 tests: 26 user management, 17 announcements)
 - Game integration - Target Tag (68 tests: 54 announcements, 14 user management)
 - Game integration - Monster Mash (65 tests: 47 game logic, 18 announcements)
 - Game integration - Reef Royale (~154 tests: game logic + announcements)
 - Game integration - Clockwork Quest (84 tests: 66 game logic, 18 announcements)
 - Save/resume integration (20 tests)
+- Utility tests (34 tests: DartboardLayout)
 - Shared test components (24 tests)
 - Widget tests (44 tests: 23 dartboard, 8 save modal, 13 resume modal)
 
-**UI Automation Test Coverage (330 tests, ~224 minutes):**
-- Target Tag (62 tests, ~48 min): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
-- Carnival Derby (33 tests, ~22 min): Menu, gameplay, bust mechanics, skip turn, edit score, results screen, save/resume
-- Monster Mash (60 tests, ~40 min): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation, save/resume
-- Reef Royale (70 tests, ~37 min): Add player, menu settings, gameplay, coral claiming, edit score, results screen, visual validation, showcase, save/resume
-- Clockwork Quest (105 tests, ~57 min): Add player, menu settings, gameplay, gear progression, edit score, results screen, save/resume, screenshot
+**Server Test Coverage (178 tests):**
+- Database & helpers (25 tests)
+- Database registry & session middleware (10 tests)
+- Model roundtrips (32 tests)
+- Migration runner, V1 baseline & V2 failed_stats (29 tests)
+- Settings routes (9 tests)
+- Dartboard routes (10 tests)
+- Player routes (24 tests)
+- Saved game routes (13 tests)
+- Victory music routes (14 tests)
+- Failed stats routes (6 tests)
+- Test routes (6 tests)
+
+**Per-Session Database Isolation (UI Tests):**
+
+Flutter bug [#67090](https://github.com/flutter/flutter/issues/67090) causes `flutter drive -d chrome` to spawn two browser instances. Both execute the test code, which previously caused duplicate game saves and other data collisions. To solve this, each browser instance generates a unique session ID and sends it via `X-DB-Session` HTTP header on every request. The server's `DatabaseRegistry` lazily creates isolated SQLite databases per session (stored in `data/sessions/`), routed via `dbSessionMiddleware` using Dart's Zone system. Production traffic (no header) uses the single default database — zero behavior change for non-test usage.
+
+**UI Automation Test Coverage (366 tests, one-test-per-process architecture):**
+- Each test runs in its own `flutter drive` process for full isolate-level isolation
+- **Sequential runner** (`run_ui_tests.bat`): One game at a time, ~507 minutes (~8h 27m). Interactive Chrome sessions visible. Best for debugging.
+- **Parallel runner** (`run_ui_tests_parallel.bat`): All 5 games simultaneously, ~143 minutes (~2h 23m, ~3.5x faster). Fully headless — no visible Chrome sessions. Each game gets its own ChromeDriver (ports 4444-4448) and backend server (ports 9001-9005). Requires 16GB+ RAM.
+- Per-session database isolation (`X-DB-Session` header) prevents cross-test data pollution
+- Target Tag (69 tests): Menu settings, gameplay mechanics, visual validation, add player, results screen, save/resume
+- Carnival Derby (40 tests): Menu, gameplay, bust mechanics, skip turn, edit score, results screen, save/resume
+- Monster Mash (67 tests): Add player, menu settings, gameplay, buff effects, speed play, edit score, results screen, visual validation, save/resume
+- Reef Royale (83 tests): Add player, menu settings, gameplay, coral claiming, edit score, results screen, visual validation, showcase, screenshot, save/resume
+- Clockwork Quest (107 tests): Add player, menu settings, gameplay, gear progression, edit score, results screen, save/resume, screenshot
 - Requires chromedriver setup - see [CLAUDE.md](CLAUDE.md) for complete UI testing guide
 
 ### Cross-Platform Compatibility
@@ -934,7 +982,7 @@ The app supports two modes:
 This is a private project. Contributions and pull requests are not accepted at this time.
 
 **For internal development:**
-1. **Run all tests** before committing changes (`flutter test`)
+1. **Run all tests** before committing changes (`flutter test` and `cd server && dart test`)
 2. **Maintain cross-platform compatibility** (web and tablet)
 3. **Follow integration requirements** when adding games
 4. **Update documentation** for new features

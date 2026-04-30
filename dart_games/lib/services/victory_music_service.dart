@@ -2,18 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 import '../models/victory_music_file.dart';
+import 'api/api_client.dart';
+import 'api/api_config.dart';
 
-// Conditional import for web
-import 'victory_music_web.dart' if (dart.library.io) 'victory_music_native.dart'
-    as platform;
-
-/// Service to manage victory music storage.
-/// On web, stores audio data in IndexedDB (persistent, supports large files).
-/// On native platforms, stores file paths in SharedPreferences.
+/// Service to manage victory music storage via the backend API.
+///
+/// Music files are uploaded to the server and played via server URLs.
 /// Supports multiple music files with random selection.
 class VictoryMusicService {
   static final VictoryMusicService _instance =
@@ -24,79 +19,59 @@ class VictoryMusicService {
   // In-memory cache
   List<VictoryMusicFile> _musicFiles = [];
   bool _initialized = false;
+  Future<void>? _activeInit;
   final Random _random = Random();
 
-  /// Initialize the service and load any stored music.
+  ApiClient? _apiClient;
+
+  /// Set the API client. Call once at app startup.
+  void initializeApi(ApiClient client) {
+    _apiClient = client;
+  }
+
+  ApiClient get _api {
+    if (_apiClient == null) {
+      throw StateError(
+          'VictoryMusicService not initialized. Call initializeApi() first.');
+    }
+    return _apiClient!;
+  }
+
+  /// For testing: reset internal state.
+  void resetForTesting() {
+    _musicFiles = [];
+    _initialized = false;
+    _activeInit = null;
+  }
+
+  /// Initialize the service and load stored music from the server.
   Future<void> initialize() async {
     if (_initialized) return;
 
-    // Try to load new format first
-    if (kIsWeb) {
-      final stored = await platform.loadStoredMusicFiles();
-      if (stored != null && stored.isNotEmpty) {
-        _musicFiles =
-            stored.map((json) => VictoryMusicFile.fromJson(json)).toList();
-        _initialized = true;
-        return;
-      }
-
-      // Migration: Check for old single-file format
-      final oldFormat = await platform.loadStoredMusic();
-      if (oldFormat != null) {
-        final migratedFile = VictoryMusicFile(
-          id: const Uuid().v4(),
-          name: oldFormat['name'] as String,
-          source: oldFormat['dataUrl'] as String,
-          addedDate: DateTime.now(),
-        );
-        _musicFiles = [migratedFile];
-        await _saveMusicFiles(); // Save in new format
-        await platform.clearStoredMusic(); // Clean up old format
-      }
-    } else {
-      final prefs = await SharedPreferences.getInstance();
-
-      // Try new format
-      final jsonString = prefs.getString('victory_music_files');
-      if (jsonString != null && jsonString.isNotEmpty) {
-        final List<dynamic> jsonList = jsonDecode(jsonString);
-        _musicFiles =
-            jsonList.map((json) => VictoryMusicFile.fromJson(json)).toList();
-        _initialized = true;
-        return;
-      }
-
-      // Migration: Check for old single-file format
-      final oldPath = prefs.getString('victory_music_path');
-      final oldName = prefs.getString('victory_music_name');
-      if (oldPath != null && oldPath.isNotEmpty) {
-        // Check if old file still exists and copy to app storage
-        try {
-          if (await platform.fileExists(oldPath)) {
-            final id = const Uuid().v4();
-            final newPath = await platform.copyMusicToAppStorage(
-                oldPath, oldName ?? 'custom_music.mp3', id);
-
-            final migratedFile = VictoryMusicFile(
-              id: id,
-              name: oldName ?? 'Custom music',
-              source: newPath,
-              addedDate: DateTime.now(),
-            );
-            _musicFiles = [migratedFile];
-            await _saveMusicFiles(); // Save in new format
-          }
-          // If file doesn't exist, don't migrate it
-        } catch (e) {
-          print('Error migrating old music file: $e');
-          // Continue without migrating if there's an error
-        }
-
-        // Clean up old keys regardless of migration success
-        await prefs.remove('victory_music_path');
-        await prefs.remove('victory_music_name');
-      }
+    // Deduplicate concurrent initialize() calls so only one fetch runs.
+    if (_activeInit != null) {
+      await _activeInit;
+      return;
     }
+
+    _activeInit = _doInitialize();
+    try {
+      await _activeInit;
+    } finally {
+      _activeInit = null;
+    }
+  }
+
+  Future<void> _doInitialize() async {
+    final musicList = await _api.getMusic();
+    _musicFiles = musicList.map((json) {
+      return VictoryMusicFile(
+        id: json['id'] as String,
+        name: json['fileName'] as String,
+        source: ApiConfig.url('/api/v1/music/${json['id']}/file'),
+        addedDate: DateTime.parse(json['createdAt'] as String),
+      );
+    }).toList();
 
     _initialized = true;
   }
@@ -107,7 +82,7 @@ class VictoryMusicService {
     return List.unmodifiable(_musicFiles);
   }
 
-  /// Get a random music source for playback.
+  /// Get a random music source URL for playback.
   Future<String?> getRandomMusicSource() async {
     await initialize();
 
@@ -124,6 +99,8 @@ class VictoryMusicService {
   }
 
   /// Add a new music file.
+  ///
+  /// Uploads the file to the server and caches it locally.
   Future<void> addMusicFile({
     required String fileName,
     String? filePath,
@@ -132,97 +109,56 @@ class VictoryMusicService {
   }) async {
     await initialize();
 
-    final id = const Uuid().v4();
-    final String source;
+    String base64Data;
 
     if (dataUrl != null) {
-      // Use pre-made data URL directly (for test data)
-      source = dataUrl;
-    } else if (kIsWeb && fileBytes != null) {
-      // Convert to data URL (existing logic)
-      final mimeType = _getMimeType(fileName);
-      final base64Data = base64Encode(fileBytes);
-      source = 'data:$mimeType;base64,$base64Data';
-    } else if (filePath != null) {
-      // Native platform - copy file to app storage for persistent access
-      source = await platform.copyMusicToAppStorage(filePath, fileName, id);
+      // Extract base64 from data URL (data:audio/mpeg;base64,XXXXXX)
+      final commaIndex = dataUrl.indexOf(',');
+      if (commaIndex >= 0) {
+        base64Data = dataUrl.substring(commaIndex + 1);
+      } else {
+        base64Data = dataUrl;
+      }
+    } else if (fileBytes != null) {
+      base64Data = base64Encode(fileBytes);
     } else {
-      throw Exception('Invalid file data');
+      throw Exception('Invalid file data: provide fileBytes or dataUrl');
     }
+
+    // Upload to server
+    final result = await _api.uploadMusic(fileName, base64Data);
+    final id = result['id'] as String;
 
     final newFile = VictoryMusicFile(
       id: id,
       name: fileName,
-      source: source,
+      source: ApiConfig.url('/api/v1/music/$id/file'),
       addedDate: DateTime.now(),
     );
 
     _musicFiles.add(newFile);
-    await _saveMusicFiles();
   }
 
   /// Remove a music file by ID.
   Future<void> removeMusicFile(String id) async {
     await initialize();
 
-    // Find the file to remove
-    final fileToRemove = _musicFiles.firstWhere(
-      (file) => file.id == id,
-      orElse: () => throw Exception('Music file not found'),
-    );
-
-    // Delete the physical file on native platforms
-    if (!kIsWeb && !fileToRemove.source.startsWith('data:')) {
-      await platform.deleteMusicFile(fileToRemove.source);
-    }
-
+    await _api.deleteMusic(id);
     _musicFiles.removeWhere((file) => file.id == id);
-    await _saveMusicFiles();
   }
 
   /// Clear all music files.
   Future<void> clearAllMusic() async {
     await initialize();
 
-    // Delete all physical files on native platforms
-    if (!kIsWeb) {
-      for (final file in _musicFiles) {
-        if (!file.source.startsWith('data:')) {
-          await platform.deleteMusicFile(file.source);
-        }
-      }
-    }
-
+    await _api.deleteAllMusic();
     _musicFiles.clear();
-    await _saveMusicFiles();
   }
 
   /// Check if any custom music is set.
   Future<bool> hasCustomMusic() async {
     await initialize();
     return _musicFiles.isNotEmpty;
-  }
-
-  /// Save current music files to storage.
-  Future<void> _saveMusicFiles() async {
-    if (kIsWeb) {
-      final jsonList = _musicFiles.map((f) => f.toJson()).toList();
-      await platform.storeMusicFiles(jsonList);
-    } else {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonString =
-          jsonEncode(_musicFiles.map((f) => f.toJson()).toList());
-      await prefs.setString('victory_music_files', jsonString);
-    }
-  }
-
-  String _getMimeType(String fileName) {
-    final lowerName = fileName.toLowerCase();
-    if (lowerName.endsWith('.mp3')) return 'audio/mpeg';
-    if (lowerName.endsWith('.wav')) return 'audio/wav';
-    if (lowerName.endsWith('.ogg')) return 'audio/ogg';
-    if (lowerName.endsWith('.aac')) return 'audio/aac';
-    return 'audio/mpeg';
   }
 
   // DEPRECATED METHODS - kept for backwards compatibility

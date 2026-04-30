@@ -2,118 +2,131 @@
 
 ## Overview
 
-Dart Games uses a schema versioning and migration system to safely evolve persisted data across app updates. When the app launches, the migration runner checks the stored schema version and executes any pending migrations before providers load data.
+Dart Games uses a server-side SQLite migration system to safely evolve the database schema across releases. When the server starts (or tests create a `Database` instance), the migration runner checks the stored schema version and executes any pending migrations before the server begins handling requests.
 
-**Storage:** Player data, saved games, and settings are stored in SharedPreferences (localStorage on web). The migration system manages changes to this data.
-
-**IndexedDB** (victory music) has its own native versioning via `onUpgradeNeeded` in `victory_music_web.dart` and is NOT managed by this migration system.
+**Storage:** All data is stored in a SQLite database on the server. The migration system manages schema changes (adding tables, columns, indexes, etc.) to this database.
 
 ## Architecture
 
 ```
-lib/services/migration/
-  migration.dart              # Migration base class
-  migration_runner.dart       # Orchestrator (runs at startup)
+server/lib/database/
+  database.dart              # Database class (calls MigrationRunner.run)
+  migration.dart             # Migration base class + MigrationRunner
   migrations/
-    migration_v1.dart         # Bootstrap: establishes versioning baseline
-    migration_v2.dart         # (future)
+    migration_v1.dart        # Baseline schema (7 tables + defaults)
+    migration_v2.dart        # Failed stats table for logging player stats update failures
 ```
 
 ### How It Works
 
-1. `MigrationRunner.runMigrations()` is called in `main()` before `runApp()`
-2. It reads the `schema_version` integer from SharedPreferences (absent = version 0)
-3. **Fresh install** (no existing data keys): stamps the current version and skips all migrations
-4. **Existing data**: runs pending migrations sequentially (v1 -> v2 -> v3...)
-5. The version is written after **each** successful migration, not batched
-6. If a migration fails, the chain stops and retries on next app launch
+1. `MigrationRunner.run(db)` is called in the `Database` constructor after configuring PRAGMAs
+2. It creates the `schema_version` table if it does not exist
+3. Reads the stored version (0 for fresh databases)
+4. Runs each pending migration in its own transaction
+5. Updates the version after each successful migration
+6. If a migration throws, the transaction rolls back and the exception is rethrown
 
-### Fresh Install Detection
+### Transaction Safety
 
-The runner checks for known data keys (`players_roster`, `setup_complete`, `voice_enabled`, `serial_number`, `dartboard_name`, `google_tts_api_key`, and any `saved_games_*` keys). If none exist, it's a fresh install — no data to migrate.
+Each migration runs inside its own `BEGIN`/`COMMIT` transaction. If the migration throws:
+- All schema changes in that migration are rolled back
+- The version remains at the last successful migration
+- The exception propagates — the server will not start with a partially-migrated schema
+
+SQLite supports transactional DDL (unlike many other databases), so `CREATE TABLE`, `ALTER TABLE`, etc. are all safely rolled back on failure.
+
+## Current Migrations
+
+### V1 — Baseline Schema (`MigrationV1Baseline`)
+Creates the 7 core application tables: `settings`, `dartboard`, `dartboard_profiles`, `players`, `game_history`, `saved_games`, `victory_music`. Seeds a default dartboard row with `id=1`.
+
+### V2 — Failed Stats Table (`MigrationV2FailedStats`)
+Creates the `failed_stats` table for persistently logging player stats update failures. When `PlayerProvider.updatePlayerStats()` fails (e.g. player deleted mid-game, server 404, network error), the failure payload is POSTed to `/api/v1/stats/failed` and stored in this table for later investigation or replay.
+
+**Columns:** `id` (PK), `player_id`, `player_name`, `game_name`, `won`, `duration_ms`, `dart_throws`, `turns`, `player_count`, `error_message`, `created_at`
+
+**API endpoints** (mounted at `/api/v1/stats`):
+- `GET /failed` — List all failed stats entries
+- `POST /failed` — Log a new failure (requires `playerId` and `errorMessage`)
+- `DELETE /failed` — Clear all entries
+- `DELETE /failed/<id>` — Delete a single entry
 
 ## Adding a New Migration
 
-Follow these steps when you need to make a breaking change to stored data (renaming keys, changing field types, restructuring JSON, etc.).
+Follow these steps when you need to change the database schema.
 
 ### Step 1: Create the Migration File
 
-Create `lib/services/migration/migrations/migration_vN.dart`:
+Create `server/lib/database/migrations/migration_vN.dart` (next version is V3):
 
 ```dart
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import '../migration.dart';
 
-class MigrationV2RenamePlayersKey extends Migration {
+class MigrationV3AddPlayerEmail extends Migration {
   @override
-  int get version => 2;
+  int get version => 3;
 
   @override
-  String get description => 'Rename players_roster to players';
+  String get description => 'Add email column to players';
 
   @override
-  Future<void> migrate(SharedPreferences prefs) async {
-    final data = prefs.getString('players_roster');
-    if (data != null) {
-      await prefs.setString('players', data);
-      await prefs.remove('players_roster');
-    }
+  void migrate(sqlite3.Database db) {
+    db.execute('ALTER TABLE players ADD COLUMN email TEXT;');
   }
 }
 ```
 
 ### Step 2: Register the Migration
 
-Add it to the `migrations` list in `migration_runner.dart`:
+Add it to the `migrations` list in `migration.dart`:
 
 ```dart
-static final List<Migration> migrations = [
-  MigrationV1InitializeVersioning(),
-  MigrationV2RenamePlayersKey(),       // <-- add at the end
-];
+import 'migrations/migration_v1.dart';
+import 'migrations/migration_v2.dart';
+import 'migrations/migration_v3.dart';
+
+class MigrationRunner {
+  static final List<Migration> migrations = [
+    MigrationV1Baseline(),
+    MigrationV2FailedStats(),
+    MigrationV3AddPlayerEmail(),  // <-- add at the end
+  ];
 ```
 
 ### Step 3: Write Tests
 
-Create `test/services/migration_v2_test.dart`:
+Add tests in `server/test/migration_test.dart`:
 
 ```dart
-import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dart_games/services/migration/migrations/migration_v2.dart';
-
-void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  group('MigrationV2RenamePlayersKey', () {
-    test('renames players_roster to players', () async {
-      SharedPreferences.setMockInitialValues({
-        'players_roster': '[{"id":"p1","name":"Alice"}]',
-      });
-
-      final prefs = await SharedPreferences.getInstance();
-      final migration = MigrationV2RenamePlayersKey();
-      await migration.migrate(prefs);
-
-      expect(prefs.getString('players_roster'), isNull);
-      expect(prefs.getString('players'), '[{"id":"p1","name":"Alice"}]');
-    });
-
-    test('handles missing key gracefully', () async {
-      SharedPreferences.setMockInitialValues({});
-
-      final prefs = await SharedPreferences.getInstance();
-      final migration = MigrationV2RenamePlayersKey();
-      await migration.migrate(prefs); // should not throw
-    });
+group('MigrationV3AddPlayerEmail', () {
+  test('has version 3', () {
+    expect(MigrationV3AddPlayerEmail().version, 3);
   });
-}
+
+  test('adds email column to players', () {
+    // Run V1 + V2 first so the baseline schema exists.
+    MigrationV1Baseline().migrate(db);
+    MigrationV2FailedStats().migrate(db);
+
+    // Run V3.
+    MigrationV3AddPlayerEmail().migrate(db);
+
+    // Verify the column exists.
+    db.execute(
+      "INSERT INTO players (id, name, created_at, email) "
+      "VALUES ('p1', 'Alice', '2026-01-01', 'alice@example.com');",
+    );
+    final result = db.select('SELECT email FROM players WHERE id = ?;', ['p1']);
+    expect(result.first['email'], 'alice@example.com');
+  });
+});
 ```
 
 ### Step 4: Run Tests
 
 ```bash
-flutter test
+cd server && dart test
 ```
 
 All existing tests plus the new migration tests must pass.
@@ -125,43 +138,41 @@ Update the test counts in `CLAUDE.md` and `docs/testing/test-overview.md`.
 ## Rules
 
 1. **Versions must be sequential.** Version N runs after version N-1. Never skip numbers.
-2. **Migrations must handle missing data.** A key might not exist for all users — always check before operating on it.
-3. **There is no rollback.** Write migrations carefully. Test them. If a migration fails at runtime, it will retry on the next app launch.
+2. **Migrations must be idempotent where possible.** Use `IF NOT EXISTS`, `IF EXISTS`, etc.
+3. **There is no rollback mechanism.** Write migrations carefully. Test them. If a migration fails at runtime, the transaction rolls back automatically, but the migration will block server startup until fixed.
 4. **Don't modify existing migrations.** Once a migration has been deployed, it should never change. If it was wrong, fix it in a new migration.
 5. **Keep migrations focused.** One migration per logical change. Don't bundle unrelated changes.
-6. **Adding optional fields doesn't need a migration.** If your `fromJson()` uses `??` for the new field, you don't need a migration — the defensive coding handles it. Migrations are for breaking changes only.
+6. **Adding optional columns doesn't always need a migration.** If the column has a DEFAULT and existing code handles its absence, you may still want a migration to make the column queryable.
 
 ## When You DO Need a Migration
 
-- Renaming a SharedPreferences key
-- Renaming a field inside stored JSON
-- Changing a field's type (e.g., `int` to `String`)
-- Removing a field that other code depends on being absent
-- Restructuring nested JSON (e.g., flattening or nesting)
-- Splitting one storage key into multiple keys
+- Adding a new table
+- Adding a column to an existing table
+- Renaming a column or table
+- Adding or removing an index
+- Changing a column's type or constraints
+- Restructuring data between tables
 
 ## When You DON'T Need a Migration
 
-- Adding a new optional field with a default (use `??` in `fromJson()`)
-- Adding a new SharedPreferences key (nothing to migrate)
-- Changing app logic without changing stored data shapes
+- Adding new API routes that use existing tables
+- Changing application logic without changing the schema
 - UI-only changes
+- Adding new settings (the `settings` table is a key-value store)
 
 ## Error Handling
 
-If a migration throws an exception:
-- The version is NOT updated (stays at the last successful version)
-- The error is logged via `debugPrint`
-- The app continues to start normally
-- The failed migration will retry on next app launch
+If a migration throws:
+- The transaction is rolled back (schema changes are undone)
+- The exception is rethrown
+- The server will not start — this is intentional (a partially-migrated schema is worse than a failed startup)
+- Fix the migration, rebuild, and restart
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `lib/services/migration/migration.dart` | `Migration` base class |
-| `lib/services/migration/migration_runner.dart` | `MigrationRunner` — startup orchestrator |
-| `lib/services/migration/migrations/` | Individual migration files |
-| `lib/main.dart` | Calls `MigrationRunner.runMigrations()` |
-| `test/services/migration_runner_test.dart` | Runner tests |
-| `test/services/migration_v1_test.dart` | V1 bootstrap tests |
+| `server/lib/database/migration.dart` | `Migration` base class + `MigrationRunner` |
+| `server/lib/database/migrations/` | Individual migration files |
+| `server/lib/database/database.dart` | Calls `MigrationRunner.run()` in constructor |
+| `server/test/migration_test.dart` | Migration runner + individual migration tests |

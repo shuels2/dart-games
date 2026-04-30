@@ -35,13 +35,13 @@ Each game has its own unique visual identity while integrating with global syste
 - [Resume Game Button](docs/development/resume-game-button.md) - Shared resume game button component
 - [Save & Resume Game](docs/development/save-resume-game.md) - Save and resume game feature
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
-- [Data Migrations](docs/development/data-migrations.md) - Schema versioning and data migration system
+- [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1076 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **746 non-UI + 330 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 746 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 330 UI tests (~224 minutes, optional)
+### 🧪 Testing (1721 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 178 server + 364 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1357 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 366 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -68,25 +68,29 @@ Each game has its own unique visual identity while integrating with global syste
 
 ### Run All Non-UI Tests (MANDATORY before builds)
 ```bash
+# Flutter tests (1179 tests)
 flutter test
+
+# Server tests (178 tests)
+cd server && dart test
 ```
-**Required:** 100% pass rate (746 tests)
+**Required:** 100% pass rate (1357 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
-# Terminal 1: Start chromedriver
-cd chromedriver/chromedriver-win64
-./chromedriver.exe --port=4444
-
-# Terminal 2: Run all UI tests (330 tests, ~224 minutes)
-./run_ui_tests.bat
-
-# Or run specific game
-./run_ui_tests.bat target_tag
+# Sequential runner (all infrastructure managed automatically)
+./run_ui_tests.bat                          # All tests (~507 min, interactive Chrome)
+./run_ui_tests.bat target_tag               # Specific game
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
 ./run_ui_tests.bat reef_royale
 ./run_ui_tests.bat clockwork_quest
+
+# Parallel runner (~3.5x faster, 5 games simultaneously, ~143 min, fully headless)
+./run_ui_tests_parallel.bat                          # All games
+./run_ui_tests_parallel.bat target_tag monster_mash  # Specific games
+./run_ui_tests_parallel.bat save_resume              # Filter by test type
+./run_ui_tests_parallel.bat reef_royale/gameplay     # Game + subfolder
 ```
 
 ### Run Game-Specific Tests
@@ -100,37 +104,54 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1076 tests**
-- **Non-UI Tests:** 746 tests (100% pass rate MANDATORY)
-  - Model tests: 40
-  - Model serialization tests: 55
-  - Provider tests: 44
-  - Provider save/restore tests: 28
-  - Service tests: 42
+**Total: 1723 tests**
+- **Flutter Non-UI Tests:** 1179 tests (100% pass rate MANDATORY)
+  - API client tests: 49 (5 config + 38 client + 6 voice settings)
+  - Model tests: 98 (40 core + 58 additional)
+  - Model serialization tests: 74 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19)
+  - Provider tests: 74 (PlayerProvider 44 + DartboardProvider 30)
+  - Provider save/restore tests: 35 (5 games x 7)
+  - Provider game mechanics tests: 233 (HorseRace 50 + ClockworkQuest 49 + MonsterMash 44 + ReefRoyale 45 + TargetTag 45)
+  - Service tests: 91 (AppSettings 20 + VictoryMusicService 22 + StorageService 24 + ApiLoggerService 25)
   - Save game service tests: 13
+  - Announcement queue model tests: 30
   - Integration tests: 163
   - Save/resume integration tests: 20
   - Shared component tests: 24
-  - Widget tests: 23
-  - Save game modal tests: 8
-  - Resume game modal tests: 13
+  - Utility tests: 34 (DartboardLayout)
+  - Widget tests: 44 (23 dartboard + 8 save modal + 13 resume modal)
   - Monster Mash announcements: 18
   - Reef Royale game logic + announcements: ~154
   - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
-  - Migration tests: 19 (15 runner + 4 v1)
   - Carnival Derby game logic: 8 (included in integration above)
 
-- **UI Automation Tests:** 330 tests (optional, ask before running)
-  - Target Tag: 62 tests (~48 minutes)
-  - Carnival Derby: 33 tests (~22 minutes)
-  - Monster Mash: 60 tests (~40 minutes)
-  - Reef Royale: 70 tests (~37 minutes)
-  - Clockwork Quest: 105 tests (~57 minutes) [89 functional + 16 save/resume]
+- **Server Tests:** 178 tests (100% pass rate MANDATORY)
+  - Database & helpers: 25
+  - Database registry & middleware: 10
+  - Model roundtrips: 32
+  - Migration runner, V1 baseline & V2 failed_stats: 29
+  - Settings routes: 9
+  - Dartboard routes: 10
+  - Player routes: 24
+  - Saved game routes: 13
+  - Victory music routes: 14
+  - Failed stats routes: 6
+  - Test routes: 6
+
+- **UI Automation Tests:** 366 tests (optional, ask before running)
+  - Target Tag: 69 tests (~101 minutes)
+  - Carnival Derby: 40 tests (~56 minutes)
+  - Monster Mash: 67 tests (~93 minutes)
+  - Reef Royale: 83 tests (~114 minutes)
+  - Clockwork Quest: 107 tests (~143 minutes) [91 functional + 16 save/resume]
+  - **Sequential (`run_ui_tests.bat`): ~507 minutes (~8h 27m) — interactive Chrome sessions**
+  - **Parallel (`run_ui_tests_parallel.bat`): ~143 minutes (~2h 23m) — fully headless, no visible Chrome**
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 746 non-UI tests MUST pass
+✅ Run `flutter test` - ALL 1179 Flutter non-UI tests MUST pass
+✅ Run `cd server && dart test` - ALL 178 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -223,33 +244,48 @@ dart_games/
 │       ├── target-tag/              # Target Tag docs (8 files)
 │       ├── monster-mash/            # Monster Mash docs (8 files)
 │       └── reef-royale/            # Reef Royale docs (8 files)
-├── lib/                             # Source code
+├── server/                          # Dart Shelf backend server
+│   ├── bin/server.dart             # Entry point
+│   ├── lib/
+│   │   ├── database/               # SQLite database layer, migrations, per-session DB registry
+│   │   ├── models/                 # Server-side models
+│   │   ├── routes/                 # REST API route handlers
+│   │   └── middleware/             # CORS and logging middleware
+│   └── test/                       # Server tests (178 tests)
+│       └── routes/                 # Route-level tests
+├── lib/                             # Flutter source code
 │   ├── main.dart
 │   ├── models/
 │   ├── providers/
 │   ├── services/
-│   │   └── migration/               # Schema versioning and data migrations
+│   │   └── api/                    # API client layer (ApiClient, ApiConfig)
 │   ├── widgets/
 │   └── screens/
 │       └── games/
 │           ├── carnival_horse_race/
 │           ├── target_tag/
 │           ├── monster_mash/
-│           └── reef_royale/
-├── test/                            # Non-UI tests (637 tests)
-├── integration_test/                # UI automation tests (195 tests)
+│           ├── reef_royale/
+│           └── clockwork_quest/
+├── test/                            # Flutter non-UI tests (1179 tests)
+│   ├── shared/                     # Shared test helpers (MockApiServer, etc.)
+│   ├── services/api/               # API client tests
+│   └── ...
+├── integration_test/                # UI automation tests (364 tests)
 │   ├── shared/                     # Shared test helpers
-│   ├── target_tag/                 # Target Tag UI tests (5 files)
-│   ├── carnival_derby/             # Carnival Derby UI tests (1 file)
-│   ├── monster_mash/               # Monster Mash UI tests (6 files)
-│   └── reef_royale/                # Reef Royale UI tests (8 files)
+│   ├── target_tag/                 # Target Tag UI tests
+│   ├── carnival_derby/             # Carnival Derby UI tests
+│   ├── monster_mash/               # Monster Mash UI tests
+│   ├── reef_royale/                # Reef Royale UI tests
+│   └── clockwork_quest/            # Clockwork Quest UI tests
 └── assets/                          # Game assets
     ├── common/
     └── games/
         ├── carnival_derby/
         ├── target_tag/
         ├── monster_mash/
-        └── reef_royale/
+        ├── reef_royale/
+        └── clockwork_quest/
 ```
 
 ## Platform Support
@@ -266,9 +302,17 @@ All features must work on all platforms. See [Cross-Platform](docs/critical-rule
 ### Flutter Commands
 ```bash
 flutter run -d chrome          # Run on web
-flutter test                    # Run all non-UI tests
+flutter test                    # Run all Flutter non-UI tests
 flutter build web               # Build for web
 flutter doctor                  # Check Flutter setup
+```
+
+### Server Commands
+```bash
+cd server && dart run bin/server.dart  # Start server (default port 8080)
+cd server && dart test                  # Run all server tests
+cd server && dart run bin/server.dart --port 9090  # Custom port
+cd server && dart run bin/server.dart --data-dir /path/to/data  # Custom data dir
 ```
 
 ### Git Commands
@@ -295,6 +339,6 @@ git push origin <branch>        # Push (with permission)
 
 ---
 
-**Last Updated:** 2026-03-14
-**Documentation Version:** 3.2 (Clockwork Quest)
+**Last Updated:** 2026-04-15
+**Documentation Version:** 4.2 (Server-Side Migrations)
 **Total Documentation Files:** 77

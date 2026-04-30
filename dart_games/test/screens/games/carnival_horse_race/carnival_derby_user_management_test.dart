@@ -3,18 +3,20 @@ import 'package:dart_games/models/player.dart';
 import 'package:dart_games/models/horse_race_game.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/horse_race_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../shared/mock_api_helpers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Carnival Derby - User Management Integration', () {
+    late MockApiServer mockServer;
     late PlayerProvider playerProvider;
     late HorseRaceProvider horseRaceProvider;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
+      mockServer = MockApiServer();
       playerProvider = PlayerProvider();
+      playerProvider.initialize(mockServer.apiClient);
       horseRaceProvider = HorseRaceProvider();
       await playerProvider.loadPlayers();
     });
@@ -171,6 +173,7 @@ void main() {
 
       // Create new provider to simulate app restart
       final newProvider = PlayerProvider();
+      newProvider.initialize(mockServer.apiClient);
       await newProvider.loadPlayers();
 
       final loaded = newProvider.getPlayerById(player.id);

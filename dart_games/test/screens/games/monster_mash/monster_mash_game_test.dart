@@ -17,7 +17,7 @@ import 'package:dart_games/models/monster_mash_game.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/providers/monster_mash_provider.dart';
 import 'package:dart_games/services/game_skip_turn_helper.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../shared/mock_api_helpers.dart';
 
 // =============================================================================
 // REUSABLE TEST HELPERS
@@ -162,7 +162,7 @@ void group1_gameCreation() {
     // EXPECTED: No game is created, currentGame remains null
     test('3. Reject game with fewer than 2 players', () {
       TestWidgetsFlutterBinding.ensureInitialized();
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
 
       final provider = MonsterMashProvider();
       final singlePlayer = createTestPlayers(1);
@@ -176,7 +176,7 @@ void group1_gameCreation() {
     // EXPECTED: No game created for health outside 10-50 range
     test('4. Reject game with invalid health max', () {
       TestWidgetsFlutterBinding.ensureInitialized();
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
 
       final provider = MonsterMashProvider();
       final players = createTestPlayers(2);
@@ -900,7 +900,7 @@ void group9_sectorParsing() {
     // Tests the provider's _parseSector logic via processDartThrow
     test('41. Sector strings parse correctly', () {
       TestWidgetsFlutterBinding.ensureInitialized();
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
 
       final provider = MonsterMashProvider();
       final players = createTestPlayers(2);
@@ -941,7 +941,7 @@ void group10_skipTurn() {
     //           waitingForTakeout = true
     test('42. Skip after 0 darts adds 3 Skip markers', () {
       TestWidgetsFlutterBinding.ensureInitialized();
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
 
       final provider = MonsterMashProvider();
       final players = createTestPlayers(2);
@@ -968,7 +968,7 @@ void group10_skipTurn() {
     // EXPECTED: 2 "Skip" markers added, original damage preserved
     test('43. Skip after 1 dart adds 2 Skip markers and preserves effects', () {
       TestWidgetsFlutterBinding.ensureInitialized();
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
 
       final provider = MonsterMashProvider();
       final players = createTestPlayers(2);
@@ -1031,7 +1031,7 @@ void group10_skipTurn() {
     // EXPECTED: totalDartsThrown = 0, totalTurns = 0 (no real darts were thrown)
     test('46. Skip with 0 darts does not increment global stats', () {
       TestWidgetsFlutterBinding.ensureInitialized();
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
 
       final provider = MonsterMashProvider();
       final players = createTestPlayers(2);
@@ -1053,7 +1053,7 @@ void group10_skipTurn() {
     // EXPECTED: totalDartsThrown = 2 (only real throws), totalTurns = 1
     test('47. Skip after partial darts counts actual throws in global stats', () {
       TestWidgetsFlutterBinding.ensureInitialized();
-      SharedPreferences.setMockInitialValues({});
+      MockApiServer();
 
       final provider = MonsterMashProvider();
       final players = createTestPlayers(2);
