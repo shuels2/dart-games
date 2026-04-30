@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'package:dart_games/services/victory_music_service.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/settings_helpers.dart';
 import '../../shared/provider_helpers.dart';
@@ -28,6 +29,8 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
+
+    expect(VictoryMusicService().isInitialized, isTrue);
 
     // Winner should have gamesPlayed=1, gamesWon=1
     // completeGameToVictory makes the current first player win

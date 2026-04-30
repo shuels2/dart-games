@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'package:dart_games/services/victory_music_service.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
 import '_helpers.dart';
@@ -17,6 +18,8 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
+
+    expect(VictoryMusicService().isInitialized, isTrue);
 
     // Winner (Player A) should have gamesPlayed=1, gamesWon=1
     final winner = ProviderHelpers.findPlayerByName(tester, 'Player A');

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'package:dart_games/services/victory_music_service.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
@@ -20,6 +21,11 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
+
+    // _playVictoryMusic() calls getRandomMusicSource() → initialize();
+    // resetServerState() resets _initialized to false, so true here proves
+    // the results screen actually triggered music playback.
+    expect(VictoryMusicService().isInitialized, isTrue);
 
     // Winner (Player A) should have gamesPlayed=1, gamesWon=1
     final winner = ProviderHelpers.findPlayerByName(tester, 'Player A');
