@@ -506,25 +506,28 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     if (_gameCompleted) return;
     _gameCompleted = true;
 
-    final playerProvider = context.read<PlayerProvider>();
-    final targetTagProvider = context.read<TargetTagProvider>();
-    final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
-
-    if (winners.isNotEmpty) {
-      final winnerNames = winners.map((p) => p.name).toList();
-      _audioQueue!.announceWinner(winnerNames);
-    }
-
-    Future.delayed(const Duration(milliseconds: 3000), () {
+    void navigateToResults() {
       if (!mounted) return;
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => const TargetTagResultsScreen(),
         ),
       );
-    });
+    }
+
+    if (_dartboardEmulatorController.isAutoPlaying) {
+      navigateToResults();
+    } else {
+      final playerProvider = context.read<PlayerProvider>();
+      final targetTagProvider = context.read<TargetTagProvider>();
+      final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
+      if (winners.isNotEmpty) {
+        final winnerNames = winners.map((p) => p.name).toList();
+        _audioQueue!.announceWinner(winnerNames);
+      }
+      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+    }
   }
 
   @override

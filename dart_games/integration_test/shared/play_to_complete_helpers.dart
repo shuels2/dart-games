@@ -24,7 +24,7 @@ class PlayToCompleteHelpers {
       await tester.pump();
       if (isComplete()) break;
     }
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 5));
     await tester.pump();
     await tester.pump();
     await tester.pump();

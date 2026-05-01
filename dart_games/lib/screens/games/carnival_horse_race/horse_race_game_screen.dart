@@ -341,16 +341,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     if (_gameCompleted) return;
     _gameCompleted = true;
 
-    // Wait for final score announcement to complete before transitioning
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    void navigateToResults() {
       if (!mounted) return;
-
       final horseRaceProvider = context.read<HorseRaceProvider>();
       final playerProvider = context.read<PlayerProvider>();
       final winner = horseRaceProvider.getWinner(playerProvider.allPlayers);
-
       if (winner != null) {
-        // Navigate to results screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -358,7 +354,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           ),
         );
       }
-    });
+    }
+
+    if (_dartboardEmulatorController.isAutoPlaying) {
+      navigateToResults();
+    } else {
+      Future.delayed(const Duration(milliseconds: 2500), navigateToResults);
+    }
   }
 
   @override

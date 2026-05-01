@@ -451,21 +451,25 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     if (_gameCompleted) return;
     _gameCompleted = true;
 
-    final playerProvider = context.read<PlayerProvider>();
-    final monsterMashProvider = context.read<MonsterMashProvider>();
-    final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
-
-    if (winners.isNotEmpty) {
-      _audioQueue!.announceWinners(winners.map((p) => p.name).toList());
-    }
-
-    Future.delayed(const Duration(milliseconds: 3000), () {
+    void navigateToResults() {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MonsterMashResultsScreen()),
       );
-    });
+    }
+
+    if (_dartboardEmulatorController.isAutoPlaying) {
+      navigateToResults();
+    } else {
+      final playerProvider = context.read<PlayerProvider>();
+      final monsterMashProvider = context.read<MonsterMashProvider>();
+      final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
+      if (winners.isNotEmpty) {
+        _audioQueue!.announceWinners(winners.map((p) => p.name).toList());
+      }
+      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+    }
   }
 
   @override

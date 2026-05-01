@@ -217,22 +217,26 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     if (_gameCompleted) return;
     _gameCompleted = true;
 
-    // Announce victory
-    final reefProvider = context.read<ReefRoyaleProvider>();
-    final playerProvider = context.read<PlayerProvider>();
-    final winnerId = reefProvider.currentGame?.winnerId;
-    if (winnerId != null) {
-      final winner = playerProvider.allPlayers.firstWhere((p) => p.id == winnerId);
-      _audioQueue?.announceVictory(winner.name);
-    }
-
-    Future.delayed(const Duration(milliseconds: 3000), () {
+    void navigateToResults() {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ReefRoyaleResultsScreen()),
       );
-    });
+    }
+
+    if (_dartboardEmulatorController.isAutoPlaying) {
+      navigateToResults();
+    } else {
+      final reefProvider = context.read<ReefRoyaleProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final winnerId = reefProvider.currentGame?.winnerId;
+      if (winnerId != null) {
+        final winner = playerProvider.allPlayers.firstWhere((p) => p.id == winnerId);
+        _audioQueue?.announceVictory(winner.name);
+      }
+      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+    }
   }
 
   void _announceDartResult(ReefRoyaleProvider provider, String playerId, String sector) {
