@@ -29,13 +29,13 @@ class PlayToCompleteRunner {
 
     try {
       while (!_cancelled && context.mounted) {
-        if (strategy.isGameComplete(context)) break;
-
         if (strategy.shouldAutoTakeout(context)) {
           mockApi.simulateTakeoutFinished();
           await _delay(const Duration(milliseconds: 200));
           continue;
         }
+
+        if (strategy.isGameComplete(context)) break;
 
         final dart = strategy.getNextThrow(context);
         if (dart == null) break;
