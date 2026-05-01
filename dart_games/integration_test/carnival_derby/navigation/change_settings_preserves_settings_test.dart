@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
-import '../../shared/pump_sequences.dart';
 import '../ui/_helpers.dart';
 
 void main() {
@@ -20,18 +19,7 @@ void main() {
     await UITestHelpers.addPlayer(tester, 'Player B', config);
     await startGame(tester);
 
-    // Win in one turn: 3x T20 = 180
-    await throwDartViaMock(tester, 20, multiplier: 'triple');
-    await throwDartViaMock(tester, 20, multiplier: 'triple');
-    await throwDartViaMock(tester, 20, multiplier: 'triple');
-    await clickDartsRemoved(tester);
-
-    // Wait for results screen
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
+    await completeGameToVictory(tester);
 
     // Click Change Settings on results screen
     await UITestHelpers.clickChangeSettings(tester, config);

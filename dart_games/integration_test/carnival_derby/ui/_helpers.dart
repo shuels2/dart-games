@@ -161,6 +161,21 @@ Future<void> clickDartsRemoved(WidgetTester tester) async {
   }
 }
 
+/// Complete a game to victory with target score 180 (3x T20)
+/// Assumes game is already started with target score 180
+Future<void> completeGameToVictory(WidgetTester tester) async {
+  await throwDartViaMock(tester, 20, multiplier: 'triple');
+  await throwDartViaMock(tester, 20, multiplier: 'triple');
+  await throwDartViaMock(tester, 20, multiplier: 'triple');
+  await clickDartsRemoved(tester);
+
+  await tester.pump(const Duration(seconds: 3));
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 2));
+  await tester.pump();
+  await PumpSequences.fullRebuild(tester);
+}
+
 /// Open edit score dialog
 Future<void> openEditScore(WidgetTester tester) async {
   final editButton = config.getEditScoreButton();

@@ -2,26 +2,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
-import '../../shared/settings_helpers.dart';
 import '../results_screen/_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-      'Change Settings preserves shield max and players after victory',
+      'Change Settings preserves settings and players after victory',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
     await UITestHelpers.navigateToGameMenu(tester, config);
 
-    // Set non-default shield max
-    await setShieldMax(tester, 5);
-
+    await setShieldMax(tester, 3);
     await UITestHelpers.addPlayer(tester, 'Player A', config);
     await UITestHelpers.addPlayer(tester, 'Player B', config);
-
-    // Shield max 3 for quick game (override for playability)
-    await setShieldMax(tester, 3);
     await UITestHelpers.startGame(tester, config);
 
     await completeGameToVictory(tester, 'Player A', 'Player B');
@@ -29,7 +23,7 @@ void main() {
     // Click Change Settings on results screen
     await UITestHelpers.clickChangeSettings(tester, config);
 
-    // Verify we're on the menu with settings preserved
+    // Verify menu with settings preserved
     expect(config.getStartButton(), findsOneWidget);
     expect(find.text('Shield Max: 3'), findsOneWidget);
 
