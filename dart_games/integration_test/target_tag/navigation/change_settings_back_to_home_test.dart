@@ -21,6 +21,8 @@ void main() {
     await UITestHelpers.startGame(tester, config);
 
     await completeGameToVictory(tester, 'Player A', 'Player B');
+    await PumpSequences.fullRebuild(tester);
+    expect(config.getPlayAgainButton(), findsOneWidget);
 
     // Click Change Settings on results screen
     await UITestHelpers.clickChangeSettings(tester, config);

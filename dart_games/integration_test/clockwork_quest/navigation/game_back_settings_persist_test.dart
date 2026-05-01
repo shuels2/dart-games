@@ -16,7 +16,15 @@ void main() {
 
     // Complete game then Play Again to get fresh game screen
     await completeGameToVictory(tester);
+    await PumpSequences.fullRebuild(tester);
+    expect(config.getPlayAgainButton(), findsOneWidget);
     await UITestHelpers.clickPlayAgain(tester, config);
+
+    // Wait for game screen to fully render after Play Again
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
 
     // Tap game back button (0 darts thrown in new game, no save modal)
     await UITestHelpers.tapGameScreenBackButton(tester, config);

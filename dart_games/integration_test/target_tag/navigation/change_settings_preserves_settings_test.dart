@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
+import '../../shared/pump_sequences.dart';
 import '../results_screen/_helpers.dart';
 
 void main() {
@@ -19,6 +20,8 @@ void main() {
     await UITestHelpers.startGame(tester, config);
 
     await completeGameToVictory(tester, 'Player A', 'Player B');
+    await PumpSequences.fullRebuild(tester);
+    expect(config.getPlayAgainButton(), findsOneWidget);
 
     // Click Change Settings on results screen
     await UITestHelpers.clickChangeSettings(tester, config);

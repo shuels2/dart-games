@@ -23,6 +23,8 @@ void main() {
     await UITestHelpers.startGame(tester, config);
 
     await completeGameToVictory(tester);
+    await PumpSequences.fullRebuild(tester);
+    expect(config.getPlayAgainButton(), findsOneWidget);
 
     // Click Change Settings on results screen
     await UITestHelpers.clickChangeSettings(tester, config);
