@@ -381,7 +381,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
 
                   // Active player at the center
                   Align(
-                    alignment: const Alignment(0, -0.28),
+                    alignment: const Alignment(0, 0.0),
                     child: _buildClockCenterPanel(
                         provider, currentPlayer, currentPlayerId,
                         currentTarget, game, size),
@@ -464,7 +464,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final maxTarget = game.maxTarget as int;
 
     // All sizes derived from clockSize so the panel always fits inside the gear ring.
-    final characterSize = (clockSize * 0.4125).clamp(83.0, 358.0);
+    final characterSize = (clockSize * 0.462).clamp(93.0, 401.0);
     final panelMaxWidth = (clockSize * 0.56).clamp(130.0, 460.0);
     final nameFontSize = (clockSize * 0.032).clamp(11.0, 24.0);
     final targetFontSize = (clockSize * 0.065).clamp(22.0, 52.0);

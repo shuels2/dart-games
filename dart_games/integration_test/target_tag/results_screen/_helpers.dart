@@ -153,9 +153,9 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   // Turn 1: Player 1 throws TRIPLE on own target = 3 shields = TAGGED IN!
   await throwDartViaMock(tester, target1, multiplier: 'triple'); // 3 shields - TAGGED IN!
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);
@@ -165,7 +165,7 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   await PumpSequences.simpleUpdate(tester);
   await throwDartViaMock(tester, target2, multiplier: 'single'); // Shield 2
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);
@@ -175,17 +175,17 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   await PumpSequences.simpleUpdate(tester);
   await throwDartViaMock(tester, target2, multiplier: 'single'); // Attack! (shields 1->0, vulnerable)
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, target2, multiplier: 'single'); // Miss to end turn
+  await throwDartViaMock(tester, target2, multiplier: 'single'); // Attack! (shields 0, eliminated next hit)
   await PumpSequences.simpleUpdate(tester);
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);
 
   // Turn 4: Player 2 misses (still vulnerable at 0 shields)
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);
@@ -196,12 +196,13 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   await clickDartsRemoved(tester);
 
   // Extended wait for victory screen and confetti animation
-  await tester.pump(const Duration(seconds: 3)); // Wait for victory announcements
+  await tester.pump(const Duration(seconds: 4)); // Wait for victory announcements
   await tester.pump();
-  await tester.pump(const Duration(seconds: 2)); // Wait for navigation to results screen
+  await tester.pump(const Duration(seconds: 3)); // Wait for navigation to results screen
   await tester.pump();
-  await tester.pump(const Duration(seconds: 1)); // Wait for confetti controller to initialize
+  await tester.pump(const Duration(seconds: 2)); // Wait for confetti controller to initialize
   await tester.pump();
+  await PumpSequences.fullRebuild(tester);
 }
 
 /// Complete a team mode game and reach results screen
@@ -219,9 +220,9 @@ Future<void> completeGameToVictoryTeamMode(WidgetTester tester, String team1Play
   // Turn 1 (Team1 Player1): Get tagged in immediately with triple on own target
   await throwDartViaMock(tester, teamTargetNum, multiplier: 'triple'); // 3 shields - TAGGED IN!
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);
@@ -244,11 +245,11 @@ Future<void> completeGameToVictoryTeamMode(WidgetTester tester, String team1Play
   }
 
   // Turn 2 (Team2 Player1): Miss all 3 throws - stay at 0 shields
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 1, multiplier: 'single'); // Miss
+  await throwDartViaMock(tester, 0, multiplier: 'miss'); // Miss
   await PumpSequences.simpleUpdate(tester);
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);

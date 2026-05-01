@@ -37,6 +37,10 @@ class VictoryMusicService {
     return _apiClient!;
   }
 
+  /// Whether the service has been initialized (music list fetched from server).
+  /// Useful in tests to confirm getRandomMusicSource() was actually called.
+  bool get isInitialized => _initialized;
+
   /// For testing: reset internal state.
   void resetForTesting() {
     _musicFiles = [];

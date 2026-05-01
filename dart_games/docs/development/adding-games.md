@@ -376,8 +376,28 @@ Create test files in a game-specific subfolder under `integration_test/`:
 - `integration_test/your_game/your_game_edit_score_test.dart`
 - `integration_test/your_game/your_game_showcase_test.dart`
 - `test/screens/games/your_game/your_game_game_test.dart`
+- `test/screens/games/your_game/your_game_user_management_test.dart`
 
 Follow patterns from existing games.
+
+#### Mandatory Results Screen UI Tests
+
+The results screen UI tests MUST cover all three of the following. Unit tests alone are not sufficient — each of these bugs is invisible to unit tests but caught only by the full UI flow:
+
+**1. Exit button navigates to game selection (not root route)**
+Complete a game → click the exit/leave button → assert multiple game cards are visible. Use at least three game card assertions (e.g. `getCarnivalDerbyCard()`, `getTargetTagCard()`, `getMonsterMashCard()`). A single-card assertion is a false positive because `pushNamedAndRemoveUntil('/')` also shows the home screen in the test environment. The implementation must use `Navigator.popUntil(context, (route) => route.isFirst)` — using `pushNamedAndRemoveUntil('/')` navigates to the dartboard registration page in real use.
+
+**2. Player stats updated after victory**
+Complete a game → land on results screen → pump extra time for async API calls → read `PlayerProvider` via `ProviderHelpers.findPlayerByName` → assert winner has `gamesPlayed == 1`, `gamesWon == 1`, and a `gameHistory` entry with the correct `gameName`; assert every loser has `gamesPlayed == 1`, `gamesWon == 0`. If `_updatePlayerStats()` is accidentally omitted from `initState`, stats stay at 0 and this test fails — but the non-UI user management test still passes.
+
+**3. Victory music triggered after victory**
+`resetServerState()` resets `VictoryMusicService._initialized` to `false`. After the results screen loads, assert `VictoryMusicService().isInitialized == true`. This proves `_playVictoryMusic()` called `getRandomMusicSource()` → `initialize()` from `initState`. If `_playVictoryMusic()` is accidentally omitted, `isInitialized` stays `false` and the test fails.
+
+See `integration_test/clockwork_quest/results/winner_stats_updated_test.dart` for the reference implementation of tests 2 and 3, and `integration_test/clockwork_quest/results/leave_tower_test.dart` for test 1.
+
+#### User Management Non-UI Tests
+
+Also create `test/screens/games/your_game/your_game_user_management_test.dart` following the pattern in `test/screens/games/clockwork_quest/clockwork_quest_user_management_test.dart`. This test validates the `updatePlayerStats` business logic in isolation (winner/loser flags, duration, game name, persistence across reload). It complements but does not replace the UI flow test above.
 
 **MANDATORY: After writing tests, run a Spec Coverage Audit.**
 Cross-reference EVERY option from spec Section 7 and EVERY visual element from Section 10 against actual test files. For each option, verify there is at least one non-UI test AND one UI test that exercises it. Write any missing tests before proceeding. See [Spec Coverage Audit](../testing/spec-coverage-audit.md) for the full procedure.

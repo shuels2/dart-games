@@ -105,6 +105,9 @@ flutter drive --driver=test_driver/integration_test.dart \
 - [ ] Statistics display
 - [ ] Play again functionality
 - [ ] Settings preservation
+- [ ] **Exit button returns to game selection screen** — use `Navigator.popUntil(context, (route) => route.isFirst)`, NOT `pushNamedAndRemoveUntil('/', ...)`. Assert multiple game cards are visible after navigation (not just one), so the test would fail if the wrong route is used.
+- [ ] **Player stats updated on victory** — after the results screen loads and async calls settle, read `PlayerProvider` via `ProviderHelpers.findPlayerByName` and assert `gamesPlayed == 1`, `gamesWon == 1` for the winner and `gamesWon == 0` for all losers, plus a `gameHistory` entry with the correct `gameName`. This validates the full UI flow, not just that `updatePlayerStats` works in isolation.
+- [ ] **Victory music triggered on victory** — `resetServerState()` resets `VictoryMusicService._initialized` to `false`; after the results screen loads assert `VictoryMusicService().isInitialized == true`. This proves `_playVictoryMusic()` ran in `initState` — a unit test cannot catch a missing call.
 - [ ] [Other results screen scenarios]
 
 **Key Test Cases:**
@@ -178,6 +181,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 
 - `playAgainButton` - Play again button
 - `changeSettingsButton` - Change settings button
+- `leaveButton` - Exit/leave button (returns to game selection) — required for navigation test
 - `[otherKey]` - [Description]
 
 ## Test Patterns

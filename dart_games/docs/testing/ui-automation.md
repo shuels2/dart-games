@@ -52,6 +52,31 @@
 6. Save & Resume: 16 tests
 7. Screenshot: 1 test
 
+## Mandatory Results Screen Coverage
+
+Every game's Results Screen UI tests MUST include these three tests. They catch bugs that unit tests cannot, because unit tests call functions directly without validating whether the results screen actually calls them.
+
+### 1. Exit Button Navigation (`*_back_to_home_test.dart` or similar)
+- Complete a game → click the exit/leave button
+- Assert **at least three** game card keys are visible (e.g. `getCarnivalDerbyCard()`, `getTargetTagCard()`, `getMonsterMashCard()`)
+- A single-card assertion is a false positive: `pushNamedAndRemoveUntil('/')` also satisfies it in the test environment but routes to the dartboard registration page in real use
+- Implementation must use `Navigator.popUntil(context, (route) => route.isFirst)`, not `pushNamedAndRemoveUntil('/')`
+
+### 2. Player Stats Updated (`winner_stats_updated_test.dart`)
+- Complete a game → land on results screen → pump extra time for async calls
+- Read `PlayerProvider` via `ProviderHelpers.findPlayerByName`
+- Assert winner: `gamesPlayed == 1`, `gamesWon == 1`, `gameHistory.first.gameName == '<GameName>'`
+- Assert each loser: `gamesPlayed == 1`, `gamesWon == 0`
+- If `_updatePlayerStats()` is missing from results screen `initState`, stats stay at 0 and this test fails
+
+### 3. Victory Music Triggered (`winner_stats_updated_test.dart` — same file as #2)
+- `resetServerState()` resets `VictoryMusicService._initialized` to `false`
+- After results screen loads, assert `VictoryMusicService().isInitialized == true`
+- Proves `_playVictoryMusic()` called `getRandomMusicSource()` → `initialize()`
+- If `_playVictoryMusic()` is missing from results screen `initState`, `isInitialized` stays `false`
+
+See `integration_test/clockwork_quest/results/winner_stats_updated_test.dart` for the reference implementation of tests 2 and 3.
+
 ## ChromeDriver Version Sync
 
 ChromeDriver must match the installed Chrome major version. The `update_chromedriver.bat` script handles this automatically:

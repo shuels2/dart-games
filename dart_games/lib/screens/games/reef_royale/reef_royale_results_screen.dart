@@ -363,7 +363,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                       const SizedBox(height: 12),
 
                       // Rankings
-                      Flexible(child: _buildRankings(rankedIds, allPlayers, currentGame)),
+                      Flexible(child: SingleChildScrollView(child: _buildRankings(rankedIds, allPlayers, currentGame))),
 
                       const SizedBox(height: 16),
 
