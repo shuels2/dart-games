@@ -6,7 +6,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/settings_helpers.dart';
 import '../../shared/pump_sequences.dart';
-import '../results_screen/_helpers.dart';
+import '_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
