@@ -127,6 +127,10 @@ See [Dartboard Paused Modal Integration](dartboard-paused-modal.md).
 - [ ] Use edit score dialog component
 - [ ] Use dartboard paused modal component
 - [ ] Create component config factory methods
+- [ ] Implement PlayToCompleteStrategy for the game
+- [ ] Create PlayToCompleteButtonConfig factory method
+- [ ] Wire Play to Complete into game screen (runner, guards, callbacks)
+- [ ] Write Play to Complete UI tests (default settings + game-critical settings + mid-game)
 
 ## Critical: Game Duration Tracking for ALL Players
 

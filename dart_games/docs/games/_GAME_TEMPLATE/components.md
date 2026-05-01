@@ -170,6 +170,48 @@ showEditScoreDialog(
 );
 ```
 
+## Play to Complete
+
+### PlayToCompleteStrategy
+**File:** `lib/services/play_to_complete/[game_name]_strategy.dart`
+
+**Implementation:**
+```dart
+class [GameName]Strategy implements PlayToCompleteStrategy {
+  @override
+  bool isGameComplete(BuildContext context) {
+    return context.read<[GameName]Provider>().hasWinner;
+  }
+
+  @override
+  bool shouldAutoTakeout(BuildContext context) {
+    return context.read<[GameName]Provider>().shouldPromptTakeout;
+  }
+
+  @override
+  SimulatedThrow? getNextThrow(BuildContext context) {
+    // Read current game state and settings from provider
+    // Return optimal throw based on game rules and current state
+    // Return null if game is done
+  }
+}
+```
+
+### PlayToCompleteButtonConfig
+**Factory Method:** `PlayToCompleteButtonConfig.[gameName]()`
+
+**Configuration:**
+```dart
+factory PlayToCompleteButtonConfig.[gameName]() {
+  return PlayToCompleteButtonConfig(
+    backgroundColor: const Color(0xXXXXXX),
+    foregroundColor: [color],
+    borderColor: const Color(0xXXXXXX),
+    textStyle: GoogleFonts.[fontName](...),
+  );
+}
+```
+
 ## Custom Components
 
 ### [Custom Component 1 Name]

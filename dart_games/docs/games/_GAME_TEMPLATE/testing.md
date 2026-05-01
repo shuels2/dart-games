@@ -216,6 +216,28 @@ flutter drive --driver=test_driver/integration_test.dart \
 **Workaround:** [How to handle it]
 **Tests Affected:** [Which tests are affected]
 
+## Play to Complete Tests
+**Location:** `integration_test/[game_name]/play_to_complete/`
+
+**Required Tests:**
+- `default_settings_test.dart` — Game completes with default settings
+- One test per game-critical setting (settings that change strategy behavior)
+- `mid_game_test.dart` — Manual darts thrown first, then Play to Complete finishes
+
+**Pattern:**
+```dart
+await UITestHelpers.resetServerState();
+await UITestHelpers.navigateToGameMenu(tester, config);
+// Configure settings if needed
+await UITestHelpers.addPlayer(tester, 'Player A', config);
+await UITestHelpers.addPlayer(tester, 'Player B', config);
+await UITestHelpers.startGame(tester, config);
+await PlayToCompleteHelpers.tapPlayToComplete(tester);
+await PlayToCompleteHelpers.waitForGameCompletion(tester, isComplete: () => provider.hasWinner);
+expect(provider.hasWinner, isTrue);
+expect(config.getPlayAgainButton(), findsOneWidget);
+```
+
 ## Visual Validation Tests
 
 ### [Visual Test 1]

@@ -10,17 +10,18 @@ class DartboardEmulatorFAB extends StatelessWidget {
   /// when the user explicitly chose emulator mode.
   final bool isConnected;
   final DartboardFABConfig config;
+  final VoidCallback? onCancelAutoPlay;
 
   const DartboardEmulatorFAB({
     super.key,
     required this.controller,
     required this.isConnected,
     required this.config,
+    this.onCancelAutoPlay,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Don't render if connected
     if (isConnected) {
       return const SizedBox.shrink();
     }
@@ -28,6 +29,19 @@ class DartboardEmulatorFAB extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
+        if (controller.isAutoPlaying) {
+          return FloatingActionButton.extended(
+            key: DartboardEmulatorKeys.toggleFAB,
+            onPressed: onCancelAutoPlay,
+            backgroundColor: Colors.red[700],
+            icon: const Icon(Icons.stop, color: Colors.white),
+            label: Text(
+              'Cancel Auto-Play',
+              style: config.textStyle.copyWith(color: Colors.white),
+            ),
+          );
+        }
+
         return FloatingActionButton.extended(
           key: DartboardEmulatorKeys.toggleFAB,
           onPressed: controller.toggle,

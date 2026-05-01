@@ -189,3 +189,91 @@ class DartboardFABConfig {
     );
   }
 }
+
+class PlayToCompleteButtonConfig {
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color borderColor;
+  final TextStyle textStyle;
+  final String buttonText;
+  final IconData icon;
+  final String runningText;
+
+  const PlayToCompleteButtonConfig({
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.borderColor,
+    required this.textStyle,
+    this.buttonText = 'Play to Complete',
+    this.icon = Icons.fast_forward,
+    this.runningText = 'Auto-Playing...',
+  });
+
+  factory PlayToCompleteButtonConfig.carnivalDerby() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFFE63946), // Lava Red
+      foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+      borderColor: const Color(0xFFFFD700), // Canary Yellow
+      textStyle: GoogleFonts.bangers(
+        fontSize: 16,
+        letterSpacing: 1.0,
+        color: const Color(0xFFF1FAEE),
+      ),
+    );
+  }
+
+  factory PlayToCompleteButtonConfig.targetTag() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFFFF007A), // Hot pink
+      foregroundColor: Colors.white,
+      borderColor: const Color(0xFF00FFA3), // Neon green
+      textStyle: GoogleFonts.fredoka(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+        color: Colors.white,
+      ),
+    );
+  }
+
+  factory PlayToCompleteButtonConfig.monsterMash() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFF4B0082), // Haunted Purple
+      foregroundColor: const Color(0xFFF5F5DC), // Aged Parchment
+      borderColor: const Color(0xFF7FFF00), // Ecto-Green
+      textStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 1.0,
+        color: const Color(0xFFF5F5DC),
+      ),
+    );
+  }
+
+  factory PlayToCompleteButtonConfig.reefRoyale() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFF48D1CC), // Seafoam Green
+      foregroundColor: const Color(0xFFFFF8F0), // Pearl White
+      borderColor: const Color(0xFF00CED1), // Sunlit Aqua
+      textStyle: GoogleFonts.fredoka(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+        color: const Color(0xFFFFF8F0),
+      ),
+    );
+  }
+
+  factory PlayToCompleteButtonConfig.clockworkQuest() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFFC5A54E), // Brass Gold
+      foregroundColor: const Color(0xFF2C2C34), // Dark Iron
+      borderColor: const Color(0xFFB87333), // Copper Rose
+      textStyle: GoogleFonts.cinzelDecorative(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+        color: const Color(0xFF2C2C34),
+      ),
+    );
+  }
+}
