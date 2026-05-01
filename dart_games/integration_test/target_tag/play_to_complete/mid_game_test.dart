@@ -5,7 +5,10 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
-import '../gameplay/_helpers.dart';
+import '../../shared/dart_throw_helpers.dart';
+import '../../shared/game_setup_helpers.dart';
+
+final config = GameUIConfig.targetTag();
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -21,9 +24,9 @@ void main() {
     await UITestHelpers.startGame(tester, config);
 
     // Throw 2 manual darts (building shields on own target)
-    final targetNumber = getCurrentPlayerTargetNumber(tester);
-    await throwDartViaMock(tester, targetNumber, multiplier: 'single');
-    await throwDartViaMock(tester, targetNumber, multiplier: 'single');
+    final targetNumber = GameSetupHelpers.getCurrentPlayerTargetNumber(tester);
+    await DartThrowHelpers.throwDartViaMock(tester, targetNumber, multiplier: 'single');
+    await DartThrowHelpers.throwDartViaMock(tester, targetNumber, multiplier: 'single');
 
     final provider = ProviderHelpers.getTargetTagProvider(tester);
     expect(provider.hasWinner, isFalse);

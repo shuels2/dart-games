@@ -5,7 +5,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
-import '../ui/_helpers.dart' show setTargetScore;
+import '../../shared/game_setup_helpers.dart';
 
 final config = GameUIConfig.carnivalDerby();
 
@@ -17,7 +17,7 @@ void main() {
     await UITestHelpers.resetServerState();
     await UITestHelpers.navigateToGameMenu(tester, config);
 
-    await setTargetScore(tester, 250);
+    await GameSetupHelpers.setCarnivalDerbyTargetScoreSlider(tester, 250);
 
     await UITestHelpers.addPlayer(tester, 'Player A', config);
     await UITestHelpers.addPlayer(tester, 'Player B', config);

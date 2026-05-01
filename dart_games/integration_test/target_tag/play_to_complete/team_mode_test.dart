@@ -5,7 +5,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
-import '../gameplay/_helpers.dart' show enableTeamMode;
+import '../../shared/game_setup_helpers.dart';
 
 final config = GameUIConfig.targetTag();
 
@@ -17,7 +17,7 @@ void main() {
     await UITestHelpers.resetServerState();
     await UITestHelpers.navigateToGameMenu(tester, config);
 
-    await enableTeamMode(tester);
+    await GameSetupHelpers.enableTargetTagTeamMode(tester);
 
     await UITestHelpers.addPlayer(tester, 'Player A', config);
     await UITestHelpers.addPlayer(tester, 'Player B', config);

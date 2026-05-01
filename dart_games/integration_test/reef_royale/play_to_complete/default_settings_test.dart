@@ -5,7 +5,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
-import '../gameplay/_helpers.dart' show setupAndStartGame;
+import '../../shared/game_setup_helpers.dart';
 
 final config = GameUIConfig.reefRoyale();
 
@@ -15,7 +15,7 @@ void main() {
   testWidgets('Play to Complete: Reef Royale with default settings',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
+    await GameSetupHelpers.setupAndStartReefRoyale(tester, config);
 
     await PlayToCompleteHelpers.tapPlayToComplete(tester);
 

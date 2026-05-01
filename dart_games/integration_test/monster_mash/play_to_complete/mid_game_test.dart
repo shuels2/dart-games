@@ -6,7 +6,9 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/settings_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
-import '../gameplay/_helpers.dart';
+import '../../shared/dart_throw_helpers.dart';
+
+final config = GameUIConfig.monsterMash();
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +31,8 @@ void main() {
     final opponent = players.firstWhere((p) => p.id != currentPlayerId);
     final opponentTarget = ProviderHelpers.getMonsterMashPlayerTarget(tester, opponent.id)!;
 
-    await throwDartViaMock(tester, opponentTarget, multiplier: 'single');
-    await throwDartViaMock(tester, opponentTarget, multiplier: 'single');
+    await DartThrowHelpers.throwDartViaMock(tester, opponentTarget, multiplier: 'single');
+    await DartThrowHelpers.throwDartViaMock(tester, opponentTarget, multiplier: 'single');
 
     final provider = ProviderHelpers.getMonsterMashProvider(tester);
     expect(provider.hasWinner, isFalse);

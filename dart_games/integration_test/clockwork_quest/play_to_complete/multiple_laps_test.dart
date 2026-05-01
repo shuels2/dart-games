@@ -5,7 +5,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
-import '../gameplay/_helpers.dart' show setupAndStartGame;
+import '../../shared/game_setup_helpers.dart';
 
 final config = GameUIConfig.clockworkQuest();
 
@@ -15,7 +15,8 @@ void main() {
   testWidgets('Play to Complete: Clockwork Quest with 2 laps',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config, laps: 2);
+    await GameSetupHelpers.setupAndStartClockworkQuest(tester, config,
+        laps: 2);
 
     await PlayToCompleteHelpers.tapPlayToComplete(tester);
 

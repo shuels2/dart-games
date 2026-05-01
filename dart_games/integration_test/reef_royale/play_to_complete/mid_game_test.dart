@@ -5,7 +5,10 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
-import '../gameplay/_helpers.dart';
+import '../../shared/game_setup_helpers.dart';
+import '../../shared/dart_throw_helpers.dart';
+
+final config = GameUIConfig.reefRoyale();
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -13,11 +16,11 @@ void main() {
   testWidgets('Play to Complete: Reef Royale mid-game pickup',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
+    await GameSetupHelpers.setupAndStartReefRoyale(tester, config);
 
     // Throw 2 manual darts first
-    await throwDartViaMock(tester, 20, multiplier: 'single');
-    await throwDartViaMock(tester, 20, multiplier: 'single');
+    await DartThrowHelpers.throwDartViaMock(tester, 20, multiplier: 'single');
+    await DartThrowHelpers.throwDartViaMock(tester, 20, multiplier: 'single');
 
     final provider = ProviderHelpers.getReefRoyaleProvider(tester);
     expect(provider.hasWinner, isFalse);
