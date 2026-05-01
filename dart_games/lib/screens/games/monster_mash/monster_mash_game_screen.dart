@@ -65,6 +65,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   Future<void> _initializeGame() async {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
+    if (mounted) setState(() {});
 
     final globalQueue = GameAnnouncementQueueService();
     await globalQueue.loadSettings();

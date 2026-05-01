@@ -53,6 +53,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final dartboardProvider = context.read<DartboardProvider>();
       _mockApi = dartboardProvider.apiService;
+      if (mounted) setState(() {});
 
       // Initialize global announcement queue with Carnival Derby helper
       final globalQueue = GameAnnouncementQueueService();

@@ -53,6 +53,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
   Future<void> _initializeGame() async {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
+    if (mounted) setState(() {});
 
     // Subscribe to dartboard events
     final eventStream = dartboardProvider.dartboardEventStream;

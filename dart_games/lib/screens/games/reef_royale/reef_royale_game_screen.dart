@@ -67,6 +67,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
   Future<void> _initializeGame() async {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
+    if (mounted) setState(() {});
 
     // Initialize audio
     final globalQueue = GameAnnouncementQueueService();

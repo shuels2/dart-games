@@ -58,6 +58,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   Future<void> _initializeGame() async {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
+    if (mounted) setState(() {});
 
     // Initialize global announcement queue with Target Tag helper
     final globalQueue = GameAnnouncementQueueService();
