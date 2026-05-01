@@ -24,6 +24,36 @@ class TargetTagStrategy implements PlayToCompleteStrategy {
     final playerId = provider.getCurrentPlayerId();
     if (playerId == null) return null;
 
+    // Designate the first non-eliminated player as the winner.
+    // All other players throw neutral darts so the winner can
+    // build shields and eliminate them without oscillation.
+    final winnerId = game.playerIds.firstWhere(
+      (id) => !provider.isEliminated(id),
+      orElse: () => game.playerIds.first,
+    );
+
+    bool isDesignatedWinner = playerId == winnerId;
+
+    // In team mode, teammates of the winner also play normally
+    if (!isDesignatedWinner &&
+        game.mode.name == 'team' &&
+        game.playerToTeam != null) {
+      final winnerTeam = game.playerToTeam![winnerId];
+      final myTeam = game.playerToTeam![playerId];
+      if (winnerTeam == myTeam) isDesignatedWinner = true;
+    }
+
+    if (!isDesignatedWinner) {
+      // Throw at a number not assigned to any player (no effect)
+      final assignedNumbers = game.targetNumbers.values.toSet();
+      int neutralNumber = 20;
+      while (assignedNumbers.contains(neutralNumber)) {
+        neutralNumber--;
+      }
+      return SimulatedThrow(
+          score: neutralNumber, multiplier: 'single', baseScore: neutralNumber);
+    }
+
     final isTaggedIn = provider.isTaggedIn(playerId);
 
     if (!isTaggedIn) {
