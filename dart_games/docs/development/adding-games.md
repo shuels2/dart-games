@@ -207,6 +207,7 @@ See [Game Integration Requirements](game-integration.md) for complete details.
 - ✅ Create announcement helper class
 - ✅ Update player stats for ALL players (winners and losers)
 - ✅ Track game duration
+- ✅ Follow [navigation rules](game-integration.md#6-navigation-rules) for back arrows, Change Settings, Play Again, and Home
 
 ### 7. Organize Game Assets
 
@@ -524,6 +525,7 @@ Use this checklist to ensure complete integration:
 - [ ] Integrated with GameAnnouncementQueueService
 - [ ] Integrated with VictoryMusicService
 - [ ] Integrated with DartboardProvider
+- [ ] Follows navigation rules (menu→Home, game→menu, Change Settings keeps Home)
 - [ ] Created announcement helper
 - [ ] Organized game assets
 - [ ] Created component configurations

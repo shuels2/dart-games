@@ -90,6 +90,51 @@ class GameProvider {
 }
 ```
 
+### 6. Navigation Rules
+
+Every game MUST follow these back-navigation rules:
+
+✅ **Game menu back arrow** → returns to Home (game selection)  
+✅ **Game screen back arrow** → returns to that game's menu (show save modal if darts thrown)  
+✅ **Results → Change Settings** → keeps Home in the stack  
+✅ **Results → Play Again** → replaces results with new game screen  
+✅ **Results → Home** → pops to first route  
+
+```dart
+// Menu screen back arrow — pops to Home
+leading: IconButton(
+  icon: const Icon(Icons.arrow_back),
+  onPressed: () => Navigator.pop(context),
+),
+
+// Game screen back arrow — pops to Menu (with save guard)
+onPressed: () {
+  if (hasDartsThrown) {
+    setState(() => _showSaveModal = true);
+  } else {
+    Navigator.of(context).pop();
+  }
+},
+
+// Results → Change Settings — keep Home, remove game + results
+Navigator.pushAndRemoveUntil(
+  context,
+  MaterialPageRoute(builder: (context) => YourGameMenuScreen(...)),
+  (route) => route.isFirst,  // MUST use route.isFirst, NOT (route) => false
+);
+
+// Results → Play Again — replace results with new game
+Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (context) => const YourGameScreen()),
+);
+
+// Results → Home — pop everything back to Home
+Navigator.popUntil(context, (route) => route.isFirst);
+```
+
+**Critical:** Never use `(route) => false` in Change Settings — this clears the Home route from the stack, breaking the menu back arrow.
+
 ## Optional But Recommended Integrations
 
 ### Dartboard Emulator Components
@@ -126,6 +171,7 @@ See [Dartboard Paused Modal Integration](dartboard-paused-modal.md).
 - [ ] Use add player dialog component
 - [ ] Use edit score dialog component
 - [ ] Use dartboard paused modal component
+- [ ] Follow navigation rules (menu→Home, game→menu, Change Settings uses `route.isFirst`)
 - [ ] Create component config factory methods
 - [ ] Implement PlayToCompleteStrategy for the game
 - [ ] Create PlayToCompleteButtonConfig factory method
