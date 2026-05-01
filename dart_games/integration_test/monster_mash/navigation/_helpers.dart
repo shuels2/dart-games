@@ -14,34 +14,34 @@ MockScoliaApiService? getMockApi(WidgetTester tester) {
 
 Future<void> throwDartViaMock(WidgetTester tester, int number, {String multiplier = 'single'}) async {
   final mockApi = getMockApi(tester);
-  if (mockApi != null) {
-    mockApi.simulateDartThrow(
-      score: number * (multiplier == 'double' ? 2 : multiplier == 'triple' ? 3 : 1),
-      multiplier: multiplier,
-      playerName: 'Player',
-      baseScore: number,
-      widgetX: 125.0,
-      widgetY: 125.0,
-      widgetSize: 250.0,
-    );
-    await PumpSequences.simpleUpdate(tester);
-  }
+  assert(mockApi != null, 'Mock API not available - game may not be initialized');
+  mockApi!.simulateDartThrow(
+    score: number * (multiplier == 'double' ? 2 : multiplier == 'triple' ? 3 : 1),
+    multiplier: multiplier,
+    playerName: 'Player',
+    baseScore: number,
+    widgetX: 125.0,
+    widgetY: 125.0,
+    widgetSize: 250.0,
+  );
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.pump();
 }
 
 Future<void> throwMissViaMock(WidgetTester tester) async {
   final mockApi = getMockApi(tester);
-  if (mockApi != null) {
-    mockApi.simulateDartThrow(
-      score: 0,
-      multiplier: 'single',
-      playerName: 'Player',
-      baseScore: 0,
-      widgetX: 125.0,
-      widgetY: 125.0,
-      widgetSize: 250.0,
-    );
-    await PumpSequences.simpleUpdate(tester);
-  }
+  assert(mockApi != null, 'Mock API not available - game may not be initialized');
+  mockApi!.simulateDartThrow(
+    score: 0,
+    multiplier: 'single',
+    playerName: 'Player',
+    baseScore: 0,
+    widgetX: 125.0,
+    widgetY: 125.0,
+    widgetSize: 250.0,
+  );
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.pump();
 }
 
 Future<void> clickDartsRemoved(WidgetTester tester) async {
