@@ -413,8 +413,22 @@ Screenshots are saved to `temp_screenshots/`. Read each one and evaluate against
 
 **History:** This bug was the root cause of extensive debugging during the server-side updates branch. Initial investigation incorrectly suspected test cleanup issues, leading to per-test-file server isolation. The actual fix was per-session database isolation, which allowed safely sharing one server per game category.
 
+## Shared Test Helpers
+
+UI automation tests use shared helpers from `integration_test/shared/` to avoid code duplication across games. Each game's `_helpers.dart` files delegate to these shared static methods rather than duplicating function bodies.
+
+Key shared helpers:
+- **`DartThrowHelpers`** — All dart simulation (throw, miss, bullseye, remove darts)
+- **`GameSetupHelpers`** — Per-game setup with settings configuration
+- **`SaveResumeHelpers`** — Save/resume test patterns and `GameSaveConfig` factories
+- **`UITestHelpers`** — Navigation and player management
+- **`PumpSequences`** — Standardized frame pumping patterns
+
+When adding a new game, extend the shared helpers and create game-specific `_helpers.dart` files using the delegate pattern. See [Shared Helpers Reference](shared-helpers-reference.md) for templates and the full helper list.
+
 ## Related Documentation
 
 - [Test Overview](test-overview.md)
 - [Continuous Animations](continuous-animations.md)
+- [Shared Helpers Reference](shared-helpers-reference.md)
 - [Build Process](../deployment/build-process.md)

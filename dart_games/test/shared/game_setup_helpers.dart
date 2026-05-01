@@ -38,6 +38,97 @@ class GameSetupHelpers {
     await UITestHelpers.startGame(tester, config);
   }
 
+  // ===== Target Tag =====
+
+  static Future<void> setupAndStartTargetTag(
+    WidgetTester tester,
+    GameUIConfig config, {
+    int? shieldMax,
+    bool teamMode = false,
+    bool heroBonus = false,
+    List<String>? playerNames,
+  }) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+
+    if (shieldMax != null) {
+      await SettingsHelpers.setTargetTagShieldMax(tester, shieldMax);
+    }
+    if (teamMode) {
+      await SettingsHelpers.toggleTargetTagTeamMode(tester);
+      await PumpSequences.fullRebuild(tester);
+    }
+    if (heroBonus) {
+      await SettingsHelpers.toggleTargetTagHeroBonus(tester);
+    }
+
+    final names = playerNames ?? ['Player A', 'Player B'];
+    for (final name in names) {
+      await UITestHelpers.addPlayer(tester, name, config);
+    }
+
+    await UITestHelpers.startGame(tester, config);
+  }
+
+  // ===== Carnival Derby =====
+
+  static Future<void> setupAndStartCarnivalDerby(
+    WidgetTester tester,
+    GameUIConfig config, {
+    int? targetScore,
+    bool perfectFinish = false,
+    List<String>? playerNames,
+  }) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+
+    if (targetScore != null) {
+      await setCarnivalDerbyTargetScoreSlider(tester, targetScore);
+    }
+    if (perfectFinish) {
+      await SettingsHelpers.toggleCarnivalDerbyPerfectFinish(tester);
+    }
+
+    final names = playerNames ?? ['Player A', 'Player B'];
+    for (final name in names) {
+      await UITestHelpers.addPlayer(tester, name, config);
+    }
+
+    await UITestHelpers.startGame(tester, config);
+  }
+
+  // ===== Monster Mash =====
+
+  static Future<void> setupAndStartMonsterMash(
+    WidgetTester tester,
+    GameUIConfig config, {
+    int? healthMax,
+    int? roundLimit,
+    bool bonusBuffs = false,
+    bool speedPlay = false,
+    List<String>? playerNames,
+  }) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+
+    if (healthMax != null) {
+      await SettingsHelpers.setMonsterMashHealthMax(tester, healthMax);
+    }
+    if (roundLimit != null) {
+      await SettingsHelpers.setMonsterMashRoundLimit(tester, roundLimit);
+    }
+    if (bonusBuffs) {
+      await SettingsHelpers.toggleMonsterMashBonusBuffs(tester);
+    }
+    if (speedPlay) {
+      await SettingsHelpers.toggleMonsterMashSpeedPlay(tester);
+    }
+
+    final names = playerNames ?? ['Player A', 'Player B'];
+    for (final name in names) {
+      await UITestHelpers.addPlayer(tester, name, config);
+    }
+
+    await UITestHelpers.startGame(tester, config);
+  }
+
   // ===== Reef Royale =====
 
   static Future<void> setupAndStartReefRoyale(
@@ -50,11 +141,16 @@ class GameSetupHelpers {
     bool speedPlay = false,
     int? roundLimit,
     bool randomReefs = false,
+    bool showHints = false,
+    List<String>? playerNames,
   }) async {
     await UITestHelpers.navigateToGameMenu(tester, config);
 
     if (cursedTide) {
       await SettingsHelpers.setReefRoyaleGameMode(tester, 'Cursed Tide');
+    }
+    if (showHints) {
+      await SettingsHelpers.toggleReefRoyaleShowHints(tester);
     }
     if (easyClaim) {
       await SettingsHelpers.toggleReefRoyaleEasyClaim(tester);
@@ -75,8 +171,10 @@ class GameSetupHelpers {
       await SettingsHelpers.setReefRoyaleRoundLimit(tester, roundLimit);
     }
 
-    await UITestHelpers.addPlayer(tester, 'Player A', config);
-    await UITestHelpers.addPlayer(tester, 'Player B', config);
+    final names = playerNames ?? ['Player A', 'Player B'];
+    for (final name in names) {
+      await UITestHelpers.addPlayer(tester, name, config);
+    }
 
     await UITestHelpers.startGame(tester, config);
   }

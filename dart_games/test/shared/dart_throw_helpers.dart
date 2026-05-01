@@ -64,6 +64,29 @@ class DartThrowHelpers {
     }
   }
 
+  static Future<void> throwOuterBullViaMock(WidgetTester tester) async {
+    final mockApi = getMockApi(tester);
+    if (mockApi != null) {
+      mockApi.simulateDartThrow(
+        score: 25,
+        multiplier: 'outer_bull',
+        playerName: 'Player',
+        baseScore: 25,
+        widgetX: 125.0,
+        widgetY: 125.0,
+        widgetSize: 250.0,
+      );
+      await PumpSequences.simpleUpdate(tester);
+    }
+  }
+
+  static Future<void> completeTurnWithMisses(WidgetTester tester) async {
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await clickDartsRemoved(tester);
+  }
+
   static Future<void> clickDartsRemoved(WidgetTester tester) async {
     final dartsRemovedButton = find.text('DARTS REMOVED');
     if (dartsRemovedButton.evaluate().isNotEmpty) {

@@ -35,6 +35,9 @@ When modifying any file in either shared folder:
 - `results_helpers.dart` - Results screen verification
 - `pump_sequences.dart` - Animation and async waiting
 - `game_ui_config.dart` - Game-specific UI configuration
+- `dart_throw_helpers.dart` - Dart simulation via mock API
+- `game_setup_helpers.dart` - Per-game setup with settings
+- `save_resume_helpers.dart` - Save/resume test patterns
 
 ### Exception: Integration-Test-Only Files
 
@@ -44,6 +47,16 @@ Some files only exist in `integration_test/shared/` because they're specific to 
 - Browser-specific functions
 
 **Rule:** If a file exists in both locations, keep them in sync. If it only exists in one, that's intentional.
+
+### Game-Specific `_helpers.dart` Convention
+
+Each game's test subdirectories have `_helpers.dart` files that **delegate** to shared helpers rather than duplicating code. When a shared helper changes:
+
+1. Update the shared file in both `test/shared/` and `integration_test/shared/`
+2. Game-specific `_helpers.dart` files automatically pick up the changes (they call shared functions, not copy them)
+3. Only update game-specific helpers if you're changing a function signature
+
+See [Shared Helpers Reference](shared-helpers-reference.md) for the full list of shared helpers and the delegate pattern.
 
 ## When Features Change
 

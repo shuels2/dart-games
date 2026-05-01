@@ -44,6 +44,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [UI Automation](docs/testing/ui-automation.md) - 414 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
+- [Shared Helpers Reference](docs/testing/shared-helpers-reference.md) - Shared test helper files, delegate pattern, new game templates
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
 
 ### 🚀 Deployment

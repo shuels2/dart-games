@@ -416,6 +416,38 @@ Create test files in a game-specific subfolder under `integration_test/`:
 
 Follow patterns from existing games.
 
+#### Create `_helpers.dart` Using Shared Helpers
+
+Each test subdirectory (gameplay, navigation, results, save_resume, etc.) needs a `_helpers.dart` file. **Use the delegate pattern** — import shared helpers and create one-line delegates rather than copying function bodies:
+
+1. **Extend shared helpers** for your game:
+   - Add `GameUIConfig.yourGame()` factory to `game_ui_config.dart`
+   - Add `GameSetupHelpers.setupAndStartYourGame()` to `game_setup_helpers.dart`
+   - Add `GameSaveConfig.yourGame()` and `.yourGameSecond()` factories to `save_resume_helpers.dart`
+   - Add settings toggles to `settings_helpers.dart`
+   - Add provider accessors to `provider_helpers.dart`
+   - **Sync all additions** to both `test/shared/` and `integration_test/shared/`
+
+2. **Create `_helpers.dart` files** that delegate to shared helpers:
+   ```dart
+   import '../../shared/dart_throw_helpers.dart';
+   import '../../shared/game_ui_config.dart';
+
+   final config = GameUIConfig.yourGame();
+
+   // One-line delegates — never copy function bodies
+   Future<void> throwDartViaMock(WidgetTester tester, int number,
+           {String multiplier = 'single'}) =>
+       DartThrowHelpers.throwDartViaMock(tester, number, multiplier: multiplier);
+   ```
+
+3. **Write game-specific logic only** in `_helpers.dart`:
+   - `completeGameToVictory()` — unique dart sequences per game
+   - Visual validation functions — game-specific UI assertions
+   - Provider shortcuts for complex assertions
+
+See [Shared Helpers Reference](../testing/shared-helpers-reference.md) for complete templates and the full helper list.
+
 #### Mandatory Results Screen UI Tests
 
 The results screen UI tests MUST cover all three of the following. Unit tests alone are not sufficient — each of these bugs is invisible to unit tests but caught only by the full UI flow:
