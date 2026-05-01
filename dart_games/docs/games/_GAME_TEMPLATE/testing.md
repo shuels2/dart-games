@@ -238,6 +238,52 @@ expect(provider.hasWinner, isTrue);
 expect(config.getPlayAgainButton(), findsOneWidget);
 ```
 
+## Navigation Tests
+**Location:** `integration_test/[game_name]/navigation/`
+
+Every game MUST have these 4 navigation UI tests. They catch route stack bugs (e.g., `(route) => false` vs `route.isFirst` in Change Settings).
+
+### Required Test Files
+
+1. **`menu_back_to_home_test.dart`** (1 test)
+   - Navigate to game menu, tap back button, verify home screen with ≥3 game cards visible
+   - Catches: broken menu back navigation
+
+2. **`game_back_settings_persist_test.dart`** (1 test)
+   - Change non-default settings, start game, tap game back button, verify settings preserved on menu
+   - Catches: settings lost on game→menu navigation
+
+3. **`change_settings_back_to_home_test.dart`** (1 test)
+   - Complete game → Change Settings → verify menu → tap back → verify home screen with ≥3 game cards
+   - Catches: `(route) => false` bug that clears Home from route stack
+
+4. **`change_settings_preserves_settings_test.dart`** (1 test)
+   - Complete game → Change Settings → verify settings and players preserved on menu
+   - Catches: settings/players lost through results→menu navigation
+
+### Helper File
+
+Create `integration_test/[game_name]/navigation/_helpers.dart`:
+```dart
+import '../../shared/game_ui_config.dart';
+final config = GameUIConfig.[gameName]();
+```
+
+### Pattern (menu back → home)
+```dart
+await UITestHelpers.resetServerState();
+await UITestHelpers.navigateToGameMenu(tester, config);
+final backButton = ElementFinders.get[GameName]BackButton();
+expect(backButton, findsOneWidget);
+await tester.tap(backButton);
+await PumpSequences.navigation(tester);
+expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget);
+expect(ElementFinders.getTargetTagCard(), findsOneWidget);
+expect(ElementFinders.getMonsterMashCard(), findsOneWidget);
+```
+
+See existing implementations in `integration_test/*/navigation/` for all 5 games, and [Navigation Rules](../../development/game-integration.md#6-navigation-rules) for the correct `Navigator` patterns.
+
 ## Visual Validation Tests
 
 ### [Visual Test 1]

@@ -38,10 +38,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1730 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 178 server + 373 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1357 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 373 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
+### 🧪 Testing (1782 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1190 Flutter + 178 server + 414 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1368 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 414 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
@@ -104,7 +104,7 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1763 tests**
+**Total: 1782 tests**
 - **Flutter Non-UI Tests:** 1190 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
@@ -138,14 +138,14 @@ flutter test test/screens/games/clockwork_quest/
   - Failed stats routes: 6
   - Test routes: 6
 
-- **UI Automation Tests:** 395 tests (optional, ask before running)
-  - Target Tag: 76 tests (~109 minutes) [71 functional + 5 play-to-complete]
-  - Carnival Derby: 47 tests (~64 minutes) [42 functional + 5 play-to-complete]
-  - Monster Mash: 72 tests (~99 minutes) [68 functional + 4 play-to-complete]
-  - Reef Royale: 88 tests (~120 minutes) [84 functional + 4 play-to-complete]
-  - Clockwork Quest: 113 tests (~150 minutes) [92 functional + 16 save/resume + 5 play-to-complete]
-  - **Sequential (`run_ui_tests.bat`): ~542 minutes (~9h 2m) — interactive Chrome sessions**
-  - **Parallel (`run_ui_tests_parallel.bat`): ~150 minutes (~2h 30m) — fully headless, no visible Chrome**
+- **UI Automation Tests:** 414 tests (optional, ask before running)
+  - Target Tag: 80 tests (~113 minutes) [71 functional + 4 navigation + 5 play-to-complete]
+  - Carnival Derby: 51 tests (~68 minutes) [42 functional + 4 navigation + 5 play-to-complete]
+  - Monster Mash: 76 tests (~103 minutes) [68 functional + 4 navigation + 4 play-to-complete]
+  - Reef Royale: 92 tests (~124 minutes) [84 functional + 4 navigation + 4 play-to-complete]
+  - Clockwork Quest: 116 tests (~153 minutes) [92 functional + 3 navigation + 16 save/resume + 5 play-to-complete]
+  - **Sequential (`run_ui_tests.bat`): ~561 minutes (~9h 21m) — interactive Chrome sessions**
+  - **Parallel (`run_ui_tests_parallel.bat`): ~153 minutes (~2h 33m) — fully headless, no visible Chrome**
 
 ## Critical Reminders
 

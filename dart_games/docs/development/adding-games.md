@@ -431,6 +431,17 @@ Complete a game → land on results screen → pump extra time for async API cal
 
 See `integration_test/clockwork_quest/results/winner_stats_updated_test.dart` for the reference implementation of tests 2 and 3, and `integration_test/clockwork_quest/results/leave_tower_test.dart` for test 1.
 
+#### Mandatory Navigation UI Tests
+
+Create `integration_test/your_game/navigation/` with these 4 tests:
+
+1. **`menu_back_to_home_test.dart`** — Navigate to menu, tap back button, verify ≥3 home screen game cards visible
+2. **`game_back_settings_persist_test.dart`** — Change non-default settings, start game, tap game back button, verify settings preserved on menu
+3. **`change_settings_back_to_home_test.dart`** — Complete game, click Change Settings, tap menu back, verify home screen (catches `(route) => false` vs `route.isFirst` bugs)
+4. **`change_settings_preserves_settings_test.dart`** — Complete game, click Change Settings, verify settings and players preserved on menu
+
+See existing implementations in `integration_test/*/navigation/` for all 5 games, and [Navigation Rules](game-integration.md#6-navigation-rules) for the correct `Navigator` patterns.
+
 #### User Management Non-UI Tests
 
 Also create `test/screens/games/your_game/your_game_user_management_test.dart` following the pattern in `test/screens/games/clockwork_quest/clockwork_quest_user_management_test.dart`. This test validates the `updatePlayerStats` business logic in isolation (winner/loser flags, duration, game name, persistence across reload). It complements but does not replace the UI flow test above.
@@ -534,6 +545,7 @@ Use this checklist to ensure complete integration:
 - [ ] Added game card to home screen
 - [ ] Added routes
 - [ ] Created all tests
+- [ ] Created navigation UI tests (4 tests in `integration_test/your_game/navigation/`)
 - [ ] Created game documentation (8 files)
 - [ ] Updated main CLAUDE.md
 - [ ] All tests pass (272+ non-UI tests)

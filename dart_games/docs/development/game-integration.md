@@ -135,6 +135,17 @@ Navigator.popUntil(context, (route) => route.isFirst);
 
 **Critical:** Never use `(route) => false` in Change Settings — this clears the Home route from the stack, breaking the menu back arrow.
 
+### Required Navigation Tests
+
+Every game MUST have these 4 navigation UI tests in `integration_test/your_game/navigation/`:
+
+1. **`menu_back_to_home_test.dart`** — Navigate to menu, tap back button, verify ≥3 home screen game cards visible
+2. **`game_back_settings_persist_test.dart`** — Change non-default settings, start game, tap game back button, verify settings preserved on menu
+3. **`change_settings_back_to_home_test.dart`** — Complete game, click Change Settings, tap menu back, verify home screen (catches the `route.isFirst` bug)
+4. **`change_settings_preserves_settings_test.dart`** — Complete game, click Change Settings, verify settings and players preserved on menu
+
+See existing implementations in `integration_test/*/navigation/` for all 5 games.
+
 ## Optional But Recommended Integrations
 
 ### Dartboard Emulator Components
@@ -177,6 +188,7 @@ See [Dartboard Paused Modal Integration](dartboard-paused-modal.md).
 - [ ] Create PlayToCompleteButtonConfig factory method
 - [ ] Wire Play to Complete into game screen (runner, guards, callbacks)
 - [ ] Write Play to Complete UI tests (default settings + game-critical settings + mid-game)
+- [ ] Write navigation UI tests (menu→home, game→menu+settings, change settings→back→home, change settings→verify settings)
 
 ## Critical: Game Duration Tracking for ALL Players
 
