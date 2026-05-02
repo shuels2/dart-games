@@ -28,40 +28,17 @@ Future<void> setShieldMax(WidgetTester tester, int shieldMax) =>
 // ===== GAME-SPECIFIC HELPERS =====
 
 String? getTargetNumberFromPlayerTile(WidgetTester tester, String playerName) {
-  final playerFinder = find.text(playerName);
-  if (playerFinder.evaluate().isEmpty) return null;
+  final playerProvider = ProviderHelpers.getPlayerProvider(tester);
+  final targetTagProvider = ProviderHelpers.getTargetTagProvider(tester);
 
-  final playerTileContainer = find.ancestor(
-    of: playerFinder.first,
-    matching: find.byType(Container),
-  );
-  if (playerTileContainer.evaluate().isEmpty) return null;
-
-  final allTextInTile = find.descendant(
-    of: playerTileContainer.first,
-    matching: find.byType(Text),
+  final players = playerProvider.allPlayers;
+  final player = players.firstWhere(
+    (p) => p.name == playerName,
+    orElse: () => throw Exception('Player $playerName not found'),
   );
 
-  final targetLabel = find.descendant(
-    of: playerTileContainer.first,
-    matching: find.text('Target number: '),
-  );
-  if (targetLabel.evaluate().isEmpty) return null;
-
-  int targetLabelIndex = -1;
-  for (int i = 0; i < allTextInTile.evaluate().length; i++) {
-    final textWidget = allTextInTile.evaluate().elementAt(i).widget as Text;
-    if (textWidget.data == 'Target number: ') {
-      targetLabelIndex = i;
-      break;
-    }
-  }
-
-  if (targetLabelIndex >= 0 && targetLabelIndex + 1 < allTextInTile.evaluate().length) {
-    final targetNumWidget = allTextInTile.evaluate().elementAt(targetLabelIndex + 1).widget as Text;
-    return targetNumWidget.data ?? '';
-  }
-  return null;
+  final targetNumber = targetTagProvider.getTargetNumber(player.id);
+  return targetNumber?.toString();
 }
 
 Future<void> completeGameToVictory(WidgetTester tester, String player1Name, String player2Name) async {
@@ -84,24 +61,7 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);
 
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 0, multiplier: 'miss');
-  await PumpSequences.simpleUpdate(tester);
-  await clickDartsRemoved(tester);
-  await PumpSequences.fullRebuild(tester);
-
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await clickDartsRemoved(tester);
-  await PumpSequences.fullRebuild(tester);
-
+  // Turn 2: Player 2 throws all misses (stays at 0 shields — eliminatable in one hit)
   await throwDartViaMock(tester, 0, multiplier: 'miss');
   await PumpSequences.simpleUpdate(tester);
   await throwDartViaMock(tester, 0, multiplier: 'miss');
@@ -111,15 +71,14 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);
 
+  // Turn 3: Player 1 (tagged in) hits Player 2's target once → instant elimination (P2 at 0 shields)
   await throwDartViaMock(tester, target2, multiplier: 'single');
   await PumpSequences.simpleUpdate(tester);
   await clickDartsRemoved(tester);
 
+  // Wait for _handleGameWon 3s navigation delay
+  await tester.pump();
   await tester.pump(const Duration(seconds: 4));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 3));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 2));
   await tester.pump();
   await PumpSequences.fullRebuild(tester);
 }
