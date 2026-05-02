@@ -76,40 +76,17 @@ Future<void> setShieldMax(WidgetTester tester, int shieldMax) async {
 }
 
 String? getTargetNumberFromPlayerTile(WidgetTester tester, String playerName) {
-  final playerFinder = find.text(playerName);
-  if (playerFinder.evaluate().isEmpty) return null;
+  final playerProvider = ProviderHelpers.getPlayerProvider(tester);
+  final targetTagProvider = ProviderHelpers.getTargetTagProvider(tester);
 
-  final playerTileContainer = find.ancestor(
-    of: playerFinder.first,
-    matching: find.byType(Container),
-  );
-  if (playerTileContainer.evaluate().isEmpty) return null;
-
-  final allTextInTile = find.descendant(
-    of: playerTileContainer.first,
-    matching: find.byType(Text),
+  final players = playerProvider.allPlayers;
+  final player = players.firstWhere(
+    (p) => p.name == playerName,
+    orElse: () => throw Exception('Player $playerName not found'),
   );
 
-  final targetLabel = find.descendant(
-    of: playerTileContainer.first,
-    matching: find.text('Target number: '),
-  );
-  if (targetLabel.evaluate().isEmpty) return null;
-
-  int targetLabelIndex = -1;
-  for (int i = 0; i < allTextInTile.evaluate().length; i++) {
-    final textWidget = allTextInTile.evaluate().elementAt(i).widget as Text;
-    if (textWidget.data == 'Target number: ') {
-      targetLabelIndex = i;
-      break;
-    }
-  }
-
-  if (targetLabelIndex >= 0 && targetLabelIndex + 1 < allTextInTile.evaluate().length) {
-    final targetNumWidget = allTextInTile.evaluate().elementAt(targetLabelIndex + 1).widget as Text;
-    return targetNumWidget.data ?? '';
-  }
-  return null;
+  final targetNumber = targetTagProvider.getTargetNumber(player.id);
+  return targetNumber?.toString();
 }
 
 Future<void> completeGameToVictory(WidgetTester tester, String player1Name, String player2Name) async {
