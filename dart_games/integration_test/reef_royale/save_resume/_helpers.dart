@@ -5,6 +5,7 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/save_resume_helpers.dart';
 
 final config = GameUIConfig.reefRoyale();
+const gameType = 'reef_royale';
 
 // ===== DELEGATES TO SHARED HELPERS =====
 

@@ -53,7 +53,7 @@ class DartThrowHelpers {
     if (mockApi != null) {
       mockApi.simulateDartThrow(
         score: 0,
-        multiplier: 'single',
+        multiplier: 'miss',
         playerName: 'Player',
         baseScore: 0,
         widgetX: 125.0,

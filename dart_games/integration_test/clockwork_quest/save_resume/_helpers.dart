@@ -5,6 +5,7 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/save_resume_helpers.dart';
 
 final config = GameUIConfig.clockworkQuest();
+const gameType = 'clockwork_quest';
 
 // ===== DELEGATES TO SHARED HELPERS =====
 

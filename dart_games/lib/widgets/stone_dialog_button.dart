@@ -168,6 +168,7 @@ class _StoneDialogButtonState extends State<StoneDialogButton>
                   child: AnimatedBuilder(
                     animation: _lightningController!,
                     builder: (context, child) {
+                      if (!mounted) return const SizedBox.shrink();
                       return CustomPaint(
                         painter: _LightningPainter(
                           animationValue: _lightningController!.value,

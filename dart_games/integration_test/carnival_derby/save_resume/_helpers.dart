@@ -5,6 +5,7 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/save_resume_helpers.dart';
 
 final config = GameUIConfig.carnivalDerby();
+const gameType = 'carnival_derby';
 
 Future<void> navigateToGameScreen(WidgetTester tester) =>
     SaveResumeHelpers.navigateToGameScreen(tester, config);

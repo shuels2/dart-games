@@ -7,6 +7,7 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/save_resume_helpers.dart';
 
 final config = GameUIConfig.monsterMash();
+const gameType = 'monster_mash';
 
 // ===== DELEGATES TO SHARED HELPERS =====
 

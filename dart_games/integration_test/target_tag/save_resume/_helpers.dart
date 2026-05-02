@@ -7,6 +7,7 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/save_resume_helpers.dart';
 
 final config = GameUIConfig.targetTag();
+const gameType = 'target_tag';
 
 // ===== DELEGATES TO SHARED HELPERS =====
 
