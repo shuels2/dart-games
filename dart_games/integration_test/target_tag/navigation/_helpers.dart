@@ -110,27 +110,7 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);
 
-  // Turn 2: Player 2 builds 2 shields
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, 0, multiplier: 'miss');
-  await PumpSequences.simpleUpdate(tester);
-  await clickDartsRemoved(tester);
-  await PumpSequences.fullRebuild(tester);
-
-  // Turn 3: Player 1 attacks Player 2's target (shields 2->1->0)
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await throwDartViaMock(tester, target2, multiplier: 'single');
-  await PumpSequences.simpleUpdate(tester);
-  await clickDartsRemoved(tester);
-  await PumpSequences.fullRebuild(tester);
-
-  // Turn 4: Player 2 misses
+  // Turn 2: Player 2 throws all misses (stays at 0 shields — eliminatable in one hit)
   await throwDartViaMock(tester, 0, multiplier: 'miss');
   await PumpSequences.simpleUpdate(tester);
   await throwDartViaMock(tester, 0, multiplier: 'miss');
@@ -140,16 +120,14 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   await clickDartsRemoved(tester);
   await PumpSequences.fullRebuild(tester);
 
-  // Turn 5: Player 1 eliminates Player 2
+  // Turn 3: Player 1 (tagged in) hits Player 2's target once → instant elimination (P2 at 0 shields)
   await throwDartViaMock(tester, target2, multiplier: 'single');
   await PumpSequences.simpleUpdate(tester);
   await clickDartsRemoved(tester);
 
+  // Wait for _handleGameWon 3s navigation delay
+  await tester.pump();
   await tester.pump(const Duration(seconds: 4));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 3));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 2));
   await tester.pump();
   await PumpSequences.fullRebuild(tester);
 }
