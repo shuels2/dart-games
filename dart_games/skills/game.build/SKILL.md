@@ -465,6 +465,10 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > - `docs/development/game-integration.md` — full integration checklist including `(route) => false` rule
 > - `docs/development/widget-keys.md` — including the `HomeKeys.[gameName]Card` requirement
 > - `docs/development/dartboard-emulator.md` — **including the Play-to-Complete architecture (Strategy interface, Button factory, Runner wiring) — this is mandatory.**
+> - `lib/widgets/dartboard_emulator/play_to_complete_strategy.dart` — the actual interface (3 methods, all take `BuildContext context`)
+> - `lib/widgets/dartboard_emulator/play_to_complete_runner.dart` — the runner: constructor takes strategy + mockApi + context + optional `onComplete`; exposes `run()`, `cancel()`, `dispose()`
+> - `lib/services/play_to_complete/target_tag_strategy.dart` — canonical reference strategy implementation
+> - `lib/screens/games/target_tag/target_tag_game_screen.dart` — canonical Play-to-Complete wiring (field name `_playToCompleteRunner`, `_onPlayToComplete()`, `_onCancelAutoPlay()`, dispose)
 > - `docs/development/resume-game-button.md` — exact menu state setup (`_hasSavedGames`, `_checkForSavedGames()`, `addPostFrameCallback`)
 > - `docs/development/dartboard-paused-modal.md` — the conditional: show only if `!dartboardProvider.isEmulator && status != connected && status != emulator`
 > - `docs/development/save-resume-game.md` — `_deleteResumedSavedGame()` runs INDEPENDENTLY in `addPostFrameCallback`, NOT awaited inline after `_updatePlayerStats()`
@@ -495,11 +499,11 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >
 > **3. Create the Play-to-Complete strategy:**
 > - File: `lib/services/play_to_complete/[GAME_NAME_SNAKE]_strategy.dart`
-> - Implement `PlayToCompleteStrategy`:
->   - `getNextThrow(provider)` — returns the next dart action based on game state
->   - `isGameComplete(provider)` — returns true when win condition is met
->   - `shouldAutoTakeout(provider)` — true if takeout should happen automatically after a throw
-> - Reference `lib/services/play_to_complete/target_tag_strategy.dart` (or another existing strategy) for the pattern.
+> - Implement `PlayToCompleteStrategy` (from `lib/widgets/dartboard_emulator/play_to_complete_strategy.dart`). The interface has THREE methods — **all take `BuildContext context`, NOT a provider**. The strategy itself calls `context.read<[GAME_NAME_PASCAL]Provider>()` to access state.
+>   - `SimulatedThrow? getNextThrow(BuildContext context)` — returns the next dart action as a `SimulatedThrow` (fields `score`, `multiplier`, `baseScore`), or `null` when the game is done.
+>   - `bool isGameComplete(BuildContext context)` — returns `true` when the win condition is met.
+>   - `bool shouldAutoTakeout(BuildContext context)` — returns `true` if takeout should fire automatically after this throw.
+> - Reference `lib/services/play_to_complete/target_tag_strategy.dart` (canonical) for the pattern. Also study the other 4 game strategies (`carnival_derby_strategy.dart`, `clockwork_quest_strategy.dart`, `monster_mash_strategy.dart`, `reef_royale_strategy.dart`) to confirm the convention.
 >
 > **4. Create `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart`:**
 > - Use the correct PlayerListPanel per spec (Dual vs Team)
@@ -781,7 +785,7 @@ If FAIL:
 
 ## Phase 7: UI Automation Tests, Spec Coverage Audit, and Mandatory Coverage
 
-**Goal:** Write all UI tests in the proper subdirectory layout (including mandatory navigation, results, and play-to-complete tests), synchronize the 11 shared helpers, update all 4 batch files, run the spec coverage audit.
+**Goal:** Write all UI tests in the proper subdirectory layout (including mandatory navigation, results, and play-to-complete tests), synchronize the 12 shared helpers, update all 4 batch files, run the spec coverage audit.
 
 **Model:** Sonnet sub-agent for shared helper sync + UI test files + screenshot test + batch file updates; orchestrator (Opus) for the spec coverage audit + AR-6 + Gate 3.
 
@@ -795,9 +799,11 @@ If FAIL:
 > - Spec file: `[SPEC_PATH]` — Testing Plan section (UI test list and screenshot test states)
 > - Section map: [PASTE SECTION MAP TABLE]
 > - `docs/testing/test-maintenance.md` — **CRITICAL: shared helper synchronization rules**
+> - `docs/testing/shared-helpers-reference.md` — **authoritative reference for all 12 mirrored shared helpers, the `_helpers.dart` delegate pattern for per-subdirectory game-specific helpers, and the decision tree for where new helper functions belong**
 > - `docs/testing/ui-automation.md` — including the per-session DB isolation pattern (`X-DB-Session` header, `resetServerState()`) and the parallel runner port-assignment table
 > - `docs/testing/continuous-animations.md` — `pumpAndSettle()` rules
-> - `docs/development/adding-games.md` — **including mandatory navigation tests (4), mandatory results-screen tests (3), and mandatory play-to-complete tests**
+> - `docs/development/adding-games.md` — **including mandatory navigation tests (4), mandatory results-screen tests (3), and mandatory play-to-complete tests, with rationales for each**
+> - `docs/development/navigation-ui-tests-plan.md` — **canonical plan for the 4 mandatory navigation tests, with per-game settings to change, completion strategies, and verification text patterns**
 > - `docs/development/game-integration.md` — `(route) => false` rule
 > - `docs/development/dartboard-emulator.md` — Play-to-Complete strategy + tests
 > - At least one existing game's UI tests for reference (use Clockwork Quest as the canonical example: `integration_test/clockwork_quest/`)
@@ -807,7 +813,7 @@ If FAIL:
 >
 > **1. Update shared test helpers in BOTH locations (mandatory synchronization).**
 >
-> The `test/shared/` directory currently contains 11 files. Apply game-specific changes to each that needs them, AND mirror every change in `integration_test/shared/`:
+> There are **12 mirrored shared helper files** that must stay byte-identical between `test/shared/` and `integration_test/shared/`:
 >
 > - `dart_throw_helpers.dart`
 > - `edit_score_helpers.dart`
@@ -818,12 +824,30 @@ If FAIL:
 > - `provider_helpers.dart`
 > - `pump_sequences.dart`
 > - `results_helpers.dart`
+> - `save_resume_helpers.dart`
 > - `settings_helpers.dart`
 > - `ui_test_helpers.dart`
 >
-> After editing, for every pair `test/shared/X.dart` ↔ `integration_test/shared/X.dart`, run `diff` and confirm byte-identical (apart from the path, contents must match).
+> Apply game-specific changes to each that needs them in BOTH directories.
+>
+> **Note:** `test/shared/` also contains additional non-UI-only files (`mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart`, plus their `_test.dart` files) that have NO `integration_test/shared/` counterpart. The byte-identical synchronization rule applies ONLY to the 12 mirrored files above.
+>
+> After editing, for every pair `test/shared/X.dart` ↔ `integration_test/shared/X.dart` in the 12-file list, run `diff` and confirm byte-identical (apart from the path, contents must match).
+>
+> **1.5. Create per-subdirectory `_helpers.dart` files** (delegate pattern from `docs/testing/shared-helpers-reference.md`):
+>
+> Every test subdirectory needs an `_helpers.dart` file. Follow the delegate pattern documented at lines 76-163 of `docs/testing/shared-helpers-reference.md`:
+> - Import the relevant shared helpers from `../../shared/`
+> - Expose **one-line delegate functions** that preserve the local function names test files already use (e.g., `Future<void> setupGame(...) => GameSetupHelpers.setupGame(...)`)
+> - ONLY add genuinely game-specific logic that doesn't belong in shared helpers (e.g., a `completeGameToVictory()` that knows how to drive THIS game's win condition)
+> - When unsure whether new logic belongs in `_helpers.dart` or in the shared helpers, follow the decision tree in `shared-helpers-reference.md` (used by ≥2 games → shared; used only by this game → `_helpers.dart`).
 >
 > **2. Create UI test files using the SUBDIRECTORY layout** (NOT flat files):
+>
+> **Reference layouts vary across the 5 existing games — follow Clockwork Quest as the canonical fully-subdivided example.** Layout differences:
+> - **Clockwork Quest** (`integration_test/clockwork_quest/`) — fully subdivided; canonical reference. Note: its menu-back-to-home test is at `menu_and_settings/back_button_test.dart` (historical) rather than `navigation/menu_back_to_home_test.dart`. New games should put it in `navigation/` per the pattern in the other 4 games.
+> - **Target Tag, Monster Mash, Reef Royale** — use `results_screen/` (3 of 5 games). Target Tag uses `menu_and_mechanics/` for historical reasons; new games should use `menu_and_settings/`.
+> - **Carnival Derby** — legacy flat `ui/` directory; **do NOT use as a layout reference for new games**.
 >
 > Create the following subdirectories under `integration_test/[GAME_NAME_SNAKE]/`:
 >
@@ -831,23 +855,29 @@ If FAIL:
 > - `edit_score/` — Edit Score Dialog tests
 > - `gameplay/` — Core gameplay tests
 > - `menu_and_settings/` — Menu screen + settings tests
-> - `results/` (or `results_screen/` if matching reference game) — Results screen tests, INCLUDING the three mandatory tests below
+> - `results_screen/` — Results screen tests, INCLUDING the three mandatory tests below. **Use `results_screen/` (matches Target Tag, Monster Mash, Reef Royale — 3 of 5 games) unless your spec explicitly mandates `results/`.**
 > - `save_resume/` — Save/Resume tests
 > - **`navigation/`** — the 4 mandatory navigation tests (see below)
 > - **`play_to_complete/`** — Play-to-Complete tests (see below)
+> - `visual_validation/` — Screenshot test (Step 7 below)
 >
-> **3. Mandatory navigation tests** (4 separate files in `integration_test/[GAME_NAME_SNAKE]/navigation/`, per `docs/development/game-integration.md`):
+> **3. Mandatory navigation tests** (4 separate files in `integration_test/[GAME_NAME_SNAKE]/navigation/`, per `docs/development/game-integration.md` and `docs/development/navigation-ui-tests-plan.md`):
 >
 > - `menu_back_to_home_test.dart` — back arrow on menu returns to home with ≥3 game cards visible
 > - `game_back_settings_persist_test.dart` — back from game returns to menu with previously-set settings preserved
 > - `change_settings_back_to_home_test.dart` — Change Settings on results returns to menu, then back to home
 > - `change_settings_preserves_settings_test.dart` — Change Settings preserves all menu settings (does NOT reset)
 >
-> **4. Mandatory results-screen tests** (3 specific tests in `integration_test/[GAME_NAME_SNAKE]/results/`, per `docs/development/adding-games.md`):
+> **Settings-persistence tests must change *non-default* settings** so the test actually verifies persistence. Pick at least 2 non-default options from the spec's Options section; for reference, see how each existing game does it (`navigation-ui-tests-plan.md` lines 62-66 — e.g., Target Tag changes `shieldMax` from default 3 to 5; Carnival Derby changes `targetScore` to 180 and `perfectFinish` to Yes; Monster Mash changes `health` and `speedMode`). The orchestrator should pick 2 non-default options for THIS game from the spec and pass them in the sub-agent prompt.
 >
-> - **Exit-button test** — assert ≥3 game cards visible after pressing Back-to-Home, AND verify the implementation uses `Navigator.popUntil(context, (route) => route.isFirst)` (NOT `pushNamedAndRemoveUntil('/', (route) => false)`)
-> - **`winner_stats_updated_test.dart`** — after game completes, use `ProviderHelpers.findPlayerByName` to assert `gamesPlayed == 1` and `gamesWon == 1` for the winner, and `gamesWon == 0` for losers
-> - **`victory_music_initialized_test.dart`** — after `resetServerState()` and game completion, assert `VictoryMusicService().isInitialized == true`
+> **4. Mandatory results-screen tests** (3 specific tests in `integration_test/[GAME_NAME_SNAKE]/results_screen/`, per `docs/development/adding-games.md` lines 451-464):
+>
+> - **Exit-button test** — assert **≥3 game cards visible** after pressing Back-to-Home, AND verify the implementation uses `Navigator.popUntil(context, (route) => route.isFirst)` (NOT `pushNamedAndRemoveUntil('/', (route) => false)`).
+>   - **Rationale:** asserting only ≥1 card is a false positive — the home screen renders even when the route stack is broken. Asserting ≥3 cards proves the home screen actually loaded with its real content. Reference: `integration_test/clockwork_quest/results/leave_tower_test.dart`.
+> - **`winner_stats_updated_test.dart`** — after game completes, use `ProviderHelpers.findPlayerByName` to assert `gamesPlayed == 1` and `gamesWon == 1` for the winner, and `gamesWon == 0` for losers. **Pump for at least 5 seconds** to allow the async `updatePlayerStats` API call to complete.
+>   - **Rationale:** the Dart unit test for `updatePlayerStats` passes even when `_updatePlayerStats` is omitted from `initState()` on the results screen — only an end-to-end UI test catches that wiring error. Without enough pump time, the async call hasn't returned and the assertion fails spuriously.
+> - **`victory_music_initialized_test.dart`** — call `await UITestHelpers.resetServerState()` first, then complete the game; after the results screen loads, assert `VictoryMusicService().isInitialized == true`.
+>   - **Rationale:** `resetServerState()` resets the singleton's `_initialized` flag back to `false`. If the results screen fails to call `VictoryMusicService().initialize()`, the flag stays `false` — this is the only signal that proves the music init actually fires on results.
 >
 > **5. Mandatory play-to-complete tests** (in `integration_test/[GAME_NAME_SNAKE]/play_to_complete/`, per `docs/development/dartboard-emulator.md`):
 >
@@ -872,7 +902,7 @@ If FAIL:
 >
 > **Report back:**
 > - File paths created and modified, organized by subdirectory
-> - For each pair of shared helpers (11 pairs), `diff` result (must be byte-identical)
+> - For each pair of shared helpers (12 pairs), `diff` result (must be byte-identical)
 > - Total count of UI tests added across all subdirectories
 > - Confirmation that every UI test starts with `await UITestHelpers.resetServerState();`
 > - Confirmation that the 4 navigation tests, 3 results tests, and play-to-complete tests are all present (cite filenames)
@@ -890,7 +920,7 @@ If FAIL:
 > - Run the UI tests yourself in this phase (orchestrator runs them in Phase 8)
 
 After the sub-agent returns:
-- Run `diff` on each of the 11 shared-helper pairs yourself
+- Run `diff` on each of the 12 shared-helper pairs yourself
 - `find integration_test/[GAME_NAME_SNAKE] -type d` to confirm subdirectory layout
 - `grep -rL 'resetServerState' integration_test/[GAME_NAME_SNAKE]` (must return zero — every test file must contain a `resetServerState` call)
 - Confirm the 4 batch files were updated
@@ -920,11 +950,11 @@ Per `docs/testing/spec-coverage-audit.md`:
 >
 > (c) **Verify all FOUR batch files include the new game:** `run_ui_tests.bat`, `run_ui_tests_stub.bat`, `run_ui_tests_parallel.bat` (in the `GAMES` variable), `run_ui_tests_parallel_stub.bat`. Also verify the port-assignment table in `docs/testing/ui-automation.md` was updated.
 >
-> (d) Verify all 11 shared helpers in `test/shared/` and `integration_test/shared/` are synchronized — diff each pair and report any mismatches.
+> (d) Verify all 12 mirrored shared helpers in `test/shared/` and `integration_test/shared/` are synchronized — diff each pair and report any mismatches. (Non-mirrored `test/shared/` files like `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` are excluded from this check.)
 >
 > (e) **Verify the 4 mandatory navigation tests exist** in `integration_test/[GAME_NAME_SNAKE]/navigation/`: menu_back_to_home, game_back_settings_persist, change_settings_back_to_home, change_settings_preserves_settings.
 >
-> (f) **Verify the 3 mandatory results-screen tests exist** in `integration_test/[GAME_NAME_SNAKE]/results/`: exit-button (popUntil + ≥3 cards assertion), winner_stats_updated, victory_music_initialized.
+> (f) **Verify the 3 mandatory results-screen tests exist** in `integration_test/[GAME_NAME_SNAKE]/results_screen/` (or `results/` if the new game follows Clockwork Quest's pattern): exit-button (popUntil + ≥3 cards assertion), winner_stats_updated, victory_music_initialized.
 >
 > (g) **Verify play-to-complete tests exist** in `integration_test/[GAME_NAME_SNAKE]/play_to_complete/`: default_settings, mid_game, plus one per game-critical setting.
 >
@@ -1276,9 +1306,9 @@ If a check CANNOT be run:
 > - `README.md` — overview, quick facts, player count, file locations, key features
 > - `game-rules.md` — objective, setup, turn structure, scoring, win conditions, edge cases
 > - `design-system.md` — color palette with hex codes, typography, screen styling, animations
-> - `components.md` — every config factory method documented with parameters; **fill the "Custom Components" section if the game introduces game-specific widgets** (e.g., a custom button or panel)
+> - `components.md` — fill in (a) every dartboard / dialog / modal config factory method with parameters, (b) **the "Play to Complete" section with the strategy class and `PlayToCompleteButtonConfig` factory** (this section is now mandatory in `_GAME_TEMPLATE/components.md` lines 173-213, not optional), and (c) the "Custom Components" section if the game introduces game-specific widgets (e.g., a custom button or panel)
 > - `announcements.md` — every announcement event with priorities, sound effects, stacking rules
-> - `testing.md` — REAL test counts from step 1 (broken down by subdirectory), test files, widget keys, test patterns; include navigation tests, results tests, play-to-complete tests
+> - `testing.md` — REAL test counts from step 1 (broken down by subdirectory). **Fill in the new template sections** (`_GAME_TEMPLATE/testing.md` lines 219-285): the **"Play to Complete Tests"** section (per-game-critical-setting list with file names) and the **"Navigation Tests"** section (4 required files, helper file template, test name examples). Also document widget keys and test patterns.
 > - `assets.md` — complete asset inventory with descriptions
 > - `implementation-notes.md` — provider pattern, model design, algorithms, gotchas; **include the Play-to-Complete strategy** and any non-obvious save/resume detail
 >
@@ -1450,12 +1480,12 @@ Verify EVERY item:
 **Testing:**
 - [ ] Flutter non-UI tests pass (count: real)
 - [ ] Server tests pass (count: real)
-- [ ] UI test files in subdirectory layout (add_player/, edit_score/, gameplay/, menu_and_settings/, navigation/, play_to_complete/, results/, save_resume/, visual_validation/)
+- [ ] UI test files in subdirectory layout (add_player/, edit_score/, gameplay/, menu_and_settings/, navigation/, play_to_complete/, results_screen/ [or results/], save_resume/, visual_validation/)
 - [ ] **4 mandatory navigation tests present and passing**
 - [ ] **3 mandatory results-screen tests present and passing**
 - [ ] **Play-to-complete tests present and passing**
 - [ ] All 4 batch files updated (run_ui_tests, run_ui_tests_stub, run_ui_tests_parallel, run_ui_tests_parallel_stub)
-- [ ] All 11 shared helpers synchronized (test/shared/ matches integration_test/shared/)
+- [ ] All 12 mirrored shared helpers synchronized (test/shared/ matches integration_test/shared/)
 - [ ] Every UI test calls `resetServerState()`
 
 **Visual Validation:**
@@ -1535,7 +1565,7 @@ Per `docs/critical-rules/dartboard-protection.md`:
 
 ### When Shared Test Helpers Need Changes
 Per `docs/testing/test-maintenance.md`:
-1. Sub-agent must update BOTH `test/shared/` AND `integration_test/shared/` (all 11 files in each).
+1. Sub-agent must update BOTH `test/shared/` AND `integration_test/shared/` (all 12 mirrored files in each — non-mirrored `test/shared/` files like `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` are excluded).
 2. Verify synchronization by diffing every corresponding pair (orchestrator runs the diff).
 3. Run both test suites to verify.
 
