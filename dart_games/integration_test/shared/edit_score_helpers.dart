@@ -127,7 +127,7 @@ class EditScoreHelpers {
     // We need to find the ring button that is a descendant of this dart section
     final ringButtonFinder = find.descendant(
       of: dartSection,
-      matching: find.text(ring),
+      matching: find.widgetWithText(ElevatedButton, ring),
     );
 
     expect(ringButtonFinder, findsOneWidget,
