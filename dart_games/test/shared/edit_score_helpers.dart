@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'element_finders.dart';
 import 'pump_sequences.dart';
@@ -127,7 +128,7 @@ class EditScoreHelpers {
     // We need to find the ring button that is a descendant of this dart section
     final ringButtonFinder = find.descendant(
       of: dartSection,
-      matching: find.text(ring),
+      matching: find.widgetWithText(ElevatedButton, ring),
     );
 
     expect(ringButtonFinder, findsOneWidget,

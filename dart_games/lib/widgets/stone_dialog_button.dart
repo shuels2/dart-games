@@ -168,6 +168,7 @@ class _StoneDialogButtonState extends State<StoneDialogButton>
                   child: AnimatedBuilder(
                     animation: _lightningController!,
                     builder: (context, child) {
+                      if (!mounted) return const SizedBox.shrink();
                       return CustomPaint(
                         painter: _LightningPainter(
                           animationValue: _lightningController!.value,
@@ -311,8 +312,8 @@ class _LightningPainter extends CustomPainter {
       final start = window.$1;
       final dur = window.$2;
       if (animationValue >= start && animationValue <= start + dur) {
-        final t = (animationValue - start) / dur;
-        return 1.0 - (2.0 * (t - 0.5)).abs();
+        final t = ((animationValue - start) / dur).clamp(0.0, 1.0);
+        return (1.0 - (2.0 * (t - 0.5)).abs()).clamp(0.0, 1.0);
       }
     }
     return 0.0;
@@ -325,8 +326,8 @@ class _LightningPainter extends CustomPainter {
   }) {
     if (animationValue < phase || animationValue > phase + duration) return;
 
-    final t = (animationValue - phase) / duration;
-    final opacity = t < 0.3 ? t / 0.3 : 1.0 - ((t - 0.3) / 0.7);
+    final t = ((animationValue - phase) / duration).clamp(0.0, 1.0);
+    final opacity = (t < 0.3 ? t / 0.3 : 1.0 - ((t - 0.3) / 0.7)).clamp(0.0, 1.0);
 
     final rng = Random(seed);
     final startX = size.width * (0.15 + rng.nextDouble() * 0.7);

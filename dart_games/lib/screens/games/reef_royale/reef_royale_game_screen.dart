@@ -12,6 +12,7 @@ import '../../../providers/dartboard_provider.dart';
 import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/reef_royale_announcement_helper.dart';
+import '../../../services/play_to_complete/reef_royale_strategy.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -37,6 +38,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
   MockScoliaApiService? _mockApi;
   ReefRoyaleAnnouncementHelper? _audioQueue;
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
+  PlayToCompleteRunner? _playToCompleteRunner;
   bool _gameCompleted = false;
   bool _showSaveModal = false;
   late final AnimationController _pulseController;
@@ -65,6 +67,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
   Future<void> _initializeGame() async {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
+    if (mounted) setState(() {});
 
     // Initialize audio
     final globalQueue = GameAnnouncementQueueService();
@@ -95,11 +98,36 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
   @override
   void dispose() {
+    _playToCompleteRunner?.dispose();
     _pulseController.dispose();
     _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
     _dartboardEmulatorController.dispose();
     super.dispose();
+  }
+
+  void _onPlayToComplete() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+
+    _playToCompleteRunner = PlayToCompleteRunner(
+      strategy: ReefRoyaleStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToCompleteRunner!.run();
+  }
+
+  void _onCancelAutoPlay() {
+    _playToCompleteRunner?.cancel();
+    _dartboardEmulatorController.setAutoPlaying(false);
+    _dartboardEmulatorController.show();
   }
 
   void _handleDartboardEvent(Map<String, dynamic> event) {
@@ -124,10 +152,12 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     reefProvider.processDartThrow(sector);
 
     // Announce dart result
-    _announceDartResult(reefProvider, playerId, sector);
+    if (!_dartboardEmulatorController.isAutoPlaying) {
+      _announceDartResult(reefProvider, playerId, sector);
+    }
 
     final dartsThrown = reefProvider.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || reefProvider.hasWinner) {
+    if (!_dartboardEmulatorController.isAutoPlaying && (dartsThrown >= 3 || reefProvider.hasWinner)) {
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _audioQueue?.announceRemoveDarts();
       });
@@ -157,25 +187,28 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
     // Check for buff change (new round)
     final buffAfter = reefProvider.getActiveBuff();
-    if (buffAfter != null && buffAfter != buffBefore) {
+    if (!_dartboardEmulatorController.isAutoPlaying && buffAfter != null && buffAfter != buffBefore) {
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _audioQueue?.announceBuff(buffAfter);
       });
     }
 
     if (reefProvider.hasWinner) {
-      // Speed play end
-      _audioQueue?.announceSpeedPlayEnd();
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _handleGameWon();
-      });
+      if (!_dartboardEmulatorController.isAutoPlaying) {
+        _audioQueue?.announceSpeedPlayEnd();
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) _handleGameWon();
+        });
+      }
       return;
     }
 
     // Announce next player's turn
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) _announceCurrentPlayerTurn();
-    });
+    if (!_dartboardEmulatorController.isAutoPlaying) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _announceCurrentPlayerTurn();
+      });
+    }
 
     setState(() {});
   }
@@ -184,22 +217,26 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     if (_gameCompleted) return;
     _gameCompleted = true;
 
-    // Announce victory
-    final reefProvider = context.read<ReefRoyaleProvider>();
-    final playerProvider = context.read<PlayerProvider>();
-    final winnerId = reefProvider.currentGame?.winnerId;
-    if (winnerId != null) {
-      final winner = playerProvider.allPlayers.firstWhere((p) => p.id == winnerId);
-      _audioQueue?.announceVictory(winner.name);
-    }
-
-    Future.delayed(const Duration(milliseconds: 3000), () {
+    void navigateToResults() {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ReefRoyaleResultsScreen()),
       );
-    });
+    }
+
+    if (_dartboardEmulatorController.isAutoPlaying) {
+      navigateToResults();
+    } else {
+      final reefProvider = context.read<ReefRoyaleProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final winnerId = reefProvider.currentGame?.winnerId;
+      if (winnerId != null) {
+        final winner = playerProvider.allPlayers.firstWhere((p) => p.id == winnerId);
+        _audioQueue?.announceVictory(winner.name);
+      }
+      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+    }
   }
 
   void _announceDartResult(ReefRoyaleProvider provider, String playerId, String sector) {
@@ -555,6 +592,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                 _mockApi?.simulateTakeoutFinished();
               },
               config: DartboardSectionConfig.reefRoyale(),
+              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
+              playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.reefRoyale() : null,
             ),
           ),
 
@@ -574,6 +613,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
         controller: _dartboardEmulatorController,
         isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.reefRoyale(),
+        onCancelAutoPlay: _onCancelAutoPlay,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),

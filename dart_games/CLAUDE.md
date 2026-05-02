@@ -22,7 +22,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [Design System](docs/architecture/design-system.md) - Container app colors, typography, patterns
 
 ### 👨‍💻 Development Guides
-- [Adding New Games](docs/development/adding-games.md) - Complete 19-step guide for creating games
+- [Adding New Games](docs/development/adding-games.md) - Complete 20-step guide for creating games
 - [Game Integration Requirements](docs/development/game-integration.md) - Required integrations checklist
 - [Asset Organization](docs/development/asset-organization.md) - Asset folder structure and naming
 - [Announcement System](docs/development/announcement-system.md) - Audio system integration guide
@@ -38,12 +38,13 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1730 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **1179 Flutter + 178 server + 373 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1357 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 373 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
+### 🧪 Testing (1782 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1190 Flutter + 178 server + 414 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1368 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 414 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
+- [Shared Helpers Reference](docs/testing/shared-helpers-reference.md) - Shared test helper files, delegate pattern, new game templates
 - [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) - Mandatory audit for 100% spec coverage
 
 ### 🚀 Deployment
@@ -104,8 +105,8 @@ flutter test test/screens/games/clockwork_quest/
 
 ## Current Test Counts
 
-**Total: 1730 tests**
-- **Flutter Non-UI Tests:** 1179 tests (100% pass rate MANDATORY)
+**Total: 1782 tests**
+- **Flutter Non-UI Tests:** 1190 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
   - Model serialization tests: 74 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19)
@@ -138,19 +139,19 @@ flutter test test/screens/games/clockwork_quest/
   - Failed stats routes: 6
   - Test routes: 6
 
-- **UI Automation Tests:** 373 tests (optional, ask before running)
-  - Target Tag: 71 tests (~104 minutes)
-  - Carnival Derby: 42 tests (~59 minutes)
-  - Monster Mash: 68 tests (~95 minutes)
-  - Reef Royale: 84 tests (~116 minutes)
-  - Clockwork Quest: 108 tests (~145 minutes) [92 functional + 16 save/resume]
-  - **Sequential (`run_ui_tests.bat`): ~519 minutes (~8h 39m) — interactive Chrome sessions**
-  - **Parallel (`run_ui_tests_parallel.bat`): ~145 minutes (~2h 25m) — fully headless, no visible Chrome**
+- **UI Automation Tests:** 414 tests (optional, ask before running)
+  - Target Tag: 80 tests (~113 minutes) [71 functional + 4 navigation + 5 play-to-complete]
+  - Carnival Derby: 51 tests (~68 minutes) [42 functional + 4 navigation + 5 play-to-complete]
+  - Monster Mash: 76 tests (~103 minutes) [68 functional + 4 navigation + 4 play-to-complete]
+  - Reef Royale: 92 tests (~124 minutes) [84 functional + 4 navigation + 4 play-to-complete]
+  - Clockwork Quest: 116 tests (~153 minutes) [92 functional + 3 navigation + 16 save/resume + 5 play-to-complete]
+  - **Sequential (`run_ui_tests.bat`): ~561 minutes (~9h 21m) — interactive Chrome sessions**
+  - **Parallel (`run_ui_tests_parallel.bat`): ~153 minutes (~2h 33m) — fully headless, no visible Chrome**
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 1179 Flutter non-UI tests MUST pass
+✅ Run `flutter test` - ALL 1190 Flutter non-UI tests MUST pass
 ✅ Run `cd server && dart test` - ALL 178 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
@@ -181,9 +182,10 @@ flutter test test/screens/games/clockwork_quest/
 1. **Spec coverage audit** — Cross-reference EVERY option from spec Section 7 and EVERY visual element from Section 10 against actual test files. For each option/element, verify there is at least one non-UI test AND one UI test that exercises it. List any gaps, write missing tests, and re-verify. See [Spec Coverage Audit](docs/testing/spec-coverage-audit.md) for the full procedure.
 2. **Screenshot tests** — Run screenshot tests, evaluate EVERY screenshot against the spec's visual checklist, fix issues, re-run until zero issues
 3. **UI automation tests** — Run ALL UI tests for the new game, fix failures, re-run until 100% pass
-4. **Non-UI tests** — Run `flutter test`, fix any regressions, re-run until 100% pass
-5. **Simultaneous pass** — ALL four (spec audit clean + screenshots clean + UI tests pass + non-UI tests pass) must be true AT THE SAME TIME before proceeding
-6. **Spec Definition of Done** — Every item in the spec's Definition of Done checklist verified and reported to user
+4. **Play to Complete UI tests** — Run all `play_to_complete/` tests for the new game, fix failures, re-run until 100% pass
+5. **Non-UI tests** — Run `flutter test`, fix any regressions, re-run until 100% pass
+6. **Simultaneous pass** — ALL five gates must be true AT THE SAME TIME before proceeding
+7. **Spec Definition of Done** — Every item in the spec's Definition of Done checklist verified and reported to user
 
 ❌ NEVER rationalize skipping any gate (e.g., "it requires manual setup", "it seems like a visual-only step", "the tests were already written")
 ❌ NEVER move to documentation or mark phases complete until all gates pass simultaneously

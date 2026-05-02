@@ -369,6 +369,70 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 }
 ```
 
+## Play to Complete
+
+The Play to Complete feature auto-plays a game from the current state to completion using simulated dart throws. Each game implements a strategy that determines the optimal throw based on current game state and settings.
+
+### Architecture
+
+**Strategy Interface** (`lib/widgets/dartboard_emulator/play_to_complete_strategy.dart`):
+- `SimulatedThrow` — data class with `score`, `multiplier`, `baseScore`
+- `PlayToCompleteStrategy` — abstract class with three methods:
+  - `getNextThrow(context)` — returns the next throw to make, or null if done
+  - `isGameComplete(context)` — checks if game has a winner
+  - `shouldAutoTakeout(context)` — checks if darts need to be removed
+
+**Runner** (`lib/widgets/dartboard_emulator/play_to_complete_runner.dart`):
+- Async loop: check complete → check takeout → get throw → simulate → delay → repeat
+- Timing: 250ms between throws, 200ms for takeout handling
+- Cancellable via `cancel()`, cleaned up via `dispose()`
+
+**Strategies** (`lib/services/play_to_complete/`):
+- `carnival_derby_strategy.dart` — Perfect Finish exact-finish logic
+- `clockwork_quest_strategy.dart` — Sequential/speed mode target progression
+- `reef_royale_strategy.dart` — Target claiming with active target awareness
+- `monster_mash_strategy.dart` — HP/buff-aware combat
+- `target_tag_strategy.dart` — Shield building and opponent elimination
+
+### Game Screen Integration
+
+Each game screen needs:
+
+1. **Runner field**: `PlayToCompleteRunner? _playToCompleteRunner;`
+2. **`_onPlayToComplete()` method**: Creates strategy + runner, hides dartboard, sets auto-playing
+3. **`_onCancelAutoPlay()` method**: Cancels runner, shows dartboard, clears auto-playing
+4. **Auto-play guards**: Skip announcement delays and takeout chains when `controller.isAutoPlaying`
+5. **Wire callbacks**: Pass `onPlayToComplete` and `playToCompleteConfig` to `DartboardEmulatorSection`, pass `onCancelAutoPlay` to `DartboardEmulatorFAB`
+6. **Dispose**: `_playToCompleteRunner?.dispose()` in `dispose()`
+
+### Button Configuration
+
+Add a factory to `PlayToCompleteButtonConfig` in `dartboard_emulator_config.dart`:
+
+```dart
+factory PlayToCompleteButtonConfig.yourGame() {
+  return PlayToCompleteButtonConfig(
+    backgroundColor: const Color(0xYOURCOLOR),
+    foregroundColor: Colors.white,
+    borderColor: const Color(0xYOURBORDER),
+    textStyle: GoogleFonts.yourFont(/* ... */),
+  );
+}
+```
+
+### FAB Cancel Mode
+
+When `controller.isAutoPlaying` is true, the FAB shows a red "Cancel Auto-Play" button instead of the normal show/hide toggle. Pressing it calls the `onCancelAutoPlay` callback.
+
+### UI Integration Tests
+
+Every game must have Play to Complete UI tests in `integration_test/<game>/play_to_complete/`:
+- `default_settings_test.dart` — default settings complete successfully
+- Settings-specific tests for each game-critical setting
+- `mid_game_test.dart` — throws manual darts first, then auto-completes
+
+Tests use `PlayToCompleteHelpers.tapPlayToComplete()` and `waitForGameCompletion()` from `integration_test/shared/play_to_complete_helpers.dart`.
+
 ## Testing
 
 ### Manual Testing
@@ -379,6 +443,8 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 5. Click FAB to show dartboard
 6. Click dartboard segments - verify throws register
 7. Connect to real dartboard - verify FAB and emulator disappear
+8. Click Play to Complete - verify game auto-plays to results screen
+9. Click Cancel during auto-play - verify it stops and dartboard reappears
 
 ### Unit Testing
 Test your game logic with simulated dart throws, not the dartboard component itself.
@@ -388,7 +454,10 @@ Test your game logic with simulated dart throws, not the dartboard component its
 - **Carnival Derby:** `lib/screens/games/carnival_horse_race/horse_race_game_screen.dart`
 - **Target Tag:** `lib/screens/games/target_tag/target_tag_game_screen.dart`
 - **Monster Mash:** `lib/screens/games/monster_mash/monster_mash_game_screen.dart`
+- **Reef Royale:** `lib/screens/games/reef_royale/reef_royale_game_screen.dart`
+- **Clockwork Quest:** `lib/screens/games/clockwork_quest/clockwork_quest_game_screen.dart`
 - **Component Source:** `lib/widgets/dartboard_emulator/`
+- **Strategies:** `lib/services/play_to_complete/`
 
 ## Related Documentation
 

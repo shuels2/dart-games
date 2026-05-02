@@ -18,6 +18,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
+import '../../../services/play_to_complete/carnival_derby_strategy.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
@@ -40,7 +41,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   CarnivalDerbyAnnouncementHelper? _audioQueue;
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
   final ScrollController _scrollController = ScrollController();
-  bool _gameCompleted = false; // Prevent multiple navigations to results screen
+  PlayToCompleteRunner? _playToCompleteRunner;
+  bool _gameCompleted = false;
   bool _showSaveModal = false;
 
   @override
@@ -51,6 +53,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final dartboardProvider = context.read<DartboardProvider>();
       _mockApi = dartboardProvider.apiService;
+      if (mounted) setState(() {});
 
       // Initialize global announcement queue with Carnival Derby helper
       final globalQueue = GameAnnouncementQueueService();
@@ -131,11 +134,36 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
   @override
   void dispose() {
+    _playToCompleteRunner?.dispose();
     _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
     _dartboardEmulatorController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onPlayToComplete() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+
+    _playToCompleteRunner = PlayToCompleteRunner(
+      strategy: CarnivalDerbyStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToCompleteRunner!.run();
+  }
+
+  void _onCancelAutoPlay() {
+    _playToCompleteRunner?.cancel();
+    _dartboardEmulatorController.setAutoPlaying(false);
+    _dartboardEmulatorController.show();
   }
 
   void _handleDartboardEvent(Map<String, dynamic> event) {
@@ -167,22 +195,16 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
       // Check if player busted
       if (horseRaceProvider.currentPlayerBusted) {
-        // Player busted - bust suppresses dart score (player sees score on screen)
-        if (currentPlayer != null) {
-          // Announce the bust directly (dart score suppressed)
+        if (!_dartboardEmulatorController.isAutoPlaying && currentPlayer != null) {
           Future.delayed(const Duration(milliseconds: 500), () {
             _audioQueue?.announceBust(currentPlayer.name);
 
-            // Wait for bust announcement to complete (~3s)
             Future.delayed(const Duration(milliseconds: 3000), () {
-              // Tell them to remove darts
               _audioQueue?.announceRemoveDarts(currentPlayer.name);
 
-              // Wait for remove darts announcement (~2s) then initiate takeout
               Future.delayed(const Duration(milliseconds: 2000), () {
                 _mockApi?.simulateTakeoutStarted();
 
-                // Auto-complete takeout after a short delay
                 Future.delayed(const Duration(milliseconds: 500), () {
                   _mockApi?.simulateTakeoutFinished();
                 });
@@ -193,41 +215,35 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         return;
       }
 
-      // Announce the score
-      if (isMiss) {
-        _audioQueue?.announceMiss();
-      } else {
-        _audioQueue?.announceDart(
-          score,
-          _getMultiplierFromSector(sector),
-        );
+      if (!_dartboardEmulatorController.isAutoPlaying) {
+        if (isMiss) {
+          _audioQueue?.announceMiss();
+        } else {
+          _audioQueue?.announceDart(
+            score,
+            _getMultiplierFromSector(sector),
+          );
+        }
       }
 
-      // Check if game is won
       if (horseRaceProvider.hasWinner) {
-        // Winner found - announce to remove darts and trigger takeout
-        if (currentPlayer != null) {
-          // Wait for score announcement to complete (~1.5s) + 1 second
+        if (!_dartboardEmulatorController.isAutoPlaying && currentPlayer != null) {
           Future.delayed(const Duration(milliseconds: 2500), () {
             _audioQueue?.announceRemoveDarts(currentPlayer.name);
 
-            // Trigger takeout events
             Future.delayed(const Duration(milliseconds: 2000), () {
               _mockApi?.simulateTakeoutStarted();
 
-              // Auto-complete takeout after a short delay
               Future.delayed(const Duration(milliseconds: 500), () {
                 _mockApi?.simulateTakeoutFinished();
               });
             });
           });
         }
-      } else {
-        // If this was the 3rd dart, announce to remove darts after score finishes + 1 second
+      } else if (!_dartboardEmulatorController.isAutoPlaying) {
         final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
         if (dartsThrown >= 3) {
           if (currentPlayer != null) {
-            // Wait for score announcement to complete (~1.5s) + 1 second
             Future.delayed(const Duration(milliseconds: 2500), () {
               _audioQueue?.announceRemoveDarts(currentPlayer.name);
             });
@@ -245,18 +261,17 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     final horseRaceProvider = context.read<HorseRaceProvider>();
     horseRaceProvider.handleTakeoutFinished();
 
-    // Scroll to current player's track tile
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        _scrollToCurrentPlayer();
-      }
-    });
+    if (!_dartboardEmulatorController.isAutoPlaying) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _scrollToCurrentPlayer();
+        }
+      });
+    }
 
-    // Check if game is won after takeout
     if (horseRaceProvider.hasWinner) {
       _handleGameWon();
-    } else if (mounted && horseRaceProvider.currentGame != null) {
-      // Announce next player's turn (before they throw)
+    } else if (mounted && horseRaceProvider.currentGame != null && !_dartboardEmulatorController.isAutoPlaying) {
       final playerProvider = context.read<PlayerProvider>();
       final players = horseRaceProvider.currentGame!.playerIds
           .map((id) => playerProvider.getPlayerById(id))
@@ -326,16 +341,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     if (_gameCompleted) return;
     _gameCompleted = true;
 
-    // Wait for final score announcement to complete before transitioning
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    void navigateToResults() {
       if (!mounted) return;
-
       final horseRaceProvider = context.read<HorseRaceProvider>();
       final playerProvider = context.read<PlayerProvider>();
       final winner = horseRaceProvider.getWinner(playerProvider.allPlayers);
-
       if (winner != null) {
-        // Navigate to results screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -343,7 +354,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           ),
         );
       }
-    });
+    }
+
+    if (_dartboardEmulatorController.isAutoPlaying) {
+      navigateToResults();
+    } else {
+      Future.delayed(const Duration(milliseconds: 2500), navigateToResults);
+    }
   }
 
   @override
@@ -578,6 +595,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   _mockApi?.simulateTakeoutFinished();
                 },
                 config: DartboardSectionConfig.carnivalDerby(),
+                onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
+                playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.carnivalDerby() : null,
               ),
             ],
           );
@@ -608,6 +627,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         controller: _dartboardEmulatorController,
         isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.carnivalDerby(),
+        onCancelAutoPlay: _onCancelAutoPlay,
       ),
       ),
     );

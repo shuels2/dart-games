@@ -15,6 +15,8 @@ class DartboardEmulatorSection extends StatelessWidget {
   final VoidCallback onRemoveDarts;
   final GlobalKey<InteractiveDartboardState>? dartboardKey;
   final DartboardSectionConfig config;
+  final VoidCallback? onPlayToComplete;
+  final PlayToCompleteButtonConfig? playToCompleteConfig;
 
   const DartboardEmulatorSection({
     super.key,
@@ -25,6 +27,8 @@ class DartboardEmulatorSection extends StatelessWidget {
     required this.onRemoveDarts,
     this.dartboardKey,
     required this.config,
+    this.onPlayToComplete,
+    this.playToCompleteConfig,
   });
 
   @override
@@ -37,37 +41,60 @@ class DartboardEmulatorSection extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return Container(
-          padding: config.padding,
-          decoration: BoxDecoration(
-            color: config.backgroundColor,
-            borderRadius: config.borderRadius,
-            border: config.border,
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Dartboard with conditional disable
-              AbsorbPointer(
-                absorbing: shouldPromptTakeout,
-                child: Opacity(
-                  opacity: shouldPromptTakeout ? 0.5 : 1.0,
-                  child: InteractiveDartboard(
-                    key: dartboardKey,
-                    size: 250,
-                    onDartThrow: onDartThrow,
-                    onRemoveDarts: onRemoveDarts,
-                  ),
-                ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onPlayToComplete != null && playToCompleteConfig != null)
+              _buildPlayToCompleteButton(),
+            Container(
+              padding: config.padding,
+              decoration: BoxDecoration(
+                color: config.backgroundColor,
+                borderRadius: config.borderRadius,
+                border: config.border,
               ),
-
-              // Disabled overlay modal
-              if (shouldPromptTakeout)
-                _buildDisabledOverlay(),
-            ],
-          ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AbsorbPointer(
+                    absorbing: shouldPromptTakeout || controller.isAutoPlaying,
+                    child: Opacity(
+                      opacity: shouldPromptTakeout ? 0.5 : 1.0,
+                      child: InteractiveDartboard(
+                        key: dartboardKey,
+                        size: 250,
+                        onDartThrow: onDartThrow,
+                        onRemoveDarts: onRemoveDarts,
+                      ),
+                    ),
+                  ),
+                  if (shouldPromptTakeout)
+                    _buildDisabledOverlay(),
+                ],
+              ),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildPlayToCompleteButton() {
+    final btnConfig = playToCompleteConfig!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: ElevatedButton.icon(
+        key: DartboardEmulatorKeys.playToCompleteButton,
+        onPressed: shouldPromptTakeout ? null : onPlayToComplete,
+        icon: Icon(btnConfig.icon, color: btnConfig.foregroundColor),
+        label: Text(btnConfig.buttonText, style: btnConfig.textStyle),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: btnConfig.backgroundColor,
+          disabledBackgroundColor: btnConfig.backgroundColor.withOpacity(0.5),
+          side: BorderSide(color: btnConfig.borderColor, width: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        ),
+      ),
     );
   }
 

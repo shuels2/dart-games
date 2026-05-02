@@ -599,7 +599,7 @@ class _ClockworkQuestResultsScreenState
           initialNumberOfLaps: numberOfLaps,
         ),
       ),
-      (route) => false,
+      (route) => route.isFirst,
     );
     clockworkProvider.clearGame();
   }

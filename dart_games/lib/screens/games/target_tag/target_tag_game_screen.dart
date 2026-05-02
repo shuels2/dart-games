@@ -15,6 +15,7 @@ import '../../../widgets/target_tag/active_player_panel_widget.dart';
 import '../../../widgets/target_tag/game_info_panel_widget.dart';
 import '../../../widgets/target_tag/player_card_widget.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
+import '../../../services/play_to_complete/target_tag_strategy.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -40,8 +41,9 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   final ScrollController _scrollController = ScrollController();
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
 
+  PlayToCompleteRunner? _playToCompleteRunner;
   bool _hasAnnouncedSuddenDeath = false;
-  bool _gameCompleted = false; // Prevent multiple navigations to results screen
+  bool _gameCompleted = false;
   bool _showSaveModal = false;
 
   @override
@@ -56,6 +58,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   Future<void> _initializeGame() async {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
+    if (mounted) setState(() {});
 
     // Initialize global announcement queue with Target Tag helper
     final globalQueue = GameAnnouncementQueueService();
@@ -83,11 +86,36 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 
   @override
   void dispose() {
+    _playToCompleteRunner?.dispose();
     _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
     _dartboardEmulatorController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onPlayToComplete() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+
+    _playToCompleteRunner = PlayToCompleteRunner(
+      strategy: TargetTagStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToCompleteRunner!.run();
+  }
+
+  void _onCancelAutoPlay() {
+    _playToCompleteRunner?.cancel();
+    _dartboardEmulatorController.setAutoPlaying(false);
+    _dartboardEmulatorController.show();
   }
 
   void _handleDartboardEvent(Map<String, dynamic> event) {
@@ -215,135 +243,129 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 
     // ===== PHASE 2: APPLY PRECEDENCE (max 1 moment announcement) =====
 
-    // Hit/Miss: only fire if NO secondary effect exists
-    if (!hasSecondary) {
-      if (!isMiss && parsed != null) {
-        _audioQueue!.announceHit(
-          parsed['number'] as int,
-          parsed['multiplier'] as String,
-        );
-      } else {
-        _audioQueue!.announceHit(0, 'single', isMiss: true);
+    if (!_dartboardEmulatorController.isAutoPlaying) {
+      // Hit/Miss: only fire if NO secondary effect exists
+      if (!hasSecondary) {
+        if (!isMiss && parsed != null) {
+          _audioQueue!.announceHit(
+            parsed['number'] as int,
+            parsed['multiplier'] as String,
+          );
+        } else {
+          _audioQueue!.announceHit(0, 'single', isMiss: true);
+        }
       }
-    }
 
-    // Pick highest-priority moment and fire exactly one
-    if (hasElimination) {
-      // Priority 1: Elimination
-      if (currentGame.mode == GameMode.team) {
-        final eliminatedTeams = <String, List<String>>{};
-        for (final eliminatedId in newlyEliminated) {
-          final teamId = currentGame.playerToTeam![eliminatedId]!;
-          if (!eliminatedTeams.containsKey(teamId)) {
-            eliminatedTeams[teamId] = [];
+      // Pick highest-priority moment and fire exactly one
+      if (hasElimination) {
+        if (currentGame.mode == GameMode.team) {
+          final eliminatedTeams = <String, List<String>>{};
+          for (final eliminatedId in newlyEliminated) {
+            final teamId = currentGame.playerToTeam![eliminatedId]!;
+            if (!eliminatedTeams.containsKey(teamId)) {
+              eliminatedTeams[teamId] = [];
+            }
+            final player = allPlayers.firstWhere((p) => p.id == eliminatedId);
+            eliminatedTeams[teamId]!.add(player.name);
           }
-          final player = allPlayers.firstWhere((p) => p.id == eliminatedId);
-          eliminatedTeams[teamId]!.add(player.name);
-        }
-        for (final playerNames in eliminatedTeams.values) {
-          _audioQueue!.announceEliminated(playerNames);
-        }
-      } else {
-        for (final eliminatedId in newlyEliminated) {
-          final eliminatedPlayer = allPlayers.firstWhere((p) => p.id == eliminatedId);
-          _audioQueue!.announceEliminated([eliminatedPlayer.name]);
-        }
-      }
-    } else if (hasVulnerable) {
-      // Priority 2: Vulnerable
-      if (currentGame.mode == GameMode.team) {
-        final vulnerableTeams = <String, List<String>>{};
-        for (final playerId in vulnerablePlayers) {
-          final teamId = currentGame.playerToTeam![playerId]!;
-          if (!vulnerableTeams.containsKey(teamId)) {
-            vulnerableTeams[teamId] = [];
+          for (final playerNames in eliminatedTeams.values) {
+            _audioQueue!.announceEliminated(playerNames);
+          }
+        } else {
+          for (final eliminatedId in newlyEliminated) {
+            final eliminatedPlayer = allPlayers.firstWhere((p) => p.id == eliminatedId);
+            _audioQueue!.announceEliminated([eliminatedPlayer.name]);
           }
         }
-        for (final teamId in vulnerableTeams.keys) {
-          final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-          final playerNames = teamPlayerIds
-              .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
-              .toList();
-          _audioQueue!.announceVulnerable(playerNames);
-        }
-      } else {
-        for (final playerId in vulnerablePlayers) {
-          final player = allPlayers.firstWhere((p) => p.id == playerId);
-          _audioQueue!.announceVulnerable([player.name]);
-        }
-      }
-    } else if (hasLowShields) {
-      // Priority 3: Low Shields
-      if (currentGame.mode == GameMode.team) {
-        final lowShieldTeams = <String, List<String>>{};
-        for (final playerId in lowShieldPlayers) {
-          final teamId = currentGame.playerToTeam![playerId]!;
-          if (!lowShieldTeams.containsKey(teamId)) {
-            lowShieldTeams[teamId] = [];
+      } else if (hasVulnerable) {
+        if (currentGame.mode == GameMode.team) {
+          final vulnerableTeams = <String, List<String>>{};
+          for (final playerId in vulnerablePlayers) {
+            final teamId = currentGame.playerToTeam![playerId]!;
+            if (!vulnerableTeams.containsKey(teamId)) {
+              vulnerableTeams[teamId] = [];
+            }
+          }
+          for (final teamId in vulnerableTeams.keys) {
+            final teamPlayerIds = currentGame.teamPlayers![teamId]!;
+            final playerNames = teamPlayerIds
+                .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+                .toList();
+            _audioQueue!.announceVulnerable(playerNames);
+          }
+        } else {
+          for (final playerId in vulnerablePlayers) {
+            final player = allPlayers.firstWhere((p) => p.id == playerId);
+            _audioQueue!.announceVulnerable([player.name]);
           }
         }
-        for (final teamId in lowShieldTeams.keys) {
-          final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-          final playerNames = teamPlayerIds
+      } else if (hasLowShields) {
+        if (currentGame.mode == GameMode.team) {
+          final lowShieldTeams = <String, List<String>>{};
+          for (final playerId in lowShieldPlayers) {
+            final teamId = currentGame.playerToTeam![playerId]!;
+            if (!lowShieldTeams.containsKey(teamId)) {
+              lowShieldTeams[teamId] = [];
+            }
+          }
+          for (final teamId in lowShieldTeams.keys) {
+            final teamPlayerIds = currentGame.teamPlayers![teamId]!;
+            final playerNames = teamPlayerIds
+                .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+                .toList();
+            _audioQueue!.announceLowShields(playerNames);
+          }
+        } else {
+          for (final playerId in lowShieldPlayers) {
+            final player = allPlayers.firstWhere((p) => p.id == playerId);
+            _audioQueue!.announceLowShields([player.name]);
+          }
+        }
+      } else if (hasTaggedOut) {
+        if (currentGame.mode == GameMode.team) {
+          final lostByTeam = <String, List<String>>{};
+          for (final playerId in lostTaggedInPlayers) {
+            final teamId = currentGame.playerToTeam![playerId]!;
+            lostByTeam[teamId] ??= [];
+          }
+          for (final teamId in lostByTeam.keys) {
+            final teamPlayerIds = currentGame.teamPlayers![teamId]!;
+            final playerNames = teamPlayerIds
+                .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+                .toList();
+            _audioQueue!.announceTaggedOut(playerNames);
+          }
+        } else {
+          final lostNames = lostTaggedInPlayers
               .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
               .toList();
-          _audioQueue!.announceLowShields(playerNames);
+          _audioQueue!.announceTaggedOut(lostNames);
         }
-      } else {
-        for (final playerId in lowShieldPlayers) {
-          final player = allPlayers.firstWhere((p) => p.id == playerId);
-          _audioQueue!.announceLowShields([player.name]);
-        }
-      }
-    } else if (hasTaggedOut) {
-      // Priority 4: Tagged Out
-      if (currentGame.mode == GameMode.team) {
-        final lostByTeam = <String, List<String>>{};
-        for (final playerId in lostTaggedInPlayers) {
-          final teamId = currentGame.playerToTeam![playerId]!;
-          lostByTeam[teamId] ??= [];
-        }
-        for (final teamId in lostByTeam.keys) {
+      } else if (hasSuccessfulTag) {
+        _audioQueue!.announceSuccessfulTag();
+      } else if (hasTaggedIn) {
+        List<String> playerNames;
+        if (currentGame.mode == GameMode.team) {
+          final teamId = currentGame.playerToTeam![currentPlayer.id]!;
           final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-          final playerNames = teamPlayerIds
+          playerNames = teamPlayerIds
               .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
               .toList();
-          _audioQueue!.announceTaggedOut(playerNames);
+        } else {
+          playerNames = [currentPlayer.name];
         }
-      } else {
-        final lostNames = lostTaggedInPlayers
-            .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
-            .toList();
-        _audioQueue!.announceTaggedOut(lostNames);
+        _audioQueue!.announceTaggedIn(playerNames);
+      } else if (hasShieldGain) {
+        _audioQueue!.announceShieldGained(
+          currentPlayer.name,
+          shieldsAfter,
+          targetTagProvider.currentGame!.shieldMax,
+        );
       }
-    } else if (hasSuccessfulTag) {
-      // Priority 5: Successful Tag (no status change triggered)
-      _audioQueue!.announceSuccessfulTag();
-    } else if (hasTaggedIn) {
-      // Priority 6: Tagged In
-      List<String> playerNames;
-      if (currentGame.mode == GameMode.team) {
-        final teamId = currentGame.playerToTeam![currentPlayer.id]!;
-        final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-        playerNames = teamPlayerIds
-            .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
-            .toList();
-      } else {
-        playerNames = [currentPlayer.name];
-      }
-      _audioQueue!.announceTaggedIn(playerNames);
-    } else if (hasShieldGain) {
-      // Priority 7: Shield Gained
-      _audioQueue!.announceShieldGained(
-        currentPlayer.name,
-        shieldsAfter,
-        targetTagProvider.currentGame!.shieldMax,
-      );
     }
-    // Priority 8: Hit/Miss already handled above (when !hasSecondary)
 
     // Check if turn is over (3 darts or winner)
-    if (dartsThrown >= 3 || targetTagProvider.hasWinner) {
+    if (!_dartboardEmulatorController.isAutoPlaying && (dartsThrown >= 3 || targetTagProvider.hasWinner)) {
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) {
           _audioQueue!.announceRemoveDarts();
@@ -392,19 +414,21 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 
     targetTagProvider.handleTakeoutFinished();
 
-    // Scroll to current player's tile if needed
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        _scrollToCurrentPlayer();
-      }
-    });
+    if (!_dartboardEmulatorController.isAutoPlaying) {
+      // Scroll to current player's tile if needed
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _scrollToCurrentPlayer();
+        }
+      });
 
-    // Next player's turn
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        _announceCurrentPlayerTurn();
-      }
-    });
+      // Next player's turn
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _announceCurrentPlayerTurn();
+        }
+      });
+    }
 
     setState(() {});
   }
@@ -482,25 +506,28 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     if (_gameCompleted) return;
     _gameCompleted = true;
 
-    final playerProvider = context.read<PlayerProvider>();
-    final targetTagProvider = context.read<TargetTagProvider>();
-    final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
-
-    if (winners.isNotEmpty) {
-      final winnerNames = winners.map((p) => p.name).toList();
-      _audioQueue!.announceWinner(winnerNames);
-    }
-
-    Future.delayed(const Duration(milliseconds: 3000), () {
+    void navigateToResults() {
       if (!mounted) return;
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => const TargetTagResultsScreen(),
         ),
       );
-    });
+    }
+
+    if (_dartboardEmulatorController.isAutoPlaying) {
+      navigateToResults();
+    } else {
+      final playerProvider = context.read<PlayerProvider>();
+      final targetTagProvider = context.read<TargetTagProvider>();
+      final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
+      if (winners.isNotEmpty) {
+        final winnerNames = winners.map((p) => p.name).toList();
+        _audioQueue!.announceWinner(winnerNames);
+      }
+      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+    }
   }
 
   @override
@@ -806,6 +833,8 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
               _mockApi?.simulateTakeoutFinished();
             },
             config: DartboardSectionConfig.targetTag(),
+            onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
+            playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.targetTag() : null,
           ),
             ],
           ),
@@ -833,6 +862,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         controller: _dartboardEmulatorController,
         isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.targetTag(),
+        onCancelAutoPlay: _onCancelAutoPlay,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),

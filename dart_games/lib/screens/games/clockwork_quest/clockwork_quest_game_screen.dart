@@ -20,6 +20,7 @@ import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../widgets/save_game_modal/save_game_modal_config.dart';
+import '../../../services/play_to_complete/clockwork_quest_strategy.dart';
 import '../../../widgets/interactive_dartboard.dart';
 
 class ClockworkQuestGameScreen extends StatefulWidget {
@@ -37,6 +38,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
   MockScoliaApiService? _mockApi;
   final DartboardEmulatorController _dartboardEmulatorController =
       DartboardEmulatorController();
+  PlayToCompleteRunner? _playToCompleteRunner;
   bool _showSaveModal = false;
   bool _gameCompleted = false;
 
@@ -51,6 +53,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
   Future<void> _initializeGame() async {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
+    if (mounted) setState(() {});
 
     // Subscribe to dartboard events
     final eventStream = dartboardProvider.dartboardEventStream;
@@ -63,9 +66,34 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
 
   @override
   void dispose() {
+    _playToCompleteRunner?.dispose();
     _dartboardSubscription?.cancel();
     _dartboardEmulatorController.dispose();
     super.dispose();
+  }
+
+  void _onPlayToComplete() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+
+    _playToCompleteRunner = PlayToCompleteRunner(
+      strategy: ClockworkQuestStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToCompleteRunner!.run();
+  }
+
+  void _onCancelAutoPlay() {
+    _playToCompleteRunner?.cancel();
+    _dartboardEmulatorController.setAutoPlaying(false);
+    _dartboardEmulatorController.show();
   }
 
   void _handleDartboardEvent(Map<String, dynamic> event) {
@@ -292,6 +320,8 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                 _mockApi?.simulateTakeoutFinished();
               },
               config: DartboardSectionConfig.clockworkQuest(),
+              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
+              playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.clockworkQuest() : null,
             ),
           ),
 
@@ -319,6 +349,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         controller: _dartboardEmulatorController,
         isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.clockworkQuest(),
+        onCancelAutoPlay: _onCancelAutoPlay,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),

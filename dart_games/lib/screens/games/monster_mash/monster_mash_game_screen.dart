@@ -12,6 +12,7 @@ import '../../../providers/dartboard_provider.dart';
 import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/monster_mash_announcement_helper.dart';
+import '../../../services/play_to_complete/monster_mash_strategy.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -35,6 +36,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   MockScoliaApiService? _mockApi;
   MonsterMashAnnouncementHelper? _audioQueue;
   final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
+  PlayToCompleteRunner? _playToCompleteRunner;
   bool _gameCompleted = false;
   bool _showSaveModal = false;
 
@@ -63,6 +65,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   Future<void> _initializeGame() async {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
+    if (mounted) setState(() {});
 
     final globalQueue = GameAnnouncementQueueService();
     await globalQueue.loadSettings();
@@ -182,10 +185,35 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
 
   @override
   void dispose() {
+    _playToCompleteRunner?.dispose();
     _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
     _dartboardEmulatorController.dispose();
     super.dispose();
+  }
+
+  void _onPlayToComplete() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+
+    _playToCompleteRunner = PlayToCompleteRunner(
+      strategy: MonsterMashStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToCompleteRunner!.run();
+  }
+
+  void _onCancelAutoPlay() {
+    _playToCompleteRunner?.cancel();
+    _dartboardEmulatorController.setAutoPlaying(false);
+    _dartboardEmulatorController.show();
   }
 
   void _handleDartboardEvent(Map<String, dynamic> event) {
@@ -291,61 +319,55 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     }
 
     // --- Apply precedence rules ---
-    final hasSecondary = hasHealing || hasClutchHeal || hasAttack || hasElimination || hasHatTrick;
+    if (!_dartboardEmulatorController.isAutoPlaying) {
+      final hasSecondary = hasHealing || hasClutchHeal || hasAttack || hasElimination || hasHatTrick;
 
-    // Rule 1: Hit only fires when no secondary effect exists
-    if (!hasSecondary) {
-      if (!isMiss && parsed != null) {
-        _audioQueue!.announceHit(parsed['number'] as int, parsed['multiplier'] as String);
-      } else {
-        _audioQueue!.announceHit(0, 'single', isMiss: true);
-      }
-    }
-
-    // Determine which moment announcement fires (highest priority wins)
-    if (hasHatTrick && hasElimination && newlyEliminated.contains(hatTrickTargetId)) {
-      // Rule 8: Merged hat trick + elimination
-      _audioQueue!.announceHatTrickElimination(hatTrickTargetName!);
-      // Handle any OTHER eliminations not covered by the hat trick (e.g. Lab Spark)
-      final otherEliminated = newlyEliminated.where((id) => id != hatTrickTargetId).toList();
-      if (otherEliminated.isNotEmpty) {
-        final names = otherEliminated.map((id) => allPlayers.firstWhere((p) => p.id == id).name).toList();
-        if (names.length > 1) {
-          _audioQueue!.announceCombinedElimination(names);
+      // Rule 1: Hit only fires when no secondary effect exists
+      if (!hasSecondary) {
+        if (!isMiss && parsed != null) {
+          _audioQueue!.announceHit(parsed['number'] as int, parsed['multiplier'] as String);
         } else {
-          _audioQueue!.announceElimination(names.first);
+          _audioQueue!.announceHit(0, 'single', isMiss: true);
         }
       }
-    } else if (hasElimination) {
-      // Rules 2,3,4,9: Elimination supersedes attack, health warning, heal
-      final eliminatedNames = newlyEliminated.map((id) => allPlayers.firstWhere((p) => p.id == id).name).toList();
-      if (eliminatedNames.length > 1) {
-        _audioQueue!.announceCombinedElimination(eliminatedNames);
-      } else {
-        _audioQueue!.announceElimination(eliminatedNames.first);
+
+      // Determine which moment announcement fires (highest priority wins)
+      if (hasHatTrick && hasElimination && newlyEliminated.contains(hatTrickTargetId)) {
+        _audioQueue!.announceHatTrickElimination(hatTrickTargetName!);
+        final otherEliminated = newlyEliminated.where((id) => id != hatTrickTargetId).toList();
+        if (otherEliminated.isNotEmpty) {
+          final names = otherEliminated.map((id) => allPlayers.firstWhere((p) => p.id == id).name).toList();
+          if (names.length > 1) {
+            _audioQueue!.announceCombinedElimination(names);
+          } else {
+            _audioQueue!.announceElimination(names.first);
+          }
+        }
+      } else if (hasElimination) {
+        final eliminatedNames = newlyEliminated.map((id) => allPlayers.firstWhere((p) => p.id == id).name).toList();
+        if (eliminatedNames.length > 1) {
+          _audioQueue!.announceCombinedElimination(eliminatedNames);
+        } else {
+          _audioQueue!.announceElimination(eliminatedNames.first);
+        }
+      } else if (hasHatTrick) {
+        _audioQueue!.announceHatTrick(hatTrickTargetName!);
+      } else if (hasClutchHeal) {
+        _audioQueue!.announceClutchHeal(currentPlayer.name);
+      } else if (hasAttack) {
+        _audioQueue!.announceAttack(attackTargetName!, attackMultiplier, attackDamage);
+        if (hasHealthWarningCrossing) {
+          _audioQueue!.announceHealthWarning(attackTargetName!, warningPct!);
+        }
+      } else if (hasHealing) {
+        final multiplierStr = parsed?['multiplier'] as String? ?? 'single';
+        _audioQueue!.announceHealing(multiplierStr, healAmount);
       }
-    } else if (hasHatTrick) {
-      // Rule 7: Hat trick supersedes attack and health warning
-      _audioQueue!.announceHatTrick(hatTrickTargetName!);
-    } else if (hasClutchHeal) {
-      // Rule 5: Clutch heal supersedes healing amount
-      _audioQueue!.announceClutchHeal(currentPlayer.name);
-    } else if (hasAttack) {
-      // Attack fires (hit already suppressed by rule 1)
-      _audioQueue!.announceAttack(attackTargetName!, attackMultiplier, attackDamage);
-      // Rule 6: Health warning only on tier crossing
-      if (hasHealthWarningCrossing) {
-        _audioQueue!.announceHealthWarning(attackTargetName!, warningPct!);
-      }
-    } else if (hasHealing) {
-      // Healing fires (hit already suppressed by rule 1)
-      final multiplierStr = parsed?['multiplier'] as String? ?? 'single';
-      _audioQueue!.announceHealing(multiplierStr, healAmount);
     }
 
     // Remove darts (always fires on 3rd dart or winner)
     final dartsThrown = monsterMashProvider.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || monsterMashProvider.hasWinner) {
+    if (!_dartboardEmulatorController.isAutoPlaying && (dartsThrown >= 3 || monsterMashProvider.hasWinner)) {
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _audioQueue!.announceRemoveDarts();
       });
@@ -391,7 +413,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
 
     // Check if buff changed (new round started)
     final buffAfter = monsterMashProvider.getActiveBuff();
-    if (buffAfter != null && buffAfter != buffBefore) {
+    if (!_dartboardEmulatorController.isAutoPlaying && buffAfter != null && buffAfter != buffBefore) {
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _audioQueue!.announceBuff(buffAfter);
       });
@@ -399,15 +421,19 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
 
     // Check for game end after advancing (round limit)
     if (monsterMashProvider.hasWinner) {
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _handleGameWon();
-      });
+      if (!_dartboardEmulatorController.isAutoPlaying) {
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) _handleGameWon();
+        });
+      }
       return;
     }
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) _announceCurrentPlayerTurn();
-    });
+    if (!_dartboardEmulatorController.isAutoPlaying) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _announceCurrentPlayerTurn();
+      });
+    }
 
     setState(() {});
   }
@@ -425,21 +451,25 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     if (_gameCompleted) return;
     _gameCompleted = true;
 
-    final playerProvider = context.read<PlayerProvider>();
-    final monsterMashProvider = context.read<MonsterMashProvider>();
-    final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
-
-    if (winners.isNotEmpty) {
-      _audioQueue!.announceWinners(winners.map((p) => p.name).toList());
-    }
-
-    Future.delayed(const Duration(milliseconds: 3000), () {
+    void navigateToResults() {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MonsterMashResultsScreen()),
       );
-    });
+    }
+
+    if (_dartboardEmulatorController.isAutoPlaying) {
+      navigateToResults();
+    } else {
+      final playerProvider = context.read<PlayerProvider>();
+      final monsterMashProvider = context.read<MonsterMashProvider>();
+      final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
+      if (winners.isNotEmpty) {
+        _audioQueue!.announceWinners(winners.map((p) => p.name).toList());
+      }
+      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+    }
   }
 
   @override
@@ -628,6 +658,8 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                 _mockApi?.simulateTakeoutFinished();
               },
               config: DartboardSectionConfig.monsterMash(),
+              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
+              playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.monsterMash() : null,
             ),
           ),
           // Dartboard connection lost modal
@@ -653,6 +685,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         controller: _dartboardEmulatorController,
         isConnected: !dartboardProvider.isEmulator,
         config: DartboardFABConfig.monsterMash(),
+        onCancelAutoPlay: _onCancelAutoPlay,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),

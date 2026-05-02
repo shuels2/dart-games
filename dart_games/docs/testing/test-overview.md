@@ -2,10 +2,10 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 1723 total tests:
+The Dart Games app has a comprehensive test suite with 1742 total tests:
 - **1179 Flutter non-UI tests** (models, providers, services, widgets, game logic)
 - **178 server tests** (database, models, routes, migrations)
-- **366 UI automation tests** (end-to-end testing with Chrome)
+- **385 UI automation tests** (end-to-end testing with Chrome)
 
 ## Non-UI Tests (1179 Flutter + 178 Server = 1357 tests)
 
@@ -114,51 +114,56 @@ _Note: Some tests span multiple categories. The total (1179) is the authoritativ
 - Failed stats routes: 6 tests
 - Test routes: 6 tests
 
-## UI Automation Tests (366 tests)
+## UI Automation Tests (385 tests)
 
 **Run with:** `./run_ui_tests.bat` (sequential) or `./run_ui_tests_parallel.bat` (parallel)
 **Sequential time:** ~507 minutes (~8h 27m) — interactive Chrome sessions visible
 **Parallel time:** ~143 minutes (~2h 23m) — fully headless, no visible Chrome sessions
 **OPTIONAL:** Ask user before running
 
-### Target Tag (69 tests, ~101 minutes)
+### Target Tag (73 tests, ~107 minutes)
 - Menu and Mechanics: 24 tests
 - Gameplay: 13 tests
 - Add Player: 6 tests
 - Results Screen: 6 tests
+- Navigation: 4 tests
 - Visual Validation: 4 tests
 - Save & Resume: 16 tests
 
-### Carnival Derby (40 tests, ~56 minutes)
+### Carnival Derby (44 tests, ~62 minutes)
 - Complete UI test suite: 24 tests
+- Navigation: 4 tests
 - Save & Resume: 16 tests
 
-### Monster Mash (67 tests, ~93 minutes)
+### Monster Mash (71 tests, ~99 minutes)
 - Add Player: 6 tests
 - Menu and Settings: 8 tests
 - Gameplay: 20 tests
 - Edit Score: 5 tests
 - Results Screen: 6 tests
+- Navigation: 4 tests
 - Visual Validation: 6 tests
 - Save & Resume: 16 tests
 
-### Reef Royale (83 tests, ~114 minutes)
+### Reef Royale (87 tests, ~120 minutes)
 - Add Player: 6 tests
 - Menu and Settings: 10 tests
 - Gameplay: 30 tests
 - Edit Score: 6 tests
 - Results Screen: 6 tests
+- Navigation: 4 tests
 - Visual Validation: 7 tests
 - Showcase: 1 test
 - Screenshot: 1 test
 - Save & Resume: 16 tests
 
-### Clockwork Quest (107 tests, ~143 minutes)
+### Clockwork Quest (110 tests, ~147 minutes)
 - Add Player: 10 tests
 - Menu and Settings: 20 tests
 - Gameplay: 38 tests
 - Edit Score: 11 tests
 - Results Screen: 11 tests
+- Navigation: 3 tests
 - Save & Resume: 16 tests
 - Screenshot: 1 test
 

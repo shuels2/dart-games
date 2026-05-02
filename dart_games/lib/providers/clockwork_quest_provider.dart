@@ -94,7 +94,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
 
     // Assign inventors to players
     final availableInventors = List<ClockworkInventor>.from(
-        ClockworkInventor.values.take(players.length));
+        ClockworkInventor.values);
     availableInventors.shuffle();
 
     final inventorAssignments = <String, ClockworkInventor>{};

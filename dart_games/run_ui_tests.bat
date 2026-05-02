@@ -299,7 +299,7 @@ if !_RST_ATTEMPT! gtr 1 (
 )
 if "!_RST_ABORT!"=="1" goto :run_single_test_done
 
-start /B "" cmd /C "flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --dart-define=SERVER_PORT=!_CAT_PORT! >> "!_RST_LOG!" 2>&1"
+start /B "" cmd /C "flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --dart-define=SERVER_PORT=!_CAT_PORT! --web-browser-flag=--start-maximized --browser-dimension=1920x1080 >> "!_RST_LOG!" 2>&1"
 
 powershell -NoProfile -Command "$log='!_RST_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 
@@ -308,7 +308,7 @@ if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
 REM On first failure, check for infrastructure errors and retry once
 set "_RST_RETRY=0"
 if "!_RST_PASS!"=="0" if !_RST_ATTEMPT! lss 2 (
-    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" "!_RST_LOG!" >nul 2>&1
+    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"FormatException" "!_RST_LOG!" >nul 2>&1
     if !errorlevel! equ 0 set "_RST_RETRY=1"
 )
 if "!_RST_RETRY!"=="1" goto :run_single_test_attempt

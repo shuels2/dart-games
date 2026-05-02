@@ -22,6 +22,10 @@ class ElementFinders {
   // CARNIVAL DERBY MENU FINDERS
   // ==========================================================================
 
+  static Finder getCarnivalDerbyBackButton() {
+    return find.byKey(CarnivalDerbyMenuKeys.backButton);
+  }
+
   static Finder getCarnivalDerbyAddPlayerButton() {
     return find.byKey(CarnivalDerbyMenuKeys.addPlayerButton);
   }
@@ -97,6 +101,10 @@ class ElementFinders {
   // ==========================================================================
   // TARGET TAG MENU FINDERS
   // ==========================================================================
+
+  static Finder getTargetTagBackButton() {
+    return find.byKey(TargetTagMenuKeys.backButton);
+  }
 
   static Finder getTargetTagAddPlayerButton() {
     return find.byKey(TargetTagMenuKeys.addPlayerButton);

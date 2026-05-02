@@ -207,6 +207,7 @@ See [Game Integration Requirements](game-integration.md) for complete details.
 - ✅ Create announcement helper class
 - ✅ Update player stats for ALL players (winners and losers)
 - ✅ Track game duration
+- ✅ Follow [navigation rules](game-integration.md#6-navigation-rules) for back arrows, Change Settings, Play Again, and Home
 
 ### 7. Organize Game Assets
 
@@ -292,13 +293,48 @@ factory DartboardPausedModalConfig.yourGame() {
 }
 ```
 
-### 9. Create Announcement Helper
+### 9. Implement Play to Complete Strategy
+
+Create a strategy for auto-playing the game to completion:
+
+**File:** `lib/services/play_to_complete/your_game_strategy.dart`
+
+```dart
+import '../../widgets/dartboard_emulator/play_to_complete_strategy.dart';
+import '../../providers/your_game_provider.dart';
+
+class YourGameStrategy implements PlayToCompleteStrategy {
+  @override
+  bool isGameComplete(BuildContext context) {
+    return context.read<YourGameProvider>().hasWinner;
+  }
+
+  @override
+  bool shouldAutoTakeout(BuildContext context) {
+    return context.read<YourGameProvider>().shouldPromptTakeout;
+  }
+
+  @override
+  SimulatedThrow? getNextThrow(BuildContext context) {
+    // Read current game state and settings from provider
+    // Return the optimal throw for the current situation
+    // Return null if game is done
+  }
+}
+```
+
+**Also add:**
+- `PlayToCompleteButtonConfig.yourGame()` factory in `dartboard_emulator_config.dart`
+- Wire strategy + runner into game screen (see [Dartboard Emulator - Play to Complete](dartboard-emulator.md#play-to-complete))
+- Add auto-play guards on announcement/takeout delay chains in game screen
+
+### 10. Create Announcement Helper
 
 **File:** `lib/services/your_game_announcement_helper.dart`
 
 See [Announcement System Integration](announcement-system.md) for complete guide.
 
-### 10. Create Sound Effects Service (Optional)
+### 11. Create Sound Effects Service (Optional)
 
 **File:** `lib/services/your_game_sound_effects.dart`
 
@@ -314,7 +350,7 @@ class YourGameSoundEffects {
 }
 ```
 
-### 11. Add Widget Keys for Testing
+### 12. Add Widget Keys for Testing
 
 **File:** `lib/constants/test_keys.dart`
 
@@ -338,7 +374,7 @@ class YourGameResultsKeys {
 
 See [Widget Keys](widget-keys.md) for complete guide.
 
-### 12. Add Game Card to Home Screen
+### 13. Add Game Card to Home Screen
 
 **File:** `lib/screens/home_screen.dart`
 
@@ -353,7 +389,7 @@ GameCard(
 )
 ```
 
-### 13. Add Routes
+### 14. Add Routes
 
 **File:** `lib/main.dart`
 
@@ -366,7 +402,7 @@ routes: {
 }
 ```
 
-### 14. Create Tests and Run Spec Coverage Audit
+### 15. Create Tests and Run Spec Coverage Audit
 
 Create test files in a game-specific subfolder under `integration_test/`:
 - `integration_test/your_game/your_game_menu_test.dart`
@@ -379,6 +415,38 @@ Create test files in a game-specific subfolder under `integration_test/`:
 - `test/screens/games/your_game/your_game_user_management_test.dart`
 
 Follow patterns from existing games.
+
+#### Create `_helpers.dart` Using Shared Helpers
+
+Each test subdirectory (gameplay, navigation, results, save_resume, etc.) needs a `_helpers.dart` file. **Use the delegate pattern** — import shared helpers and create one-line delegates rather than copying function bodies:
+
+1. **Extend shared helpers** for your game:
+   - Add `GameUIConfig.yourGame()` factory to `game_ui_config.dart`
+   - Add `GameSetupHelpers.setupAndStartYourGame()` to `game_setup_helpers.dart`
+   - Add `GameSaveConfig.yourGame()` and `.yourGameSecond()` factories to `save_resume_helpers.dart`
+   - Add settings toggles to `settings_helpers.dart`
+   - Add provider accessors to `provider_helpers.dart`
+   - **Sync all additions** to both `test/shared/` and `integration_test/shared/`
+
+2. **Create `_helpers.dart` files** that delegate to shared helpers:
+   ```dart
+   import '../../shared/dart_throw_helpers.dart';
+   import '../../shared/game_ui_config.dart';
+
+   final config = GameUIConfig.yourGame();
+
+   // One-line delegates — never copy function bodies
+   Future<void> throwDartViaMock(WidgetTester tester, int number,
+           {String multiplier = 'single'}) =>
+       DartThrowHelpers.throwDartViaMock(tester, number, multiplier: multiplier);
+   ```
+
+3. **Write game-specific logic only** in `_helpers.dart`:
+   - `completeGameToVictory()` — unique dart sequences per game
+   - Visual validation functions — game-specific UI assertions
+   - Provider shortcuts for complex assertions
+
+See [Shared Helpers Reference](../testing/shared-helpers-reference.md) for complete templates and the full helper list.
 
 #### Mandatory Results Screen UI Tests
 
@@ -395,6 +463,17 @@ Complete a game → land on results screen → pump extra time for async API cal
 
 See `integration_test/clockwork_quest/results/winner_stats_updated_test.dart` for the reference implementation of tests 2 and 3, and `integration_test/clockwork_quest/results/leave_tower_test.dart` for test 1.
 
+#### Mandatory Navigation UI Tests
+
+Create `integration_test/your_game/navigation/` with these 4 tests:
+
+1. **`menu_back_to_home_test.dart`** — Navigate to menu, tap back button, verify ≥3 home screen game cards visible
+2. **`game_back_settings_persist_test.dart`** — Change non-default settings, start game, tap game back button, verify settings preserved on menu
+3. **`change_settings_back_to_home_test.dart`** — Complete game, click Change Settings, tap menu back, verify home screen (catches `(route) => false` vs `route.isFirst` bugs)
+4. **`change_settings_preserves_settings_test.dart`** — Complete game, click Change Settings, verify settings and players preserved on menu
+
+See existing implementations in `integration_test/*/navigation/` for all 5 games, and [Navigation Rules](game-integration.md#6-navigation-rules) for the correct `Navigator` patterns.
+
 #### User Management Non-UI Tests
 
 Also create `test/screens/games/your_game/your_game_user_management_test.dart` following the pattern in `test/screens/games/clockwork_quest/clockwork_quest_user_management_test.dart`. This test validates the `updatePlayerStats` business logic in isolation (winner/loser flags, duration, game name, persistence across reload). It complements but does not replace the UI flow test above.
@@ -402,7 +481,7 @@ Also create `test/screens/games/your_game/your_game_user_management_test.dart` f
 **MANDATORY: After writing tests, run a Spec Coverage Audit.**
 Cross-reference EVERY option from spec Section 7 and EVERY visual element from Section 10 against actual test files. For each option, verify there is at least one non-UI test AND one UI test that exercises it. Write any missing tests before proceeding. See [Spec Coverage Audit](../testing/spec-coverage-audit.md) for the full procedure.
 
-### 15. Create Game Documentation
+### 16. Create Game Documentation
 
 Copy the game template:
 
@@ -420,20 +499,20 @@ Fill out all 8 template files:
 - assets.md
 - implementation-notes.md
 
-### 16. Check for Data Migration Needs
+### 17. Check for Data Migration Needs
 
 If your game changes the shape of any existing server-side SQLite schema (renaming columns, changing field types in shared models like Player or SavedGameMetadata), you must add a data migration. Adding new columns or new optional fields with defaults does NOT require a migration.
 
 See [Data Migrations](data-migrations.md) for how to add one.
 
-### 17. Update Main Documentation
+### 18. Update Main Documentation
 
 Update `CLAUDE.md` with:
 - New test counts
 - Link to your game documentation
 - Any game-specific critical notes
 
-### 18. Test Everything
+### 19. Test Everything
 
 **Run all tests:**
 ```bash
@@ -449,13 +528,19 @@ flutter test
 Add your game name to the `GAMES` variable in `run_ui_tests_parallel.bat`.
 Ports are assigned automatically. See [UI Automation - Adding a New Game](../testing/ui-automation.md#adding-a-new-game-to-parallel-tests).
 
+**Run Play to Complete tests:**
+```bash
+./run_ui_tests_parallel.bat your_game/play_to_complete
+```
+
 **Manual testing:**
 - Test on web
 - Test on tablet (if available)
 - Test all game modes
 - Test edge cases
+- Test Play to Complete with default and non-default settings
 
-### 19. Commit Your Work
+### 20. Commit Your Work
 
 ```bash
 git add .
@@ -483,6 +568,7 @@ Use this checklist to ensure complete integration:
 - [ ] Integrated with GameAnnouncementQueueService
 - [ ] Integrated with VictoryMusicService
 - [ ] Integrated with DartboardProvider
+- [ ] Follows navigation rules (menu→Home, game→menu, Change Settings keeps Home)
 - [ ] Created announcement helper
 - [ ] Organized game assets
 - [ ] Created component configurations
@@ -491,6 +577,7 @@ Use this checklist to ensure complete integration:
 - [ ] Added game card to home screen
 - [ ] Added routes
 - [ ] Created all tests
+- [ ] Created navigation UI tests (4 tests in `integration_test/your_game/navigation/`)
 - [ ] Created game documentation (8 files)
 - [ ] Updated main CLAUDE.md
 - [ ] All tests pass (272+ non-UI tests)
