@@ -622,15 +622,12 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
       List<dynamic> allPlayers) {
     final playerCount = game.playerIds.length;
 
-    // Character image size based on player count
-    double charSize;
-    if (playerCount <= 4) {
-      charSize = 200;
-    } else if (playerCount == 5) {
-      charSize = 160;
-    } else {
-      charSize = 120;
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Fill 85% of each equal column width, clamped to a sensible range.
+        // This adapts automatically to any screen size or player count.
+        final charSize = (constraints.maxWidth / playerCount * 0.85)
+            .clamp(120.0, 300.0);
 
     return Container(
       margin: const EdgeInsets.all(8),
@@ -660,6 +657,8 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
           ),
         ],
       ),
+    );
+      },
     );
   }
 

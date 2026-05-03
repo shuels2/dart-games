@@ -287,7 +287,7 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
                     child: Text(
                       'MISSION ACCOMPLISHED!',
                       style: GoogleFonts.orbitron(
-                        fontSize: 32,
+                        fontSize: 64,
                         fontWeight: FontWeight.bold,
                         color: _rocketFlame,
                         letterSpacing: 1.5,
@@ -301,32 +301,69 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
                     scale: _scaleAnimation,
                     child: Column(
                       children: [
-                        // Winner character (NO circle masking)
-                        Container(
-                          key: LunarLanderResultsKeys.winnerPhoto,
-                          width: 180,
-                          height: 180,
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: _rocketFlame.withOpacity(0.6),
-                                blurRadius: 24,
-                                spreadRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: winnerCharacter != null
-                              ? Image.asset(
-                                  winnerCharacter.assetPath,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.rocket,
-                                    color: _rocketFlame,
-                                    size: 120,
+                        // Character + player avatar side by side
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            // Winner character image
+                            Container(
+                              key: LunarLanderResultsKeys.winnerPhoto,
+                              width: 270,
+                              height: 270,
+                              decoration: BoxDecoration(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _rocketFlame.withOpacity(0.6),
+                                    blurRadius: 24,
+                                    spreadRadius: 6,
                                   ),
-                                )
-                              : const Icon(Icons.rocket,
-                                  color: _rocketFlame, size: 120),
+                                ],
+                              ),
+                              child: winnerCharacter != null
+                                  ? Image.asset(
+                                      winnerCharacter.assetPath,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.rocket,
+                                        color: _rocketFlame,
+                                        size: 180,
+                                      ),
+                                    )
+                                  : const Icon(Icons.rocket,
+                                      color: _rocketFlame, size: 180),
+                            ),
+                            const SizedBox(width: 24),
+                            // Player avatar matching character height
+                            SizedBox(
+                              width: 270,
+                              height: 270,
+                              child: ClipOval(
+                                child: winner.photoPath != null
+                                    ? Image(
+                                        image: winner.photoPath!.startsWith('data:')
+                                            ? MemoryImage(Uri.parse(winner.photoPath!).data!.contentAsBytes())
+                                            : NetworkImage(winner.photoPath!) as ImageProvider,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Container(
+                                        color: _earthBlue,
+                                        child: Center(
+                                          child: Text(
+                                            winner.name.isNotEmpty
+                                                ? winner.name[0].toUpperCase()
+                                                : '?',
+                                            style: GoogleFonts.orbitron(
+                                              fontSize: 100,
+                                              fontWeight: FontWeight.bold,
+                                              color: _starWhite,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         // Flag
@@ -526,15 +563,15 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: _starWhite,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
       child: Text(
         label,
         style: GoogleFonts.orbitron(
-          fontSize: 16,
+          fontSize: 20,
           fontWeight: FontWeight.bold,
           color: _starWhite,
         ),

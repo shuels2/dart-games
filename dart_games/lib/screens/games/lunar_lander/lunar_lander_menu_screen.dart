@@ -153,7 +153,10 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
                   children: [
                     Expanded(
                       flex: 40,
-                      child: _buildLeftPanel(),
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: _buildLeftPanel(),
+                      ),
                     ),
                     Expanded(
                       flex: 60,
@@ -200,7 +203,13 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
 
   Widget _buildLeftPanel() {
     return Container(
+      margin: const EdgeInsets.fromLTRB(16, 24, 0, 16),
       padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: _earthBlue.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _rocketFlame.withOpacity(0.5), width: 2),
+      ),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -513,7 +522,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
     );
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(16, 24, 24, 24),
       child: scrollable ? SingleChildScrollView(child: content) : content,
     );
   }
