@@ -163,7 +163,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     }
 
     return PopScope(
-      canPop: !hasDartsThrown,
+      canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
         setState(() => _showSaveModal = true);

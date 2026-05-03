@@ -492,7 +492,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     final hasDartsThrown = currentGame.totalDartsThrown.values.any((c) => c > 0);
 
     return PopScope(
-      canPop: !hasDartsThrown,
+      canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
         setState(() => _showSaveModal = true);
