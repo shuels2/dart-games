@@ -103,6 +103,9 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
               key: ClockworkQuestMenuKeys.backButton,
               icon: const Icon(Icons.arrow_back, color: Color(0xFFF5F0E8), size: 32),
               onPressed: () => Navigator.pop(context),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
             ),
             title: Text(
               'CLOCKWORK QUEST SETUP',

@@ -729,9 +729,7 @@ class ElementFinders {
   // ==========================================================================
 
   static Finder getLunarLanderGameBackButton() {
-    // The Lunar Lander game screen reuses TargetTagGameKeys.backButton
-    // for the AppBar back button (see lunar_lander_game_screen.dart line 317).
-    return find.byKey(TargetTagGameKeys.backButton);
+    return find.byKey(LunarLanderGameKeys.backButton);
   }
 
   static Finder getLunarLanderSkipTurnButton() {

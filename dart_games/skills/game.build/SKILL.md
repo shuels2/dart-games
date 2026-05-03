@@ -698,6 +698,21 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > - Add Player Dialog integration
 > - DartboardConnectionInfo in AppBar (right side)
 > - **ResumeGameButton in AppBar, positioned to the LEFT of DartboardConnectionInfo**
+> - **AppBar back arrow — canonical pattern (mandatory, identical across all 3 screens of every game):**
+>   ```dart
+>   leading: IconButton(
+>     key: [GAME_NAME_PASCAL]MenuKeys.backButton, // or GameKeys/ResultsKeys per screen
+>     icon: const Icon(Icons.arrow_back, color: [SPEC_TEXT_COLOR], size: 32),
+>     onPressed: () => Navigator.of(context).pop(), // or game-screen save-modal logic
+>     hoverColor: Colors.transparent,
+>     highlightColor: Colors.transparent,
+>     splashColor: Colors.transparent,
+>   ),
+>   ```
+>   - **Icon size MUST be 32** — matches Clockwork Quest, Reef Royale, Monster Mash, Carnival Derby, Target Tag (all 5 reference games)
+>   - **All three hover-suppression properties (`hoverColor`, `highlightColor`, `splashColor`) MUST be `Colors.transparent`** — eliminates the default IconButton hover/splash effect for tablet/touch UX
+>   - **Each screen's back arrow MUST use its own keys class** (`MenuKeys.backButton`, `GameKeys.backButton`, `ResultsKeys.backButton`) — never reuse another game's key class. Define `backButton` on each Keys class even if not currently referenced by tests.
+>   - **All 3 screens MUST be identical in size, color, and hover-suppression** — a consistent, predictable back-arrow experience across menu/game/results
 > - **initState pattern (mandatory — Clockwork Quest reference):**
 >   ```dart
 >   @override
@@ -861,6 +876,7 @@ After the sub-agent returns:
 > (e) updatePlayerStats called for ALL players (winners AND losers) with the SAME gameDuration
 > (f) Every shared widget from the spec's Definition-of-Done functional-completeness list is instantiated in a screen
 > (g) All 3 AppBars have: back button + title + DartboardConnectionInfo
+> (g1) **Back arrow consistency** — read the `leading: IconButton(...)` block on all 3 screens (menu, game, results) and verify ALL of: (1) `Icon` size is `32`, (2) all three of `hoverColor`, `highlightColor`, `splashColor` are `Colors.transparent`, (3) each screen's IconButton uses its OWN keys class (`MenuKeys.backButton`, `GameKeys.backButton`, `ResultsKeys.backButton` — never another game's class). All 3 screens MUST be identical in size, color treatment, and hover suppression. Reference: Monster Mash, Carnival Derby for the canonical pattern.
 > (h) **No custom 'remove darts' button exists outside RemoveDartsModal** — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for any button labeled "Remove" outside the modal
 > (i) Correct PlayerListPanel pattern (Dual vs Team) — and the Team config lives in `team_player_list_panel_config.dart`, not `dual_player_list_panel_config.dart`
 > (j) SaveGameModal uses PopScope + Stack on game screen
@@ -1161,6 +1177,17 @@ If FAIL:
 > - `mid_game_test.dart` — invokes Play-to-Complete from a mid-game state
 > - One test file per game-critical setting (e.g., `tower_max_15_test.dart`, `quick_path_enabled_test.dart`) — every option whose setting changes the strategy's behavior gets its own test
 >
+> **5a. Mandatory player-count coverage tests** (in `integration_test/[GAME_NAME_SNAKE]/gameplay/`):
+>
+> - `min_player_count_test.dart` — start a game with the spec's minimum players (typically 2). Verify all players' UI elements render (tiles, tracks, panels — whichever the game uses). Complete one full turn cycle and verify each player's per-player state updates correctly.
+> - `max_player_count_test.dart` — start a game with the spec's maximum players (typically 8). Verify all N players' UI elements render without overflow or layout errors. Verify the screen scales correctly (e.g., character sizing, list scrolling, no clipping).
+> - **Rationale:** Layout regressions at max player count (overflow, characters too small, lists clipped, dynamic sizing broken) are invisible to default-player tests. Default tests typically use 2-3 players and never exercise the upper bound. Reference: Carnival Derby `game_eight_player_max_test.dart`, Clockwork Quest `four_player_turn_cycle_test.dart`.
+>
+> **5b. Mandatory multi-player UI visibility test** (in `integration_test/[GAME_NAME_SNAKE]/gameplay/`):
+>
+> - `opponent_display_test.dart` — in a 3+ player game, verify inactive (non-current) players are visually present (their tiles, tracks, panels, or whichever UI element represents them). After throwing darts as the current player and advancing turn, verify the previous player's per-player state (score, health, altitude, position, marks) is now visible and correct on their tile/track.
+> - **Rationale:** Many games show only the current player prominently; without this test, regressions where opponent panels disappear, never update, or show stale state are caught only by manual testing. Reference: Clockwork Quest `opponent_tiles_visible_test.dart`, Reef Royale `opponent_summary_bar_updates_test.dart`.
+>
 > **6. Every UI test must call `await UITestHelpers.resetServerState()` at the start.** This is required for per-session DB isolation (Flutter Bug #67090 spawns a phantom 2nd browser; without per-session DBs the phantom contaminates results — see `docs/testing/ui-automation.md`).
 >
 > **6a. Edit Score test design rule (mandatory):** the Edit Score button lives INSIDE the RemoveDartsModal which only renders after 3 darts thrown OR after Skip Turn. Tests trying to open the Edit Score modal MUST throw 3 darts (or 2 misses + 1 scoring dart) BEFORE calling `openEditScore`. A test that throws only 1 dart and immediately calls `openEditScore` will fail to find the button — Edit Score is part of the turn-end takeout flow.
@@ -1193,7 +1220,11 @@ If FAIL:
 >     reason: 'Dart 2 (a thrown miss) should be pre-selected as "Miss" in the Edit modal');
 > ```
 >
-> **7. Create `integration_test/[GAME_NAME_SNAKE]/visual_validation/[GAME_NAME_SNAKE]_screenshot_test.dart`:**
+> **7. Visual validation tests** (in `integration_test/[GAME_NAME_SNAKE]/visual_validation/`):
+>
+> Two categories are required: a screenshot test AND programmatic visual state tests. Together these cover both broad visual regression (screenshots) and specific UI state assertions (programmatic).
+>
+> **7a. Screenshot test** — `[GAME_NAME_SNAKE]_screenshot_test.dart`:
 > - Capture every state listed in the spec's Testing Plan visual checklist
 > - **CRITICAL:** must be runnable via `test_driver/screenshot_test.dart` as the driver
 > - **CRITICAL:** do NOT use `pumpAndSettle()` — splash screen `CircularProgressIndicator` prevents settling. Use manual `pump()` sequences from `pump_sequences.dart`.
@@ -1219,6 +1250,15 @@ If FAIL:
 >   await PumpSequences.asyncDataLoad(tester);
 >   ```
 >   Avoid the SaveGameModal "DON'T SAVE" flow for state reset — multiple overlays + DartboardEmulatorSection in the Stack make tap propagation fragile.
+>
+> **7b. Programmatic visual state tests** — at minimum 4 `*_test.dart` files in `visual_validation/` covering the mandatory concerns below. Use `find.byKey`, `find.byWidgetPredicate`, and `find.descendant` to assert specific UI state (NOT screenshots). Pick filenames to match what the game actually renders:
+>
+> - **Dart indicator state test** — verify the per-dart score indicators (D1/D2/D3 or game's equivalent) change color/state correctly: empty → hit → miss → bust. After throwing dart 1, verify slot 1 reflects the score and slots 2/3 stay empty. After 3 darts, verify all 3 slots show their respective states. Reference: Clockwork Quest `dart_indicators_update_test.dart`.
+> - **Active player highlight test** — in a 2+ player game, verify the current player is visually distinct from inactive players (border, color, badge, glow, pill — whichever the game uses). After throwing 3 darts and advancing turn, verify the highlight moves to the new current player and is removed from the previous one. Reference: Target Tag `current_player_badge_tagged_in_test.dart`.
+> - **Score/state display threshold test** — verify the primary game-state indicator (score, altitude, health, marks) updates correctly after each scoring action AND that its color/severity changes when state crosses critical thresholds (e.g., negative altitude → red, low health → red, win condition → green). Reference: Monster Mash `health_bar_color_gradient_thresholds_test.dart`.
+> - **Conditional UI element test** — for any game element that conditionally appears based on settings or state (e.g., Hard Landing badge, buff banner, hint overlay, win flag), verify it appears when the trigger condition is met AND is absent when not. Reference: Reef Royale `buff_banner_displays_when_active_test.dart`, Reef Royale `hint_overlay_shows_when_enabled_test.dart`.
+>
+> **The 4 above are the floor, not the ceiling.** If the game's spec includes additional visual mechanics (gradients, animations, multi-state badges, dynamic sizing), add one programmatic test per concern.
 >
 > **8. Update ALL FOUR batch files** with the new game:
 > - `run_ui_tests.bat`
@@ -1287,6 +1327,14 @@ Per `docs/testing/spec-coverage-audit.md`:
 > (g) **Verify play-to-complete tests exist** in `integration_test/[GAME_NAME_SNAKE]/play_to_complete/`: default_settings, mid_game, plus one per game-critical setting.
 >
 > (h) **`(route) => false` is NOT used anywhere in the new game's code or tests** (grep `lib/screens/games/[GAME_NAME_SNAKE]/` and `integration_test/[GAME_NAME_SNAKE]/`).
+>
+> (i) **Verify min/max player-count tests exist** in `integration_test/[GAME_NAME_SNAKE]/gameplay/`: `min_player_count_test.dart` and `max_player_count_test.dart`. Verify they exercise the actual min and max from the spec (typically 2 and 8) and that the max test asserts UI elements render without overflow.
+>
+> (j) **Verify the opponent display test exists** at `integration_test/[GAME_NAME_SNAKE]/gameplay/opponent_display_test.dart` and asserts BOTH visibility of inactive players' UI elements AND per-opponent state updates after their turn.
+>
+> (k) **Verify `visual_validation/` contains the screenshot test PLUS at least 4 programmatic visual state tests** covering the mandatory concerns: (1) dart indicator state, (2) active player highlight, (3) score/state display threshold, (4) conditional UI element. List each programmatic test file by name and the concern it covers.
+>
+> (l) **Build a "Visual element" coverage matrix from spec Section 10** (Screen Designs) — list every distinct UI state (e.g., "Active player track is orange", "Altitude pill turns red when negative", "Hard Landing badge appears in AppBar", "Win flag shows on results"). For each visual state, identify the programmatic UI test that verifies it. List any visual state without a corresponding test.
 >
 > Spec coverage: X% (N/M requirements covered)
 > Missing coverage: [list]"
@@ -1658,7 +1706,7 @@ If a check CANNOT be run:
 > cd server && dart test
 > ./run_ui_tests.bat [GAME_NAME_SNAKE]
 > ```
-> Record: total flutter non-UI count, total server count, this game's UI count broken down by subdirectory (add_player, edit_score, gameplay, menu_and_settings, navigation, play_to_complete, results, save_resume, visual_validation). These are the real numbers — do NOT estimate.
+> Record: total flutter non-UI count, total server count, this game's UI count broken down by subdirectory (add_player, edit_score, gameplay, menu_and_settings, navigation, play_to_complete, results, save_resume, visual_validation). For `visual_validation` further break out into `screenshot: 1` and `programmatic: N` so future audits can verify the programmatic-test floor (4 minimum). These are the real numbers — do NOT estimate.
 >
 > **2. Copy the template directory** (using PowerShell-compatible command since the project runs on Windows):
 > ```
@@ -1848,6 +1896,9 @@ Verify EVERY item:
 - [ ] **4 mandatory navigation tests present and passing**
 - [ ] **3 mandatory results-screen tests present and passing**
 - [ ] **Play-to-complete tests present and passing**
+- [ ] **2 mandatory player-count tests present and passing** (`min_player_count_test.dart`, `max_player_count_test.dart`)
+- [ ] **Mandatory opponent display test present and passing** (`opponent_display_test.dart`)
+- [ ] **Visual validation contains screenshot test PLUS at least 4 programmatic tests** (dart indicators, active player highlight, score/state threshold, conditional UI)
 - [ ] All 4 batch files updated (run_ui_tests, run_ui_tests_stub, run_ui_tests_parallel, run_ui_tests_parallel_stub)
 - [ ] All 12 mirrored shared helpers synchronized (test/shared/ matches integration_test/shared/)
 - [ ] Every UI test calls `resetServerState()`

@@ -706,6 +706,7 @@ class LunarLanderMenuKeys {
 }
 
 class LunarLanderGameKeys {
+  static const backButton = Key('game_ll_back_button');
   static const skipTurnButton = Key('game_ll_skip_turn_button');
   static const editScoreButton = Key('game_ll_edit_score_button');
   static const playerAvatar = Key('game_ll_player_avatar');

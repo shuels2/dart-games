@@ -129,6 +129,9 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
               key: ReefRoyaleMenuKeys.backButton,
               icon: const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
               onPressed: () => Navigator.of(context).pop(),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
             ),
             title: Transform.translate(
               offset: const Offset(0, -3),

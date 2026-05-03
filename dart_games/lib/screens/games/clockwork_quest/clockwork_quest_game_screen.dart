@@ -182,6 +182,9 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               Navigator.of(context).pop();
             }
           },
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          splashColor: Colors.transparent,
         ),
         title: Text(
           'CLOCKWORK QUEST',

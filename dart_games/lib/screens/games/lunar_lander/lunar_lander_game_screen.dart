@@ -326,8 +326,8 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         backgroundColor: _spaceBlack,
         appBar: AppBar(
           leading: IconButton(
-            key: TargetTagGameKeys.backButton, // reuse pattern for back key
-            icon: const Icon(Icons.arrow_back, color: _starWhite, size: 28),
+            key: LunarLanderGameKeys.backButton,
+            icon: const Icon(Icons.arrow_back, color: _starWhite, size: 32),
             onPressed: () {
               if (hasDartsThrown) {
                 setState(() => _showSaveModal = true);
@@ -335,6 +335,9 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                 Navigator.of(context).pop();
               }
             },
+            hoverColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            splashColor: Colors.transparent,
           ),
           title: Text(
             'LUNAR LANDER',

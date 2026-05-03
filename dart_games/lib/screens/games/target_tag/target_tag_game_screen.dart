@@ -561,7 +561,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       appBar: AppBar(
         leading: IconButton(
           key: TargetTagGameKeys.backButton,
-          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 32),
           onPressed: () {
             if (hasDartsThrown) {
               setState(() => _showSaveModal = true);
@@ -569,6 +569,9 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
               Navigator.of(context).pop();
             }
           },
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          splashColor: Colors.transparent,
         ),
         title: Padding(
           padding: const EdgeInsets.only(top: 10),

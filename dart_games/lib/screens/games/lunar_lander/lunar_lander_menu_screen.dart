@@ -109,8 +109,11 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
           appBar: AppBar(
             leading: IconButton(
               key: LunarLanderMenuKeys.backButton,
-              icon: const Icon(Icons.arrow_back, color: _starWhite, size: 28),
+              icon: const Icon(Icons.arrow_back, color: _starWhite, size: 32),
               onPressed: () => Navigator.of(context).pop(),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
             ),
             title: Text(
               'LUNAR LANDER GAME SETUP',
