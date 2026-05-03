@@ -88,15 +88,35 @@ dart_games/
         │   ├── assets.md             # 32 character images, 3 icons, 2 images, 4 sounds
         │   └── implementation-notes.md # Health image system, buff mechanics, grid layout
         │
-        └── reef-royale/
-            ├── README.md             # "Reef Royale is a coral-claiming dart game..."
-            ├── game-rules.md         # Cricket-style marking, pearl scoring, Cursed Tide
-            ├── design-system.md      # Ocean reef theme, seafoam/gold accents, Fredoka font
-            ├── components.md         # Coral cards, dart indicators, option badges, buff banner
-            ├── announcements.md      # ReefRoyaleAnnouncementHelper, 9 sound effects
-            ├── testing.md            # 67 UI tests, ~150 non-UI tests, neighbor/buff testing
-            ├── assets.md             # 8 creatures, 14 corals, 1 icon, 1 image, 8 sounds
-            └── implementation-notes.md # Target resolution, pearl scoring, shared neighbors
+        ├── reef-royale/
+        │   ├── README.md             # "Reef Royale is a coral-claiming dart game..."
+        │   ├── game-rules.md         # Cricket-style marking, pearl scoring, Cursed Tide
+        │   ├── design-system.md      # Ocean reef theme, seafoam/gold accents, Fredoka font
+        │   ├── components.md         # Coral cards, dart indicators, option badges, buff banner
+        │   ├── announcements.md      # ReefRoyaleAnnouncementHelper, 9 sound effects
+        │   ├── testing.md            # 67 UI tests, ~150 non-UI tests, neighbor/buff testing
+        │   ├── assets.md             # 8 creatures, 14 corals, 1 icon, 1 image, 8 sounds
+        │   └── implementation-notes.md # Target resolution, pearl scoring, shared neighbors
+        │
+        ├── clockwork-quest/
+        │   ├── README.md             # "Clockwork Quest is a steampunk gear progression game..."
+        │   ├── game-rules.md         # Sequential/speed gear activation, bullseye mode, laps
+        │   ├── design-system.md      # Steampunk brass/copper theme, Orbitron font
+        │   ├── components.md         # DartboardSectionConfig.clockworkQuest(), dialog configs
+        │   ├── announcements.md      # ClockworkQuestAnnouncementHelper, gear/tick sounds
+        │   ├── testing.md            # 105 UI tests, 84 non-UI tests, speed mode testing
+        │   ├── assets.md             # 8 inventor characters, 1 icon, 1 background, sounds
+        │   └── implementation-notes.md # Gear activation, speed mode, stacking modal pattern
+        │
+        └── lunar-lander/
+            ├── README.md             # "Lunar Lander is a retro NASA countdown dart game..."
+            ├── game-rules.md         # Countdown/descent rules, Hard Landing bust rule, win conditions
+            ├── design-system.md      # Space Black/Earth Blue/Rocket Flame theme, Orbitron+Exo2 fonts
+            ├── components.md         # DualPlayerListPanel configs, all shared widget factory methods
+            ├── announcements.md      # LunarLanderAnnouncementHelper, 8 sound effects, stacking chain
+            ├── testing.md            # 46 UI tests, 85 non-UI tests, known chromedriver flake
+            ├── assets.md             # 8 astronaut characters, 1 icon, 1 background, 8 sounds
+            └── implementation-notes.md # Random character assignment, stacking modal, totalTurns pattern
 ```
 
 ## Documentation Purpose by Category

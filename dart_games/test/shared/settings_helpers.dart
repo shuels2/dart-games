@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter/material.dart' show Slider;
+import 'package:flutter/material.dart' show Slider, Switch;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:dart_games/models/player.dart';
@@ -391,6 +391,50 @@ class SettingsHelpers {
   ) async {
     await openAddPlayerDialog(tester, ElementFinders.getReefRoyaleAddPlayerButton());
     await addPlayerViaDialog(tester, playerName);
+  }
+
+  // ==========================================================================
+  // LUNAR LANDER SETTINGS
+  // ==========================================================================
+
+  /// Lunar Lander: Set Starting Altitude (slider)
+  ///
+  /// Valid values: 100-500 (increments of 10)
+  static Future<void> setLunarLanderAltitude(
+    WidgetTester tester,
+    int value,
+  ) async {
+    final sliderFinder = ElementFinders.getLunarLanderAltitudeSlider();
+    expect(sliderFinder, findsOneWidget);
+
+    Slider sliderWidget = tester.widget<Slider>(sliderFinder);
+    if (sliderWidget.onChanged != null) {
+      sliderWidget.onChanged!(value.toDouble());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+    }
+
+    await PumpSequences.simpleUpdate(tester);
+
+    sliderWidget = tester.widget<Slider>(sliderFinder);
+    expect(sliderWidget.value.toInt(), value,
+        reason: 'Altitude should be set to $value');
+  }
+
+  /// Lunar Lander: Set Hard Landing toggle
+  static Future<void> setLunarLanderHardLanding(
+    WidgetTester tester, {
+    required bool enabled,
+  }) async {
+    final switchFinder = ElementFinders.getLunarLanderHardLandingSwitch();
+    expect(switchFinder, findsOneWidget);
+
+    // Check current state and only tap if we need to change it
+    final switchWidget = tester.widget<Switch>(switchFinder);
+    if (switchWidget.value != enabled) {
+      await toggleSwitch(tester, switchFinder);
+    }
   }
 
   // ==========================================================================

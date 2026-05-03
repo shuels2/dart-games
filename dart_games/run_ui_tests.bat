@@ -339,7 +339,7 @@ REM ============================================================
 :discover_tests
 
 REM Define game categories in execution order
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest"
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander"
 
 for %%G in (%GAMES%) do (
     set "_GAME=%%G"

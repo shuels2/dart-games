@@ -35,6 +35,7 @@ class HomeKeys {
   static const monsterMashCard = Key('home_monster_mash_card');
   static const reefRoyaleCard = Key('home_reef_royale_card');
   static const clockworkQuestCard = Key('home_clockwork_quest_card');
+  static const lunarLanderCard = Key('home_lunar_lander_card');
 }
 
 // ============================================================================
@@ -686,4 +687,42 @@ class ClockworkQuestResultsKeys {
   static const leaveTowerButton = Key('cq_results_leave_tower_button');
   // Alias for back-to-menu button (same as leaveTowerButton)
   static const backToMenuButton = Key('cq_results_leave_tower_button');
+}
+
+// ============================================================================
+// LUNAR LANDER KEYS
+// ============================================================================
+
+class LunarLanderMenuKeys {
+  static const backButton = Key('menu_ll_back_button');
+  static const altitudeSlider = Key('menu_ll_altitude_slider');
+  static const hardLandingSwitch = Key('menu_ll_hard_landing_switch');
+  static const startGameButton = Key('menu_ll_start_game_button');
+  static const addPlayerButton = Key('menu_ll_add_player_button');
+  static const addPlayerButtonEmptyState = Key('menu_ll_add_player_button_empty');
+  static const playerListView = Key('menu_ll_player_list_view');
+  static Key playerTile(String playerId) => Key('menu_ll_player_tile_$playerId');
+  static Key removePlayerButton(String playerId) => Key('menu_ll_remove_player_$playerId');
+}
+
+class LunarLanderGameKeys {
+  static const skipTurnButton = Key('game_ll_skip_turn_button');
+  static const editScoreButton = Key('game_ll_edit_score_button');
+  static const playerAvatar = Key('game_ll_player_avatar');
+  static const altitudeReadout = Key('game_ll_altitude_readout');
+  static const hardLandingBadge = Key('game_ll_hard_landing_badge');
+  static const turnSummary = Key('game_ll_turn_summary');
+  static Key descentTrack(String playerId) => Key('game_ll_descent_track_$playerId');
+  static Key characterOnTrack(String playerId) => Key('game_ll_char_on_track_$playerId');
+  static Key dartIndicator(int index) => Key('game_ll_dart_indicator_$index');
+}
+
+class LunarLanderResultsKeys {
+  static const winnerName = Key('results_ll_winner_name');
+  static const winnerPhoto = Key('results_ll_winner_photo');
+  static const turnCount = Key('results_ll_turn_count');
+  static const playAgainButton = Key('results_ll_play_again_button');
+  static const changeSettingsButton = Key('results_ll_change_settings_button');
+  static const backToMenuButton = Key('results_ll_back_to_menu_button');
+  static Key playerRanking(int index) => Key('results_ll_player_ranking_$index');
 }

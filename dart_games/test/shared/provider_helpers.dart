@@ -6,6 +6,7 @@ import 'package:dart_games/providers/target_tag_provider.dart';
 import 'package:dart_games/providers/monster_mash_provider.dart';
 import 'package:dart_games/providers/reef_royale_provider.dart';
 import 'package:dart_games/providers/clockwork_quest_provider.dart';
+import 'package:dart_games/providers/lunar_lander_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/models/player.dart';
@@ -410,6 +411,58 @@ class ProviderHelpers {
     final provider = getClockworkQuestProvider(tester);
     provider.currentGame!.currentTarget[playerId] = target;
     provider.notifyListeners();
+  }
+
+  // ==========================================================================
+  // LUNAR LANDER HELPERS
+  // ==========================================================================
+
+  /// Get Lunar Lander provider
+  static LunarLanderProvider getLunarLanderProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<LunarLanderProvider>(context, listen: false);
+  }
+
+  /// Lunar Lander: Get current altitude for a player
+  static int getLunarLanderAltitude(WidgetTester tester, String playerId) {
+    final provider = getLunarLanderProvider(tester);
+    return provider.getCurrentAltitude(playerId);
+  }
+
+  /// Lunar Lander: Check for winner
+  static bool lunarLanderHasWinner(WidgetTester tester) {
+    final provider = getLunarLanderProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Lunar Lander: Get current player ID
+  static String? getLunarLanderCurrentPlayerId(WidgetTester tester) {
+    final provider = getLunarLanderProvider(tester);
+    return provider.getCurrentPlayerId();
+  }
+
+  /// Lunar Lander: Check if game is active
+  static bool isLunarLanderGameActive(WidgetTester tester) {
+    final provider = getLunarLanderProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Lunar Lander: Get darts thrown for current player
+  static int getLunarLanderCurrentPlayerDartsThrown(WidgetTester tester) {
+    final provider = getLunarLanderProvider(tester);
+    return provider.getCurrentPlayerDartsThrown();
+  }
+
+  /// Lunar Lander: Get starting altitude from current game
+  static int getLunarLanderStartingAltitude(WidgetTester tester) {
+    final provider = getLunarLanderProvider(tester);
+    return provider.currentGame?.startingAltitude ?? 200;
+  }
+
+  /// Lunar Lander: Check if hard landing is enabled
+  static bool isLunarLanderHardLandingEnabled(WidgetTester tester) {
+    final provider = getLunarLanderProvider(tester);
+    return provider.currentGame?.hardLandingEnabled ?? false;
   }
 
   // ==========================================================================

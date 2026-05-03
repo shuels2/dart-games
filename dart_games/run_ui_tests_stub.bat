@@ -157,7 +157,7 @@ REM DISCOVER AND RUN TESTS
 REM ============================================================
 :discover_tests
 
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest"
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander"
 
 for %%G in (%GAMES%) do (
     set "_GAME=%%G"

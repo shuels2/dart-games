@@ -38,10 +38,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1782 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **1190 Flutter + 178 server + 414 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1368 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 414 UI tests (~507 minutes sequential / ~143 minutes parallel, optional)
+### 🧪 Testing (1913 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1275 Flutter + 178 server + 460 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1453 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 460 UI tests (~622 minutes sequential / ~153 minutes parallel, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Shared Helpers Reference](docs/testing/shared-helpers-reference.md) - Shared test helper files, delegate pattern, new game templates
@@ -64,18 +64,19 @@ Each game has its own unique visual identity while integrating with global syste
 - [Monster Mash](docs/games/monster-mash/) - Monster battle game (2-8 players)
 - [Reef Royale](docs/games/reef-royale/) - Coral claiming game (2-8 players)
 - [Clockwork Quest](docs/games/clockwork-quest/) - Steampunk gear progression game (2-8 players)
+- [Lunar Lander](docs/games/lunar-lander/) - Retro NASA countdown game (2-8 players)
 
 ## Quick Reference
 
 ### Run All Non-UI Tests (MANDATORY before builds)
 ```bash
-# Flutter tests (1179 tests)
+# Flutter tests (1275 tests)
 flutter test
 
 # Server tests (178 tests)
 cd server && dart test
 ```
-**Required:** 100% pass rate (1357 tests total)
+**Required:** 100% pass rate (1453 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -86,8 +87,9 @@ cd server && dart test
 ./run_ui_tests.bat monster_mash
 ./run_ui_tests.bat reef_royale
 ./run_ui_tests.bat clockwork_quest
+./run_ui_tests.bat lunar_lander
 
-# Parallel runner (~3.5x faster, 5 games simultaneously, ~143 min, fully headless)
+# Parallel runner (~3.5x faster, 6 games simultaneously, ~143 min, fully headless)
 ./run_ui_tests_parallel.bat                          # All games
 ./run_ui_tests_parallel.bat target_tag monster_mash  # Specific games
 ./run_ui_tests_parallel.bat save_resume              # Filter by test type
@@ -101,17 +103,18 @@ flutter test test/screens/games/carnival_horse_race/
 flutter test test/screens/games/monster_mash/
 flutter test test/screens/games/reef_royale/
 flutter test test/screens/games/clockwork_quest/
+flutter test test/screens/games/lunar_lander/
 ```
 
 ## Current Test Counts
 
-**Total: 1782 tests**
-- **Flutter Non-UI Tests:** 1190 tests (100% pass rate MANDATORY)
+**Total: 1913 tests**
+- **Flutter Non-UI Tests:** 1275 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
-  - Model serialization tests: 74 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19)
+  - Model serialization tests: 86 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19 + LunarLander 12)
   - Provider tests: 74 (PlayerProvider 44 + DartboardProvider 30)
-  - Provider save/restore tests: 35 (5 games x 7)
+  - Provider save/restore tests: 42 (6 games x 7)
   - Provider game mechanics tests: 233 (HorseRace 50 + ClockworkQuest 49 + MonsterMash 44 + ReefRoyale 45 + TargetTag 45)
   - Service tests: 91 (AppSettings 20 + VictoryMusicService 22 + StorageService 24 + ApiLoggerService 25)
   - Save game service tests: 13
@@ -125,6 +128,7 @@ flutter test test/screens/games/clockwork_quest/
   - Reef Royale game logic + announcements: ~154
   - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
   - Carnival Derby game logic: 8 (included in integration above)
+  - Lunar Lander game logic + announcements: 66 (33 game logic + 33 announcements)
 
 - **Server Tests:** 178 tests (100% pass rate MANDATORY)
   - Database & helpers: 25
@@ -139,19 +143,20 @@ flutter test test/screens/games/clockwork_quest/
   - Failed stats routes: 6
   - Test routes: 6
 
-- **UI Automation Tests:** 414 tests (optional, ask before running)
+- **UI Automation Tests:** 460 tests (optional, ask before running)
   - Target Tag: 80 tests (~113 minutes) [71 functional + 4 navigation + 5 play-to-complete]
   - Carnival Derby: 51 tests (~68 minutes) [42 functional + 4 navigation + 5 play-to-complete]
   - Monster Mash: 76 tests (~103 minutes) [68 functional + 4 navigation + 4 play-to-complete]
   - Reef Royale: 92 tests (~124 minutes) [84 functional + 4 navigation + 4 play-to-complete]
   - Clockwork Quest: 116 tests (~153 minutes) [92 functional + 3 navigation + 16 save/resume + 5 play-to-complete]
-  - **Sequential (`run_ui_tests.bat`): ~561 minutes (~9h 21m) — interactive Chrome sessions**
+  - Lunar Lander: 46 tests (~61 minutes) [37 functional + 4 navigation + 5 play-to-complete]
+  - **Sequential (`run_ui_tests.bat`): ~622 minutes (~10h 22m) — interactive Chrome sessions**
   - **Parallel (`run_ui_tests_parallel.bat`): ~153 minutes (~2h 33m) — fully headless, no visible Chrome**
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 1190 Flutter non-UI tests MUST pass
+✅ Run `flutter test` - ALL 1275 Flutter non-UI tests MUST pass
 ✅ Run `cd server && dart test` - ALL 178 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
@@ -268,18 +273,20 @@ dart_games/
 │           ├── target_tag/
 │           ├── monster_mash/
 │           ├── reef_royale/
-│           └── clockwork_quest/
-├── test/                            # Flutter non-UI tests (1179 tests)
+│           ├── clockwork_quest/
+│           └── lunar_lander/
+├── test/                            # Flutter non-UI tests (1275 tests)
 │   ├── shared/                     # Shared test helpers (MockApiServer, etc.)
 │   ├── services/api/               # API client tests
 │   └── ...
-├── integration_test/                # UI automation tests (364 tests)
+├── integration_test/                # UI automation tests (460 tests)
 │   ├── shared/                     # Shared test helpers
 │   ├── target_tag/                 # Target Tag UI tests
 │   ├── carnival_derby/             # Carnival Derby UI tests
 │   ├── monster_mash/               # Monster Mash UI tests
 │   ├── reef_royale/                # Reef Royale UI tests
-│   └── clockwork_quest/            # Clockwork Quest UI tests
+│   ├── clockwork_quest/            # Clockwork Quest UI tests
+│   └── lunar_lander/               # Lunar Lander UI tests
 └── assets/                          # Game assets
     ├── common/
     └── games/
@@ -287,7 +294,8 @@ dart_games/
         ├── target_tag/
         ├── monster_mash/
         ├── reef_royale/
-        └── clockwork_quest/
+        ├── clockwork_quest/
+        └── lunar_lander/
 ```
 
 ## Platform Support
@@ -341,6 +349,6 @@ git push origin <branch>        # Push (with permission)
 
 ---
 
-**Last Updated:** 2026-04-15
-**Documentation Version:** 4.2 (Server-Side Migrations)
-**Total Documentation Files:** 77
+**Last Updated:** 2026-05-03
+**Documentation Version:** 4.3 (Lunar Lander)
+**Total Documentation Files:** 85

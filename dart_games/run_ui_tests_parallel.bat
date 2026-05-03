@@ -12,7 +12,7 @@ REM Supports STUB_MODE env var for testing orchestration without
 REM real infrastructure (set by run_ui_tests_parallel_stub.bat).
 REM ============================================================
 
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest"
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander"
 
 REM Strip trailing backslash from script directory to avoid \" quoting
 REM issues when paths contain spaces (e.g. /D "path\" breaks start).

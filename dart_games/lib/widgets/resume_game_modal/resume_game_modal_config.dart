@@ -302,6 +302,64 @@ class ResumeGameModalConfig {
     );
   }
 
+  factory ResumeGameModalConfig.lunarLander() {
+    return ResumeGameModalConfig(
+      backgroundColor: const Color(0xFF1B4965), // Earth Blue
+      borderColor: const Color(0xFFF26430), // Rocket Flame
+      boxShadowColor: const Color(0xFFF26430),
+      boxShadowOpacity: 0.3,
+      titleTextStyle: GoogleFonts.orbitron(
+        color: const Color(0xFFF26430), // Rocket Flame
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
+      tileBackgroundColor: const Color(0xFF1B4965).withOpacity(0.6),
+      tileSelectedBackgroundColor: const Color(0xFFF26430).withOpacity(0.15),
+      tileBorderColor: const Color(0xFFFAFDF6).withOpacity(0.3),
+      tileSelectedBorderColor: const Color(0xFFF26430),
+      tileDateTextStyle: GoogleFonts.exo2(
+        color: const Color(0xFFFAFDF6).withOpacity(0.7),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      tilePlayersTextStyle: GoogleFonts.exo2(
+        color: const Color(0xFFFAFDF6),
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      tileProgressTextStyle: GoogleFonts.orbitron(
+        color: const Color(0xFFF26430),
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+      ),
+      tileModeTextStyle: GoogleFonts.exo2(
+        color: const Color(0xFFFAFDF6).withOpacity(0.7),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      tileLeaderTextStyle: GoogleFonts.exo2(
+        color: const Color(0xFFFAFDF6),
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+      deleteButtonColor: const Color(0xFFE63946), // Thruster Red
+      resumeButtonColor: const Color(0xFF52B788), // Mission Green
+      resumeButtonTextColor: const Color(0xFFFAFDF6),
+      resumeButtonTextStyle: GoogleFonts.orbitron(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+      resumeButtonDisabledColor: Colors.grey,
+      startNewButtonColor: const Color(0xFFFAFDF6).withOpacity(0.2),
+      startNewButtonTextColor: const Color(0xFFFAFDF6),
+      startNewButtonTextStyle: GoogleFonts.exo2(fontSize: 16, fontWeight: FontWeight.w600),
+      deleteAllButtonColor: const Color(0xFFE63946),
+      deleteAllButtonTextStyle: GoogleFonts.exo2(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFE63946),
+      ),
+    );
+  }
+
   factory ResumeGameModalConfig.clockworkQuest() {
     return ResumeGameModalConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

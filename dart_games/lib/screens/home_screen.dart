@@ -12,6 +12,7 @@ import 'games/target_tag/target_tag_menu_screen.dart';
 import 'games/monster_mash/monster_mash_menu_screen.dart';
 import 'games/reef_royale/reef_royale_menu_screen.dart';
 import 'games/clockwork_quest/clockwork_quest_menu_screen.dart';
+import 'games/lunar_lander/lunar_lander_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,6 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'clockwork_quest':
         menuScreen = const ClockworkQuestMenuScreen();
+        break;
+      case 'lunar_lander':
+        menuScreen = const LunarLanderMenuScreen();
         break;
       default:
         return;
@@ -120,6 +124,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.2,
+                                )
+                          : title == 'Lunar Lander'
+                              ? GoogleFonts.orbitron(
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 3,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                                  letterSpacing: 1.0,
                                 )
                           : theme.textTheme.titleMedium?.copyWith(
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
@@ -256,6 +267,15 @@ class _HomeScreenState extends State<HomeScreen> {
         'color': const Color(0xFF2C2C34), // Dark Iron
         'onTap': dartboardProvider.canPlayGames
             ? () => _navigateToMenu('clockwork_quest')
+            : null,
+      },
+      {
+        'title': 'Lunar Lander',
+        'key': HomeKeys.lunarLanderCard,
+        'imageAssetPath': 'assets/games/lunar_lander/icons/LunarLander-Icon.png',
+        'color': const Color(0xFF1B4965), // Earth Blue
+        'onTap': dartboardProvider.canPlayGames
+            ? () => _navigateToMenu('lunar_lander')
             : null,
       },
       // Add new games here - they will automatically be sorted alphabetically

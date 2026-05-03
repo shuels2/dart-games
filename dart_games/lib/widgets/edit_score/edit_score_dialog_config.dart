@@ -254,6 +254,53 @@ class EditScoreDialogConfig {
     );
   }
 
+  factory EditScoreDialogConfig.lunarLander() {
+    return EditScoreDialogConfig(
+      backgroundColor: const Color(0xFF1B4965).withOpacity(0.95), // Earth Blue
+      borderColor: const Color(0xFFF26430), // Rocket Flame
+      borderWidth: 4,
+      titleStyle: GoogleFonts.orbitron(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFAFDF6), // Star White
+        letterSpacing: 1.2,
+      ),
+      dartLabelStyle: GoogleFonts.exo2(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFAFDF6).withOpacity(0.7),
+      ),
+      scoreBoxBackgroundColor: const Color(0xFF1B4965),
+      scoreBoxDefaultBorderColor: const Color(0xFFF26430).withOpacity(0.5),
+      scoreTextStyle: GoogleFonts.orbitron(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFAFDF6),
+      ),
+      buttonUnselectedColor: const Color(0xFF0D1B2A), // Space Black
+      buttonUnselectedForeground: const Color(0xFFFAFDF6),
+      buttonSelectedColor: const Color(0xFFF26430), // Rocket Flame
+      buttonSelectedForeground: const Color(0xFFFAFDF6),
+      buttonTextStyle: GoogleFonts.exo2(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      cancelButtonColor: const Color(0xFF0D1B2A).withOpacity(0.85),
+      cancelButtonForeground: const Color(0xFFFAFDF6),
+      cancelButtonTextStyle: GoogleFonts.exo2(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+      submitButtonColor: const Color(0xFFF26430).withOpacity(0.85), // Rocket Flame
+      submitButtonForeground: const Color(0xFFFAFDF6),
+      submitButtonTextStyle: GoogleFonts.orbitron(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+    );
+  }
+
   factory EditScoreDialogConfig.clockworkQuest() {
     return EditScoreDialogConfig(
       backgroundColor: const Color(0xFF2C2C34).withOpacity(0.95), // Dark Iron

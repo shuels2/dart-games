@@ -247,6 +247,35 @@ class DartboardConnectionInfoConfig {
     );
   }
 
+  /// Lunar Lander — Earth Blue with Rocket Flame icon, Orbitron/Exo2 fonts
+  factory DartboardConnectionInfoConfig.lunarLander() {
+    return DartboardConnectionInfoConfig(
+      backgroundColor: const Color(0xFF1B4965), // Earth Blue
+      backgroundOpacity: 0.95,
+      emulatorBorderColor: const Color(0xFFF26430), // Rocket Flame
+      hardwareBorderColor: const Color(0xFF52B788), // Mission Green
+      nameTextStyle: GoogleFonts.exo2(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFAFDF6), // Star White
+      ),
+      statusTextStyle: GoogleFonts.exo2(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      emulatorLabelTextStyle: GoogleFonts.exo2(
+        fontSize: 10,
+        color: const Color(0xFFF26430), // Rocket Flame
+      ),
+      emulatorIconColor: const Color(0xFFF26430), // Rocket Flame
+      hardwareIconColor: const Color(0xFF52B788), // Mission Green
+      connectedColor: const Color(0xFF52B788), // Mission Green
+      connectingColor: const Color(0xFFD4C5A9), // Moon Dust Gray
+      disconnectedColor: const Color(0xFFE63946), // Thruster Red
+      errorColor: const Color(0xFFE63946), // Thruster Red
+    );
+  }
+
   factory DartboardConnectionInfoConfig.clockworkQuest() {
     return DartboardConnectionInfoConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

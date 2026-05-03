@@ -2,7 +2,7 @@
 
 ## Overview
 
-1347 non-UI tests (1179 Flutter + 178 server) validate models, providers, services, widgets, game logic, API client, and server routes.
+1453 non-UI tests (1275 Flutter + 178 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
 **Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
@@ -36,17 +36,18 @@
 - ApiLogEntry: 17 tests (creation, formatting, duration tracking)
 - SavedGameMetadata: 20 tests (creation, JSON serialization, progress info)
 
-### Model Serialization Tests (74 tests)
+### Model Serialization Tests (86 tests)
 
 **HorseRaceGame (10 tests)** - `test/models/horse_race_game_serialization_test.dart`
 **TargetTagGame (13 tests)** - `test/models/target_tag_game_serialization_test.dart`
 **MonsterMashGame (13 tests)** - `test/models/monster_mash_game_serialization_test.dart`
 **ReefRoyaleGame (19 tests)** - `test/models/reef_royale_game_serialization_test.dart`
 **ClockworkQuestGame (19 tests)** - `test/models/clockwork_quest_game_serialization_test.dart`
+**LunarLanderGame (12 tests)** - `test/models/lunar_lander_game_serialization_test.dart`
 - toJson/fromJson roundtrip for all game fields
-- Enum serialization (game states, inventor assignments)
-- Per-player progress maps, dart tracking arrays, turn start state
-- Speed mode, bullseye mode, all game states
+- Enum serialization (game states, inventor assignments, character assignments)
+- Per-player altitude maps, dart tracking arrays, turn start altitude state
+- Hard landing mode, all game states, character assignments
 
 ### Provider Tests (74 tests)
 
@@ -65,13 +66,14 @@
 - Status checking, clear dartboard/error
 - Change notification verification
 
-### Provider Save/Restore Tests (35 tests)
+### Provider Save/Restore Tests (42 tests)
 
 **HorseRaceProvider (7 tests)** - `test/providers/horse_race_provider_save_restore_test.dart`
 **TargetTagProvider (7 tests)** - `test/providers/target_tag_provider_save_restore_test.dart`
 **MonsterMashProvider (7 tests)** - `test/providers/monster_mash_provider_save_restore_test.dart`
 **ReefRoyaleProvider (7 tests)** - `test/providers/reef_royale_provider_save_restore_test.dart`
 **ClockworkQuestProvider (7 tests)** - `test/providers/clockwork_quest_provider_save_restore_test.dart`
+**LunarLanderProvider (7 tests)** - `test/providers/lunar_lander_save_restore_test.dart`
 - Save game metadata creation
 - Full game state restore via SaveGameService
 - Gameplay continuation after restore
@@ -242,6 +244,23 @@
 - Announcement priority ordering
 - Text generation with player names
 
+**Lunar Lander Game Logic (33 tests)** - `test/screens/games/lunar_lander/lunar_lander_game_test.dart`
+- Basic scoring: single, double, triple, outer bull, inner bull subtraction
+- Starting altitude initialization (100, 200, 300, 500) and proportional rocket position
+- Hard Landing ON: bust behavior, revert altitude, remaining darts forfeited
+- Hard Landing OFF: negative altitude allowed, win from negative
+- Turn advancement, skip turn, multi-player cycling
+- Win condition detection (exact 0, below 0 with HL OFF)
+- Edit score updates altitude and re-evaluates win/bust
+
+**Lunar Lander Announcements (33 tests)** - `test/screens/games/lunar_lander/lunar_lander_announcement_test.dart`
+- All 10 announcement events (game start, player turn, standard/big descent, miss, near landing, crash landing, negative altitude, climbing back, touchdown)
+- Sound effect assignments per event
+- Stacking precedence chain (8 levels, Touchdown highest)
+- MAX 2 announcements per dart enforcement
+- "Remove your darts" unconditional behavior
+- Priority level assignments (turnTransition, hitConfirm, statusChange, victory)
+
 ### Utility Tests (34 tests)
 
 **DartboardLayout (34 tests)** - `test/utils/dartboard_layout_test.dart`
@@ -352,10 +371,10 @@
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests (1179 tests)
+# Flutter tests (1275 tests)
 flutter test
 
-# Server tests (168 tests)
+# Server tests (178 tests)
 cd server && dart test
 ```
 
@@ -376,6 +395,7 @@ flutter test test/screens/games/target_tag/
 flutter test test/screens/games/monster_mash/
 flutter test test/screens/games/reef_royale/
 flutter test test/screens/games/clockwork_quest/
+flutter test test/screens/games/lunar_lander/
 ```
 
 ## Test Patterns

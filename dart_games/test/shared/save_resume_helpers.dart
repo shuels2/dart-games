@@ -100,6 +100,25 @@ class GameSaveConfig {
         gameState: {'_marker': 'test2'},
       );
 
+  factory GameSaveConfig.lunarLander() => const GameSaveConfig(
+        gameType: 'lunar_lander',
+        playerNames: ['Alice', 'Bob'],
+        progressInfo: 'Altitude: 120 / 200',
+        gameModeName: 'Alt: 200',
+        leadingPlayerName: 'Alice',
+        leadingPlayerScore: 'Alt: 120',
+      );
+
+  factory GameSaveConfig.lunarLanderSecond() => const GameSaveConfig(
+        gameType: 'lunar_lander',
+        playerNames: ['Charlie', 'Diana'],
+        progressInfo: 'Altitude: 80 / 300',
+        gameModeName: 'Alt: 300, Hard Landing',
+        leadingPlayerName: 'Charlie',
+        leadingPlayerScore: 'Alt: 80',
+        gameState: {'_marker': 'test2'},
+      );
+
   factory GameSaveConfig.clockworkQuest() => const GameSaveConfig(
         gameType: 'clockwork_quest',
         playerNames: ['Alice', 'Bob'],

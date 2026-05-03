@@ -140,6 +140,27 @@ class GameUIConfig {
     );
   }
 
+  /// Lunar Lander game configuration
+  factory GameUIConfig.lunarLander() {
+    return GameUIConfig._(
+      gameName: 'Lunar Lander',
+      getGameCard: ElementFinders.getLunarLanderCard,
+      getAddPlayerButton: ElementFinders.getLunarLanderAddPlayerButton,
+      getPlayerTile: ElementFinders.getLunarLanderPlayerTile,
+      getStartButton: ElementFinders.getLunarLanderStartButton,
+      getSkipTurnButton: ElementFinders.getLunarLanderSkipTurnButton,
+      getEditScoreButton: ElementFinders.getLunarLanderEditScoreButton,
+      getDartButton: (multiplier, number) => find.text('Not used in Lunar Lander directly'),
+      getBullseyeButton: () => find.text('Not used in Lunar Lander directly'),
+      getOuterBullButton: () => find.text('Not used in Lunar Lander directly'),
+      getMissButton: () => find.text('Not used in Lunar Lander directly'),
+      getPlayAgainButton: ElementFinders.getLunarLanderPlayAgainButton,
+      getChangeSettingsButton: ElementFinders.getLunarLanderChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getLunarLanderBackToMenuButton,
+      getGameBackButton: ElementFinders.getLunarLanderGameBackButton,
+    );
+  }
+
   /// Clockwork Quest game configuration
   factory GameUIConfig.clockworkQuest() {
     return GameUIConfig._(

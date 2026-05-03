@@ -239,6 +239,58 @@ class DualPlayerListPanelConfig {
     );
   }
 
+  /// Lunar Lander theme — Earth Blue containers, Rocket Flame accents, Orbitron/Exo2 fonts
+  factory DualPlayerListPanelConfig.lunarLander() {
+    return DualPlayerListPanelConfig(
+      containerColor: const Color(0xFF1B4965), // Earth Blue
+      containerOpacity: 0.85,
+      containerBorderColor: const Color(0xFFF26430).withOpacity(0.5), // Rocket Flame
+      containerBorderWidth: 2,
+      headerTextStyle: GoogleFonts.orbitron(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF26430), // Rocket Flame
+        letterSpacing: 1.0,
+      ),
+      selectedBorderColorWhenReady: const Color(0xFFF26430),
+      selectedBorderWidthWhenReady: 2,
+      minPlayersForReady: 2,
+      selectedHeaderColorWhenReady: const Color(0xFFF26430),
+      emptyStateTextStyle: GoogleFonts.exo2(
+        color: const Color(0xFFFAFDF6).withOpacity(0.7),
+        fontSize: 16,
+      ),
+      selectedEmptyText: 'Select at least 2 players',
+      addButtonColor: const Color(0xFF1B4965),
+      addButtonForegroundColor: const Color(0xFFFAFDF6),
+      addButtonBorderSide: const BorderSide(
+        color: Color(0xFFF26430), // Rocket Flame
+        width: 2,
+      ),
+      addButtonTextStyle: GoogleFonts.orbitron(
+        fontSize: 13,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFAFDF6),
+        letterSpacing: 0.5,
+      ),
+      selectedColor: const Color(0xFFF26430).withOpacity(0.2),
+      selectedBorderColor: const Color(0xFFF26430),
+      unselectedBackgroundColor: const Color(0xFF1B4965).withOpacity(0.6),
+      unselectedBorderColor: const Color(0xFFF26430).withOpacity(0.3),
+      cardNameStyle: GoogleFonts.exo2(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFAFDF6),
+      ),
+      nameStatsSpacing: 1.4,
+      maxPlayers: 8,
+      availableContainerMargin: EdgeInsets.zero,
+      selectedContainerMargin: EdgeInsets.zero,
+      listGap: 8,
+      addPlayerDialogConfig: AddPlayerDialogConfig.lunarLander(),
+    );
+  }
+
   factory DualPlayerListPanelConfig.clockworkQuest() {
     return DualPlayerListPanelConfig(
       containerColor: const Color(0xFF2C2C34), // Dark Iron

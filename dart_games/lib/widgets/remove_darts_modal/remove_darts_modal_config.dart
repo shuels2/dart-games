@@ -188,6 +188,41 @@ class RemoveDartsModalConfig {
     );
   }
 
+  /// Lunar Lander — Earth Blue background, Rocket Flame border, Orbitron/Exo2 fonts
+  factory RemoveDartsModalConfig.lunarLander() {
+    return RemoveDartsModalConfig(
+      backgroundColor: const Color(0xFF1B4965), // Earth Blue
+      backgroundOpacity: 0.95,
+      borderColor: const Color(0xFFF26430), // Rocket Flame
+      borderWidth: 4,
+      boxShadowColor: const Color(0xFFF26430),
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFFAFDF6), // Star White
+      iconSize: 48,
+      playerNameTextStyle: GoogleFonts.orbitron(
+        color: const Color(0xFFF26430), // Rocket Flame
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+      instructionTextStyle: GoogleFonts.exo2(
+        color: const Color(0xFFFAFDF6), // Star White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.0,
+      ),
+      buttonBackgroundColor: const Color(0xFFF26430).withOpacity(0.85), // Rocket Flame
+      buttonForegroundColor: const Color(0xFFFAFDF6),
+      buttonTextStyle: GoogleFonts.orbitron(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.5,
+      ),
+      editButtonText: 'Edit player score',
+      maxWidth: 400,
+    );
+  }
+
   factory RemoveDartsModalConfig.clockworkQuest() {
     return RemoveDartsModalConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

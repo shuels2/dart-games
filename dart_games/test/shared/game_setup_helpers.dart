@@ -8,6 +8,32 @@ import 'provider_helpers.dart';
 import 'game_ui_config.dart';
 
 class GameSetupHelpers {
+  // ===== Lunar Lander =====
+
+  static Future<void> setupAndStartLunarLander(
+    WidgetTester tester,
+    GameUIConfig config, {
+    int altitude = 200,
+    bool hardLanding = false,
+    List<String>? playerNames,
+  }) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+
+    if (altitude != 200) {
+      await SettingsHelpers.setLunarLanderAltitude(tester, altitude);
+    }
+    if (hardLanding) {
+      await SettingsHelpers.setLunarLanderHardLanding(tester, enabled: true);
+    }
+
+    final names = playerNames ?? ['Player A', 'Player B'];
+    for (final name in names) {
+      await UITestHelpers.addPlayer(tester, name, config);
+    }
+
+    await UITestHelpers.startGame(tester, config);
+  }
+
   // ===== Clockwork Quest =====
 
   static Future<void> setupAndStartClockworkQuest(

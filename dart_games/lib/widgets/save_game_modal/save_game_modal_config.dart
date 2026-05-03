@@ -158,6 +158,34 @@ class SaveGameModalConfig {
     );
   }
 
+  factory SaveGameModalConfig.lunarLander() {
+    return SaveGameModalConfig(
+      backgroundColor: const Color(0xFF1B4965), // Earth Blue
+      borderColor: const Color(0xFFF26430), // Rocket Flame
+      boxShadowColor: const Color(0xFFF26430),
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFF26430), // Rocket Flame
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.orbitron(
+        color: const Color(0xFFF26430), // Rocket Flame
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
+      messageTextStyle: GoogleFonts.exo2(
+        color: const Color(0xFFFAFDF6), // Star White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      saveButtonColor: const Color(0xFFF26430), // Rocket Flame
+      saveButtonTextColor: const Color(0xFFFAFDF6),
+      saveButtonTextStyle: GoogleFonts.orbitron(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+      dontSaveButtonColor: Colors.transparent,
+      dontSaveButtonTextColor: const Color(0xFFFAFDF6),
+      dontSaveButtonTextStyle: GoogleFonts.exo2(fontSize: 16, fontWeight: FontWeight.w600),
+    );
+  }
+
   factory SaveGameModalConfig.clockworkQuest() {
     return SaveGameModalConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

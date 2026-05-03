@@ -156,6 +156,16 @@ class UITestHelpers {
       } else {
         addButton = normalStateButton;
       }
+    } else if (config.gameName == 'Lunar Lander') {
+      // For Lunar Lander, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getLunarLanderAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getLunarLanderAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
     } else {
       // For other games, use the config method
       addButton = config.getAddPlayerButton();
