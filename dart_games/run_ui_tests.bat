@@ -308,7 +308,7 @@ if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
 REM On first failure, check for infrastructure errors and retry once
 set "_RST_RETRY=0"
 if "!_RST_PASS!"=="0" if !_RST_ATTEMPT! lss 2 (
-    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"FormatException" "!_RST_LOG!" >nul 2>&1
+    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"FormatException" /C:"PathAccessException" "!_RST_LOG!" >nul 2>&1
     if !errorlevel! equ 0 set "_RST_RETRY=1"
 )
 if "!_RST_RETRY!"=="1" goto :run_single_test_attempt
