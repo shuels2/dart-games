@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dartboard_provider.dart';
+import '../providers/player_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,12 +19,17 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkSetupStatus() async {
     final dartboardProvider = context.read<DartboardProvider>();
+    final playerProvider = context.read<PlayerProvider>();
 
     // Small delay for splash effect
     await Future.delayed(const Duration(seconds: 1));
 
-    // Load dartboard configuration
-    await dartboardProvider.loadConfiguration();
+    // Load dartboard config and player data in parallel — both must complete
+    // before navigation so game menus never open with an empty player list.
+    await Future.wait([
+      dartboardProvider.loadConfiguration(),
+      playerProvider.loadPlayers(),
+    ]);
 
     if (!mounted) return;
 

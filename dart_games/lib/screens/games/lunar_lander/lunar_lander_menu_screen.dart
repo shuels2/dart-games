@@ -225,9 +225,9 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Pilot your rocket from orbit to the moon! Subtract your dart scores from your '
-              'altitude to descend toward the surface. The first astronaut to land at exactly '
-              'zero touches down safely and wins the mission!',
+              'Pilot your astronaut from orbit to the moon! Subtract your dart scores from your '
+              'altitude to descend toward the surface. The first astronaut to touch down safely '
+              'wins the mission!',
               style: GoogleFonts.exo2(
                 fontSize: 22,
                 color: _starWhite,
@@ -240,7 +240,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
             _buildHowToStep('2', 'Throw Darts:',
                 'Each turn you get 3 darts. Subtract the score from your current altitude.'),
             _buildHowToStep('3', 'Land Safely:',
-                'Reach exactly 0 to land. Overshoot is fine unless Hard Landing is ON.'),
+                'Reach 0 to land. Overshooting is fine unless Hard Landing is ON.'),
             _buildHowToStep('4', 'Hard Landing:',
                 'With Hard Landing ON, going below 0 is a crash — your turn is forfeited and altitude resets to turn start.'),
             const SizedBox(height: 20),
