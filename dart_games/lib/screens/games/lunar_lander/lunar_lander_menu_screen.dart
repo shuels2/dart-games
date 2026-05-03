@@ -115,7 +115,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
             title: Text(
               'LUNAR LANDER GAME SETUP',
               style: GoogleFonts.orbitron(
-                fontSize: 20,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: _starWhite,
                 letterSpacing: 1.5,
@@ -136,10 +136,19 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
               const SizedBox(width: 8),
             ],
           ),
-          body: LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth > 800) {
-                return Row(
+          body: Stack(
+            children: [
+              // Background image with dark overlay
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/games/lunar_lander/images/LunarLander-Background.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth > 800) {
+                    return Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
@@ -163,6 +172,8 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
                 );
               }
             },
+              ),
+            ],
           ),
         ),
         // Resume game modal overlay — covers entire screen including AppBar
@@ -197,7 +208,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
             Text(
               'HOW TO PLAY',
               style: GoogleFonts.orbitron(
-                fontSize: 24,
+                fontSize: 30,
                 fontWeight: FontWeight.bold,
                 color: _rocketFlame,
                 letterSpacing: 1.5,
@@ -209,7 +220,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
               'altitude to descend toward the surface. The first astronaut to land at exactly '
               'zero touches down safely and wins the mission!',
               style: GoogleFonts.exo2(
-                fontSize: 16,
+                fontSize: 22,
                 color: _starWhite,
                 height: 1.5,
               ),
@@ -227,7 +238,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
             Text(
               'Beginner Tips:',
               style: GoogleFonts.orbitron(
-                fontSize: 16,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: _rocketFlame,
                 letterSpacing: 1.0,
@@ -252,7 +263,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
           Text(
             '$number. ',
             style: GoogleFonts.orbitron(
-              fontSize: 16,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: _rocketFlame,
             ),
@@ -264,7 +275,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
                   TextSpan(
                     text: title,
                     style: GoogleFonts.exo2(
-                      fontSize: 16,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: _starWhite,
                     ),
@@ -272,7 +283,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
                   TextSpan(
                     text: ' $description',
                     style: GoogleFonts.exo2(
-                      fontSize: 16,
+                      fontSize: 22,
                       color: _starWhite.withOpacity(0.8),
                       height: 1.5,
                     ),
@@ -295,7 +306,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
           Text(
             '• ',
             style: GoogleFonts.exo2(
-              fontSize: 16,
+              fontSize: 22,
               color: _rocketFlame,
             ),
           ),
@@ -303,7 +314,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
             child: Text(
               text,
               style: GoogleFonts.exo2(
-                fontSize: 16,
+                fontSize: 22,
                 color: _starWhite.withOpacity(0.8),
                 height: 1.5,
               ),
@@ -349,8 +360,12 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Settings row
-        Row(
+        // Settings row — SizedBox gives both containers a shared height (Slider
+        // does not support IntrinsicHeight, so we fix the height explicitly).
+        SizedBox(
+          height: 68,
+          child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Altitude slider box
             Expanded(
@@ -391,7 +406,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8),
             // Hard Landing toggle box
             Expanded(
               child: Container(
@@ -454,6 +469,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
               ),
             ),
           ],
+          ),
         ),
         const SizedBox(height: 16),
 

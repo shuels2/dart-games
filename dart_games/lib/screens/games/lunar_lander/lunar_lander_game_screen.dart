@@ -299,6 +299,8 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
 
     final allPlayers = playerProvider.allPlayers;
     final currentPlayerId = provider.getCurrentPlayerId() ?? '';
+    final dartScores = game.getCurrentTurnDartScores(currentPlayerId);
+    final dartBusts = game.getDartThrowWasBust(currentPlayerId);
     final shouldPromptTakeout = provider.shouldPromptTakeout;
 
     final hasDartsThrown =
@@ -334,41 +336,122 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
               }
             },
           ),
-          title: Row(
-            children: [
-              Text(
-                'LUNAR LANDER',
-                style: GoogleFonts.orbitron(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: _starWhite,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              if (game.hardLandingEnabled) ...[
-                const SizedBox(width: 12),
-                Container(
-                  key: LunarLanderGameKeys.hardLandingBadge,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _thrusterRed,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'HARD LANDING',
-                    style: GoogleFonts.orbitron(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: _starWhite,
+          title: Text(
+            'LUNAR LANDER',
+            style: GoogleFonts.orbitron(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: _starWhite,
+              letterSpacing: 1.5,
+            ),
+          ),
+          flexibleSpace: game.hardLandingEnabled
+              ? SafeArea(
+                  child: Center(
+                    child: Container(
+                      key: LunarLanderGameKeys.hardLandingBadge,
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _thrusterRed,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        'HARD LANDING',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _starWhite,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ],
-          ),
+                )
+              : null,
           backgroundColor: _earthBlue,
           foregroundColor: _starWhite,
           actions: [
+            // Skip turn button
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: OutlinedButton(
+                key: LunarLanderGameKeys.skipTurnButton,
+                onPressed: () {
+                  final p = context.read<LunarLanderProvider>();
+                  p.skipTurn();
+                  if (p.shouldPromptTakeout) {
+                    Future.delayed(const Duration(milliseconds: 1500), () {
+                      if (mounted) _audioQueue!.announceRemoveDarts();
+                    });
+                    Future.delayed(const Duration(milliseconds: 3500), () {
+                      if (mounted) _mockApi?.simulateTakeoutStarted();
+                    });
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: _rocketFlame, width: 1.5),
+                  foregroundColor: _rocketFlame,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                ),
+                child: Text(
+                  'SKIP TURN',
+                  style: GoogleFonts.orbitron(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            // D1, D2, D3 dart indicators
+            ...List.generate(3, (i) {
+              final hasScore = i < dartScores.length;
+              final score = hasScore ? dartScores[i] : null;
+              final isBust = hasScore && i < dartBusts.length && dartBusts[i];
+              final isSkip = hasScore && score == 0 && !isBust;
+
+              Color slotColor;
+              String scoreLabel;
+              if (!hasScore) {
+                slotColor = _rocketFlame.withOpacity(0.5);
+                scoreLabel = '—';
+              } else if (isBust) {
+                slotColor = _thrusterRed;
+                scoreLabel = 'X';
+              } else if (isSkip) {
+                slotColor = _moonDustGray.withOpacity(0.5);
+                scoreLabel = '—';
+              } else {
+                slotColor = _missionGreen;
+                scoreLabel = '$score';
+              }
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                child: Container(
+                  key: LunarLanderGameKeys.dartIndicator(i),
+                  width: 44,
+                  decoration: BoxDecoration(
+                    color: hasScore ? slotColor.withOpacity(0.25) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: hasScore ? slotColor : _rocketFlame.withOpacity(0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      scoreLabel,
+                      style: GoogleFonts.orbitron(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: hasScore ? slotColor : _rocketFlame.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(width: 8),
             DartboardConnectionInfo(
               config: DartboardConnectionInfoConfig.lunarLander(),
             ),
@@ -377,32 +460,20 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         ),
         body: Stack(
           children: [
+            // Background image with dark overlay
+            Positioned.fill(
+              child: Image.asset(
+                'assets/games/lunar_lander/images/LunarLander-Background.png',
+                fit: BoxFit.cover,
+              ),
+            ),
             // Main content
             Column(
               children: [
-                // Game area: active player panel + descent area
+                // Game area: full-width descent tracks
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // LEFT: Active Player Panel (200px wide)
-                      _buildActivePlayerPanel(
-                          game, currentPlayerId, allPlayers),
-                      // CENTER/RIGHT: Descent area
-                      Expanded(
-                        child: _buildDescentArea(game, currentPlayerId, allPlayers),
-                      ),
-                    ],
-                  ),
+                  child: _buildDescentArea(game, currentPlayerId, allPlayers),
                 ),
-                // Turn summary row
-                _buildTurnSummary(game, currentPlayerId),
-                // Reserve space for the dartboard emulator section, which is
-                // rendered as a Positioned widget AFTER the modal (below) so
-                // its "DARTS REMOVED" button stays tappable on top of the
-                // RemoveDartsModal overlay. Matches the Clockwork Quest pattern.
-                if (dartboardProvider.isEmulator)
-                  const SizedBox(height: 320),
               ],
             ),
             // Remove darts modal overlay
@@ -547,168 +618,6 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
     );
   }
 
-  Widget _buildActivePlayerPanel(
-      LunarLanderGame game, String currentPlayerId, List<dynamic> allPlayers) {
-    final player =
-        allPlayers.where((p) => p.id == currentPlayerId).firstOrNull;
-    final character = game.getCharacter(currentPlayerId);
-    final altitude = provider_altitude(currentPlayerId, game);
-    final dartScores =
-        game.getCurrentTurnDartScores(currentPlayerId);
-    final dartBusts = game.getDartThrowWasBust(currentPlayerId);
-
-    return Container(
-      width: 200,
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: _earthBlue.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _rocketFlame, width: 2),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          // Character image
-          Container(
-            key: LunarLanderGameKeys.playerAvatar,
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: _rocketFlame.withOpacity(0.5),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: character != null
-                ? Image.asset(
-                    character.assetPath,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.rocket,
-                      color: _rocketFlame,
-                      size: 80,
-                    ),
-                  )
-                : const Icon(Icons.rocket, color: _rocketFlame, size: 80),
-          ),
-          const SizedBox(height: 8),
-          // Player name
-          Text(
-            player?.name ?? 'Player',
-            style: GoogleFonts.orbitron(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: _rocketFlame,
-            ),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 6),
-          // Altitude readout
-          Text(
-            'ALT: $altitude',
-            key: LunarLanderGameKeys.altitudeReadout,
-            style: GoogleFonts.orbitron(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: altitude < 0 ? _thrusterRed : _starWhite,
-            ),
-          ),
-          const SizedBox(height: 12),
-          // 3 dart indicator slots
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(3, (i) {
-              final hasScore = i < dartScores.length;
-              final score = hasScore ? dartScores[i] : null;
-              final isBust =
-                  hasScore && i < dartBusts.length && dartBusts[i];
-              final isSkip = hasScore && score == 0 && !isBust;
-
-              Color slotColor;
-              String label;
-              if (!hasScore) {
-                slotColor = Colors.transparent;
-                label = '—';
-              } else if (isBust) {
-                slotColor = _thrusterRed;
-                label = 'X';
-              } else if (isSkip) {
-                slotColor = _moonDustGray.withOpacity(0.5);
-                label = '—';
-              } else {
-                slotColor = _missionGreen;
-                label = '$score';
-              }
-
-              return Container(
-                key: LunarLanderGameKeys.dartIndicator(i),
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: slotColor.withOpacity(hasScore ? 0.25 : 0.0),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: hasScore ? slotColor : _rocketFlame.withOpacity(0.5),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    label,
-                    style: GoogleFonts.orbitron(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: hasScore ? slotColor : _rocketFlame.withOpacity(0.5),
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-          const Spacer(),
-          // Skip turn button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              key: LunarLanderGameKeys.skipTurnButton,
-              onPressed: () {
-                final p = context.read<LunarLanderProvider>();
-                p.skipTurn();
-                if (p.shouldPromptTakeout) {
-                  Future.delayed(const Duration(milliseconds: 1500), () {
-                    if (mounted) _audioQueue!.announceRemoveDarts();
-                  });
-                  Future.delayed(const Duration(milliseconds: 3500), () {
-                    if (mounted) _mockApi?.simulateTakeoutStarted();
-                  });
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: _rocketFlame, width: 1.5),
-                foregroundColor: _rocketFlame,
-              ),
-              child: Text(
-                'SKIP',
-                style: GoogleFonts.orbitron(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  int provider_altitude(String playerId, LunarLanderGame game) {
-    return game.getCurrentAltitude(playerId);
-  }
-
   Widget _buildDescentArea(LunarLanderGame game, String currentPlayerId,
       List<dynamic> allPlayers) {
     final playerCount = game.playerIds.length;
@@ -716,42 +625,23 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
     // Character image size based on player count
     double charSize;
     if (playerCount <= 4) {
-      charSize = 90;
+      charSize = 200;
     } else if (playerCount == 5) {
-      charSize = 70;
+      charSize = 160;
     } else {
-      charSize = 55;
+      charSize = 120;
     }
 
     return Container(
       margin: const EdgeInsets.all(8),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(8, 12, 8, 112),
       decoration: BoxDecoration(
-        color: _spaceBlack.withOpacity(0.6),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _earthBlue, width: 1),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Column(
         children: [
-          // ORBIT header
-          Row(
-            children: [
-              const Expanded(child: Divider(color: _earthBlue)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  'ORBIT',
-                  style: GoogleFonts.orbitron(
-                    fontSize: 12,
-                    color: _moonDustGray,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ),
-              const Expanded(child: Divider(color: _earthBlue)),
-            ],
-          ),
-          const SizedBox(height: 4),
           // Descent columns
           Expanded(
             child: Row(
@@ -767,25 +657,6 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                 );
               }).toList(),
             ),
-          ),
-          const SizedBox(height: 4),
-          // MOON footer
-          Row(
-            children: [
-              const Expanded(child: Divider(color: _earthBlue)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  '🌙 MOON',
-                  style: GoogleFonts.orbitron(
-                    fontSize: 12,
-                    color: _moonDustGray,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ),
-              const Expanded(child: Divider(color: _earthBlue)),
-            ],
           ),
         ],
       ),
@@ -815,19 +686,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Column(
           children: [
-            // Player name above character
-            Text(
-              playerName,
-              style: GoogleFonts.orbitron(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: isActive ? _rocketFlame : _starWhite,
-              ),
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            // Descent column with character
+            // Descent column with character (name moves with character)
             Expanded(
               child: Column(
                 key: LunarLanderGameKeys.descentTrack(playerId),
@@ -837,42 +696,74 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                     flex: (progress * 100).toInt(),
                     child: Container(),
                   ),
-                  // Character image
-                  Transform.scale(
-                    scale: isActive ? 1.1 : 1.0,
-                    child: Container(
-                      key: LunarLanderGameKeys.characterOnTrack(playerId),
-                      width: charSize,
-                      height: charSize,
-                      decoration: isActive
-                          ? BoxDecoration(
-                              shape: BoxShape.rectangle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _rocketFlame.withOpacity(0.6),
-                                  blurRadius: 16,
-                                  spreadRadius: 4,
-                                ),
-                              ],
-                            )
-                          : null,
-                      child: character != null
-                          ? Image.asset(
-                              character.assetPath,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => Icon(
-                                Icons.rocket,
-                                color:
-                                    isActive ? _rocketFlame : _starWhite,
-                                size: charSize * 0.7,
-                              ),
-                            )
-                          : Icon(
+                  // Player name travels with the character
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? _rocketFlame.withOpacity(0.9)
+                          : const Color(0xFF4A9EC4).withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      playerName,
+                      style: GoogleFonts.orbitron(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: _starWhite,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Character image — fixed charSize box, top-aligned so all
+                  // character tops sit at the same position relative to the
+                  // name pill. Letterbox variation is pushed to the bottom.
+                  Container(
+                    key: isActive
+                        ? LunarLanderGameKeys.playerAvatar
+                        : LunarLanderGameKeys.characterOnTrack(playerId),
+                    width: charSize,
+                    height: charSize,
+                    child: character != null
+                        ? Image.asset(
+                            character.assetPath,
+                            width: charSize,
+                            height: charSize,
+                            fit: BoxFit.contain,
+                            alignment: Alignment.topCenter,
+                            errorBuilder: (_, __, ___) => Icon(
                               Icons.rocket,
-                              color:
-                                  isActive ? _rocketFlame : _starWhite,
+                              color: isActive ? _rocketFlame : _starWhite,
                               size: charSize * 0.7,
                             ),
+                          )
+                        : Icon(
+                            Icons.rocket,
+                            color: isActive ? _rocketFlame : _starWhite,
+                            size: charSize * 0.7,
+                          ),
+                  ),
+                  // Altitude label below character
+                  Container(
+                    key: isActive ? LunarLanderGameKeys.altitudeReadout : null,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: currentAlt < 0
+                          ? _thrusterRed.withOpacity(0.9)
+                          : isActive
+                              ? _rocketFlame.withOpacity(0.9)
+                              : const Color(0xFF4A9EC4).withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$currentAlt',
+                      style: GoogleFonts.orbitron(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: _starWhite,
+                      ),
                     ),
                   ),
                   // Descent line below character
@@ -880,15 +771,14 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                     flex: ((1.0 - progress) * 100).toInt().clamp(1, 100),
                     child: Center(
                       child: Container(
-                        width: 6,
+                        width: 18,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [
-                              _rocketFlame,
-                              _rocketFlame.withOpacity(0.1),
-                            ],
+                            colors: isActive
+                                ? [_rocketFlame, _rocketFlame.withOpacity(0.15)]
+                                : [const Color(0xFF4A9EC4), const Color(0xFF4A9EC4).withOpacity(0.15)],
                           ),
                           borderRadius: BorderRadius.circular(3),
                         ),
@@ -898,56 +788,10 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                 ],
               ),
             ),
-            // Altitude label
-            Text(
-              '$currentAlt',
-              style: GoogleFonts.orbitron(
-                fontSize: 10,
-                color: currentAlt < 0 ? _thrusterRed : _starWhite,
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTurnSummary(LunarLanderGame game, String currentPlayerId) {
-    final dartScores = game.getCurrentTurnDartScores(currentPlayerId);
-    final dartBusts = game.getDartThrowWasBust(currentPlayerId);
-    final hasBust =
-        dartBusts.isNotEmpty && dartBusts.any((b) => b);
-    final revertedAlt = game.turnStartAltitude[currentPlayerId] ?? game.startingAltitude;
-    final currentAlt = game.getCurrentAltitude(currentPlayerId);
-    final totalDescended = dartScores.fold<int>(0, (sum, s) => sum + s);
-
-    String summaryText;
-    Color summaryColor;
-
-    if (hasBust) {
-      summaryText = 'CRASH! Reverted to $revertedAlt';
-      summaryColor = _thrusterRed;
-    } else if (dartScores.isEmpty) {
-      summaryText = 'Altitude: $currentAlt';
-      summaryColor = _moonDustGray;
-    } else {
-      final prevAlt = currentAlt + totalDescended;
-      summaryText = 'Descended $totalDescended this turn ($prevAlt → $currentAlt)';
-      summaryColor = _moonDustGray;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      color: _spaceBlack,
-      child: Text(
-        summaryText,
-        key: LunarLanderGameKeys.turnSummary,
-        style: GoogleFonts.exo2(
-          fontSize: 14,
-          color: summaryColor,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
 }

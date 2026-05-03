@@ -200,7 +200,7 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
         title: Text(
           'LUNAR LANDER RESULTS',
           style: GoogleFonts.orbitron(
-            fontSize: 20,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
             color: _starWhite,
             letterSpacing: 1.5,
@@ -223,14 +223,6 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
             child: Image.asset(
               'assets/games/lunar_lander/images/LunarLander-Background.png',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Container(color: _spaceBlack),
-            ),
-          ),
-          // Dark overlay
-          Positioned.fill(
-            child: Container(
-              color: _spaceBlack.withOpacity(0.75),
             ),
           ),
           // Confetti
