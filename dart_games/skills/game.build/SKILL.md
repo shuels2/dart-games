@@ -439,7 +439,7 @@ Present `game_early_2p.html` to the user. **Wait for approval.**
 > - `results_2p.html` — results screen with 2 players, the winner highlighted
 >
 > **Layout requirements:**
-> - AppBar: back button, title (e.g., "[GAME] RESULTS"), DartboardConnectionInfo on right
+> - AppBar: title (e.g., "[GAME] RESULTS") + DartboardConnectionInfo on right. **NO back button** — results-screen navigation is exclusively via the 3 action buttons (Play Again, Change Settings, Back to Menu). Use `automaticallyImplyLeading: false` on the AppBar.
 > - Background: use the real background image (recurring miss — must be visible on results screen)
 > - Winner card: real character image at native size (no circle clipping), winner stats, victory styling
 > - Player rankings list: generic avatars (initials), NOT character images per the project rule (winner card is the only exception)
@@ -698,10 +698,10 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > - Add Player Dialog integration
 > - DartboardConnectionInfo in AppBar (right side)
 > - **ResumeGameButton in AppBar, positioned to the LEFT of DartboardConnectionInfo**
-> - **AppBar back arrow — canonical pattern (mandatory, identical across all 3 screens of every game):**
+> - **AppBar back arrow — canonical pattern (mandatory, identical on the menu AND game screens):**
 >   ```dart
 >   leading: IconButton(
->     key: [GAME_NAME_PASCAL]MenuKeys.backButton, // or GameKeys/ResultsKeys per screen
+>     key: [GAME_NAME_PASCAL]MenuKeys.backButton, // or GameKeys.backButton on game screen
 >     icon: const Icon(Icons.arrow_back, color: [SPEC_TEXT_COLOR], size: 32),
 >     onPressed: () => Navigator.of(context).pop(), // or game-screen save-modal logic
 >     hoverColor: Colors.transparent,
@@ -711,8 +711,9 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   ```
 >   - **Icon size MUST be 32** — matches Clockwork Quest, Reef Royale, Monster Mash, Carnival Derby, Target Tag (all 5 reference games)
 >   - **All three hover-suppression properties (`hoverColor`, `highlightColor`, `splashColor`) MUST be `Colors.transparent`** — eliminates the default IconButton hover/splash effect for tablet/touch UX
->   - **Each screen's back arrow MUST use its own keys class** (`MenuKeys.backButton`, `GameKeys.backButton`, `ResultsKeys.backButton`) — never reuse another game's key class. Define `backButton` on each Keys class even if not currently referenced by tests.
->   - **All 3 screens MUST be identical in size, color, and hover-suppression** — a consistent, predictable back-arrow experience across menu/game/results
+>   - **Each screen's back arrow MUST use its own keys class** (`MenuKeys.backButton`, `GameKeys.backButton`) — never reuse another game's key class. Define `backButton` on each Keys class even if not currently referenced by tests.
+>   - **Menu and game screens MUST be identical in size, color, and hover-suppression** — a consistent, predictable back-arrow experience.
+>   - **Results screen MUST NOT have a back arrow** — set `automaticallyImplyLeading: false` on the AppBar and do NOT supply a `leading:` widget. Navigation off the results screen is exclusively via the 3 action buttons (Play Again, Change Settings, Back to Menu). Reference: Clockwork Quest, Reef Royale, Monster Mash, Target Tag, Carnival Derby — all 5 reference games omit the back arrow on results.
 > - **initState pattern (mandatory — Clockwork Quest reference):**
 >   ```dart
 >   @override
@@ -876,7 +877,8 @@ After the sub-agent returns:
 > (e) updatePlayerStats called for ALL players (winners AND losers) with the SAME gameDuration
 > (f) Every shared widget from the spec's Definition-of-Done functional-completeness list is instantiated in a screen
 > (g) All 3 AppBars have: back button + title + DartboardConnectionInfo
-> (g1) **Back arrow consistency** — read the `leading: IconButton(...)` block on all 3 screens (menu, game, results) and verify ALL of: (1) `Icon` size is `32`, (2) all three of `hoverColor`, `highlightColor`, `splashColor` are `Colors.transparent`, (3) each screen's IconButton uses its OWN keys class (`MenuKeys.backButton`, `GameKeys.backButton`, `ResultsKeys.backButton` — never another game's class). All 3 screens MUST be identical in size, color treatment, and hover suppression. Reference: Monster Mash, Carnival Derby for the canonical pattern.
+> (g1) **Back arrow consistency** — read the `leading: IconButton(...)` block on the MENU and GAME screens and verify ALL of: (1) `Icon` size is `32`, (2) all three of `hoverColor`, `highlightColor`, `splashColor` are `Colors.transparent`, (3) each screen's IconButton uses its OWN keys class (`MenuKeys.backButton`, `GameKeys.backButton` — never another game's class). Menu and game MUST be identical in size, color treatment, and hover suppression. Reference: Monster Mash, Carnival Derby for the canonical pattern.
+> (g2) **Results screen has NO back arrow** — read the results-screen AppBar and verify `automaticallyImplyLeading: false` is set AND no `leading:` widget is supplied. Confirm the 3 action buttons (Play Again, Change Settings, Back to Menu) are the only navigation off the results screen.
 > (h) **No custom 'remove darts' button exists outside RemoveDartsModal** — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for any button labeled "Remove" outside the modal
 > (i) Correct PlayerListPanel pattern (Dual vs Team) — and the Team config lives in `team_player_list_panel_config.dart`, not `dual_player_list_panel_config.dart`
 > (j) SaveGameModal uses PopScope + Stack on game screen

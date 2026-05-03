@@ -193,13 +193,6 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
     return Scaffold(
       backgroundColor: _spaceBlack,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: _starWhite, size: 32),
-          onPressed: () => Navigator.of(context).pop(),
-          hoverColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          splashColor: Colors.transparent,
-        ),
         title: Text(
           'LUNAR LANDER RESULTS',
           style: GoogleFonts.orbitron(
