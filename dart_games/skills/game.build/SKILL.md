@@ -108,6 +108,73 @@ If the sub-agent's actual output diverges from what was requested, send the sub-
 
 ARs are independent critiques of the implementer's work. Run them on the orchestrator (Opus) using the prompt blocks already in each phase. Do NOT delegate ARs to a sub-agent — losing the conversation context (the build plan, prior findings) weakens the critique. If a particular AR needs deeper independence, you may spawn a *fresh Opus sub-agent* with `model: "opus"` and a self-contained briefing, but this is optional.
 
+### Universal Rule: Limit Changes to the New Game
+
+**This rule MUST be embedded in every sub-agent prompt's hard-rules section.**
+
+> **"Existing-games-work" baseline:** All existing games (Carnival Derby, Target Tag, Monster Mash, Reef Royale, Clockwork Quest) work with the shared infrastructure today. If you encounter a bug during this build, it is **almost certainly in the new game's code**, NOT in shared widgets, providers, services, or other games. Limit ALL changes to the additive new-game zones below; if you believe a shared file has a bug, **STOP and surface it to the orchestrator** — do not fix it.
+>
+> **Allowed change zones (additive only):**
+> - `lib/{models,providers,services}/[GAME_NAME_SNAKE]*` and `lib/services/play_to_complete/[GAME_NAME_SNAKE]_strategy.dart`
+> - `lib/screens/games/[GAME_NAME_SNAKE]/`
+> - `assets/games/[GAME_NAME_SNAKE]/`
+> - `test/screens/games/[GAME_NAME_SNAKE]/`, `test/models/[GAME_NAME_SNAKE]*`, `test/providers/[GAME_NAME_SNAKE]*`, `test/mocks/mock_[GAME_NAME_SNAKE]*`
+> - `integration_test/[GAME_NAME_SNAKE]/`
+> - `docs/games/[GAME_NAME_HYPHEN]/`
+> - `lib/constants/test_keys.dart` — additive: new key class only + `HomeKeys.[gameName]Card`
+> - `lib/main.dart` — additive: provider + 3 routes
+> - `lib/screens/home_screen.dart` — additive: new game card
+> - `lib/widgets/*/[*]_config.dart` — additive: new `.[gameName]()` factory only
+> - 12 mirrored shared helpers — additive only (new game-specific helpers)
+> - 4 batch files — additive: game name appended to GAMES list
+> - `pubspec.yaml` — additive: asset directory entries
+>
+> **Forbidden zones (do NOT modify):**
+> - Any other game's code, tests, docs, or assets
+> - The dartboard emulator core widgets
+> - Shared widget bodies (only their config files for `.[gameName]()` factories)
+> - Existing tests outside the new-game-specific list
+> - `.claude/settings.json` or `.claude/settings.local.json`
+> - `.git/hooks/*`
+>
+> **Auto-revert rule:** at the end of each phase, the orchestrator runs `git diff master...HEAD --name-only` and verifies all changed files are within the allowed zones. Any unexpected modification triggers `git checkout -- <file>` and a corrective sub-agent dispatch with a tightened prompt.
+
+### YOLO Mode Pre-Flight
+
+If the user is running this skill in YOLO mode (no permission prompts) — risks include sub-agents pushing to remote, committing to master, or modifying shared code without challenge. The skill mitigates these via:
+
+1. **Hard-rules section in every sub-agent prompt** — already in place; the universal rule above plus per-phase forbids.
+2. **Pre-commit hook on master/main** — `.git/hooks/pre-commit` should reject any commit attempted on `master` or `main`. The orchestrator verifies this exists at the start of Phase 0; if missing, the orchestrator BLOCKS the run and surfaces setup instructions to the user.
+3. **Per-phase auto-revert** — see "Auto-revert rule" above.
+4. **Phase 8 final user acceptance gate** — see Phase 8 STEP 10. Even in YOLO mode, the user explicitly accepts the visual state before docs.
+5. **Branch isolation** — all work happens on `[BRANCH_NAME]` (default `[GAME_NAME_HYPHEN]-game`). No commits to master/main, no pushes to remote without user permission.
+
+**Phase 0 Step 0 (pre-flight check, run BEFORE Step 1 of Phase 0):**
+
+Verify the environment is YOLO-safe:
+
+1. Confirm `.git/hooks/pre-commit` exists AND contains a `master|main` block. Test:
+   ```bash
+   if [ ! -f .git/hooks/pre-commit ] || ! grep -q 'master\|main' .git/hooks/pre-commit; then
+     echo "FAIL: pre-commit hook missing master/main protection"
+     exit 1
+   fi
+   ```
+   If FAIL: tell the user the hook is missing and offer to create it. STOP until they confirm.
+
+2. Confirm the user is NOT currently on master/main:
+   ```bash
+   current_branch=$(git branch --show-current)
+   if [ "$current_branch" = "master" ] || [ "$current_branch" = "main" ]; then
+     echo "FAIL: currently on $current_branch — switch to a dev branch first"
+     exit 1
+   fi
+   ```
+
+3. Confirm the working tree is clean OR the only uncommitted changes are within the allowed zones above.
+
+If any check fails, STOP and surface to the user. Do not proceed.
+
 ---
 
 ## Phase 0: Initialization and Spec Analysis
@@ -202,12 +269,31 @@ ARs are independent critiques of the implementer's work. Run them on the orchest
 > 5. If ANY asset is MISSING or has a non-conforming filename, do NOT continue. Report the issue and STOP — assets are user-provided and renaming requires user approval.
 > 6. Read `pubspec.yaml`. If the game's asset directories are not listed under `flutter.assets`, add them in alphabetical order with the existing games.
 > 7. Run `flutter pub get` and confirm exit code 0.
+> 8. **Write the asset path manifest** at `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md`. This is consumed by Phase 2 (wireframes) and Phase 3 (model `assetPath` getter). Format:
+>    ```
+>    # Lunar Lander asset paths (canonical post-rename — use these EXACTLY)
+>
+>    ## Icon / Background
+>    - icon: `assets/games/[GAME_NAME_SNAKE]/icons/[GameName]-Icon.png`
+>    - background: `assets/games/[GAME_NAME_SNAKE]/images/[GameName]-Background.png`
+>
+>    ## Characters (enum_value → path)
+>    - spaceDog → `assets/games/[GAME_NAME_SNAKE]/characters/SpaceDog.png`
+>    - moonCat  → `assets/games/[GAME_NAME_SNAKE]/characters/MoonCat.png`
+>    - ...
+>
+>    ## Sounds (constant → path → start/end times)
+>    - thrusterBurn → `assets/games/[GAME_NAME_SNAKE]/sounds/[GameName]-ThrusterBurn.mp3` → 0.5s–3.0s
+>    - ...
+>    ```
+>    Phase 3 sub-agent reads this file to populate the model's `assetPath` getter using the renamed paths, NOT the spec's original (potentially pre-rename) names.
 >
 > **Report back:**
 > - The asset table from step 4 (paths, naming, present/missing)
 > - Confirmation the home-screen icon is at the expected path
 > - The diff applied to `pubspec.yaml` (or "no changes needed")
 > - The output of `flutter pub get`
+> - Confirmation that `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md` was written
 > - The active git branch
 >
 > **Hard rules — Do NOT:**
@@ -228,6 +314,7 @@ After the sub-agent returns, run `git status` and read the modified `pubspec.yam
 > (d) The home-screen card icon is present at its expected path
 > (e) No assets are in the wrong subdirectory (e.g., character images in sounds/)
 > (f) No spec assets were overlooked
+> (g) The asset path manifest at `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md` was written and lists every asset with its CANONICAL POST-RENAME path. Read the manifest and verify every listed path resolves to a real file (`if [ -f "$path" ]`). This manifest is the source of truth for Phases 2 (wireframes) and 3 (model `assetPath`) — a path mismatch here cascades into the model and screens, causing silent runtime image-load failures.
 >
 > I will list every discrepancy found."
 
@@ -235,90 +322,170 @@ Report AR-1 findings. If discrepancies exist, dispatch a corrective Sonnet sub-a
 
 ---
 
-## Phase 2: Wireframe Mockups
+## Phase 2: Wireframe Mockups (Staged Approval)
 
 **Goal:** Create HTML/CSS wireframe mockups of all game screens so the user can review the visual design and layout BEFORE any game code is written. This catches layout problems, UX issues, and misunderstandings of the spec early — when changes are free.
 
-**Model:** Sonnet sub-agent for HTML/CSS authoring; orchestrator (Opus) for AR-2 + WIREFRAME APPROVAL GATE.
+**Model:** Sonnet sub-agent for HTML/CSS authoring; orchestrator (Opus) for AR-2 + WIREFRAME APPROVAL GATEs.
 
-### Delegate to Sonnet sub-agent
+### Staged Approval Strategy
 
-**Sub-agent prompt template:**
+Past sessions showed that building all wireframes upfront led to multiple revision rounds when the user only realized the visual direction was off after seeing them all. **This phase is now split into 4 stages with cheap approval gates between them.** The goal is to lock in the look-and-feel before investing in the full wireframe set.
 
-> You are completing Phase 2 (Wireframe Mockups) for the **[GAME_NAME_DISPLAY]** game build.
+- **Stage A:** Menu screen at ONE player count (e.g., 4 players selected) → user approval gate
+- **Stage B:** Game screen (early state) at 2 players → user approval gate
+- **Stage C:** Results screen at 2 players → user approval gate
+- **Stage D:** Full wireframe set across min/mid/max player counts + modals → final user approval gate
+
+After each stage, the user can request changes cheaply. Visual direction confirmed early → Stage D is mostly mechanical replication across player counts.
+
+**CRITICAL — Use REAL game assets in every wireframe:**
+
+The wireframes are NOT generic placeholders. Reference the actual character images, background images, and icon via `<img src="../../assets/games/[GAME_NAME_SNAKE]/...">` paths. Apply the spec's exact color palette + Google Fonts to ALL elements: list boxes, settings panels, modal overlays, AppBars, buttons, everything. The wireframe must be visually close to the final game so the user can give meaningful feedback.
+
+- Use the actual icon for the home-screen card mock-up
+- Use the actual background image as the page background on game and results screens
+- Use the actual character images on player tiles, descent tracks, winner card, etc.
+- Use the spec's exact hex codes (no "approximate" colors)
+- Load the spec's Google Fonts via `<link>` tags
+- Match the spec's Style section closely — the wireframe should be nearly indistinguishable from the final game in colors/fonts/imagery
+
+The ONLY stylistic restriction: do NOT use the container app's tokens (Nunito font, Flame Orange `#FF6B35`, etc.).
+
+### Stage A: Menu screen wireframe + approval
+
+**Sub-agent prompt template (Stage A only):**
+
+> You are completing Phase 2 Stage A (Menu wireframe) for the **[GAME_NAME_DISPLAY]** game build.
 >
 > **Read first:**
-> - Spec file: `[SPEC_PATH]` — focus on the spec's "Overview" (player count, Dual/Team), "Style & Visual Identity" (palette + fonts), "Game Options & Settings" (option controls + effects), "Screen Designs" (Menu/Game/Results), "New Components Required" (shared component list).
+> - Spec file: `[SPEC_PATH]` — focus on "Overview" (player count, Dual/Team), "Style & Visual Identity" (palette + fonts), "Game Options & Settings" (option controls + effects), "Screen Designs" Menu Section, "New Components Required".
 > - Section map: [PASTE SECTION MAP TABLE]
-> - `docs/architecture/design-system.md` — the rule on container vs game tokens.
+> - `docs/architecture/design-system.md` — container vs game tokens rule.
+> - Asset paths from Phase 1's manifest at `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md` — reference these EXACTLY.
+>
+> **Output directory:** `temp_wireframes/[GAME_NAME_SNAKE]/`
+>
+> **Stage A scope (single file):**
+> - `menu_4p.html` — menu with 4 players selected, default option values, fully styled
+>
+> **The wireframe MUST use real game assets** referenced via `<img src="../../assets/games/[GAME_NAME_SNAKE]/...">`:
+> - Real icon, real character images (on the player tile section if the spec calls for it — otherwise generic), real background if the spec specifies one for the menu
+> - Spec's exact color palette (every box, every border, every text color)
+> - Spec's Google Fonts loaded via `<link>` tags and applied to AppBar, headers, body, buttons
+> - Real game-themed labels and messaging from the spec — NOT generic Lorem-ipsum
+>
+> **Layout requirements (apply consistently — these are the patterns the user has called out as bugs in past sessions):**
+> - Option boxes have IDENTICAL heights regardless of control type (slider/toggle/dropdown). Use a fixed `min-height` so a slider box and a toggle box render the same height.
+> - Spacing between option columns matches spacing between option columns and player list panel below them. Use the same `gap` / `margin` value throughout the right panel.
+> - AppBar shows: back button, title (spec's exact text), DartboardConnectionInfo placeholder on the right, **ResumeGameButton positioned to the LEFT of DartboardConnectionInfo** (per `docs/development/resume-game-button.md`)
+> - Player list panel populated with 4 player entries. **Use generic placeholder avatars on player tiles (initials/abstract shapes — NOT character images) — per project rule.** The character images go on game-screen + winner-card only.
+>
+> **Report back:**
+> - File path created
+> - Asset paths referenced (verify each is a real file via `if -e $path`)
+> - Coverage table: each option from spec → its menu control + visible effect
+>
+> **Hard rules — Do NOT:**
+> - Commit to master/main. Do NOT push to remote.
+> - Use Nunito or Flame Orange `#FF6B35`.
+> - Use generic placeholder colors / fonts / labels — match the spec exactly.
+> - Use game characters as player tile avatars (use initials/shapes).
+> - Skip the asset paths from `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md` (Phase 1 manifest).
+
+After the sub-agent returns, run AR-2 (Stage A subset) on the orchestrator.
+
+### Stage A approval gate
+
+Present the menu wireframe to the user:
+- "Open `temp_wireframes/[GAME_NAME_SNAKE]/menu_4p.html` in your browser"
+- "Confirm: colors, fonts, layout, character/imagery use, option box heights, spacing"
+
+**STOP and wait for user approval.** Iterate per user feedback (each round = one corrective sub-agent dispatch). Do NOT proceed to Stage B until the user explicitly approves the menu look-and-feel.
+
+### Stage B: Game screen wireframe + approval
+
+**Sub-agent prompt template (Stage B only):**
+
+> You are completing Phase 2 Stage B (Game screen wireframe) for the **[GAME_NAME_DISPLAY]** game build. The orchestrator has already locked in the menu visual direction in Stage A — REUSE the same color palette, fonts, panel styling, AppBar pattern from `menu_4p.html`.
+>
+> **Output directory:** `temp_wireframes/[GAME_NAME_SNAKE]/`
+>
+> **Stage B scope (single file):**
+> - `game_early_2p.html` — game screen at the START of a game (2 players, all at starting state)
+>
+> **Layout requirements:**
+> - AppBar: back button, title, DartboardConnectionInfo on the right (NO ResumeGameButton on game screen)
+> - Active player panel (LEFT, 200px wide per spec Section 10B if specified): use the player's CHARACTER IMAGE rendered NATIVELY (no circle clipping, `object-fit: contain`). Apply a shape-conformal `filter: drop-shadow` for active-player glow.
+> - Player progress visualization (descent track / coral cards / shields / etc. per spec): use REAL CHARACTER IMAGES, not rocket/circle placeholders. Render them at native size with no circle masking.
+> - Background: use the real background image from `assets/games/[GAME_NAME_SNAKE]/images/...` if the spec specifies one. The background must be visible on the game screen (recurring miss in past sessions).
+> - **The dartboard emulator section is a TEMPORARY OVERLAY at the bottom — NOT space-reserving infrastructure.** The primary game UI should fill the FULL available height as if the dartboard didn't exist. The emulator overlaps the bottom portion at run time. Reference: in the actual implementation, DartboardEmulatorSection is a `Positioned(bottom: 0)` child of the body Stack, on top of the game UI. Mirror this in the wireframe by drawing the game content full-height and placing the dartboard label as an overlay at the bottom edge.
+> - Skip Turn button visible (per spec's screen design)
+> - Show every option's visible effect from the Options section (e.g., "HARD LANDING" badge if HL ON, altitude readout, etc.)
+>
+> **Hard rules — same as Stage A.**
+
+Present `game_early_2p.html` to the user. **Wait for approval.**
+
+### Stage C: Results screen wireframe + approval
+
+**Sub-agent prompt template (Stage C only):**
+
+> You are completing Phase 2 Stage C (Results screen wireframe) for the **[GAME_NAME_DISPLAY]** game build. REUSE the locked-in visual direction from Stage A + Stage B.
+>
+> **Output directory:** `temp_wireframes/[GAME_NAME_SNAKE]/`
+>
+> **Stage C scope (single file):**
+> - `results_2p.html` — results screen with 2 players, the winner highlighted
+>
+> **Layout requirements:**
+> - AppBar: back button, title (e.g., "[GAME] RESULTS"), DartboardConnectionInfo on right
+> - Background: use the real background image (recurring miss — must be visible on results screen)
+> - Winner card: real character image at native size (no circle clipping), winner stats, victory styling
+> - Player rankings list: generic avatars (initials), NOT character images per the project rule (winner card is the only exception)
+> - 3 buttons: Play Again, Change Settings, Back to Menu — colored per spec
+>
+> **Hard rules — same as Stage A.**
+
+Present `results_2p.html` to the user. **Wait for approval.**
+
+### Stage D: Full wireframe set + final approval
+
+**Sub-agent prompt template (Stage D only):**
+
+> You are completing Phase 2 Stage D (full wireframe set) for the **[GAME_NAME_DISPLAY]** game build. The orchestrator has locked in the menu, game, and results visual direction in Stages A-C. Now produce the full set across player-count variants and add the modals wireframe + index.
+>
+> **Read first:**
+> - The 3 approved wireframes: `menu_4p.html`, `game_early_2p.html`, `results_2p.html` — REUSE their CSS, colors, fonts, structures verbatim
 >
 > **Output directory:** `temp_wireframes/[GAME_NAME_SNAKE]/`
 >
 > **Files to create:** Each screen must be shown at multiple player counts to validate scaling. For a game supporting min M / max N players, create wireframes at min, max, and at least one count in between.
 >
 > Required wireframes:
-> - `menu_Xp.html` for each player-count variant (M, mid, N)
+> - `menu_Xp.html` for each player-count variant (M, mid, N — N being max)
 > - `game_early_Xp.html` for each player-count variant
 > - `game_midgame_Xp.html` for each player-count variant
 > - `game_modals.html` (one file — Remove Darts modal + Edit Score button + Dartboard Paused modal + Save Game modal)
 > - `results_Xp.html` for each player-count variant
 > - `index.html` linking to all wireframes with brief descriptions
 >
-> **Each Menu wireframe must show:**
-> - AppBar with back button, game title, DartboardConnectionInfo placeholder, ResumeGameButton
-> - **ResumeGameButton must be positioned to the LEFT of DartboardConnectionInfo** in the AppBar (per `docs/development/resume-game-button.md`)
-> - Player list panel (Dual or Team per spec) populated with the appropriate number of sample player entries for that variant — **use generic placeholder avatars (initials, abstract shapes, etc.). Do NOT use the game's character images for player avatars.**
-> - All settings controls from the Options section with labels and default values
-> - Start Game button with enable/disable state
-> - Layout proportions matching the container app pattern
+> **Each variant inherits the locked-in styling from Stages A-C and varies ONLY player count.**
 >
-> **Each Game-Early wireframe must show:**
-> - AppBar with back button, game title, DartboardConnectionInfo placeholder
-> - Game board / play area with all visual elements from the Screen Designs section
-> - Player indicators showing the appropriate number of players at early game state — **generic avatars only, no character images**
-> - Score / progress displays
-> - Skip Turn button
-> - Dartboard emulator section at BOTTOM of screen
-> - Visual representation of every option's effect from the Options section
->
-> **Each Game-Midgame wireframe must show:**
-> - Same layout as early game but with mid-game state
-> - Show progression (scores advanced, game elements changed)
->
-> **Game-modals wireframe must show:**
+> **Game-modals wireframe (single file with 3 stacked panels):**
 > - Game screen with Remove Darts modal overlay (including Edit Score button inside the modal)
 > - Dartboard Paused modal state
 > - Save Game modal (back-button triggered)
 >
-> **Each Results wireframe must show:**
-> - Winner display with character/avatar — **the winner card may show the game's character art for the winning player; player tiles still use generic avatars**
-> - Full player rankings with stats for all players at that count
-> - Play Again, Change Settings, Back to Menu buttons
-> - AppBar with game title, DartboardConnectionInfo placeholder
->
-> **Hard rules for every HTML file:**
-> - Use the game's actual color palette from the spec's Style section (exact hex codes — no "approximate" colors)
-> - Use Google Fonts links for the game's typography from the spec
-> - **Do NOT use the container app's design tokens** — no Nunito font, no Flame Orange (`#FF6B35`), no other container-only colors. Container tokens are reserved for container screens only (per `docs/architecture/design-system.md`).
-> - **Do NOT use game characters as player avatars** (per spec Rule 10 / `docs/development/adding-games.md`).
-> - Self-contained: inline CSS, no external dependencies beyond Google Fonts
-> - Responsive: use flexbox/grid, look correct at 1280x800 (primary target)
-> - Realistic placeholder content (player names, scores)
-> - Label shared components clearly (e.g., "DartboardEmulatorSection", "RemoveDartsModal")
-> - Show every option from the Options section and where its visual effect appears on the game screen
+> **Hard rules — same as Stage A. Do NOT introduce new colors/fonts; reuse the locked-in CSS.**
 >
 > **Report back:**
 > - Full list of files created (paths)
 > - A coverage table mapping each option from the spec's Options section to (a) where its menu control appears and (b) where its game-screen effect is shown
-> - Confirmation that no game character images are used as player avatars
+> - Confirmation that no game character images are used as player tile avatars
 > - Any spec ambiguities you had to resolve and how
->
-> **Hard rules — Do NOT:**
-> - Commit to master/main. Do NOT push to remote.
-> - Use Nunito or Flame Orange anywhere
-> - Use game characters as player avatars
 
-After the sub-agent returns, list the files yourself and spot-check at least the menu wireframe at one player count and the game-early wireframe at one player count.
+After the sub-agent returns, list the files yourself and spot-check the new player-count variants.
 
 ### Adversarial Review AR-2: Wireframe Completeness
 
@@ -334,7 +501,12 @@ After the sub-agent returns, list the files yourself and spot-check at least the
 > (h) Modal overlays are shown (Remove Darts, Save Game, Dartboard Paused)
 > (i) Every screen type has wireframes at min player count, max player count, AND at least one count in between
 > (j) **ResumeGameButton is positioned to the LEFT of DartboardConnectionInfo on the menu wireframe**
-> (k) **No game character images are used as player avatars in any wireframe**
+> (k) **No game character images are used as player TILE avatars** (winner card and active-player panel exceptions allowed per spec)
+> (l) **Real character images ARE used** on the game screen (descent track / coral cards / shields / etc.) and on the winner card — rendered NATIVELY without circle clipping (no `border-radius: 50%` + `overflow: hidden` masking the character art)
+> (m) **Background image is visible** on the game screen and results screen IF the spec specifies one (recurring miss in past sessions — flag it)
+> (n) **Option boxes have IDENTICAL heights** regardless of control type (slider, toggle, dropdown all render to the same `min-height`)
+> (o) **Spacing is consistent** — gap between option columns equals gap between option columns and the player list panel below
+> (p) **Dartboard emulator is positioned as a BOTTOM OVERLAY** that overlaps the bottom of the game UI — NOT as a space-reserving section that the game UI flows around. The game content fills full available height as if the dartboard didn't exist.
 >
 > Wireframe coverage:
 > | Screen/State | Wireframe File | Section Match | Player Counts |
@@ -345,21 +517,21 @@ After the sub-agent returns, list the files yourself and spot-check at least the
 
 Report AR-2 findings. Dispatch a corrective Sonnet sub-agent for any gaps before presenting to the user.
 
-### WIREFRAME APPROVAL GATE
+### Stage D: Final wireframe approval gate
 
-Present the wireframes to the user:
+Present the full wireframe set to the user:
 - List all wireframe files created
 - Tell the user to open `temp_wireframes/[GAME_NAME_SNAKE]/index.html` in their browser
-- Ask the user to review each screen and provide feedback
+- Ask the user to review the full set across player counts and the modals wireframe
 
-**STOP and wait for user feedback on the wireframes.**
+**STOP and wait for user approval.**
 
 The user may:
 - **Approve** — proceed to Phase 3
-- **Request changes** — dispatch a corrective Sonnet sub-agent with the specific feedback, present again, wait for approval
-- **Request major redesign** — dispatch a Sonnet sub-agent with the redesign brief, present again
+- **Request changes** — dispatch a corrective Sonnet sub-agent with specific feedback, present again, wait for approval
+- **Request major redesign** — return to the appropriate Stage (A/B/C) for re-approval first
 
-Do NOT proceed to Phase 3 until the user explicitly approves the wireframe designs. This is the cheapest place to catch design issues — before any code is written.
+Do NOT proceed to Phase 3 until the user explicitly approves the full wireframe set. This is the cheapest place to catch design issues — before any code is written.
 
 ---
 
@@ -395,6 +567,14 @@ Do NOT proceed to Phase 3 until the user explicitly approves the wireframe desig
 >    - Every option from the spec's Options section must have a code path that consumes it. Add a comment near the code citing the option name.
 >    - `saveGame()`, `restoreGame()`, `resumedSavedGameId`, `clearResumedSavedGameId()`
 >    - Game duration tracking via `_gameStartTime` and `endGame()`
+>    - **Standard turn increment rule (mandatory — applies to every game):** `totalTurns[playerId]` is incremented EXACTLY ONCE per turn — at the moment the player throws their FIRST dart of that turn. It is NEVER incremented elsewhere (not on the last dart, not in `advanceToNextPlayer`, not on takeout). Canonical pattern (in `processDartThrow`, after computing the dart but before applying it):
+>      ```dart
+>      if (game.dartsThrown[playerId] == 1) {
+>        game.totalTurns[playerId] = (game.totalTurns[playerId] ?? 0) + 1;
+>      }
+>      ```
+>      Reference: `target_tag_game.dart:347-352` (`_incrementTurnIfFirst`). The model MUST NOT also increment `totalTurns` in `advanceToNextPlayer` — that double-counts and breaks the "Landed in X turns" / "Won in N turns" displays.
+>    - **Asset path source of truth:** the model's `assetPath` getter for any character / variant enum MUST read paths from the Phase 1 manifest at `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md`, NOT from the spec's original asset paths. The spec may have used pre-rename names (e.g., `space_dog.png`) that no longer exist on disk after Phase 1's renaming pass. Always cross-reference the manifest.
 > 3. `test/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_test.dart`
 >    - Every test listed in the spec's Testing Plan game-logic section
 >    - At least one test per Options-section option exercising its effect
@@ -424,13 +604,15 @@ After the sub-agent returns, read `lib/providers/[GAME_NAME_SNAKE]_provider.dart
 > "I will now cross-reference every option from the spec's Options section against the provider code and tests. For each option I will list it by name and verify:
 > (a) The provider has logic that handles this option (cite the method/line)
 > (b) There is at least one test that exercises this option (cite the test name)
+> (c) **Turn increment rule:** `grep -n 'totalTurns' lib/models/[GAME_NAME_SNAKE]_game.dart lib/providers/[GAME_NAME_SNAKE]_provider.dart` — the increment (`totalTurns[...] = ... + 1`) MUST appear in EXACTLY ONE place: the provider's `processDartThrow` guarded by `if (game.dartsThrown[playerId] == 1)`. Any increment in `advanceToNextPlayer` or anywhere else is a double-count bug.
+> (d) **Asset paths in model match Phase 1 manifest:** for every enum value in the model with an `assetPath` getter, the returned path MUST exist on disk. Run `flutter test test/screens/games/[GAME_NAME_SNAKE]/` — if any character image fails to load, the unit tests still pass (they don't load images). The check is: read the model file and grep each `return 'assets/...'` path, then confirm the file exists.
 >
 > Coverage matrix:
 > | Option | Provider Logic | Test Coverage |
 > |--------|---------------|---------------|
 > | [name] | [method]      | [test name]   |
 >
-> I will report any option that lacks either provider logic or test coverage."
+> I will report any option that lacks either provider logic or test coverage, plus any turn-increment double-count or any model assetPath that doesn't exist on disk."
 
 Report AR-3 findings. Dispatch a corrective Sonnet sub-agent for any gaps before proceeding.
 
@@ -507,18 +689,84 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >
 > **4. Create `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart`:**
 > - Use the correct PlayerListPanel per spec (Dual vs Team)
-> - **Generic avatars only — do NOT assign game character images to player avatars**
-> - All settings from the Options section with correct controls bound to provider state
+> - **DualPlayerListPanel layout — MUST have bounded height** (recurring crash in past sessions): the panel's internal Column has `Expanded` children that crash with unbounded height constraints. Wrap pattern:
+>   - In wide layout (constraints.maxWidth > 800): `Expanded(child: DualPlayerListPanel(...))` so the panel takes remaining vertical space in the right-panel Column.
+>   - In narrow scrollable layout (constraints.maxWidth <= 800): `SizedBox(height: 400, child: DualPlayerListPanel(...))` because `Expanded` cannot live inside a `SingleChildScrollView`.
+>   - Reference: `monster_mash_menu_screen.dart` line 715 — `Expanded(child: DualPlayerListPanel(...))`.
+> - **Generic avatars only on player TILE — do NOT assign game character images to player tile avatars**
+> - All settings from the Options section with correct controls bound to provider state. **Option boxes MUST have IDENTICAL heights** regardless of control type (slider/toggle/dropdown). Use a fixed `min-height` so visual rhythm stays consistent across the settings row.
 > - Add Player Dialog integration
 > - DartboardConnectionInfo in AppBar (right side)
 > - **ResumeGameButton in AppBar, positioned to the LEFT of DartboardConnectionInfo**
-> - Menu state setup per `resume-game-button.md`: `_hasSavedGames` field, `_checkForSavedGames()` method, `WidgetsBinding.instance.addPostFrameCallback(...)` call in `initState()`
+> - **initState pattern (mandatory — Clockwork Quest reference):**
+>   ```dart
+>   @override
+>   void initState() {
+>     super.initState();
+>
+>     // 1. Restore settings from the most recent game (when reentering via
+>     //    Results → CHANGE MISSION). The provider retains `currentGame` after
+>     //    the game ends; CHANGE MISSION pushes a fresh menu without clearing
+>     //    it. Reading those values here makes the menu remember the user's
+>     //    last settings instead of resetting to defaults.
+>     final lastGame = context.read<[GAME_NAME_PASCAL]Provider>().currentGame;
+>     if (lastGame != null) {
+>       // Read each spec-defined setting from lastGame and assign to local state
+>       _settingA = lastGame.settingA;
+>       _settingB = lastGame.settingB;
+>       // ...
+>     }
+>
+>     // 2. Initial saved-games check — if any saves exist on first menu entry,
+>     //    AUTO-OPEN the resume modal. Subsequent re-checks (after games
+>     //    complete or user actions) only update _hasSavedGames; they do NOT
+>     //    auto-open the modal.
+>     WidgetsBinding.instance.addPostFrameCallback((_) async {
+>       final hasSaved = await SaveGameService().hasSavedGames('[GAME_NAME_SNAKE]');
+>       if (mounted) {
+>         setState(() {
+>           _hasSavedGames = hasSaved;
+>           _showResumeModal = hasSaved;  // ← auto-open on initial load
+>         });
+>       }
+>     });
+>   }
+>   ```
+>   Reference: `clockwork_quest_menu_screen.dart` lines 63-77 + 79-84.
 > - ResumeGameModal overlay (Stack pattern)
 > - Start button enable/disable logic (min players per spec Overview)
+> - **Spacing consistency:** the gap between option columns MUST equal the gap between the option row and the player list panel below. Use a single spacing constant.
 >
 > **5. Create `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart`:**
 > - Game board / play area per the Screen Designs section layout
-> - DartboardEmulatorSection at BOTTOM of the screen
+> - **Background image (if spec specifies one):** render it as `Positioned.fill(child: Image.asset(BACKGROUND_PATH, fit: BoxFit.cover))` as the FIRST child of the body Stack — AppBar + game content render on top of it. **Recurring miss in past sessions:** specs often list a background image but the implementation never uses it. Reference `clockwork_quest_results_screen.dart` lines ~222-228 for the canonical pattern.
+> - **STACK CHILD ORDER FOR THE GAME SCREEN BODY (mandatory — apply EXACTLY):**
+>   ```
+>   body: Stack(
+>     children: [
+>       // 1. Background image (if any) — rendered first (back layer)
+>       if (BACKGROUND_PATH != null)
+>         Positioned.fill(child: Image.asset(BACKGROUND_PATH, fit: BoxFit.cover)),
+>       // 2. Main game content — Column with Expanded(game area) + turn summary +
+>       //    SizedBox(height: ~320) reserving space for the dartboard emulator.
+>       //    The game UI fills FULL available height as if the emulator didn't exist;
+>       //    the SizedBox just reserves bottom space.
+>       Column(...),
+>       // 3. Modals (conditional, in order of priority)
+>       if (shouldPromptTakeout) RemoveDartsModal(...),
+>       if (...pausedConditions...) DartboardPausedModal(...),
+>       if (_showSaveModal) SaveGameModal(...),
+>       // 4. DartboardEmulatorSection — MUST BE THE LAST CHILD of the Stack,
+>       //    wrapped in Positioned(left:0, right:0, bottom:0). It renders ON TOP
+>       //    of all modals so its "DARTS REMOVED" button stays tappable.
+>       //    Reference: clockwork_quest_game_screen.dart lines 286-300, comment
+>       //    *"rendered after modal so its buttons stay on top"*.
+>       Positioned(left: 0, right: 0, bottom: 0,
+>           child: DartboardEmulatorSection(...)),
+>     ],
+>   )
+>   ```
+>   **The dartboard emulator is a TEMPORARY OVERLAY, not reserved space in the visual hierarchy.** The primary game UI (descent area, player panels, scores) should be designed to fill the FULL available screen height. The bottom SizedBox(~320) is just internal padding so widgets don't render UNDER the emulator at run time. Reference `monster_mash_game_screen.dart` for canonical full-height game UI + Positioned emulator overlay.
 > - DartboardEmulatorFAB
 > - **PlayToCompleteRunner integration:**
 >   - Field: `PlayToCompleteRunner? _playToCompleteRunner;`
@@ -532,17 +780,37 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > - Skip turn button
 > - DartboardConnectionInfo in AppBar
 > - **`announceRemoveDarts` is called UNCONDITIONALLY on takeout** (not inside a precedence `else`; the call is independent of which moment-announcement won precedence)
+> - **Auto-navigate to results when `provider.hasWinner` becomes true (mandatory — Clockwork Quest pattern):** at the top of the `build` method, after computing game state but before returning the widget tree:
+>   ```dart
+>   if (provider.hasWinner) {
+>     WidgetsBinding.instance.addPostFrameCallback((_) {
+>       _handleGameWon();
+>     });
+>   }
+>   ```
+>   Without this, navigation only fires via the takeout flow (after user clicks "DARTS REMOVED"), making win behavior non-deterministic in tests and confusing in real play. Reference: `clockwork_quest_game_screen.dart` lines 158-163.
+> - **Edit Score `initialSegments` MUST map a thrown miss (score 0) to `'Miss'`, NOT `'-'`.** The shared EditScoreDialog distinguishes between:
+>   - `'-'` or empty → dart NOT yet thrown (`ring=null` → invalidates the dialog Save button)
+>   - `'Miss'` → dart thrown as a miss (`ring='Miss'` → valid)
+>   - `'S20'` / `'D20'` / `'T20'` → numeric scoring darts
+>   - `'Bull'` (50) / `'25'` (outer bull)
+>
+>   Edit Score is only accessible AFTER the turn ends (3 darts thrown), so all 3 segments should be valid (`'Miss'`, `'Bull'`, `'25'`, or `'SX'`/`'DX'`/`'TX'` for some X). NEVER pass `'-'` for a thrown miss — it disables Save. The `onSubmit` handler must explicitly handle each segment type (`Miss`, `Bull`, `25`, regex match for `SDTsdt\d+`).
 > - All option effects visible per the spec's Options section
-> - **Generic avatars only — do NOT assign game character images to player avatars**
+> - **Generic avatars only on player TILE / rankings list — do NOT assign game character images to player avatars there.** Character images go on:
+>   - The active player panel (LEFT side of game screen) — render character at native size, NO circle clipping (no `border-radius: 50%` + `overflow: hidden` masking the cute character art into a circle). Use `BoxFit.contain`. Apply shape-conformal `filter: drop-shadow` for active-player glow.
+>   - The descent track / coral cards / shields / etc. (per spec's Screen Designs) — same: native size, no circle clipping.
+>   - The results screen winner card — same.
 >
 > **6. Create `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_results_screen.dart`:**
-> - Winner display + rankings (winner card may show character art; player tiles use generic avatars)
+> - **Background image (if spec specifies one):** render it as `Positioned.fill(child: Image.asset(BACKGROUND_PATH, fit: BoxFit.cover))` as the FIRST child of the body Stack — winner card + rankings + buttons render on top of it. Reference: `clockwork_quest_results_screen.dart` lines ~222-228.
+> - Winner display + rankings (**winner card uses character art rendered NATIVELY without circle clipping** — no `border-radius: 50%` + `overflow: hidden`. Use `BoxFit.contain` and `filter: drop-shadow` for any glow effect. Player tiles in the rankings list use generic avatars per project rule.)
 > - Victory music integration via VictoryMusicService
 > - Player stats update (`updatePlayerStats`) for ALL players (winners AND losers) with the SAME `gameDuration` value
 > - **Auto-delete saved game**: `_deleteResumedSavedGame()` runs INDEPENDENTLY in `WidgetsBinding.instance.addPostFrameCallback(...)` — it is NOT awaited inline after `_updatePlayerStats()` (per `save-resume-game.md`)
 > - Play Again, Change Settings, Back to Menu buttons
 > - **Exit / Back-to-Home button: use `Navigator.popUntil(context, (route) => route.isFirst)`. NEVER use `pushNamedAndRemoveUntil('/', (route) => false)`** — the `(route) => false` predicate breaks the navigation stack (per `docs/development/game-integration.md`).
-> - **Change Settings button: use `Navigator.popUntil(context, (route) => route.isFirst || route.settings.name == '/[GAME_NAME_SNAKE]_menu')`** — never `(route) => false`.
+> - **Change Settings button: use `Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => [GAME_NAME_PASCAL]MenuScreen()), (route) => route.isFirst)`** — keeps home in the stack so the menu's back button still works. NEVER use `(route) => false`.
 > - DartboardConnectionInfo in AppBar
 >
 > **7. Add the game card to `lib/screens/home_screen.dart`:**
@@ -604,8 +872,16 @@ After the sub-agent returns:
 > (p) **`_deleteResumedSavedGame()` runs INDEPENDENTLY in `addPostFrameCallback`** on the results screen — not awaited inline after `_updatePlayerStats()`
 > (q) **PlayToCompleteRunner is wired:** strategy file exists at `lib/services/play_to_complete/[GAME_NAME_SNAKE]_strategy.dart`, `PlayToCompleteButtonConfig.[gameName]()` exists, runner field is on game screen state, runner is disposed in `dispose()`
 > (r) **`HomeKeys.[gameName]Card`** exists in `lib/constants/test_keys.dart` and is used on the home_screen.dart card
-> (s) **Game characters are NOT used as player avatars** — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for any reference to character image asset paths in player tile / avatar widget code (must return zero matches in avatar context)
+> (s) **Game characters are NOT used as player TILE avatars** in the player tile / rankings list — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for character image asset paths in player tile / rankings list contexts (must return zero matches there). They ARE allowed on the active player panel + descent/coral/shield game UI + winner card.
 > (t) No Nunito font or Flame Orange (`#FF6B35`) used in game-screen styling
+> (u) **Background image (if spec specifies one) IS rendered on game AND results screens.** Grep for the background asset path in `lib/screens/games/[GAME_NAME_SNAKE]/`. Must appear in both `[GAME_NAME_SNAKE]_game_screen.dart` AND `[GAME_NAME_SNAKE]_results_screen.dart` if a background asset is in the spec's Asset Checklist. Recurring miss in past sessions.
+> (v) **Stack child order on the game screen body matches the canonical pattern:** background (if any) → main Column with reserved bottom space → modals → `Positioned(bottom: 0, child: DartboardEmulatorSection)` AS THE LAST CHILD. Read the actual Stack and verify the DartboardEmulatorSection is the LAST child, not buried inside the Column. The "DARTS REMOVED" button must render on top of all modals.
+> (w) **DualPlayerListPanel has bounded height** on the menu screen — wrapped in `Expanded(...)` for wide layout AND `SizedBox(height: ...)` for narrow scrollable layout. Read the menu screen and verify both branches.
+> (x) **Menu screen initState restores settings from `provider.currentGame`** when it's not null (so CHANGE MISSION preserves them). Read `initState()` and verify the read.
+> (y) **Menu screen initState auto-shows resume modal when saved games exist on initial entry** — `setState(() { _hasSavedGames = hasSaved; _showResumeModal = hasSaved; })` inside the initial `addPostFrameCallback`.
+> (z) **Game screen `build` auto-navigates to results when `provider.hasWinner` becomes true** via `addPostFrameCallback(_handleGameWon)`. Without this, navigation only fires via takeout flow which is non-deterministic in tests.
+> (aa) **Edit Score `initialSegments` maps thrown miss (score 0) to `'Miss'`, NOT `'-'`.** Read the menu/game screen's onEditScore handler and verify the segment building. The `'-'` value invalidates the dialog Save button; thrown misses must be `'Miss'`.
+> (bb) **Character images on game screen + winner card are rendered NATIVELY (no circle clipping).** Grep for `border-radius:.*5[0-9]%` and `BorderRadius.circular(.*5[0-9]\.0` near `Image.asset(.*characters/`. Avatar widgets in the player tile / rankings list MAY use circles (initials placeholders); the active player panel + descent/coral/shield + winner card MUST NOT clip the character art.
 >
 > For each item I will cite the file and line number, or report MISSING.
 > I will list every gap found."
@@ -887,10 +1163,62 @@ If FAIL:
 >
 > **6. Every UI test must call `await UITestHelpers.resetServerState()` at the start.** This is required for per-session DB isolation (Flutter Bug #67090 spawns a phantom 2nd browser; without per-session DBs the phantom contaminates results — see `docs/testing/ui-automation.md`).
 >
+> **6a. Edit Score test design rule (mandatory):** the Edit Score button lives INSIDE the RemoveDartsModal which only renders after 3 darts thrown OR after Skip Turn. Tests trying to open the Edit Score modal MUST throw 3 darts (or 2 misses + 1 scoring dart) BEFORE calling `openEditScore`. A test that throws only 1 dart and immediately calls `openEditScore` will fail to find the button — Edit Score is part of the turn-end takeout flow.
+>
+> Canonical pattern:
+> ```dart
+> await throwDartViaMock(tester, 10);   // dart 1
+> await throwMissViaMock(tester);       // dart 2 (miss — score 0)
+> await throwMissViaMock(tester);       // dart 3 (miss)
+> // RemoveDartsModal now visible — Edit Score button accessible
+> await openEditScore(tester);
+> // Dialog shows: ['S10', 'Miss', 'Miss']
+> // The 'Miss' segments have ring='Miss' so Save is enabled.
+> await EditScoreHelpers.setDart1(tester, 'S5');  // change dart 1
+> await updateScore(tester);  // tap Save — dialog closes, altitude updates
+> ```
+>
+> **6b. Edit Score Miss pre-selection test (mandatory — add to every game's edit_score subdirectory):** after throwing a miss, opening the Edit Score modal must show that dart's dropdown pre-selected to "Miss" (NOT to "-"). Reference test name: `miss_dart_preselected_in_edit_test.dart`. Assertion shape:
+> ```dart
+> // Throw a miss in the middle (dart 2)
+> await throwDartViaMock(tester, 10);   // dart 1: S10
+> await throwMissViaMock(tester);       // dart 2: Miss
+> await throwDartViaMock(tester, 5);    // dart 3: S5
+> await openEditScore(tester);
+> // Read the dart 2 dropdown widget and assert its current value text contains "Miss"
+> final dart2Dropdown = ElementFinders.getEditScoreDart2Dropdown();
+> expect(dart2Dropdown, findsOneWidget);
+> expect(find.descendant(of: dart2Dropdown, matching: find.text('Miss')),
+>     findsOneWidget,
+>     reason: 'Dart 2 (a thrown miss) should be pre-selected as "Miss" in the Edit modal');
+> ```
+>
 > **7. Create `integration_test/[GAME_NAME_SNAKE]/visual_validation/[GAME_NAME_SNAKE]_screenshot_test.dart`:**
 > - Capture every state listed in the spec's Testing Plan visual checklist
 > - **CRITICAL:** must be runnable via `test_driver/screenshot_test.dart` as the driver
 > - **CRITICAL:** do NOT use `pumpAndSettle()` — splash screen `CircularProgressIndicator` prevents settling. Use manual `pump()` sequences from `pump_sequences.dart`.
+> - **CRITICAL state-reset pattern between scenes:** when transitioning between screen scenarios within a single test (e.g., from "default game" to "Hard Landing ON game"), use the PROGRAMMATIC reset pattern instead of fragile back-from-game user-flow navigation:
+>   ```dart
+>   // 1. Capture the Navigator state from a still-mounted descendant
+>   //    (e.g., the game screen's Skip Turn button) BEFORE state-clearing.
+>   //    Capture as NavigatorState (not BuildContext) so the reference survives
+>   //    after the widget tree rebuilds.
+>   final navState = Navigator.of(
+>       tester.element(find.byKey([GAME_NAME_PASCAL]GameKeys.skipTurnButton).first));
+>   // 2. Clear the in-memory game state (this triggers a build that removes
+>   //    the game-screen widgets — that's why we captured navState first).
+>   ProviderHelpers.get[GAME_NAME_PASCAL]Provider(tester).clearGame();
+>   await tester.pump();
+>   await tester.pump();
+>   // 3. Pop everything back to home.
+>   navState.popUntil((route) => route.isFirst);
+>   await PumpSequences.navigation(tester);
+>   // 4. Re-enter the menu fresh by tapping the home-screen card.
+>   await tester.tap(config.getGameCard());
+>   await PumpSequences.navigation(tester);
+>   await PumpSequences.asyncDataLoad(tester);
+>   ```
+>   Avoid the SaveGameModal "DON'T SAVE" flow for state reset — multiple overlays + DartboardEmulatorSection in the Stack make tap propagation fragile.
 >
 > **8. Update ALL FOUR batch files** with the new game:
 > - `run_ui_tests.bat`
@@ -1011,6 +1339,8 @@ STEP 7 → STEP 8 decision
 
 ### STEP 1: CAPTURE (Sonnet sub-agent)
 
+**Hung-process safety:** Past sessions have seen the screenshot test deadlock for 25+ minutes when the game UI has a build error or missing widget. The orchestrator imposes a **60-second progress timeout** on the screenshot test process — if no new screenshot files appear in `temp_screenshots/` for 60 seconds AND the flutter_drive process hasn't exited, the orchestrator instructs the sub-agent to KILL chromedriver + chrome + flutter_drive, read the partial log, and assess what's wrong before retrying. Don't let a single deadlocked run burn 10+ minutes.
+
 **Sub-agent prompt template:**
 
 > You are running the screenshot capture for the **[GAME_NAME_DISPLAY]** game.
@@ -1122,6 +1452,11 @@ Present the full report to the user.
 - Dispatch a Sonnet sub-agent with the full fix list as a self-contained brief — include the screenshot filename, the specific issue, the file/line to change, and the desired result.
 - After the sub-agent returns, **go back to STEP 1.** Re-capture AND re-evaluate ALL screenshots — fixes can have unintended effects on other screens.
 
+**Per-screen iteration option (when full screenshot test breaks midway):** if the screenshot test fails partway through (e.g., screenshots 1-7 captured, 8-11 missing because step 8 throws), don't loop on the full test. Instead:
+1. Diagnose what's wrong with the screen at the failure point (read the partial log + assess widget tree state).
+2. Dispatch a focused diagnostic sub-agent to capture JUST the failing screen state via a minimal targeted test that sets up just enough state for that screen.
+3. Once that one screen renders, re-run the full screenshot test. Per-screen iteration is much faster than re-running the full ~4-minute screenshot capture for each fix.
+
 **NO (issues = 0):**
 - Continue to STEP 5.
 
@@ -1196,7 +1531,36 @@ All four conditions are now true at the same time:
 - Flutter non-UI tests: 100% pass
 - Server tests: 100% pass
 
-Proceed to AR-7.
+Proceed to STEP 10 (final user acceptance).
+
+---
+
+### STEP 10: FINAL USER ACCEPTANCE GATE (mandatory)
+
+After the orchestrator's iterative review passes, present the FINAL screenshot set + Phase 2 wireframes to the user for explicit acceptance:
+
+> "All gates have passed internally. Before we move to documentation, please review the final visual state:
+>
+> 1. Open `temp_screenshots/` and review every captured screenshot.
+> 2. Open `temp_wireframes/[GAME_NAME_SNAKE]/index.html` and compare against the Phase 2 wireframes you originally approved.
+>
+> Confirm:
+> - The implementation matches the wireframe intent (colors, fonts, layout, character/imagery use).
+> - All player counts (min/mid/max) render correctly.
+> - All option states are represented (defaults, alternates, ON/OFF toggles).
+> - All screens look polished and family-friendly at scale.
+>
+> Reply: ✅ **Accept** (proceed to AR-7) — OR — 🔧 list specific UI changes you'd like."
+
+**STOP and wait for user response.**
+
+If the user requests changes:
+- Dispatch a Sonnet sub-agent to apply the UI fixes to the relevant screen file(s).
+- After the sub-agent returns, **go back to STEP 1.** Re-capture AND re-evaluate ALL screenshots.
+- Then re-run the UI test suite (STEP 5) and non-UI tests (STEP 7).
+- Repeat the entire Phase 8 cycle until the user explicitly accepts.
+
+**Do NOT proceed to AR-7 until the user has explicitly accepted.** The orchestrator's "all gates pass" is necessary but not sufficient — final visual judgement is the user's.
 
 ---
 
@@ -1580,6 +1944,21 @@ Per `docs/critical-rules/cross-platform.md`:
 - **Sub-agent goes off-script (modifies files outside its brief):** revert the unintended changes (`git checkout -- <file>`), tighten the prompt's "Do NOT" list, dispatch a fresh sub-agent.
 - **Sub-agent's tests pass but the AR finds gaps:** the AR is more rigorous than the sub-agent's self-verification — trust the AR, dispatch corrective sub-agent.
 - **Sub-agent guesses wrong on hyphen vs underscore:** the prompt did not pass both `[GAME_NAME_SNAKE]` and `[GAME_NAME_HYPHEN]` clearly — fix the prompt and re-dispatch.
+
+### Per-Phase Auto-Revert Audit (mandatory, applies in YOLO mode)
+
+After EVERY phase completes (and before moving to the next), the orchestrator runs:
+
+```bash
+git diff master...HEAD --name-only
+```
+
+For each file in the output, verify it's within the additive allowed zones (see "Universal Rule: Limit Changes to the New Game" at the top of this skill). Any file outside those zones triggers:
+1. `git checkout master -- <file>` to revert.
+2. A corrective Sonnet sub-agent dispatch with a tightened prompt that includes the specific violation.
+3. The phase's gates re-run after the revert + corrective fix.
+
+This catches sub-agents that drift out of scope before the divergence cascades into AR-9 / Gate 5.
 
 ### Prohibited Actions
 - NEVER skip a phase or gate for any reason.
