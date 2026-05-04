@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
+import '../../shared/edit_score_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '_helpers.dart';
 
@@ -21,13 +22,12 @@ void main() {
 
     expect(ProviderHelpers.carnivalDerbyHasWinner(tester), isTrue);
 
-    // Edit to remove win: S20 + S20 + S20 = 60 pts (below 100, no win)
-    // Only change rings — numbers stay 20, avoiding CD number-button ambiguity
-    await openEditScore(tester);
-    await setDartInEditScore(tester, 0, 'Single (outer)'); // D1: T20 -> S20
-    await setDartInEditScore(tester, 1, 'Single (outer)'); // D2: T20 -> S20
-    // D3 is already S20, no change needed
-    await updateScore(tester);
+    // Edit to remove win: D5 + D5 + D5 = 30 pts (below 100, no win)
+    // Use Double to avoid CD's scoreDisplayTransform conflict: D5 shows
+    // "10" in the score box while the number button shows "5" — unique match.
+    // Single values conflict because S5 shows "5" in both score box and button.
+    await EditScoreHelpers.editScoreAndSave(tester, config,
+        dart1: 'D5', dart2: 'D5', dart3: 'D5');
 
     expect(ProviderHelpers.carnivalDerbyHasWinner(tester), isFalse);
 
