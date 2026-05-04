@@ -38,9 +38,9 @@ void main() {
 
     expect(ProviderHelpers.targetTagHasWinner(tester), isTrue);
 
-    // Edit to remove win: change all 3 darts to Miss
+    // Edit to remove win: change dart1 to S1 (neutral, not anyone's target), rest Miss
     await EditScoreHelpers.editScoreAndSave(tester, config,
-        dart1: 'Miss', dart2: 'Miss', dart3: 'Miss');
+        dart1: 'S1', dart2: 'Miss', dart3: 'Miss');
 
     expect(ProviderHelpers.targetTagHasWinner(tester), isFalse);
 

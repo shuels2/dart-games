@@ -38,8 +38,8 @@ void main() {
     // Should be a winner after hitting bullseye
     expect(provider.hasWinner, isTrue);
 
-    // Edit: change dart 1 to Miss — should remove winner
-    await EditScoreHelpers.editScoreAndSave(tester, config, dart1: 'Miss');
+    // Edit: change dart 1 to S1 (gear 1 already completed, won't advance) — should remove winner
+    await EditScoreHelpers.editScoreAndSave(tester, config, dart1: 'S1');
     expect(provider.hasWinner, isFalse);
 
     // Confirm darts removed

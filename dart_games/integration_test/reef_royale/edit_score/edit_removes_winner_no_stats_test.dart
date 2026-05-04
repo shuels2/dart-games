@@ -97,9 +97,9 @@ void main() {
     // Winner should exist
     expect(ProviderHelpers.reefRoyaleHasWinner(tester), isTrue);
 
-    // Edit to remove winner: change all darts to misses
+    // Edit to remove winner: change dart1 to S1 (not a RR target), rest Miss
     await EditScoreHelpers.editScoreAndSave(tester, config,
-        dart1: 'Miss', dart2: 'Miss', dart3: 'Miss');
+        dart1: 'S1', dart2: 'Miss', dart3: 'Miss');
 
     // Winner should be removed
     expect(ProviderHelpers.reefRoyaleHasWinner(tester), isFalse);
