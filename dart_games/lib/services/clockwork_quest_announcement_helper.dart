@@ -135,4 +135,8 @@ class ClockworkQuestAnnouncementHelper {
       AudioPriority.turnTransition,
     );
   }
+
+  void dispose() {
+    _queueService.dispose();
+  }
 }

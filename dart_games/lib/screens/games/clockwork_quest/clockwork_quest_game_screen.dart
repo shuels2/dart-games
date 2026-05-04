@@ -70,14 +70,31 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         _handleDartboardEvent(event);
       });
     }
+
+    _audioQueue!.announceGameStart();
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) _announceCurrentPlayerTurn();
+    });
   }
 
   @override
   void dispose() {
     _playToCompleteRunner?.dispose();
     _dartboardSubscription?.cancel();
+    _audioQueue?.dispose();
     _dartboardEmulatorController.dispose();
     super.dispose();
+  }
+
+  void _announceCurrentPlayerTurn() {
+    final clockworkProvider = context.read<ClockworkQuestProvider>();
+    final playerProvider = context.read<PlayerProvider>();
+    final currentPlayerId = clockworkProvider.getCurrentPlayerId();
+    if (currentPlayerId == null) return;
+    final player = playerProvider.getPlayerById(currentPlayerId);
+    if (player != null) {
+      _audioQueue?.announcePlayerTurn(player);
+    }
   }
 
   void _onPlayToComplete() {
@@ -120,8 +137,76 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final throwData = event['data']['payload'];
     final sector = throwData['sector'] as String;
 
+    final currentPlayerId = clockworkProvider.getCurrentPlayerId();
+
     clockworkProvider.processDartThrow(sector);
+
+    if (!_dartboardEmulatorController.isAutoPlaying && currentPlayerId != null) {
+      _announceDartResult(clockworkProvider, currentPlayerId);
+    }
+
+    final dartsThrown = clockworkProvider.getCurrentPlayerDartsThrown();
+    if (!_dartboardEmulatorController.isAutoPlaying &&
+        (dartsThrown >= 3 || clockworkProvider.hasWinner)) {
+      final playerProvider = context.read<PlayerProvider>();
+      final player = currentPlayerId != null
+          ? playerProvider.getPlayerById(currentPlayerId)
+          : null;
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted && player != null) {
+          _audioQueue?.announceRemoveDarts(player);
+        }
+      });
+    }
+
     setState(() {});
+  }
+
+  void _announceDartResult(
+      ClockworkQuestProvider provider, String playerId) {
+    final playerProvider = context.read<PlayerProvider>();
+    final player = playerProvider.getPlayerById(playerId);
+    if (player == null) return;
+
+    final hitTargetList = provider.getDartThrowHitTarget(playerId);
+    final multiplierList = provider.getDartThrowMultiplier(playerId);
+    final advancedList = provider.getDartThrowAdvanced(playerId);
+    final completedLapList = provider.getDartThrowCompletedLap(playerId);
+    if (hitTargetList.isEmpty) return;
+
+    final hitTarget = hitTargetList.last;
+    final multiplier = multiplierList.last;
+    final advanced = advancedList.last;
+    final completedLap = completedLapList.last;
+    final newTarget = provider.getPlayerCurrentTarget(playerId);
+    final completedTargets = provider.getPlayerCompletedTargets(playerId);
+
+    if (provider.hasWinner) return;
+
+    if (completedLap) {
+      _audioQueue?.announceLapComplete();
+    } else if (hitTarget && advanced && newTarget == 21) {
+      _audioQueue?.announceBullseyeHit();
+    } else if (hitTarget && advanced) {
+      if (multiplier == 3) {
+        _audioQueue?.announceTripleAdvance(player);
+      } else if (multiplier == 2) {
+        _audioQueue?.announceDoubleAdvance(player);
+      } else {
+        _audioQueue?.announceGearActivated(newTarget - 1);
+      }
+    } else if (!hitTarget) {
+      _audioQueue?.announceMiss();
+    }
+
+    if (newTarget == 21 && !completedLap) {
+      _audioQueue?.announceBullseyeTarget();
+    } else if (completedTargets.length == 10) {
+      _audioQueue?.announceHalfway(player);
+    } else if (completedTargets.length >= 18) {
+      final gearsLeft = 20 - completedTargets.length;
+      _audioQueue?.announceNearVictory(player, gearsLeft);
+    }
   }
 
   void _handleTakeoutFinished() {
@@ -136,6 +221,13 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     if (!clockworkProvider.isGameActive) return;
 
     clockworkProvider.confirmDartsRemoved();
+
+    if (!_dartboardEmulatorController.isAutoPlaying) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _announceCurrentPlayerTurn();
+      });
+    }
+
     setState(() {});
   }
 

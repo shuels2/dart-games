@@ -3,7 +3,7 @@ import 'game_announcement_models.dart';
 /// Sound effect asset definitions for Lunar Lander.
 /// Start/end times trim each clip to the relevant portion.
 class LunarLanderSoundEffects {
-  static const String _basePath = 'assets/games/lunar_lander/sounds/';
+  static const String _basePath = 'games/lunar_lander/sounds/';
 
   /// Rocket thruster burn — plays from 0.5s to 3.0s
   static const SoundEffectConfig thrusterBurn = SoundEffectConfig(

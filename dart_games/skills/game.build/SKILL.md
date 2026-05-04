@@ -1087,6 +1087,14 @@ After the sub-agent returns:
 > (z) **Victory flow waits for DARTS REMOVED** — the game screen MUST NOT auto-navigate to results when `hasWinner` becomes true. Grep the game screen for `addPostFrameCallback(_handleGameWon)` and `simulateTakeoutFinished` inside `hasWinner` blocks — neither should exist. `_handleGameWon()` must ONLY be called from `_handleTakeoutFinished()`. The `shouldPromptTakeout` condition should be `dartsThrown >= 3 || provider.hasWinner` so RemoveDartsModal (and the Edit Score button inside it) is always accessible after a winning turn.
 > (aa) **Edit Score `initialSegments` maps thrown miss (score 0) to `'Miss'`, NOT `'-'`.** Read the menu/game screen's onEditScore handler and verify the segment building. The `'-'` value invalidates the dialog Save button; thrown misses must be `'Miss'`.
 > (bb) **Character images on game screen + winner card are rendered NATIVELY (no circle clipping).** Grep for `border-radius:.*5[0-9]%` and `BorderRadius.circular(.*5[0-9]\.0` near `Image.asset(.*characters/`. Avatar widgets in the player tile / rankings list MAY use circles (initials placeholders); the active player panel + descent/coral/shield + winner card MUST NOT clip the character art.
+> (cc) **Sound effect files follow naming convention** — list all files in `assets/games/[GAME_NAME_SNAKE]/sounds/` and verify every filename uses the `GameName-SoundName.mp3` pattern (PascalCase, hyphen separator). No snake_case filenames.
+> (dd) **Sound effects config `_basePath` has no `assets/` prefix** — read the `_basePath` constant in `lib/services/[GAME_NAME_SNAKE]_sound_effects.dart` and verify it starts with `'games/'` not `'assets/games/'`.
+> (ee) **Sound effects config has trim times** — verify every `SoundEffectConfig` has a non-null `endSeconds` value matching the spec's Asset Checklist.
+> (ff) **Announcement helper has `dispose()` method** — read the helper class and verify a `void dispose()` method exists that calls `_queueService.dispose()`.
+> (gg) **Game screen calls `announceGameStart()` in `_initializeGame()`** — grep the game screen for `announceGameStart` and verify it fires after `_audioQueue` creation. Also verify first turn is announced with a 2s delay.
+> (hh) **Game screen disposes `_audioQueue`** — read the `dispose()` method and verify `_audioQueue?.dispose()` is present.
+> (ii) **Per-dart announcements wired in `_handleDartThrow`** — verify the game screen calls announcement methods after `processDartThrow()` with an `isAutoPlaying` guard. Announcements must follow precedence (victory > milestone > advance > miss).
+> (jj) **Game-with-announcements integration test exists** — verify `test/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_with_announcements_test.dart` exists with lifecycle, moment, precedence, and auto-play suppression tests.
 >
 > For each item I will cite the file and line number, or report MISSING.
 > I will list every gap found."
@@ -1133,14 +1141,37 @@ Before invoking the sub-agent, work through the worst-case stacking analysis on 
 > - Use the "gather facts, pick winner" pattern: collect every event the dart triggered, then select one moment announcement based on the precedence chain
 > - **The game screen's takeout handler must call `announceRemoveDarts` UNCONDITIONALLY** (not inside a precedence `else` block — the call is independent of the moment-announcement winner)
 >
+> **Mandatory conventions (all 6 existing games follow these — do NOT diverge):**
+>
+> - **Sound file naming:** `GameName-SoundName.mp3` (PascalCase game name, PascalCase sound name, hyphen separator). Example: `ClockworkQuest-GearClick.mp3`, `LunarLander-ThrusterBurn.mp3`. Do NOT use snake_case filenames.
+> - **Sound effects config `_basePath`:** `'games/[game_name_snake]/sounds/'` — NO `assets/` prefix. The Flutter asset system prepends `assets/` automatically.
+> - **Sound trim times:** Every `SoundEffectConfig` MUST have an `endSeconds` value from the spec's Asset Checklist. Do NOT leave `endSeconds: null` — untrimmed audio makes the game feel sluggish.
+> - **Announcement helper `dispose()`:** Every helper class MUST have a `void dispose() { _queueService.dispose(); }` method. The game screen calls `_audioQueue?.dispose()` in its `dispose()`.
+> - **Game screen audio wiring checklist:**
+>   1. `_audioQueue` field typed as the game's `AnnouncementHelper?`
+>   2. Initialized in `_initializeGame()` via `GameAnnouncementQueueService` + `loadSettings()`
+>   3. `announceGameStart()` called after init
+>   4. First turn announced with 2000ms delay
+>   5. Per-dart moment announcements in `_handleDartThrow` (with precedence chain + `isAutoPlaying` guard)
+>   6. Remove darts announcement at 1500ms delay when `shouldPromptTakeout`
+>   7. Turn announcement in `_handleTakeoutFinished` at 500ms delay (with `isAutoPlaying` guard)
+>   8. `_audioQueue?.dispose()` in `dispose()`
+> - **Test file:** `[GAME_NAME_SNAKE]_game_with_announcements_test.dart` testing full game flow with announcements (~18 tests covering lifecycle, moments, milestones, precedence, auto-play suppression)
+>
 > **Files to create:**
 > 1. `lib/services/[GAME_NAME_SNAKE]_sound_effects.dart` — every sound file from the Asset Checklist + Announcements section with correct start/end times
-> 2. `lib/services/[GAME_NAME_SNAKE]_announcement_helper.dart` — every announcement event with correct priority levels and sound effect associations, implementing the stacking precedence rules above
+> 2. `lib/services/[GAME_NAME_SNAKE]_announcement_helper.dart` — every announcement event with correct priority levels and sound effect associations, implementing the stacking precedence rules above. MUST include `dispose()` method.
 > 3. `test/mocks/mock_[GAME_NAME_SNAKE]_audio_queue_service.dart`
 > 4. `test/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_announcement_test.dart`
 >    - Every test from the spec's Announcements testing section
 >    - A test verifying max 2 announcements fire on the worst-case dart
 >    - A test verifying "Remove your darts" always plays (cannot be suppressed)
+> 5. `test/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_with_announcements_test.dart`
+>    - Integration tests verifying announcements fire correctly from game state changes via the provider
+>    - Lifecycle tests (game start, turn change, remove darts)
+>    - Per-dart moment tests (hit, miss, advance, milestone events)
+>    - Precedence tests (higher-priority events suppress lower-priority)
+>    - Auto-play suppression tests (no announcements fire during Play-to-Complete)
 >
 > **Files to modify:**
 > - `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart` — wire the announcement helper into dart processing; verify `announceRemoveDarts` is called unconditionally on takeout (this was a Phase 4 requirement; if not yet present, add it now)
@@ -2096,6 +2127,7 @@ Verify EVERY item:
 - [ ] **Play-to-complete tests present and passing**
 - [ ] **2 mandatory player-count tests present and passing** (`min_player_count_test.dart`, `max_player_count_test.dart`)
 - [ ] **Mandatory opponent display test present and passing** (`opponent_display_test.dart`)
+- [ ] **Game-with-announcements integration test present and passing** (`[game]_game_with_announcements_test.dart`)
 - [ ] **Visual validation contains screenshot test PLUS at least 4 programmatic tests** (dart indicators, active player highlight, score/state threshold, conditional UI)
 - [ ] All 4 batch files updated (run_ui_tests, run_ui_tests_stub, run_ui_tests_parallel, run_ui_tests_parallel_stub)
 - [ ] All 12 mirrored shared helpers synchronized (test/shared/ matches integration_test/shared/)
