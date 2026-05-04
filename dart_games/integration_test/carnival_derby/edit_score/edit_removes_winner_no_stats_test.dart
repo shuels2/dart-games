@@ -21,12 +21,12 @@ void main() {
 
     expect(ProviderHelpers.carnivalDerbyHasWinner(tester), isTrue);
 
-    // Edit to remove win: S1 + S1 + S1 = 3 pts (no win)
-    // Use CD-specific helpers to avoid ring-button layout ambiguity
+    // Edit to remove win: S20 + S20 + S20 = 60 pts (below 100, no win)
+    // Only change rings — numbers stay 20, avoiding CD number-button ambiguity
     await openEditScore(tester);
-    await setDartInEditScore(tester, 0, 'Single (outer)', number: 1); // D1: T20 -> S1
-    await setDartInEditScore(tester, 1, 'Single (outer)', number: 1); // D2: T20 -> S1
-    await setDartInEditScore(tester, 2, 'Single (outer)', number: 1); // D3: S20 -> S1
+    await setDartInEditScore(tester, 0, 'Single (outer)'); // D1: T20 -> S20
+    await setDartInEditScore(tester, 1, 'Single (outer)'); // D2: T20 -> S20
+    // D3 is already S20, no change needed
     await updateScore(tester);
 
     expect(ProviderHelpers.carnivalDerbyHasWinner(tester), isFalse);
