@@ -26,11 +26,14 @@ class _SaveGameModalState extends State<SaveGameModal> {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: Container(
-        key: SaveGameModalKeys.overlay,
-        color: Colors.black.withOpacity(0.7),
-        child: Center(
-          child: _buildModalContent(),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Container(
+          key: SaveGameModalKeys.overlay,
+          color: Colors.black.withOpacity(0.7),
+          child: Center(
+            child: _buildModalContent(),
+          ),
         ),
       ),
     );

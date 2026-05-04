@@ -254,17 +254,6 @@ class DartGamesApp extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               elevation: 4,
               shadowColor: Colors.black45,
-              textStyle: const TextStyle(decoration: TextDecoration.none),
-            ),
-          ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(
-              textStyle: const TextStyle(decoration: TextDecoration.none),
-            ),
-          ),
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(
-              textStyle: const TextStyle(decoration: TextDecoration.none),
             ),
           ),
           cardTheme: CardThemeData(

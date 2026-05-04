@@ -69,10 +69,12 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
     final config = widget.config;
 
     return Positioned.fill(
-      child: Container(
-        key: ResumeGameModalKeys.overlay,
-        color: Colors.black.withOpacity(0.7),
-        child: Center(
+      child: Material(
+        type: MaterialType.transparency,
+        child: Container(
+          key: ResumeGameModalKeys.overlay,
+          color: Colors.black.withOpacity(0.7),
+          child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: config.maxWidth,
@@ -147,6 +149,7 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );
