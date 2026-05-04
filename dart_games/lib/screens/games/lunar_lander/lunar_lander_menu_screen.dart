@@ -3,11 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/test_keys.dart';
 import '../../../models/saved_game_metadata.dart';
+import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/lunar_lander_provider.dart';
 import '../../../services/save_game_service.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../widgets/player_list_panel/dual_player_list_panel.dart';
 import '../../../widgets/player_list_panel/dual_player_list_panel_config.dart';
 import '../../../widgets/resume_game_button.dart';
@@ -56,8 +58,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
       // game exists, auto-open the resume modal. Subsequent re-checks (after
       // games complete or user actions) only update _hasSavedGames; they do
       // NOT auto-open the modal. Mirrors the Clockwork Quest pattern.
-      final hasSaved =
-          await SaveGameService().hasSavedGames('lunar_lander');
+      final hasSaved = await SaveGameService().hasSavedGames('lunar_lander');
       if (mounted) {
         setState(() {
           _hasSavedGames = hasSaved;
@@ -102,6 +103,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dartboardProvider = context.watch<DartboardProvider>();
     return Stack(
       children: [
         Scaffold(
@@ -152,32 +154,32 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
                 builder: (context, constraints) {
                   if (constraints.maxWidth > 800) {
                     return Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 40,
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: _buildLeftPanel(),
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 40,
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: _buildLeftPanel(),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 60,
+                          child: _buildRightPanel(scrollable: false),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          _buildLeftPanel(),
+                          _buildRightPanel(),
+                        ],
                       ),
-                    ),
-                    Expanded(
-                      flex: 60,
-                      child: _buildRightPanel(scrollable: false),
-                    ),
-                  ],
-                );
-              } else {
-                return SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _buildLeftPanel(),
-                      _buildRightPanel(),
-                    ],
-                  ),
-                );
-              }
-            },
+                    );
+                  }
+                },
               ),
             ],
           ),
@@ -199,6 +201,13 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
               setState(() => _showResumeModal = false);
               _checkForSavedGames();
             },
+          ),
+        // Dartboard paused modal — last child, paints on top.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.lunarLander(),
           ),
       ],
     );
@@ -257,9 +266,12 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            _buildBulletPoint('Start with altitude 200 and Hard Landing OFF for the most fun.'),
-            _buildBulletPoint('As you get better, turn Hard Landing ON for a real challenge.'),
-            _buildBulletPoint('Plan your last few darts carefully — exact landings win missions!'),
+            _buildBulletPoint(
+                'Start with altitude 200 and Hard Landing OFF for the most fun.'),
+            _buildBulletPoint(
+                'As you get better, turn Hard Landing ON for a real challenge.'),
+            _buildBulletPoint(
+                'Plan your last few darts carefully — exact landings win missions!'),
           ],
         ),
       ),
@@ -352,20 +364,24 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
             child: DualPlayerListPanel(
               config: DualPlayerListPanelConfig.lunarLander(),
               addPlayerButtonKey: LunarLanderMenuKeys.addPlayerButton,
-              addPlayerButtonEmptyStateKey: LunarLanderMenuKeys.addPlayerButtonEmptyState,
+              addPlayerButtonEmptyStateKey:
+                  LunarLanderMenuKeys.addPlayerButtonEmptyState,
               playerListViewKey: LunarLanderMenuKeys.playerListView,
               playerTileKey: (id) => LunarLanderMenuKeys.playerTile(id),
-              removePlayerButtonKey: (id) => LunarLanderMenuKeys.removePlayerButton(id),
+              removePlayerButtonKey: (id) =>
+                  LunarLanderMenuKeys.removePlayerButton(id),
             ),
           )
         : Expanded(
             child: DualPlayerListPanel(
               config: DualPlayerListPanelConfig.lunarLander(),
               addPlayerButtonKey: LunarLanderMenuKeys.addPlayerButton,
-              addPlayerButtonEmptyStateKey: LunarLanderMenuKeys.addPlayerButtonEmptyState,
+              addPlayerButtonEmptyStateKey:
+                  LunarLanderMenuKeys.addPlayerButtonEmptyState,
               playerListViewKey: LunarLanderMenuKeys.playerListView,
               playerTileKey: (id) => LunarLanderMenuKeys.playerTile(id),
-              removePlayerButtonKey: (id) => LunarLanderMenuKeys.removePlayerButton(id),
+              removePlayerButtonKey: (id) =>
+                  LunarLanderMenuKeys.removePlayerButton(id),
             ),
           );
 
@@ -377,110 +393,121 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
         SizedBox(
           height: 68,
           child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Altitude slider box
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _spaceBlack.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _earthBlue, width: 2),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Altitude: ${_startingAltitude.toInt()}',
-                      style: GoogleFonts.orbitron(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: _starWhite,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Altitude slider box
+              Expanded(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _spaceBlack.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _earthBlue, width: 2),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Altitude: ${_startingAltitude.toInt()}',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: _starWhite,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Slider(
-                        key: LunarLanderMenuKeys.altitudeSlider,
-                        value: _startingAltitude,
-                        min: 100,
-                        max: 500,
-                        divisions: 40, // (500-100)/10 = 40 steps
-                        label: _startingAltitude.toInt().toString(),
-                        activeColor: _rocketFlame,
-                        onChanged: (value) {
-                          // Snap to multiples of 10
-                          setState(() => _startingAltitude = (value / 10).round() * 10.0);
-                        },
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Slider(
+                          key: LunarLanderMenuKeys.altitudeSlider,
+                          value: _startingAltitude,
+                          min: 100,
+                          max: 500,
+                          divisions: 40, // (500-100)/10 = 40 steps
+                          label: _startingAltitude.toInt().toString(),
+                          activeColor: _rocketFlame,
+                          onChanged: (value) {
+                            // Snap to multiples of 10
+                            setState(() => _startingAltitude =
+                                (value / 10).round() * 10.0);
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Hard Landing toggle box
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _spaceBlack.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _hardLandingEnabled ? _rocketFlame : _earthBlue,
-                    width: 2,
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Hard Landing',
-                      style: GoogleFonts.orbitron(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: _starWhite,
+              ),
+              const SizedBox(width: 8),
+              // Hard Landing toggle box
+              Expanded(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _spaceBlack.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _hardLandingEnabled ? _rocketFlame : _earthBlue,
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Hard Landing',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: _starWhite,
+                        ),
                       ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Off',
-                          style: GoogleFonts.exo2(
-                            fontSize: 13,
-                            fontWeight: !_hardLandingEnabled ? FontWeight.bold : FontWeight.normal,
-                            color: !_hardLandingEnabled ? _starWhite : _starWhite.withOpacity(0.5),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Off',
+                            style: GoogleFonts.exo2(
+                              fontSize: 13,
+                              fontWeight: !_hardLandingEnabled
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: !_hardLandingEnabled
+                                  ? _starWhite
+                                  : _starWhite.withOpacity(0.5),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        Transform.scale(
-                          scale: 0.8,
-                          child: Switch(
-                            key: LunarLanderMenuKeys.hardLandingSwitch,
-                            value: _hardLandingEnabled,
-                            activeColor: _rocketFlame,
-                            onChanged: (value) {
-                              setState(() => _hardLandingEnabled = value);
-                            },
+                          const SizedBox(width: 4),
+                          Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              key: LunarLanderMenuKeys.hardLandingSwitch,
+                              value: _hardLandingEnabled,
+                              activeColor: _rocketFlame,
+                              onChanged: (value) {
+                                setState(() => _hardLandingEnabled = value);
+                              },
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'On',
-                          style: GoogleFonts.exo2(
-                            fontSize: 13,
-                            fontWeight: _hardLandingEnabled ? FontWeight.bold : FontWeight.normal,
-                            color: _hardLandingEnabled ? _rocketFlame : _starWhite.withOpacity(0.5),
+                          const SizedBox(width: 4),
+                          Text(
+                            'On',
+                            style: GoogleFonts.exo2(
+                              fontSize: 13,
+                              fontWeight: _hardLandingEnabled
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: _hardLandingEnabled
+                                  ? _rocketFlame
+                                  : _starWhite.withOpacity(0.5),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
           ),
         ),
         const SizedBox(height: 16),

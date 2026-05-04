@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
 import '../../../widgets/player_list_panel/player_list_panel.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
 import '../../../constants/test_keys.dart';
@@ -51,7 +53,8 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
       _playerProvider!.clearSelection();
 
       // Preselect players if provided
-      if (widget.preselectedPlayerIds != null && widget.preselectedPlayerIds!.isNotEmpty) {
+      if (widget.preselectedPlayerIds != null &&
+          widget.preselectedPlayerIds!.isNotEmpty) {
         final playerProvider = context.read<PlayerProvider>();
         for (final playerId in widget.preselectedPlayerIds!) {
           final player = playerProvider.getPlayerById(playerId);
@@ -89,184 +92,204 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dartboardProvider = context.watch<DartboardProvider>();
     return Stack(
       children: [
         Scaffold(
           backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
           appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                Color(0xFFE63946), // Lava Red (left)
-                Color(0xFFFFD700), // Canary Yellow (center)
-                Color(0xFF48CAE4), // Electric Teal (right)
-              ],
-              stops: [0.0, 0.66, 1.0], // Red lasts twice as long
-            ),
-          ),
-          child: AppBar(
-            leading: IconButton(
-              key: CarnivalDerbyMenuKeys.backButton,
-              icon: Icon(
-                Icons.arrow_back,
-                color: const Color(0xFFF1FAEE), // Cloud Dancer white
-                size: 32, // Bigger size
-                shadows: [
-                  const Shadow(
-                    color: Color(0xFFFFD700), // Canary Yellow glow
-                    blurRadius: 10,
-                  ),
-                  const Shadow(
-                    color: Color(0xFFFFD700),
-                    blurRadius: 20,
-                  ),
-                ],
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-              hoverColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              splashColor: Colors.transparent,
-            ),
-            title: Text(
-              'Carnival Derby Game Setup',
-              style: GoogleFonts.rye(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-                color: const Color(0xFFF1FAEE), // Cloud Dancer
-                shadows: [
-                  Shadow(
-                    color: const Color(0xFFFFD700), // Canary Yellow glow
-                    blurRadius: 10,
-                  ),
-                  Shadow(
-                    color: const Color(0xFFFFD700),
-                    blurRadius: 20,
-                  ),
-                ],
-              ),
-            ),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            actions: [
-              ResumeGameButton(
-                key: CarnivalDerbyMenuKeys.resumeGameButton,
-                hasSavedGames: _hasSavedGames,
-                onPressed: () => setState(() => _showResumeModal = true),
-                color: const Color(0xFFF1FAEE), // Cloud Dancer white
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: DartboardConnectionInfo(
-                  config: DartboardConnectionInfoConfig.carnivalDerby(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Rotated wood plank background
-          Positioned.fill(
-            child: Transform.scale(
-              scale: 2.0, // Scale up to ensure coverage
-              child: Transform.rotate(
-                angle: 1.5708, // 90 degrees in radians (π/2)
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B5E3C), // Warm Cedar base color
-                    image: DecorationImage(
-                      image: AssetImage('assets/games/carnival_derby/images/CarnivalDerby-WoodPlanks.jpg'),
-                      fit: BoxFit.cover,
-                      repeat: ImageRepeat.repeat,
-                      colorFilter: ColorFilter.mode(
-                        const Color(0xFF8B5E3C).withOpacity(0.7), // Lighter tint with reduced opacity
-                        BlendMode.multiply,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Radial gradient spotlight overlay - warm overhead lamp effect
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(0, -0.6), // Top-middle (50% 20%)
-                    radius: 1.2,
-                    colors: [
-                      const Color.fromRGBO(255, 230, 150, 0.4), // Warm soft amber center glow
-                      const Color.fromRGBO(255, 230, 150, 0.1), // Transparent warm wash
-                      const Color.fromRGBO(13, 27, 42, 0.8), // Deep moody navy-black edges
-                    ],
-                    stops: const [0.0, 0.4, 1.0], // Center → Mid-falloff → Outer shadows
-                  ),
-                  backgroundBlendMode: BlendMode.overlay, // Interact with wood grain
-                ),
-              ),
-            ),
-          ),
-          // Carnival target logo (centered, in front of background, behind string lights)
-          const Center(
-            child: CarnivalTargetLogo(size: 700.0),
-          ),
-          // Carnival string lights (behind content, in front of background)
-          const CarnivalStringLights(),
-          // Content
-          Consumer<PlayerProvider>(
-              builder: (context, playerProvider, child) {
-                if (playerProvider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left side: Game Description
-              Expanded(
-                flex: 1,
-                child: _buildGameDescription(),
-              ),
-
-              // Right side: Game Settings
-              Expanded(
-                flex: 1,
-                child: Column(
-                  children: [
-                    // Target Score Slider
-                    _buildTargetScoreSection(),
-                    const SizedBox(height: 4),
-
-                    // Player Selection (Available and Selected side-by-side)
-                    Expanded(
-                      child: DualPlayerListPanel(
-                        config: DualPlayerListPanelConfig.carnivalDerby(),
-                        addPlayerButtonKey: CarnivalDerbyMenuKeys.addPlayerButton,
-                        addPlayerButtonEmptyStateKey: CarnivalDerbyMenuKeys.addPlayerButtonEmptyState,
-                        playerListViewKey: CarnivalDerbyMenuKeys.playerListView,
-                        playerTileKey: (id) => CarnivalDerbyMenuKeys.playerTile(id),
-                        removePlayerButtonKey: (id) => CarnivalDerbyMenuKeys.removePlayerButton(id),
-                      ),
-                    ),
-
-                    // Start Button
-                    _buildStartButton(playerProvider),
+            preferredSize: const Size.fromHeight(kToolbarHeight),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0xFFE63946), // Lava Red (left)
+                    Color(0xFFFFD700), // Canary Yellow (center)
+                    Color(0xFF48CAE4), // Electric Teal (right)
                   ],
+                  stops: [0.0, 0.66, 1.0], // Red lasts twice as long
                 ),
               ),
+              child: AppBar(
+                leading: IconButton(
+                  key: CarnivalDerbyMenuKeys.backButton,
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: const Color(0xFFF1FAEE), // Cloud Dancer white
+                    size: 32, // Bigger size
+                    shadows: [
+                      const Shadow(
+                        color: Color(0xFFFFD700), // Canary Yellow glow
+                        blurRadius: 10,
+                      ),
+                      const Shadow(
+                        color: Color(0xFFFFD700),
+                        blurRadius: 20,
+                      ),
+                    ],
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  splashColor: Colors.transparent,
+                ),
+                title: Text(
+                  'Carnival Derby Game Setup',
+                  style: GoogleFonts.rye(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    color: const Color(0xFFF1FAEE), // Cloud Dancer
+                    shadows: [
+                      Shadow(
+                        color: const Color(0xFFFFD700), // Canary Yellow glow
+                        blurRadius: 10,
+                      ),
+                      Shadow(
+                        color: const Color(0xFFFFD700),
+                        blurRadius: 20,
+                      ),
+                    ],
+                  ),
+                ),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                actions: [
+                  ResumeGameButton(
+                    key: CarnivalDerbyMenuKeys.resumeGameButton,
+                    hasSavedGames: _hasSavedGames,
+                    onPressed: () => setState(() => _showResumeModal = true),
+                    color: const Color(0xFFF1FAEE), // Cloud Dancer white
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16.0),
+                    child: DartboardConnectionInfo(
+                      config: DartboardConnectionInfoConfig.carnivalDerby(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          body: Stack(
+            children: [
+              // Rotated wood plank background
+              Positioned.fill(
+                child: Transform.scale(
+                  scale: 2.0, // Scale up to ensure coverage
+                  child: Transform.rotate(
+                    angle: 1.5708, // 90 degrees in radians (π/2)
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B5E3C), // Warm Cedar base color
+                        image: DecorationImage(
+                          image: AssetImage(
+                              'assets/games/carnival_derby/images/CarnivalDerby-WoodPlanks.jpg'),
+                          fit: BoxFit.cover,
+                          repeat: ImageRepeat.repeat,
+                          colorFilter: ColorFilter.mode(
+                            const Color(0xFF8B5E3C).withOpacity(
+                                0.7), // Lighter tint with reduced opacity
+                            BlendMode.multiply,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Radial gradient spotlight overlay - warm overhead lamp effect
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center:
+                            const Alignment(0, -0.6), // Top-middle (50% 20%)
+                        radius: 1.2,
+                        colors: [
+                          const Color.fromRGBO(255, 230, 150,
+                              0.4), // Warm soft amber center glow
+                          const Color.fromRGBO(
+                              255, 230, 150, 0.1), // Transparent warm wash
+                          const Color.fromRGBO(
+                              13, 27, 42, 0.8), // Deep moody navy-black edges
+                        ],
+                        stops: const [
+                          0.0,
+                          0.4,
+                          1.0
+                        ], // Center → Mid-falloff → Outer shadows
+                      ),
+                      backgroundBlendMode:
+                          BlendMode.overlay, // Interact with wood grain
+                    ),
+                  ),
+                ),
+              ),
+              // Carnival target logo (centered, in front of background, behind string lights)
+              const Center(
+                child: CarnivalTargetLogo(size: 700.0),
+              ),
+              // Carnival string lights (behind content, in front of background)
+              const CarnivalStringLights(),
+              // Content
+              Consumer<PlayerProvider>(
+                builder: (context, playerProvider, child) {
+                  if (playerProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left side: Game Description
+                      Expanded(
+                        flex: 1,
+                        child: _buildGameDescription(),
+                      ),
+
+                      // Right side: Game Settings
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          children: [
+                            // Target Score Slider
+                            _buildTargetScoreSection(),
+                            const SizedBox(height: 4),
+
+                            // Player Selection (Available and Selected side-by-side)
+                            Expanded(
+                              child: DualPlayerListPanel(
+                                config:
+                                    DualPlayerListPanelConfig.carnivalDerby(),
+                                addPlayerButtonKey:
+                                    CarnivalDerbyMenuKeys.addPlayerButton,
+                                addPlayerButtonEmptyStateKey:
+                                    CarnivalDerbyMenuKeys
+                                        .addPlayerButtonEmptyState,
+                                playerListViewKey:
+                                    CarnivalDerbyMenuKeys.playerListView,
+                                playerTileKey: (id) =>
+                                    CarnivalDerbyMenuKeys.playerTile(id),
+                                removePlayerButtonKey: (id) =>
+                                    CarnivalDerbyMenuKeys.removePlayerButton(
+                                        id),
+                              ),
+                            ),
+
+                            // Start Button
+                            _buildStartButton(playerProvider),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ],
-          );
-        },
-      ),
-        ],
-      ),
+          ),
         ),
         // Resume game modal overlay - covers entire screen including AppBar
         if (_showResumeModal)
@@ -286,6 +309,13 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
               _checkForSavedGames();
             },
           ),
+        // Dartboard paused modal — last child, paints on top.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.carnivalDerby(),
+          ),
       ],
     );
   }
@@ -296,7 +326,8 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
       child: Container(
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
-          color: const Color(0xFF1D3557).withOpacity(0.85), // Dark navy 85% opacity
+          color: const Color(0xFF1D3557)
+              .withOpacity(0.85), // Dark navy 85% opacity
           border: Border.all(
             color: const Color(0xFFF1FAEE), // Off-white border
             width: 1,
@@ -306,219 +337,239 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          RichText(
-            text: TextSpan(
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.montserrat(
+                  fontSize: 18,
+                  color: const Color(0xFFF1FAEE), // Off-white
+                  fontWeight: FontWeight.w900,
+                ),
+                children: [
+                  const TextSpan(
+                      text:
+                          'Step right up! Transform your game room into a high-stakes midway with '),
+                  TextSpan(
+                    text: 'Carnival Derby',
+                    style: GoogleFonts.rye(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const TextSpan(
+                      text:
+                          ', the fast-paced horse racing game where your aim determines your fame!'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'The Race is On!',
+              style: GoogleFonts.montserrat(
+                fontSize: 18,
+                color: const Color(0xFFFFD700), // Canary Yellow
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  color: const Color(0xFFF1FAEE), // Off-white
+                  fontWeight: FontWeight.w500,
+                ),
+                children: [
+                  const TextSpan(text: 'In '),
+                  TextSpan(
+                    text: 'Carnival Derby',
+                    style: GoogleFonts.rye(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const TextSpan(
+                      text:
+                          ', you aren\'t just a spectator—you\'re the engine! Every player commands a horse at the starting gate, but speed is measured in bullseyes.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  color: const Color(0xFFF1FAEE), // Off-white
+                  fontWeight: FontWeight.w500,
+                ),
+                children: [
+                  const TextSpan(
+                      text: 'The mechanics are simple but addictive: '),
+                  TextSpan(
+                    text: 'Throw your darts to move your horse.',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const TextSpan(
+                      text:
+                          ' The better your shot, the faster your steed gallops down the track toward the finish line. It\'s a heart-pounding blend of precision and racing strategy that keeps everyone on the edge of their seats until the final throw.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Customize Your Challenge',
+              style: GoogleFonts.montserrat(
+                fontSize: 18,
+                color: const Color(0xFFE63946), // Lava Red
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Whether you\'re looking for a quick sprint or an epic endurance test, Carnival Derby lets you control the reins:',
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: const Color(0xFFF1FAEE), // Off-white
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  color: const Color(0xFFF1FAEE), // Off-white
+                  fontWeight: FontWeight.w500,
+                ),
+                children: [
+                  const TextSpan(text: '• '),
+                  TextSpan(
+                    text: 'Set the Distance:',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const TextSpan(
+                      text:
+                          ' Want a lightning-fast "Quarter Horse" dash? Set a low point total. Looking for a grueling "Triple Crown" marathon? Crank up the points required to win!'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  color: const Color(0xFFF1FAEE), // Off-white
+                  fontWeight: FontWeight.w500,
+                ),
+                children: [
+                  const TextSpan(text: '• '),
+                  TextSpan(
+                    text: 'The "Perfect Finish" Rule:',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const TextSpan(
+                      text: ' For the ultimate test of skill, turn on '),
+                  TextSpan(
+                    text: 'Perfect Finish',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const TextSpan(
+                      text:
+                          ' mode. In this game, you can\'t just blast past the finish line—you have to land your final dart to hit the winning number exactly. If you over-score, your horse stays put, giving your rivals a chance to catch up!'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Why You\'ll Love It',
+              style: GoogleFonts.montserrat(
+                fontSize: 18,
+                color: const Color(0xFF48CAE4), // Electric Teal
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  color: const Color(0xFFF1FAEE), // Off-white
+                  fontWeight: FontWeight.w500,
+                ),
+                children: [
+                  const TextSpan(text: '• '),
+                  TextSpan(
+                    text: 'Interactive Fun:',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const TextSpan(
+                      text:
+                          ' Unlike traditional darts, every point has a visual impact as you watch your horse pull ahead of the pack.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  color: const Color(0xFFF1FAEE), // Off-white
+                  fontWeight: FontWeight.w500,
+                ),
+                children: [
+                  const TextSpan(text: '• '),
+                  TextSpan(
+                    text: 'All Skill Levels:',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const TextSpan(
+                      text:
+                          ' Beginners can aim for the big slices, while pros can hunt for triples to leapfrog the competition.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  color: const Color(0xFFF1FAEE), // Off-white
+                  fontWeight: FontWeight.w500,
+                ),
+                children: [
+                  const TextSpan(text: '• '),
+                  TextSpan(
+                    text: 'High Tension:',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const TextSpan(
+                      text:
+                          ' Nothing beats the roar of the crowd (or your friends!) as three horses neck-and-neck approach the final few points.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Do you have the steady hand needed to take the winner\'s circle? Grab your darts and let the derby begin!',
               style: GoogleFonts.montserrat(
                 fontSize: 18,
                 color: const Color(0xFFF1FAEE), // Off-white
                 fontWeight: FontWeight.w900,
               ),
-              children: [
-                const TextSpan(text: 'Step right up! Transform your game room into a high-stakes midway with '),
-                TextSpan(
-                  text: 'Carnival Derby',
-                  style: GoogleFonts.rye(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                const TextSpan(text: ', the fast-paced horse racing game where your aim determines your fame!'),
-              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'The Race is On!',
-            style: GoogleFonts.montserrat(
-              fontSize: 18,
-              color: const Color(0xFFFFD700), // Canary Yellow
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: const Color(0xFFF1FAEE), // Off-white
-                fontWeight: FontWeight.w500,
-              ),
-              children: [
-                const TextSpan(text: 'In '),
-                TextSpan(
-                  text: 'Carnival Derby',
-                  style: GoogleFonts.rye(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const TextSpan(text: ', you aren\'t just a spectator—you\'re the engine! Every player commands a horse at the starting gate, but speed is measured in bullseyes.'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: const Color(0xFFF1FAEE), // Off-white
-                fontWeight: FontWeight.w500,
-              ),
-              children: [
-                const TextSpan(text: 'The mechanics are simple but addictive: '),
-                TextSpan(
-                  text: 'Throw your darts to move your horse.',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const TextSpan(text: ' The better your shot, the faster your steed gallops down the track toward the finish line. It\'s a heart-pounding blend of precision and racing strategy that keeps everyone on the edge of their seats until the final throw.'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Customize Your Challenge',
-            style: GoogleFonts.montserrat(
-              fontSize: 18,
-              color: const Color(0xFFE63946), // Lava Red
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Whether you\'re looking for a quick sprint or an epic endurance test, Carnival Derby lets you control the reins:',
-            style: GoogleFonts.montserrat(
-              fontSize: 16,
-              color: const Color(0xFFF1FAEE), // Off-white
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: const Color(0xFFF1FAEE), // Off-white
-                fontWeight: FontWeight.w500,
-              ),
-              children: [
-                const TextSpan(text: '• '),
-                TextSpan(
-                  text: 'Set the Distance:',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const TextSpan(text: ' Want a lightning-fast "Quarter Horse" dash? Set a low point total. Looking for a grueling "Triple Crown" marathon? Crank up the points required to win!'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: const Color(0xFFF1FAEE), // Off-white
-                fontWeight: FontWeight.w500,
-              ),
-              children: [
-                const TextSpan(text: '• '),
-                TextSpan(
-                  text: 'The "Perfect Finish" Rule:',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const TextSpan(text: ' For the ultimate test of skill, turn on '),
-                TextSpan(
-                  text: 'Perfect Finish',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const TextSpan(text: ' mode. In this game, you can\'t just blast past the finish line—you have to land your final dart to hit the winning number exactly. If you over-score, your horse stays put, giving your rivals a chance to catch up!'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Why You\'ll Love It',
-            style: GoogleFonts.montserrat(
-              fontSize: 18,
-              color: const Color(0xFF48CAE4), // Electric Teal
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: const Color(0xFFF1FAEE), // Off-white
-                fontWeight: FontWeight.w500,
-              ),
-              children: [
-                const TextSpan(text: '• '),
-                TextSpan(
-                  text: 'Interactive Fun:',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const TextSpan(text: ' Unlike traditional darts, every point has a visual impact as you watch your horse pull ahead of the pack.'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: const Color(0xFFF1FAEE), // Off-white
-                fontWeight: FontWeight.w500,
-              ),
-              children: [
-                const TextSpan(text: '• '),
-                TextSpan(
-                  text: 'All Skill Levels:',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const TextSpan(text: ' Beginners can aim for the big slices, while pros can hunt for triples to leapfrog the competition.'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: const Color(0xFFF1FAEE), // Off-white
-                fontWeight: FontWeight.w500,
-              ),
-              children: [
-                const TextSpan(text: '• '),
-                TextSpan(
-                  text: 'High Tension:',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const TextSpan(text: ' Nothing beats the roar of the crowd (or your friends!) as three horses neck-and-neck approach the final few points.'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Do you have the steady hand needed to take the winner\'s circle? Grab your darts and let the derby begin!',
-            style: GoogleFonts.montserrat(
-              fontSize: 18,
-              color: const Color(0xFFF1FAEE), // Off-white
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -530,7 +581,8 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
       child: Container(
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
-          color: const Color(0xFF1D3557).withOpacity(0.85), // Dark navy 85% opacity
+          color: const Color(0xFF1D3557)
+              .withOpacity(0.85), // Dark navy 85% opacity
           border: Border.all(
             color: const Color(0xFFF1FAEE), // Off-white border
             width: 1,
@@ -548,163 +600,175 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                 fontWeight: FontWeight.w900,
               ),
             ),
-          Slider(
-            key: CarnivalDerbyMenuKeys.targetScoreSlider,
-            value: _targetScore,
-            min: 20,
-            max: 250,
-            divisions: 46,
-            label: _targetScore.toInt().toString(),
-            activeColor: const Color(0xFFFFD700), // Canary Yellow
-            onChanged: (value) {
-              setState(() {
-                _targetScore = value;
-              });
-            },
-          ),
-          Text(
-            'Range: 20-250 points',
-            style: GoogleFonts.montserrat(
-              fontSize: 12,
-              color: const Color(0xFFF1FAEE), // Off-white
-              fontWeight: FontWeight.w300,
+            Slider(
+              key: CarnivalDerbyMenuKeys.targetScoreSlider,
+              value: _targetScore,
+              min: 20,
+              max: 250,
+              divisions: 46,
+              label: _targetScore.toInt().toString(),
+              activeColor: const Color(0xFFFFD700), // Canary Yellow
+              onChanged: (value) {
+                setState(() {
+                  _targetScore = value;
+                });
+              },
             ),
-          ),
-          const SizedBox(height: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Require "Perfect Finish" to win the game',
-                style: GoogleFonts.montserrat(
-                  fontSize: 16,
-                  color: const Color(0xFFF1FAEE), // Off-white
-                  fontWeight: FontWeight.w900,
+            Text(
+              'Range: 20-250 points',
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                color: const Color(0xFFF1FAEE), // Off-white
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Require "Perfect Finish" to win the game',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 16,
+                    color: const Color(0xFFF1FAEE), // Off-white
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _exactScoreMode = true;
-                        });
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Radio<bool>(
-                                  key: CarnivalDerbyMenuKeys.perfectFinishSwitch,
-                                  value: true,
-                                  groupValue: _exactScoreMode,
-                                  activeColor: const Color(0xFF48CAE4), // Electric Teal
-                                  fillColor: MaterialStateProperty.resolveWith<Color>(
-                                    (Set<MaterialState> states) {
-                                      if (states.contains(MaterialState.selected)) {
-                                        return const Color(0xFF48CAE4); // Electric Teal when selected
-                                      }
-                                      return const Color(0xFFF1FAEE); // Cloud Dancer white when not selected
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _exactScoreMode = true;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Radio<bool>(
+                                    key: CarnivalDerbyMenuKeys
+                                        .perfectFinishSwitch,
+                                    value: true,
+                                    groupValue: _exactScoreMode,
+                                    activeColor: const Color(
+                                        0xFF48CAE4), // Electric Teal
+                                    fillColor: MaterialStateProperty
+                                        .resolveWith<Color>(
+                                      (Set<MaterialState> states) {
+                                        if (states
+                                            .contains(MaterialState.selected)) {
+                                          return const Color(
+                                              0xFF48CAE4); // Electric Teal when selected
+                                        }
+                                        return const Color(
+                                            0xFFF1FAEE); // Cloud Dancer white when not selected
+                                      },
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _exactScoreMode = value!;
+                                      });
                                     },
                                   ),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _exactScoreMode = value!;
-                                    });
-                                  },
-                                ),
-                                Text(
-                                  'Yes',
-                                  style: GoogleFonts.montserrat(
-                                    color: const Color(0xFFF1FAEE), // Off-white
-                                    fontWeight: FontWeight.w500,
+                                  Text(
+                                    'Yes',
+                                    style: GoogleFonts.montserrat(
+                                      color:
+                                          const Color(0xFFF1FAEE), // Off-white
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              'A player must hit the exact Target score to win the game. Going over the target score ends the player turn and leaves their score at the value it was before the last dart throw.',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 12,
-                                color: const Color(0xFFF1FAEE), // Off-white
-                                fontWeight: FontWeight.w300,
+                                ],
                               ),
-                            ),
-                          ],
+                              Text(
+                                'A player must hit the exact Target score to win the game. Going over the target score ends the player turn and leaves their score at the value it was before the last dart throw.',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 12,
+                                  color: const Color(0xFFF1FAEE), // Off-white
+                                  fontWeight: FontWeight.w300,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _exactScoreMode = false;
-                        });
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Radio<bool>(
-                                  value: false,
-                                  groupValue: _exactScoreMode,
-                                  activeColor: const Color(0xFF48CAE4), // Electric Teal
-                                  fillColor: MaterialStateProperty.resolveWith<Color>(
-                                    (Set<MaterialState> states) {
-                                      if (states.contains(MaterialState.selected)) {
-                                        return const Color(0xFF48CAE4); // Electric Teal when selected
-                                      }
-                                      return const Color(0xFFF1FAEE); // Cloud Dancer white when not selected
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _exactScoreMode = false;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Radio<bool>(
+                                    value: false,
+                                    groupValue: _exactScoreMode,
+                                    activeColor: const Color(
+                                        0xFF48CAE4), // Electric Teal
+                                    fillColor: MaterialStateProperty
+                                        .resolveWith<Color>(
+                                      (Set<MaterialState> states) {
+                                        if (states
+                                            .contains(MaterialState.selected)) {
+                                          return const Color(
+                                              0xFF48CAE4); // Electric Teal when selected
+                                        }
+                                        return const Color(
+                                            0xFFF1FAEE); // Cloud Dancer white when not selected
+                                      },
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _exactScoreMode = value!;
+                                      });
                                     },
                                   ),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _exactScoreMode = value!;
-                                    });
-                                  },
-                                ),
-                                Text(
-                                  'No',
-                                  style: GoogleFonts.montserrat(
-                                    color: const Color(0xFFF1FAEE), // Off-white
-                                    fontWeight: FontWeight.w500,
+                                  Text(
+                                    'No',
+                                    style: GoogleFonts.montserrat(
+                                      color:
+                                          const Color(0xFFF1FAEE), // Off-white
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              'A player wins the game when their score is greater than or equal to the Target score.',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 12,
-                                color: const Color(0xFFF1FAEE), // Off-white
-                                fontWeight: FontWeight.w300,
+                                ],
                               ),
-                            ),
-                          ],
+                              Text(
+                                'A player wins the game when their score is greater than or equal to the Target score.',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 12,
+                                  color: const Color(0xFFF1FAEE), // Off-white
+                                  fontWeight: FontWeight.w300,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
-
 
   Widget _buildStartButton(PlayerProvider playerProvider) {
     final canStart = playerProvider.selectedPlayers.isNotEmpty;
@@ -769,5 +833,4 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
       ),
     ).then((_) => _checkForSavedGames());
   }
-
 }

@@ -9,6 +9,8 @@ import '../../../providers/clockwork_quest_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../providers/dartboard_provider.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../services/save_game_service.dart';
 
@@ -59,8 +61,7 @@ class _ClockworkQuestResultsScreenState
     if (!mounted) return;
     final clockworkProvider =
         Provider.of<ClockworkQuestProvider>(context, listen: false);
-    final playerProvider =
-        Provider.of<PlayerProvider>(context, listen: false);
+    final playerProvider = Provider.of<PlayerProvider>(context, listen: false);
 
     final game = clockworkProvider.currentGame;
     if (game == null) return;
@@ -104,21 +105,23 @@ class _ClockworkQuestResultsScreenState
       if (customMusicSource != null && customMusicSource.isNotEmpty) {
         if (customMusicSource.startsWith('data:')) {
           await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => debugPrint('Audio playback timed out'),
-          );
+                const Duration(seconds: 5),
+                onTimeout: () => debugPrint('Audio playback timed out'),
+              );
         } else {
           await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => debugPrint('Audio playback timed out'),
-          );
+                const Duration(seconds: 5),
+                onTimeout: () => debugPrint('Audio playback timed out'),
+              );
         }
       } else {
-        await _audioPlayer.play(UrlSource(
-            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3')).timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => debugPrint('Audio playback timed out'),
-        );
+        await _audioPlayer
+            .play(UrlSource(
+                'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'))
+            .timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => debugPrint('Audio playback timed out'),
+            );
       }
     } catch (e) {
       debugPrint('Error playing victory music: $e');
@@ -127,6 +130,7 @@ class _ClockworkQuestResultsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final dartboardProvider = context.watch<DartboardProvider>();
     final clockworkProvider = Provider.of<ClockworkQuestProvider>(context);
     final playerProvider = Provider.of<PlayerProvider>(context);
 
@@ -148,83 +152,97 @@ class _ClockworkQuestResultsScreenState
     // Build rankings
     final rankedPlayerIds = _getRankedPlayers(game, playerProvider);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2C2C34),
-        leading: const SizedBox(), // No back button on results
-        title: Text(
-          'CLOCKWORK QUEST',
-          style: GoogleFonts.cinzelDecorative(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFFF5F0E8),
-            letterSpacing: 1.5,
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF2C2C34),
+            leading: const SizedBox(), // No back button on results
+            title: Text(
+              'CLOCKWORK QUEST',
+              style: GoogleFonts.cinzelDecorative(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFF5F0E8),
+                letterSpacing: 1.5,
+              ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.clockworkQuest(),
+                ),
+              ),
+            ],
+          ),
+          body: Stack(
+            children: [
+              // Background image with dark overlay
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/games/clockwork_quest/images/background.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  color: const Color(0xFF2C2C34).withOpacity(0.80),
+                ),
+              ),
+
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final availableHeight = constraints.maxHeight;
+                    final inventorMaxHeight =
+                        (availableHeight * 0.42).clamp(140.0, 350.0);
+
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          // Winner Section
+                          _buildWinnerSection(winner, clockworkProvider,
+                              maxSize: inventorMaxHeight),
+
+                          const SizedBox(height: 16),
+
+                          // Rankings
+                          Flexible(
+                              child: SingleChildScrollView(
+                            child: _buildRankings(rankedPlayerIds,
+                                playerProvider, clockworkProvider),
+                          )),
+
+                          const SizedBox(height: 16),
+
+                          // Action Buttons
+                          _buildActionButtons(context),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.clockworkQuest(),
-            ),
+        // Dartboard paused modal — covers entire screen incl. AppBar when disconnected.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.clockworkQuest(),
           ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Background image with dark overlay
-          Positioned.fill(
-            child: Image.asset(
-              'assets/games/clockwork_quest/images/background.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: Container(
-              color: const Color(0xFF2C2C34).withOpacity(0.80),
-            ),
-          ),
-
-          Positioned.fill(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final availableHeight = constraints.maxHeight;
-                final inventorMaxHeight = (availableHeight * 0.42).clamp(140.0, 350.0);
-
-                return Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      // Winner Section
-                      _buildWinnerSection(winner, clockworkProvider, maxSize: inventorMaxHeight),
-
-                      const SizedBox(height: 16),
-
-                      // Rankings
-                      Flexible(child: SingleChildScrollView(
-                        child: _buildRankings(
-                          rankedPlayerIds, playerProvider, clockworkProvider),
-                      )),
-
-                      const SizedBox(height: 16),
-
-                      // Action Buttons
-                      _buildActionButtons(context),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 
-  Widget _buildWinnerSection(
-      dynamic winner, ClockworkQuestProvider provider, {double? maxSize}) {
+  Widget _buildWinnerSection(dynamic winner, ClockworkQuestProvider provider,
+      {double? maxSize}) {
     final winnerId = provider.currentGame!.winnerId!;
     final lapsCompleted = provider.getPlayerLapsCompleted(winnerId);
     final inventorSize = maxSize ?? 280.0;
@@ -260,8 +278,7 @@ class _ClockworkQuestResultsScreenState
             CircleAvatar(
               radius: inventorSize / 2.5,
               backgroundImage: winner.photoPath!.startsWith('data:')
-                  ? MemoryImage(
-                      base64Decode(winner.photoPath!.split(',')[1]))
+                  ? MemoryImage(base64Decode(winner.photoPath!.split(',')[1]))
                   : NetworkImage(winner.photoPath!) as ImageProvider,
             )
           else
@@ -319,20 +336,23 @@ class _ClockworkQuestResultsScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: _buildRankingColumn(
-                rankedPlayerIds.take(4).toList(), playerProvider, clockworkProvider, 0),
+            child: _buildRankingColumn(rankedPlayerIds.take(4).toList(),
+                playerProvider, clockworkProvider, 0),
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: _buildRankingColumn(
-                rankedPlayerIds.skip(4).toList(), playerProvider, clockworkProvider, 4),
+            child: _buildRankingColumn(rankedPlayerIds.skip(4).toList(),
+                playerProvider, clockworkProvider, 4),
           ),
         ],
       );
     }
 
     return _buildRankingColumn(
-      rankedPlayerIds, playerProvider, clockworkProvider, 0,
+      rankedPlayerIds,
+      playerProvider,
+      clockworkProvider,
+      0,
       key: ClockworkQuestResultsKeys.rankingsList,
     );
   }
@@ -396,32 +416,34 @@ class _ClockworkQuestResultsScreenState
                 SizedBox(
                   width: 40,
                   height: 40,
-                  child: clockworkProvider.getInventorImagePath(playerId) != null
-                      ? Image.asset(
-                          clockworkProvider.getInventorImagePath(playerId)!,
-                          fit: BoxFit.contain,
-                        )
-                      : player.photoPath != null
-                          ? CircleAvatar(
-                              radius: 20,
-                              backgroundImage: player.photoPath!.startsWith('data:')
-                                  ? MemoryImage(base64Decode(
-                                      player.photoPath!.split(',')[1]))
-                                  : NetworkImage(player.photoPath!)
-                                      as ImageProvider,
+                  child:
+                      clockworkProvider.getInventorImagePath(playerId) != null
+                          ? Image.asset(
+                              clockworkProvider.getInventorImagePath(playerId)!,
+                              fit: BoxFit.contain,
                             )
-                          : CircleAvatar(
-                              radius: 20,
-                              backgroundColor: const Color(0xFFB87333),
-                              child: Text(
-                                player.name[0].toUpperCase(),
-                                style: GoogleFonts.cinzelDecorative(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF2C2C34),
+                          : player.photoPath != null
+                              ? CircleAvatar(
+                                  radius: 20,
+                                  backgroundImage:
+                                      player.photoPath!.startsWith('data:')
+                                          ? MemoryImage(base64Decode(
+                                              player.photoPath!.split(',')[1]))
+                                          : NetworkImage(player.photoPath!)
+                                              as ImageProvider,
+                                )
+                              : CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: const Color(0xFFB87333),
+                                  child: Text(
+                                    player.name[0].toUpperCase(),
+                                    style: GoogleFonts.cinzelDecorative(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF2C2C34),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -437,9 +459,8 @@ class _ClockworkQuestResultsScreenState
                 Text(
                   () {
                     final maxTarget = clockworkProvider.currentGame!.maxTarget;
-                    final gearsActivated = isWinner
-                        ? maxTarget
-                        : (target - 1).clamp(0, maxTarget);
+                    final gearsActivated =
+                        isWinner ? maxTarget : (target - 1).clamp(0, maxTarget);
                     return 'Gear $gearsActivated/$maxTarget${clockworkProvider.currentGame!.numberOfLaps > 1 ? " (Lap ${laps + 1})" : ""}';
                   }(),
                   style: GoogleFonts.lato(
@@ -559,8 +580,7 @@ class _ClockworkQuestResultsScreenState
   void _playAgain(BuildContext context) {
     final clockworkProvider =
         Provider.of<ClockworkQuestProvider>(context, listen: false);
-    final playerProvider =
-        Provider.of<PlayerProvider>(context, listen: false);
+    final playerProvider = Provider.of<PlayerProvider>(context, listen: false);
 
     final game = clockworkProvider.currentGame!;
     final players = playerProvider.allPlayers

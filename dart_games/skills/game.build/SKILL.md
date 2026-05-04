@@ -419,7 +419,7 @@ Present the menu wireframe to the user:
 > - Active player panel (LEFT, 200px wide per spec Section 10B if specified): use the player's CHARACTER IMAGE rendered NATIVELY (no circle clipping, `object-fit: contain`). Apply a shape-conformal `filter: drop-shadow` for active-player glow.
 > - Player progress visualization (descent track / coral cards / shields / etc. per spec): use REAL CHARACTER IMAGES, not rocket/circle placeholders. Render them at native size with no circle masking.
 > - Background: use the real background image from `assets/games/[GAME_NAME_SNAKE]/images/...` if the spec specifies one. The background must be visible on the game screen (recurring miss in past sessions).
-> - **The dartboard emulator section is a TEMPORARY OVERLAY at the bottom — NOT space-reserving infrastructure.** The primary game UI should fill the FULL available height as if the dartboard didn't exist. The emulator overlaps the bottom portion at run time. Reference: in the actual implementation, DartboardEmulatorSection is a `Positioned(bottom: 0)` child of the body Stack, on top of the game UI. Mirror this in the wireframe by drawing the game content full-height and placing the dartboard label as an overlay at the bottom edge.
+> - **The dartboard emulator section is a TEMPORARY OVERLAY at the bottom — NOT space-reserving infrastructure.** The primary game UI should fill the FULL available height as if the dartboard didn't exist. The emulator overlaps the bottom portion at run time. Reference: in the actual implementation, DartboardEmulatorSection is a `Positioned(bottom: 0)` child of the **outer Stack** (sibling of Scaffold, NOT inside the body Stack), on top of the game UI. Mirror this in the wireframe by drawing the game content full-height and placing the dartboard label as an overlay at the bottom edge.
 > - Skip Turn button visible (per spec's screen design)
 > - Show every option's visible effect from the Options section (e.g., "HARD LANDING" badge if HL ON, altitude readout, etc.)
 >
@@ -749,56 +749,133 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   }
 >   ```
 >   Reference: `clockwork_quest_menu_screen.dart` lines 63-77 + 79-84.
-> - ResumeGameModal overlay (Stack pattern)
+> - **MENU SCREEN STRUCTURE — outer-Stack modal pattern (MANDATORY, apply EXACTLY — same shape as game screen):**
+>   The menu screen wraps `Scaffold` in an outer `Stack` so menu modals paint OVER the AppBar (back arrow, ResumeGameButton, DartboardConnectionInfo). The build method's return value is `Stack`, NOT `Scaffold`.
+>   ```dart
+>   @override
+>   Widget build(BuildContext context) {
+>     final dartboardProvider = context.watch<DartboardProvider>();
+>     // ...other watch calls and computations...
+>     return Stack(
+>       children: [
+>         // 1. Scaffold — AppBar (back + ResumeGameButton if saved games + DartboardConnectionInfo)
+>         //    + body (background, options, player list panel).
+>         Scaffold(
+>           appBar: AppBar(...),
+>           body: Stack(children: [bg, content]),
+>         ),
+>         // 2. ResumeGameModal (conditional) — auto-shown on initial entry if saved
+>         //    games exist; or on tap of ResumeGameButton in AppBar.
+>         if (_showResumeModal) ResumeGameModal(...),
+>         // 3. DartboardPausedModal (conditional) — LAST child; paints on top.
+>         //    Same conditional as the game screen's paused modal.
+>         if (!dartboardProvider.isEmulator &&
+>             dartboardProvider.status != DartboardConnectionStatus.connected &&
+>             dartboardProvider.status != DartboardConnectionStatus.emulator)
+>           DartboardPausedModal(config: DartboardPausedModalConfig.[gameName]()),
+>       ],
+>     );
+>   }
+>   // 4. AddPlayerDialog — NOT an outer-Stack child. It is a routed dialog
+>   //    (`showAddPlayerDialog()`) launched from INSIDE `DualPlayerListPanel` (the
+>   //    shared player list panel widget — see `lib/widgets/player_list_panel/`).
+>   //    The menu screen passes `addPlayerButtonKey` + `addPlayerButtonEmptyStateKey`
+>   //    to the panel; the panel handles the dialog internally. The menu screen
+>   //    file does NOT call `showAddPlayerDialog` directly. As a routed dialog it
+>   //    paints above all outer-Stack siblings (including DartboardPausedModal)
+>   //    when shown.
+>   ```
+>   Reference: any menu screen for the canonical pattern (e.g. `lunar_lander_menu_screen.dart` lines ~105-225).
 > - Start button enable/disable logic (min players per spec Overview)
 > - **Spacing consistency:** the gap between option columns MUST equal the gap between the option row and the player list panel below. Use a single spacing constant.
 >
 > **5. Create `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart`:**
 > - Game board / play area per the Screen Designs section layout
 > - **Background image (if spec specifies one):** render it as `Positioned.fill(child: Image.asset(BACKGROUND_PATH, fit: BoxFit.cover))` as the FIRST child of the body Stack — AppBar + game content render on top of it. **Recurring miss in past sessions:** specs often list a background image but the implementation never uses it. Reference `clockwork_quest_results_screen.dart` lines ~222-228 for the canonical pattern.
-> - **STACK CHILD ORDER FOR THE GAME SCREEN BODY (mandatory — apply EXACTLY):**
->   ```
->   body: Stack(
->     children: [
->       // 1. Background image (if any) — rendered first (back layer)
->       if (BACKGROUND_PATH != null)
->         Positioned.fill(child: Image.asset(BACKGROUND_PATH, fit: BoxFit.cover)),
->       // 2. Main game content — Column with Expanded(game area) + turn summary +
->       //    SizedBox(height: ~320) reserving space for the dartboard emulator.
->       //    The game UI fills FULL available height as if the emulator didn't exist;
->       //    the SizedBox just reserves bottom space.
->       Column(...),
->       // 3. RemoveDartsModal (conditional) — turn-end takeout overlay, painted
->       //    BEHIND the emulator so the emulator's DARTS REMOVED button stays
->       //    visible and tappable on top of the takeout modal. The user finishes
->       //    the takeout by tapping that button (the modal is the visual prompt).
->       if (shouldPromptTakeout) RemoveDartsModal(...),
->       // 4. DartboardEmulatorSection — wrapped in Positioned(left:0, right:0, bottom:0).
->       //    Sits ABOVE RemoveDartsModal so its DARTS REMOVED button paints on top
->       //    of the takeout overlay. Sits BELOW SaveGameModal so the save modal's
->       //    Don't Save button isn't intercepted by the emulator section.
->       Positioned(left: 0, right: 0, bottom: 0,
->           child: DartboardEmulatorSection(...)),
->       // 5. SaveGameModal (conditional) — explicit user action (back-button save flow).
->       //    Sits ABOVE the emulator so the Don't Save button at the bottom of the
->       //    modal isn't covered by the emulator section. Save / Don't Save buttons
->       //    are the only interactive widgets inside; everything else passes through.
->       if (_showSaveModal) SaveGameModal(...),
->       // 6. DartboardPausedModal (conditional) — MUST BE THE LAST CHILD.
->       //    Disconnected state means the dartboard hardware can't register input
->       //    changes, so we want this overlay to dim everything else and indicate
->       //    a non-functional state. Auto-dismisses when the dartboard reconnects.
->       if (...pausedConditions...) DartboardPausedModal(...),
->     ],
->   )
+> - **GAME SCREEN STRUCTURE — outer-Stack modal pattern (MANDATORY, apply EXACTLY):**
+>   The game screen wraps `Scaffold` in an outer `Stack` whose siblings are the 4 visible modals + the dartboard emulator section. This is required so gameplay-screen modals paint OVER the AppBar and FAB. A modal placed inside the Scaffold's `body:` cannot paint over the `appBar:` or `floatingActionButton:` slots — the back arrow and the FAB stay tappable behind the modal, which is the wrong UX. Reference: any of the 6 game screens (e.g. `lunar_lander_game_screen.dart`, `clockwork_quest_game_screen.dart`).
+>   ```dart
+>   @override
+>   Widget build(BuildContext context) {
+>     // Provider data MUST be hoisted to the top of build() (not inside a
+>     // Consumer<X> subtree) so the outer-Stack modals below can reference it.
+>     final dartboardProvider = context.watch<DartboardProvider>();
+>     final provider = context.watch<[GAME]Provider>();
+>     final playerProvider = context.watch<PlayerProvider>();
+>     // ... compute currentPlayer, dartsThrown, shouldPromptTakeout, etc. ...
+>
+>     return PopScope(
+>       canPop: !hasDartsThrown || _showSaveModal,
+>       onPopInvokedWithResult: (didPop, result) {
+>         if (didPop || _showSaveModal) return;
+>         setState(() => _showSaveModal = true);
+>       },
+>       child: Stack(
+>         children: [
+>           // 1. Scaffold — contains AppBar + body (background + main game content) + FAB.
+>           //    Body Stack contains ONLY background and main game UI — NO modals here.
+>           Scaffold(
+>             appBar: AppBar(...),
+>             body: Stack(
+>               children: [
+>                 // 1a. Background image (if any) — first child of body Stack.
+>                 if (BACKGROUND_PATH != null)
+>                   Positioned.fill(child: Image.asset(BACKGROUND_PATH, fit: BoxFit.cover)),
+>                 // 1b. Main game content — Column with Expanded(game area).
+>                 Column(...),
+>               ],
+>             ),
+>             floatingActionButton: DartboardEmulatorFAB(...),
+>             floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+>           ),
+>           // 2. RemoveDartsModal (conditional) — turn-end takeout overlay, painted
+>           //    BEHIND the emulator so DARTS REMOVED stays visible/tappable on top
+>           //    of the takeout modal. Paints OVER the AppBar — blocks back arrow.
+>           if (shouldPromptTakeout) RemoveDartsModal(...),
+>           // 3. DartboardEmulatorSection — wrapped in Positioned(left:0, right:0, bottom:0).
+>           //    Sits ABOVE RemoveDartsModal so DARTS REMOVED paints on top of the
+>           //    takeout overlay. Sits BELOW SaveGameModal/PausedModal so those
+>           //    modals' buttons aren't intercepted by the emulator section.
+>           //    NOTE: this is an outer-Stack sibling (NOT a body-Stack child) so the
+>           //    Save/Paused modals above it can also cover the AppBar.
+>           Positioned(left: 0, right: 0, bottom: 0,
+>               child: DartboardEmulatorSection(...)),
+>           // 4. SaveGameModal (conditional) — explicit user action (back-button save flow).
+>           //    Paints OVER the AppBar — blocks back arrow.
+>           if (_showSaveModal) SaveGameModal(...),
+>           // 5. DartboardPausedModal (conditional) — MUST BE THE LAST CHILD.
+>           //    Disconnected state means the dartboard hardware can't register input.
+>           //    Paints OVER the AppBar — blocks back arrow. Auto-dismisses on reconnect.
+>           if (!dartboardProvider.isEmulator &&
+>               dartboardProvider.status != DartboardConnectionStatus.connected &&
+>               dartboardProvider.status != DartboardConnectionStatus.emulator)
+>             DartboardPausedModal(...),
+>         ],
+>       ),
+>     );
+>   }
+>   // 6. EditScoreDialog — NOT an outer-Stack child. It is a Flutter routed dialog
+>   //    (`showDialog()`) launched from the "Edit Score" button INSIDE RemoveDartsModal.
+>   //    Navigator routes always paint above the underlying page, so when shown it
+>   //    sits above ALL outer-Stack layers (including DartboardPausedModal).
 >   ```
 >
->   **Why this exact order matters — semantic z-stacking driven by where each interactive button lives:**
->   - **RemoveDartsModal at the back of the modal stack**: its only interactive widget (the Edit Score button) is in the centered card. The modal mainly serves as a visual "remove your darts" prompt; the actual dismissal trigger is the DARTS REMOVED button which lives INSIDE the dartboard emulator section. RemoveDartsModal therefore goes behind the emulator so DARTS REMOVED stays visible/tappable.
+>   **Why this structure — outer Stack wrapping Scaffold:**
+>   - **AppBar must be blocked when any modal is open.** The AppBar's leading IconButton (back arrow) is tappable. If a modal is a body-Stack child, it sits inside Scaffold's body slot and cannot paint over the AppBar — the back arrow stays tappable behind the modal, leading to confusing or destructive taps (e.g. re-triggering the save flow on top of the takeout flow). Outer-Stack siblings of the Scaffold paint OVER the entire Scaffold, including the AppBar slot.
+>   - **FAB must be blocked too.** `Scaffold.floatingActionButton` paints above the body, so a body-Stack modal cannot cover the FAB. Outer-Stack siblings cover everything in the Scaffold including the FAB.
+>   - **The body Stack now contains ONLY background + main game content.** The 4 modals + emulator section are all outer-Stack siblings. The internal z-order rationale (RemoveDarts < Emulator < Save < Paused) is unchanged from the prior body-Stack design — only the parent Stack moved.
+>   - **EditScoreDialog already covers the AppBar+FAB by being a routed dialog** — it doesn't need to be in the outer Stack.
+>   - **Provider data must be hoisted to the top of `build()`** so outer-Stack modals can reference `currentPlayer`, `shouldPromptTakeout`, etc. Use `context.watch<XProvider>()` at the start of `build()` rather than wrapping a subtree in `Consumer<X>`. The entire build rebuilds on provider notifications either way; outer-Stack siblings cannot otherwise access variables computed inside a nested `Consumer` builder.
+>
+>   **Why the modal z-order is what it is — semantic z-stacking driven by where each interactive button lives:**
+>   - **RemoveDartsModal at the back of the modal stack**: its only interactive widget (Edit Score button) is in the centered card. The actual dismissal trigger is the DARTS REMOVED button INSIDE the dartboard emulator section. RemoveDartsModal therefore goes behind the emulator so DARTS REMOVED stays visible/tappable.
 >   - **DartboardEmulatorSection above RemoveDartsModal**: its DARTS REMOVED button must paint on top of the takeout overlay so the user can finish the takeout. Sits at `Positioned(bottom: 0)` so it only covers the bottom strip of the screen.
->   - **SaveGameModal above the emulator**: the user explicitly tapped back to save — that intent wins over the takeout flow. The Don't Save button in the SaveGameModal is at the bottom of the modal's centered card; with SaveGameModal painted above the emulator, the button is no longer covered by the emulator section, so the Don't Save tap dispatches correctly.
->   - **DartboardPausedModal at the very top**: the dartboard is disconnected; the game can't reliably register state changes regardless of what the user taps. Painting Paused above everything visually communicates "non-functional state" even if hit-tests can technically pass through to widgets below (no AbsorbPointer is needed; the visual signal is sufficient and matches the existing modal implementations).
->   **The dartboard emulator is a TEMPORARY OVERLAY, not reserved space in the visual hierarchy.** The primary game UI (descent area, player panels, scores) should be designed to fill the FULL available screen height. The bottom SizedBox(~320) is just internal padding so widgets don't render UNDER the emulator at run time. Reference `monster_mash_game_screen.dart` for canonical full-height game UI + Positioned emulator overlay.
+>   - **SaveGameModal above the emulator**: the user explicitly tapped back to save — that intent wins over the takeout flow. The Don't Save button is at the bottom of the modal's centered card; painting SaveGameModal above the emulator means Don't Save isn't covered by the emulator section.
+>   - **DartboardPausedModal at the very top of the outer Stack**: the dartboard is disconnected; the game can't reliably register state changes regardless of what the user taps. Painting Paused above everything visually communicates "non-functional state."
+>   - **EditScoreDialog above the entire outer Stack as a routed dialog**: it is a focused, blocking interaction the user explicitly opened from inside RemoveDartsModal. Implementing it as a `showDialog()` route automatically gives it correct z-order above every outer-Stack layer, plus a barrier scrim and modal focus trap for free. The dialog's `barrierDismissible: false` and explicit Save / Cancel buttons mean it owns the user's attention until dismissed.
+>   - **EditScoreDialog auto-cancels on dartboard disconnect (already implemented in `lib/widgets/edit_score/edit_score_dialog.dart`)**: because the dialog is a route, layer 5 (`DartboardPausedModal`) cannot paint above it. The shared `showEditScoreDialog` therefore watches `DartboardProvider` and, when the paused condition (`!isEmulator && status != connected && status != emulator`) becomes true, schedules a post-frame `Navigator.pop()` WITHOUT calling `onSubmit`. No score updates while disconnected — when the dartboard reconnects the user can re-open Edit Score from RemoveDartsModal. Game screens do NOT need to wire anything game-specific for this; it's centralized in the shared dialog. **Rule: any future routed dialog launched from the gameplay screen must replicate this auto-cancel-on-disconnect pattern, or layer 5 will be visually shadowed by the dialog.**
+>   - **Edit Score button placement and flow (mandatory, identical across all games)**: the Edit Score button MUST live inside RemoveDartsModal and ONLY inside RemoveDartsModal — never as a standalone widget on the game screen, never in the AppBar, never in any other modal. Pass it in via `editScoreButtonKey: [GAME]GameKeys.editScoreButton` + `onEditScore: () => showEditScoreDialog(...)`. The user flow is: (1) takeout begins (3 darts thrown OR Skip Turn) → RemoveDartsModal renders → (2) user taps Edit Score → EditScoreDialog routes over the page → (3) user taps Save (provider scores updated) OR Cancel (no update) → dialog pops → (4) user is back on the game screen with RemoveDartsModal still visible (`shouldPromptTakeout` is still true) → (5) user can re-open Edit Score, or tap DARTS REMOVED inside the emulator section to finish the takeout and start the next turn. This means Edit Score is **gated by takeout** — a player cannot edit scores mid-turn (only after their 3 darts are in / they skipped), which prevents partial-turn corrections from desyncing announcements and turn state.
+>   **The dartboard emulator is a TEMPORARY OVERLAY, not reserved space in the visual hierarchy.** The primary game UI (descent area, player panels, scores) should be designed to fill the FULL available screen height. Reference `monster_mash_game_screen.dart` for canonical full-height game UI + Positioned emulator overlay.
 > - DartboardEmulatorFAB
 > - **PlayToCompleteRunner integration:**
 >   - Field: `PlayToCompleteRunner? _playToCompleteRunner;`
@@ -806,7 +883,7 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   - Method: `_onCancelAutoPlay()` cancels the runner
 >   - Auto-play guards on announcement and takeout chains (skip when runner is active)
 >   - Dispose the runner in `dispose()`
-> - RemoveDartsModal overlay (with Edit Score button inside — do NOT add a custom remove-darts button outside the modal)
+> - RemoveDartsModal overlay (with Edit Score button inside — do NOT add a custom remove-darts button outside the modal, and do NOT add an Edit Score button anywhere outside this modal — see "Edit Score button placement and flow" rule above)
 > - DartboardPausedModal overlay — show only when `!dartboardProvider.isEmulator && status != connected && status != emulator`
 > - SaveGameModal (back button + PopScope pattern)
 > - Skip turn button
@@ -835,6 +912,33 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   - The results screen winner card — same.
 >
 > **6. Create `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_results_screen.dart`:**
+> - **RESULTS SCREEN STRUCTURE — outer-Stack modal pattern (MANDATORY, apply EXACTLY — same shape as game/menu screens):**
+>   The results screen wraps `Scaffold` in an outer `Stack` so DartboardPausedModal can paint OVER the AppBar when the dartboard disconnects on this screen. The build method's return value is `Stack`, NOT `Scaffold`.
+>   ```dart
+>   @override
+>   Widget build(BuildContext context) {
+>     final dartboardProvider = context.watch<DartboardProvider>();
+>     // ...other watch calls and computations...
+>     return Stack(
+>       children: [
+>         // 1. Scaffold — AppBar (NO back arrow + title + DartboardConnectionInfo)
+>         //    + body (background, winner card, rankings, action buttons).
+>         Scaffold(
+>           appBar: AppBar(automaticallyImplyLeading: false, ...),
+>           body: ...,
+>         ),
+>         // 2. DartboardPausedModal (conditional) — LAST child; paints on top.
+>         //    Same conditional as the game and menu screens.
+>         if (!dartboardProvider.isEmulator &&
+>             dartboardProvider.status != DartboardConnectionStatus.connected &&
+>             dartboardProvider.status != DartboardConnectionStatus.emulator)
+>           DartboardPausedModal(config: DartboardPausedModalConfig.[gameName]()),
+>       ],
+>     );
+>   }
+>   ```
+>   Reference: any results screen for the canonical pattern (e.g. `lunar_lander_results_screen.dart`).
+>   **If a future feature adds another modal to the results screen** (e.g. a confirm-delete dialog, a stats dialog), follow the same outer-Stack-wrapping-Scaffold pattern: add the new modal as another outer-Stack sibling above the Scaffold and below DartboardPausedModal (which is always the last child). Routed dialogs (`showDialog`) are also fine and will paint above the entire outer Stack — for those, follow the EditScoreDialog auto-cancel-on-disconnect rule documented in the game-screen section above.
 > - **Background image (if spec specifies one):** render it as `Positioned.fill(child: Image.asset(BACKGROUND_PATH, fit: BoxFit.cover))` as the FIRST child of the body Stack — winner card + rankings + buttons render on top of it. Reference: `clockwork_quest_results_screen.dart` lines ~222-228.
 > - Winner display + rankings (**winner card uses character art rendered NATIVELY without circle clipping** — no `border-radius: 50%` + `overflow: hidden`. Use `BoxFit.contain` and `filter: drop-shadow` for any glow effect. Player tiles in the rankings list use generic avatars per project rule.)
 > - Victory music integration via VictoryMusicService
@@ -896,9 +1000,11 @@ After the sub-agent returns:
 > (g1) **Back arrow consistency** — read the `leading: IconButton(...)` block on the MENU and GAME screens and verify ALL of: (1) `Icon` size is `32`, (2) all three of `hoverColor`, `highlightColor`, `splashColor` are `Colors.transparent`, (3) each screen's IconButton uses its OWN keys class (`MenuKeys.backButton`, `GameKeys.backButton` — never another game's class). Menu and game MUST be identical in size, color treatment, and hover suppression. Reference: Monster Mash, Carnival Derby for the canonical pattern.
 > (g2) **Results screen has NO back arrow** — read the results-screen AppBar and verify `automaticallyImplyLeading: false` is set AND no `leading:` widget is supplied. Confirm the 3 action buttons (Play Again, Change Settings, Back to Menu) are the only navigation off the results screen.
 > (h) **No custom 'remove darts' button exists outside RemoveDartsModal** — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for any button labeled "Remove" outside the modal
+> (h1) **No Edit Score button exists outside RemoveDartsModal** — grep the game screen for any `key: ...editScoreButton` or `'Edit Score'` button outside RemoveDartsModal. The button must ONLY be wired via `RemoveDartsModal(editScoreButtonKey: ..., onEditScore: () => showEditScoreDialog(...))`. No standalone Edit Score button on the game screen, in the AppBar, or anywhere else.
 > (i) Correct PlayerListPanel pattern (Dual vs Team) — and the Team config lives in `team_player_list_panel_config.dart`, not `dual_player_list_panel_config.dart`
-> (j) SaveGameModal uses PopScope + Stack on game screen
-> (k) ResumeGameModal uses Stack on menu screen
+> (j) SaveGameModal uses PopScope + outer Stack on game screen (sibling of Scaffold, not body-Stack child)
+> (k) **Menu screen outer-Stack modal pattern**: build() returns `Stack`, NOT Scaffold. Outer-Stack siblings (back → front): Scaffold → `if (_showResumeModal) ResumeGameModal(...)` → conditional `DartboardPausedModal(...)` (last child, same paused condition as game screen). AddPlayerDialog is NOT a Stack child — it's a routed dialog launched from inside `DualPlayerListPanel` via `showAddPlayerDialog()` (the panel handles it; menu screen passes `addPlayerButtonKey` only).
+> (k1) **Results screen outer-Stack modal pattern**: build() returns `Stack`, NOT Scaffold. Outer-Stack siblings (back → front): Scaffold → conditional `DartboardPausedModal(...)` (last child, same paused condition). `context.watch<DartboardProvider>()` must be at the top of build().
 > (l) ResumeGameButton appears in menu screen AppBar, positioned to the LEFT of DartboardConnectionInfo
 > (m) **`announceRemoveDarts` is called UNCONDITIONALLY in the game-screen takeout handler** (the call is not inside a precedence `else` block) — read the actual code and trace the call site
 > (n) **DartboardPausedModal shown only when** `!dartboardProvider.isEmulator && status != connected && status != emulator` — read the actual conditional
@@ -909,7 +1015,9 @@ After the sub-agent returns:
 > (s) **Game characters are NOT used as player TILE avatars** in the player tile / rankings list — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for character image asset paths in player tile / rankings list contexts (must return zero matches there). They ARE allowed on the active player panel + descent/coral/shield game UI + winner card.
 > (t) No Nunito font or Flame Orange (`#FF6B35`) used in game-screen styling
 > (u) **Background image (if spec specifies one) IS rendered on game AND results screens.** Grep for the background asset path in `lib/screens/games/[GAME_NAME_SNAKE]/`. Must appear in both `[GAME_NAME_SNAKE]_game_screen.dart` AND `[GAME_NAME_SNAKE]_results_screen.dart` if a background asset is in the spec's Asset Checklist. Recurring miss in past sessions.
-> (v) **Stack child order on the game screen body matches the canonical pattern (CRITICAL — wrong order silently breaks both the takeout flow and the Don't Save flow):** background (if any) → main Column with reserved bottom space → `RemoveDartsModal` (conditional) → `Positioned(bottom: 0, child: DartboardEmulatorSection)` → `SaveGameModal` (conditional) → `DartboardPausedModal` (conditional) AS THE LAST CHILD. Read the actual Stack and verify the EXACT order of these four widgets: RemoveDartsModal first (back), then DartboardEmulatorSection, then SaveGameModal, then DartboardPausedModal (front). The semantics: takeout overlay sits behind the emulator so the emulator's DARTS REMOVED button stays tappable on top; save modal beats takeout so Don't Save isn't intercepted by the emulator's bottom strip; paused-disconnect modal beats everything.
+> (v) **Outer-Stack modal pattern on the game screen (CRITICAL — wrong structure silently breaks AppBar/FAB blocking AND the takeout/Don't Save flows):** the build method must `return PopScope(child: Stack(children: [Scaffold(...), ...4 outer-Stack modals]))`. Verify by reading the actual `return` statement: (1) PopScope's child is `Stack`, NOT `Scaffold`. (2) The Scaffold is the FIRST child of the outer Stack. (3) Inside the Scaffold's `body: Stack(...)`, the children are ONLY the background image and the main game Column — **NO modals inside body**. (4) The 4 outer-Stack siblings AFTER the Scaffold appear in this exact order: `RemoveDartsModal` (conditional, back) → `Positioned(bottom: 0, child: DartboardEmulatorSection)` → `SaveGameModal` (conditional) → `DartboardPausedModal` (conditional, last/front). Semantics: takeout overlay sits behind the emulator so DARTS REMOVED stays tappable; save modal beats takeout so Don't Save isn't intercepted; paused-disconnect modal beats everything; ALL four cover the AppBar back arrow + FAB so no other screen control is reachable while a modal is up.
+> (v1) **No modals inside `Scaffold.body` Stack** — grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart` for `RemoveDartsModal(`, `SaveGameModal(`, `DartboardPausedModal(`, `DartboardEmulatorSection(`. Each must appear EXACTLY ONCE, and the surrounding context (find the parent `Stack(children:` it lives in by reading 50 lines up) must be the OUTER Stack (sibling of Scaffold inside PopScope.child), NOT the inner body Stack. If any of the four widgets is inside `body: Stack(...)`, the AppBar back arrow stays tappable behind it and the modal-blocking guarantee is broken.
+> (v2) **Provider data hoisted to top of `build()`** — read the first ~20 lines of the build method and verify `context.watch<DartboardProvider>()`, `context.watch<[GAME]Provider>()`, and (when needed for outer-Stack modals) `context.watch<PlayerProvider>()` are called there. Variables computed inside a `Consumer<X>` builder are NOT visible to outer-Stack siblings; this fails compilation or silently strips data from the modals.
 > (w) **DualPlayerListPanel has bounded height** on the menu screen — wrapped in `Expanded(...)` for wide layout AND `SizedBox(height: ...)` for narrow scrollable layout. Read the menu screen and verify both branches.
 > (x) **Menu screen initState restores settings from `provider.currentGame`** when it's not null (so CHANGE MISSION preserves them). Read `initState()` and verify the read.
 > (y) **Menu screen initState auto-shows resume modal when saved games exist on initial entry** — `setState(() { _hasSavedGames = hasSaved; _showResumeModal = hasSaved; })` inside the initial `addPostFrameCallback`.

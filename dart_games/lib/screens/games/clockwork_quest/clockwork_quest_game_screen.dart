@@ -152,8 +152,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         : null;
 
     final shouldPromptTakeout = clockworkProvider.shouldPromptTakeout;
-    final hasDartsThrown =
-        game.totalDartsThrown.values.any((c) => c > 0);
+    final hasDartsThrown = game.totalDartsThrown.values.any((c) => c > 0);
 
     // Check for winner
     if (clockworkProvider.hasWinner) {
@@ -168,124 +167,145 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         if (didPop || _showSaveModal) return;
         setState(() => _showSaveModal = true);
       },
-      child: Scaffold(
-      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2C2C34),
-        leading: IconButton(
-          key: ClockworkQuestGameKeys.backButton,
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFF5F0E8), size: 32),
-          onPressed: () {
-            if (hasDartsThrown) {
-              setState(() => _showSaveModal = true);
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
-          hoverColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          splashColor: Colors.transparent,
-        ),
-        title: Text(
-          'CLOCKWORK QUEST',
-          style: GoogleFonts.cinzelDecorative(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFFF5F0E8),
-            letterSpacing: 1.5,
-          ),
-        ),
-        flexibleSpace: game.numberOfLaps > 1 && currentPlayerId != null
-            ? SafeArea(
-                child: Center(
-                  child: Text(
-                    'Lap ${clockworkProvider.getPlayerLapsCompleted(currentPlayerId!) + 1} / ${game.numberOfLaps}',
-                    key: ClockworkQuestGameKeys.currentLapText,
-                    style: GoogleFonts.cinzelDecorative(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFBF00),
-                      letterSpacing: 1.2,
-                    ),
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+            appBar: AppBar(
+              backgroundColor: const Color(0xFF2C2C34),
+              leading: IconButton(
+                key: ClockworkQuestGameKeys.backButton,
+                icon: const Icon(Icons.arrow_back,
+                    color: Color(0xFFF5F0E8), size: 32),
+                onPressed: () {
+                  if (hasDartsThrown) {
+                    setState(() => _showSaveModal = true);
+                  } else {
+                    Navigator.of(context).pop();
+                  }
+                },
+                hoverColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                splashColor: Colors.transparent,
+              ),
+              title: Text(
+                'CLOCKWORK QUEST',
+                style: GoogleFonts.cinzelDecorative(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFF5F0E8),
+                  letterSpacing: 1.5,
+                ),
+              ),
+              flexibleSpace: game.numberOfLaps > 1 && currentPlayerId != null
+                  ? SafeArea(
+                      child: Center(
+                        child: Text(
+                          'Lap ${clockworkProvider.getPlayerLapsCompleted(currentPlayerId!) + 1} / ${game.numberOfLaps}',
+                          key: ClockworkQuestGameKeys.currentLapText,
+                          style: GoogleFonts.cinzelDecorative(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFFBF00),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    )
+                  : null,
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: DartboardConnectionInfo(
+                    config: DartboardConnectionInfoConfig.clockworkQuest(),
                   ),
                 ),
-              )
-            : null,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.clockworkQuest(),
+              ],
             ),
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Background image with dark overlay
-          Positioned.fill(
-            child: Image.asset(
-              'assets/games/clockwork_quest/images/background.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: Container(
-              color: const Color(0xFF2C2C34).withOpacity(0.75),
-            ),
-          ),
+            body: Stack(
+              children: [
+                // Background image with dark overlay
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/games/clockwork_quest/images/background.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned.fill(
+                  child: Container(
+                    color: const Color(0xFF2C2C34).withOpacity(0.75),
+                  ),
+                ),
 
-          // Main game content — Positioned.fill so emulator overlay doesn't resize it
-          Positioned.fill(
-            child: Builder(builder: (context) {
-              // Compute opponents in turn order (who plays next)
-              final playerIds = game.playerIds as List<String>;
-              final currentIdx = game.currentPlayerIndex;
-              final opponents = <String>[];
-              for (int i = 1; i < playerIds.length; i++) {
-                opponents.add(playerIds[(currentIdx + i) % playerIds.length]);
-              }
-              final leftOpponents = opponents.take(4).toList();
-              final rightOpponents = opponents.skip(4).take(3).toList();
+                // Main game content — Positioned.fill so emulator overlay doesn't resize it
+                Positioned.fill(
+                  child: Builder(builder: (context) {
+                    // Compute opponents in turn order (who plays next)
+                    final playerIds = game.playerIds as List<String>;
+                    final currentIdx = game.currentPlayerIndex;
+                    final opponents = <String>[];
+                    for (int i = 1; i < playerIds.length; i++) {
+                      opponents
+                          .add(playerIds[(currentIdx + i) % playerIds.length]);
+                    }
+                    final leftOpponents = opponents.take(4).toList();
+                    final rightOpponents = opponents.skip(4).take(3).toList();
 
-              return Column(
-                children: [
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    return Column(
                       children: [
-                        // Left column — always reserve width so clock stays centered
-                        SizedBox(
-                          width: 263,
-                          child: leftOpponents.isNotEmpty
-                              ? _buildOpponentColumn(
-                                  leftOpponents, clockworkProvider, playerProvider, game)
-                              : const SizedBox(),
-                        ),
-
-                        // Center — clock face
                         Expanded(
-                          child: _buildClockFace(clockworkProvider, playerProvider,
-                              currentPlayer, currentPlayerId, game),
-                        ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Left column — always reserve width so clock stays centered
+                              SizedBox(
+                                width: 263,
+                                child: leftOpponents.isNotEmpty
+                                    ? _buildOpponentColumn(leftOpponents,
+                                        clockworkProvider, playerProvider, game)
+                                    : const SizedBox(),
+                              ),
 
-                        // Right column — always reserve width so clock stays centered
-                        SizedBox(
-                          width: 263,
-                          child: rightOpponents.isNotEmpty
-                              ? _buildOpponentColumn(
-                                  rightOpponents, clockworkProvider, playerProvider, game)
-                              : const SizedBox(),
+                              // Center — clock face
+                              Expanded(
+                                child: _buildClockFace(
+                                    clockworkProvider,
+                                    playerProvider,
+                                    currentPlayer,
+                                    currentPlayerId,
+                                    game),
+                              ),
+
+                              // Right column — always reserve width so clock stays centered
+                              SizedBox(
+                                width: 263,
+                                child: rightOpponents.isNotEmpty
+                                    ? _buildOpponentColumn(rightOpponents,
+                                        clockworkProvider, playerProvider, game)
+                                    : const SizedBox(),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
-              );
-            }),
+                    );
+                  }),
+                ),
+              ],
+            ),
+            floatingActionButton: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.clockworkQuest(),
+              onCancelAutoPlay: _onCancelAutoPlay,
+            ),
+            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           ),
 
-          // RemoveDartsModal (conditional) — sits BEHIND the emulator so the emulator's DARTS REMOVED button stays visible/tappable on top of the takeout overlay.
+          // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
+          // block ALL screen interactions while shown.
+          // RemoveDartsModal sits BEHIND the emulator so DARTS REMOVED stays
+          // visible/tappable on top of the takeout overlay.
           if (shouldPromptTakeout && currentPlayer != null)
             RemoveDartsModal(
               key: ClockworkQuestGameKeys.removeDartsModal,
@@ -295,7 +315,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               onEditScore: () => _showEditScoreDialog(context),
             ),
 
-          // DartboardEmulatorSection — sits ABOVE RemoveDartsModal so DARTS REMOVED is on top, BELOW SaveGameModal so Save's Don't Save button isn't intercepted.
+          // Emulator above RemoveDartsModal; below SaveGameModal.
           Positioned(
             left: 0,
             right: 0,
@@ -324,7 +344,9 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               },
               config: DartboardSectionConfig.clockworkQuest(),
               onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-              playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.clockworkQuest() : null,
+              playToCompleteConfig: _mockApi != null
+                  ? PlayToCompleteButtonConfig.clockworkQuest()
+                  : null,
             ),
           ),
 
@@ -339,7 +361,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               onDontSave: () => Navigator.of(context).pop(),
             ),
 
-          // Dartboard Paused Modal
+          // Dartboard Paused Modal — last child, paints on top.
           if (!dartboardProvider.isEmulator &&
               dartboardProvider.status != DartboardConnectionStatus.connected &&
               dartboardProvider.status != DartboardConnectionStatus.emulator)
@@ -347,14 +369,6 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               config: DartboardPausedModalConfig.clockworkQuest(),
             ),
         ],
-      ),
-      floatingActionButton: DartboardEmulatorFAB(
-        controller: _dartboardEmulatorController,
-        isConnected: !dartboardProvider.isEmulator,
-        config: DartboardFABConfig.clockworkQuest(),
-        onCancelAutoPlay: _onCancelAutoPlay,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -373,11 +387,33 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
 
     final currentTarget = provider.getPlayerCurrentTarget(currentPlayerId);
     final totalGears = game.maxTarget as int;
-    final completedTargets = provider.getPlayerCompletedTargets(currentPlayerId);
+    final completedTargets =
+        provider.getPlayerCompletedTargets(currentPlayerId);
     final isSpeedMode = game.speedMode as bool;
 
     // Standard dartboard segment order, clockwise from 12 o'clock
-    const dartboardOrder = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+    const dartboardOrder = [
+      20,
+      1,
+      18,
+      4,
+      13,
+      6,
+      10,
+      15,
+      2,
+      17,
+      3,
+      19,
+      7,
+      16,
+      8,
+      11,
+      14,
+      9,
+      12,
+      5
+    ];
 
     return Column(
       children: [
@@ -401,38 +437,52 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                   // Gears in dartboard order (clockwise from 12 o'clock)
                   for (int i = 0; i < 20; i++)
                     _positionedGearOnClock(
-                      i, dartboardOrder[i], currentTarget,
-                      cx, cy, gearRadius, gearSize, currentGearSize, totalGears,
-                      completedTargets: completedTargets, isSpeedMode: isSpeedMode,
+                      i,
+                      dartboardOrder[i],
+                      currentTarget,
+                      cx,
+                      cy,
+                      gearRadius,
+                      gearSize,
+                      currentGearSize,
+                      totalGears,
+                      completedTargets: completedTargets,
+                      isSpeedMode: isSpeedMode,
                     ),
                   if (game.includeBullseye)
                     _positionedGearOnClock(
-                      20, 21, currentTarget,
-                      cx, cy, gearRadius, gearSize, currentGearSize, totalGears,
+                      20,
+                      21,
+                      currentTarget,
+                      cx,
+                      cy,
+                      gearRadius,
+                      gearSize,
+                      currentGearSize,
+                      totalGears,
                       isBull: true,
-                      completedTargets: completedTargets, isSpeedMode: isSpeedMode,
+                      completedTargets: completedTargets,
+                      isSpeedMode: isSpeedMode,
                     ),
 
                   // Active player at the center
                   Align(
                     alignment: const Alignment(0, 0.0),
-                    child: _buildClockCenterPanel(
-                        provider, currentPlayer, currentPlayerId,
-                        currentTarget, game, size),
+                    child: _buildClockCenterPanel(provider, currentPlayer,
+                        currentPlayerId, currentTarget, game, size),
                   ),
                 ],
               );
             },
           ),
         ),
-
       ],
     );
   }
 
   Widget _positionedGearOnClock(
     int positionIndex, // clock position 0-indexed (0 = 12 o'clock)
-    int number,        // gear number (1-20 or 21 for bull)
+    int number, // gear number (1-20 or 21 for bull)
     int currentTarget,
     double cx,
     double cy,
@@ -513,7 +563,8 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         children: [
           // Inventor character image (separate from avatar)
           if (inventorPath != null)
-            Image.asset(inventorPath, height: characterSize, fit: BoxFit.contain)
+            Image.asset(inventorPath,
+                height: characterSize, fit: BoxFit.contain)
           // Player photo avatar (fallback when no inventor)
           else if (currentPlayer.photoPath != null)
             CircleAvatar(
@@ -752,8 +803,8 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             children: [
               // Inventor character image
               if (inventorPath != null)
-                Image.asset(inventorPath, width: imgSize, height: imgSize,
-                    fit: BoxFit.contain)
+                Image.asset(inventorPath,
+                    width: imgSize, height: imgSize, fit: BoxFit.contain)
               else
                 CircleAvatar(
                   radius: imgSize / 2,
@@ -795,8 +846,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
   void _showEditScoreDialog(BuildContext context) {
     final clockworkProvider =
         Provider.of<ClockworkQuestProvider>(context, listen: false);
-    final playerProvider =
-        Provider.of<PlayerProvider>(context, listen: false);
+    final playerProvider = Provider.of<PlayerProvider>(context, listen: false);
 
     final currentPlayerId = clockworkProvider.getCurrentPlayerId();
     if (currentPlayerId == null) return;
@@ -807,8 +857,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     showEditScoreDialog(
       context: context,
       playerName: currentPlayer.name,
-      initialSegments:
-          clockworkProvider.getCurrentTurnDarts(currentPlayerId),
+      initialSegments: clockworkProvider.getCurrentTurnDarts(currentPlayerId),
       config: EditScoreDialogConfig.clockworkQuest(),
       onSubmit: (newSegments) {
         clockworkProvider.editScore(
@@ -817,6 +866,4 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
       },
     );
   }
-
 }
-

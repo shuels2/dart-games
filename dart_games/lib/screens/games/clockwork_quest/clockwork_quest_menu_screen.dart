@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import '../../../constants/test_keys.dart';
 import '../../../models/player.dart';
 import '../../../providers/clockwork_quest_provider.dart';
+import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../widgets/player_list_panel/dual_player_list_panel.dart';
 import '../../../widgets/player_list_panel/dual_player_list_panel_config.dart';
 import '../../../services/save_game_service.dart';
@@ -45,9 +47,11 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
   void initState() {
     super.initState();
 
-    if (widget.initialIncludeBullseye != null) _includeBullseye = widget.initialIncludeBullseye!;
+    if (widget.initialIncludeBullseye != null)
+      _includeBullseye = widget.initialIncludeBullseye!;
     if (widget.initialSpeedMode != null) _speedMode = widget.initialSpeedMode!;
-    if (widget.initialNumberOfLaps != null) _numberOfLaps = widget.initialNumberOfLaps!;
+    if (widget.initialNumberOfLaps != null)
+      _numberOfLaps = widget.initialNumberOfLaps!;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final playerProvider = context.read<PlayerProvider>();
@@ -92,6 +96,7 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
   @override
   Widget build(BuildContext context) {
     final clockworkProvider = Provider.of<ClockworkQuestProvider>(context);
+    final dartboardProvider = context.watch<DartboardProvider>();
 
     return Stack(
       children: [
@@ -101,7 +106,8 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
             backgroundColor: const Color(0xFF2C2C34),
             leading: IconButton(
               key: ClockworkQuestMenuKeys.backButton,
-              icon: const Icon(Icons.arrow_back, color: Color(0xFFF5F0E8), size: 32),
+              icon: const Icon(Icons.arrow_back,
+                  color: Color(0xFFF5F0E8), size: 32),
               onPressed: () => Navigator.pop(context),
               hoverColor: Colors.transparent,
               highlightColor: Colors.transparent,
@@ -147,204 +153,212 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
               ),
 
               Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left Panel - Game Description
-              Expanded(
-                flex: 4,
-                child: Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2C2C34).withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFB87333).withOpacity(0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'HOW TO PLAY',
-                          style: GoogleFonts.cinzelDecorative(
-                            fontSize: 39,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFFFFBF00),
-                            letterSpacing: 1.5,
-                          ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left Panel - Game Description
+                  Expanded(
+                    flex: 4,
+                    child: Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C2C34).withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFB87333).withOpacity(0.3),
+                          width: 2,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Race to activate all 20 gears on the clocktower before your opponents!',
-                          style: GoogleFonts.lato(
-                            fontSize: 20,
-                            color: const Color(0xFFF5F0E8),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          '1.  Hit numbers 1 through 20 on the dartboard in order. Each hit activates that gear on the clock.',
-                          style: GoogleFonts.lato(
-                            fontSize: 20,
-                            color: const Color(0xFFF5F0E8),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '2.  You get 3 darts per turn. Only hits on your current target advance you — everything else is a miss.',
-                          style: GoogleFonts.lato(
-                            fontSize: 20,
-                            color: const Color(0xFFF5F0E8),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '3.  First inventor to activate all gears earns the Clockwork Crown!',
-                          style: GoogleFonts.lato(
-                            fontSize: 20,
-                            color: const Color(0xFFF5F0E8),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'OPTIONS:',
-                          style: GoogleFonts.cinzelDecorative(
-                            fontSize: 33,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFFC5A54E),
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '⚙  Include Bullseye — Adds the bullseye as gear 21, making the game longer.',
-                          style: GoogleFonts.lato(
-                            fontSize: 19,
-                            color: const Color(0xFFF5F0E8).withOpacity(0.85),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '⚙  Speed Mode — Hit any gear in any order instead of 1 to 20 in numerical order. Great for a faster, more chaotic game.',
-                          style: GoogleFonts.lato(
-                            fontSize: 19,
-                            color: const Color(0xFFF5F0E8).withOpacity(0.85),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '⚙  Laps — Set how many full circuits (1–5) players must complete to win.',
-                          style: GoogleFonts.lato(
-                            fontSize: 19,
-                            color: const Color(0xFFF5F0E8).withOpacity(0.85),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'The tower awaits — who will master the machine?',
-                          style: GoogleFonts.cinzelDecorative(
-                            fontSize: 23,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFFFFBF00),
-                            letterSpacing: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Right Panel - Settings + Players + Start
-              Expanded(
-                flex: 6,
-                child: Consumer<PlayerProvider>(
-                  builder: (context, playerProvider, child) {
-                    final selectedPlayers = playerProvider.selectedPlayers;
-                    final bool canStart =
-                        selectedPlayers.length >= 2 && selectedPlayers.length <= 8;
-
-                    return Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 16, 16, 0),
-                          child: _buildSettingsSection(),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Player Selection
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
-                            child: DualPlayerListPanel(
-                              key: ClockworkQuestMenuKeys.playerListView,
-                              config: DualPlayerListPanelConfig.clockworkQuest(),
-                              addPlayerButtonKey:
-                                  ClockworkQuestMenuKeys.addPlayerButton,
-                              addPlayerButtonEmptyStateKey:
-                                  ClockworkQuestMenuKeys.addPlayerButtonEmptyState,
-                              playerTileKey: (id) =>
-                                  ClockworkQuestMenuKeys.playerTile(id),
-                              removePlayerButtonKey: (id) =>
-                                  ClockworkQuestMenuKeys.removePlayerButton(id),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Start Button
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 0, 16, 16),
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              key: ClockworkQuestMenuKeys.startButton,
-                              onPressed: canStart
-                                  ? () => _startGame(context, selectedPlayers)
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color(0xFF43B3AE), // Verdigris Green
-                                disabledBackgroundColor:
-                                    const Color(0xFF43B3AE).withOpacity(0.5),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'HOW TO PLAY',
+                              style: GoogleFonts.cinzelDecorative(
+                                fontSize: 39,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFBF00),
+                                letterSpacing: 1.5,
                               ),
-                              child: Text(
-                                'WIND THE CLOCK!',
-                                style: GoogleFonts.cinzelDecorative(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFF5F0E8),
-                                  letterSpacing: 1.5,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Race to activate all 20 gears on the clocktower before your opponents!',
+                              style: GoogleFonts.lato(
+                                fontSize: 20,
+                                color: const Color(0xFFF5F0E8),
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '1.  Hit numbers 1 through 20 on the dartboard in order. Each hit activates that gear on the clock.',
+                              style: GoogleFonts.lato(
+                                fontSize: 20,
+                                color: const Color(0xFFF5F0E8),
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '2.  You get 3 darts per turn. Only hits on your current target advance you — everything else is a miss.',
+                              style: GoogleFonts.lato(
+                                fontSize: 20,
+                                color: const Color(0xFFF5F0E8),
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '3.  First inventor to activate all gears earns the Clockwork Crown!',
+                              style: GoogleFonts.lato(
+                                fontSize: 20,
+                                color: const Color(0xFFF5F0E8),
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'OPTIONS:',
+                              style: GoogleFonts.cinzelDecorative(
+                                fontSize: 33,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFC5A54E),
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              '⚙  Include Bullseye — Adds the bullseye as gear 21, making the game longer.',
+                              style: GoogleFonts.lato(
+                                fontSize: 19,
+                                color:
+                                    const Color(0xFFF5F0E8).withOpacity(0.85),
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              '⚙  Speed Mode — Hit any gear in any order instead of 1 to 20 in numerical order. Great for a faster, more chaotic game.',
+                              style: GoogleFonts.lato(
+                                fontSize: 19,
+                                color:
+                                    const Color(0xFFF5F0E8).withOpacity(0.85),
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              '⚙  Laps — Set how many full circuits (1–5) players must complete to win.',
+                              style: GoogleFonts.lato(
+                                fontSize: 19,
+                                color:
+                                    const Color(0xFFF5F0E8).withOpacity(0.85),
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'The tower awaits — who will master the machine?',
+                              style: GoogleFonts.cinzelDecorative(
+                                fontSize: 23,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFBF00),
+                                letterSpacing: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Right Panel - Settings + Players + Start
+                  Expanded(
+                    flex: 6,
+                    child: Consumer<PlayerProvider>(
+                      builder: (context, playerProvider, child) {
+                        final selectedPlayers = playerProvider.selectedPlayers;
+                        final bool canStart = selectedPlayers.length >= 2 &&
+                            selectedPlayers.length <= 8;
+
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(0, 16, 16, 0),
+                              child: _buildSettingsSection(),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Player Selection
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
+                                child: DualPlayerListPanel(
+                                  key: ClockworkQuestMenuKeys.playerListView,
+                                  config: DualPlayerListPanelConfig
+                                      .clockworkQuest(),
+                                  addPlayerButtonKey:
+                                      ClockworkQuestMenuKeys.addPlayerButton,
+                                  addPlayerButtonEmptyStateKey:
+                                      ClockworkQuestMenuKeys
+                                          .addPlayerButtonEmptyState,
+                                  playerTileKey: (id) =>
+                                      ClockworkQuestMenuKeys.playerTile(id),
+                                  removePlayerButtonKey: (id) =>
+                                      ClockworkQuestMenuKeys.removePlayerButton(
+                                          id),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+
+                            const SizedBox(height: 16),
+
+                            // Start Button
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(0, 0, 16, 16),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  key: ClockworkQuestMenuKeys.startButton,
+                                  onPressed: canStart
+                                      ? () =>
+                                          _startGame(context, selectedPlayers)
+                                      : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(
+                                        0xFF43B3AE), // Verdigris Green
+                                    disabledBackgroundColor:
+                                        const Color(0xFF43B3AE)
+                                            .withOpacity(0.5),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'WIND THE CLOCK!',
+                                    style: GoogleFonts.cinzelDecorative(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFF5F0E8),
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
             ],
           ),
         ),
@@ -369,6 +383,13 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
               setState(() => _showResumeModal = false);
               _checkForSavedGames();
             },
+          ),
+        // Dartboard paused modal — last child, paints on top.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.clockworkQuest(),
           ),
       ],
     );

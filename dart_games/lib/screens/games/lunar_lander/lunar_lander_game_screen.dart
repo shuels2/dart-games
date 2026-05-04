@@ -175,8 +175,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
               : 0;
           final newAltitude = provider.getCurrentAltitude(currentPlayerId);
           final dartBusts = provider.getDartThrowWasBust(currentPlayerId);
-          final wasBust =
-              dartBusts.isNotEmpty && dartBusts.last;
+          final wasBust = dartBusts.isNotEmpty && dartBusts.last;
           final hasWinner = provider.hasWinner;
 
           // Fire exactly ONE moment announcement via precedence chain
@@ -303,8 +302,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
     final dartBusts = game.getDartThrowWasBust(currentPlayerId);
     final shouldPromptTakeout = provider.shouldPromptTakeout;
 
-    final hasDartsThrown =
-        game.totalDartsThrown.values.any((c) => c > 0);
+    final hasDartsThrown = game.totalDartsThrown.values.any((c) => c > 0);
 
     // Auto-navigate to results when hasWinner becomes true. Matches the
     // Clockwork Quest pattern — without this, navigation would only fire via
@@ -322,342 +320,358 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         if (didPop || _showSaveModal) return;
         setState(() => _showSaveModal = true);
       },
-      child: Scaffold(
-        backgroundColor: _spaceBlack,
-        appBar: AppBar(
-          leading: IconButton(
-            key: LunarLanderGameKeys.backButton,
-            icon: const Icon(Icons.arrow_back, color: _starWhite, size: 32),
-            onPressed: () {
-              if (hasDartsThrown) {
-                setState(() => _showSaveModal = true);
-              } else {
-                Navigator.of(context).pop();
-              }
-            },
-            hoverColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            splashColor: Colors.transparent,
-          ),
-          title: Text(
-            'LUNAR LANDER',
-            style: GoogleFonts.orbitron(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: _starWhite,
-              letterSpacing: 1.5,
-            ),
-          ),
-          flexibleSpace: game.hardLandingEnabled
-              ? SafeArea(
-                  child: Center(
-                    child: Container(
-                      key: LunarLanderGameKeys.hardLandingBadge,
-                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _thrusterRed,
-                        borderRadius: BorderRadius.circular(30),
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: _spaceBlack,
+            appBar: AppBar(
+              leading: IconButton(
+                key: LunarLanderGameKeys.backButton,
+                icon: const Icon(Icons.arrow_back, color: _starWhite, size: 32),
+                onPressed: () {
+                  if (hasDartsThrown) {
+                    setState(() => _showSaveModal = true);
+                  } else {
+                    Navigator.of(context).pop();
+                  }
+                },
+                hoverColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                splashColor: Colors.transparent,
+              ),
+              title: Text(
+                'LUNAR LANDER',
+                style: GoogleFonts.orbitron(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: _starWhite,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              flexibleSpace: game.hardLandingEnabled
+                  ? SafeArea(
+                      child: Center(
+                        child: Container(
+                          key: LunarLanderGameKeys.hardLandingBadge,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 15, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _thrusterRed,
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Text(
+                            'HARD LANDING',
+                            style: GoogleFonts.orbitron(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: _starWhite,
+                            ),
+                          ),
+                        ),
                       ),
-                      child: Text(
-                        'HARD LANDING',
-                        style: GoogleFonts.orbitron(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: _starWhite,
+                    )
+                  : null,
+              backgroundColor: _earthBlue,
+              foregroundColor: _starWhite,
+              actions: [
+                // Skip turn button
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: OutlinedButton(
+                    key: LunarLanderGameKeys.skipTurnButton,
+                    onPressed: () {
+                      final p = context.read<LunarLanderProvider>();
+                      p.skipTurn();
+                      if (p.shouldPromptTakeout) {
+                        Future.delayed(const Duration(milliseconds: 1500), () {
+                          if (mounted) _audioQueue!.announceRemoveDarts();
+                        });
+                        Future.delayed(const Duration(milliseconds: 3500), () {
+                          if (mounted) _mockApi?.simulateTakeoutStarted();
+                        });
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: _rocketFlame, width: 1.5),
+                      foregroundColor: _rocketFlame,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    ),
+                    child: Text(
+                      'SKIP TURN',
+                      style: GoogleFonts.orbitron(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                // D1, D2, D3 dart indicators
+                ...List.generate(3, (i) {
+                  final hasScore = i < dartScores.length;
+                  final score = hasScore ? dartScores[i] : null;
+                  final isBust =
+                      hasScore && i < dartBusts.length && dartBusts[i];
+                  final isSkip = hasScore && score == 0 && !isBust;
+
+                  Color slotColor;
+                  String scoreLabel;
+                  if (!hasScore) {
+                    slotColor = _rocketFlame.withOpacity(0.5);
+                    scoreLabel = '—';
+                  } else if (isBust) {
+                    slotColor = _thrusterRed;
+                    scoreLabel = 'X';
+                  } else if (isSkip) {
+                    slotColor = _moonDustGray.withOpacity(0.5);
+                    scoreLabel = '—';
+                  } else {
+                    slotColor = _missionGreen;
+                    scoreLabel = '$score';
+                  }
+
+                  return Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child: Container(
+                      key: LunarLanderGameKeys.dartIndicator(i),
+                      width: 44,
+                      decoration: BoxDecoration(
+                        color: hasScore
+                            ? slotColor.withOpacity(0.25)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: hasScore
+                              ? slotColor
+                              : _rocketFlame.withOpacity(0.5),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          scoreLabel,
+                          style: GoogleFonts.orbitron(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: hasScore
+                                ? slotColor
+                                : _rocketFlame.withOpacity(0.5),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                )
-              : null,
-          backgroundColor: _earthBlue,
-          foregroundColor: _starWhite,
-          actions: [
-            // Skip turn button
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: OutlinedButton(
-                key: LunarLanderGameKeys.skipTurnButton,
-                onPressed: () {
-                  final p = context.read<LunarLanderProvider>();
-                  p.skipTurn();
-                  if (p.shouldPromptTakeout) {
-                    Future.delayed(const Duration(milliseconds: 1500), () {
-                      if (mounted) _audioQueue!.announceRemoveDarts();
-                    });
-                    Future.delayed(const Duration(milliseconds: 3500), () {
-                      if (mounted) _mockApi?.simulateTakeoutStarted();
-                    });
-                  }
-                },
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: _rocketFlame, width: 1.5),
-                  foregroundColor: _rocketFlame,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  );
+                }),
+                const SizedBox(width: 8),
+                DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.lunarLander(),
                 ),
-                child: Text(
-                  'SKIP TURN',
-                  style: GoogleFonts.orbitron(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+                const SizedBox(width: 8),
+              ],
             ),
-            const SizedBox(width: 4),
-            // D1, D2, D3 dart indicators
-            ...List.generate(3, (i) {
-              final hasScore = i < dartScores.length;
-              final score = hasScore ? dartScores[i] : null;
-              final isBust = hasScore && i < dartBusts.length && dartBusts[i];
-              final isSkip = hasScore && score == 0 && !isBust;
-
-              Color slotColor;
-              String scoreLabel;
-              if (!hasScore) {
-                slotColor = _rocketFlame.withOpacity(0.5);
-                scoreLabel = '—';
-              } else if (isBust) {
-                slotColor = _thrusterRed;
-                scoreLabel = 'X';
-              } else if (isSkip) {
-                slotColor = _moonDustGray.withOpacity(0.5);
-                scoreLabel = '—';
-              } else {
-                slotColor = _missionGreen;
-                scoreLabel = '$score';
-              }
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                child: Container(
-                  key: LunarLanderGameKeys.dartIndicator(i),
-                  width: 44,
-                  decoration: BoxDecoration(
-                    color: hasScore ? slotColor.withOpacity(0.25) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: hasScore ? slotColor : _rocketFlame.withOpacity(0.5),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      scoreLabel,
-                      style: GoogleFonts.orbitron(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: hasScore ? slotColor : _rocketFlame.withOpacity(0.5),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(width: 8),
-            DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.lunarLander(),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: Stack(
-          children: [
-            // Background image with dark overlay
-            Positioned.fill(
-              child: Image.asset(
-                'assets/games/lunar_lander/images/LunarLander-Background.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            // Main content
-            Column(
+            body: Stack(
               children: [
-                // Game area: full-width descent tracks
-                Expanded(
-                  child: _buildDescentArea(game, currentPlayerId, allPlayers),
+                // Background image with dark overlay
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/games/lunar_lander/images/LunarLander-Background.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                // Main content
+                Column(
+                  children: [
+                    // Game area: full-width descent tracks
+                    Expanded(
+                      child:
+                          _buildDescentArea(game, currentPlayerId, allPlayers),
+                    ),
+                  ],
                 ),
               ],
             ),
-            // RemoveDartsModal (conditional) — sits BEHIND the emulator so the emulator's DARTS REMOVED button stays visible/tappable on top of the takeout overlay.
-            if (shouldPromptTakeout)
-              RemoveDartsModal(
-                config: RemoveDartsModalConfig.lunarLander(),
-                playerName: allPlayers
-                        .where((p) => p.id == currentPlayerId)
-                        .firstOrNull
-                        ?.name ??
-                    'Player',
-                editScoreButtonKey: LunarLanderGameKeys.editScoreButton,
-                onEditScore: () {
-                  final currentPlayer = allPlayers
+            floatingActionButton: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.lunarLander(),
+              onCancelAutoPlay: _onCancelAutoPlay,
+            ),
+            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          ),
+          // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
+          // block ALL screen interactions while shown.
+          // RemoveDartsModal sits BEHIND the emulator so DARTS REMOVED stays
+          // visible/tappable on top of the takeout overlay.
+          if (shouldPromptTakeout)
+            RemoveDartsModal(
+              config: RemoveDartsModalConfig.lunarLander(),
+              playerName: allPlayers
                       .where((p) => p.id == currentPlayerId)
-                      .firstOrNull;
-                  if (currentPlayer == null) return;
-                  final dartScores = provider.getCurrentTurnDartScores(currentPlayerId);
-                  // Build segment strings from dart scores for edit dialog.
-                  // EditScoreDialog distinguishes between '-' (not yet thrown,
-                  // ring=null → invalidates the Save button) and 'Miss' (thrown
-                  // as a miss, ring='Miss' → valid). Mapping a thrown miss to
-                  // '-' would wrongly disable Save; map it to 'Miss' instead.
-                  final segments = dartScores
-                      .map((score) => score == 0 ? 'Miss' : 'S$score')
-                      .toList();
-                  showEditScoreDialog(
-                    context: context,
-                    playerName: currentPlayer.name,
-                    initialSegments: segments,
-                    onSubmit: (newSegments) {
-                      // Apply each dart's new value via editPlayerScore.
-                      // Segments arrive from the dialog as one of:
-                      //   'S20' / 's20' / 'D20' / 'T20' — single/double/triple
-                      //   'Bull' (50) / '25' (outer bull)
-                      //   'Miss' — a thrown miss (score 0)
-                      //   '-' or empty — dart not thrown (skip; should not
-                      //   occur because Save is disabled when ring is null)
-                      for (int i = 0; i < newSegments.length && i < 3; i++) {
-                        final seg = newSegments[i];
-                        if (seg.isEmpty || seg == '-') continue;
-                        int score = 0;
-                        int mult = 1;
-                        if (seg == 'Miss') {
-                          score = 0;
-                          mult = 1;
-                        } else if (seg == 'Bull') {
-                          score = 50;
-                          mult = 1;
-                        } else if (seg == '25') {
-                          score = 25;
-                          mult = 1;
-                        } else {
-                          final m = RegExp(r'([SDTsdt])(\d+)').firstMatch(seg);
-                          if (m != null) {
-                            score = int.tryParse(m.group(2)!) ?? 0;
-                            final p = m.group(1)!.toUpperCase();
-                            if (p == 'D') mult = 2;
-                            if (p == 'T') mult = 3;
-                          }
-                        }
-                        if (i < dartScores.length) {
-                          provider.editPlayerScore(
-                            playerId: currentPlayerId,
-                            dartIndex: i,
-                            newScore: score,
-                            newMultiplier: mult,
-                          );
+                      .firstOrNull
+                      ?.name ??
+                  'Player',
+              editScoreButtonKey: LunarLanderGameKeys.editScoreButton,
+              onEditScore: () {
+                final currentPlayer = allPlayers
+                    .where((p) => p.id == currentPlayerId)
+                    .firstOrNull;
+                if (currentPlayer == null) return;
+                final dartScores =
+                    provider.getCurrentTurnDartScores(currentPlayerId);
+                // Build segment strings from dart scores for edit dialog.
+                // EditScoreDialog distinguishes between '-' (not yet thrown,
+                // ring=null → invalidates the Save button) and 'Miss' (thrown
+                // as a miss, ring='Miss' → valid). Mapping a thrown miss to
+                // '-' would wrongly disable Save; map it to 'Miss' instead.
+                final segments = dartScores
+                    .map((score) => score == 0 ? 'Miss' : 'S$score')
+                    .toList();
+                showEditScoreDialog(
+                  context: context,
+                  playerName: currentPlayer.name,
+                  initialSegments: segments,
+                  onSubmit: (newSegments) {
+                    // Apply each dart's new value via editPlayerScore.
+                    // Segments arrive from the dialog as one of:
+                    //   'S20' / 's20' / 'D20' / 'T20' — single/double/triple
+                    //   'Bull' (50) / '25' (outer bull)
+                    //   'Miss' — a thrown miss (score 0)
+                    //   '-' or empty — dart not thrown (skip; should not
+                    //   occur because Save is disabled when ring is null)
+                    for (int i = 0; i < newSegments.length && i < 3; i++) {
+                      final seg = newSegments[i];
+                      if (seg.isEmpty || seg == '-') continue;
+                      int score = 0;
+                      int mult = 1;
+                      if (seg == 'Miss') {
+                        score = 0;
+                        mult = 1;
+                      } else if (seg == 'Bull') {
+                        score = 50;
+                        mult = 1;
+                      } else if (seg == '25') {
+                        score = 25;
+                        mult = 1;
+                      } else {
+                        final m = RegExp(r'([SDTsdt])(\d+)').firstMatch(seg);
+                        if (m != null) {
+                          score = int.tryParse(m.group(2)!) ?? 0;
+                          final p = m.group(1)!.toUpperCase();
+                          if (p == 'D') mult = 2;
+                          if (p == 'T') mult = 3;
                         }
                       }
-                    },
-                    config: EditScoreDialogConfig.lunarLander(),
-                  );
-                },
-              ),
-            // DartboardEmulatorSection — sits ABOVE RemoveDartsModal so DARTS REMOVED is on top, BELOW SaveGameModal so Save's Don't Save button isn't intercepted.
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: DartboardEmulatorSection(
-                controller: _dartboardEmulatorController,
-                isConnected: !dartboardProvider.isEmulator,
-                shouldPromptTakeout: shouldPromptTakeout,
-                dartboardKey: _dartboardKey,
-                onDartThrow: (score, multiplier, baseScore, position) {
-                  if (_mockApi != null) {
-                    _mockApi!.simulateDartThrow(
-                      score: score,
-                      multiplier: multiplier,
-                      playerName: 'Player',
-                      baseScore: baseScore,
-                      widgetX: position.dx,
-                      widgetY: position.dy,
-                      widgetSize: 250,
-                    );
-                  }
-                },
-                onRemoveDarts: () {
-                  _mockApi?.simulateTakeoutFinished();
-                },
-                config: DartboardSectionConfig.lunarLander(),
-                onPlayToComplete:
-                    _mockApi != null ? _onPlayToComplete : null,
-                playToCompleteConfig: _mockApi != null
-                    ? PlayToCompleteButtonConfig.lunarLander()
-                    : null,
-              ),
+                      if (i < dartScores.length) {
+                        provider.editPlayerScore(
+                          playerId: currentPlayerId,
+                          dartIndex: i,
+                          newScore: score,
+                          newMultiplier: mult,
+                        );
+                      }
+                    }
+                  },
+                  config: EditScoreDialogConfig.lunarLander(),
+                );
+              },
             ),
-            // Save game modal
-            if (_showSaveModal)
-              SaveGameModal(
-                config: SaveGameModalConfig.lunarLander(),
-                onSave: () async {
-                  await provider.saveGame(allPlayers);
-                  if (mounted) Navigator.of(context).pop();
-                },
-                onDontSave: () => Navigator.of(context).pop(),
-              ),
-            // Dartboard paused modal
-            if (!dartboardProvider.isEmulator &&
-                dartboardProvider.status !=
-                    DartboardConnectionStatus.connected &&
-                dartboardProvider.status !=
-                    DartboardConnectionStatus.emulator)
-              DartboardPausedModal(
-                config: DartboardPausedModalConfig.lunarLander(),
-              ),
-          ],
-        ),
-        floatingActionButton: DartboardEmulatorFAB(
-          controller: _dartboardEmulatorController,
-          isConnected: !dartboardProvider.isEmulator,
-          config: DartboardFABConfig.lunarLander(),
-          onCancelAutoPlay: _onCancelAutoPlay,
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          // Emulator above RemoveDartsModal; below SaveGameModal so the save modal's
+          // Don't Save button isn't intercepted by the emulator.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: DartboardEmulatorSection(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              shouldPromptTakeout: shouldPromptTakeout,
+              dartboardKey: _dartboardKey,
+              onDartThrow: (score, multiplier, baseScore, position) {
+                if (_mockApi != null) {
+                  _mockApi!.simulateDartThrow(
+                    score: score,
+                    multiplier: multiplier,
+                    playerName: 'Player',
+                    baseScore: baseScore,
+                    widgetX: position.dx,
+                    widgetY: position.dy,
+                    widgetSize: 250,
+                  );
+                }
+              },
+              onRemoveDarts: () {
+                _mockApi?.simulateTakeoutFinished();
+              },
+              config: DartboardSectionConfig.lunarLander(),
+              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
+              playToCompleteConfig: _mockApi != null
+                  ? PlayToCompleteButtonConfig.lunarLander()
+                  : null,
+            ),
+          ),
+          // Save Game Modal
+          if (_showSaveModal)
+            SaveGameModal(
+              config: SaveGameModalConfig.lunarLander(),
+              onSave: () async {
+                await provider.saveGame(allPlayers);
+                if (mounted) Navigator.of(context).pop();
+              },
+              onDontSave: () => Navigator.of(context).pop(),
+            ),
+          // Dartboard Paused Modal — last child, paints on top.
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.lunarLander(),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildDescentArea(LunarLanderGame game, String currentPlayerId,
-      List<dynamic> allPlayers) {
+  Widget _buildDescentArea(
+      LunarLanderGame game, String currentPlayerId, List<dynamic> allPlayers) {
     final playerCount = game.playerIds.length;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         // Fill 85% of each equal column width, clamped to a sensible range.
         // This adapts automatically to any screen size or player count.
-        final charSize = (constraints.maxWidth / playerCount * 0.85)
-            .clamp(120.0, 300.0);
+        final charSize =
+            (constraints.maxWidth / playerCount * 0.85).clamp(120.0, 300.0);
 
-    return Container(
-      margin: const EdgeInsets.all(8),
-      padding: const EdgeInsets.fromLTRB(8, 12, 8, 112),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.transparent),
-      ),
-      child: Column(
-        children: [
-          // Descent columns
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: game.playerIds.map((playerId) {
-                return _buildPlayerDescentColumn(
-                  game: game,
-                  playerId: playerId,
-                  currentPlayerId: currentPlayerId,
-                  allPlayers: allPlayers,
-                  charSize: charSize,
-                );
-              }).toList(),
-            ),
+        return Container(
+          margin: const EdgeInsets.all(8),
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 112),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.transparent),
           ),
-        ],
-      ),
-    );
+          child: Column(
+            children: [
+              // Descent columns
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: game.playerIds.map((playerId) {
+                    return _buildPlayerDescentColumn(
+                      game: game,
+                      playerId: playerId,
+                      currentPlayerId: currentPlayerId,
+                      allPlayers: allPlayers,
+                      charSize: charSize,
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -697,7 +711,8 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                   ),
                   // Player name travels with the character
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: isActive
                           ? _rocketFlame.withOpacity(0.9)
@@ -747,7 +762,8 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                   // Altitude label below character
                   Container(
                     key: isActive ? LunarLanderGameKeys.altitudeReadout : null,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: currentAlt < 0
                           ? _thrusterRed.withOpacity(0.9)
@@ -777,7 +793,10 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                             end: Alignment.bottomCenter,
                             colors: isActive
                                 ? [_rocketFlame, _rocketFlame.withOpacity(0.15)]
-                                : [const Color(0xFF4A9EC4), const Color(0xFF4A9EC4).withOpacity(0.15)],
+                                : [
+                                    const Color(0xFF4A9EC4),
+                                    const Color(0xFF4A9EC4).withOpacity(0.15)
+                                  ],
                           ),
                           borderRadius: BorderRadius.circular(3),
                         ),
@@ -792,5 +811,4 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
       ),
     );
   }
-
 }

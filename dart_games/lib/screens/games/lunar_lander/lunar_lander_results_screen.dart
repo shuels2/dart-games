@@ -13,6 +13,8 @@ import '../../../services/save_game_service.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../providers/dartboard_provider.dart';
 import 'lunar_lander_menu_screen.dart';
 import 'lunar_lander_game_screen.dart';
 
@@ -128,25 +130,20 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
 
       if (customMusicSource != null && customMusicSource.isNotEmpty) {
         if (customMusicSource.startsWith('data:')) {
-          await _audioPlayer
-              .play(UrlSource(customMusicSource))
-              .timeout(const Duration(seconds: 5),
-                  onTimeout: () =>
-                      debugPrint('Audio playback timed out'));
+          await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => debugPrint('Audio playback timed out'));
         } else {
-          await _audioPlayer
-              .play(DeviceFileSource(customMusicSource))
-              .timeout(const Duration(seconds: 5),
-                  onTimeout: () =>
-                      debugPrint('Audio playback timed out'));
+          await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => debugPrint('Audio playback timed out'));
         }
       } else {
         await _audioPlayer
             .play(UrlSource(
                 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'))
             .timeout(const Duration(seconds: 5),
-                onTimeout: () =>
-                    debugPrint('Audio playback timed out'));
+                onTimeout: () => debugPrint('Audio playback timed out'));
       }
     } catch (e) {
       debugPrint('Error playing victory music: $e');
@@ -155,6 +152,7 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final dartboardProvider = context.watch<DartboardProvider>();
     final provider = context.read<LunarLanderProvider>();
     final playerProvider = context.read<PlayerProvider>();
 
@@ -168,8 +166,7 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
     if (winnerId == null) {
       return const Scaffold(body: Center(child: Text('No winner found')));
     }
-    final winner =
-        allPlayers.where((p) => p.id == winnerId).firstOrNull;
+    final winner = allPlayers.where((p) => p.id == winnerId).firstOrNull;
     if (winner == null) {
       return const Scaffold(body: Center(child: Text('Winner not found')));
     }
@@ -190,230 +187,244 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
       return turnsA.compareTo(turnsB);
     });
 
-    return Scaffold(
-      backgroundColor: _spaceBlack,
-      appBar: AppBar(
-        title: Text(
-          'LUNAR LANDER RESULTS',
-          style: GoogleFonts.orbitron(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: _starWhite,
-            letterSpacing: 1.5,
-          ),
-        ),
-        backgroundColor: _earthBlue,
-        foregroundColor: _starWhite,
-        automaticallyImplyLeading: false,
-        actions: [
-          DartboardConnectionInfo(
-            config: DartboardConnectionInfoConfig.lunarLander(),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Background image
-          Positioned.fill(
-            child: Image.asset(
-              'assets/games/lunar_lander/images/LunarLander-Background.png',
-              fit: BoxFit.cover,
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: _spaceBlack,
+          appBar: AppBar(
+            title: Text(
+              'LUNAR LANDER RESULTS',
+              style: GoogleFonts.orbitron(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: _starWhite,
+                letterSpacing: 1.5,
+              ),
             ),
+            backgroundColor: _earthBlue,
+            foregroundColor: _starWhite,
+            automaticallyImplyLeading: false,
+            actions: [
+              DartboardConnectionInfo(
+                config: DartboardConnectionInfoConfig.lunarLander(),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
-          // Confetti
-          Align(
-            alignment: Alignment.topLeft,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: pi / 4,
-              emissionFrequency: 0.05,
-              numberOfParticles: 25,
-              gravity: 0.1,
-              colors: const [
-                _rocketFlame,
-                _missionGreen,
-                Colors.yellow,
-                _starWhite,
-              ],
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: pi / 2,
-              emissionFrequency: 0.05,
-              numberOfParticles: 25,
-              gravity: 0.1,
-              colors: const [
-                _rocketFlame,
-                _missionGreen,
-                Colors.yellow,
-                _starWhite,
-              ],
-            ),
-          ),
-          Align(
-            alignment: Alignment.topRight,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: 3 * pi / 4,
-              emissionFrequency: 0.05,
-              numberOfParticles: 25,
-              gravity: 0.1,
-              colors: const [
-                _rocketFlame,
-                _missionGreen,
-                Colors.yellow,
-                _starWhite,
-              ],
-            ),
-          ),
-          // Main content
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Title
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Text(
-                      'MISSION ACCOMPLISHED!',
-                      style: GoogleFonts.orbitron(
-                        fontSize: 64,
-                        fontWeight: FontWeight.bold,
-                        color: _rocketFlame,
-                        letterSpacing: 1.5,
+          body: Stack(
+            children: [
+              // Background image
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/games/lunar_lander/images/LunarLander-Background.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+              // Confetti
+              Align(
+                alignment: Alignment.topLeft,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: pi / 4,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 25,
+                  gravity: 0.1,
+                  colors: const [
+                    _rocketFlame,
+                    _missionGreen,
+                    Colors.yellow,
+                    _starWhite,
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: pi / 2,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 25,
+                  gravity: 0.1,
+                  colors: const [
+                    _rocketFlame,
+                    _missionGreen,
+                    Colors.yellow,
+                    _starWhite,
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.topRight,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: 3 * pi / 4,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 25,
+                  gravity: 0.1,
+                  colors: const [
+                    _rocketFlame,
+                    _missionGreen,
+                    Colors.yellow,
+                    _starWhite,
+                  ],
+                ),
+              ),
+              // Main content
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Title
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: Text(
+                          'MISSION ACCOMPLISHED!',
+                          style: GoogleFonts.orbitron(
+                            fontSize: 64,
+                            fontWeight: FontWeight.bold,
+                            color: _rocketFlame,
+                            letterSpacing: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Winner card
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Column(
-                      children: [
-                        // Character + player avatar side by side
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                      const SizedBox(height: 24),
+                      // Winner card
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: Column(
                           children: [
-                            // Winner character image
-                            Container(
-                              key: LunarLanderResultsKeys.winnerPhoto,
-                              width: 270,
-                              height: 270,
-                              decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _rocketFlame.withOpacity(0.6),
-                                    blurRadius: 24,
-                                    spreadRadius: 6,
-                                  ),
-                                ],
-                              ),
-                              child: winnerCharacter != null
-                                  ? Image.asset(
-                                      winnerCharacter.assetPath,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const Icon(
-                                        Icons.rocket,
-                                        color: _rocketFlame,
-                                        size: 180,
+                            // Character + player avatar side by side
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                // Winner character image
+                                Container(
+                                  key: LunarLanderResultsKeys.winnerPhoto,
+                                  width: 270,
+                                  height: 270,
+                                  decoration: BoxDecoration(
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _rocketFlame.withOpacity(0.6),
+                                        blurRadius: 24,
+                                        spreadRadius: 6,
                                       ),
-                                    )
-                                  : const Icon(Icons.rocket,
-                                      color: _rocketFlame, size: 180),
-                            ),
-                            const SizedBox(width: 24),
-                            // Player avatar matching character height
-                            SizedBox(
-                              width: 270,
-                              height: 270,
-                              child: ClipOval(
-                                child: winner.photoPath != null
-                                    ? Image(
-                                        image: winner.photoPath!.startsWith('data:')
-                                            ? MemoryImage(Uri.parse(winner.photoPath!).data!.contentAsBytes())
-                                            : NetworkImage(winner.photoPath!) as ImageProvider,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Container(
-                                        color: _earthBlue,
-                                        child: Center(
-                                          child: Text(
-                                            winner.name.isNotEmpty
-                                                ? winner.name[0].toUpperCase()
-                                                : '?',
-                                            style: GoogleFonts.orbitron(
-                                              fontSize: 100,
-                                              fontWeight: FontWeight.bold,
-                                              color: _starWhite,
+                                    ],
+                                  ),
+                                  child: winnerCharacter != null
+                                      ? Image.asset(
+                                          winnerCharacter.assetPath,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, __, ___) =>
+                                              const Icon(
+                                            Icons.rocket,
+                                            color: _rocketFlame,
+                                            size: 180,
+                                          ),
+                                        )
+                                      : const Icon(Icons.rocket,
+                                          color: _rocketFlame, size: 180),
+                                ),
+                                const SizedBox(width: 24),
+                                // Player avatar matching character height
+                                SizedBox(
+                                  width: 270,
+                                  height: 270,
+                                  child: ClipOval(
+                                    child: winner.photoPath != null
+                                        ? Image(
+                                            image: winner.photoPath!
+                                                    .startsWith('data:')
+                                                ? MemoryImage(
+                                                    Uri.parse(winner.photoPath!)
+                                                        .data!
+                                                        .contentAsBytes())
+                                                : NetworkImage(
+                                                        winner.photoPath!)
+                                                    as ImageProvider,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            color: _earthBlue,
+                                            child: Center(
+                                              child: Text(
+                                                winner.name.isNotEmpty
+                                                    ? winner.name[0]
+                                                        .toUpperCase()
+                                                    : '?',
+                                                style: GoogleFonts.orbitron(
+                                                  fontSize: 100,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: _starWhite,
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            // Flag
+                            const Text('🚩', style: TextStyle(fontSize: 32)),
+                            const SizedBox(height: 8),
+                            // Winner name
+                            Text(
+                              winner.name,
+                              key: LunarLanderResultsKeys.winnerName,
+                              style: GoogleFonts.orbitron(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: _starWhite,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            // Turn count
+                            Text(
+                              'Landed in $winnerTurns turns',
+                              key: LunarLanderResultsKeys.turnCount,
+                              style: GoogleFonts.orbitron(
+                                fontSize: 20,
+                                color: _rocketFlame,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        // Flag
-                        const Text('🚩',
-                            style: TextStyle(fontSize: 32)),
-                        const SizedBox(height: 8),
-                        // Winner name
-                        Text(
-                          winner.name,
-                          key: LunarLanderResultsKeys.winnerName,
-                          style: GoogleFonts.orbitron(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: _starWhite,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        // Turn count
-                        Text(
-                          'Landed in $winnerTurns turns',
-                          key: LunarLanderResultsKeys.turnCount,
-                          style: GoogleFonts.orbitron(
-                            fontSize: 20,
-                            color: _rocketFlame,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 32),
+                      // Rankings
+                      _buildRankings(game, sortedPlayers, allPlayers, winnerId),
+                      const SizedBox(height: 32),
+                      // Action buttons
+                      _buildActionButtons(game, allPlayers),
+                    ],
                   ),
-                  const SizedBox(height: 32),
-                  // Rankings
-                  _buildRankings(game, sortedPlayers, allPlayers, winnerId),
-                  const SizedBox(height: 32),
-                  // Action buttons
-                  _buildActionButtons(game, allPlayers),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+        // Dartboard paused modal — covers entire screen incl. AppBar when disconnected.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.lunarLander(),
+          ),
+      ],
     );
   }
 
   Widget _buildRankings(LunarLanderGame game, List<Player> sortedPlayers,
       List<Player> allPlayers, String winnerId) {
-    final cols =
-        sortedPlayers.length > 4 ? 2 : 1;
-    final col1 = cols == 2
-        ? sortedPlayers.sublist(0, 4)
-        : sortedPlayers;
-    final col2 =
-        cols == 2 ? sortedPlayers.sublist(4) : <Player>[];
+    final cols = sortedPlayers.length > 4 ? 2 : 1;
+    final col1 = cols == 2 ? sortedPlayers.sublist(0, 4) : sortedPlayers;
+    final col2 = cols == 2 ? sortedPlayers.sublist(4) : <Player>[];
 
     Widget buildRankRow(Player p, int rank) {
       final isWinner = p.id == winnerId;
@@ -430,9 +441,7 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
               ? _earthBlue.withOpacity(0.6)
               : _spaceBlack.withOpacity(0.6),
           borderRadius: BorderRadius.circular(8),
-          border: isWinner
-              ? Border.all(color: _rocketFlame, width: 2)
-              : null,
+          border: isWinner ? Border.all(color: _rocketFlame, width: 2) : null,
         ),
         child: Row(
           children: [
@@ -474,8 +483,7 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
               'Alt: $alt',
               style: GoogleFonts.orbitron(
                 fontSize: 13,
-                color:
-                    isWinner ? _missionGreen : _starWhite.withOpacity(0.7),
+                color: isWinner ? _missionGreen : _starWhite.withOpacity(0.7),
               ),
             ),
           ],
