@@ -83,12 +83,71 @@ final player = await showAddPlayerDialog(
 - Dartboard emulator (use shared components)
 - Action buttons (skip turn, edit score, etc.)
 
+**Player Avatar Rule:** NEVER use game character images as player tile avatars. Use generic avatars (initials placeholders). Character images go on: the active player panel, game-specific progress visualization, and results winner card -- rendered at native size without circle clipping.
+
 **Victory Flow Requirement:** The game screen MUST wait for the user to click DARTS REMOVED (`takeout_finished` event) before navigating to the results screen, even when `hasWinner` is true. This ensures the Edit Score button remains accessible after a winning turn. The standardized flow is:
 
 1. `_handleTakeoutFinished()`: Check `hasWinner` at the TOP (before any provider advance call). If winner, call `_handleGameWon()` and return. Otherwise advance the turn.
 2. `_handleGameWon()`: Guard with `_gameCompleted` flag. If `isAutoPlaying`, navigate immediately. Otherwise wait 3000ms (for victory announcement), then navigate via `Navigator.pushReplacement`.
 
 All 6 existing games follow this exact pattern. Reference any game screen for the canonical implementation.
+
+**Standardized `_handleTakeoutFinished()` pattern:**
+```dart
+void _handleTakeoutFinished() {
+  final provider = context.read<YourGameProvider>();
+  if (!mounted) return;
+
+  if (provider.hasWinner) {
+    _handleGameWon();
+    return;
+  }
+
+  if (!provider.isGameActive) return;
+
+  provider.handleTakeoutFinished(); // or confirmDartsRemoved() / advanceTurn()
+  // Game-specific: announce turn, scroll to player, check buffs
+  setState(() {});
+}
+```
+
+**Standardized `_handleGameWon()` pattern:**
+```dart
+void _handleGameWon() {
+  if (_gameCompleted) return;  // (1) Guard prevents double navigation
+  _gameCompleted = true;
+
+  void navigateToResults() {
+    if (!mounted) return;
+    Navigator.pushReplacement(context,
+      MaterialPageRoute(builder: (_) => const YourGameResultsScreen()));
+  }
+
+  if (_dartboardEmulatorController.isAutoPlaying) {  // (2) Skip delay for Play-to-Complete
+    navigateToResults();
+  } else {
+    // (3) Announce winner BEFORE the delay (plays during the wait)
+    final provider = context.read<YourGameProvider>();
+    final playerProvider = context.read<PlayerProvider>();
+    final winnerId = provider.currentGame?.winnerId;
+    if (winnerId != null) {
+      final winner = playerProvider.allPlayers.firstWhere(
+        (p) => p.id == winnerId,
+        orElse: () => playerProvider.allPlayers.first,
+      );
+      _audioQueue?.announceWinner(winner.name);
+    }
+    Future.delayed(const Duration(milliseconds: 3000), navigateToResults);  // (4) 3000ms for announcement
+  }
+}
+```
+
+Key requirements:
+- `_gameCompleted` guard prevents double navigation
+- `isAutoPlaying` check skips the delay and announcement for Play-to-Complete
+- Winner announcement fires BEFORE the 3000ms delay (announcement plays during the delay)
+- Navigation uses `Navigator.pushReplacement` with `MaterialPageRoute` (NOT `pushReplacementNamed`)
+- `hasWinner` check is at the TOP of `_handleTakeoutFinished`, BEFORE calling the provider advance method
 
 **Key Integration:**
 ```dart
@@ -230,7 +289,23 @@ Place all game assets in these folders. See [Asset Organization](asset-organizat
 
 ### 8. Create Component Configurations
 
-Create factory methods for shared components:
+Create factory methods for shared components. Every new game requires factory methods in ALL of the following config files:
+
+| Config Class | File Path |
+|---|---|
+| `AddPlayerDialogConfig.[gameName]()` | `lib/widgets/add_player/add_player_dialog_config.dart` |
+| `EditScoreDialogConfig.[gameName]()` | `lib/widgets/edit_score/edit_score_dialog_config.dart` |
+| `DartboardSectionConfig.[gameName]()` | `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` |
+| `DartboardFABConfig.[gameName]()` | `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` |
+| `PlayToCompleteButtonConfig.[gameName]()` | `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` |
+| `DualPlayerListPanelConfig.[gameName]()` or `TeamPlayerListPanelConfig.[gameName]()` | `lib/widgets/player_list_panel/dual_player_list_panel_config.dart` or `lib/widgets/player_list_panel/team_player_list_panel_config.dart` |
+| `RemoveDartsModalConfig.[gameName]()` | `lib/widgets/remove_darts_modal/remove_darts_modal_config.dart` |
+| `DartboardConnectionInfoConfig.[gameName]()` | `lib/widgets/dartboard_connection_info/dartboard_connection_info_config.dart` |
+| `DartboardPausedModalConfig.[gameName]()` | `lib/widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart` |
+| `SaveGameModalConfig.[gameName]()` | `lib/widgets/save_game_modal/save_game_modal_config.dart` |
+| `ResumeGameModalConfig.[gameName]()` | `lib/widgets/resume_game_modal/resume_game_modal_config.dart` |
+
+**Example factory methods:**
 
 **File:** `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart`
 

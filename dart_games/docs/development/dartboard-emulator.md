@@ -407,6 +407,8 @@ Each game screen needs:
 
 ### Button Configuration
 
+**MANDATORY:** Every new game MUST include a `PlayToCompleteButtonConfig.[gameName]()` factory method in `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` during game screen creation.
+
 Add a factory to `PlayToCompleteButtonConfig` in `dartboard_emulator_config.dart`:
 
 ```dart

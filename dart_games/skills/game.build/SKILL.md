@@ -1095,6 +1095,7 @@ After the sub-agent returns:
 > (hh) **Game screen disposes `_audioQueue`** — read the `dispose()` method and verify `_audioQueue?.dispose()` is present.
 > (ii) **Per-dart announcements wired in `_handleDartThrow`** — verify the game screen calls announcement methods after `processDartThrow()` with an `isAutoPlaying` guard. Announcements must follow precedence (victory > milestone > advance > miss).
 > (jj) **Game-with-announcements integration test exists** — verify `test/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_with_announcements_test.dart` exists with lifecycle, moment, precedence, and auto-play suppression tests.
+> (kk) **DartboardPausedModal UI tests exist** — verify `integration_test/[GAME_NAME_SNAKE]/pause_modal/` directory exists with 3 test files: `menu_pause_test.dart` (7 tests), `gameplay_pause_test.dart` (8 tests), `results_pause_test.dart` (5 tests). These verify the pause modal appears on disconnect, blocks all interaction (AppBar, buttons, modals), and dismisses on reconnect. The gameplay test must verify EditScoreDialog auto-closes on disconnect.
 >
 > For each item I will cite the file and line number, or report MISSING.
 > I will list every gap found."
@@ -1372,6 +1373,7 @@ If FAIL:
 > - **`navigation/`** — the 4 mandatory navigation tests (see below)
 > - **`play_to_complete/`** — Play-to-Complete tests (see below)
 > - `visual_validation/` — Screenshot test (Step 7 below)
+> - **`pause_modal/`** — Dartboard pause modal tests (3 files: `menu_pause_test.dart`, `gameplay_pause_test.dart`, `results_pause_test.dart`)
 >
 > **3. Mandatory navigation tests** (4 separate files in `integration_test/[GAME_NAME_SNAKE]/navigation/`, per `docs/development/game-integration.md` and `docs/development/navigation-ui-tests-plan.md`):
 >
@@ -2128,6 +2130,7 @@ Verify EVERY item:
 - [ ] **2 mandatory player-count tests present and passing** (`min_player_count_test.dart`, `max_player_count_test.dart`)
 - [ ] **Mandatory opponent display test present and passing** (`opponent_display_test.dart`)
 - [ ] **Game-with-announcements integration test present and passing** (`[game]_game_with_announcements_test.dart`)
+- [ ] **Pause modal tests present and passing** (3 files in `pause_modal/`: `menu_pause_test.dart`, `gameplay_pause_test.dart`, `results_pause_test.dart`)
 - [ ] **Visual validation contains screenshot test PLUS at least 4 programmatic tests** (dart indicators, active player highlight, score/state threshold, conditional UI)
 - [ ] All 4 batch files updated (run_ui_tests, run_ui_tests_stub, run_ui_tests_parallel, run_ui_tests_parallel_stub)
 - [ ] All 12 mirrored shared helpers synchronized (test/shared/ matches integration_test/shared/)

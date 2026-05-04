@@ -67,6 +67,8 @@ factory EditScoreDialogConfig.yourGame() {
 - `25` - Outer bull
 - `Miss` - Miss
 
+**Critical:** A thrown miss (score 0) MUST be encoded as `'Miss'` in `initialSegments`, NOT `'-'` or empty. The value `'-'` means "dart not yet thrown" and disables the Save button. Since Edit Score is only accessible after 3 darts are thrown, all 3 segments should be valid (`'Miss'`, `'Bull'`, `'25'`, or `'SX'`/`'DX'`/`'TX'`).
+
 ## Features
 
 - Ring/number picker for all 3 darts
@@ -96,6 +98,14 @@ List<Color?> _computeDartBorderColors(String playerId) {
 - Carnival Derby: `lib/screens/games/carnival_horse_race/horse_race_game_screen.dart`
 - Target Tag: `lib/screens/games/target_tag/target_tag_game_screen.dart`
 - Monster Mash: `lib/screens/games/monster_mash/monster_mash_game_screen.dart`
+
+## Mandatory Tests
+
+Every game MUST have the following edit score tests in `integration_test/[game]/edit_score/`:
+
+- **`edit_creates_winner_stats_test.dart`** -- Position the game near the win condition, throw 3 non-winning darts, open Edit Score and change darts to winning values. Verify `hasWinner == true`, navigate to results, then verify player stats and victory music.
+
+- **`edit_removes_winner_no_stats_test.dart`** -- Position the game near the win condition, throw 3 winning darts, open Edit Score and change darts to non-winning values. Verify `hasWinner == false`, verify game continues (NOT navigated to results), verify no player stats were updated.
 
 ## Related Documentation
 

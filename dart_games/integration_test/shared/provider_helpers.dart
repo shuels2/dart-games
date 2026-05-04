@@ -534,4 +534,14 @@ class ProviderHelpers {
     final provider = getDartboardProvider(tester);
     return provider.isEmulator;
   }
+
+  /// Simulate dartboard disconnection (triggers DartboardPausedModal)
+  static void simulateDartboardDisconnection(WidgetTester tester) {
+    getDartboardProvider(tester).simulateDisconnection();
+  }
+
+  /// Simulate dartboard reconnection (dismisses DartboardPausedModal)
+  static void simulateDartboardReconnection(WidgetTester tester) {
+    getDartboardProvider(tester).simulateReconnection();
+  }
 }

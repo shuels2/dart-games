@@ -440,6 +440,20 @@ class DartboardProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  void simulateDisconnection() {
+    _status = DartboardConnectionStatus.error;
+    _error = 'Simulated disconnection for testing';
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void simulateReconnection() {
+    _status = DartboardConnectionStatus.emulator;
+    _error = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     stopStatusChecking();
