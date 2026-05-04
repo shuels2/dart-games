@@ -1446,7 +1446,19 @@ If FAIL:
 >
 > - `edit_creates_winner_stats_test.dart` — Position the game near the win condition (programmatically or via gameplay), throw 3 non-winning darts, open Edit Score and change darts to winning values. Verify `hasWinner == true`, call `clickDartsRemoved(tester)`, wait for results screen navigation (pump 4 seconds for `_handleGameWon` delay + 5 seconds for `_updatePlayerStats` async call + `PumpSequences.fullRebuild`), then verify: `VictoryMusicService().isInitialized == true`, winner `gamesPlayed == 1`, winner `gamesWon == 1`, winner `gameHistory.length == 1`, winner `gameHistory.first.gameName == '[GAME_NAME_DISPLAY]'`, loser `gamesPlayed == 1`, loser `gamesWon == 0`.
 >
-> - `edit_removes_winner_no_stats_test.dart` — Position the game near the win condition, throw 3 winning darts (triggers `hasWinner == true`), open Edit Score and change darts to non-winning values. Verify `hasWinner == false`, call `clickDartsRemoved(tester)` (game should continue, NOT navigate to results), verify game is still active (`provider.isGameActive == true`), verify both players: `gamesPlayed == 0`, `gamesWon == 0`, `gameHistory.isEmpty`.
+> - `edit_removes_winner_no_stats_test.dart` — Position the game near the win condition, throw 3 darts where the **winning dart is dart 3** (not dart 1 or 2), open Edit Score and change dart 3 to a non-winning value. Verify `hasWinner == false`, call `clickDartsRemoved(tester)` (game should continue, NOT navigate to results), verify game is still active (`provider.isGameActive == true`), verify both players: `gamesPlayed == 0`, `gamesWon == 0`, `gameHistory.isEmpty`.
+>
+>   **CRITICAL — winning dart MUST be dart 3:** When a dart triggers a win, the game screen's `_handleDartThrow` returns early for subsequent darts (`!provider.isGameActive`), so darts 2 and 3 are never processed. The Edit Score dialog opens with only 1 dart populated and `'-'` for the rest, which disables the Save button. Always structure the dart sequence so the win triggers on the LAST dart (dart 3), ensuring all 3 darts are processed and the dialog opens with valid data for all slots.
+>
+>   **Examples of correct dart ordering:**
+>   - Lunar Lander (altitude=10): `S3 + S3 + S4` (wins on dart 3), edit dart 3 → `S1`
+>   - Clockwork Quest (target=21): `Miss + Miss + Bull` (wins on dart 3), edit dart 3 → `S1`
+>   - Target Tag (P2 at 0 shields): `Miss + Miss + S(target)` (wins on dart 3), edit dart 3 → `S1`
+>   - Monster Mash (opponent at 1 HP): `Miss + Miss + S(target)` (wins on dart 3), edit dart 3 → `S1`
+>   - Reef Royale (6/7 targets, need 3 marks on Bull): `Miss + 25 + Bull` (wins on dart 3), edit dart 3 → `S1`
+>   - Carnival Derby (target=100): `T20 + T20 + S20` = 140 (wins on dart 3), edit all → `D5` (30 pts)
+>
+>   **Carnival Derby additional constraint:** CD's `scoreDisplayTransform` converts segments to point values in the score display box (e.g., `S5` → "5"). This means `find.text('5')` matches both the score display AND the number button within a dart section. Use Double or Triple values (e.g., `D5` → score display "10", number button "5") to avoid the duplicate text match.
 >
 > **7. Visual validation tests** (in `integration_test/[GAME_NAME_SNAKE]/visual_validation/`):
 >
