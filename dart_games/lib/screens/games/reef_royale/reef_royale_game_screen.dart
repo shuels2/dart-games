@@ -86,10 +86,10 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
     // Announce game start
     final reefProvider = context.read<ReefRoyaleProvider>();
-    _audioQueue!.announceGameStart();
+    _audioQueue?.announceGameStart();
 
     if (reefProvider.currentGame?.randomReefs ?? false) {
-      _audioQueue!.announceRandomReefs();
+      _audioQueue?.announceRandomReefs();
     }
 
     // Announce first player turn
@@ -261,9 +261,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     // Miss or non-target
     if (target == null) {
       if (sector == 'None' || sector.isEmpty) {
-        _audioQueue!.announceMiss();
+        _audioQueue?.announceMiss();
       } else {
-        _audioQueue!.announceNonTarget();
+        _audioQueue?.announceNonTarget();
       }
       return;
     }
@@ -300,12 +300,12 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     int count = 0;
 
     if (justClaimed && count < 2) {
-      _audioQueue!.announceCoralClaimed(playerName, coralName);
+      _audioQueue?.announceCoralClaimed(playerName, coralName);
       count++;
     }
 
     if (justLocked && count < 2) {
-      _audioQueue!.announceReefLocked(coralName);
+      _audioQueue?.announceReefLocked(coralName);
       count++;
     }
 
@@ -315,28 +315,28 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
         final opponentName = playerProvider.allPlayers
             .firstWhere((p) => p.id == recipientId)
             .name;
-        _audioQueue!.announceCursedScoring(pearlsScored, opponentName);
+        _audioQueue?.announceCursedScoring(pearlsScored, opponentName);
       } else {
-        _audioQueue!.announceScoring(playerName, pearlsScored);
+        _audioQueue?.announceScoring(playerName, pearlsScored);
       }
       count++;
     }
 
     if (!justClaimed && count < 2 && marksAdded > 0) {
       if (isNeighbor) {
-        _audioQueue!.announceNeighborMark(coralName);
+        _audioQueue?.announceNeighborMark(coralName);
       } else if (marksAdded >= 3) {
-        _audioQueue!.announceTripleMark(coralName);
+        _audioQueue?.announceTripleMark(coralName);
       } else if (marksAdded >= 2) {
-        _audioQueue!.announceDoubleMark(coralName);
+        _audioQueue?.announceDoubleMark(coralName);
       } else {
-        _audioQueue!.announceSingleMark(coralName);
+        _audioQueue?.announceSingleMark(coralName);
       }
     }
 
     // Near victory: 6 of 7 corals claimed
     if (justClaimed && provider.getPlayerClaimedCount(playerId) == 6) {
-      _audioQueue!.announceNearVictory(playerName);
+      _audioQueue?.announceNearVictory(playerName);
     }
   }
 

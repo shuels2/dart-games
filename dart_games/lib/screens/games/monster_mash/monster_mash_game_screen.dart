@@ -99,7 +99,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       }
     }
 
-    _audioQueue!.announceGameStart();
+    _audioQueue?.announceGameStart();
 
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
@@ -347,10 +347,10 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       // Rule 1: Hit only fires when no secondary effect exists
       if (!hasSecondary) {
         if (!isMiss && parsed != null) {
-          _audioQueue!.announceHit(
+          _audioQueue?.announceHit(
               parsed['number'] as int, parsed['multiplier'] as String);
         } else {
-          _audioQueue!.announceHit(0, 'single', isMiss: true);
+          _audioQueue?.announceHit(0, 'single', isMiss: true);
         }
       }
 
@@ -358,7 +358,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       if (hasHatTrick &&
           hasElimination &&
           newlyEliminated.contains(hatTrickTargetId)) {
-        _audioQueue!.announceHatTrickElimination(hatTrickTargetName!);
+        _audioQueue?.announceHatTrickElimination(hatTrickTargetName!);
         final otherEliminated =
             newlyEliminated.where((id) => id != hatTrickTargetId).toList();
         if (otherEliminated.isNotEmpty) {
@@ -366,9 +366,9 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
               .toList();
           if (names.length > 1) {
-            _audioQueue!.announceCombinedElimination(names);
+            _audioQueue?.announceCombinedElimination(names);
           } else {
-            _audioQueue!.announceElimination(names.first);
+            _audioQueue?.announceElimination(names.first);
           }
         }
       } else if (hasElimination) {
@@ -376,23 +376,22 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
             .toList();
         if (eliminatedNames.length > 1) {
-          _audioQueue!.announceCombinedElimination(eliminatedNames);
+          _audioQueue?.announceCombinedElimination(eliminatedNames);
         } else {
-          _audioQueue!.announceElimination(eliminatedNames.first);
+          _audioQueue?.announceElimination(eliminatedNames.first);
         }
       } else if (hasHatTrick) {
-        _audioQueue!.announceHatTrick(hatTrickTargetName!);
+        _audioQueue?.announceHatTrick(hatTrickTargetName!);
       } else if (hasClutchHeal) {
-        _audioQueue!.announceClutchHeal(currentPlayer.name);
+        _audioQueue?.announceClutchHeal(currentPlayer.name);
       } else if (hasAttack) {
-        _audioQueue!
-            .announceAttack(attackTargetName!, attackMultiplier, attackDamage);
+        _audioQueue?.announceAttack(attackTargetName!, attackMultiplier, attackDamage);
         if (hasHealthWarningCrossing) {
-          _audioQueue!.announceHealthWarning(attackTargetName!, warningPct!);
+          _audioQueue?.announceHealthWarning(attackTargetName!, warningPct!);
         }
       } else if (hasHealing) {
         final multiplierStr = parsed?['multiplier'] as String? ?? 'single';
-        _audioQueue!.announceHealing(multiplierStr, healAmount);
+        _audioQueue?.announceHealing(multiplierStr, healAmount);
       }
     }
 
@@ -401,7 +400,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     if (!_dartboardEmulatorController.isAutoPlaying &&
         (dartsThrown >= 3 || monsterMashProvider.hasWinner)) {
       Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _audioQueue!.announceRemoveDarts();
+        if (mounted) _audioQueue?.announceRemoveDarts();
       });
       Future.delayed(const Duration(milliseconds: 3500), () {
         if (mounted) _mockApi?.simulateTakeoutStarted();
@@ -449,7 +448,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         buffAfter != null &&
         buffAfter != buffBefore) {
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) _audioQueue!.announceBuff(buffAfter);
+        if (mounted) _audioQueue?.announceBuff(buffAfter);
       });
     }
 
@@ -478,7 +477,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     final currentPlayer =
         monsterMashProvider.getCurrentPlayer(playerProvider.allPlayers);
     if (currentPlayer != null) {
-      _audioQueue!.announceTurn(currentPlayer.name);
+      _audioQueue?.announceTurn(currentPlayer.name);
     }
   }
 
@@ -502,7 +501,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       final monsterMashProvider = context.read<MonsterMashProvider>();
       final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
       if (winners.isNotEmpty) {
-        _audioQueue!.announceWinners(winners.map((p) => p.name).toList());
+        _audioQueue?.announceWinners(winners.map((p) => p.name).toList());
       }
       Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
     }
@@ -899,7 +898,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                       provider.skipTurn();
                       if (dartsThrown > 0) {
                         Future.delayed(const Duration(milliseconds: 1500), () {
-                          if (mounted) _audioQueue!.announceRemoveDarts();
+                          if (mounted) _audioQueue?.announceRemoveDarts();
                         });
                         Future.delayed(const Duration(milliseconds: 3500), () {
                           if (mounted) _mockApi?.simulateTakeoutStarted();

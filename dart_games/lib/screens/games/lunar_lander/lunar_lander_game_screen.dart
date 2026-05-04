@@ -82,7 +82,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
     final provider = context.read<LunarLanderProvider>();
     final game = provider.currentGame;
     if (game != null) {
-      _audioQueue!.announceGameStart(startingAltitude: game.startingAltitude);
+      _audioQueue?.announceGameStart(startingAltitude: game.startingAltitude);
     }
 
     // Announce first player turn after brief delay
@@ -179,7 +179,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
           final hasWinner = provider.hasWinner;
 
           // Fire exactly ONE moment announcement via precedence chain
-          _audioQueue!.announceMomentForDart(
+          _audioQueue?.announceMomentForDart(
             playerName: player.name,
             dartScore: dartScore,
             previousAltitude: previousAltitude,
@@ -196,7 +196,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
       if (dartsThrown >= 3 || provider.hasWinner) {
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) {
-            _audioQueue!.announceRemoveDarts(); // UNCONDITIONAL
+            _audioQueue?.announceRemoveDarts(); // UNCONDITIONAL
           }
         });
         Future.delayed(const Duration(milliseconds: 3500), () {
@@ -258,7 +258,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         .where((p) => p.id == currentPlayerId)
         .firstOrNull;
     if (player != null) {
-      _audioQueue!.announcePlayerTurn(playerName: player.name);
+      _audioQueue?.announcePlayerTurn(playerName: player.name);
     }
   }
 
@@ -382,7 +382,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                       p.skipTurn();
                       if (p.shouldPromptTakeout) {
                         Future.delayed(const Duration(milliseconds: 1500), () {
-                          if (mounted) _audioQueue!.announceRemoveDarts();
+                          if (mounted) _audioQueue?.announceRemoveDarts();
                         });
                         Future.delayed(const Duration(milliseconds: 3500), () {
                           if (mounted) _mockApi?.simulateTakeoutStarted();

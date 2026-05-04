@@ -76,7 +76,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     }
 
     // Announce game start
-    _audioQueue!.announceGameStart();
+    _audioQueue?.announceGameStart();
 
     // Announce first player
     Future.delayed(const Duration(milliseconds: 2500), () {
@@ -267,12 +267,12 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       // Hit/Miss: only fire if NO secondary effect exists
       if (!hasSecondary) {
         if (!isMiss && parsed != null) {
-          _audioQueue!.announceHit(
+          _audioQueue?.announceHit(
             parsed['number'] as int,
             parsed['multiplier'] as String,
           );
         } else {
-          _audioQueue!.announceHit(0, 'single', isMiss: true);
+          _audioQueue?.announceHit(0, 'single', isMiss: true);
         }
       }
 
@@ -289,13 +289,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             eliminatedTeams[teamId]!.add(player.name);
           }
           for (final playerNames in eliminatedTeams.values) {
-            _audioQueue!.announceEliminated(playerNames);
+            _audioQueue?.announceEliminated(playerNames);
           }
         } else {
           for (final eliminatedId in newlyEliminated) {
             final eliminatedPlayer =
                 allPlayers.firstWhere((p) => p.id == eliminatedId);
-            _audioQueue!.announceEliminated([eliminatedPlayer.name]);
+            _audioQueue?.announceEliminated([eliminatedPlayer.name]);
           }
         }
       } else if (hasVulnerable) {
@@ -312,12 +312,12 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             final playerNames = teamPlayerIds
                 .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
                 .toList();
-            _audioQueue!.announceVulnerable(playerNames);
+            _audioQueue?.announceVulnerable(playerNames);
           }
         } else {
           for (final playerId in vulnerablePlayers) {
             final player = allPlayers.firstWhere((p) => p.id == playerId);
-            _audioQueue!.announceVulnerable([player.name]);
+            _audioQueue?.announceVulnerable([player.name]);
           }
         }
       } else if (hasLowShields) {
@@ -334,12 +334,12 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             final playerNames = teamPlayerIds
                 .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
                 .toList();
-            _audioQueue!.announceLowShields(playerNames);
+            _audioQueue?.announceLowShields(playerNames);
           }
         } else {
           for (final playerId in lowShieldPlayers) {
             final player = allPlayers.firstWhere((p) => p.id == playerId);
-            _audioQueue!.announceLowShields([player.name]);
+            _audioQueue?.announceLowShields([player.name]);
           }
         }
       } else if (hasTaggedOut) {
@@ -354,16 +354,16 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             final playerNames = teamPlayerIds
                 .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
                 .toList();
-            _audioQueue!.announceTaggedOut(playerNames);
+            _audioQueue?.announceTaggedOut(playerNames);
           }
         } else {
           final lostNames = lostTaggedInPlayers
               .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
               .toList();
-          _audioQueue!.announceTaggedOut(lostNames);
+          _audioQueue?.announceTaggedOut(lostNames);
         }
       } else if (hasSuccessfulTag) {
-        _audioQueue!.announceSuccessfulTag();
+        _audioQueue?.announceSuccessfulTag();
       } else if (hasTaggedIn) {
         List<String> playerNames;
         if (currentGame.mode == GameMode.team) {
@@ -375,9 +375,9 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         } else {
           playerNames = [currentPlayer.name];
         }
-        _audioQueue!.announceTaggedIn(playerNames);
+        _audioQueue?.announceTaggedIn(playerNames);
       } else if (hasShieldGain) {
-        _audioQueue!.announceShieldGained(
+        _audioQueue?.announceShieldGained(
           currentPlayer.name,
           shieldsAfter,
           targetTagProvider.currentGame!.shieldMax,
@@ -390,7 +390,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         (dartsThrown >= 3 || targetTagProvider.hasWinner)) {
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) {
-          _audioQueue!.announceRemoveDarts();
+          _audioQueue?.announceRemoveDarts();
         }
       });
 
@@ -462,7 +462,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final currentPlayer =
         targetTagProvider.getCurrentPlayer(playerProvider.allPlayers);
     if (currentPlayer != null) {
-      _audioQueue!.announceTurn(currentPlayer.name);
+      _audioQueue?.announceTurn(currentPlayer.name);
     }
   }
 
@@ -548,7 +548,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
       if (winners.isNotEmpty) {
         final winnerNames = winners.map((p) => p.name).toList();
-        _audioQueue!.announceWinner(winnerNames);
+        _audioQueue?.announceWinner(winnerNames);
       }
       Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
     }
@@ -735,8 +735,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                                               const Duration(
                                                   milliseconds: 1500), () {
                                             if (mounted) {
-                                              _audioQueue!
-                                                  .announceRemoveDarts();
+                                              _audioQueue?.announceRemoveDarts();
                                             }
                                           });
                                           Future.delayed(

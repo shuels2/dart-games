@@ -71,7 +71,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
       });
     }
 
-    _audioQueue!.announceGameStart();
+    _audioQueue?.announceGameStart();
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) _announceCurrentPlayerTurn();
     });
