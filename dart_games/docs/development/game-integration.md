@@ -182,6 +182,8 @@ See [Dartboard Paused Modal Integration](dartboard-paused-modal.md).
 - [ ] Use add player dialog component
 - [ ] Use edit score dialog component
 - [ ] Use dartboard paused modal component
+- [ ] Victory flow waits for DARTS REMOVED before navigating to results (no auto-navigate on hasWinner)
+- [ ] Edit score winner/stats toggle tests present (`edit_creates_winner_stats_test.dart`, `edit_removes_winner_no_stats_test.dart`)
 - [ ] Follow navigation rules (menu→Home, game→menu, Change Settings uses `route.isFirst`)
 - [ ] Create component config factory methods
 - [ ] Implement PlayToCompleteStrategy for the game

@@ -889,15 +889,78 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > - Skip turn button
 > - DartboardConnectionInfo in AppBar
 > - **`announceRemoveDarts` is called UNCONDITIONALLY on takeout** (not inside a precedence `else`; the call is independent of which moment-announcement won precedence)
-> - **Auto-navigate to results when `provider.hasWinner` becomes true (mandatory — Clockwork Quest pattern):** at the top of the `build` method, after computing game state but before returning the widget tree:
+> - **Victory flow MUST wait for DARTS REMOVED (mandatory):** When `hasWinner` becomes true after a dart throw, the game screen MUST NOT auto-navigate to the results screen. The RemoveDartsModal must still appear, the Edit Score button must remain accessible, and navigation to results must ONLY happen through the takeout flow: user clicks DARTS REMOVED → `_handleTakeoutFinished()` checks `hasWinner` → if true, calls `_handleGameWon()`.
+>
+>   **Prohibited patterns:**
+>   - Do NOT add `if (provider.hasWinner) { addPostFrameCallback(_handleGameWon) }` in `build()`.
+>   - Do NOT auto-call `simulateTakeoutStarted()` / `simulateTakeoutFinished()` on a winning turn.
+>   - Do NOT call `_handleGameWon()` directly from the dart-event handler.
+>
+>   **Why:** The Edit Score button lives inside the RemoveDartsModal. If the game auto-navigates on a winning turn, the player cannot correct a mistaken score that triggered a false victory. The DARTS REMOVED step is the user's last chance to review and edit before the victory flow fires.
+>
+>   **Correct `shouldPromptTakeout` condition:** `dartsThrown >= 3 || provider.hasWinner` — ensures RemoveDartsModal always shows on a winning turn.
+>
+>   **Standardized `_handleTakeoutFinished()` pattern (all 6 games follow this):**
 >   ```dart
->   if (provider.hasWinner) {
->     WidgetsBinding.instance.addPostFrameCallback((_) {
+>   void _handleTakeoutFinished() {
+>     final provider = context.read<[Game]Provider>();
+>     if (!mounted) return;
+>
+>     if (provider.hasWinner) {
 >       _handleGameWon();
->     });
+>       return;
+>     }
+>
+>     if (!provider.isGameActive) return;
+>
+>     provider.handleTakeoutFinished(); // or confirmDartsRemoved() / advanceTurn()
+>     // Game-specific: announce turn, scroll to player, check buffs
+>     setState(() {});
 >   }
 >   ```
->   Without this, navigation only fires via the takeout flow (after user clicks "DARTS REMOVED"), making win behavior non-deterministic in tests and confusing in real play. Reference: `clockwork_quest_game_screen.dart` lines 158-163.
+>
+>   **Standardized `_handleGameWon()` pattern (all 6 games follow this):**
+>   ```dart
+>   void _handleGameWon() {
+>     if (_gameCompleted) return;
+>     _gameCompleted = true;
+>
+>     void navigateToResults() {
+>       if (!mounted) return;
+>       Navigator.pushReplacement(context,
+>         MaterialPageRoute(builder: (_) => const [Game]ResultsScreen()));
+>     }
+>
+>     if (_dartboardEmulatorController.isAutoPlaying) {
+>       navigateToResults();
+>     } else {
+>       // Announce winner (MANDATORY — every game must announce here)
+>       final provider = context.read<[Game]Provider>();
+>       final playerProvider = context.read<PlayerProvider>();
+>       final winnerId = provider.currentGame?.winnerId;
+>       if (winnerId != null) {
+>         final winner = playerProvider.allPlayers.firstWhere(
+>           (p) => p.id == winnerId,
+>           orElse: () => playerProvider.allPlayers.first,
+>         );
+>         _audioQueue?.announceWinner(winner.name);
+>       }
+>       Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+>     }
+>   }
+>   ```
+>
+>   Key requirements:
+>   - (1) `_gameCompleted` guard prevents double navigation.
+>   - (2) `isAutoPlaying` check skips the delay and announcement for Play-to-Complete.
+>   - (3) Winner announcement fires BEFORE the 3000ms delay (announcement plays during the delay).
+>   - (4) 3000ms delay gives time for victory announcement before navigation.
+>   - (5) Navigation uses `Navigator.pushReplacement` with `MaterialPageRoute` (NOT `pushReplacementNamed`).
+>   - (6) `hasWinner` check is at the TOP of `_handleTakeoutFinished`, BEFORE calling the provider advance method.
+>   - (7) The game's announcement helper MUST have a public `announceWinner(String playerName)` method (or equivalent like `announceVictory`).
+>   - (8) The `_audioQueue` field (typed as the game's `AnnouncementHelper`) MUST be initialized in `_initializeGame()`.
+>
+>   **Reference:** All 6 game screens now follow this pattern. Use any as reference.
 > - **Edit Score `initialSegments` MUST map a thrown miss (score 0) to `'Miss'`, NOT `'-'`.** The shared EditScoreDialog distinguishes between:
 >   - `'-'` or empty → dart NOT yet thrown (`ring=null` → invalidates the dialog Save button)
 >   - `'Miss'` → dart thrown as a miss (`ring='Miss'` → valid)
@@ -1021,7 +1084,7 @@ After the sub-agent returns:
 > (w) **DualPlayerListPanel has bounded height** on the menu screen — wrapped in `Expanded(...)` for wide layout AND `SizedBox(height: ...)` for narrow scrollable layout. Read the menu screen and verify both branches.
 > (x) **Menu screen initState restores settings from `provider.currentGame`** when it's not null (so CHANGE MISSION preserves them). Read `initState()` and verify the read.
 > (y) **Menu screen initState auto-shows resume modal when saved games exist on initial entry** — `setState(() { _hasSavedGames = hasSaved; _showResumeModal = hasSaved; })` inside the initial `addPostFrameCallback`.
-> (z) **Game screen `build` auto-navigates to results when `provider.hasWinner` becomes true** via `addPostFrameCallback(_handleGameWon)`. Without this, navigation only fires via takeout flow which is non-deterministic in tests.
+> (z) **Victory flow waits for DARTS REMOVED** — the game screen MUST NOT auto-navigate to results when `hasWinner` becomes true. Grep the game screen for `addPostFrameCallback(_handleGameWon)` and `simulateTakeoutFinished` inside `hasWinner` blocks — neither should exist. `_handleGameWon()` must ONLY be called from `_handleTakeoutFinished()`. The `shouldPromptTakeout` condition should be `dartsThrown >= 3 || provider.hasWinner` so RemoveDartsModal (and the Edit Score button inside it) is always accessible after a winning turn.
 > (aa) **Edit Score `initialSegments` maps thrown miss (score 0) to `'Miss'`, NOT `'-'`.** Read the menu/game screen's onEditScore handler and verify the segment building. The `'-'` value invalidates the dialog Save button; thrown misses must be `'Miss'`.
 > (bb) **Character images on game screen + winner card are rendered NATIVELY (no circle clipping).** Grep for `border-radius:.*5[0-9]%` and `BorderRadius.circular(.*5[0-9]\.0` near `Image.asset(.*characters/`. Avatar widgets in the player tile / rankings list MAY use circles (initials placeholders); the active player panel + descent/coral/shield + winner card MUST NOT clip the character art.
 >
@@ -1345,6 +1408,12 @@ If FAIL:
 >     findsOneWidget,
 >     reason: 'Dart 2 (a thrown miss) should be pre-selected as "Miss" in the Edit modal');
 > ```
+>
+> **6c. Edit Score winner/stats toggle tests (mandatory — add to every game's edit_score subdirectory):** Two tests that verify edit score correctly toggles winner state and that player stats are updated (or not) accordingly.
+>
+> - `edit_creates_winner_stats_test.dart` — Position the game near the win condition (programmatically or via gameplay), throw 3 non-winning darts, open Edit Score and change darts to winning values. Verify `hasWinner == true`, call `clickDartsRemoved(tester)`, wait for results screen navigation (pump 4 seconds for `_handleGameWon` delay + 5 seconds for `_updatePlayerStats` async call + `PumpSequences.fullRebuild`), then verify: `VictoryMusicService().isInitialized == true`, winner `gamesPlayed == 1`, winner `gamesWon == 1`, winner `gameHistory.length == 1`, winner `gameHistory.first.gameName == '[GAME_NAME_DISPLAY]'`, loser `gamesPlayed == 1`, loser `gamesWon == 0`.
+>
+> - `edit_removes_winner_no_stats_test.dart` — Position the game near the win condition, throw 3 winning darts (triggers `hasWinner == true`), open Edit Score and change darts to non-winning values. Verify `hasWinner == false`, call `clickDartsRemoved(tester)` (game should continue, NOT navigate to results), verify game is still active (`provider.isGameActive == true`), verify both players: `gamesPlayed == 0`, `gamesWon == 0`, `gameHistory.isEmpty`.
 >
 > **7. Visual validation tests** (in `integration_test/[GAME_NAME_SNAKE]/visual_validation/`):
 >
@@ -2023,6 +2092,7 @@ Verify EVERY item:
 - [ ] UI test files in subdirectory layout (add_player/, edit_score/, gameplay/, menu_and_settings/, navigation/, play_to_complete/, results_screen/ [or results/], save_resume/, visual_validation/)
 - [ ] **4 mandatory navigation tests present and passing**
 - [ ] **3 mandatory results-screen tests present and passing**
+- [ ] **2 mandatory edit score winner/stats tests present and passing** (`edit_creates_winner_stats_test.dart`, `edit_removes_winner_no_stats_test.dart`)
 - [ ] **Play-to-complete tests present and passing**
 - [ ] **2 mandatory player-count tests present and passing** (`min_player_count_test.dart`, `max_player_count_test.dart`)
 - [ ] **Mandatory opponent display test present and passing** (`opponent_display_test.dart`)

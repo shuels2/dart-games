@@ -43,6 +43,7 @@ void main() {
 
     // Alice Turn 2: D20 (40) - exact win
     await throwDartViaMock(tester, 20, multiplier: 'double');
+    await clickDartsRemoved(tester);
     expect(getCurrentPlayerScore(tester), 40);
     expect(hasWinner(tester), true);
   });

@@ -12,7 +12,7 @@ export '../../shared/pump_sequences.dart';
 export '../../shared/edit_score_helpers.dart';
 export '../../shared/provider_helpers.dart';
 
-final config = GameUIConfig.reefRoyale();
+final config = GameUIConfig.targetTag();
 
 // ===== DELEGATES TO SHARED HELPERS =====
 
@@ -32,18 +32,20 @@ Future<void> clickDartsRemoved(WidgetTester tester) =>
 Future<void> completeTurnWithMisses(WidgetTester tester) =>
     DartThrowHelpers.completeTurnWithMisses(tester);
 
-Future<void> throwBullseyeViaMock(WidgetTester tester) =>
-    DartThrowHelpers.throwBullseyeViaMock(tester);
+Future<void> setupAndStartGame(
+  WidgetTester tester,
+  GameUIConfig config, {
+  int? shieldMax,
+  List<String>? playerNames,
+}) =>
+    GameSetupHelpers.setupAndStartTargetTag(
+      tester,
+      config,
+      shieldMax: shieldMax,
+      playerNames: playerNames,
+    );
 
-Future<void> throwOuterBullViaMock(WidgetTester tester) =>
-    DartThrowHelpers.throwOuterBullViaMock(tester);
-
-Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config,
-        {List<String>? playerNames}) =>
-    GameSetupHelpers.setupAndStartReefRoyale(tester, config,
-        playerNames: playerNames);
-
-Future<void> openEditScore(WidgetTester tester, GameUIConfig config) =>
+Future<void> openEditScore(WidgetTester tester) =>
     EditScoreHelpers.openEditScore(tester, config);
 
 Future<void> updateScore(WidgetTester tester) =>

@@ -277,8 +277,16 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
     if (_dartboardEmulatorController.isAutoPlaying) {
       navigateToResults();
     } else {
-      // Touchdown announcement is already fired by _handleDartThrow via
-      // announceMomentForDart (hasWinner == true path). No duplicate needed here.
+      final provider = context.read<LunarLanderProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final winnerId = provider.currentGame?.winnerId;
+      if (winnerId != null) {
+        final winner = playerProvider.allPlayers.firstWhere(
+          (p) => p.id == winnerId,
+          orElse: () => playerProvider.allPlayers.first,
+        );
+        _audioQueue?.announceWinner(winner.name);
+      }
       Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
     }
   }
@@ -303,16 +311,6 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
     final shouldPromptTakeout = provider.shouldPromptTakeout;
 
     final hasDartsThrown = game.totalDartsThrown.values.any((c) => c > 0);
-
-    // Auto-navigate to results when hasWinner becomes true. Matches the
-    // Clockwork Quest pattern — without this, navigation would only fire via
-    // the takeout flow (after user clicks "DARTS REMOVED"), which makes the
-    // win path non-deterministic in tests and unfriendly in real play.
-    if (provider.hasWinner) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleGameWon();
-      });
-    }
 
     return PopScope(
       canPop: !hasDartsThrown || _showSaveModal,

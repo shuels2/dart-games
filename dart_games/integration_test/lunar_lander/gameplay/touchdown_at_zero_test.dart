@@ -23,6 +23,7 @@ void main() {
     await throwDartViaMock(tester, 20, multiplier: 'triple');
     await throwDartViaMock(tester, 20);
     await throwDartViaMock(tester, 20);
+    await clickDartsRemoved(tester);
 
     expect(hasWinner(tester), isTrue,
         reason: 'Exactly reaching 0 altitude should win the game');

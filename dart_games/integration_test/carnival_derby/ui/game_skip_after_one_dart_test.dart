@@ -41,6 +41,7 @@ void main() {
 
     // Bob's turn
     await throwDartViaMock(tester, 20, multiplier: 'triple'); // 60 (wins)
+    await clickDartsRemoved(tester);
     expect(getCurrentPlayerScore(tester), 60);
     expect(hasWinner(tester), true);
   });

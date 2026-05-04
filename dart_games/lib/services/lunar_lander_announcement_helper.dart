@@ -101,6 +101,10 @@ class LunarLanderAnnouncementHelper {
     }
   }
 
+  void announceWinner(String playerName) {
+    _announceTouchdown(playerName: playerName);
+  }
+
   // ─── Private moment-announcement implementations ─────────────────────────────
 
   void _announceTouchdown({required String playerName}) {

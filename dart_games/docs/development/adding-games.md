@@ -83,6 +83,13 @@ final player = await showAddPlayerDialog(
 - Dartboard emulator (use shared components)
 - Action buttons (skip turn, edit score, etc.)
 
+**Victory Flow Requirement:** The game screen MUST wait for the user to click DARTS REMOVED (`takeout_finished` event) before navigating to the results screen, even when `hasWinner` is true. This ensures the Edit Score button remains accessible after a winning turn. The standardized flow is:
+
+1. `_handleTakeoutFinished()`: Check `hasWinner` at the TOP (before any provider advance call). If winner, call `_handleGameWon()` and return. Otherwise advance the turn.
+2. `_handleGameWon()`: Guard with `_gameCompleted` flag. If `isAutoPlaying`, navigate immediately. Otherwise wait 3000ms (for victory announcement), then navigate via `Navigator.pushReplacement`.
+
+All 6 existing games follow this exact pattern. Reference any game screen for the canonical implementation.
+
 **Key Integration:**
 ```dart
 import '../../../providers/dartboard_provider.dart';
@@ -410,6 +417,8 @@ Create test files in a game-specific subfolder under `integration_test/`:
 - `integration_test/your_game/your_game_results_test.dart`
 - `integration_test/your_game/your_game_visual_validation_test.dart`
 - `integration_test/your_game/your_game_edit_score_test.dart`
+- `integration_test/your_game/edit_score/edit_creates_winner_stats_test.dart` (mandatory)
+- `integration_test/your_game/edit_score/edit_removes_winner_no_stats_test.dart` (mandatory)
 - `integration_test/your_game/your_game_showcase_test.dart`
 - `test/screens/games/your_game/your_game_game_test.dart`
 - `test/screens/games/your_game/your_game_user_management_test.dart`

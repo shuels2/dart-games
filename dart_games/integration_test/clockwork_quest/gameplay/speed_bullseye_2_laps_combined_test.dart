@@ -30,6 +30,7 @@ void main() {
 
     // Hit bullseye to complete first lap
     await throwBullseyeViaMock(tester);
+    await clickDartsRemoved(tester);
 
     expect(provider.getPlayerLapsCompleted(playerId), 1);
     expect(provider.hasWinner, isFalse);
@@ -41,6 +42,7 @@ void main() {
     provider.currentGame!.currentTarget[playerId] = 21;
 
     await throwBullseyeViaMock(tester);
+    await clickDartsRemoved(tester);
 
     expect(provider.hasWinner, isTrue);
   });

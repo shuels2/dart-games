@@ -228,24 +228,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         }
       }
 
-      if (horseRaceProvider.hasWinner) {
-        if (!_dartboardEmulatorController.isAutoPlaying &&
-            currentPlayer != null) {
-          Future.delayed(const Duration(milliseconds: 2500), () {
-            _audioQueue?.announceRemoveDarts(currentPlayer.name);
-
-            Future.delayed(const Duration(milliseconds: 2000), () {
-              _mockApi?.simulateTakeoutStarted();
-
-              Future.delayed(const Duration(milliseconds: 500), () {
-                _mockApi?.simulateTakeoutFinished();
-              });
-            });
-          });
-        }
-      } else if (!_dartboardEmulatorController.isAutoPlaying) {
+      if (!_dartboardEmulatorController.isAutoPlaying) {
         final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
-        if (dartsThrown >= 3) {
+        if (dartsThrown >= 3 || horseRaceProvider.hasWinner) {
           if (currentPlayer != null) {
             Future.delayed(const Duration(milliseconds: 2500), () {
               _audioQueue?.announceRemoveDarts(currentPlayer.name);
@@ -262,6 +247,15 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
   void _onTakeoutComplete() {
     final horseRaceProvider = context.read<HorseRaceProvider>();
+    if (!mounted) return;
+
+    if (horseRaceProvider.hasWinner) {
+      _handleGameWon();
+      return;
+    }
+
+    if (!horseRaceProvider.isGameActive) return;
+
     horseRaceProvider.handleTakeoutFinished();
 
     if (!_dartboardEmulatorController.isAutoPlaying) {
@@ -270,13 +264,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           _scrollToCurrentPlayer();
         }
       });
-    }
 
-    if (horseRaceProvider.hasWinner) {
-      _handleGameWon();
-    } else if (mounted &&
-        horseRaceProvider.currentGame != null &&
-        !_dartboardEmulatorController.isAutoPlaying) {
       final playerProvider = context.read<PlayerProvider>();
       final players = horseRaceProvider.currentGame!.playerIds
           .map((id) => playerProvider.getPlayerById(id))
@@ -285,10 +273,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       final nextPlayer = horseRaceProvider.getCurrentPlayer(players);
       if (nextPlayer != null) {
         Future.delayed(const Duration(milliseconds: 500), () {
-          _audioQueue?.announceTurn(nextPlayer.name);
+          if (mounted) _audioQueue?.announceTurn(nextPlayer.name);
         });
       }
     }
+
+    setState(() {});
   }
 
   int _calculateScore(String sector) {
@@ -348,23 +338,24 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
     void navigateToResults() {
       if (!mounted) return;
-      final horseRaceProvider = context.read<HorseRaceProvider>();
-      final playerProvider = context.read<PlayerProvider>();
-      final winner = horseRaceProvider.getWinner(playerProvider.allPlayers);
-      if (winner != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const HorseRaceResultsScreen(),
-          ),
-        );
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const HorseRaceResultsScreen(),
+        ),
+      );
     }
 
     if (_dartboardEmulatorController.isAutoPlaying) {
       navigateToResults();
     } else {
-      Future.delayed(const Duration(milliseconds: 2500), navigateToResults);
+      final horseRaceProvider = context.read<HorseRaceProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final winner = horseRaceProvider.getWinner(playerProvider.allPlayers);
+      if (winner != null) {
+        _audioQueue?.announceWinner(winner.name);
+      }
+      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
     }
   }
 

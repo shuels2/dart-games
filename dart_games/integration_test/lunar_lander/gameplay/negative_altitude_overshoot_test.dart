@@ -27,6 +27,7 @@ void main() {
     // Player A at altitude 5 — now throw a dart that overshoots (e.g. single 20)
     // Hard Landing OFF: going below 0 wins
     await throwDartViaMock(tester, 20); // 5 - 20 = -15 → WIN (not bust)
+    await clickDartsRemoved(tester);
 
     // Game should now have a winner
     expect(hasWinner(tester), isTrue,

@@ -60,6 +60,7 @@ void main() {
     await throwDartViaMock(tester, 20, multiplier: 'triple'); // 255 total - wins!
 
     // Player wins on first dart of turn 3 (195 + 60 = 255 >= 200)
+    await clickDartsRemoved(tester);
     expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(200));
     expect(hasWinner(tester), true);
 

@@ -38,6 +38,7 @@ void main() {
 
     // Bob Turn 1: T20 wins
     await throwDartViaMock(tester, 20, multiplier: 'triple');
+    await clickDartsRemoved(tester);
     expect(getCurrentPlayerScore(tester), 60);
     verifyCurrentPlayerScoreDisplay(tester, 60, 60); // Bob wins: 60/60
     verifyRaceTrackScore(tester, 60, 60); // Race track: 60/60

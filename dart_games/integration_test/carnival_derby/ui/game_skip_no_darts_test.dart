@@ -31,6 +31,7 @@ void main() {
     // We can't check dart display since it advances too quickly
     // Instead, verify that when Bob throws a dart, his score updates
     await throwDartViaMock(tester, 20, multiplier: 'triple'); // Bob: 60 (wins)
+    await clickDartsRemoved(tester);
 
     expect(getCurrentPlayerScore(tester), 60);
     expect(hasWinner(tester), true);

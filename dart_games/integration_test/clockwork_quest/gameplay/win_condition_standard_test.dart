@@ -20,6 +20,7 @@ void main() {
     provider.currentGame!.currentTarget[playerId] = 20;
 
     await throwDartViaMock(tester, 20);
+    await clickDartsRemoved(tester);
 
     expect(provider.hasWinner, isTrue);
     expect(provider.currentGame!.winnerId, playerId);

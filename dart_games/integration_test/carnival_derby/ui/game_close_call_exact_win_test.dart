@@ -38,6 +38,7 @@ void main() {
 
     // Turn 2: S5 = 100 (exact win)
     await throwDartViaMock(tester, 5); // 100
+    await clickDartsRemoved(tester);
 
     expect(getCurrentPlayerScore(tester), 100);
     expect(hasWinner(tester), true);

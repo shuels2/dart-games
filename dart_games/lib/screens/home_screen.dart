@@ -6,6 +6,8 @@ import '../providers/dartboard_provider.dart';
 import '../services/dart_announcer_service.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import 'options_screen.dart';
 import 'games/carnival_horse_race/horse_race_menu_screen.dart';
 import 'games/target_tag/target_tag_menu_screen.dart';
@@ -292,140 +294,150 @@ class _HomeScreenState extends State<HomeScreen> {
     final dartboardProvider = context.watch<DartboardProvider>();
     final games = _getAvailableGames(dartboardProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false, // No back arrow on home screen
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF44336), // Red
-                Color(0xFFFFC107), // Amber
-              ],
-            ),
-          ),
-        ),
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/common/images/logo.png',
-              height: 40,
-              width: 40,
-            ),
-            const SizedBox(width: 12),
-            const Text('Let\'s play some Dart Games'),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.homeScreen(),
-            ),
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: 'Menu',
-            onSelected: (value) {
-              if (value == 'options') {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => OptionsScreen(announcer: _announcer),
-                  ),
-                );
-              } else if (value == 'disconnect') {
-                _handleDisconnect(context);
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'options',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey),
-                    SizedBox(width: 12),
-                    Text('System Settings'),
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFF44336),
+                    Color(0xFFFFC107),
                   ],
                 ),
               ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'disconnect',
-                child: Row(
-                  children: [
-                    Icon(Icons.link_off, color: Colors.red),
-                    SizedBox(width: 12),
-                    Text('Disconnect Dartboard'),
-                  ],
+            ),
+            title: Row(
+              children: [
+                Image.asset(
+                  'assets/common/images/logo.png',
+                  height: 40,
+                  width: 40,
+                ),
+                const SizedBox(width: 12),
+                const Text('Let\'s play some Dart Games'),
+              ],
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.homeScreen(),
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'Menu',
+                onSelected: (value) {
+                  if (value == 'options') {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => OptionsScreen(announcer: _announcer),
+                      ),
+                    );
+                  } else if (value == 'disconnect') {
+                    _handleDisconnect(context);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'options',
+                    child: Row(
+                      children: [
+                        Icon(Icons.settings, color: Colors.grey),
+                        SizedBox(width: 12),
+                        Text('System Settings'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'disconnect',
+                    child: Row(
+                      children: [
+                        Icon(Icons.link_off, color: Colors.red),
+                        SizedBox(width: 12),
+                        Text('Disconnect Dartboard'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            foregroundColor: Colors.white,
+          ),
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const tileWidth = 360.0;
+                    const minSpacing = 12.0;
+                    final availableWidth = constraints.maxWidth;
+
+                    int itemsPerRow = ((availableWidth + minSpacing) / (tileWidth + minSpacing)).floor();
+                    itemsPerRow = itemsPerRow.clamp(1, games.length);
+
+                    final justifiedSpacing = itemsPerRow > 1
+                        ? (availableWidth - (itemsPerRow * tileWidth)) / (itemsPerRow - 1)
+                        : 0.0;
+
+                    final rows = <List<Map<String, dynamic>>>[];
+                    for (var i = 0; i < games.length; i += itemsPerRow) {
+                      rows.add(games.sublist(i, (i + itemsPerRow).clamp(0, games.length)));
+                    }
+
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
+                            if (rowIndex > 0) const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: rows[rowIndex].length == itemsPerRow
+                                  ? MainAxisAlignment.spaceBetween
+                                  : MainAxisAlignment.start,
+                              children: [
+                                for (var i = 0; i < rows[rowIndex].length; i++) ...[
+                                  if (i > 0 && rows[rowIndex].length < itemsPerRow)
+                                    SizedBox(width: justifiedSpacing),
+                                  SizedBox(
+                                    width: tileWidth,
+                                    height: 400,
+                                    child: _buildGameCard(
+                                      context: context,
+                                      key: rows[rowIndex][i]['key'] as Key?,
+                                      imageAssetPath: rows[rowIndex][i]['imageAssetPath'] as String?,
+                                      title: rows[rowIndex][i]['title'] as String,
+                                      color: rows[rowIndex][i]['color'] as Color,
+                                      onTap: rows[rowIndex][i]['onTap'] as VoidCallback?,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
           ),
-        ],
-        foregroundColor: Colors.white,
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                const tileWidth = 360.0;
-                const minSpacing = 12.0;
-                final availableWidth = constraints.maxWidth;
-
-                int itemsPerRow = ((availableWidth + minSpacing) / (tileWidth + minSpacing)).floor();
-                itemsPerRow = itemsPerRow.clamp(1, games.length);
-
-                final justifiedSpacing = itemsPerRow > 1
-                    ? (availableWidth - (itemsPerRow * tileWidth)) / (itemsPerRow - 1)
-                    : 0.0;
-
-                final rows = <List<Map<String, dynamic>>>[];
-                for (var i = 0; i < games.length; i += itemsPerRow) {
-                  rows.add(games.sublist(i, (i + itemsPerRow).clamp(0, games.length)));
-                }
-
-                return SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
-                        if (rowIndex > 0) const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: rows[rowIndex].length == itemsPerRow
-                              ? MainAxisAlignment.spaceBetween
-                              : MainAxisAlignment.start,
-                          children: [
-                            for (var i = 0; i < rows[rowIndex].length; i++) ...[
-                              if (i > 0 && rows[rowIndex].length < itemsPerRow)
-                                SizedBox(width: justifiedSpacing),
-                              SizedBox(
-                                width: tileWidth,
-                                height: 400,
-                                child: _buildGameCard(
-                                  context: context,
-                                  key: rows[rowIndex][i]['key'] as Key?,
-                                  imageAssetPath: rows[rowIndex][i]['imageAssetPath'] as String?,
-                                  title: rows[rowIndex][i]['title'] as String,
-                                  color: rows[rowIndex][i]['color'] as Color,
-                                  onTap: rows[rowIndex][i]['onTap'] as VoidCallback?,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              },
-            ),
+        ),
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.homeScreen(),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

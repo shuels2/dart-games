@@ -22,6 +22,9 @@ import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../widgets/save_game_modal/save_game_modal_config.dart';
 import '../../../services/play_to_complete/clockwork_quest_strategy.dart';
 import '../../../widgets/interactive_dartboard.dart';
+import '../../../services/game_announcement_queue_service.dart';
+import '../../../services/clockwork_quest_announcement_helper.dart';
+import 'clockwork_quest_results_screen.dart';
 
 class ClockworkQuestGameScreen extends StatefulWidget {
   const ClockworkQuestGameScreen({super.key});
@@ -36,6 +39,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
   MockScoliaApiService? _mockApi;
+  ClockworkQuestAnnouncementHelper? _audioQueue;
   final DartboardEmulatorController _dartboardEmulatorController =
       DartboardEmulatorController();
   PlayToCompleteRunner? _playToCompleteRunner;
@@ -54,6 +58,10 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final dartboardProvider = context.read<DartboardProvider>();
     _mockApi = dartboardProvider.apiService;
     if (mounted) setState(() {});
+
+    final globalQueue = GameAnnouncementQueueService();
+    await globalQueue.loadSettings();
+    _audioQueue = ClockworkQuestAnnouncementHelper(globalQueue);
 
     // Subscribe to dartboard events
     final eventStream = dartboardProvider.dartboardEventStream;
@@ -120,6 +128,13 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final clockworkProvider = context.read<ClockworkQuestProvider>();
     if (!mounted) return;
 
+    if (clockworkProvider.hasWinner) {
+      _handleGameWon();
+      return;
+    }
+
+    if (!clockworkProvider.isGameActive) return;
+
     clockworkProvider.confirmDartsRemoved();
     setState(() {});
   }
@@ -128,8 +143,31 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     if (_gameCompleted) return;
     _gameCompleted = true;
 
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/clockwork_quest_results');
+    void navigateToResults() {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ClockworkQuestResultsScreen(),
+        ),
+      );
+    }
+
+    if (_dartboardEmulatorController.isAutoPlaying) {
+      navigateToResults();
+    } else {
+      final clockworkProvider = context.read<ClockworkQuestProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final winnerId = clockworkProvider.currentGame?.winnerId;
+      if (winnerId != null) {
+        final winner = playerProvider.allPlayers.firstWhere(
+          (p) => p.id == winnerId,
+          orElse: () => playerProvider.allPlayers.first,
+        );
+        _audioQueue?.announceVictory(winner);
+      }
+      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+    }
   }
 
   @override
@@ -153,13 +191,6 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
 
     final shouldPromptTakeout = clockworkProvider.shouldPromptTakeout;
     final hasDartsThrown = game.totalDartsThrown.values.any((c) => c > 0);
-
-    // Check for winner
-    if (clockworkProvider.hasWinner) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleGameWon();
-      });
-    }
 
     return PopScope(
       canPop: !hasDartsThrown || _showSaveModal,

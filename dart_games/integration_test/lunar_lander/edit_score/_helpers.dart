@@ -10,6 +10,7 @@ export '../../shared/ui_test_helpers.dart';
 export '../../shared/element_finders.dart';
 export '../../shared/pump_sequences.dart';
 export '../../shared/edit_score_helpers.dart';
+export '../../shared/provider_helpers.dart';
 
 final config = GameUIConfig.lunarLander();
 
@@ -27,6 +28,9 @@ Future<void> throwMissViaMock(WidgetTester tester) =>
 
 Future<void> clickDartsRemoved(WidgetTester tester) =>
     DartThrowHelpers.clickDartsRemoved(tester);
+
+Future<void> completeTurnWithMisses(WidgetTester tester) =>
+    DartThrowHelpers.completeTurnWithMisses(tester);
 
 Future<void> setupAndStartGame(
   WidgetTester tester,
