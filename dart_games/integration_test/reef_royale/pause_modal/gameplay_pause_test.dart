@@ -125,9 +125,12 @@ void main() {
 
     // Disconnect — edit score dialog should auto-close
     ProviderHelpers.simulateDartboardDisconnection(tester);
-    await PumpSequences.simpleUpdate(tester);
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
 
-    // Edit score dialog save button should be gone
+    // Edit score dialog save button should be gone (post-frame callback needs pump time)
     expect(ElementFinders.getEditScoreSaveButton(), findsNothing);
 
     // Pause modal should be visible

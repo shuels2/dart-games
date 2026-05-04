@@ -249,7 +249,10 @@ void main() {
       print('SCREENSHOT: P1 hitting gear 20 to win...');
       await throwDartViaMock(tester, 20);
 
-      // Wait for results screen navigation
+      // Remove darts to trigger victory flow (standardized: DARTS REMOVED before results)
+      await clickDartsRemoved(tester);
+
+      // Wait for 3000ms victory delay + results screen navigation
       await tester.pump(const Duration(seconds: 4));
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
@@ -294,7 +297,10 @@ void main() {
       print('SCREENSHOT: Hitting bullseye to win...');
       await throwBullseyeViaMock(tester);
 
-      // Wait for results screen navigation
+      // Remove darts to trigger victory flow (standardized: DARTS REMOVED before results)
+      await clickDartsRemoved(tester);
+
+      // Wait for 3000ms victory delay + results screen navigation
       await tester.pump(const Duration(seconds: 4));
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));

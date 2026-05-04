@@ -18,6 +18,9 @@ void main() {
     await UITestHelpers.addPlayer(tester, 'Player B', config);
 
     await UITestHelpers.startGame(tester, config);
+    // Extra pump to ensure game state is fully propagated
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
 
     final playerA = ProviderHelpers.findPlayerByName(tester, 'Player A')!;
     final playerB = ProviderHelpers.findPlayerByName(tester, 'Player B')!;

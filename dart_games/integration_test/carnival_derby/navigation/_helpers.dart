@@ -27,6 +27,9 @@ Future<void> setTargetScore(WidgetTester tester, int targetScore) =>
 
 Future<void> startGame(WidgetTester tester) async {
   await UITestHelpers.startGame(tester, config);
+  // Extra pump time for game screen to fully render after navigation
+  await tester.pump(const Duration(seconds: 2));
+  await tester.pump();
   expect(find.text('Carnival Derby Race'), findsOneWidget);
 }
 

@@ -119,10 +119,17 @@ void main() {
     EditScoreHelpers.verifyDialogOpen();
 
     // Disconnect
-    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
+    ProviderHelpers.simulateDartboardDisconnection(tester);
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
 
-    // Verify edit score dialog is closed
+    // Verify edit score dialog is closed (post-frame callback needs pump time)
     EditScoreHelpers.verifyDialogClosed();
+
+    // Verify pause modal appeared
+    PauseModalHelpers.verifyPauseModalVisible(tester);
   });
 
   testWidgets('Pause dismisses on reconnect and Target Tag game continues',

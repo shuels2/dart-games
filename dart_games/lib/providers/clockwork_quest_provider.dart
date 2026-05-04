@@ -272,11 +272,11 @@ class ClockworkQuestProvider extends ChangeNotifier {
   }
 
   void _checkTakeoutCondition() {
-    if (_currentGame == null || !isGameActive) return;
+    if (_currentGame == null) return;
     final currentPlayerId = _currentGame!.currentPlayerId;
     final dartsThrown = _currentGame!.dartsThrown[currentPlayerId] ?? 0;
 
-    if (dartsThrown >= _currentGame!.maxDartsPerTurn) {
+    if (dartsThrown >= _currentGame!.maxDartsPerTurn || hasWinner) {
       _waitingForTakeout = true;
     }
   }

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
-import '../../shared/edit_score_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '_helpers.dart';
 
@@ -23,8 +22,12 @@ void main() {
     expect(ProviderHelpers.carnivalDerbyHasWinner(tester), isTrue);
 
     // Edit to remove win: S1 + S1 + S1 = 3 pts (no win)
-    await EditScoreHelpers.editScoreAndSave(tester, config,
-        dart1: 'S1', dart2: 'S1', dart3: 'S1');
+    // Use CD-specific helpers to avoid ring-button layout ambiguity
+    await openEditScore(tester);
+    await setDartInEditScore(tester, 0, 'Single (outer)', number: 1); // D1: T20 -> S1
+    await setDartInEditScore(tester, 1, 'Single (outer)', number: 1); // D2: T20 -> S1
+    await setDartInEditScore(tester, 2, 'Single (outer)', number: 1); // D3: S20 -> S1
+    await updateScore(tester);
 
     expect(ProviderHelpers.carnivalDerbyHasWinner(tester), isFalse);
 
