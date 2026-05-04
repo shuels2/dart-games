@@ -44,7 +44,7 @@ void main() {
       final provider = createProvider(startingAltitude: 200);
       final playerId = provider.getCurrentPlayerId()!;
 
-      provider.processDartThrow(score: 20, multiplier: 1);
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
 
       expect(provider.getCurrentAltitude(playerId), 180);
     });
@@ -53,7 +53,7 @@ void main() {
       final provider = createProvider(startingAltitude: 200);
       final playerId = provider.getCurrentPlayerId()!;
 
-      provider.processDartThrow(score: 20, multiplier: 2);
+      provider.processDartThrow(score: 20, multiplier: 2, sector: 'D20');
 
       expect(provider.getCurrentAltitude(playerId), 160); // 200 - 40
     });
@@ -62,7 +62,7 @@ void main() {
       final provider = createProvider(startingAltitude: 200);
       final playerId = provider.getCurrentPlayerId()!;
 
-      provider.processDartThrow(score: 20, multiplier: 3);
+      provider.processDartThrow(score: 20, multiplier: 3, sector: 'T20');
 
       expect(provider.getCurrentAltitude(playerId), 140); // 200 - 60
     });
@@ -71,7 +71,7 @@ void main() {
       final provider = createProvider(startingAltitude: 200);
       final playerId = provider.getCurrentPlayerId()!;
 
-      provider.processDartThrow(score: 25, multiplier: 1);
+      provider.processDartThrow(score: 25, multiplier: 1, sector: '25');
 
       expect(provider.getCurrentAltitude(playerId), 175);
     });
@@ -80,7 +80,7 @@ void main() {
       final provider = createProvider(startingAltitude: 200);
       final playerId = provider.getCurrentPlayerId()!;
 
-      provider.processDartThrow(score: 50, multiplier: 1);
+      provider.processDartThrow(score: 50, multiplier: 1, sector: 'Bull');
 
       expect(provider.getCurrentAltitude(playerId), 150);
     });
@@ -89,9 +89,9 @@ void main() {
       final provider = createProvider(startingAltitude: 300);
       final playerId = provider.getCurrentPlayerId()!;
 
-      provider.processDartThrow(score: 20, multiplier: 1); // -20 → 280
-      provider.processDartThrow(score: 15, multiplier: 1); // -15 → 265
-      provider.processDartThrow(score: 10, multiplier: 1); // -10 → 255
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // -20 → 280
+      provider.processDartThrow(score: 15, multiplier: 1, sector: 'S15'); // -15 → 265
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // -10 → 255
 
       expect(provider.getCurrentAltitude(playerId), 255);
     });
@@ -103,9 +103,9 @@ void main() {
       final p2 = 'p2';
 
       // P1 throws 3 darts and triggers takeout
-      provider.processDartThrow(score: 20, multiplier: 1); // p1: 200-20=180
-      provider.processDartThrow(score: 20, multiplier: 1); // p1: 180-20=160
-      provider.processDartThrow(score: 20, multiplier: 1); // p1: 160-20=140
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // p1: 200-20=180
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // p1: 180-20=160
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // p1: 160-20=140
       expect(provider.getCurrentAltitude(p1), 140);
       expect(provider.shouldPromptTakeout, isTrue);
 
@@ -114,12 +114,12 @@ void main() {
       expect(provider.getCurrentPlayerId(), p2);
 
       // P2 throws 2 darts
-      provider.processDartThrow(score: 15, multiplier: 1); // p2: 200-15=185
-      provider.processDartThrow(score: 10, multiplier: 1); // p2: 185-10=175
+      provider.processDartThrow(score: 15, multiplier: 1, sector: 'S15'); // p2: 200-15=185
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // p2: 185-10=175
       expect(provider.getCurrentAltitude(p2), 175);
 
       // Finish P2's turn
-      provider.processDartThrow(score: 5, multiplier: 1); // p2: 175-5=170
+      provider.processDartThrow(score: 5, multiplier: 1, sector: 'S5'); // p2: 175-5=170
       provider.advanceTurn();
 
       // Back to P1
@@ -133,11 +133,11 @@ void main() {
       final game = provider.currentGame!;
       final playerId = provider.getCurrentPlayerId()!;
 
-      provider.processDartThrow(score: 10, multiplier: 1);
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
       expect(game.dartsThrown[playerId], 1);
-      provider.processDartThrow(score: 10, multiplier: 1);
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
       expect(game.dartsThrown[playerId], 2);
-      provider.processDartThrow(score: 10, multiplier: 1);
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
       expect(game.dartsThrown[playerId], 3);
     });
   });
@@ -204,34 +204,34 @@ void main() {
       final p2 = 'p2';
 
       // Turn 1 — P1: throw 3 darts to reduce from 100 → 70
-      provider.processDartThrow(score: 10, multiplier: 1); // 100-10=90
-      provider.processDartThrow(score: 10, multiplier: 1); // 90-10=80
-      provider.processDartThrow(score: 10, multiplier: 1); // 80-10=70
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // 100-10=90
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // 90-10=80
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // 80-10=70
       expect(provider.getCurrentAltitude(p1), 70);
       provider.advanceTurn(); // advance to P2
 
       // Turn 1 — P2: quick 3-dart turn
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
       provider.advanceTurn(); // back to P1
 
       // Turn 2 — P1: reduce from 70 → 40
-      provider.processDartThrow(score: 10, multiplier: 1); // 70-10=60
-      provider.processDartThrow(score: 10, multiplier: 1); // 60-10=50
-      provider.processDartThrow(score: 10, multiplier: 1); // 50-10=40
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // 70-10=60
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // 60-10=50
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // 50-10=40
       expect(provider.getCurrentAltitude(p1), 40);
       provider.advanceTurn(); // advance to P2
 
       // Turn 2 — P2: quick 3-dart turn
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
       provider.advanceTurn(); // back to P1
 
       // Turn 3 — P1: altitude is 40. Dart that goes below zero: T20=60 > 40
       expect(provider.getCurrentAltitude(p1), 40); // starts this turn at 40
-      provider.processDartThrow(score: 20, multiplier: 3); // would be -20 → bust
+      provider.processDartThrow(score: 20, multiplier: 3, sector: 'T20'); // would be -20 → bust
       // Must revert to turn-start altitude (40)
       expect(provider.getCurrentAltitude(p1), 40);
       expect(provider.currentGame!.dartThrowWasBust[p1]!.last, isTrue);
@@ -248,7 +248,7 @@ void main() {
       final playerId = provider.getCurrentPlayerId()!;
 
       // Throw a bust dart on first dart (single 60 > altitude 50)
-      provider.processDartThrow(score: 20, multiplier: 3); // 60 > 50 → bust
+      provider.processDartThrow(score: 20, multiplier: 3, sector: 'T20'); // 60 > 50 → bust
       expect(provider.getCurrentAltitude(playerId), 50); // reverted
       expect(provider.currentGame!.dartsThrown[playerId],
           provider.currentGame!.maxDartsPerTurn); // forfeited
@@ -264,7 +264,7 @@ void main() {
           hardLandingEnabled: true);
       final playerId = provider.getCurrentPlayerId()!;
 
-      provider.processDartThrow(score: 20, multiplier: 3); // exactly 60 → 0
+      provider.processDartThrow(score: 20, multiplier: 3, sector: 'T20'); // exactly 60 → 0
       expect(provider.getCurrentAltitude(playerId), 0);
       expect(provider.hasWinner, isTrue);
       expect(provider.currentGame!.winnerId, playerId);
@@ -283,26 +283,26 @@ void main() {
       final p2 = 'p2';
 
       // P1 turn 1: reduce to 80, then bust
-      provider.processDartThrow(score: 20, multiplier: 1); // 100-20=80
-      provider.processDartThrow(score: 20, multiplier: 1); // 80-20=60
-      provider.processDartThrow(score: 20, multiplier: 1); // 60-20=40
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // 100-20=80
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // 80-20=60
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // 60-20=40
       provider.advanceTurn();
 
       // P2 turn 1
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
       provider.advanceTurn();
 
       // P1 turn 2 start altitude is 40; bust on the first dart
       expect(provider.getCurrentAltitude(p1), 40);
-      provider.processDartThrow(score: 20, multiplier: 3); // 60 > 40 → bust
+      provider.processDartThrow(score: 20, multiplier: 3, sector: 'T20'); // 60 > 40 → bust
       expect(provider.getCurrentAltitude(p1), 40); // reverted to 40
 
       provider.advanceTurn(); // P2 turn 2
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
       provider.advanceTurn();
 
       // P1 turn 3: altitude still 40 (bust in turn 2 didn't change it)
@@ -320,7 +320,7 @@ void main() {
       final playerId = provider.getCurrentPlayerId()!;
 
       // Dart that overshoots (score > altitude) — should WIN
-      provider.processDartThrow(score: 20, multiplier: 2); // 40 > 30 → -10
+      provider.processDartThrow(score: 20, multiplier: 2, sector: 'D20'); // 40 > 30 → -10
       expect(provider.hasWinner, isTrue);
       expect(provider.currentGame!.winnerId, playerId);
     });
@@ -333,7 +333,7 @@ void main() {
           hardLandingEnabled: false);
       final playerId = provider.getCurrentPlayerId()!;
 
-      provider.processDartThrow(score: 20, multiplier: 2); // exactly 40 → 0
+      provider.processDartThrow(score: 20, multiplier: 2, sector: 'D20'); // exactly 40 → 0
       expect(provider.getCurrentAltitude(playerId), 0);
       expect(provider.hasWinner, isTrue);
     });
@@ -349,11 +349,11 @@ void main() {
       final playerId = provider.getCurrentPlayerId()!;
 
       // Throw a valid dart first
-      provider.processDartThrow(score: 10, multiplier: 1); // 50-10=40
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // 50-10=40
       expect(provider.currentGame!.dartThrowWasBust[playerId]!.last, isFalse);
 
       // Now bust (any value > 40)
-      provider.processDartThrow(score: 20, multiplier: 3); // 60 > 40 → bust
+      provider.processDartThrow(score: 20, multiplier: 3, sector: 'T20'); // 60 > 40 → bust
       final bustList =
           provider.currentGame!.dartThrowWasBust[playerId]!;
       expect(bustList.last, isTrue);
@@ -370,9 +370,9 @@ void main() {
           createProvider(playerIds: ['p1', 'p2'], startingAltitude: 200);
 
       // P1 throws 3 darts
-      provider.processDartThrow(score: 10, multiplier: 1);
-      provider.processDartThrow(score: 10, multiplier: 1);
-      provider.processDartThrow(score: 10, multiplier: 1);
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
       expect(provider.shouldPromptTakeout, isTrue);
 
       provider.advanceTurn();
@@ -383,7 +383,7 @@ void main() {
       final provider =
           createProvider(playerIds: ['p1', 'p2'], startingAltitude: 200);
 
-      provider.processDartThrow(score: 10, multiplier: 1); // 1 dart thrown
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10'); // 1 dart thrown
       provider.skipTurn(); // skip remaining 2
       expect(provider.shouldPromptTakeout, isTrue);
 
@@ -407,7 +407,7 @@ void main() {
           playerIds: ['p1', 'p2'], startingAltitude: 20);
       final p1 = 'p1';
 
-      provider.processDartThrow(score: 20, multiplier: 1); // p1: 20-20=0
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // p1: 20-20=0
       expect(provider.hasWinner, isTrue);
       expect(provider.currentGame!.winnerId, p1);
     });
@@ -416,7 +416,7 @@ void main() {
       final provider = createProvider(
           playerIds: ['p1', 'p2'], startingAltitude: 20);
 
-      provider.processDartThrow(score: 20, multiplier: 1); // p1 wins
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // p1 wins
       expect(provider.currentGame!.state, LunarLanderGameState.finished);
       expect(provider.currentGame!.winnerId, isNotNull);
     });
@@ -461,18 +461,18 @@ void main() {
       final p2 = 'p2';
 
       // Reduce p1 to near-zero
-      provider.processDartThrow(score: 20, multiplier: 2); // p1: 50-40=10
+      provider.processDartThrow(score: 20, multiplier: 2, sector: 'D20'); // p1: 50-40=10
       expect(provider.getCurrentPlayerId(), p1);
       expect(provider.hasWinner, isFalse);
 
       // End p1's turn
-      provider.processDartThrow(score: 1, multiplier: 1); // p1: 10-1=9
-      provider.processDartThrow(score: 1, multiplier: 1); // p1: 9-1=8
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1'); // p1: 10-1=9
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1'); // p1: 9-1=8
       provider.advanceTurn();
 
       // p2 is now active; p2 wins — p1 is NOT affected
       expect(provider.getCurrentPlayerId(), p2);
-      provider.processDartThrow(score: 25, multiplier: 2); // p2: 50-50=0
+      provider.processDartThrow(score: 25, multiplier: 2, sector: 'D25'); // p2: 50-50=0
       expect(provider.hasWinner, isTrue);
       expect(provider.currentGame!.winnerId, p2);
       // p1 is still at 8, not at 0
@@ -539,9 +539,9 @@ void main() {
       final playerId = provider.getCurrentPlayerId()!;
 
       // Throw 3 darts: 10+10+10 = 30 → altitude 70
-      provider.processDartThrow(score: 10, multiplier: 1);
-      provider.processDartThrow(score: 10, multiplier: 1);
-      provider.processDartThrow(score: 10, multiplier: 1);
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
       expect(provider.getCurrentAltitude(playerId), 70);
 
       // Edit dart 0: change from score=10 (value=10) to score=20 (value=20)
@@ -565,8 +565,8 @@ void main() {
       final playerId = provider.getCurrentPlayerId()!;
 
       // Throw a small dart, no win yet
-      provider.processDartThrow(score: 5, multiplier: 1); // 20-5=15
-      provider.processDartThrow(score: 5, multiplier: 1); // 15-5=10
+      provider.processDartThrow(score: 5, multiplier: 1, sector: 'S5'); // 20-5=15
+      provider.processDartThrow(score: 5, multiplier: 1, sector: 'S5'); // 15-5=10
       expect(provider.hasWinner, isFalse);
 
       // Edit dart 0 to score=20 (value 20): 20+5+5=30 → overshoot -10 → win (hard landing off)
@@ -592,8 +592,8 @@ void main() {
           hardLandingEnabled: true);
 
       // Play some darts to create non-trivial state
-      provider.processDartThrow(score: 20, multiplier: 1); // p1: 150-20=130
-      provider.processDartThrow(score: 10, multiplier: 2); // p1: 130-20=110
+      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20'); // p1: 150-20=130
+      provider.processDartThrow(score: 10, multiplier: 2, sector: 'D10'); // p1: 130-20=110
 
       final game = provider.currentGame!;
       final json = game.toJson();
@@ -629,6 +629,6 @@ void _throwFullTurn(LunarLanderProvider provider, int scorePerDart) {
   for (int i = 0; i < 3; i++) {
     if (!provider.isGameActive) break;
     if (provider.shouldPromptTakeout) break;
-    provider.processDartThrow(score: scorePerDart, multiplier: 1);
+    provider.processDartThrow(score: scorePerDart, multiplier: 1, sector: 'S$scorePerDart');
   }
 }

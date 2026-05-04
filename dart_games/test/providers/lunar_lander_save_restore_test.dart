@@ -29,7 +29,7 @@ void main() {
       );
 
       // Throw a dart to create some state
-      provider.processDartThrow(score: 10, multiplier: 2);
+      provider.processDartThrow(score: 10, multiplier: 2, sector: 'D10');
 
       await provider.saveGame(players);
 
@@ -51,8 +51,8 @@ void main() {
         hardLandingEnabled: true,
       );
 
-      provider.processDartThrow(score: 5, multiplier: 1);
-      provider.processDartThrow(score: 10, multiplier: 1);
+      provider.processDartThrow(score: 5, multiplier: 1, sector: 'S5');
+      provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)
@@ -81,9 +81,9 @@ void main() {
         hardLandingEnabled: false,
       );
       // Throw 3 darts to fill the turn → waitingForTakeout = true
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
       expect(provider.shouldPromptTakeout, true);
 
       await provider.saveGame(players);
@@ -102,7 +102,7 @@ void main() {
         startingAltitude: 200,
         hardLandingEnabled: false,
       );
-      provider.processDartThrow(score: 5, multiplier: 1);
+      provider.processDartThrow(score: 5, multiplier: 1, sector: 'S5');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)
@@ -121,7 +121,7 @@ void main() {
         startingAltitude: 200,
         hardLandingEnabled: false,
       );
-      provider.processDartThrow(score: 5, multiplier: 1);
+      provider.processDartThrow(score: 5, multiplier: 1, sector: 'S5');
 
       // First save
       await provider.saveGame(players);
@@ -132,7 +132,7 @@ void main() {
 
       // Restore and throw another dart, then save again
       provider.restoreGame(saved1[0]);
-      provider.processDartThrow(score: 5, multiplier: 1);
+      provider.processDartThrow(score: 5, multiplier: 1, sector: 'S5');
       await provider.saveGame(players);
 
       // Should still be 1 saved game, same id (overwrite)
@@ -149,13 +149,13 @@ void main() {
         hardLandingEnabled: false,
       );
       // p1 throws 3 darts, then turn advances
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
-      provider.processDartThrow(score: 1, multiplier: 1);
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
+      provider.processDartThrow(score: 1, multiplier: 1, sector: 'S1');
       provider.advanceTurn();
 
       // p2 throws 1 dart
-      provider.processDartThrow(score: 2, multiplier: 1);
+      provider.processDartThrow(score: 2, multiplier: 1, sector: 'S2');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)
@@ -181,7 +181,7 @@ void main() {
         startingAltitude: 100,
         hardLandingEnabled: false,
       );
-      provider.processDartThrow(score: 3, multiplier: 1);
+      provider.processDartThrow(score: 3, multiplier: 1, sector: 'S3');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)

@@ -102,6 +102,9 @@ class LunarLanderGame {
   /// Whether each dart in the current turn caused a bust (Hard Landing ON).
   Map<String, List<bool>> dartThrowWasBust;
 
+  /// Raw sector strings for each dart this turn (e.g., 'S20', 'D20', 'Bull', 'Miss').
+  Map<String, List<String>> currentTurnDartSegments;
+
   /// Altitude at the start of the current turn per player (for Hard Landing revert).
   Map<String, int> turnStartAltitude;
 
@@ -133,6 +136,7 @@ class LunarLanderGame {
     Map<String, int>? totalTurns,
     Map<String, List<int>>? currentTurnDartScores,
     Map<String, List<bool>>? dartThrowWasBust,
+    Map<String, List<String>>? currentTurnDartSegments,
     Map<String, int>? turnStartAltitude,
     int? turnStartCurrentPlayerIndex,
     LunarLanderGameState? turnStartState,
@@ -143,6 +147,7 @@ class LunarLanderGame {
         totalTurns = totalTurns ?? {},
         currentTurnDartScores = currentTurnDartScores ?? {},
         dartThrowWasBust = dartThrowWasBust ?? {},
+        currentTurnDartSegments = currentTurnDartSegments ?? {},
         turnStartAltitude = turnStartAltitude ?? {},
         turnStartCurrentPlayerIndex = turnStartCurrentPlayerIndex,
         turnStartState =
@@ -156,6 +161,7 @@ class LunarLanderGame {
       this.totalTurns[playerId] ??= 0;
       this.currentTurnDartScores[playerId] ??= [];
       this.dartThrowWasBust[playerId] ??= [];
+      this.currentTurnDartSegments[playerId] ??= [];
       this.turnStartAltitude[playerId] ??= startingAltitude;
     }
   }
@@ -203,6 +209,7 @@ class LunarLanderGame {
       totalTurns: {for (final id in playerIds) id: 0},
       currentTurnDartScores: {for (final id in playerIds) id: []},
       dartThrowWasBust: {for (final id in playerIds) id: []},
+      currentTurnDartSegments: {for (final id in playerIds) id: []},
       turnStartAltitude: turnStartAlt,
       turnStartCurrentPlayerIndex: 0,
       turnStartState: LunarLanderGameState.playing,
@@ -229,6 +236,10 @@ class LunarLanderGame {
 
   List<bool> getDartThrowWasBust(String playerId) {
     return dartThrowWasBust[playerId] ?? [];
+  }
+
+  List<String> getCurrentTurnDartSegments(String playerId) {
+    return currentTurnDartSegments[playerId] ?? [];
   }
 
   int getCurrentAltitude(String playerId) {
@@ -296,6 +307,7 @@ class LunarLanderGame {
     dartsThrown[currentId] = 0;
     currentTurnDartScores[currentId] = [];
     dartThrowWasBust[currentId] = [];
+    currentTurnDartSegments[currentId] = [];
 
     // Advance index
     currentPlayerIndex = (currentPlayerIndex + 1) % playerIds.length;
@@ -329,6 +341,9 @@ class LunarLanderGame {
       ),
       'dartThrowWasBust': dartThrowWasBust.map(
         (k, v) => MapEntry(k, List<bool>.from(v)),
+      ),
+      'currentTurnDartSegments': currentTurnDartSegments.map(
+        (k, v) => MapEntry(k, List<String>.from(v)),
       ),
       'turnStartAltitude': turnStartAltitude,
       'turnStartCurrentPlayerIndex': turnStartCurrentPlayerIndex,
@@ -370,6 +385,13 @@ class LunarLanderGame {
       );
     }
 
+    Map<String, List<String>> _toListStringMap(dynamic raw) {
+      if (raw == null) return {};
+      return (raw as Map<String, dynamic>).map(
+        (k, v) => MapEntry(k, List<String>.from(v as List)),
+      );
+    }
+
     return LunarLanderGame(
       id: json['id'] as String,
       startedAt: DateTime.parse(json['startedAt'] as String),
@@ -391,6 +413,8 @@ class LunarLanderGame {
       currentTurnDartScores:
           _toListIntMap(json['currentTurnDartScores']),
       dartThrowWasBust: _toListBoolMap(json['dartThrowWasBust']),
+      currentTurnDartSegments:
+          _toListStringMap(json['currentTurnDartSegments']),
       turnStartAltitude: _toIntMap(json['turnStartAltitude']),
       turnStartCurrentPlayerIndex:
           json['turnStartCurrentPlayerIndex'] as int?,

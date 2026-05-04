@@ -53,6 +53,9 @@ class LunarLanderProvider extends ChangeNotifier {
   List<bool> getDartThrowWasBust(String playerId) =>
       _currentGame?.getDartThrowWasBust(playerId) ?? [];
 
+  List<String> getCurrentTurnDartSegments(String playerId) =>
+      _currentGame?.getCurrentTurnDartSegments(playerId) ?? [];
+
   /// Duration since game started (null until startGame is called).
   Duration? get gameDuration {
     if (_gameStartTime == null) return null;
@@ -108,6 +111,7 @@ class LunarLanderProvider extends ChangeNotifier {
   void processDartThrow({
     required int score,
     required int multiplier,
+    required String sector,
   }) {
     if (_currentGame == null || !isGameActive) return;
     if (_waitingForTakeout) return;
@@ -143,12 +147,14 @@ class LunarLanderProvider extends ChangeNotifier {
       // TOUCHDOWN — exact landing
       game.currentAltitudes[playerId] = 0;
       game.currentTurnDartScores[playerId]!.add(dartValue);
+      game.currentTurnDartSegments[playerId]!.add(sector);
       game.dartThrowWasBust[playerId]!.add(false);
       _triggerWin(playerId);
     } else if (newAltitude > 0) {
       // Continue descent
       game.currentAltitudes[playerId] = newAltitude;
       game.currentTurnDartScores[playerId]!.add(dartValue);
+      game.currentTurnDartSegments[playerId]!.add(sector);
       game.dartThrowWasBust[playerId]!.add(false);
     } else {
       // newAltitude < 0
@@ -159,6 +165,7 @@ class LunarLanderProvider extends ChangeNotifier {
         game.currentAltitudes[playerId] =
             game.turnStartAltitude[playerId]!;
         game.currentTurnDartScores[playerId]!.add(dartValue);
+        game.currentTurnDartSegments[playerId]!.add(sector);
         game.dartThrowWasBust[playerId]!.add(true);
         // Forfeit remaining darts by setting counter to maxDartsPerTurn
         game.dartsThrown[playerId] = game.maxDartsPerTurn;
@@ -167,6 +174,7 @@ class LunarLanderProvider extends ChangeNotifier {
         // CONSUMES OPTION: hardLandingEnabled (false branch)
         game.currentAltitudes[playerId] = newAltitude;
         game.currentTurnDartScores[playerId]!.add(dartValue);
+        game.currentTurnDartSegments[playerId]!.add(sector);
         game.dartThrowWasBust[playerId]!.add(false);
         _triggerWin(playerId);
       }
@@ -231,6 +239,7 @@ class LunarLanderProvider extends ChangeNotifier {
         _currentGame!.currentTurnDartScores[playerId] ??= [];
         // Store a 0 score as a skip placeholder in the score list
         _currentGame!.currentTurnDartScores[playerId]!.add(0);
+        _currentGame!.currentTurnDartSegments[playerId]!.add('Miss');
         _currentGame!.dartThrowWasBust[playerId]!.add(false);
       },
     );
@@ -277,6 +286,7 @@ class LunarLanderProvider extends ChangeNotifier {
     // Reset this player's turn state
     game.dartsThrown[playerId] = 0;
     game.currentTurnDartScores[playerId] = [];
+    game.currentTurnDartSegments[playerId] = [];
     game.dartThrowWasBust[playerId] = [];
 
     // Revert altitude + game state to turn-start
@@ -299,6 +309,22 @@ class LunarLanderProvider extends ChangeNotifier {
         replayMultiplier = 1;
       }
 
+      // Reconstruct segment string from score + multiplier
+      String replaySegment;
+      if (replayScore == 0) {
+        replaySegment = 'Miss';
+      } else if (replayScore == 50) {
+        replaySegment = 'Bull';
+      } else if (replayScore == 25) {
+        replaySegment = '25';
+      } else if (replayMultiplier == 2) {
+        replaySegment = 'D$replayScore';
+      } else if (replayMultiplier == 3) {
+        replaySegment = 'T$replayScore';
+      } else {
+        replaySegment = 'S$replayScore';
+      }
+
       final dartValue = game.dartScore(
           score: replayScore, multiplier: replayMultiplier);
       final prevAlt = game.currentAltitudes[playerId]!;
@@ -312,22 +338,26 @@ class LunarLanderProvider extends ChangeNotifier {
       if (newAlt == 0) {
         game.currentAltitudes[playerId] = 0;
         game.currentTurnDartScores[playerId]!.add(dartValue);
+        game.currentTurnDartSegments[playerId]!.add(replaySegment);
         game.dartThrowWasBust[playerId]!.add(false);
         _triggerWin(playerId);
       } else if (newAlt > 0) {
         game.currentAltitudes[playerId] = newAlt;
         game.currentTurnDartScores[playerId]!.add(dartValue);
+        game.currentTurnDartSegments[playerId]!.add(replaySegment);
         game.dartThrowWasBust[playerId]!.add(false);
       } else {
         if (game.hardLandingEnabled) {
           game.currentAltitudes[playerId] =
               game.turnStartAltitude[playerId]!;
           game.currentTurnDartScores[playerId]!.add(dartValue);
+          game.currentTurnDartSegments[playerId]!.add(replaySegment);
           game.dartThrowWasBust[playerId]!.add(true);
           game.dartsThrown[playerId] = game.maxDartsPerTurn;
         } else {
           game.currentAltitudes[playerId] = newAlt;
           game.currentTurnDartScores[playerId]!.add(dartValue);
+          game.currentTurnDartSegments[playerId]!.add(replaySegment);
           game.dartThrowWasBust[playerId]!.add(false);
           _triggerWin(playerId);
         }

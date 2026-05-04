@@ -109,6 +109,7 @@ Shows the **calculated point value** (e.g., "60" for T20, "20" for S20). Used wh
 
 - `EditScoreDialogConfig` factory includes `scoreDisplayTransform: _gameScoreDisplay`
 - The transform converts segment strings to point values: S20→"20", D13→"26", T20→"60"
+- **Provider must store raw segment strings** alongside calculated scores. The game model needs a `currentTurnDartSegments` field (`Map<String, List<String>>`) storing the original sector strings ('S20', 'D15', 'T20', 'Bull', 'Miss'). The game screen passes the raw sector string through to the provider, which stores it with each dart. The `onEditScore` handler reads `provider.getCurrentTurnDartSegments(playerId)` to populate `initialSegments`. Without this, converting calculated values back to segments is lossy (e.g., score 40 becomes 'S40' with no matching dartboard number). The field must be serialized for save/resume, cleared on turn advance, and rebuilt during edit score replay.
 - **Test constraint:** Single values (S5, S10) cause duplicate text matches in the dialog because the score display AND number button show the same value. Tests MUST use Double or Triple values (D5, T5) so the score display differs from the number button.
 
 ### Pattern B: Dart Throw Display (Target Tag, Monster Mash, Reef Royale, Clockwork Quest)

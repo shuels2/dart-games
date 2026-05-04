@@ -153,11 +153,12 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
 
     if (parsed == null) {
       // Miss — score 0
-      provider.processDartThrow(score: 0, multiplier: 1);
+      provider.processDartThrow(score: 0, multiplier: 1, sector: 'Miss');
     } else {
       provider.processDartThrow(
         score: parsed['score'] as int,
         multiplier: parsed['multiplier'] as int,
+        sector: sector,
       );
     }
 
@@ -517,14 +518,10 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                 if (currentPlayer == null) return;
                 final dartScores =
                     provider.getCurrentTurnDartScores(currentPlayerId);
-                // Build segment strings from dart scores for edit dialog.
-                // EditScoreDialog distinguishes between '-' (not yet thrown,
-                // ring=null → invalidates the Save button) and 'Miss' (thrown
-                // as a miss, ring='Miss' → valid). Mapping a thrown miss to
-                // '-' would wrongly disable Save; map it to 'Miss' instead.
-                final segments = dartScores
-                    .map((score) => score == 0 ? 'Miss' : 'S$score')
-                    .toList();
+                // Use stored segment strings for proper ring+number pre-selection
+                // in the Edit Score dialog (e.g., 'D20' instead of 'S40').
+                final segments =
+                    provider.getCurrentTurnDartSegments(currentPlayerId);
                 showEditScoreDialog(
                   context: context,
                   playerName: currentPlayer.name,
