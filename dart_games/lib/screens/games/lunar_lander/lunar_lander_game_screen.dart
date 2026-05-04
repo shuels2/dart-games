@@ -479,6 +479,40 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                 ),
               ],
             ),
+            // Dartboard emulator section
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: DartboardEmulatorSection(
+                controller: _dartboardEmulatorController,
+                isConnected: !dartboardProvider.isEmulator,
+                shouldPromptTakeout: shouldPromptTakeout,
+                dartboardKey: _dartboardKey,
+                onDartThrow: (score, multiplier, baseScore, position) {
+                  if (_mockApi != null) {
+                    _mockApi!.simulateDartThrow(
+                      score: score,
+                      multiplier: multiplier,
+                      playerName: 'Player',
+                      baseScore: baseScore,
+                      widgetX: position.dx,
+                      widgetY: position.dy,
+                      widgetSize: 250,
+                    );
+                  }
+                },
+                onRemoveDarts: () {
+                  _mockApi?.simulateTakeoutFinished();
+                },
+                config: DartboardSectionConfig.lunarLander(),
+                onPlayToComplete:
+                    _mockApi != null ? _onPlayToComplete : null,
+                playToCompleteConfig: _mockApi != null
+                    ? PlayToCompleteButtonConfig.lunarLander()
+                    : null,
+              ),
+            ),
             // Remove darts modal overlay
             if (shouldPromptTakeout)
               RemoveDartsModal(
@@ -552,15 +586,6 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                   );
                 },
               ),
-            // Dartboard paused modal
-            if (!dartboardProvider.isEmulator &&
-                dartboardProvider.status !=
-                    DartboardConnectionStatus.connected &&
-                dartboardProvider.status !=
-                    DartboardConnectionStatus.emulator)
-              DartboardPausedModal(
-                config: DartboardPausedModalConfig.lunarLander(),
-              ),
             // Save game modal
             if (_showSaveModal)
               SaveGameModal(
@@ -571,43 +596,15 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                 },
                 onDontSave: () => Navigator.of(context).pop(),
               ),
-            // Dartboard emulator section — rendered LAST so its "DARTS REMOVED"
-            // button stays on top of the RemoveDartsModal overlay (matches the
-            // Clockwork Quest pattern). The Column above reserves space for it
-            // via a SizedBox.
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: DartboardEmulatorSection(
-                controller: _dartboardEmulatorController,
-                isConnected: !dartboardProvider.isEmulator,
-                shouldPromptTakeout: shouldPromptTakeout,
-                dartboardKey: _dartboardKey,
-                onDartThrow: (score, multiplier, baseScore, position) {
-                  if (_mockApi != null) {
-                    _mockApi!.simulateDartThrow(
-                      score: score,
-                      multiplier: multiplier,
-                      playerName: 'Player',
-                      baseScore: baseScore,
-                      widgetX: position.dx,
-                      widgetY: position.dy,
-                      widgetSize: 250,
-                    );
-                  }
-                },
-                onRemoveDarts: () {
-                  _mockApi?.simulateTakeoutFinished();
-                },
-                config: DartboardSectionConfig.lunarLander(),
-                onPlayToComplete:
-                    _mockApi != null ? _onPlayToComplete : null,
-                playToCompleteConfig: _mockApi != null
-                    ? PlayToCompleteButtonConfig.lunarLander()
-                    : null,
+            // Dartboard paused modal
+            if (!dartboardProvider.isEmulator &&
+                dartboardProvider.status !=
+                    DartboardConnectionStatus.connected &&
+                dartboardProvider.status !=
+                    DartboardConnectionStatus.emulator)
+              DartboardPausedModal(
+                config: DartboardPausedModalConfig.lunarLander(),
               ),
-            ),
           ],
         ),
         floatingActionButton: DartboardEmulatorFAB(

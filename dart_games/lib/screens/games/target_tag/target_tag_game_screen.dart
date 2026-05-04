@@ -785,68 +785,65 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                       );
                     },
                   ),
-                  // Modal overlay for remove darts prompt
-                  if (shouldPromptTakeout)
-                    RemoveDartsModal(
-                      config: RemoveDartsModalConfig.targetTag(),
-                      playerName: currentPlayer?.name ?? 'Player',
-                      editScoreButtonKey: TargetTagGameKeys.editScoreButton,
-                      onEditScore: () {
-                        if (currentPlayer == null) return;
-                        final targetTagProvider =
-                            Provider.of<TargetTagProvider>(context, listen: false);
-                        showEditScoreDialog(
-                          context: context,
-                          playerName: currentPlayer.name,
-                          initialSegments:
-                              targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
-                          onSubmit: (newSegments) => targetTagProvider
-                              .updateAllDartScores(currentPlayer.id, newSegments),
-                          config: EditScoreDialogConfig.targetTag(),
-                          dartBorderColors:
-                              _computeDartBorderColors(currentPlayer.id),
-                        );
-                      },
-                    ),
                 ],
               ),
             ),
           ),
-
-          // Dartboard emulator (if not connected and visible)
-          DartboardEmulatorSection(
-            controller: _dartboardEmulatorController,
-            isConnected: !dartboardProvider.isEmulator,
-            shouldPromptTakeout: shouldPromptTakeout,
-            dartboardKey: _dartboardKey,
-            onDartThrow: (score, multiplier, baseScore, position) {
-              if (_mockApi != null) {
-                _mockApi!.simulateDartThrow(
-                  score: score,
-                  multiplier: multiplier,
-                  playerName: 'Player',
-                  baseScore: baseScore,
-                  widgetX: position.dx,
-                  widgetY: position.dy,
-                  widgetSize: 250,
-                );
-              }
-            },
-            onRemoveDarts: () {
-              _mockApi?.simulateTakeoutFinished();
-            },
-            config: DartboardSectionConfig.targetTag(),
-            onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-            playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.targetTag() : null,
-          ),
             ],
           ),
-          // Dartboard connection lost modal
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.targetTag(),
+          // Dartboard emulator (if not connected and visible)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: DartboardEmulatorSection(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              shouldPromptTakeout: shouldPromptTakeout,
+              dartboardKey: _dartboardKey,
+              onDartThrow: (score, multiplier, baseScore, position) {
+                if (_mockApi != null) {
+                  _mockApi!.simulateDartThrow(
+                    score: score,
+                    multiplier: multiplier,
+                    playerName: 'Player',
+                    baseScore: baseScore,
+                    widgetX: position.dx,
+                    widgetY: position.dy,
+                    widgetSize: 250,
+                  );
+                }
+              },
+              onRemoveDarts: () {
+                _mockApi?.simulateTakeoutFinished();
+              },
+              config: DartboardSectionConfig.targetTag(),
+              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
+              playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.targetTag() : null,
+            ),
+          ),
+          // Modal overlay for remove darts prompt
+          if (shouldPromptTakeout)
+            RemoveDartsModal(
+              config: RemoveDartsModalConfig.targetTag(),
+              playerName: currentPlayer?.name ?? 'Player',
+              editScoreButtonKey: TargetTagGameKeys.editScoreButton,
+              onEditScore: () {
+                if (currentPlayer == null) return;
+                final targetTagProvider =
+                    Provider.of<TargetTagProvider>(context, listen: false);
+                showEditScoreDialog(
+                  context: context,
+                  playerName: currentPlayer.name,
+                  initialSegments:
+                      targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
+                  onSubmit: (newSegments) => targetTagProvider
+                      .updateAllDartScores(currentPlayer.id, newSegments),
+                  config: EditScoreDialogConfig.targetTag(),
+                  dartBorderColors:
+                      _computeDartBorderColors(currentPlayer.id),
+                );
+              },
             ),
           // Save game modal
           if (_showSaveModal)
@@ -857,6 +854,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                 if (mounted) Navigator.of(context).pop();
               },
               onDontSave: () => Navigator.of(context).pop(),
+            ),
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.targetTag(),
             ),
         ],
       ),

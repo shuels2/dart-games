@@ -12,7 +12,8 @@ void main() {
   // Verifies that editing only a single dart (dart 2) leaves darts 1 and 3
   // untouched and recalculates altitude correctly. Throw 3 darts (20, 10, 5)
   // -> total 35 from starting altitude 200 -> 165. Edit only dart 2 from 10
-  // to Bull (25). New total = 20 + 25 + 5 = 50 -> altitude 150.
+  // to Outer Bull (25). New total = 20 + 25 + 5 = 50 -> altitude 150.
+  // Note: '25' = Outer Bull (25 pts). 'Bull' = Bullseye (50 pts).
   testWidgets('Edit Score: partial change (only dart 2) recalculates altitude correctly',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
@@ -39,15 +40,15 @@ void main() {
     expect(altBefore, startingAlt - 35,
         reason: 'Altitude after 20+10+5 should be 200 - 35 = 165');
 
-    // Edit ONLY dart 2: change 10 -> Bull (25). Leave dart 1 (20) and
+    // Edit ONLY dart 2: change 10 -> Outer Bull (25). Leave dart 1 (20) and
     // dart 3 (5) untouched.
     await openEditScore(tester);
-    await EditScoreHelpers.setDart2(tester, 'Bull');
+    await EditScoreHelpers.setDart2(tester, '25');
     await updateScore(tester);
 
     // New total descent = 20 + 25 + 5 = 50. Altitude = 200 - 50 = 150.
     final altAfter = ProviderHelpers.getLunarLanderAltitude(tester, playerId);
     expect(altAfter, startingAlt - 50,
-        reason: 'After editing only dart 2 from 10 to Bull(25), altitude should be 150');
+        reason: 'After editing only dart 2 from 10 to Outer Bull(25), altitude should be 150');
   });
 }

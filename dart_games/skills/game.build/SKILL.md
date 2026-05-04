@@ -768,20 +768,36 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >       //    The game UI fills FULL available height as if the emulator didn't exist;
 >       //    the SizedBox just reserves bottom space.
 >       Column(...),
->       // 3. Modals (conditional, in order of priority)
->       if (shouldPromptTakeout) RemoveDartsModal(...),
->       if (...pausedConditions...) DartboardPausedModal(...),
->       if (_showSaveModal) SaveGameModal(...),
->       // 4. DartboardEmulatorSection — MUST BE THE LAST CHILD of the Stack,
->       //    wrapped in Positioned(left:0, right:0, bottom:0). It renders ON TOP
->       //    of all modals so its "DARTS REMOVED" button stays tappable.
->       //    Reference: clockwork_quest_game_screen.dart lines 286-300, comment
->       //    *"rendered after modal so its buttons stay on top"*.
+>       // 3. DartboardEmulatorSection — wrapped in Positioned(left:0, right:0, bottom:0).
+>       //    Painted FIRST among the modal layers because it's just the dartboard
+>       //    surface; everything else is a real modal that should overlay it.
 >       Positioned(left: 0, right: 0, bottom: 0,
 >           child: DartboardEmulatorSection(...)),
+>       // 4. RemoveDartsModal (conditional) — turn-end takeout flow.
+>       //    Sits ABOVE the emulator so the user can't simulate more dart throws
+>       //    while removing darts. Empty areas of the modal are pass-through
+>       //    (no GestureDetector/AbsorbPointer), so the emulator's DARTS REMOVED
+>       //    button at the bottom remains tappable through the modal's overlay.
+>       if (shouldPromptTakeout) RemoveDartsModal(...),
+>       // 5. SaveGameModal (conditional) — explicit user action (back-button save flow).
+>       //    Sits ABOVE the emulator and the takeout modal so the user can interrupt
+>       //    a turn-end takeout to save mid-flow. The Save / Don't Save buttons are
+>       //    the only interactive widgets inside; everything else passes through.
+>       if (_showSaveModal) SaveGameModal(...),
+>       // 6. DartboardPausedModal (conditional) — MUST BE THE LAST CHILD.
+>       //    Disconnected state means the dartboard hardware can't register input
+>       //    changes, so we want this overlay to dim everything else and indicate
+>       //    a non-functional state. Auto-dismisses when the dartboard reconnects.
+>       if (...pausedConditions...) DartboardPausedModal(...),
 >     ],
 >   )
 >   ```
+>
+>   **Why this exact order matters — semantic z-stacking from least-to-most authoritative UI state:**
+>   - **Emulator at the back**: it's just the dartboard surface — virtually nothing should ever paint behind a real modal.
+>   - **RemoveDartsModal above Emulator**: turn-end takeout is a game-state event; it should visually dim the dartboard while the user removes their darts. The modal's overlay is hit-test transparent in its empty regions, so the emulator's DARTS REMOVED button at the bottom is still reachable by both real users and tests (`tester.tap(find.text('DARTS REMOVED'))` falls through the overlay's empty area to the button below).
+>   - **SaveGameModal above RemoveDartsModal**: the user explicitly tapped back to save — that intent wins over the takeout flow. The Don't Save button in the SaveGameModal is at the bottom of the modal's centered card; with SaveGameModal painted above the emulator, the button is no longer covered by the emulator section, so the Don't Save tap dispatches correctly.
+>   - **DartboardPausedModal at the very top**: the dartboard is disconnected; the game can't reliably register state changes regardless of what the user taps. Painting Paused above everything visually communicates "non-functional state" even if hit-tests can technically pass through to widgets below (no AbsorbPointer is needed; the visual signal is sufficient and matches the existing modal implementations).
 >   **The dartboard emulator is a TEMPORARY OVERLAY, not reserved space in the visual hierarchy.** The primary game UI (descent area, player panels, scores) should be designed to fill the FULL available screen height. The bottom SizedBox(~320) is just internal padding so widgets don't render UNDER the emulator at run time. Reference `monster_mash_game_screen.dart` for canonical full-height game UI + Positioned emulator overlay.
 > - DartboardEmulatorFAB
 > - **PlayToCompleteRunner integration:**
@@ -893,7 +909,7 @@ After the sub-agent returns:
 > (s) **Game characters are NOT used as player TILE avatars** in the player tile / rankings list — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for character image asset paths in player tile / rankings list contexts (must return zero matches there). They ARE allowed on the active player panel + descent/coral/shield game UI + winner card.
 > (t) No Nunito font or Flame Orange (`#FF6B35`) used in game-screen styling
 > (u) **Background image (if spec specifies one) IS rendered on game AND results screens.** Grep for the background asset path in `lib/screens/games/[GAME_NAME_SNAKE]/`. Must appear in both `[GAME_NAME_SNAKE]_game_screen.dart` AND `[GAME_NAME_SNAKE]_results_screen.dart` if a background asset is in the spec's Asset Checklist. Recurring miss in past sessions.
-> (v) **Stack child order on the game screen body matches the canonical pattern:** background (if any) → main Column with reserved bottom space → modals → `Positioned(bottom: 0, child: DartboardEmulatorSection)` AS THE LAST CHILD. Read the actual Stack and verify the DartboardEmulatorSection is the LAST child, not buried inside the Column. The "DARTS REMOVED" button must render on top of all modals.
+> (v) **Stack child order on the game screen body matches the canonical pattern (CRITICAL — wrong order silently breaks the Don't Save flow and inverts the modal precedence):** background (if any) → main Column with reserved bottom space → `Positioned(bottom: 0, child: DartboardEmulatorSection)` → `RemoveDartsModal` (conditional) → `SaveGameModal` (conditional) → `DartboardPausedModal` (conditional) AS THE LAST CHILD. Read the actual Stack and verify the EXACT order of these four widgets: Emulator first (back), then RemoveDartsModal, then SaveGameModal, then DartboardPausedModal (front). The semantics: emulator is just the dartboard surface, takeout dims it, save modal beats takeout, and a paused-disconnect modal beats everything.
 > (w) **DualPlayerListPanel has bounded height** on the menu screen — wrapped in `Expanded(...)` for wide layout AND `SizedBox(height: ...)` for narrow scrollable layout. Read the menu screen and verify both branches.
 > (x) **Menu screen initState restores settings from `provider.currentGame`** when it's not null (so CHANGE MISSION preserves them). Read `initState()` and verify the read.
 > (y) **Menu screen initState auto-shows resume modal when saved games exist on initial entry** — `setState(() { _hasSavedGames = hasSaved; _showResumeModal = hasSaved; })` inside the initial `addPostFrameCallback`.
@@ -1265,8 +1281,10 @@ If FAIL:
 > **8. Update ALL FOUR batch files** with the new game:
 > - `run_ui_tests.bat`
 > - `run_ui_tests_stub.bat`
-> - `run_ui_tests_parallel.bat` — add `[GAME_NAME_SNAKE]` to the `GAMES` variable
-> - `run_ui_tests_parallel_stub.bat`
+> - `run_ui_tests_parallel.bat` — TWO places to update:
+>   1. The `GAMES` variable (top of file, ~line 15) — add `[GAME_NAME_SNAKE]`
+>   2. The pre-run worktree cleanup `for %%G in (...)` loop (~line 272) — add `[GAME_NAME_SNAKE]` to the hardcoded list. Without this, stale worktrees from a previous failed run for the new game won't be auto-cleaned at startup, which can cause `git worktree add` to fail and abort the entire run. Grep `run_ui_tests_parallel.bat` for the existing list of game names; both occurrences must include the new game.
+> - `run_ui_tests_parallel_stub.bat` — same dual-update if the stub variant has the same hardcoded cleanup list
 >
 > Also update the port-assignment table in `docs/testing/ui-automation.md` for the new game (Server = `9000 + N`, ChromeDriver = `4443 + N`, where N is the new index).
 >
@@ -1318,7 +1336,7 @@ Per `docs/testing/spec-coverage-audit.md`:
 > | Option | Non-UI Test | UI Test |
 > |--------|-------------|---------|
 >
-> (c) **Verify all FOUR batch files include the new game:** `run_ui_tests.bat`, `run_ui_tests_stub.bat`, `run_ui_tests_parallel.bat` (in the `GAMES` variable), `run_ui_tests_parallel_stub.bat`. Also verify the port-assignment table in `docs/testing/ui-automation.md` was updated.
+> (c) **Verify all FOUR batch files include the new game:** `run_ui_tests.bat`, `run_ui_tests_stub.bat`, `run_ui_tests_parallel.bat`, `run_ui_tests_parallel_stub.bat`. For `run_ui_tests_parallel.bat` SPECIFICALLY: grep for the new game name and verify it appears in BOTH (1) the `GAMES` variable AND (2) the pre-run worktree cleanup `for %%G in (...)` loop near line 272. Past failure: Lunar Lander was added to GAMES but not to the cleanup loop, leaving stale worktrees uncleaned across runs. Also verify the port-assignment table in `docs/testing/ui-automation.md` was updated.
 >
 > (d) Verify all 12 mirrored shared helpers in `test/shared/` and `integration_test/shared/` are synchronized — diff each pair and report any mismatches. (Non-mirrored `test/shared/` files like `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` are excluded from this check.)
 >

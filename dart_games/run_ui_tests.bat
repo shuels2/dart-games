@@ -71,6 +71,14 @@ if not exist "server\bin\server.dart" (
     exit /b 1
 )
 
+echo Cleaning Flutter build caches ^(build/, .dart_tool/^)...
+call flutter clean
+if !errorlevel! neq 0 (
+    echo ERROR: flutter clean failed.
+    pause
+    exit /b 1
+)
+
 echo Resolving Flutter dependencies...
 call flutter pub get
 if !errorlevel! neq 0 (

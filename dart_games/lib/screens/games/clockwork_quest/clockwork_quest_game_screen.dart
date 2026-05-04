@@ -285,17 +285,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             }),
           ),
 
-          // Remove Darts Modal
-          if (shouldPromptTakeout && currentPlayer != null)
-            RemoveDartsModal(
-              key: ClockworkQuestGameKeys.removeDartsModal,
-              playerName: currentPlayer.name,
-              config: RemoveDartsModalConfig.clockworkQuest(),
-              editScoreButtonKey: ClockworkQuestGameKeys.editScoreButton,
-              onEditScore: () => _showEditScoreDialog(context),
-            ),
-
-          // Dartboard Emulator — rendered after modal so its buttons stay on top
+          // Dartboard Emulator
           Positioned(
             left: 0,
             right: 0,
@@ -328,12 +318,14 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             ),
           ),
 
-          // Dartboard Paused Modal
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.clockworkQuest(),
+          // Remove Darts Modal
+          if (shouldPromptTakeout && currentPlayer != null)
+            RemoveDartsModal(
+              key: ClockworkQuestGameKeys.removeDartsModal,
+              playerName: currentPlayer.name,
+              config: RemoveDartsModalConfig.clockworkQuest(),
+              editScoreButtonKey: ClockworkQuestGameKeys.editScoreButton,
+              onEditScore: () => _showEditScoreDialog(context),
             ),
 
           // Save Game Modal
@@ -345,6 +337,14 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                 if (mounted) Navigator.of(context).pop();
               },
               onDontSave: () => Navigator.of(context).pop(),
+            ),
+
+          // Dartboard Paused Modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.clockworkQuest(),
             ),
         ],
       ),

@@ -602,13 +602,6 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           );
         },
       ),
-          // Dartboard connection lost modal
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.carnivalDerby(),
-            ),
           // Save game modal
           if (_showSaveModal)
             SaveGameModal(
@@ -619,6 +612,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                 if (mounted) Navigator.of(context).pop();
               },
               onDontSave: () => Navigator.of(context).pop(),
+            ),
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.carnivalDerby(),
             ),
         ],
       ),

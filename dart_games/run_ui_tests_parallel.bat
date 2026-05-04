@@ -269,7 +269,7 @@ echo.
 REM Remove any leftover worktrees from a previous failed run
 if exist "!_WORKTREE_BASE!" (
     echo Cleaning up previous worker worktrees...
-    for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest) do (
+    for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander) do (
         git worktree remove --force "!_WORKTREE_BASE!\%%G" >nul 2>&1
     )
     git worktree prune >nul 2>&1

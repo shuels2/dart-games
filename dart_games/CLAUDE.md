@@ -177,6 +177,14 @@ flutter test test/screens/games/lunar_lander/
 ✅ Verify both non-UI tests (`flutter test`) and UI tests pass after changes
 📖 See [Test Maintenance](docs/testing/test-maintenance.md) for synchronization rules
 
+### game.build Skill Synchronization
+❌ NEVER modify the game.build skill in only one location — there are TWO copies that MUST stay byte-identical:
+- `.claude/skills/game.build/SKILL.md` (the locally-installed copy used by this Claude session)
+- `skills/game.build/SKILL.md` (the project-tracked copy committed to git)
+✅ When changing either copy, apply the SAME edits to the other (or `cp` one over the other)
+✅ Verify with `diff -q .claude/skills/game.build/SKILL.md skills/game.build/SKILL.md` — must report no differences
+✅ Commit both files together so future runs of `/game.build` use the latest rules
+
 ### Dartboard Emulator Code
 ❌ NEVER modify without explicit user permission
 ❓ If bug suspected, ask user to verify first

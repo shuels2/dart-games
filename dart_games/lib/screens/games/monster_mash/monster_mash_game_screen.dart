@@ -596,26 +596,6 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                     if (currentPlayer != null)
                       _buildActivePlayer(currentGame, currentPlayer, monsterMashProvider),
 
-                    // Remove darts modal
-                    if (shouldPromptTakeout)
-                      RemoveDartsModal(
-                        config: RemoveDartsModalConfig.monsterMash(),
-                        playerName: currentPlayer?.name ?? 'Player',
-                        editScoreButtonKey: MonsterMashGameKeys.editScoreButton,
-                        onEditScore: () {
-                          if (currentPlayer == null) return;
-                          showEditScoreDialog(
-                            context: context,
-                            playerName: currentPlayer.name,
-                            initialSegments: monsterMashProvider.getCurrentTurnDarts(currentPlayer.id),
-                            onSubmit: (newSegments) =>
-                                monsterMashProvider.updateAllDartScores(currentPlayer.id, newSegments),
-                            config: EditScoreDialogConfig.monsterMash(),
-                            dartBorderColors: _computeDartBorderColors(currentPlayer.id, monsterMashProvider),
-                          );
-                        },
-                      ),
-
                     // Round progress bar (top-center)
                     Positioned(
                       top: 16,
@@ -631,7 +611,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             ),
           ),
 
-          // Dartboard emulator (overlay, in front of everything)
+          // Dartboard emulator
           Positioned(
             left: 0,
             right: 0,
@@ -662,12 +642,24 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.monsterMash() : null,
             ),
           ),
-          // Dartboard connection lost modal
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.monsterMash(),
+          // Remove darts modal
+          if (shouldPromptTakeout)
+            RemoveDartsModal(
+              config: RemoveDartsModalConfig.monsterMash(),
+              playerName: currentPlayer?.name ?? 'Player',
+              editScoreButtonKey: MonsterMashGameKeys.editScoreButton,
+              onEditScore: () {
+                if (currentPlayer == null) return;
+                showEditScoreDialog(
+                  context: context,
+                  playerName: currentPlayer.name,
+                  initialSegments: monsterMashProvider.getCurrentTurnDarts(currentPlayer.id),
+                  onSubmit: (newSegments) =>
+                      monsterMashProvider.updateAllDartScores(currentPlayer.id, newSegments),
+                  config: EditScoreDialogConfig.monsterMash(),
+                  dartBorderColors: _computeDartBorderColors(currentPlayer.id, monsterMashProvider),
+                );
+              },
             ),
           // Save game modal
           if (_showSaveModal)
@@ -678,6 +670,13 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                 if (mounted) Navigator.of(context).pop();
               },
               onDontSave: () => Navigator.of(context).pop(),
+            ),
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.monsterMash(),
             ),
         ],
       ),

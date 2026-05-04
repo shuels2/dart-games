@@ -540,34 +540,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             ),
           ),
 
-          // Remove darts modal
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.reefRoyale(),
-              playerName: currentPlayer?.name ?? 'Player',
-              editScoreButtonKey: ReefRoyaleGameKeys.editScoreButton,
-              onEditScore: () {
-                if (currentPlayer == null) return;
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayer.name,
-                  initialSegments: reefProvider.getCurrentTurnDarts(currentPlayer.id),
-                  onSubmit: (newSegments) =>
-                      reefProvider.updateAllDartScores(currentPlayer.id, newSegments),
-                  config: EditScoreDialogConfig.reefRoyale(),
-                  dartBorderColors: _computeDartBorderColors(currentPlayer.id, reefProvider),
-                );
-              },
-            ),
-
-          // Dartboard connection lost modal
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.reefRoyale(),
-            ),
-
           // Dartboard emulator
           Positioned(
             left: 0,
@@ -600,6 +572,26 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             ),
           ),
 
+          // Remove darts modal
+          if (shouldPromptTakeout)
+            RemoveDartsModal(
+              config: RemoveDartsModalConfig.reefRoyale(),
+              playerName: currentPlayer?.name ?? 'Player',
+              editScoreButtonKey: ReefRoyaleGameKeys.editScoreButton,
+              onEditScore: () {
+                if (currentPlayer == null) return;
+                showEditScoreDialog(
+                  context: context,
+                  playerName: currentPlayer.name,
+                  initialSegments: reefProvider.getCurrentTurnDarts(currentPlayer.id),
+                  onSubmit: (newSegments) =>
+                      reefProvider.updateAllDartScores(currentPlayer.id, newSegments),
+                  config: EditScoreDialogConfig.reefRoyale(),
+                  dartBorderColors: _computeDartBorderColors(currentPlayer.id, reefProvider),
+                );
+              },
+            ),
+
           // Save game modal
           if (_showSaveModal)
             SaveGameModal(
@@ -609,6 +601,14 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                 if (mounted) Navigator.of(context).pop();
               },
               onDontSave: () => Navigator.of(context).pop(),
+            ),
+
+          // Dartboard connection lost modal
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.reefRoyale(),
             ),
         ],
       ),
