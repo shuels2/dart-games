@@ -611,7 +611,26 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             ),
           ),
 
-          // Dartboard emulator
+          // RemoveDartsModal (conditional) — sits BEHIND the emulator so the emulator's DARTS REMOVED button stays visible/tappable on top of the takeout overlay.
+          if (shouldPromptTakeout)
+            RemoveDartsModal(
+              config: RemoveDartsModalConfig.monsterMash(),
+              playerName: currentPlayer?.name ?? 'Player',
+              editScoreButtonKey: MonsterMashGameKeys.editScoreButton,
+              onEditScore: () {
+                if (currentPlayer == null) return;
+                showEditScoreDialog(
+                  context: context,
+                  playerName: currentPlayer.name,
+                  initialSegments: monsterMashProvider.getCurrentTurnDarts(currentPlayer.id),
+                  onSubmit: (newSegments) =>
+                      monsterMashProvider.updateAllDartScores(currentPlayer.id, newSegments),
+                  config: EditScoreDialogConfig.monsterMash(),
+                  dartBorderColors: _computeDartBorderColors(currentPlayer.id, monsterMashProvider),
+                );
+              },
+            ),
+          // DartboardEmulatorSection — sits ABOVE RemoveDartsModal so DARTS REMOVED is on top, BELOW SaveGameModal so Save's Don't Save button isn't intercepted.
           Positioned(
             left: 0,
             right: 0,
@@ -642,25 +661,6 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.monsterMash() : null,
             ),
           ),
-          // Remove darts modal
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.monsterMash(),
-              playerName: currentPlayer?.name ?? 'Player',
-              editScoreButtonKey: MonsterMashGameKeys.editScoreButton,
-              onEditScore: () {
-                if (currentPlayer == null) return;
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayer.name,
-                  initialSegments: monsterMashProvider.getCurrentTurnDarts(currentPlayer.id),
-                  onSubmit: (newSegments) =>
-                      monsterMashProvider.updateAllDartScores(currentPlayer.id, newSegments),
-                  config: EditScoreDialogConfig.monsterMash(),
-                  dartBorderColors: _computeDartBorderColors(currentPlayer.id, monsterMashProvider),
-                );
-              },
-            ),
           // Save game modal
           if (_showSaveModal)
             SaveGameModal(

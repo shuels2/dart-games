@@ -540,7 +540,27 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             ),
           ),
 
-          // Dartboard emulator
+          // RemoveDartsModal (conditional) — sits BEHIND the emulator so the emulator's DARTS REMOVED button stays visible/tappable on top of the takeout overlay.
+          if (shouldPromptTakeout)
+            RemoveDartsModal(
+              config: RemoveDartsModalConfig.reefRoyale(),
+              playerName: currentPlayer?.name ?? 'Player',
+              editScoreButtonKey: ReefRoyaleGameKeys.editScoreButton,
+              onEditScore: () {
+                if (currentPlayer == null) return;
+                showEditScoreDialog(
+                  context: context,
+                  playerName: currentPlayer.name,
+                  initialSegments: reefProvider.getCurrentTurnDarts(currentPlayer.id),
+                  onSubmit: (newSegments) =>
+                      reefProvider.updateAllDartScores(currentPlayer.id, newSegments),
+                  config: EditScoreDialogConfig.reefRoyale(),
+                  dartBorderColors: _computeDartBorderColors(currentPlayer.id, reefProvider),
+                );
+              },
+            ),
+
+          // DartboardEmulatorSection — sits ABOVE RemoveDartsModal so DARTS REMOVED is on top, BELOW SaveGameModal so Save's Don't Save button isn't intercepted.
           Positioned(
             left: 0,
             right: 0,
@@ -571,26 +591,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.reefRoyale() : null,
             ),
           ),
-
-          // Remove darts modal
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.reefRoyale(),
-              playerName: currentPlayer?.name ?? 'Player',
-              editScoreButtonKey: ReefRoyaleGameKeys.editScoreButton,
-              onEditScore: () {
-                if (currentPlayer == null) return;
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayer.name,
-                  initialSegments: reefProvider.getCurrentTurnDarts(currentPlayer.id),
-                  onSubmit: (newSegments) =>
-                      reefProvider.updateAllDartScores(currentPlayer.id, newSegments),
-                  config: EditScoreDialogConfig.reefRoyale(),
-                  dartBorderColors: _computeDartBorderColors(currentPlayer.id, reefProvider),
-                );
-              },
-            ),
 
           // Save game modal
           if (_showSaveModal)

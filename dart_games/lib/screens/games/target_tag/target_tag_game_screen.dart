@@ -791,7 +791,30 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           ),
             ],
           ),
-          // Dartboard emulator (if not connected and visible)
+          // RemoveDartsModal (conditional) — sits BEHIND the emulator so the emulator's DARTS REMOVED button stays visible/tappable on top of the takeout overlay.
+          if (shouldPromptTakeout)
+            RemoveDartsModal(
+              config: RemoveDartsModalConfig.targetTag(),
+              playerName: currentPlayer?.name ?? 'Player',
+              editScoreButtonKey: TargetTagGameKeys.editScoreButton,
+              onEditScore: () {
+                if (currentPlayer == null) return;
+                final targetTagProvider =
+                    Provider.of<TargetTagProvider>(context, listen: false);
+                showEditScoreDialog(
+                  context: context,
+                  playerName: currentPlayer.name,
+                  initialSegments:
+                      targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
+                  onSubmit: (newSegments) => targetTagProvider
+                      .updateAllDartScores(currentPlayer.id, newSegments),
+                  config: EditScoreDialogConfig.targetTag(),
+                  dartBorderColors:
+                      _computeDartBorderColors(currentPlayer.id),
+                );
+              },
+            ),
+          // DartboardEmulatorSection — sits ABOVE RemoveDartsModal so DARTS REMOVED is on top, BELOW SaveGameModal so Save's Don't Save button isn't intercepted.
           Positioned(
             left: 0,
             right: 0,
@@ -822,29 +845,6 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
               playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.targetTag() : null,
             ),
           ),
-          // Modal overlay for remove darts prompt
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.targetTag(),
-              playerName: currentPlayer?.name ?? 'Player',
-              editScoreButtonKey: TargetTagGameKeys.editScoreButton,
-              onEditScore: () {
-                if (currentPlayer == null) return;
-                final targetTagProvider =
-                    Provider.of<TargetTagProvider>(context, listen: false);
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayer.name,
-                  initialSegments:
-                      targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
-                  onSubmit: (newSegments) => targetTagProvider
-                      .updateAllDartScores(currentPlayer.id, newSegments),
-                  config: EditScoreDialogConfig.targetTag(),
-                  dartBorderColors:
-                      _computeDartBorderColors(currentPlayer.id),
-                );
-              },
-            ),
           // Save game modal
           if (_showSaveModal)
             SaveGameModal(

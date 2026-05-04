@@ -285,7 +285,17 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             }),
           ),
 
-          // Dartboard Emulator
+          // RemoveDartsModal (conditional) — sits BEHIND the emulator so the emulator's DARTS REMOVED button stays visible/tappable on top of the takeout overlay.
+          if (shouldPromptTakeout && currentPlayer != null)
+            RemoveDartsModal(
+              key: ClockworkQuestGameKeys.removeDartsModal,
+              playerName: currentPlayer.name,
+              config: RemoveDartsModalConfig.clockworkQuest(),
+              editScoreButtonKey: ClockworkQuestGameKeys.editScoreButton,
+              onEditScore: () => _showEditScoreDialog(context),
+            ),
+
+          // DartboardEmulatorSection — sits ABOVE RemoveDartsModal so DARTS REMOVED is on top, BELOW SaveGameModal so Save's Don't Save button isn't intercepted.
           Positioned(
             left: 0,
             right: 0,
@@ -317,16 +327,6 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.clockworkQuest() : null,
             ),
           ),
-
-          // Remove Darts Modal
-          if (shouldPromptTakeout && currentPlayer != null)
-            RemoveDartsModal(
-              key: ClockworkQuestGameKeys.removeDartsModal,
-              playerName: currentPlayer.name,
-              config: RemoveDartsModalConfig.clockworkQuest(),
-              editScoreButtonKey: ClockworkQuestGameKeys.editScoreButton,
-              onEditScore: () => _showEditScoreDialog(context),
-            ),
 
           // Save Game Modal
           if (_showSaveModal)

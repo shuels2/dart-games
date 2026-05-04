@@ -768,21 +768,21 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >       //    The game UI fills FULL available height as if the emulator didn't exist;
 >       //    the SizedBox just reserves bottom space.
 >       Column(...),
->       // 3. DartboardEmulatorSection — wrapped in Positioned(left:0, right:0, bottom:0).
->       //    Painted FIRST among the modal layers because it's just the dartboard
->       //    surface; everything else is a real modal that should overlay it.
+>       // 3. RemoveDartsModal (conditional) — turn-end takeout overlay, painted
+>       //    BEHIND the emulator so the emulator's DARTS REMOVED button stays
+>       //    visible and tappable on top of the takeout modal. The user finishes
+>       //    the takeout by tapping that button (the modal is the visual prompt).
+>       if (shouldPromptTakeout) RemoveDartsModal(...),
+>       // 4. DartboardEmulatorSection — wrapped in Positioned(left:0, right:0, bottom:0).
+>       //    Sits ABOVE RemoveDartsModal so its DARTS REMOVED button paints on top
+>       //    of the takeout overlay. Sits BELOW SaveGameModal so the save modal's
+>       //    Don't Save button isn't intercepted by the emulator section.
 >       Positioned(left: 0, right: 0, bottom: 0,
 >           child: DartboardEmulatorSection(...)),
->       // 4. RemoveDartsModal (conditional) — turn-end takeout flow.
->       //    Sits ABOVE the emulator so the user can't simulate more dart throws
->       //    while removing darts. Empty areas of the modal are pass-through
->       //    (no GestureDetector/AbsorbPointer), so the emulator's DARTS REMOVED
->       //    button at the bottom remains tappable through the modal's overlay.
->       if (shouldPromptTakeout) RemoveDartsModal(...),
 >       // 5. SaveGameModal (conditional) — explicit user action (back-button save flow).
->       //    Sits ABOVE the emulator and the takeout modal so the user can interrupt
->       //    a turn-end takeout to save mid-flow. The Save / Don't Save buttons are
->       //    the only interactive widgets inside; everything else passes through.
+>       //    Sits ABOVE the emulator so the Don't Save button at the bottom of the
+>       //    modal isn't covered by the emulator section. Save / Don't Save buttons
+>       //    are the only interactive widgets inside; everything else passes through.
 >       if (_showSaveModal) SaveGameModal(...),
 >       // 6. DartboardPausedModal (conditional) — MUST BE THE LAST CHILD.
 >       //    Disconnected state means the dartboard hardware can't register input
@@ -793,10 +793,10 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   )
 >   ```
 >
->   **Why this exact order matters — semantic z-stacking from least-to-most authoritative UI state:**
->   - **Emulator at the back**: it's just the dartboard surface — virtually nothing should ever paint behind a real modal.
->   - **RemoveDartsModal above Emulator**: turn-end takeout is a game-state event; it should visually dim the dartboard while the user removes their darts. The modal's overlay is hit-test transparent in its empty regions, so the emulator's DARTS REMOVED button at the bottom is still reachable by both real users and tests (`tester.tap(find.text('DARTS REMOVED'))` falls through the overlay's empty area to the button below).
->   - **SaveGameModal above RemoveDartsModal**: the user explicitly tapped back to save — that intent wins over the takeout flow. The Don't Save button in the SaveGameModal is at the bottom of the modal's centered card; with SaveGameModal painted above the emulator, the button is no longer covered by the emulator section, so the Don't Save tap dispatches correctly.
+>   **Why this exact order matters — semantic z-stacking driven by where each interactive button lives:**
+>   - **RemoveDartsModal at the back of the modal stack**: its only interactive widget (the Edit Score button) is in the centered card. The modal mainly serves as a visual "remove your darts" prompt; the actual dismissal trigger is the DARTS REMOVED button which lives INSIDE the dartboard emulator section. RemoveDartsModal therefore goes behind the emulator so DARTS REMOVED stays visible/tappable.
+>   - **DartboardEmulatorSection above RemoveDartsModal**: its DARTS REMOVED button must paint on top of the takeout overlay so the user can finish the takeout. Sits at `Positioned(bottom: 0)` so it only covers the bottom strip of the screen.
+>   - **SaveGameModal above the emulator**: the user explicitly tapped back to save — that intent wins over the takeout flow. The Don't Save button in the SaveGameModal is at the bottom of the modal's centered card; with SaveGameModal painted above the emulator, the button is no longer covered by the emulator section, so the Don't Save tap dispatches correctly.
 >   - **DartboardPausedModal at the very top**: the dartboard is disconnected; the game can't reliably register state changes regardless of what the user taps. Painting Paused above everything visually communicates "non-functional state" even if hit-tests can technically pass through to widgets below (no AbsorbPointer is needed; the visual signal is sufficient and matches the existing modal implementations).
 >   **The dartboard emulator is a TEMPORARY OVERLAY, not reserved space in the visual hierarchy.** The primary game UI (descent area, player panels, scores) should be designed to fill the FULL available screen height. The bottom SizedBox(~320) is just internal padding so widgets don't render UNDER the emulator at run time. Reference `monster_mash_game_screen.dart` for canonical full-height game UI + Positioned emulator overlay.
 > - DartboardEmulatorFAB
@@ -909,7 +909,7 @@ After the sub-agent returns:
 > (s) **Game characters are NOT used as player TILE avatars** in the player tile / rankings list — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for character image asset paths in player tile / rankings list contexts (must return zero matches there). They ARE allowed on the active player panel + descent/coral/shield game UI + winner card.
 > (t) No Nunito font or Flame Orange (`#FF6B35`) used in game-screen styling
 > (u) **Background image (if spec specifies one) IS rendered on game AND results screens.** Grep for the background asset path in `lib/screens/games/[GAME_NAME_SNAKE]/`. Must appear in both `[GAME_NAME_SNAKE]_game_screen.dart` AND `[GAME_NAME_SNAKE]_results_screen.dart` if a background asset is in the spec's Asset Checklist. Recurring miss in past sessions.
-> (v) **Stack child order on the game screen body matches the canonical pattern (CRITICAL — wrong order silently breaks the Don't Save flow and inverts the modal precedence):** background (if any) → main Column with reserved bottom space → `Positioned(bottom: 0, child: DartboardEmulatorSection)` → `RemoveDartsModal` (conditional) → `SaveGameModal` (conditional) → `DartboardPausedModal` (conditional) AS THE LAST CHILD. Read the actual Stack and verify the EXACT order of these four widgets: Emulator first (back), then RemoveDartsModal, then SaveGameModal, then DartboardPausedModal (front). The semantics: emulator is just the dartboard surface, takeout dims it, save modal beats takeout, and a paused-disconnect modal beats everything.
+> (v) **Stack child order on the game screen body matches the canonical pattern (CRITICAL — wrong order silently breaks both the takeout flow and the Don't Save flow):** background (if any) → main Column with reserved bottom space → `RemoveDartsModal` (conditional) → `Positioned(bottom: 0, child: DartboardEmulatorSection)` → `SaveGameModal` (conditional) → `DartboardPausedModal` (conditional) AS THE LAST CHILD. Read the actual Stack and verify the EXACT order of these four widgets: RemoveDartsModal first (back), then DartboardEmulatorSection, then SaveGameModal, then DartboardPausedModal (front). The semantics: takeout overlay sits behind the emulator so the emulator's DARTS REMOVED button stays tappable on top; save modal beats takeout so Don't Save isn't intercepted by the emulator's bottom strip; paused-disconnect modal beats everything.
 > (w) **DualPlayerListPanel has bounded height** on the menu screen — wrapped in `Expanded(...)` for wide layout AND `SizedBox(height: ...)` for narrow scrollable layout. Read the menu screen and verify both branches.
 > (x) **Menu screen initState restores settings from `provider.currentGame`** when it's not null (so CHANGE MISSION preserves them). Read `initState()` and verify the read.
 > (y) **Menu screen initState auto-shows resume modal when saved games exist on initial entry** — `setState(() { _hasSavedGames = hasSaved; _showResumeModal = hasSaved; })` inside the initial `addPostFrameCallback`.

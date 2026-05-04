@@ -479,41 +479,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                 ),
               ],
             ),
-            // Dartboard emulator section
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: DartboardEmulatorSection(
-                controller: _dartboardEmulatorController,
-                isConnected: !dartboardProvider.isEmulator,
-                shouldPromptTakeout: shouldPromptTakeout,
-                dartboardKey: _dartboardKey,
-                onDartThrow: (score, multiplier, baseScore, position) {
-                  if (_mockApi != null) {
-                    _mockApi!.simulateDartThrow(
-                      score: score,
-                      multiplier: multiplier,
-                      playerName: 'Player',
-                      baseScore: baseScore,
-                      widgetX: position.dx,
-                      widgetY: position.dy,
-                      widgetSize: 250,
-                    );
-                  }
-                },
-                onRemoveDarts: () {
-                  _mockApi?.simulateTakeoutFinished();
-                },
-                config: DartboardSectionConfig.lunarLander(),
-                onPlayToComplete:
-                    _mockApi != null ? _onPlayToComplete : null,
-                playToCompleteConfig: _mockApi != null
-                    ? PlayToCompleteButtonConfig.lunarLander()
-                    : null,
-              ),
-            ),
-            // Remove darts modal overlay
+            // RemoveDartsModal (conditional) — sits BEHIND the emulator so the emulator's DARTS REMOVED button stays visible/tappable on top of the takeout overlay.
             if (shouldPromptTakeout)
               RemoveDartsModal(
                 config: RemoveDartsModalConfig.lunarLander(),
@@ -586,6 +552,40 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                   );
                 },
               ),
+            // DartboardEmulatorSection — sits ABOVE RemoveDartsModal so DARTS REMOVED is on top, BELOW SaveGameModal so Save's Don't Save button isn't intercepted.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: DartboardEmulatorSection(
+                controller: _dartboardEmulatorController,
+                isConnected: !dartboardProvider.isEmulator,
+                shouldPromptTakeout: shouldPromptTakeout,
+                dartboardKey: _dartboardKey,
+                onDartThrow: (score, multiplier, baseScore, position) {
+                  if (_mockApi != null) {
+                    _mockApi!.simulateDartThrow(
+                      score: score,
+                      multiplier: multiplier,
+                      playerName: 'Player',
+                      baseScore: baseScore,
+                      widgetX: position.dx,
+                      widgetY: position.dy,
+                      widgetSize: 250,
+                    );
+                  }
+                },
+                onRemoveDarts: () {
+                  _mockApi?.simulateTakeoutFinished();
+                },
+                config: DartboardSectionConfig.lunarLander(),
+                onPlayToComplete:
+                    _mockApi != null ? _onPlayToComplete : null,
+                playToCompleteConfig: _mockApi != null
+                    ? PlayToCompleteButtonConfig.lunarLander()
+                    : null,
+              ),
+            ),
             // Save game modal
             if (_showSaveModal)
               SaveGameModal(
