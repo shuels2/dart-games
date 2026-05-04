@@ -33,17 +33,16 @@ void main() {
     // P2 Turn: throw misses
     await completeTurnWithMisses(tester);
 
-    // P1 Turn 2: throw S(opponentTarget) + 2 misses (1 damage = kills)
+    // P1 Turn 2: throw Miss + Miss + S(opponentTarget) (wins on dart 3, all processed)
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
     await throwDartViaMock(tester, opponentTarget);
-    await throwMissViaMock(tester);
-    await throwMissViaMock(tester);
 
-    // Winner should exist
     expect(ProviderHelpers.monsterMashHasWinner(tester), isTrue);
 
-    // Edit to remove winner: change dart1 to S1 (not anyone's target), rest Miss
+    // Edit dart 3 to S1 (not anyone's target) — removes winner
     await EditScoreHelpers.editScoreAndSave(tester, config,
-        dart1: 'S1', dart2: 'Miss', dart3: 'Miss');
+        dart3: 'S1');
 
     // Winner should be removed
     expect(ProviderHelpers.monsterMashHasWinner(tester), isFalse);

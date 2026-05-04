@@ -30,16 +30,15 @@ void main() {
     provider.notifyListeners();
     await PumpSequences.simpleUpdate(tester);
 
-    // Throw Bull (winning) + 2 misses
+    // Throw Miss + Miss + Bull (wins on dart 3, all darts processed)
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
     await throwBullseyeViaMock(tester);
-    await throwMissViaMock(tester);
-    await throwMissViaMock(tester);
 
-    // Should be a winner after hitting bullseye
     expect(provider.hasWinner, isTrue);
 
-    // Edit: change dart 1 to S1 (gear 1 already completed, won't advance) — should remove winner
-    await EditScoreHelpers.editScoreAndSave(tester, config, dart1: 'S1');
+    // Edit dart 3: Bull → S1 (won't advance, removes winner)
+    await EditScoreHelpers.editScoreAndSave(tester, config, dart3: 'S1');
     expect(provider.hasWinner, isFalse);
 
     // Confirm darts removed

@@ -31,16 +31,16 @@ void main() {
     // P2 throws misses
     await completeTurnWithMisses(tester);
 
-    // P1 (tagged in): throw 3x P2's target (eliminates P2)
-    await throwDartViaMock(tester, p2Target);
-    await throwDartViaMock(tester, p2Target);
+    // P1 (tagged in): throw Miss + Miss + S(p2Target) (wins on dart 3, all processed)
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
     await throwDartViaMock(tester, p2Target);
 
     expect(ProviderHelpers.targetTagHasWinner(tester), isTrue);
 
-    // Edit to remove win: change dart1 to S1 (neutral, not anyone's target), rest Miss
+    // Edit dart 3 to S1 (neutral, not anyone's target) — removes winner
     await EditScoreHelpers.editScoreAndSave(tester, config,
-        dart1: 'S1', dart2: 'Miss', dart3: 'Miss');
+        dart3: 'S1');
 
     expect(ProviderHelpers.targetTagHasWinner(tester), isFalse);
 

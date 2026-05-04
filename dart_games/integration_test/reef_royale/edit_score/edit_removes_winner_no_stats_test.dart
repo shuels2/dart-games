@@ -89,17 +89,17 @@ void main() {
         ProviderHelpers.reefRoyaleHasPlayerClaimed(tester, playerId, 15),
         isTrue);
 
-    // P1 Turn 3: throw Bull + Outer Bull + Miss (claims 7th target, wins)
-    await throwBullseyeViaMock(tester);
-    await throwOuterBullViaMock(tester);
+    // P1 Turn 3: throw Miss + 25 + Bull (wins on dart 3, all darts processed)
+    // 25 gives 1 mark, Bull gives 2 marks = 3 total on dart 3
     await throwMissViaMock(tester);
+    await throwOuterBullViaMock(tester);
+    await throwBullseyeViaMock(tester);
 
-    // Winner should exist
     expect(ProviderHelpers.reefRoyaleHasWinner(tester), isTrue);
 
-    // Edit to remove winner: change dart1 to S1 (not a RR target), rest Miss
+    // Edit dart 3: Bull → S1 (not a RR target, removes marks, removes winner)
     await EditScoreHelpers.editScoreAndSave(tester, config,
-        dart1: 'S1', dart2: 'Miss', dart3: 'Miss');
+        dart3: 'S1');
 
     // Winner should be removed
     expect(ProviderHelpers.reefRoyaleHasWinner(tester), isFalse);

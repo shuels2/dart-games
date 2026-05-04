@@ -20,7 +20,7 @@ void main() {
         ProviderHelpers.getLunarLanderCurrentPlayerId(tester)!;
     final provider = ProviderHelpers.getLunarLanderProvider(tester);
 
-    // Programmatically set altitude low so a single S10 can win
+    // Set altitude so 3 darts are needed to win (no single dart wins early)
     provider.currentGame!.currentAltitudes[playerId] = 10;
     provider.currentGame!.turnStartAltitude[playerId] = 10;
     provider.currentGame!.turnStartState = provider.currentGame!.state;
@@ -28,17 +28,16 @@ void main() {
     provider.notifyListeners();
     await PumpSequences.simpleUpdate(tester);
 
-    // Throw S10 (winning — altitude 10 - 10 = 0) + 2 misses
-    await throwDartViaMock(tester, 10);
-    await throwMissViaMock(tester);
-    await throwMissViaMock(tester);
+    // Throw S3 + S3 + S4 = 10 (wins on 3rd dart, all darts processed)
+    await throwDartViaMock(tester, 3);
+    await throwDartViaMock(tester, 3);
+    await throwDartViaMock(tester, 4);
 
-    // Should be a winner after hitting S10
     expect(ProviderHelpers.lunarLanderHasWinner(tester), isTrue);
 
-    // Edit: change dart 1 to S1 — altitude becomes 10-1=9 instead of 0, removing winner
+    // Edit dart 3: S4 → S1 (total 3+3+1=7, altitude=3, no win)
     await openEditScore(tester);
-    await EditScoreHelpers.setDart1(tester, 'S1');
+    await EditScoreHelpers.setDart3(tester, 'S1');
     await updateScore(tester);
 
     expect(ProviderHelpers.lunarLanderHasWinner(tester), isFalse);
