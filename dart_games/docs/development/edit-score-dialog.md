@@ -99,6 +99,27 @@ List<Color?> _computeDartBorderColors(String playerId) {
 - Target Tag: `lib/screens/games/target_tag/target_tag_game_screen.dart`
 - Monster Mash: `lib/screens/games/monster_mash/monster_mash_game_screen.dart`
 
+## Score Display Patterns
+
+Games use one of two scoring display patterns for the D1/D2/D3 labels and Edit Score dialog:
+
+### Pattern A: Total Score Display (Carnival Derby, Lunar Lander)
+
+Shows the **calculated point value** (e.g., "60" for T20, "20" for S20). Used when the game's scoring is based on point values that affect player position/score.
+
+- `EditScoreDialogConfig` factory includes `scoreDisplayTransform: _gameScoreDisplay`
+- The transform converts segment strings to point values: S20→"20", D13→"26", T20→"60"
+- **Test constraint:** Single values (S5, S10) cause duplicate text matches in the dialog because the score display AND number button show the same value. Tests MUST use Double or Triple values (D5, T5) so the score display differs from the number button.
+
+### Pattern B: Dart Throw Display (Target Tag, Monster Mash, Reef Royale, Clockwork Quest)
+
+Shows the **raw segment string** (e.g., "S20", "T20", "Bull"). Used when the game's scoring is based on targets hit.
+
+- `EditScoreDialogConfig` factory does NOT include `scoreDisplayTransform` (default null)
+- No duplicate text issue since "S20" ≠ "20"
+
+**If unsure which pattern applies to a new game, ask the user before implementing.**
+
 ## Mandatory Tests
 
 Every game MUST have the following edit score tests in `integration_test/[game]/edit_score/`:

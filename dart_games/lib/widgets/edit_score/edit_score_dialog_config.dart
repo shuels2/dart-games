@@ -298,7 +298,22 @@ class EditScoreDialogConfig {
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
       ),
+      scoreDisplayTransform: _lunarLanderScoreDisplay,
     );
+  }
+
+  static String _lunarLanderScoreDisplay(String segment) {
+    if (segment.isEmpty || segment == '-') return '-';
+    if (segment == 'Miss') return 'Miss';
+    if (segment == 'Bull') return '50';
+    if (segment == '25') return '25';
+    final match = RegExp(r'([SDTsdt])(\d+)').firstMatch(segment);
+    if (match == null) return segment;
+    final prefix = match.group(1)!.toUpperCase();
+    final number = int.parse(match.group(2)!);
+    if (prefix == 'D') return '${number * 2}';
+    if (prefix == 'T') return '${number * 3}';
+    return '$number';
   }
 
   factory EditScoreDialogConfig.clockworkQuest() {

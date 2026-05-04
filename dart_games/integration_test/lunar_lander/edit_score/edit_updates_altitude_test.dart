@@ -26,13 +26,13 @@ void main() {
     // Expected altitude: startingAlt - 5 - 3 - 0 = startingAlt - 8
     expect(ProviderHelpers.getLunarLanderAltitude(tester, playerId), startingAlt - 8);
 
-    // Edit: change dart 1 to single 10 and dart 2 to single 10
+    // Edit: change dart 1 to double 10 and dart 2 to double 10
     await openEditScore(tester);
-    await EditScoreHelpers.setDart1(tester, 'S10');
-    await EditScoreHelpers.setDart2(tester, 'S10');
+    await EditScoreHelpers.setDart1(tester, 'D10');
+    await EditScoreHelpers.setDart2(tester, 'D10');
     await updateScore(tester);
 
-    // Expected altitude: startingAlt - 10 - 10 - 0 = startingAlt - 20
-    expect(ProviderHelpers.getLunarLanderAltitude(tester, playerId), startingAlt - 20);
+    // Expected altitude: startingAlt - 20 - 20 - 0 = startingAlt - 40
+    expect(ProviderHelpers.getLunarLanderAltitude(tester, playerId), startingAlt - 40);
   });
 }

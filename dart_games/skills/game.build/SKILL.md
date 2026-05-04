@@ -968,6 +968,17 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   - `'Bull'` (50) / `'25'` (outer bull)
 >
 >   Edit Score is only accessible AFTER the turn ends (3 darts thrown), so all 3 segments should be valid (`'Miss'`, `'Bull'`, `'25'`, or `'SX'`/`'DX'`/`'TX'` for some X). NEVER pass `'-'` for a thrown miss — it disables Save. The `onSubmit` handler must explicitly handle each segment type (`Miss`, `Bull`, `25`, regex match for `SDTsdt\d+`).
+> - **Score display pattern — Total Score vs Dart Throw (choose ONE per game):**
+>
+>   **Pattern A — Total Score Display** (Carnival Derby, Lunar Lander): The D1/D2/D3 labels on the game screen AND the Edit Score dialog score boxes show the **calculated point value** (e.g., "60" for T20, "20" for S20). Use this when the game's scoring is based on POINT VALUES that affect player position/score (points toward target, altitude descent).
+>   - `EditScoreDialogConfig` factory MUST include `scoreDisplayTransform: _gameScoreDisplay` — a static method that converts segment strings to point values (S20→"20", D13→"26", T20→"60").
+>   - **Test constraint:** Single values (S5, S10) cause duplicate text matches in the dialog because the score display AND number button show the same value. Tests MUST use Double or Triple values (D5, T5) so the score display differs from the number button (D5 → score display "10", number button "5").
+>
+>   **Pattern B — Dart Throw Display** (Target Tag, Monster Mash, Reef Royale, Clockwork Quest): The D1/D2/D3 labels show the **raw segment string** (e.g., "S20", "T20", "Bull"). Use this when the game's scoring is based on TARGETS HIT (reef claiming, gear activation, shield damage, elimination).
+>   - `EditScoreDialogConfig` factory does NOT include `scoreDisplayTransform` (default null — raw segment string shown).
+>   - **Test constraint:** No duplicate text issue since "S20" ≠ "20".
+>
+>   **If unsure which pattern applies to a new game, ASK THE USER before implementing.** The choice affects the Edit Score dialog config, test design, and dart indicator display. Getting it wrong means rework across multiple files.
 > - All option effects visible per the spec's Options section
 > - **Generic avatars only on player TILE / rankings list — do NOT assign game character images to player avatars there.** Character images go on:
 >   - The active player panel (LEFT side of game screen) — render character at native size, NO circle clipping (no `border-radius: 50%` + `overflow: hidden` masking the cute character art into a circle). Use `BoxFit.contain`. Apply shape-conformal `filter: drop-shadow` for active-player glow.

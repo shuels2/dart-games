@@ -347,9 +347,14 @@ factory EditScoreDialogConfig.yourGame() {
   return EditScoreDialogConfig(
     backgroundColor: const Color(0xYOURCOLOR),
     // ... other styling
+    // For Total Score games (point values affect player position):
+    // scoreDisplayTransform: _yourGameScoreDisplay,
+    // For Dart Throw games (targets hit): omit scoreDisplayTransform
   );
 }
 ```
+
+**Score display pattern:** Games that show calculated point values (Carnival Derby, Lunar Lander) must include `scoreDisplayTransform`. Games that show raw segment strings (Target Tag, Monster Mash, Reef Royale, Clockwork Quest) omit it. See [Edit Score Dialog - Score Display Patterns](edit-score-dialog.md#score-display-patterns). **If unsure which pattern applies, ask the user.**
 
 **File:** `lib/widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart`
 

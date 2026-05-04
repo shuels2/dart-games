@@ -24,7 +24,7 @@ void main() {
 
     // Open edit, change value, then CANCEL
     await openEditScore(tester);
-    await EditScoreHelpers.setDart1(tester, 'S20');
+    await EditScoreHelpers.setDart1(tester, 'D20');
     await cancelEditScore(tester);
 
     // Altitude should be unchanged (still reflects original dart value)

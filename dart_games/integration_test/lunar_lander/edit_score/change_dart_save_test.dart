@@ -26,13 +26,13 @@ void main() {
     final altAfterDart = ProviderHelpers.getLunarLanderAltitude(tester, playerId);
     expect(altAfterDart, initialAlt - 10);
 
-    // Open edit score and change dart 1 to single 5
+    // Open edit score and change dart 1 to double 5
     await openEditScore(tester);
-    await EditScoreHelpers.setDart1(tester, 'S5');
+    await EditScoreHelpers.setDart1(tester, 'D5');
     await updateScore(tester);
 
-    // Altitude should now be initialAlt - 5 (dart 1 changed; darts 2,3 are misses)
+    // Altitude should now be initialAlt - 10 (dart 1 changed to D5=10; darts 2,3 are misses)
     final altAfterEdit = ProviderHelpers.getLunarLanderAltitude(tester, playerId);
-    expect(altAfterEdit, initialAlt - 5);
+    expect(altAfterEdit, initialAlt - 10);
   });
 }

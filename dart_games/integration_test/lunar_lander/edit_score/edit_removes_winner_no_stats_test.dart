@@ -35,9 +35,9 @@ void main() {
 
     expect(ProviderHelpers.lunarLanderHasWinner(tester), isTrue);
 
-    // Edit dart 3: S4 → S1 (total 3+3+1=7, altitude=3, no win)
+    // Edit dart 3: S4 → D1 (total 3+3+2=8, altitude=2, no win)
     await openEditScore(tester);
-    await EditScoreHelpers.setDart3(tester, 'S1');
+    await EditScoreHelpers.setDart3(tester, 'D1');
     await updateScore(tester);
 
     expect(ProviderHelpers.lunarLanderHasWinner(tester), isFalse);
