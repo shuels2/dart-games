@@ -200,14 +200,15 @@ See [Dartboard Paused Modal Integration](dartboard-paused-modal.md).
 
 Every game screen (menu, game, results) MUST wrap `Scaffold` in an outer `Stack` so that modals paint OVER the AppBar. The `build()` method's return value is `Stack`, NOT `Scaffold`.
 
-**Why:** Modals placed inside the Scaffold body (as body-Stack children) cannot paint over the AppBar or FAB. The back arrow remains tappable behind the modal, leading to confusing or destructive taps. Outer-Stack siblings of the Scaffold paint over the entire Scaffold, including the AppBar and FAB.
+**Why:** Modals placed inside the Scaffold body (as body-Stack children) cannot paint over the AppBar. The back arrow remains tappable behind the modal, leading to confusing or destructive taps. Outer-Stack siblings of the Scaffold paint over the entire Scaffold, including the AppBar.
 
 **Game screen z-order** (back to front):
-1. `Scaffold` (AppBar + body content)
-2. `RemoveDartsModal` (conditional)
-3. `DartboardEmulatorSection` (conditional)
-4. `SaveGameModal` (conditional)
-5. `DartboardPausedModal` (conditional, always last -- paints on top of everything)
+1. `Scaffold` (AppBar + body content; **NO `floatingActionButton:` argument** — the FAB lives at layer 4)
+2. `RemoveDartsModal` (conditional) — covers the AppBar back arrow but NOT the FAB
+3. `DartboardEmulatorSection` (`Positioned(left:0, right:0, bottom:0, ...)`) — contains the dartboard, the disabled overlay with DARTS REMOVED button, and the Play To Complete button
+4. `DartboardEmulatorFAB` (`Positioned(right:16, bottom:16, ...)`) — moved out of `Scaffold.floatingActionButton` into the outer Stack so RemoveDartsModal does NOT block FAB taps; in real games the FAB returns `SizedBox.shrink` so this layer is a no-op outside emulator/test mode
+5. `SaveGameModal` (conditional) — covers everything below including the FAB
+6. `DartboardPausedModal` (conditional, always last -- paints on top of everything including the FAB)
 
 `EditScoreDialog` is NOT an outer-Stack child -- it is a routed dialog launched via `showDialog()` which automatically paints above the entire outer Stack.
 

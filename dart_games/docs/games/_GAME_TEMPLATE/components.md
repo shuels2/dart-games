@@ -70,12 +70,16 @@ factory DartboardFABConfig.[gameName]() {
 }
 ```
 
-**Usage:**
+**Usage:** mount as an outer-Stack child via `Positioned(right: 16, bottom: 16, child: ...)`, NOT in `Scaffold.floatingActionButton`. See [Outer-Stack Modal Architecture](../../development/game-integration.md#outer-stack-modal-architecture) for the full layer order.
+
 ```dart
-DartboardEmulatorFAB(
-  controller: _dartboardEmulatorController,
-  isConnected: !dartboardProvider.isEmulator,
-  config: DartboardFABConfig.[gameName](),
+Positioned(
+  right: 16, bottom: 16,
+  child: DartboardEmulatorFAB(
+    controller: _dartboardEmulatorController,
+    isConnected: !dartboardProvider.isEmulator,
+    config: DartboardFABConfig.[gameName](),
+  ),
 )
 ```
 

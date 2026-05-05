@@ -793,7 +793,7 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > - Game board / play area per the Screen Designs section layout
 > - **Background image (if spec specifies one):** render it as `Positioned.fill(child: Image.asset(BACKGROUND_PATH, fit: BoxFit.cover))` as the FIRST child of the body Stack — AppBar + game content render on top of it. **Recurring miss in past sessions:** specs often list a background image but the implementation never uses it. Reference `clockwork_quest_results_screen.dart` lines ~222-228 for the canonical pattern.
 > - **GAME SCREEN STRUCTURE — outer-Stack modal pattern (MANDATORY, apply EXACTLY):**
->   The game screen wraps `Scaffold` in an outer `Stack` whose siblings are the 4 visible modals + the dartboard emulator section. This is required so gameplay-screen modals paint OVER the AppBar and FAB. A modal placed inside the Scaffold's `body:` cannot paint over the `appBar:` or `floatingActionButton:` slots — the back arrow and the FAB stay tappable behind the modal, which is the wrong UX. Reference: any of the 6 game screens (e.g. `lunar_lander_game_screen.dart`, `clockwork_quest_game_screen.dart`).
+>   The game screen wraps `Scaffold` in an outer `Stack` whose siblings are the 4 visible modals, the dartboard emulator section, AND the dartboard emulator FAB. This is required so gameplay-screen modals paint OVER the AppBar (and so SaveGameModal/PausedModal cover the FAB too). A modal placed inside the Scaffold's `body:` cannot paint over the `appBar:` slot — the back arrow stays tappable behind the modal, which is the wrong UX. The FAB is moved OUT of `Scaffold.floatingActionButton` and into the outer Stack as a `Positioned` child between the emulator section and `SaveGameModal`, so it's blocked by Save/Paused but NOT by RemoveDartsModal (the user must be able to FAB-toggle the emulator visibility during takeout). Reference: any of the 6 game screens (e.g. `lunar_lander_game_screen.dart`, `clockwork_quest_game_screen.dart`).
 >   ```dart
 >   @override
 >   Widget build(BuildContext context) {
@@ -812,8 +812,9 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >       },
 >       child: Stack(
 >         children: [
->           // 1. Scaffold — contains AppBar + body (background + main game content) + FAB.
+>           // 1. Scaffold — contains AppBar + body (background + main game content).
 >           //    Body Stack contains ONLY background and main game UI — NO modals here.
+>           //    NO floatingActionButton — moved to outer-Stack layer 4 below.
 >           Scaffold(
 >             appBar: AppBar(...),
 >             body: Stack(
@@ -825,8 +826,6 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >                 Column(...),
 >               ],
 >             ),
->             floatingActionButton: DartboardEmulatorFAB(...),
->             floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 >           ),
 >           // 2. RemoveDartsModal (conditional) — turn-end takeout overlay, painted
 >           //    BEHIND the emulator so DARTS REMOVED stays visible/tappable on top
@@ -838,14 +837,28 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >           //    modals' buttons aren't intercepted by the emulator section.
 >           //    NOTE: this is an outer-Stack sibling (NOT a body-Stack child) so the
 >           //    Save/Paused modals above it can also cover the AppBar.
+>           //    The Play To Complete button is INSIDE the emulator section's Column
+>           //    (above the dartboard), so it lives at this same layer; it is disabled
+>           //    when shouldPromptTakeout=true.
 >           Positioned(left: 0, right: 0, bottom: 0,
 >               child: DartboardEmulatorSection(...)),
->           // 4. SaveGameModal (conditional) — explicit user action (back-button save flow).
->           //    Paints OVER the AppBar — blocks back arrow.
+>           // 4. DartboardEmulatorFAB (Positioned end-float) — moved OUT of
+>           //    Scaffold.floatingActionButton into the outer Stack so RemoveDartsModal
+>           //    (layer 2) does NOT block the FAB tap. The user must be able to toggle
+>           //    emulator visibility during takeout (e.g. to hide the emulator and
+>           //    re-show it on the takeout flow). SaveGameModal (5) and
+>           //    DartboardPausedModal (6) still cover the FAB — correct, those modals
+>           //    indicate states where toggling emulator visibility is irrelevant.
+>           //    In real games (physical dartboard connected), DartboardEmulatorFAB
+>           //    returns SizedBox.shrink anyway (`isConnected` short-circuit), so this
+>           //    layer is a no-op outside emulator/test mode.
+>           Positioned(right: 16, bottom: 16, child: DartboardEmulatorFAB(...)),
+>           // 5. SaveGameModal (conditional) — explicit user action (back-button save flow).
+>           //    Paints OVER the AppBar AND the FAB — blocks both.
 >           if (_showSaveModal) SaveGameModal(...),
->           // 5. DartboardPausedModal (conditional) — MUST BE THE LAST CHILD.
+>           // 6. DartboardPausedModal (conditional) — MUST BE THE LAST CHILD.
 >           //    Disconnected state means the dartboard hardware can't register input.
->           //    Paints OVER the AppBar — blocks back arrow. Auto-dismisses on reconnect.
+>           //    Paints OVER the AppBar AND the FAB. Auto-dismisses on reconnect.
 >           if (!dartboardProvider.isEmulator &&
 >               dartboardProvider.status != DartboardConnectionStatus.connected &&
 >               dartboardProvider.status != DartboardConnectionStatus.emulator)
@@ -1123,8 +1136,8 @@ After the sub-agent returns:
 > (s) **Game characters are NOT used as player TILE avatars** in the player tile / rankings list — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for character image asset paths in player tile / rankings list contexts (must return zero matches there). They ARE allowed on the active player panel + descent/coral/shield game UI + winner card.
 > (t) No Nunito font or Flame Orange (`#FF6B35`) used in game-screen styling
 > (u) **Background image (if spec specifies one) IS rendered on game AND results screens.** Grep for the background asset path in `lib/screens/games/[GAME_NAME_SNAKE]/`. Must appear in both `[GAME_NAME_SNAKE]_game_screen.dart` AND `[GAME_NAME_SNAKE]_results_screen.dart` if a background asset is in the spec's Asset Checklist. Recurring miss in past sessions.
-> (v) **Outer-Stack modal pattern on the game screen (CRITICAL — wrong structure silently breaks AppBar/FAB blocking AND the takeout/Don't Save flows):** the build method must `return PopScope(child: Stack(children: [Scaffold(...), ...4 outer-Stack modals]))`. Verify by reading the actual `return` statement: (1) PopScope's child is `Stack`, NOT `Scaffold`. (2) The Scaffold is the FIRST child of the outer Stack. (3) Inside the Scaffold's `body: Stack(...)`, the children are ONLY the background image and the main game Column — **NO modals inside body**. (4) The 4 outer-Stack siblings AFTER the Scaffold appear in this exact order: `RemoveDartsModal` (conditional, back) → `Positioned(bottom: 0, child: DartboardEmulatorSection)` → `SaveGameModal` (conditional) → `DartboardPausedModal` (conditional, last/front). Semantics: takeout overlay sits behind the emulator so DARTS REMOVED stays tappable; save modal beats takeout so Don't Save isn't intercepted; paused-disconnect modal beats everything; ALL four cover the AppBar back arrow + FAB so no other screen control is reachable while a modal is up.
-> (v1) **No modals inside `Scaffold.body` Stack** — grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart` for `RemoveDartsModal(`, `SaveGameModal(`, `DartboardPausedModal(`, `DartboardEmulatorSection(`. Each must appear EXACTLY ONCE, and the surrounding context (find the parent `Stack(children:` it lives in by reading 50 lines up) must be the OUTER Stack (sibling of Scaffold inside PopScope.child), NOT the inner body Stack. If any of the four widgets is inside `body: Stack(...)`, the AppBar back arrow stays tappable behind it and the modal-blocking guarantee is broken.
+> (v) **Outer-Stack modal pattern on the game screen (CRITICAL — wrong structure silently breaks AppBar blocking AND the takeout/Don't Save flows):** the build method must `return PopScope(child: Stack(children: [Scaffold(...), ...modals + emulator + FAB]))`. Verify by reading the actual `return` statement: (1) PopScope's child is `Stack`, NOT `Scaffold`. (2) The Scaffold is the FIRST child of the outer Stack. (3) The Scaffold has NO `floatingActionButton:` argument — the FAB is moved to the outer Stack (see step 5). (4) Inside the Scaffold's `body: Stack(...)`, the children are ONLY the background image and the main game Column — **NO modals inside body**. (5) The outer-Stack siblings AFTER the Scaffold appear in this exact order: `RemoveDartsModal` (conditional, back) → `Positioned(bottom: 0, child: DartboardEmulatorSection)` → `Positioned(right: 16, bottom: 16, child: DartboardEmulatorFAB)` → `SaveGameModal` (conditional) → `DartboardPausedModal` (conditional, last/front). Semantics: takeout overlay sits behind the emulator so DARTS REMOVED stays tappable; FAB sits ABOVE RemoveDartsModal so the user can toggle emulator visibility during takeout (RemoveDartsModal does NOT block the FAB); save modal beats takeout AND covers the FAB so Don't Save isn't intercepted by the emulator section AND emulator toggling is irrelevant during save flow; paused-disconnect modal beats everything; the modals cover the AppBar back arrow so no AppBar control is reachable while a modal is up. The FAB is layer 4 because in real games (physical dartboard) `DartboardEmulatorFAB.build` returns `SizedBox.shrink` anyway, so this layering is only meaningful in emulator/test mode.
+> (v1) **No modals inside `Scaffold.body` Stack** — grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart` for `RemoveDartsModal(`, `SaveGameModal(`, `DartboardPausedModal(`, `DartboardEmulatorSection(`, `DartboardEmulatorFAB(`. Each must appear EXACTLY ONCE, and the surrounding context (find the parent `Stack(children:` it lives in by reading 50 lines up) must be the OUTER Stack (sibling of Scaffold inside PopScope.child), NOT the inner body Stack. The Scaffold MUST NOT have `floatingActionButton:` or `floatingActionButtonLocation:` arguments — the FAB lives in the outer Stack as `Positioned(right: 16, bottom: 16, child: DartboardEmulatorFAB(...))`. If any of the five widgets is inside `body: Stack(...)`, OR the FAB is still on `Scaffold.floatingActionButton`, the layered behavior breaks.
 > (v2) **Provider data hoisted to top of `build()`** — read the first ~20 lines of the build method and verify `context.watch<DartboardProvider>()`, `context.watch<[GAME]Provider>()`, and (when needed for outer-Stack modals) `context.watch<PlayerProvider>()` are called there. Variables computed inside a `Consumer<X>` builder are NOT visible to outer-Stack siblings; this fails compilation or silently strips data from the modals.
 > (w) **DualPlayerListPanel has bounded height** on the menu screen — wrapped in `Expanded(...)` for wide layout AND `SizedBox(height: ...)` for narrow scrollable layout. Read the menu screen and verify both branches.
 > (x) **Menu screen initState restores settings from `provider.currentGame`** when it's not null (so CHANGE MISSION preserves them). Read `initState()` and verify the read.

@@ -385,7 +385,8 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       } else if (hasClutchHeal) {
         _audioQueue?.announceClutchHeal(currentPlayer.name);
       } else if (hasAttack) {
-        _audioQueue?.announceAttack(attackTargetName!, attackMultiplier, attackDamage);
+        _audioQueue?.announceAttack(
+            attackTargetName!, attackMultiplier, attackDamage);
         if (hasHealthWarningCrossing) {
           _audioQueue?.announceHealthWarning(attackTargetName!, warningPct!);
         }
@@ -660,13 +661,6 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                 ),
               ],
             ),
-            floatingActionButton: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.monsterMash(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           ),
           // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
           // block ALL screen interactions while shown.
@@ -723,6 +717,18 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.monsterMash()
                   : null,
+            ),
+          ),
+          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
+          // can block the AppBar back arrow without also blocking the FAB).
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.monsterMash(),
+              onCancelAutoPlay: _onCancelAutoPlay,
             ),
           ),
           // Save Game Modal

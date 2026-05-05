@@ -563,13 +563,6 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   ),
               ],
             ),
-            // Floating button to toggle dartboard visibility (only show when not connected)
-            floatingActionButton: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.carnivalDerby(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
           ),
           // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
           // block ALL screen interactions while shown.
@@ -625,6 +618,18 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.carnivalDerby()
                   : null,
+            ),
+          ),
+          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
+          // can block the AppBar back arrow without also blocking the FAB).
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.carnivalDerby(),
+              onCancelAutoPlay: _onCancelAutoPlay,
             ),
           ),
           // Save Game Modal

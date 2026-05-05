@@ -285,6 +285,7 @@ Shared, reusable dartboard emulator UI components for all games.
 - Floating action button for show/hide toggle
 - Only visible in emulator mode (when `dartboardProvider.isEmulator`)
 - Game-specific styling via config
+- **Mounted as a `Positioned(right: 16, bottom: 16, child: ...)` child of the game screen's outer Stack — NOT in `Scaffold.floatingActionButton`.** This positions the FAB above `RemoveDartsModal` (so the user can toggle emulator visibility during takeout) while still being covered by `SaveGameModal` and `DartboardPausedModal`. See [Dartboard Emulator Integration](../development/dartboard-emulator.md) for the full layer order.
 
 #### Configuration Classes
 - **DartboardSectionConfig:** Styling for dartboard container

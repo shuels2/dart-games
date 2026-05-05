@@ -735,7 +735,8 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                                               const Duration(
                                                   milliseconds: 1500), () {
                                             if (mounted) {
-                                              _audioQueue?.announceRemoveDarts();
+                                              _audioQueue
+                                                  ?.announceRemoveDarts();
                                             }
                                           });
                                           Future.delayed(
@@ -877,14 +878,6 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
                 ),
               ],
             ),
-            // Floating button to toggle dartboard visibility (only show when not connected)
-            floatingActionButton: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.targetTag(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           ),
           // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
           // block ALL screen interactions while shown.
@@ -942,6 +935,18 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.targetTag()
                   : null,
+            ),
+          ),
+          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
+          // can block the AppBar back arrow without also blocking the FAB).
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.targetTag(),
+              onCancelAutoPlay: _onCancelAutoPlay,
             ),
           ),
           // Save Game Modal

@@ -584,13 +584,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                 ),
               ],
             ),
-            floatingActionButton: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.reefRoyale(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           ),
           // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
           // block ALL screen interactions while shown.
@@ -648,6 +641,19 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.reefRoyale()
                   : null,
+            ),
+          ),
+
+          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
+          // can block the AppBar back arrow without also blocking the FAB).
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.reefRoyale(),
+              onCancelAutoPlay: _onCancelAutoPlay,
             ),
           ),
 

@@ -141,7 +141,8 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
 
     clockworkProvider.processDartThrow(sector);
 
-    if (!_dartboardEmulatorController.isAutoPlaying && currentPlayerId != null) {
+    if (!_dartboardEmulatorController.isAutoPlaying &&
+        currentPlayerId != null) {
       _announceDartResult(clockworkProvider, currentPlayerId);
     }
 
@@ -162,8 +163,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     setState(() {});
   }
 
-  void _announceDartResult(
-      ClockworkQuestProvider provider, String playerId) {
+  void _announceDartResult(ClockworkQuestProvider provider, String playerId) {
     final playerProvider = context.read<PlayerProvider>();
     final player = playerProvider.getPlayerById(playerId);
     if (player == null) return;
@@ -416,13 +416,6 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                 ),
               ],
             ),
-            floatingActionButton: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.clockworkQuest(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           ),
 
           // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
@@ -470,6 +463,19 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.clockworkQuest()
                   : null,
+            ),
+          ),
+
+          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
+          // can block the AppBar back arrow without also blocking the FAB).
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.clockworkQuest(),
+              onCancelAutoPlay: _onCancelAutoPlay,
             ),
           ),
 
@@ -803,15 +809,13 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                       if (dartsThrown > 0) {
                         // Darts on board — wait for physical takeout or
                         // emulator's DARTS REMOVED button.
-                        Future.delayed(
-                            const Duration(milliseconds: 3500), () {
+                        Future.delayed(const Duration(milliseconds: 3500), () {
                           if (mounted) _mockApi?.simulateTakeoutStarted();
                         });
                       } else {
                         // No darts on board — auto-finish takeout and
                         // advance directly without showing RemoveDartsModal.
-                        Future.delayed(
-                            const Duration(milliseconds: 500), () {
+                        Future.delayed(const Duration(milliseconds: 500), () {
                           if (mounted) {
                             if (_mockApi != null) {
                               _mockApi!.simulateTakeoutFinished();
