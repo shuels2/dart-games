@@ -53,6 +53,13 @@ void main() {
       }
     }
 
+    // Trigger the victory flow: the loop exits with hasWinner=true BEFORE
+    // calling clickDartsRemoved on the winning dart, so _handleGameWon
+    // (which navigates to results AND auto-deletes the saved game) has not
+    // fired yet. Tap DARTS REMOVED to dispatch takeout_finished, which
+    // chains into the victory + cleanup flow.
+    await clickDartsRemoved(tester);
+
     // Allow the auto-navigate-on-win + addPostFrameCallback chains to complete
     await tester.pump(const Duration(seconds: 4));
     await tester.pump();

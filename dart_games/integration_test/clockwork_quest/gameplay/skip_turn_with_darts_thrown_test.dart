@@ -48,6 +48,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
+    // DIAGNOSTIC — assert DARTS REMOVED is in the tree before tapping. Without
+    // this assertion, clickDartsRemoved silently no-ops if the button isn't
+    // found, so the failure surfaces as "player ID didn't change" instead of
+    // the actual cause. If this assertion fails the button isn't rendering
+    // (rendering race / hit-test obstruction); if it passes the issue is
+    // elsewhere in the takeout-finished chain.
+    expect(find.text('DARTS REMOVED'), findsOneWidget,
+        reason:
+            'DARTS REMOVED button must be visible after FAB toggle shows the emulator');
+
     // Click darts removed
     await clickDartsRemoved(tester);
     await PumpSequences.fullRebuild(tester);
