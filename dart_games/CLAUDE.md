@@ -177,13 +177,19 @@ flutter test test/screens/games/lunar_lander/
 ✅ Verify both non-UI tests (`flutter test`) and UI tests pass after changes
 📖 See [Test Maintenance](docs/testing/test-maintenance.md) for synchronization rules
 
-### game.build Skill Synchronization
-❌ NEVER modify the game.build skill in only one location — there are TWO copies that MUST stay byte-identical:
-- `.claude/skills/game.build/SKILL.md` (the locally-installed copy used by this Claude session)
-- `skills/game.build/SKILL.md` (the project-tracked copy committed to git)
+### Project Skill Synchronization (game.build, game.perf-audit)
+❌ NEVER modify a project skill in only one location — each project skill has TWO copies that MUST stay byte-identical:
+- `.claude/skills/<skill-name>/SKILL.md` (the locally-installed copy used by this Claude session)
+- `skills/<skill-name>/SKILL.md` (the project-tracked copy committed to git)
+
+Skills currently under this rule:
+- `game.build` — `.claude/skills/game.build/SKILL.md` ↔ `skills/game.build/SKILL.md`
+- `game.perf-audit` — `.claude/skills/game.perf-audit/SKILL.md` ↔ `skills/game.perf-audit/SKILL.md`
+
 ✅ When changing either copy, apply the SAME edits to the other (or `cp` one over the other)
-✅ Verify with `diff -q .claude/skills/game.build/SKILL.md skills/game.build/SKILL.md` — must report no differences
-✅ Commit both files together so future runs of `/game.build` use the latest rules
+✅ Verify with `diff -q .claude/skills/<skill-name>/SKILL.md skills/<skill-name>/SKILL.md` — must report no differences
+✅ Commit both files together so future runs of the slash command use the latest rules
+✅ Add any new project skill (file pattern `skills/game.*/`) to this list when introduced
 
 ### Dartboard Emulator Code
 ❌ NEVER modify without explicit user permission
