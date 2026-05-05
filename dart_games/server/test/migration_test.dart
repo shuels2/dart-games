@@ -4,6 +4,7 @@ import 'package:dart_games_server/database/database.dart';
 import 'package:dart_games_server/database/migration.dart';
 import 'package:dart_games_server/database/migrations/migration_v1.dart';
 import 'package:dart_games_server/database/migrations/migration_v2.dart';
+import 'package:dart_games_server/database/migrations/migration_v3.dart';
 
 /// A test migration that records whether it ran.
 class _TestMigration extends Migration {
@@ -305,7 +306,7 @@ void main() {
       });
 
       test('currentVersion reflects highest migration version', () {
-        expect(MigrationRunner.currentVersion, 2);
+        expect(MigrationRunner.currentVersion, 3);
       });
 
       test('currentVersion is 0 with no migrations', () {
@@ -497,6 +498,76 @@ void main() {
     });
   });
 
+  group('MigrationV3HotIndexes', () {
+    late sqlite3.Database db;
+
+    setUp(() {
+      db = sqlite3.sqlite3.openInMemory();
+      db.execute('PRAGMA foreign_keys = ON;');
+      // Run prior migrations so tables exist.
+      MigrationV1Baseline().migrate(db);
+      MigrationV2FailedStats().migrate(db);
+    });
+
+    tearDown(() {
+      db.dispose();
+    });
+
+    test('has version 3', () {
+      expect(MigrationV3HotIndexes().version, 3);
+    });
+
+    test('has a description', () {
+      expect(MigrationV3HotIndexes().description, isNotEmpty);
+    });
+
+    test('creates idx_game_history_player_id', () {
+      MigrationV3HotIndexes().migrate(db);
+
+      final indexes = db.select(
+        "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_game_history_player_id';",
+      );
+      expect(indexes.length, 1);
+    });
+
+    test('creates idx_saved_games_game_type', () {
+      MigrationV3HotIndexes().migrate(db);
+
+      final indexes = db.select(
+        "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_saved_games_game_type';",
+      );
+      expect(indexes.length, 1);
+    });
+
+    test('creates idx_victory_music_is_current as a partial index', () {
+      MigrationV3HotIndexes().migrate(db);
+
+      final indexes = db.select(
+        "SELECT name, sql FROM sqlite_master WHERE type='index' AND name='idx_victory_music_is_current';",
+      );
+      expect(indexes.length, 1);
+      expect(indexes.first['sql'], contains('WHERE is_current = 1'));
+    });
+
+    test('idx_game_history_player_id is used by EXPLAIN QUERY PLAN', () {
+      MigrationV3HotIndexes().migrate(db);
+
+      final plan = db.select(
+        'EXPLAIN QUERY PLAN '
+        'SELECT * FROM game_history WHERE player_id = ?;',
+        ['p1'],
+      );
+      final detail = plan.map((r) => r['detail'] as String).join(' | ');
+      expect(detail, contains('idx_game_history_player_id'));
+    });
+
+    test('is idempotent (CREATE INDEX IF NOT EXISTS)', () {
+      MigrationV3HotIndexes().migrate(db);
+      // Run twice — should not throw.
+      expect(() => MigrationV3HotIndexes().migrate(db), returnsNormally);
+    });
+  });
+
   group('Database integration', () {
     late Database database;
 
@@ -515,10 +586,10 @@ void main() {
       expect(tables.length, 1);
     });
 
-    test('schema version is 2 after initialization', () {
+    test('schema version is 3 after initialization', () {
       final result = database.rawDb.select('SELECT version FROM schema_version;');
       expect(result.length, 1);
-      expect(result.first['version'], 2);
+      expect(result.first['version'], 3);
     });
   });
 }

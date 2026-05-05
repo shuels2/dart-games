@@ -360,6 +360,41 @@ void main() {
       await client.updatePlayerStats('p1', gamesPlayed: 10, gamesWon: 3);
       client.dispose();
     });
+
+    test('batchAddPlayerHistory POSTs to /history/batch with array body',
+        () async {
+      final mockClient = MockClient((request) async {
+        expect(request.method, 'POST');
+        expect(request.url.path, '/api/v1/players/history/batch');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        final entries = body['entries'] as List;
+        expect(entries, hasLength(2));
+        expect(entries[0]['playerId'], 'p1');
+        expect(entries[1]['playerId'], 'p2');
+        return http.Response(
+          jsonEncode({'saved': 2, 'failed': []}),
+          200,
+        );
+      });
+
+      final client = ApiClient(client: mockClient);
+      final result = await client.batchAddPlayerHistory([
+        {
+          'playerId': 'p1', 'gameName': 'Reef Royale',
+          'timestamp': '2026-01-01', 'durationMs': 60000,
+          'metadata': {'won': true},
+        },
+        {
+          'playerId': 'p2', 'gameName': 'Reef Royale',
+          'timestamp': '2026-01-01', 'durationMs': 60000,
+          'metadata': {'won': false},
+        },
+      ]);
+
+      expect(result['saved'], 2);
+      expect(result['failed'], isEmpty);
+      client.dispose();
+    });
   });
 
   group('ApiClient - Saved Games', () {

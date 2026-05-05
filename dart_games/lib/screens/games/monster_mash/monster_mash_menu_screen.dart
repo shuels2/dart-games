@@ -887,7 +887,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               // Lightning effect overlay
               if (canStart)
                 Positioned.fill(
-                  child: AnimatedBuilder(
+                  child: RepaintBoundary(child: AnimatedBuilder(
                     animation: _lightningController,
                     builder: (context, child) {
                       return CustomPaint(
@@ -896,7 +896,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                         ),
                       );
                     },
-                  ),
+                  )),
                 ),
               // Button content - chiseled text
               Center(
@@ -940,7 +940,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: AnimatedBuilder(
+      child: RepaintBoundary(child: AnimatedBuilder(
         animation: _pulseController,
         builder: (context, child) {
           final glowOpacity =
@@ -967,7 +967,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
             child: buttonContent,
           );
         },
-      ),
+      )),
     );
   }
 
@@ -1086,7 +1086,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               ),
               // Lightning effect
               Positioned.fill(
-                child: AnimatedBuilder(
+                child: RepaintBoundary(child: AnimatedBuilder(
                   animation: _lightningController,
                   builder: (context, child) {
                     return CustomPaint(
@@ -1098,7 +1098,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                       ),
                     );
                   },
-                ),
+                )),
               ),
               // Button content
               Center(

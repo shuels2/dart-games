@@ -115,22 +115,18 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
       final playerCount = currentGame.getPlayerCount();
 
       // Update stats for all players (both winners and losers get duration)
-      for (final playerId in currentGame.playerIds) {
-        if (!mounted) return;
-        final isWinner = winnerIds.contains(playerId);
-        final dartThrows = currentGame.getTotalDartsThrown(playerId);
-        final turns = currentGame.getTotalTurns(playerId);
-
-        await playerProvider.updatePlayerStats(
-          playerId,
-          won: isWinner,
-          gameName: 'Target Tag',
-          gameDuration: gameDuration,
-          dartThrows: dartThrows,
-          turns: turns,
-          playerCount: playerCount,
-        );
-      }
+      await playerProvider.batchUpdatePlayerStats([
+        for (final playerId in currentGame.playerIds)
+          PlayerStatsUpdate(
+            playerId: playerId,
+            won: winnerIds.contains(playerId),
+            gameName: 'Target Tag',
+            gameDuration: gameDuration,
+            dartThrows: currentGame.getTotalDartsThrown(playerId),
+            turns: currentGame.getTotalTurns(playerId),
+            playerCount: playerCount,
+          ),
+      ]);
     } catch (e) {
       debugPrint('Error updating player stats: $e');
     }

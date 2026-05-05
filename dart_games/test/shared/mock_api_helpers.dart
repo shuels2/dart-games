@@ -157,6 +157,51 @@ class MockApiServer {
       return _jsonResponse(players[idx]);
     }
 
+    if (path == '/api/v1/players/history/batch' && method == 'POST') {
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      final entries = body['entries'];
+      if (entries is! List) {
+        return http.Response(jsonEncode({'error': 'entries must be a list'}), 400);
+      }
+      final failed = <Map<String, String>>[];
+      var saved = 0;
+      for (final raw in entries) {
+        if (raw is! Map<String, dynamic>) {
+          failed.add({'playerId': '<unknown>', 'reason': 'entry is not an object'});
+          continue;
+        }
+        final pid = raw['playerId'] as String?;
+        if (pid == null) {
+          failed.add({'playerId': '<missing>', 'reason': 'playerId required'});
+          continue;
+        }
+        final idx = players.indexWhere((p) => p['id'] == pid);
+        if (idx < 0) {
+          failed.add({'playerId': pid, 'reason': 'Player not found'});
+          continue;
+        }
+        final entry = {
+          'id': 'hist-${gameHistory.length}',
+          'playerId': pid,
+          'gameName': raw['gameName'],
+          'timestamp': raw['timestamp'],
+          'durationMs': raw['durationMs'],
+          'metadata': raw['metadata'],
+          'dartThrows': raw['dartThrows'],
+          'turns': raw['turns'],
+          'playerCount': raw['playerCount'],
+        };
+        gameHistory.add(entry);
+        players[idx]['gamesPlayed'] = (players[idx]['gamesPlayed'] as int) + 1;
+        final metadata = raw['metadata'] as Map<String, dynamic>?;
+        if (metadata != null && metadata['won'] == true) {
+          players[idx]['gamesWon'] = (players[idx]['gamesWon'] as int) + 1;
+        }
+        saved++;
+      }
+      return _jsonResponse({'saved': saved, 'failed': failed});
+    }
+
     final playerHistoryMatch = RegExp(r'^/api/v1/players/([^/]+)/history$').firstMatch(path);
     if (playerHistoryMatch != null && method == 'POST') {
       final id = playerHistoryMatch.group(1)!;

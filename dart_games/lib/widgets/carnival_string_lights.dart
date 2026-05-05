@@ -135,53 +135,54 @@ class _CarnivalStringLightsState extends State<CarnivalStringLights>
   }
 
   Widget _buildBulb(int index) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([
-        _opacityAnimations[index],
-        _glowAnimations[index],
-      ]),
-      builder: (context, child) {
-        final opacity = _opacityAnimations[index].value;
-        final glowMultiplier = _glowAnimations[index].value;
-
-        return Opacity(
-          opacity: opacity,
-          child: Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const RadialGradient(
-                center: Alignment(-0.3, -0.3),
-                radius: 0.8,
-                colors: [
-                  Colors.white,
-                  Color(0xFFFFD700),
-                  Color(0xFFFFD700),
+    // RepaintBoundary isolates per-bulb repaints from the wider tree.
+    // FadeTransition replaces the per-frame Opacity-saveLayer; an inner
+    // AnimatedBuilder still drives the glow's BoxShadow since blur/spread
+    // depend on the controller value.
+    return RepaintBoundary(
+      child: FadeTransition(
+        opacity: _opacityAnimations[index],
+        child: AnimatedBuilder(
+          animation: _glowAnimations[index],
+          builder: (context, child) {
+            final glowMultiplier = _glowAnimations[index].value;
+            return Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const RadialGradient(
+                  center: Alignment(-0.3, -0.3),
+                  radius: 0.8,
+                  colors: [
+                    Colors.white,
+                    Color(0xFFFFD700),
+                    Color(0xFFFFD700),
+                  ],
+                  stops: [0.0, 0.3, 1.0],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700),
+                    blurRadius: 15 * glowMultiplier,
+                    spreadRadius: 2 * glowMultiplier,
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withOpacity(0.4),
+                    blurRadius: 30 * glowMultiplier,
+                    spreadRadius: 4 * glowMultiplier,
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withOpacity(0.2),
+                    blurRadius: 45 * glowMultiplier,
+                    spreadRadius: 6 * glowMultiplier,
+                  ),
                 ],
-                stops: [0.0, 0.3, 1.0],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFD700),
-                  blurRadius: 15 * glowMultiplier,
-                  spreadRadius: 2 * glowMultiplier,
-                ),
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.4),
-                  blurRadius: 30 * glowMultiplier,
-                  spreadRadius: 4 * glowMultiplier,
-                ),
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.2),
-                  blurRadius: 45 * glowMultiplier,
-                  spreadRadius: 6 * glowMultiplier,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

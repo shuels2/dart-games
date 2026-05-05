@@ -119,6 +119,13 @@ void main() {
         final result = db.rawDb.select('PRAGMA foreign_keys;');
         expect(result.first['foreign_keys'], 1);
       });
+
+      test('sets synchronous to NORMAL (1)', () {
+        // PRAGMA synchronous returns 0=OFF, 1=NORMAL, 2=FULL, 3=EXTRA.
+        // Pairing NORMAL with WAL is the recommended high-throughput setting.
+        final result = db.rawDb.select('PRAGMA synchronous;');
+        expect(result.first['synchronous'], 1);
+      });
     });
 
     group('foreign key cascade', () {

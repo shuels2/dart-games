@@ -24,9 +24,10 @@ class Database {
     MigrationRunner.run(_db);
   }
 
-  /// Enables WAL mode and foreign key enforcement.
+  /// Enables WAL mode, NORMAL synchronous fsync, and foreign key enforcement.
   void _configure() {
     _db.execute('PRAGMA journal_mode = WAL;');
+    _db.execute('PRAGMA synchronous = NORMAL;');
     _db.execute('PRAGMA foreign_keys = ON;');
   }
 

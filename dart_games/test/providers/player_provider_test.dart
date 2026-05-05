@@ -926,5 +926,140 @@ void main() {
         expect(updated.gamesWon, 2);
       });
     });
+
+    group('byId', () {
+      test('returns same instance as firstWhere', () async {
+        final p = Player.create(name: 'Lookup Target');
+        await provider.savePlayer(p);
+
+        final byFirstWhere =
+            provider.allPlayers.firstWhere((x) => x.id == p.id);
+        final byCache = provider.byId(p.id);
+
+        expect(identical(byFirstWhere, byCache), isTrue);
+      });
+
+      test('returns null for unknown id', () {
+        expect(provider.byId('nonexistent'), isNull);
+      });
+
+      test('cache invalidates on player add', () async {
+        final p1 = Player.create(name: 'First');
+        await provider.savePlayer(p1);
+        // Prime the cache.
+        expect(provider.byId(p1.id), isNotNull);
+
+        final p2 = Player.create(name: 'Second');
+        await provider.savePlayer(p2);
+
+        expect(provider.byId(p2.id)?.name, 'Second');
+      });
+
+      test('cache invalidates on player delete', () async {
+        final p = Player.create(name: 'To Delete');
+        await provider.savePlayer(p);
+        expect(provider.byId(p.id), isNotNull);
+
+        await provider.deletePlayer(p.id);
+        expect(provider.byId(p.id), isNull);
+      });
+
+      test('cache invalidates after stat update (in-place mutation)',
+          () async {
+        final p = Player.create(name: 'Stat Target');
+        await provider.savePlayer(p);
+        final cached = provider.byId(p.id);
+        expect(cached!.gamesPlayed, 0);
+
+        await provider.updatePlayerStats(
+          p.id,
+          won: true,
+          gameName: 'Test Game',
+          gameDuration: const Duration(minutes: 1),
+        );
+
+        // After update, cache should give us the NEW player (with gamesPlayed=1),
+        // not the stale 0-game one.
+        expect(provider.byId(p.id)?.gamesPlayed, 1);
+      });
+    });
+
+    group('batchUpdatePlayerStats', () {
+      test('applies all entries and notifies once', () async {
+        final p1 = Player.create(name: 'Alice');
+        final p2 = Player.create(name: 'Bob');
+        final p3 = Player.create(name: 'Carol');
+        await provider.savePlayer(p1);
+        await provider.savePlayer(p2);
+        await provider.savePlayer(p3);
+
+        var notifyCount = 0;
+        provider.addListener(() => notifyCount++);
+
+        await provider.batchUpdatePlayerStats([
+          PlayerStatsUpdate(
+            playerId: p1.id, won: true,
+            gameName: 'Reef Royale',
+            gameDuration: const Duration(minutes: 5),
+            dartThrows: 12, turns: 4, playerCount: 3,
+          ),
+          PlayerStatsUpdate(
+            playerId: p2.id, won: false,
+            gameName: 'Reef Royale',
+            gameDuration: const Duration(minutes: 5),
+            dartThrows: 9, turns: 4, playerCount: 3,
+          ),
+          PlayerStatsUpdate(
+            playerId: p3.id, won: false,
+            gameName: 'Reef Royale',
+            gameDuration: const Duration(minutes: 5),
+            dartThrows: 6, turns: 4, playerCount: 3,
+          ),
+        ]);
+
+        expect(notifyCount, 1, reason: 'should notify exactly once');
+
+        expect(provider.getPlayerById(p1.id)!.gamesPlayed, 1);
+        expect(provider.getPlayerById(p1.id)!.gamesWon, 1);
+        expect(provider.getPlayerById(p2.id)!.gamesPlayed, 1);
+        expect(provider.getPlayerById(p2.id)!.gamesWon, 0);
+        expect(provider.getPlayerById(p3.id)!.gamesPlayed, 1);
+
+        expect(provider.getPlayerById(p1.id)!.gameHistory, hasLength(1));
+        expect(provider.getPlayerById(p1.id)!.gameHistory.first.gameName,
+            'Reef Royale');
+      });
+
+      test('skips unknown players locally and reports server failures',
+          () async {
+        final p1 = Player.create(name: 'Real');
+        await provider.savePlayer(p1);
+
+        await provider.batchUpdatePlayerStats([
+          PlayerStatsUpdate(
+            playerId: p1.id, won: false,
+            gameName: 'Target Tag',
+            gameDuration: const Duration(minutes: 3),
+          ),
+          PlayerStatsUpdate(
+            playerId: 'ghost', won: false,
+            gameName: 'Target Tag',
+            gameDuration: const Duration(minutes: 3),
+          ),
+        ]);
+
+        // Real player got the update.
+        expect(provider.getPlayerById(p1.id)!.gamesPlayed, 1);
+        // Ghost is silently skipped (logged to failed_stats internally).
+        expect(provider.getPlayerById('ghost'), isNull);
+      });
+
+      test('empty list is a no-op', () async {
+        var notifyCount = 0;
+        provider.addListener(() => notifyCount++);
+        await provider.batchUpdatePlayerStats([]);
+        expect(notifyCount, 0);
+      });
+    });
   });
 }

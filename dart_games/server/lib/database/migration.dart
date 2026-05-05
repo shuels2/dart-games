@@ -1,6 +1,7 @@
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'migrations/migration_v1.dart';
 import 'migrations/migration_v2.dart';
+import 'migrations/migration_v3.dart';
 
 /// Base class for all database schema migrations.
 ///
@@ -33,6 +34,7 @@ class MigrationRunner {
   static final List<Migration> migrations = [
     MigrationV1Baseline(),
     MigrationV2FailedStats(),
+    MigrationV3HotIndexes(),
   ];
 
   /// The current schema version (highest migration version).

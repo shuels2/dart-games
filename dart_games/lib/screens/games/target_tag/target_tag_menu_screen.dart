@@ -847,7 +847,9 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
   }
 
   Widget _buildStartButton(bool canStart, List<Player> selectedPlayers) {
-    return AnimatedBuilder(
+    // RepaintBoundary keeps the pulse-driven shadow rebuild from dirtying
+    // the rest of the menu screen.
+    return RepaintBoundary(child: AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
         final pulseValue =
@@ -899,7 +901,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
           ),
         );
       },
-    );
+    ));
   }
 
   void _resumeGame(SavedGameMetadata savedGame) {
