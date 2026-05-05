@@ -887,6 +887,39 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > - DartboardPausedModal overlay — show only when `!dartboardProvider.isEmulator && status != connected && status != emulator`
 > - SaveGameModal (back button + PopScope pattern)
 > - Skip turn button
+> - **Skip Turn 0-darts bypass (mandatory, identical across all 6 games)**: the Skip Turn `onPressed` handler MUST branch on `dartsThrown`. With darts on the board (`dartsThrown > 0`), follow the normal takeout flow — schedule `_audioQueue?.announceRemoveDarts(...)` after 1500ms (where applicable) and `_mockApi?.simulateTakeoutStarted()` after 3500ms so RemoveDartsModal renders and the user is prompted to take out the darts. With NO darts on the board (`dartsThrown == 0`), there is nothing to remove, so schedule `_mockApi!.simulateTakeoutFinished()` (or `_handleTakeoutFinished()` when `_mockApi == null`) after 500ms — this short-circuits the takeout overlay and advances the player directly. Reference: `lunar_lander_game_screen.dart` and `clockwork_quest_game_screen.dart` skip-turn handlers (canonical bypass pattern). Without the bypass, players see a "Remove Your Darts" modal with no darts on the board — confusing UX. The Skip Turn `onPressed` MUST also be guarded by `provider.shouldPromptTakeout ? null : ...` so the button is disabled while a takeout is already in progress.
+>   ```dart
+>   onPressed: provider.shouldPromptTakeout
+>       ? null
+>       : () {
+>           final dartsThrown = provider.getCurrentPlayerDartsThrown();
+>           provider.skipTurn();
+>           if (dartsThrown > 0) {
+>             // Darts on board — wait for physical takeout or emulator's
+>             // DARTS REMOVED button. Optional 1500ms `announceRemoveDarts`
+>             // call then 3500ms `simulateTakeoutStarted`.
+>             Future.delayed(const Duration(milliseconds: 1500), () {
+>               if (mounted) _audioQueue?.announceRemoveDarts(/* args */);
+>             });
+>             Future.delayed(const Duration(milliseconds: 3500), () {
+>               if (mounted) _mockApi?.simulateTakeoutStarted();
+>             });
+>           } else {
+>             // No darts on board — auto-finish takeout to advance the player
+>             // directly. RemoveDartsModal never renders for this path.
+>             Future.delayed(const Duration(milliseconds: 500), () {
+>               if (mounted) {
+>                 if (_mockApi != null) {
+>                   _mockApi!.simulateTakeoutFinished();
+>                 } else {
+>                   _handleTakeoutFinished();
+>                 }
+>               }
+>             });
+>           }
+>         },
+>   ```
+>   **Verification:** UI tests for skip-turn-no-darts MUST NOT call `clickDartsRemoved` after Skip Turn — the player auto-advances. Tests for skip-turn-with-darts-thrown MUST `await tester.pump(const Duration(seconds: 4))` (or longer) after `clickSkipTurn` to let the 3500ms `simulateTakeoutStarted` schedule fire before tapping DARTS REMOVED.
 > - DartboardConnectionInfo in AppBar
 > - **`announceRemoveDarts` is called UNCONDITIONALLY on takeout** (not inside a precedence `else`; the call is independent of which moment-announcement won precedence)
 > - **Victory flow MUST wait for DARTS REMOVED (mandatory):** When `hasWinner` becomes true after a dart throw, the game screen MUST NOT auto-navigate to the results screen. The RemoveDartsModal must still appear, the Edit Score button must remain accessible, and navigation to results must ONLY happen through the takeout flow: user clicks DARTS REMOVED → `_handleTakeoutFinished()` checks `hasWinner` → if true, calls `_handleGameWon()`.

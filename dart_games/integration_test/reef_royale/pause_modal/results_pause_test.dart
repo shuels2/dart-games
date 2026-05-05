@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../shared/element_finders.dart';
-import '../results_screen/_helpers.dart' as results_helpers;
 import '_helpers.dart';
 
 void main() {
@@ -12,9 +11,8 @@ void main() {
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
 
-    await results_helpers.setupAndStartGame(
-        tester, results_helpers.config);
-    await results_helpers.completeGameToVictory(tester);
+    await setupAndStartGame(tester, config);
+    await completeGameToVictory(tester);
 
     // Verify we are on results screen
     expect(config.getPlayAgainButton(), findsOneWidget);
@@ -31,9 +29,8 @@ void main() {
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
 
-    await results_helpers.setupAndStartGame(
-        tester, results_helpers.config);
-    await results_helpers.completeGameToVictory(tester);
+    await setupAndStartGame(tester, config);
+    await completeGameToVictory(tester);
 
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
 
@@ -52,9 +49,8 @@ void main() {
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
 
-    await results_helpers.setupAndStartGame(
-        tester, results_helpers.config);
-    await results_helpers.completeGameToVictory(tester);
+    await setupAndStartGame(tester, config);
+    await completeGameToVictory(tester);
 
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
 
@@ -73,9 +69,8 @@ void main() {
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
 
-    await results_helpers.setupAndStartGame(
-        tester, results_helpers.config);
-    await results_helpers.completeGameToVictory(tester);
+    await setupAndStartGame(tester, config);
+    await completeGameToVictory(tester);
 
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
 
@@ -94,9 +89,8 @@ void main() {
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
 
-    await results_helpers.setupAndStartGame(
-        tester, results_helpers.config);
-    await results_helpers.completeGameToVictory(tester);
+    await setupAndStartGame(tester, config);
+    await completeGameToVictory(tester);
 
     // Disconnect then reconnect
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);

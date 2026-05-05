@@ -11,7 +11,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-      'Test 37: Skip turn with no darts thrown - shouldPromptTakeout=true, after takeout advances to next player',
+      'Test 37: Skip turn with no darts thrown — bypass auto-advances to next player',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
     await setupAndStartGame(tester, config);
@@ -19,28 +19,21 @@ void main() {
     final provider = ProviderHelpers.getClockworkQuestProvider(tester);
     final firstPlayerId = provider.getCurrentPlayerId()!;
 
-    // Hide dartboard emulator so skip button is not obscured
+    // Hide dartboard emulator so skip button is not obscured.
     await tester.tap(find.byKey(DartboardEmulatorKeys.toggleFAB));
     await tester.pump();
     await tester.pump();
 
-    // Skip turn without throwing any darts
+    // Skip turn without throwing any darts — the game screen's 0-darts
+    // bypass schedules simulateTakeoutFinished after 500ms so RemoveDartsModal
+    // never shows and the player advances directly.
     await UITestHelpers.clickSkipTurn(tester, config);
+    await tester.pump(const Duration(milliseconds: 800));
     await PumpSequences.fullRebuild(tester);
 
-    // Verify shouldPromptTakeout
-    expect(provider.shouldPromptTakeout, isTrue);
-
-    // Show dartboard emulator for DARTS REMOVED button
-    await tester.tap(find.byKey(DartboardEmulatorKeys.toggleFAB));
-    await tester.pump();
-    await tester.pump();
-
-    // Click darts removed
-    await clickDartsRemoved(tester);
-
-    // Verify advanced to next player
+    // Verify advanced to next player.
     final secondPlayerId = provider.getCurrentPlayerId()!;
     expect(secondPlayerId, isNot(equals(firstPlayerId)));
+    expect(provider.shouldPromptTakeout, isFalse);
   });
 }

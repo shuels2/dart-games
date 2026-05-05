@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:dart_games/constants/test_keys.dart';
 
 import '_helpers.dart';
 
@@ -13,7 +14,7 @@ void main() {
     await completeGameToVictory(tester);
 
     // Verify we are on results screen
-    expect(find.text('WINNER!'), findsOneWidget);
+    expect(find.byKey(LunarLanderResultsKeys.winnerName), findsOneWidget);
 
     // Disconnect — pause modal should appear
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
@@ -25,7 +26,7 @@ void main() {
     await setupAndStartGame(tester, config, altitude: 100);
     await completeGameToVictory(tester);
 
-    expect(find.text('WINNER!'), findsOneWidget);
+    expect(find.byKey(LunarLanderResultsKeys.winnerName), findsOneWidget);
 
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
 
@@ -35,7 +36,7 @@ void main() {
     await PumpSequences.simpleUpdate(tester);
 
     // Verify still on results screen
-    expect(find.text('WINNER!'), findsOneWidget);
+    expect(find.byKey(LunarLanderResultsKeys.winnerName), findsOneWidget);
     PauseModalHelpers.verifyPauseModalVisible(tester);
   });
 
@@ -45,7 +46,7 @@ void main() {
     await setupAndStartGame(tester, config, altitude: 100);
     await completeGameToVictory(tester);
 
-    expect(find.text('WINNER!'), findsOneWidget);
+    expect(find.byKey(LunarLanderResultsKeys.winnerName), findsOneWidget);
 
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
 
@@ -55,7 +56,7 @@ void main() {
     await PumpSequences.simpleUpdate(tester);
 
     // Verify still on results screen
-    expect(find.text('WINNER!'), findsOneWidget);
+    expect(find.byKey(LunarLanderResultsKeys.winnerName), findsOneWidget);
     PauseModalHelpers.verifyPauseModalVisible(tester);
   });
 
@@ -65,7 +66,7 @@ void main() {
     await setupAndStartGame(tester, config, altitude: 100);
     await completeGameToVictory(tester);
 
-    expect(find.text('WINNER!'), findsOneWidget);
+    expect(find.byKey(LunarLanderResultsKeys.winnerName), findsOneWidget);
 
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
 
@@ -75,7 +76,7 @@ void main() {
     await PumpSequences.simpleUpdate(tester);
 
     // Verify still on results screen
-    expect(find.text('WINNER!'), findsOneWidget);
+    expect(find.byKey(LunarLanderResultsKeys.winnerName), findsOneWidget);
     PauseModalHelpers.verifyPauseModalVisible(tester);
   });
 
@@ -85,7 +86,7 @@ void main() {
     await setupAndStartGame(tester, config, altitude: 100);
     await completeGameToVictory(tester);
 
-    expect(find.text('WINNER!'), findsOneWidget);
+    expect(find.byKey(LunarLanderResultsKeys.winnerName), findsOneWidget);
 
     // Disconnect then reconnect
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);

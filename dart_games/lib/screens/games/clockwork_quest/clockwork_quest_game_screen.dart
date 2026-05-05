@@ -796,7 +796,32 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               key: ClockworkQuestGameKeys.skipTurnButton,
               onPressed: provider.shouldPromptTakeout
                   ? null
-                  : () => provider.skipTurn(),
+                  : () {
+                      final dartsThrown =
+                          provider.getCurrentPlayerDartsThrown();
+                      provider.skipTurn();
+                      if (dartsThrown > 0) {
+                        // Darts on board — wait for physical takeout or
+                        // emulator's DARTS REMOVED button.
+                        Future.delayed(
+                            const Duration(milliseconds: 3500), () {
+                          if (mounted) _mockApi?.simulateTakeoutStarted();
+                        });
+                      } else {
+                        // No darts on board — auto-finish takeout and
+                        // advance directly without showing RemoveDartsModal.
+                        Future.delayed(
+                            const Duration(milliseconds: 500), () {
+                          if (mounted) {
+                            if (_mockApi != null) {
+                              _mockApi!.simulateTakeoutFinished();
+                            } else {
+                              _handleTakeoutFinished();
+                            }
+                          }
+                        });
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB87333),
                 disabledBackgroundColor: const Color(0xFF4A4A52),

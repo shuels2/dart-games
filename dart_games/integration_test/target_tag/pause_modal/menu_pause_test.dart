@@ -17,7 +17,7 @@ void main() {
     await UITestHelpers.navigateToGameMenu(tester, config);
 
     // Verify we are on the Target Tag menu
-    expect(find.text('Target Tag'), findsWidgets);
+    expect(find.text('TARGET TAG GAME SETUP'), findsWidgets);
 
     // Disconnect and verify pause modal
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
@@ -39,7 +39,7 @@ void main() {
     }
 
     // Verify still on Target Tag menu (game title still visible)
-    expect(find.text('Target Tag'), findsWidgets);
+    expect(find.text('TARGET TAG GAME SETUP'), findsWidgets);
   });
 
   testWidgets('Pause blocks start game button on Target Tag menu',
@@ -62,7 +62,7 @@ void main() {
     }
 
     // Verify no game screen appeared (still on menu)
-    expect(find.text('Target Tag'), findsWidgets);
+    expect(find.text('TARGET TAG GAME SETUP'), findsWidgets);
   });
 
   testWidgets('Pause blocks settings controls on Target Tag menu',
@@ -131,7 +131,7 @@ void main() {
     }
 
     // Verify still on menu
-    expect(find.text('Target Tag'), findsWidgets);
+    expect(find.text('TARGET TAG GAME SETUP'), findsWidgets);
 
     // Reconnect
     await PauseModalHelpers.simulateReconnectAndVerify(tester);

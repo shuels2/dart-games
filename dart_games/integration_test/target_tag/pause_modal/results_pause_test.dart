@@ -13,7 +13,7 @@ void main() {
   testWidgets('Pause modal appears on Target Tag results screen',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await GameSetupHelpers.setupAndStartTargetTag(tester, config);
+    await GameSetupHelpers.setupAndStartTargetTag(tester, config, shieldMax: 3);
 
     // Complete game to reach results screen
     await completeGameToVictory(tester, 'Player A', 'Player B');
@@ -28,7 +28,7 @@ void main() {
   testWidgets('Pause blocks Play Again button on Target Tag results',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await GameSetupHelpers.setupAndStartTargetTag(tester, config);
+    await GameSetupHelpers.setupAndStartTargetTag(tester, config, shieldMax: 3);
 
     await completeGameToVictory(tester, 'Player A', 'Player B');
 
@@ -49,7 +49,7 @@ void main() {
   testWidgets('Pause blocks Change Settings button on Target Tag results',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await GameSetupHelpers.setupAndStartTargetTag(tester, config);
+    await GameSetupHelpers.setupAndStartTargetTag(tester, config, shieldMax: 3);
 
     await completeGameToVictory(tester, 'Player A', 'Player B');
 
@@ -73,7 +73,7 @@ void main() {
   testWidgets('Pause blocks Back to Menu button on Target Tag results',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await GameSetupHelpers.setupAndStartTargetTag(tester, config);
+    await GameSetupHelpers.setupAndStartTargetTag(tester, config, shieldMax: 3);
 
     await completeGameToVictory(tester, 'Player A', 'Player B');
 
@@ -97,7 +97,7 @@ void main() {
   testWidgets('Pause dismisses and buttons work on Target Tag results',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await GameSetupHelpers.setupAndStartTargetTag(tester, config);
+    await GameSetupHelpers.setupAndStartTargetTag(tester, config, shieldMax: 3);
 
     await completeGameToVictory(tester, 'Player A', 'Player B');
 

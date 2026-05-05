@@ -153,8 +153,8 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
   @override
   Widget build(BuildContext context) {
     final dartboardProvider = context.watch<DartboardProvider>();
-    final provider = context.read<LunarLanderProvider>();
-    final playerProvider = context.read<PlayerProvider>();
+    final provider = context.watch<LunarLanderProvider>();
+    final playerProvider = context.watch<PlayerProvider>();
 
     final game = provider.currentGame;
     if (game == null) {

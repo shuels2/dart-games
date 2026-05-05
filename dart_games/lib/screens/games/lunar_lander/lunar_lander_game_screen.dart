@@ -380,13 +380,28 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                     key: LunarLanderGameKeys.skipTurnButton,
                     onPressed: () {
                       final p = context.read<LunarLanderProvider>();
+                      final dartsThrown = p.getCurrentPlayerDartsThrown();
                       p.skipTurn();
-                      if (p.shouldPromptTakeout) {
+                      if (dartsThrown > 0) {
+                        // Darts on board — wait for physical takeout or
+                        // emulator's DARTS REMOVED button.
                         Future.delayed(const Duration(milliseconds: 1500), () {
                           if (mounted) _audioQueue?.announceRemoveDarts();
                         });
                         Future.delayed(const Duration(milliseconds: 3500), () {
                           if (mounted) _mockApi?.simulateTakeoutStarted();
+                        });
+                      } else {
+                        // No darts on board — auto-finish takeout and
+                        // advance directly without showing RemoveDartsModal.
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (mounted) {
+                            if (_mockApi != null) {
+                              _mockApi!.simulateTakeoutFinished();
+                            } else {
+                              _handleTakeoutFinished();
+                            }
+                          }
                         });
                       }
                     },

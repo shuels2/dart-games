@@ -28,8 +28,11 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    // Skip remaining darts
+    // Skip remaining darts — with darts on the board, the game screen
+    // schedules simulateTakeoutStarted after 3500ms, so wait long enough
+    // for that delayed callback to fire before tapping DARTS REMOVED.
     await UITestHelpers.clickSkipTurn(tester, config);
+    await tester.pump(const Duration(seconds: 4));
     await PumpSequences.fullRebuild(tester);
 
     // Verify shouldPromptTakeout
@@ -42,6 +45,7 @@ void main() {
 
     // Click darts removed
     await clickDartsRemoved(tester);
+    await PumpSequences.fullRebuild(tester);
 
     // Verify advanced to next player
     final secondPlayerId = provider.getCurrentPlayerId()!;

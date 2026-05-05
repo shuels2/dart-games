@@ -12,7 +12,7 @@ void main() {
     await UITestHelpers.navigateToGameMenu(tester, config);
 
     // Verify we are on the menu screen
-    expect(find.text('Lunar Lander'), findsWidgets);
+    expect(find.text('LUNAR LANDER GAME SETUP'), findsWidgets);
 
     // Disconnect dartboard — pause modal should appear
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
@@ -33,7 +33,7 @@ void main() {
     }
 
     // Verify still on menu screen (not navigated away)
-    expect(find.text('Lunar Lander'), findsWidgets);
+    expect(find.text('LUNAR LANDER GAME SETUP'), findsWidgets);
     PauseModalHelpers.verifyPauseModalVisible(tester);
   });
 
@@ -54,7 +54,7 @@ void main() {
     await PumpSequences.simpleUpdate(tester);
 
     // Verify still on menu screen
-    expect(find.text('Lunar Lander'), findsWidgets);
+    expect(find.text('LUNAR LANDER GAME SETUP'), findsWidgets);
     PauseModalHelpers.verifyPauseModalVisible(tester);
   });
 
@@ -86,7 +86,7 @@ void main() {
     expect(find.text('Game Paused'), findsOneWidget);
 
     // Verify menu content is still behind the overlay
-    expect(find.text('Lunar Lander'), findsWidgets);
+    expect(find.text('LUNAR LANDER GAME SETUP'), findsWidgets);
   });
 
   testWidgets('Pause dismisses and menu still works',
