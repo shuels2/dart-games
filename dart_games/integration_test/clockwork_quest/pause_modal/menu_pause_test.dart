@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import '../../shared/element_finders.dart';
 import '_helpers.dart';
 
 void main() {
@@ -65,8 +66,15 @@ void main() {
 
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
 
-    // Try tapping add player button — should be blocked
-    final addPlayerButton = config.getAddPlayerButton();
+    // Try tapping add player button — should be blocked. With no players
+    // added the menu shows the empty-state add-player button; with players
+    // it shows the regular one. Tap whichever is present.
+    final emptyStateButton =
+        ElementFinders.getClockworkQuestAddPlayerButtonEmptyState();
+    final normalStateButton = config.getAddPlayerButton();
+    final addPlayerButton = emptyStateButton.evaluate().isNotEmpty
+        ? emptyStateButton
+        : normalStateButton;
     await tester.tap(addPlayerButton, warnIfMissed: false);
     await PumpSequences.simpleUpdate(tester);
 

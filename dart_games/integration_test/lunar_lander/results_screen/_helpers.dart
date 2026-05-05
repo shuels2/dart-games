@@ -96,6 +96,13 @@ Future<void> completeGameToVictory(
     }
   }
 
+  // Trigger the victory flow: when the loop exits with hasWinner=true, the
+  // winning dart has not been removed yet, so _handleTakeoutFinished (which
+  // calls _handleGameWon → navigates to results) has not fired. Tap DARTS
+  // REMOVED to dispatch the takeout_finished event that detects the winner
+  // and pushes the results screen.
+  await clickDartsRemoved(tester);
+
   await tester.pump(const Duration(seconds: 4));
   await tester.pump();
   await tester.pump();

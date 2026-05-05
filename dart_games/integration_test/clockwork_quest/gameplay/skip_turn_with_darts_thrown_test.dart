@@ -38,9 +38,14 @@ void main() {
     // Verify shouldPromptTakeout
     expect(provider.shouldPromptTakeout, isTrue);
 
-    // Show dartboard emulator for DARTS REMOVED button
+    // Show dartboard emulator for DARTS REMOVED button. Pump enough cycles
+    // for the AnimatedBuilder inside DartboardEmulatorSection to rebuild
+    // and render the DARTS REMOVED button BEFORE clickDartsRemoved searches
+    // for it (clickDartsRemoved silently no-ops if the button isn't found).
     await tester.tap(find.byKey(DartboardEmulatorKeys.toggleFAB));
     await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
     // Click darts removed
