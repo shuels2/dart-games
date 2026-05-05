@@ -181,8 +181,8 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
   @override
   Widget build(BuildContext context) {
     final dartboardProvider = context.watch<DartboardProvider>();
-    final reefProvider = context.read<ReefRoyaleProvider>();
-    final playerProvider = context.read<PlayerProvider>();
+    final reefProvider = context.watch<ReefRoyaleProvider>();
+    final playerProvider = context.watch<PlayerProvider>();
 
     final currentGame = reefProvider.currentGame;
     if (currentGame == null) {

@@ -214,6 +214,8 @@ Every game screen (menu, game, results) MUST wrap `Scaffold` in an outer `Stack`
 
 **Provider data must be hoisted to the top of `build()`** so outer-Stack modals can reference `currentPlayer`, `shouldPromptTakeout`, etc. Use `context.watch<XProvider>()` at the start of `build()` rather than inside a `Consumer<X>` builder.
 
+**Results screens must also use `context.watch` (not `context.read`) for the game/player providers in `build()`.** The results screen has early-return paths for `currentGame == null` and `winners.isEmpty`/`winnerId == null`. With `context.read`, the screen does NOT subscribe to provider changes — if it builds before the provider state is fully populated, it stays stuck on a "No game data" / "No winner found" placeholder forever, and the Play Again / Change Settings / Back to Menu buttons never appear. This breaks every results-screen UI test that asserts those buttons. Pattern recurrence: Lunar Lander, Monster Mash, Reef Royale, Target Tag have all hit this. Carnival Derby uses `Consumer2<HorseRaceProvider, PlayerProvider>` (subscribes correctly); Clockwork Quest uses `Provider.of<X>(context)` (defaults to `listen: true` ≈ `watch`). Background services accessed in `initState` / `addPostFrameCallback` (e.g. `VictoryMusicService`, `SaveGameService` cleanup) are still fine to read with `context.read` — only the build method's provider lookups need `context.watch`.
+
 ## AppBar Back Button Specification
 
 The AppBar back arrow MUST follow this canonical pattern on menu AND game screens:

@@ -215,8 +215,8 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
   @override
   Widget build(BuildContext context) {
     final dartboardProvider = context.watch<DartboardProvider>();
-    final monsterMashProvider = context.read<MonsterMashProvider>();
-    final playerProvider = context.read<PlayerProvider>();
+    final monsterMashProvider = context.watch<MonsterMashProvider>();
+    final playerProvider = context.watch<PlayerProvider>();
 
     final currentGame = monsterMashProvider.currentGame;
     if (currentGame == null) {
