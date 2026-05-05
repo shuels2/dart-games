@@ -14,9 +14,10 @@ You are auditing the Dart Games Flutter + Dart Shelf monorepo for performance an
 3. **Phase 5 only fires AFTER explicit user approval** like "approve all", "approve #1, #3", or "do #2". A vague affirmation ("ok", "go") is acceptable only if you have already explicitly enumerated the items being approved in the immediately prior message.
 4. **The plan file is the source of truth.** Phase 3 MUST write a complete plan file (with full per-finding game-code impact + test impact for both UI and non-UI tests) before Phase 4 prints to chat. Phase 5 MUST re-read the plan file at start and update its `Implementation log` as work proceeds. Chat summaries are throwaway; the plan file survives context truncation and serves as the audit-history record committed to git.
 5. **Test impact analysis is mandatory.** Every Phase 3 plan section MUST fill in the "Test impact" subsection with concrete `file:line` citations or explicit "None". This includes BOTH UI tests (`integration_test/`) and non-UI tests (`test/`, `server/test/`). Do not write "see above" or leave subsections blank.
-6. **`game.build` skill rule reuse:** all changes from Phase 5 must still respect the project's existing rules — outer-Stack modal pattern, `context.watch` in build, no `floatingActionButton:` on Scaffold, etc. Read `skills/game.build/SKILL.md` if you're unsure whether a proposed change conflicts with an existing rule.
-7. **Test gate:** any code change in Phase 5 must keep `flutter test` at the documented pass count (currently 1297/1297 Flutter non-UI + 178 server) — plus any new tests added per the plan — and `flutter analyze` introducing zero new errors.
-8. **Scope guardrail:** this skill audits performance and code-quality. It does NOT do design changes, feature additions, refactors-for-style-only, or test additions unless they're tied to a performance finding.
+6. **`game.build` skill impact analysis is mandatory.** Every Phase 3 plan section MUST fill in the "`game.build` skill impact" subsection. If a finding's pattern would otherwise be reintroduced by the next new game, the rule MUST be enshrined in `skills/game.build/SKILL.md` as part of Phase 5 — and the proposed text MUST be present in the plan file when the user reviews it. Mark "None" only when the test in the template (single-game tweak, server-only, etc.) genuinely fails. The audit's value compounds across future games ONLY when game.build absorbs the lessons.
+7. **`game.build` skill rule reuse:** all changes from Phase 5 must still respect the project's existing rules — outer-Stack modal pattern, `context.watch` in build, no `floatingActionButton:` on Scaffold, etc. Read `skills/game.build/SKILL.md` if you're unsure whether a proposed change conflicts with an existing rule.
+8. **Test gate:** any code change in Phase 5 must keep `flutter test` at the documented pass count (currently 1297/1297 Flutter non-UI + 178 server) — plus any new tests added per the plan — and `flutter analyze` introducing zero new errors.
+9. **Scope guardrail:** this skill audits performance and code-quality. It does NOT do design changes, feature additions, refactors-for-style-only, or test additions unless they're tied to a performance finding.
 
 ---
 
@@ -183,6 +184,26 @@ For each subsection, list specific `file:line` citations OR explicitly write "No
   - List `file:line` citations OR "None".
   - Common gotchas: tests that mock the API and assert on call count (will break for batch-endpoint changes), tests that walk the widget tree looking for specific widget types like `Opacity` (will break if you swap to `FadeTransition`).
 
+**`game.build` skill impact (REQUIRED — assess every finding):**
+
+Future games are scaffolded by `/game.build`. If this finding introduces a pattern that future games should follow from day 1, the rule MUST be encoded in `skills/game.build/SKILL.md` (and its mirrored `.claude/` copy) — otherwise the next new game will reintroduce the same anti-pattern that this audit just removed.
+
+For each finding, fill in BOTH lines (or explicitly mark "None"):
+
+- **Pattern to enshrine in `game.build`:**
+  - One-line description of the rule future games should follow (e.g. "When a game has a 'finish a game' flow that updates per-player stats, MUST use `apiClient.batchUpdatePlayerStats(...)` — not a per-player loop"), OR "None — game-internal optimization, no future-game implications".
+- **Specific edits to `skills/game.build/SKILL.md` (and `.claude/skills/game.build/SKILL.md`):**
+  - Section to update (cite by section heading, e.g. "Step 7: Wire results screen → API stats persistence").
+  - Verbatim text snippet to add (1-3 sentences, in the same imperative voice as the rest of `game.build`).
+  - Whether this should also be added to `game.build`'s AR-4 verification checklist (the section that grades a freshly-built game against project rules) — if YES, propose the AR-4 row text.
+  - OR "None — no `game.build` rule to add for this finding".
+
+When evaluating "should this become a `game.build` rule?", apply this test:
+- ✅ YES if the finding is a pattern that EVERY game would otherwise reintroduce (e.g. modal layering, per-player API call structure, asset cacheWidth requirements).
+- ✅ YES if the finding fixed a recurrent bug across multiple games (e.g. the round-5 `context.read` results-screen bug was fixed in 4 games — a `game.build` rule prevents the 7th game from hitting it).
+- ❌ NO if the finding is a one-off tweak to a single widget or game (e.g. fix a math bug in Carnival Derby's scoring — not generalizable).
+- ❌ NO if the finding is server-only and `game.build` doesn't generate server code paths affected by it.
+
 **Estimated savings:** quantify (e.g., "1 RTT × 6 games × ~80ms = ~480ms cumulative" or "~30% rebuild count on game screen" or "~20 MB GPU memory" — pick the most relevant metric)
 **Risk:** Low/Medium/High with one-line reason
 **Migration:** if backwards-compat matters, describe the staged path
@@ -283,7 +304,13 @@ The plan file at `docs/perf-audits/<yyyy-mm-dd>-<scope>.md` is the SOURCE OF TRU
    - Run the full `flutter test` suite. Confirm the count documented in the plan file's "Tests that MUST run" section (e.g. 1297/1297 Flutter non-UI tests still pass + any new tests added).
    - Run `cd server && dart test` if any server change was made (per plan: must stay 178/178 + any new server tests).
    - Run targeted UI re-runs from the plan's "Tests that MUST run" section (specifically the screenshot tests + critical integration tests for changed screens).
-6. **Update docs and the `game.build` skill** IF a finding introduces a new pattern that future games should follow (e.g. "always use the batch stats endpoint"). Both skill copies must stay byte-identical (per the existing CLAUDE.md rule).
+6. **Apply each approved finding's `game.build` skill impact** as a separate edit step BEFORE the final test run:
+   - Re-read each approved finding's "`game.build` skill impact" subsection in the plan file.
+   - For each finding where the subsection is NOT "None", apply the proposed text edit to BOTH `skills/game.build/SKILL.md` AND `.claude/skills/game.build/SKILL.md` (the dual-copy CLAUDE.md rule still applies).
+   - If the subsection proposed an AR-4 verification row, add it to `game.build`'s AR-4 checklist.
+   - Verify `diff -q skills/game.build/SKILL.md .claude/skills/game.build/SKILL.md` reports no differences.
+   - Append a sub-bullet to the Implementation log entry: `  - game.build updated: <section>; AR-4 row added: yes/no`. If the finding had "None" for game.build impact, write `  - game.build update: N/A`.
+   - Also update relevant docs (e.g. `docs/development/game-integration.md`, `docs/architecture/shared-systems.md`) when the same pattern is documented there.
 7. Mark each task `completed` as you finish it.
 8. **Finalize plan file:** flip `Status` to `Phase 5 — complete (<n> applied / <m> deferred)`. Each implementation-log entry should now have a commit SHA appended.
 9. **Final report to chat:** per-finding diff summary, test counts, link to the now-complete plan file, any follow-up items deferred.
