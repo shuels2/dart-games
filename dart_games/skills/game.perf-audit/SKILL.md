@@ -9,12 +9,14 @@ You are auditing the Dart Games Flutter + Dart Shelf monorepo for performance an
 
 ## Hard rules — do NOT violate
 
-1. **Phases 1–4 are read-only.** No `Edit` / `Write` calls to production code. The only files you may write before approval are the report itself and `TaskCreate`/`TaskUpdate` records.
-2. **Phase 4 is a mandatory stop.** Print the report, ask the user which findings to apply, and **end your turn**. Do not auto-proceed to Phase 5.
+1. **Phases 1–4 are read-only for production code.** No `Edit` / `Write` calls to production code or tests. The only files you may write before approval are: (a) the plan file at `docs/perf-audits/<yyyy-mm-dd>-<scope>.md` (required output of Phase 3), (b) `TaskCreate`/`TaskUpdate` records.
+2. **Phase 4 is a mandatory stop.** Print a concise summary referencing the plan file, ask the user which findings to apply, and **end your turn**. Do not auto-proceed to Phase 5.
 3. **Phase 5 only fires AFTER explicit user approval** like "approve all", "approve #1, #3", or "do #2". A vague affirmation ("ok", "go") is acceptable only if you have already explicitly enumerated the items being approved in the immediately prior message.
-4. **`game.build` skill rule reuse:** all changes from Phase 5 must still respect the project's existing rules — outer-Stack modal pattern, `context.watch` in build, no `floatingActionButton:` on Scaffold, etc. Read `skills/game.build/SKILL.md` if you're unsure whether a proposed change conflicts with an existing rule.
-5. **Test gate:** any code change in Phase 5 must keep `flutter test` at the documented pass count (currently 1297/1297 Flutter non-UI + 178 server) and `flutter analyze` introducing zero new errors.
-6. **Scope guardrail:** this skill audits performance and code-quality. It does NOT do design changes, feature additions, refactors-for-style-only, or test additions unless they're tied to a performance finding.
+4. **The plan file is the source of truth.** Phase 3 MUST write a complete plan file (with full per-finding game-code impact + test impact for both UI and non-UI tests) before Phase 4 prints to chat. Phase 5 MUST re-read the plan file at start and update its `Implementation log` as work proceeds. Chat summaries are throwaway; the plan file survives context truncation and serves as the audit-history record committed to git.
+5. **Test impact analysis is mandatory.** Every Phase 3 plan section MUST fill in the "Test impact" subsection with concrete `file:line` citations or explicit "None". This includes BOTH UI tests (`integration_test/`) and non-UI tests (`test/`, `server/test/`). Do not write "see above" or leave subsections blank.
+6. **`game.build` skill rule reuse:** all changes from Phase 5 must still respect the project's existing rules — outer-Stack modal pattern, `context.watch` in build, no `floatingActionButton:` on Scaffold, etc. Read `skills/game.build/SKILL.md` if you're unsure whether a proposed change conflicts with an existing rule.
+7. **Test gate:** any code change in Phase 5 must keep `flutter test` at the documented pass count (currently 1297/1297 Flutter non-UI + 178 server) — plus any new tests added per the plan — and `flutter analyze` introducing zero new errors.
+8. **Scope guardrail:** this skill audits performance and code-quality. It does NOT do design changes, feature additions, refactors-for-style-only, or test additions unless they're tied to a performance finding.
 
 ---
 
@@ -141,36 +143,111 @@ Discard pure noise (low-impact, high-effort, high-risk) unless the user explicit
 
 ---
 
-## Phase 3: Build implementation plan
+## Phase 3: Build implementation plan + WRITE PLAN FILE
 
-For each finding the audit will RECOMMEND (Phase 2 buckets A/B/C), produce a concrete plan section in the report:
+For each finding the audit will RECOMMEND (Phase 2 buckets A/B/C), produce a concrete plan section in the report. **The plan section template below is mandatory — every subsection must be filled in (or explicitly marked "None") for every finding. The "Test impact" subsection is REQUIRED, not optional, and MUST cover both UI and non-UI tests.**
+
+### Per-finding template (mandatory)
 
 ```
 ### [ID] [Title]
 
-**Where:** files + line ranges
-**Currently:** ≤3-line snippet of the existing code
-**Proposed:** ≤5-line snippet of the replacement (or pseudo-code for larger changes)
-**Server change** (if applicable): route file + endpoint name + request/response shape
-**Test changes** (if any): test files that need updates AND new tests required
-**Estimated savings:** quantify (e.g., "1 RTT × 6 games × ~80ms = ~480ms cumulative" or "~30% rebuild count on game screen")
+**Game code impact:**
+- **Files (and line ranges):** explicit list — every file that will be edited
+- **Currently:** ≤3-line snippet of the existing code at the primary citation
+- **Proposed:** ≤5-line snippet of the replacement (or pseudo-code for larger changes)
+- **Server change** (if applicable): route file + endpoint name + request/response shape
+- **Migration version** (if DB schema change): next sequential after highest existing in `server/lib/database/migrations/`
+- **Dependencies on other findings** (if any): "blocked by #N" / "should land before #N"
+
+**Test impact (REQUIRED — both UI and non-UI):**
+
+For each subsection, list specific `file:line` citations OR explicitly write "None". Do NOT leave a subsection blank or write "see above" — the plan file must be a self-contained source of truth.
+
+- **Existing non-UI tests touched** (`test/`):
+  - List each test file that exercises code paths affected by this finding.
+  - Note whether each one passes unchanged or requires updates (and why).
+- **Existing server tests touched** (`server/test/`):
+  - Same format. "None" if no server change.
+- **Existing UI/integration tests touched** (`integration_test/`):
+  - Walk every screen/widget rendered by the affected files. List the integration test files that mount those widgets.
+  - Note whether each one passes unchanged or requires updates.
+- **Screenshot tests requiring re-validation** (`integration_test/*/visual_validation/` or `*_screenshot_test.dart`):
+  - List test files whose screenshots could shift due to the change.
+  - For pure rendering optimizations (e.g. `RepaintBoundary`), this should typically be "None" or marked low risk.
+- **New tests required:**
+  - Non-UI (`test/`): file paths + ≤1-line description per test, OR "None".
+  - Server (`server/test/`): file paths + ≤1-line description per test, OR "None".
+  - UI (`integration_test/`): file paths + ≤1-line description per test, OR "None".
+- **Tests likely to BREAK without an update** (different from "touched" — these need code changes for tests to pass after the implementation):
+  - List `file:line` citations OR "None".
+  - Common gotchas: tests that mock the API and assert on call count (will break for batch-endpoint changes), tests that walk the widget tree looking for specific widget types like `Opacity` (will break if you swap to `FadeTransition`).
+
+**Estimated savings:** quantify (e.g., "1 RTT × 6 games × ~80ms = ~480ms cumulative" or "~30% rebuild count on game screen" or "~20 MB GPU memory" — pick the most relevant metric)
 **Risk:** Low/Medium/High with one-line reason
 **Migration:** if backwards-compat matters, describe the staged path
 ```
 
-For DB schema changes, include the migration version number that would be added (next sequential after the highest existing version in `server/lib/database/migrations/`).
+### Plan file output (REQUIRED — survives context truncation)
 
-For each plan item, also note **dependencies** if one finding's fix presupposes another.
+After producing all plan sections, **WRITE THE FULL REPORT TO A PLAN FILE** before printing anything to chat. The plan file is the SOURCE OF TRUTH for Phases 4 and 5. The summary printed in chat is for at-a-glance review only — the plan file contains the complete content that survives context truncation.
+
+**Path:** `docs/perf-audits/<yyyy-mm-dd>-<scope>.md`
+
+- `<yyyy-mm-dd>` is today's date (use `date /T` on Windows or check the system reminder for current date).
+- `<scope>` is `full` (no scope arg), the game name (e.g. `lunar_lander`), the category letter (e.g. `network`), or a path-derived slug.
+- If a plan file with that exact name already exists, append `-2`, `-3`, ... before the `.md` extension to avoid clobbering prior runs.
+- Create the `docs/perf-audits/` directory if it doesn't exist.
+
+**Plan file structure:**
+
+```markdown
+# Perf Audit Plan — <yyyy-mm-dd> [scope: full / <game> / <category>]
+
+> **Status:** Phase 4 — awaiting approval
+> **Approved findings:** (none yet — pending user reply)
+> **Implementation log:** (none yet — Phase 5 not started)
+
+## Summary
+[copy of Phase 2 summary table]
+
+## Bucket A — High impact, low effort, low risk (recommended)
+[every Phase 3 plan section for bucket-A findings, full template above]
+
+## Bucket B — High impact, medium effort
+[every Phase 3 plan section for bucket-B findings]
+
+## Bucket C — Quick wins
+[every Phase 3 plan section for bucket-C findings]
+
+## Bucket D — Deferred (low priority or high risk)
+[one-line summaries; no full plan needed unless explicitly approved]
+
+## Tests that MUST run after implementation
+[derived from per-finding test impact: full suite + targeted UI re-runs]
+
+## Approval prompt
+[the Phase 4 prompt block — for reference]
+
+## Implementation log (Phase 5)
+[empty until user approves; Phase 5 fills in per finding: applied / deferred / skipped + date + commit SHA + notes]
+```
+
+**After writing the plan file**, the summary printed to chat in Phase 4 should reference the plan file path so the user knows where the source of truth lives.
 
 ---
 
 ## Phase 4: APPROVAL GATE — STOP HERE
 
-Print the full report (sections from Phases 2 + 3) AND a clearly-marked approval prompt:
+By this point the plan file at `docs/perf-audits/<yyyy-mm-dd>-<scope>.md` exists with the full report. Print a CONCISE summary to chat (a one-line headline per finding + bucket counts) plus the approval prompt below — do not re-print the full per-finding plan in chat (it's in the file already).
 
 ```
 ═══════════════════════════════════════════════════════
 APPROVAL NEEDED — pick which findings to apply
+
+📄 Full plan: docs/perf-audits/<yyyy-mm-dd>-<scope>.md
+   (review this file for the complete per-finding plan
+    including game-code + test-impact analysis)
 
 Reply with one of:
   • "approve all"             → implement everything in buckets A/B/C
@@ -185,24 +262,33 @@ I will NOT make any code changes until you reply.
 
 **End your turn after this prompt.** Do NOT speculate, do NOT edit files, do NOT run tests.
 
-If the user replies with "approve <subset>", proceed to Phase 5 ONLY for the approved items.
+If the user replies with "approve <subset>", proceed to Phase 5 ONLY for the approved items, working from the plan file.
 
 ---
 
 ## Phase 5: Implementation (only after approval)
 
-For each approved finding, execute the plan from Phase 3:
+The plan file at `docs/perf-audits/<yyyy-mm-dd>-<scope>.md` is the SOURCE OF TRUTH for everything Phase 5 does. Re-read it at the start of Phase 5 — do not rely on chat context, which may have been compressed.
 
-1. Use `TaskCreate` to register one task per approved finding. Mark in_progress as you start each.
-2. Apply edits (`Edit` / `Write`) — small, reviewable diffs per file.
-3. Update tests if the plan listed test changes.
-4. After EACH finding is complete: run `flutter analyze` on the modified file(s). If any new errors appear, stop and report — do not move to the next finding.
-5. After ALL approved findings are complete: run the full `flutter test` suite. Confirm 1297/1297 Flutter non-UI tests still pass. Run `cd server && dart test` if any server change was made (must be 178/178).
-6. Update the relevant docs and the `game.build` skill IF a finding introduces a new pattern that future games should follow (e.g. "always use the batch stats endpoint"). Both skill copies must stay byte-identical (per the existing CLAUDE.md rule).
+1. **Read the plan file first.** Locate the approved findings (per the user's reply). Treat this file as authoritative for what to apply, what tests to add, and what existing tests are at risk.
+2. **Update plan file header:** flip `Status` to `Phase 5 — implementing` and list the approved finding IDs under `Approved findings:` with the user's reply quoted.
+3. Use `TaskCreate` to register one task per approved finding. Mark in_progress as you start each.
+4. **For each approved finding** (in plan-file order, respecting any "blocked by #N" dependencies):
+   - Apply edits (`Edit` / `Write`) per the plan's "Game code impact" section — small, reviewable diffs per file.
+   - Add new tests per the plan's "Test impact → New tests required" section (non-UI + server + UI as listed). If the plan said "None" for a category, skip it.
+   - Update existing tests per the plan's "Tests likely to BREAK without an update" section.
+   - Run `flutter analyze` on the modified file(s). If any new errors appear, **stop and report — do not move to the next finding**.
+   - Append an entry to the plan file's `Implementation log` section: `- [ID] applied — files: X, Y, Z; new tests: A, B; status: passed analyze`. (Mark `deferred` or `skipped` with reason if you couldn't apply.)
+5. **After ALL approved findings are complete:**
+   - Run the full `flutter test` suite. Confirm the count documented in the plan file's "Tests that MUST run" section (e.g. 1297/1297 Flutter non-UI tests still pass + any new tests added).
+   - Run `cd server && dart test` if any server change was made (per plan: must stay 178/178 + any new server tests).
+   - Run targeted UI re-runs from the plan's "Tests that MUST run" section (specifically the screenshot tests + critical integration tests for changed screens).
+6. **Update docs and the `game.build` skill** IF a finding introduces a new pattern that future games should follow (e.g. "always use the batch stats endpoint"). Both skill copies must stay byte-identical (per the existing CLAUDE.md rule).
 7. Mark each task `completed` as you finish it.
-8. Final report: per-finding diff summary, test counts, any follow-up items deferred.
+8. **Finalize plan file:** flip `Status` to `Phase 5 — complete (<n> applied / <m> deferred)`. Each implementation-log entry should now have a commit SHA appended.
+9. **Final report to chat:** per-finding diff summary, test counts, link to the now-complete plan file, any follow-up items deferred.
 
-**Hard test rule:** if `flutter test` regresses, immediately reverse the most recent finding's edits and report which one broke things.
+**Hard test rule:** if `flutter test` regresses, immediately reverse the most recent finding's edits, mark that finding `reverted` in the plan file's implementation log with the failure reason, and report. Do NOT proceed to the next finding while the suite is red.
 
 ---
 
@@ -218,28 +304,47 @@ Both copies MUST stay byte-identical. When updating the skill (e.g. adding a new
 
 ## Output style
 
-The report itself should be self-contained Markdown that the user can read top-to-bottom and act on. Sections in this order:
+The plan file (`docs/perf-audits/<yyyy-mm-dd>-<scope>.md`) is self-contained Markdown that the user can read top-to-bottom and act on, AND that survives context truncation as a permanent record. Sections in this order:
 
 ```
-# Perf Audit Report — <yyyy-mm-dd> [scope: full / <game> / <category>]
+# Perf Audit Plan — <yyyy-mm-dd> [scope: full / <game> / <category>]
+
+> **Status:** Phase 4 — awaiting approval | Phase 5 — implementing | Phase 5 — complete (<n> applied / <m> deferred)
+> **Approved findings:** (none yet — pending user reply) | "<verbatim user reply>" → applied: [...]
+> **Implementation log:** (see section at bottom)
 
 ## Summary
 N findings. Buckets: A=<X>, B=<Y>, C=<Z>, D=<W>. Top 3 below.
 
 ## Bucket A — High impact, low effort, low risk (recommended)
-[Plan sections per finding]
+[Full Phase 3 plan section per finding — including the mandatory Test impact subsection]
 
 ## Bucket B — High impact, medium effort
-[Plan sections per finding]
+[Full Phase 3 plan section per finding]
 
 ## Bucket C — Quick wins
-[One-line summaries, batch-fixable]
+[Full Phase 3 plan section per finding (still requires test impact)]
 
 ## Bucket D — Deferred (low priority or high risk)
-[One-line summaries; noted but not planned unless asked]
+[One-line summaries; no full plan needed unless explicitly approved later]
 
-## Approval prompt (Phase 4 gate above)
+## Tests that MUST run after implementation
+- Suites: `flutter test` (target count), `cd server && dart test` (target count), `flutter analyze` (zero new errors)
+- Targeted UI re-runs: enumerate the specific integration test files derived from the per-finding test impact (e.g. `integration_test/<game>/<area>/<test>_test.dart`)
+- Targeted screenshot tests: enumerate any `*_screenshot_test.dart` whose output could shift
+
+## Approval prompt
+[The Phase 4 prompt block — for reference, so re-reading the plan recovers the original approval request]
+
+## Implementation log (Phase 5)
+[Empty until user approves; Phase 5 fills in per finding:
+   - [ID] applied — files: X, Y, Z; new tests: A, B; commit: <SHA>; date: <yyyy-mm-dd>
+   - [ID] deferred — reason: ...
+   - [ID] reverted — reason: <test failure>; commit at revert: <SHA>
+]
 ```
+
+The chat summary printed in Phase 4 is a CONCISE pointer to the plan file — one-line per finding + the approval prompt — not a duplicate of the plan content.
 
 Cite Flutter's official guidance ([Flutter perf best practices](https://docs.flutter.dev/perf/best-practices)) and SQLite docs ([SQLite Optimizations](https://www.powersync.com/blog/sqlite-optimizations-for-ultra-high-performance)) where the rationale isn't obvious — but don't pad the report with citations.
 
@@ -249,4 +354,5 @@ Cite Flutter's official guidance ([Flutter perf best practices](https://docs.flu
 
 - After each `/game.perf-audit` run, if you discover a NEW anti-pattern that wasn't in the catalog above, ADD it as a new row to the appropriate section (in BOTH skill copies). The catalog should grow over time.
 - If a Phase-5 implementation reveals a deeper architectural rule (e.g. "all stats endpoints should be batched"), update `game.build`'s SKILL.md too so new games follow the rule from day 1.
-- Don't audit the same code path twice in successive runs — keep a short "previously fixed" list at the bottom of the report so the next run can skip them or focus elsewhere.
+- The `docs/perf-audits/` directory is a permanent audit-history record. Plan files there are committed to git so successive runs can read prior findings (especially the "deferred" sections of older plans) and the "Implementation log" sections to see what's already been applied.
+- At the start of each run, glob `docs/perf-audits/*.md` and read the most recent 1-2 plans' "Implementation log" sections. Skip any code path that's marked `applied` recently — it's been covered. Re-flag any `deferred` items the user might want to revisit now that effort/risk balance has changed.
