@@ -19,8 +19,12 @@ void main() {
     final provider = ProviderHelpers.getClockworkQuestProvider(tester);
     final firstPlayerId = provider.getCurrentPlayerId()!;
 
-    // Throw 1 dart
-    await throwMissViaMock(tester);
+    // Throw 1 real dart (single 20). Using a real number rather than a miss
+    // keeps the InteractiveDartboard / takeout state aligned with how a user
+    // would actually throw — `throwMissViaMock` was previously used here but
+    // the failure repro'd; a real-number throw exercises the same takeout
+    // chain a manual user click drives.
+    await throwDartViaMock(tester, 20);
     expect(provider.getCurrentPlayerDartsThrown(), 1);
 
     // Hide dartboard emulator so skip button is not obscured
