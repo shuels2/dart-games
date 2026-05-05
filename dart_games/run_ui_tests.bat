@@ -71,6 +71,14 @@ if not exist "server\bin\server.dart" (
     exit /b 1
 )
 
+echo Cleaning Flutter build caches ^(build/, .dart_tool/^)...
+call flutter clean
+if !errorlevel! neq 0 (
+    echo ERROR: flutter clean failed.
+    pause
+    exit /b 1
+)
+
 echo Resolving Flutter dependencies...
 call flutter pub get
 if !errorlevel! neq 0 (
@@ -305,10 +313,14 @@ powershell -NoProfile -Command "$log='!_RST_LOG!';$done=$false;$elapsed=0;while(
 
 if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
 
-REM On first failure, check for infrastructure errors and retry once
+REM On first failure, check for infrastructure errors and retry once.
+REM Patterns include WebDriver/connection drops, parallel SDK-cache file
+REM lock races (PathAccessException on engine.realm), AND transient network
+REM failures fetching Google Fonts assets ("Failed to load font" /
+REM "Failed to fetch" / "ClientException"), which are flake-prone.
 set "_RST_RETRY=0"
 if "!_RST_PASS!"=="0" if !_RST_ATTEMPT! lss 2 (
-    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"FormatException" /C:"PathAccessException" "!_RST_LOG!" >nul 2>&1
+    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"FormatException" /C:"PathAccessException" /C:"Failed to load font" /C:"Failed to fetch" /C:"ClientException" "!_RST_LOG!" >nul 2>&1
     if !errorlevel! equ 0 set "_RST_RETRY=1"
 )
 if "!_RST_RETRY!"=="1" goto :run_single_test_attempt
@@ -339,7 +351,7 @@ REM ============================================================
 :discover_tests
 
 REM Define game categories in execution order
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest"
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander"
 
 for %%G in (%GAMES%) do (
     set "_GAME=%%G"

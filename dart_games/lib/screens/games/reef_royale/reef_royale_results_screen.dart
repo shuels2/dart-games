@@ -14,6 +14,8 @@ import '../../../services/victory_music_service.dart';
 import '../../../constants/test_keys.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../providers/dartboard_provider.dart';
 import 'reef_royale_menu_screen.dart';
 import 'reef_royale_game_screen.dart';
 
@@ -21,7 +23,8 @@ class ReefRoyaleResultsScreen extends StatefulWidget {
   const ReefRoyaleResultsScreen({super.key});
 
   @override
-  State<ReefRoyaleResultsScreen> createState() => _ReefRoyaleResultsScreenState();
+  State<ReefRoyaleResultsScreen> createState() =>
+      _ReefRoyaleResultsScreenState();
 }
 
 class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
@@ -123,7 +126,6 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
           playerCount: playerCount,
         );
       }
-
     } catch (e) {
       debugPrint('Error updating player stats: $e');
     }
@@ -153,21 +155,23 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
       if (customMusicSource != null && customMusicSource.isNotEmpty) {
         if (customMusicSource.startsWith('data:')) {
           await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => debugPrint('Audio playback timed out'),
-          );
+                const Duration(seconds: 5),
+                onTimeout: () => debugPrint('Audio playback timed out'),
+              );
         } else {
           await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => debugPrint('Audio playback timed out'),
-          );
+                const Duration(seconds: 5),
+                onTimeout: () => debugPrint('Audio playback timed out'),
+              );
         }
       } else {
-        await _audioPlayer.play(UrlSource(
-            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3')).timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => debugPrint('Audio playback timed out'),
-        );
+        await _audioPlayer
+            .play(UrlSource(
+                'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'))
+            .timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => debugPrint('Audio playback timed out'),
+            );
       }
     } catch (e) {
       debugPrint('Error playing victory music: $e');
@@ -176,8 +180,9 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final reefProvider = context.read<ReefRoyaleProvider>();
-    final playerProvider = context.read<PlayerProvider>();
+    final dartboardProvider = context.watch<DartboardProvider>();
+    final reefProvider = context.watch<ReefRoyaleProvider>();
+    final playerProvider = context.watch<PlayerProvider>();
 
     final currentGame = reefProvider.currentGame;
     if (currentGame == null) {
@@ -192,225 +197,274 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     final winnerIds = currentGame.winnerIds ?? [];
     final winners = winnerIds.isEmpty
         ? [allPlayers.first]
-        : winnerIds.map((id) => allPlayers.firstWhere((p) => p.id == id, orElse: () => allPlayers.first)).toList();
+        : winnerIds
+            .map((id) => allPlayers.firstWhere((p) => p.id == id,
+                orElse: () => allPlayers.first))
+            .toList();
 
-    return Scaffold(
-      backgroundColor: _deepReefBlue,
-      appBar: AppBar(
-        title: Transform.translate(
-          offset: const Offset(0, -3),
-          child: Text(
-            'Reef Royale — Game Over',
-            style: GoogleFonts.fredoka(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: _pearlWhite,
-              letterSpacing: 2,
-              shadows: [
-                Shadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
-                const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
-              ],
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: _deepReefBlue,
+          appBar: AppBar(
+            title: Transform.translate(
+              offset: const Offset(0, -3),
+              child: Text(
+                'Reef Royale — Game Over',
+                style: GoogleFonts.fredoka(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: _pearlWhite,
+                  letterSpacing: 2,
+                  shadows: [
+                    Shadow(
+                        color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
+                    const Shadow(
+                        color: Colors.black,
+                        blurRadius: 4,
+                        offset: Offset(2, 2)),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [_deepReefBlue, _deepReefBlue, _seafoamGreen],
-              stops: [0.0, 0.45, 1.0],
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [_deepReefBlue, _deepReefBlue, _seafoamGreen],
+                  stops: [0.0, 0.45, 1.0],
+                ),
+              ),
             ),
+            backgroundColor: Colors.transparent,
+            foregroundColor: _pearlWhite,
+            automaticallyImplyLeading: false,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.reefRoyale(),
+                ),
+              ),
+            ],
           ),
-        ),
-        backgroundColor: Colors.transparent,
-        foregroundColor: _pearlWhite,
-        automaticallyImplyLeading: false,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.reefRoyale(),
-            ),
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Background
-          Positioned.fill(
-            child: Image.asset(
-              'assets/games/reef_royale/images/ReefRoyale-Background.png',
-              fit: BoxFit.cover,
-              color: Colors.black.withOpacity(0.4),
-              colorBlendMode: BlendMode.darken,
-            ),
-          ),
+          body: Stack(
+            children: [
+              // Background
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/games/reef_royale/images/ReefRoyale-Background.png',
+                  fit: BoxFit.cover,
+                  color: Colors.black.withOpacity(0.4),
+                  colorBlendMode: BlendMode.darken,
+                ),
+              ),
 
-          // Confetti
-          Align(
-            alignment: Alignment.topLeft,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: pi / 4,
-              emissionFrequency: 0.05,
-              numberOfParticles: 30,
-              gravity: 0.1,
-              colors: const [_seafoamGreen, _sandyGold, _coralPink, _sunlitAqua, _pearlWhite],
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: pi / 2,
-              emissionFrequency: 0.05,
-              numberOfParticles: 30,
-              gravity: 0.1,
-              colors: const [_seafoamGreen, _sandyGold, _coralPink, _sunlitAqua, _pearlWhite],
-            ),
-          ),
-          Align(
-            alignment: Alignment.topRight,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: 3 * pi / 4,
-              emissionFrequency: 0.05,
-              numberOfParticles: 30,
-              gravity: 0.1,
-              colors: const [_seafoamGreen, _sandyGold, _coralPink, _sunlitAqua, _pearlWhite],
-            ),
-          ),
+              // Confetti
+              Align(
+                alignment: Alignment.topLeft,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: pi / 4,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 30,
+                  gravity: 0.1,
+                  colors: const [
+                    _seafoamGreen,
+                    _sandyGold,
+                    _coralPink,
+                    _sunlitAqua,
+                    _pearlWhite
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: pi / 2,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 30,
+                  gravity: 0.1,
+                  colors: const [
+                    _seafoamGreen,
+                    _sandyGold,
+                    _coralPink,
+                    _sunlitAqua,
+                    _pearlWhite
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.topRight,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: 3 * pi / 4,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 30,
+                  gravity: 0.1,
+                  colors: const [
+                    _seafoamGreen,
+                    _sandyGold,
+                    _coralPink,
+                    _sunlitAqua,
+                    _pearlWhite
+                  ],
+                ),
+              ),
 
-          // Main content
-          Positioned.fill(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Scale creature size to fit everything on screen without scrolling
-                final availableHeight = constraints.maxHeight;
-                final creatureMaxHeight = (availableHeight * 0.30).clamp(100.0, 280.0);
+              // Main content
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Scale creature size to fit everything on screen without scrolling
+                    final availableHeight = constraints.maxHeight;
+                    final creatureMaxHeight =
+                        (availableHeight * 0.30).clamp(100.0, 280.0);
 
-                return Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Winner creature image(s)
-                      ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: ScaleTransition(
-                          scale: _pulseAnimation,
-                          child: _buildWinnerCreatures(winners, currentGame, reefProvider, maxSize: creatureMaxHeight),
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Winner text
-                      ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: ScaleTransition(
-                          scale: _pulseAnimation,
-                          child: Text(
-                            winners.length == 1 ? 'CROWN OF THE REEF!' : 'TIED!',
-                            style: GoogleFonts.fredoka(
-                              fontSize: 40,
-                              fontWeight: FontWeight.bold,
-                              color: _sandyGold,
-                              shadows: [
-                                Shadow(color: _sandyGold.withOpacity(0.5), blurRadius: 20),
-                                const Shadow(color: Colors.black, blurRadius: 4),
-                              ],
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Winner creature image(s)
+                          ScaleTransition(
+                            scale: _scaleAnimation,
+                            child: ScaleTransition(
+                              scale: _pulseAnimation,
+                              child: _buildWinnerCreatures(
+                                  winners, currentGame, reefProvider,
+                                  maxSize: creatureMaxHeight),
                             ),
                           ),
-                        ),
-                      ),
 
-                      const SizedBox(height: 8),
+                          const SizedBox(height: 8),
 
-                      // Winner name(s) with avatar(s)
-                      ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: _buildWinnerNamesAndAvatars(winners),
-                      ),
+                          // Winner text
+                          ScaleTransition(
+                            scale: _scaleAnimation,
+                            child: ScaleTransition(
+                              scale: _pulseAnimation,
+                              child: Text(
+                                winners.length == 1
+                                    ? 'CROWN OF THE REEF!'
+                                    : 'TIED!',
+                                style: GoogleFonts.fredoka(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                  color: _sandyGold,
+                                  shadows: [
+                                    Shadow(
+                                        color: _sandyGold.withOpacity(0.5),
+                                        blurRadius: 20),
+                                    const Shadow(
+                                        color: Colors.black, blurRadius: 4),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
 
-                      const SizedBox(height: 8),
+                          const SizedBox(height: 8),
 
-                      // Winner stats (only show if single winner)
-                      if (winners.length == 1)
-                        ScaleTransition(
-                          scale: _scaleAnimation,
-                          child: Row(
+                          // Winner name(s) with avatar(s)
+                          ScaleTransition(
+                            scale: _scaleAnimation,
+                            child: _buildWinnerNamesAndAvatars(winners),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // Winner stats (only show if single winner)
+                          if (winners.length == 1)
+                            ScaleTransition(
+                              scale: _scaleAnimation,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildStatChip(
+                                    '${currentGame.getPlayerPearls(winners[0].id)}',
+                                    'Pearls',
+                                    _sandyGold,
+                                    ReefRoyaleResultsKeys.pearlCount,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  _buildStatChip(
+                                    '${currentGame.getPlayerClaimedCount(winners[0].id)}/7',
+                                    'Corals',
+                                    _seafoamGreen,
+                                    ReefRoyaleResultsKeys.coralCount,
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                          const SizedBox(height: 12),
+
+                          // Rankings
+                          Flexible(
+                              child: SingleChildScrollView(
+                                  child: _buildRankings(
+                                      rankedIds, allPlayers, currentGame))),
+
+                          const SizedBox(height: 16),
+
+                          // Action buttons
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              _buildStatChip(
-                                '${currentGame.getPlayerPearls(winners[0].id)}',
-                                'Pearls',
-                                _sandyGold,
-                                ReefRoyaleResultsKeys.pearlCount,
+                              _buildActionButton(
+                                'DIVE AGAIN',
+                                Icons.refresh,
+                                _seafoamGreen,
+                                _deepReefBlue,
+                                _playAgain,
+                                key: ReefRoyaleResultsKeys.playAgainButton,
                               ),
                               const SizedBox(width: 16),
-                              _buildStatChip(
-                                '${currentGame.getPlayerClaimedCount(winners[0].id)}/7',
-                                'Corals',
-                                _seafoamGreen,
-                                ReefRoyaleResultsKeys.coralCount,
+                              _buildActionButton(
+                                'CHANGE REEFS',
+                                Icons.settings,
+                                _sunlitAqua,
+                                _deepReefBlue,
+                                _changeSettings,
+                                key: ReefRoyaleResultsKeys.changeSettingsButton,
+                              ),
+                              const SizedBox(width: 16),
+                              _buildActionButton(
+                                'SWIM HOME',
+                                Icons.home,
+                                _coralPink,
+                                _pearlWhite,
+                                _goHome,
+                                key: ReefRoyaleResultsKeys.backToMenuButton,
                               ),
                             ],
                           ),
-                        ),
-
-                      const SizedBox(height: 12),
-
-                      // Rankings
-                      Flexible(child: SingleChildScrollView(child: _buildRankings(rankedIds, allPlayers, currentGame))),
-
-                      const SizedBox(height: 16),
-
-                      // Action buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildActionButton(
-                            'DIVE AGAIN',
-                            Icons.refresh,
-                            _seafoamGreen,
-                            _deepReefBlue,
-                            _playAgain,
-                            key: ReefRoyaleResultsKeys.playAgainButton,
-                          ),
-                          const SizedBox(width: 16),
-                          _buildActionButton(
-                            'CHANGE REEFS',
-                            Icons.settings,
-                            _sunlitAqua,
-                            _deepReefBlue,
-                            _changeSettings,
-                            key: ReefRoyaleResultsKeys.changeSettingsButton,
-                          ),
-                          const SizedBox(width: 16),
-                          _buildActionButton(
-                            'SWIM HOME',
-                            Icons.home,
-                            _coralPink,
-                            _pearlWhite,
-                            _goHome,
-                            key: ReefRoyaleResultsKeys.backToMenuButton,
-                          ),
                         ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        // Dartboard paused modal — covers entire screen incl. AppBar when disconnected.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.reefRoyale(),
+          ),
+      ],
     );
   }
 
-  Widget _buildWinnerCreatures(List<Player> winners, ReefRoyaleGame game, ReefRoyaleProvider provider, {double? maxSize}) {
+  Widget _buildWinnerCreatures(
+      List<Player> winners, ReefRoyaleGame game, ReefRoyaleProvider provider,
+      {double? maxSize}) {
     // Scale creature size based on number of winners and available space
     double creatureSize;
     double horizontalPadding;
@@ -503,7 +557,9 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                     fontWeight: FontWeight.bold,
                     color: _pearlWhite,
                     shadows: [
-                      Shadow(color: _seafoamGreen.withOpacity(0.7), blurRadius: 16),
+                      Shadow(
+                          color: _seafoamGreen.withOpacity(0.7),
+                          blurRadius: 16),
                       const Shadow(color: Colors.black, blurRadius: 4),
                     ],
                   ),
@@ -518,7 +574,8 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                     key: ReefRoyaleResultsKeys.winnerPhoto,
                     radius: avatarRadius,
                     backgroundImage: winner.photoPath!.startsWith('data:')
-                        ? MemoryImage(base64Decode(winner.photoPath!.split(',')[1]))
+                        ? MemoryImage(
+                            base64Decode(winner.photoPath!.split(',')[1]))
                         : NetworkImage(winner.photoPath!) as ImageProvider,
                   )
                 else
@@ -526,7 +583,8 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                     key: ReefRoyaleResultsKeys.winnerPhoto,
                     radius: avatarRadius,
                     backgroundColor: _seafoamGreen.withOpacity(0.3),
-                    child: Icon(Icons.person, size: iconSize, color: _pearlWhite),
+                    child:
+                        Icon(Icons.person, size: iconSize, color: _pearlWhite),
                   ),
               ],
             ),
@@ -569,7 +627,8 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     );
   }
 
-  Widget _buildRankings(List<String> rankedIds, List<Player> allPlayers, ReefRoyaleGame game) {
+  Widget _buildRankings(
+      List<String> rankedIds, List<Player> allPlayers, ReefRoyaleGame game) {
     // If more than 4 players, split into two columns
     if (rankedIds.length > 4) {
       return Row(
@@ -577,12 +636,14 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
         children: [
           // Left column: Places 1-4
           Expanded(
-            child: _buildRankingColumn(rankedIds.take(4).toList(), allPlayers, game, 0),
+            child: _buildRankingColumn(
+                rankedIds.take(4).toList(), allPlayers, game, 0),
           ),
           const SizedBox(width: 16),
           // Right column: Places 5-8
           Expanded(
-            child: _buildRankingColumn(rankedIds.skip(4).toList(), allPlayers, game, 4),
+            child: _buildRankingColumn(
+                rankedIds.skip(4).toList(), allPlayers, game, 4),
           ),
         ],
       );
@@ -592,7 +653,8 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
     return _buildRankingColumn(rankedIds, allPlayers, game, 0);
   }
 
-  Widget _buildRankingColumn(List<String> rankedIds, List<Player> allPlayers, ReefRoyaleGame game, int startIndex) {
+  Widget _buildRankingColumn(List<String> rankedIds, List<Player> allPlayers,
+      ReefRoyaleGame game, int startIndex) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -606,7 +668,8 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
           final playerId = rankedIds[index];
           final player = allPlayers.firstWhere(
             (p) => p.id == playerId,
-            orElse: () => Player(id: playerId, name: 'Player', createdAt: DateTime.now()),
+            orElse: () =>
+                Player(id: playerId, name: 'Player', createdAt: DateTime.now()),
           );
           final pearls = game.getPlayerPearls(playerId);
           final corals = game.getPlayerClaimedCount(playerId);
@@ -618,7 +681,9 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             margin: const EdgeInsets.only(bottom: 4),
             decoration: BoxDecoration(
-              color: isWinner ? _seafoamGreen.withOpacity(0.15) : Colors.transparent,
+              color: isWinner
+                  ? _seafoamGreen.withOpacity(0.15)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: isWinner
                   ? Border.all(color: _seafoamGreen.withOpacity(0.5))
@@ -634,7 +699,9 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                     style: GoogleFonts.fredoka(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: globalIndex == 0 ? _sandyGold : _pearlWhite.withOpacity(0.7),
+                      color: globalIndex == 0
+                          ? _sandyGold
+                          : _pearlWhite.withOpacity(0.7),
                     ),
                   ),
                 ),
@@ -643,14 +710,16 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
                   CircleAvatar(
                     radius: 16,
                     backgroundImage: player.photoPath!.startsWith('data:')
-                        ? MemoryImage(base64Decode(player.photoPath!.split(',')[1]))
+                        ? MemoryImage(
+                            base64Decode(player.photoPath!.split(',')[1]))
                         : NetworkImage(player.photoPath!) as ImageProvider,
                   )
                 else
                   CircleAvatar(
                     radius: 16,
                     backgroundColor: _seafoamGreen.withOpacity(0.3),
-                    child: const Icon(Icons.person, size: 16, color: _pearlWhite),
+                    child:
+                        const Icon(Icons.person, size: 16, color: _pearlWhite),
                   ),
                 const SizedBox(width: 8),
                 // Name

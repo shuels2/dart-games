@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -39,7 +39,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
   MockScoliaApiService? _mockApi;
   CarnivalDerbyAnnouncementHelper? _audioQueue;
-  final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
+  final DartboardEmulatorController _dartboardEmulatorController =
+      DartboardEmulatorController();
   final ScrollController _scrollController = ScrollController();
   PlayToCompleteRunner? _playToCompleteRunner;
   bool _gameCompleted = false;
@@ -195,7 +196,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
       // Check if player busted
       if (horseRaceProvider.currentPlayerBusted) {
-        if (!_dartboardEmulatorController.isAutoPlaying && currentPlayer != null) {
+        if (!_dartboardEmulatorController.isAutoPlaying &&
+            currentPlayer != null) {
           Future.delayed(const Duration(milliseconds: 500), () {
             _audioQueue?.announceBust(currentPlayer.name);
 
@@ -226,23 +228,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
         }
       }
 
-      if (horseRaceProvider.hasWinner) {
-        if (!_dartboardEmulatorController.isAutoPlaying && currentPlayer != null) {
-          Future.delayed(const Duration(milliseconds: 2500), () {
-            _audioQueue?.announceRemoveDarts(currentPlayer.name);
-
-            Future.delayed(const Duration(milliseconds: 2000), () {
-              _mockApi?.simulateTakeoutStarted();
-
-              Future.delayed(const Duration(milliseconds: 500), () {
-                _mockApi?.simulateTakeoutFinished();
-              });
-            });
-          });
-        }
-      } else if (!_dartboardEmulatorController.isAutoPlaying) {
+      if (!_dartboardEmulatorController.isAutoPlaying) {
         final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
-        if (dartsThrown >= 3) {
+        if (dartsThrown >= 3 || horseRaceProvider.hasWinner) {
           if (currentPlayer != null) {
             Future.delayed(const Duration(milliseconds: 2500), () {
               _audioQueue?.announceRemoveDarts(currentPlayer.name);
@@ -259,6 +247,15 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
   void _onTakeoutComplete() {
     final horseRaceProvider = context.read<HorseRaceProvider>();
+    if (!mounted) return;
+
+    if (horseRaceProvider.hasWinner) {
+      _handleGameWon();
+      return;
+    }
+
+    if (!horseRaceProvider.isGameActive) return;
+
     horseRaceProvider.handleTakeoutFinished();
 
     if (!_dartboardEmulatorController.isAutoPlaying) {
@@ -267,11 +264,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           _scrollToCurrentPlayer();
         }
       });
-    }
 
-    if (horseRaceProvider.hasWinner) {
-      _handleGameWon();
-    } else if (mounted && horseRaceProvider.currentGame != null && !_dartboardEmulatorController.isAutoPlaying) {
       final playerProvider = context.read<PlayerProvider>();
       final players = horseRaceProvider.currentGame!.playerIds
           .map((id) => playerProvider.getPlayerById(id))
@@ -280,10 +273,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       final nextPlayer = horseRaceProvider.getCurrentPlayer(players);
       if (nextPlayer != null) {
         Future.delayed(const Duration(milliseconds: 500), () {
-          _audioQueue?.announceTurn(nextPlayer.name);
+          if (mounted) _audioQueue?.announceTurn(nextPlayer.name);
         });
       }
     }
+
+    setState(() {});
   }
 
   int _calculateScore(String sector) {
@@ -343,23 +338,24 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
     void navigateToResults() {
       if (!mounted) return;
-      final horseRaceProvider = context.read<HorseRaceProvider>();
-      final playerProvider = context.read<PlayerProvider>();
-      final winner = horseRaceProvider.getWinner(playerProvider.allPlayers);
-      if (winner != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const HorseRaceResultsScreen(),
-          ),
-        );
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const HorseRaceResultsScreen(),
+        ),
+      );
     }
 
     if (_dartboardEmulatorController.isAutoPlaying) {
       navigateToResults();
     } else {
-      Future.delayed(const Duration(milliseconds: 2500), navigateToResults);
+      final horseRaceProvider = context.read<HorseRaceProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final winner = horseRaceProvider.getWinner(playerProvider.allPlayers);
+      if (winner != null) {
+        _audioQueue?.announceWinner(winner.name);
+      }
+      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
     }
   }
 
@@ -367,268 +363,293 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   Widget build(BuildContext context) {
     final dartboardProvider = context.watch<DartboardProvider>();
     final horseRaceProvider = context.watch<HorseRaceProvider>();
-    final hasDartsThrown = horseRaceProvider.currentGame?.totalDartsThrown.values.any((c) => c > 0) ?? false;
+    final playerProvider = context.watch<PlayerProvider>();
+    final currentGame = horseRaceProvider.currentGame;
+    final hasDartsThrown =
+        currentGame?.totalDartsThrown.values.any((c) => c > 0) ?? false;
+
+    final players = currentGame == null
+        ? <Player>[]
+        : currentGame.playerIds
+            .map((id) => playerProvider.getPlayerById(id))
+            .whereType<Player>()
+            .toList();
+    final currentPlayer = currentGame == null
+        ? null
+        : horseRaceProvider.getCurrentPlayer(players);
+    final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
+    final shouldPromptTakeout = horseRaceProvider.shouldPromptTakeout;
 
     return PopScope(
-      canPop: !hasDartsThrown,
+      canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
         setState(() => _showSaveModal = true);
       },
-      child: Scaffold(
-      backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                Color(0xFFE63946), // Lava Red (left)
-                Color(0xFFFFD700), // Canary Yellow (center)
-                Color(0xFF48CAE4), // Electric Teal (right)
-              ],
-              stops: [0.0, 0.66, 1.0], // Red lasts twice as long
-            ),
-          ),
-          child: AppBar(
-            leading: IconButton(
-              key: CarnivalDerbyGameKeys.backButton,
-              icon: Icon(
-                Icons.arrow_back,
-                color: const Color(0xFFF1FAEE), // Cloud Dancer white
-                size: 32, // Bigger size
-                shadows: [
-                  const Shadow(
-                    color: Color(0xFFFFD700), // Canary Yellow glow
-                    blurRadius: 10,
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight),
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Color(0xFFE63946), // Lava Red (left)
+                      Color(0xFFFFD700), // Canary Yellow (center)
+                      Color(0xFF48CAE4), // Electric Teal (right)
+                    ],
+                    stops: [0.0, 0.66, 1.0], // Red lasts twice as long
                   ),
-                  const Shadow(
-                    color: Color(0xFFFFD700),
-                    blurRadius: 20,
+                ),
+                child: AppBar(
+                  leading: IconButton(
+                    key: CarnivalDerbyGameKeys.backButton,
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: const Color(0xFFF1FAEE), // Cloud Dancer white
+                      size: 32, // Bigger size
+                      shadows: [
+                        const Shadow(
+                          color: Color(0xFFFFD700), // Canary Yellow glow
+                          blurRadius: 10,
+                        ),
+                        const Shadow(
+                          color: Color(0xFFFFD700),
+                          blurRadius: 20,
+                        ),
+                      ],
+                    ),
+                    onPressed: () {
+                      if (hasDartsThrown) {
+                        setState(() => _showSaveModal = true);
+                      } else {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    hoverColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    splashColor: Colors.transparent,
                   ),
-                ],
-              ),
-              onPressed: () {
-                if (hasDartsThrown) {
-                  setState(() => _showSaveModal = true);
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
-              hoverColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              splashColor: Colors.transparent,
-            ),
-            title: Text(
-              'Carnival Derby Race',
-              style: GoogleFonts.rye(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-                color: const Color(0xFFF1FAEE), // Cloud Dancer
-                shadows: [
-                  const Shadow(
-                    color: Color(0xFFFFD700), // Canary Yellow glow
-                    blurRadius: 10,
+                  title: Text(
+                    'Carnival Derby Race',
+                    style: GoogleFonts.rye(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      color: const Color(0xFFF1FAEE), // Cloud Dancer
+                      shadows: [
+                        const Shadow(
+                          color: Color(0xFFFFD700), // Canary Yellow glow
+                          blurRadius: 10,
+                        ),
+                        const Shadow(
+                          color: Color(0xFFFFD700),
+                          blurRadius: 20,
+                        ),
+                      ],
+                    ),
                   ),
-                  const Shadow(
-                    color: Color(0xFFFFD700),
-                    blurRadius: 20,
-                  ),
-                ],
-              ),
-            ),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: DartboardConnectionInfo(
-                  config: DartboardConnectionInfoConfig.carnivalDerby(),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  actions: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16.0),
+                      child: DartboardConnectionInfo(
+                        config: DartboardConnectionInfoConfig.carnivalDerby(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Rotated wood plank background
-          Positioned.fill(
-            child: Transform.scale(
-              scale: 2.0, // Scale up to ensure coverage
-              child: Transform.rotate(
-                angle: 1.5708, // 90 degrees in radians (Ï€/2)
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B5E3C), // Warm Cedar base color
-                    image: DecorationImage(
-                      image: AssetImage('assets/games/carnival_derby/images/CarnivalDerby-WoodPlanks.jpg'),
-                      fit: BoxFit.cover,
-                      repeat: ImageRepeat.repeat,
-                      colorFilter: ColorFilter.mode(
-                        const Color(0xFF8B5E3C).withOpacity(0.7), // Lighter tint with reduced opacity
-                        BlendMode.multiply,
+            ),
+            body: Stack(
+              children: [
+                // Rotated wood plank background
+                Positioned.fill(
+                  child: Transform.scale(
+                    scale: 2.0, // Scale up to ensure coverage
+                    child: Transform.rotate(
+                      angle: 1.5708, // 90 degrees in radians (Ï€/2)
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color:
+                              const Color(0xFF8B5E3C), // Warm Cedar base color
+                          image: DecorationImage(
+                            image: AssetImage(
+                                'assets/games/carnival_derby/images/CarnivalDerby-WoodPlanks.jpg'),
+                            fit: BoxFit.cover,
+                            repeat: ImageRepeat.repeat,
+                            colorFilter: ColorFilter.mode(
+                              const Color(0xFF8B5E3C).withOpacity(
+                                  0.7), // Lighter tint with reduced opacity
+                              BlendMode.multiply,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ),
-          // Radial gradient spotlight overlay - warm overhead lamp effect
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(0, -0.6), // Top-middle (50% 20%)
-                    radius: 1.2,
-                    colors: [
-                      const Color.fromRGBO(255, 230, 150, 0.4), // Warm soft amber center glow
-                      const Color.fromRGBO(255, 230, 150, 0.1), // Transparent warm wash
-                      const Color.fromRGBO(13, 27, 42, 0.8), // Deep moody navy-black edges
-                    ],
-                    stops: const [0.0, 0.4, 1.0], // Center â†’ Mid-falloff â†’ Outer shadows
+                // Radial gradient spotlight overlay - warm overhead lamp effect
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center:
+                              const Alignment(0, -0.6), // Top-middle (50% 20%)
+                          radius: 1.2,
+                          colors: [
+                            const Color.fromRGBO(255, 230, 150,
+                                0.4), // Warm soft amber center glow
+                            const Color.fromRGBO(
+                                255, 230, 150, 0.1), // Transparent warm wash
+                            const Color.fromRGBO(
+                                13, 27, 42, 0.8), // Deep moody navy-black edges
+                          ],
+                          stops: const [
+                            0.0,
+                            0.4,
+                            1.0
+                          ], // Center â†’ Mid-falloff â†’ Outer shadows
+                        ),
+                        backgroundBlendMode:
+                            BlendMode.overlay, // Interact with wood grain
+                      ),
+                    ),
                   ),
-                  backgroundBlendMode: BlendMode.overlay, // Interact with wood grain
                 ),
-              ),
-            ),
-          ),
-          // Carnival target logo (centered, in front of background, behind string lights)
-          const Center(
-            child: CarnivalTargetLogo(size: 700.0),
-          ),
-          // Carnival string lights (behind content, in front of background)
-          const CarnivalStringLights(),
-          // Content
-          Consumer2<HorseRaceProvider, PlayerProvider>(
-              builder: (context, horseRaceProvider, playerProvider, child) {
-                final currentGame = horseRaceProvider.currentGame;
-                if (currentGame == null) {
-                  return Center(
+                // Carnival target logo (centered, in front of background, behind string lights)
+                const Center(
+                  child: CarnivalTargetLogo(size: 700.0),
+                ),
+                // Carnival string lights (behind content, in front of background)
+                const CarnivalStringLights(),
+                // Content
+                if (currentGame == null)
+                  Center(
                     child: Text(
                       'No active game',
                       style: GoogleFonts.montserrat(
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFFF1FAEE), // Cloud Dancer for visibility
+                        color: const Color(
+                            0xFFF1FAEE), // Cloud Dancer for visibility
                       ),
                     ),
+                  )
+                else
+                  Column(
+                    children: [
+                      // Current player info
+                      _buildCurrentPlayerSection(
+                        currentPlayer,
+                        dartsThrown,
+                        currentGame,
+                        horseRaceProvider,
+                      ),
+
+                      // Race track
+                      Expanded(
+                        child: RaceTrackWidget(
+                          players: players,
+                          targetScore: currentGame.targetScore,
+                          scrollController: _scrollController,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
+          // block ALL screen interactions while shown.
+          // RemoveDartsModal sits BEHIND the emulator so DARTS REMOVED stays
+          // visible/tappable on top of the takeout overlay.
+          if (shouldPromptTakeout)
+            RemoveDartsModal(
+              config: RemoveDartsModalConfig.carnivalDerby(),
+              playerName: currentPlayer?.name ?? 'Player',
+              editScoreButtonKey: CarnivalDerbyGameKeys.editScoreButton,
+              onEditScore: () {
+                if (currentPlayer == null) return;
+                showEditScoreDialog(
+                  context: context,
+                  playerName: currentPlayer.name,
+                  initialSegments: horseRaceProvider
+                      .getCurrentTurnDartScores(currentPlayer.id),
+                  onSubmit: (newSegments) => horseRaceProvider
+                      .updateAllDartScores(currentPlayer.id, newSegments),
+                  config: EditScoreDialogConfig.carnivalDerby(),
+                );
+              },
+            ),
+          // Emulator above RemoveDartsModal; below SaveGameModal so the save
+          // modal's Don't Save button isn't intercepted by the emulator.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: DartboardEmulatorSection(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              shouldPromptTakeout: shouldPromptTakeout,
+              dartboardKey: _dartboardKey,
+              onDartThrow: (score, multiplier, baseScore, position) {
+                if (_mockApi != null) {
+                  _mockApi!.simulateDartThrow(
+                    score: score,
+                    multiplier: multiplier,
+                    playerName: 'Player',
+                    baseScore: baseScore,
+                    widgetX: position.dx,
+                    widgetY: position.dy,
+                    widgetSize: 250,
                   );
                 }
-
-                final players = currentGame.playerIds
-                    .map((id) => playerProvider.getPlayerById(id))
-                    .whereType<Player>()
-                    .toList();
-
-                final currentPlayer = horseRaceProvider.getCurrentPlayer(players);
-                final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
-                final shouldPromptTakeout = horseRaceProvider.shouldPromptTakeout;
-
-                return Column(
-            children: [
-              // Current player info
-              _buildCurrentPlayerSection(
-                currentPlayer,
-                dartsThrown,
-                currentGame,
-                horseRaceProvider,
-              ),
-
-              // Race track with optional modal overlay
-              Expanded(
-                child: Stack(
-                  children: [
-                    RaceTrackWidget(
-                      players: players,
-                      targetScore: currentGame.targetScore,
-                      scrollController: _scrollController,
-                    ),
-                    // Modal overlay for remove darts prompt
-                    if (shouldPromptTakeout)
-                      RemoveDartsModal(
-                        config: RemoveDartsModalConfig.carnivalDerby(),
-                        playerName: currentPlayer?.name ?? 'Player',
-                        editScoreButtonKey: CarnivalDerbyGameKeys.editScoreButton,
-                        onEditScore: () {
-                          if (currentPlayer == null) return;
-                          final horseRaceProvider =
-                              Provider.of<HorseRaceProvider>(context, listen: false);
-                          showEditScoreDialog(
-                            context: context,
-                            playerName: currentPlayer.name,
-                            initialSegments: horseRaceProvider
-                                .getCurrentTurnDartScores(currentPlayer.id),
-                            onSubmit: (newSegments) => horseRaceProvider
-                                .updateAllDartScores(currentPlayer.id, newSegments),
-                            config: EditScoreDialogConfig.carnivalDerby(),
-                          );
-                        },
-                      ),
-                  ],
-                ),
-              ),
-
-              // Dartboard emulator (only show when not connected to real dartboard and visible)
-              DartboardEmulatorSection(
-                controller: _dartboardEmulatorController,
-                isConnected: !dartboardProvider.isEmulator,
-                shouldPromptTakeout: shouldPromptTakeout,
-                dartboardKey: _dartboardKey,
-                onDartThrow: (score, multiplier, baseScore, position) {
-                  if (_mockApi != null) {
-                    _mockApi!.simulateDartThrow(
-                      score: score,
-                      multiplier: multiplier,
-                      playerName: 'Player',
-                      baseScore: baseScore,
-                      widgetX: position.dx,
-                      widgetY: position.dy,
-                      widgetSize: 250,
-                    );
-                  }
-                },
-                onRemoveDarts: () {
-                  _mockApi?.simulateTakeoutFinished();
-                },
-                config: DartboardSectionConfig.carnivalDerby(),
-                onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-                playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.carnivalDerby() : null,
-              ),
-            ],
-          );
-        },
-      ),
-          // Dartboard connection lost modal
+              },
+              onRemoveDarts: () {
+                _mockApi?.simulateTakeoutFinished();
+              },
+              config: DartboardSectionConfig.carnivalDerby(),
+              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
+              playToCompleteConfig: _mockApi != null
+                  ? PlayToCompleteButtonConfig.carnivalDerby()
+                  : null,
+            ),
+          ),
+          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
+          // can block the AppBar back arrow without also blocking the FAB).
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.carnivalDerby(),
+              onCancelAutoPlay: _onCancelAutoPlay,
+            ),
+          ),
+          // Save Game Modal
+          if (_showSaveModal)
+            SaveGameModal(
+              config: SaveGameModalConfig.carnivalDerby(),
+              onSave: () async {
+                await horseRaceProvider.saveGame(playerProvider.allPlayers);
+                if (mounted) Navigator.of(context).pop();
+              },
+              onDontSave: () => Navigator.of(context).pop(),
+            ),
+          // Dartboard Paused Modal — last child, paints on top.
           if (!dartboardProvider.isEmulator &&
               dartboardProvider.status != DartboardConnectionStatus.connected &&
               dartboardProvider.status != DartboardConnectionStatus.emulator)
             DartboardPausedModal(
               config: DartboardPausedModalConfig.carnivalDerby(),
             ),
-          // Save game modal
-          if (_showSaveModal)
-            SaveGameModal(
-              config: SaveGameModalConfig.carnivalDerby(),
-              onSave: () async {
-                final playerProvider = context.read<PlayerProvider>();
-                await horseRaceProvider.saveGame(playerProvider.allPlayers);
-                if (mounted) Navigator.of(context).pop();
-              },
-              onDontSave: () => Navigator.of(context).pop(),
-            ),
         ],
-      ),
-      // Floating button to toggle dartboard visibility (only show when not connected)
-      floatingActionButton: DartboardEmulatorFAB(
-        controller: _dartboardEmulatorController,
-        isConnected: !dartboardProvider.isEmulator,
-        config: DartboardFABConfig.carnivalDerby(),
-        onCancelAutoPlay: _onCancelAutoPlay,
-      ),
       ),
     );
   }
@@ -652,7 +673,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1D3557).withOpacity(0.9), // Midnight Navy
         border: const Border(
-          bottom: BorderSide(color: Color(0xFFFFD700), width: 3), // Canary Yellow
+          bottom:
+              BorderSide(color: Color(0xFFFFD700), width: 3), // Canary Yellow
         ),
       ),
       child: Row(
@@ -672,7 +694,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  exactScoreMode ? 'Perfect Finish Required' : 'Perfect Finish Not Required',
+                  exactScoreMode
+                      ? 'Perfect Finish Required'
+                      : 'Perfect Finish Not Required',
                   style: GoogleFonts.luckiestGuy(
                     fontSize: 18,
                     color: const Color(0xFFF1FAEE), // Cloud Dancer
@@ -702,7 +726,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                         style: GoogleFonts.montserrat(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
-                          color: const Color(0xFFF1FAEE), // Cloud Dancer (white)
+                          color:
+                              const Color(0xFFF1FAEE), // Cloud Dancer (white)
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -755,7 +780,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE63946), // Lava Red
                     foregroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     side: const BorderSide(
                       color: Color(0xFFFFD700), // Canary Yellow border
                       width: 3,
@@ -816,5 +842,4 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       ),
     );
   }
-
 }

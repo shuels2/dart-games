@@ -77,6 +77,8 @@ Future<void> completeGameToVictory(
       }
     }
     await throwBullseyeViaMock(tester);
+    // Remove darts to trigger victory flow after bullseye win
+    await clickDartsRemoved(tester);
   }
 
   await tester.pump(const Duration(seconds: 4));

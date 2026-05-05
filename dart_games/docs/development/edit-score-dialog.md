@@ -67,6 +67,8 @@ factory EditScoreDialogConfig.yourGame() {
 - `25` - Outer bull
 - `Miss` - Miss
 
+**Critical:** A thrown miss (score 0) MUST be encoded as `'Miss'` in `initialSegments`, NOT `'-'` or empty. The value `'-'` means "dart not yet thrown" and disables the Save button. Since Edit Score is only accessible after 3 darts are thrown, all 3 segments should be valid (`'Miss'`, `'Bull'`, `'25'`, or `'SX'`/`'DX'`/`'TX'`).
+
 ## Features
 
 - Ring/number picker for all 3 darts
@@ -96,6 +98,36 @@ List<Color?> _computeDartBorderColors(String playerId) {
 - Carnival Derby: `lib/screens/games/carnival_horse_race/horse_race_game_screen.dart`
 - Target Tag: `lib/screens/games/target_tag/target_tag_game_screen.dart`
 - Monster Mash: `lib/screens/games/monster_mash/monster_mash_game_screen.dart`
+
+## Score Display Patterns
+
+Games use one of two scoring display patterns for the D1/D2/D3 labels and Edit Score dialog:
+
+### Pattern A: Total Score Display (Carnival Derby, Lunar Lander)
+
+Shows the **calculated point value** (e.g., "60" for T20, "20" for S20). Used when the game's scoring is based on point values that affect player position/score.
+
+- `EditScoreDialogConfig` factory includes `scoreDisplayTransform: _gameScoreDisplay`
+- The transform converts segment strings to point values: S20→"20", D13→"26", T20→"60"
+- **Provider must store raw segment strings** alongside calculated scores. The game model needs a `currentTurnDartSegments` field (`Map<String, List<String>>`) storing the original sector strings ('S20', 'D15', 'T20', 'Bull', 'Miss'). The game screen passes the raw sector string through to the provider, which stores it with each dart. The `onEditScore` handler reads `provider.getCurrentTurnDartSegments(playerId)` to populate `initialSegments`. Without this, converting calculated values back to segments is lossy (e.g., score 40 becomes 'S40' with no matching dartboard number). The field must be serialized for save/resume, cleared on turn advance, and rebuilt during edit score replay.
+- **Test constraint:** Single values (S5, S10) cause duplicate text matches in the dialog because the score display AND number button show the same value. Tests MUST use Double or Triple values (D5, T5) so the score display differs from the number button.
+
+### Pattern B: Dart Throw Display (Target Tag, Monster Mash, Reef Royale, Clockwork Quest)
+
+Shows the **raw segment string** (e.g., "S20", "T20", "Bull"). Used when the game's scoring is based on targets hit.
+
+- `EditScoreDialogConfig` factory does NOT include `scoreDisplayTransform` (default null)
+- No duplicate text issue since "S20" ≠ "20"
+
+**If unsure which pattern applies to a new game, ask the user before implementing.**
+
+## Mandatory Tests
+
+Every game MUST have the following edit score tests in `integration_test/[game]/edit_score/`:
+
+- **`edit_creates_winner_stats_test.dart`** -- Position the game near the win condition, throw 3 non-winning darts, open Edit Score and change darts to winning values. Verify `hasWinner == true`, navigate to results, then verify player stats and victory music.
+
+- **`edit_removes_winner_no_stats_test.dart`** -- Position the game near the win condition, throw 3 winning darts, open Edit Score and change darts to non-winning values. Verify `hasWinner == false`, verify game continues (NOT navigated to results), verify no player stats were updated.
 
 ## Related Documentation
 

@@ -125,6 +125,49 @@ class DartboardPausedModalConfig {
     );
   }
 
+  /// Lunar Lander — Earth Blue with Thruster Red icon, Orbitron/Exo2 fonts
+  factory DartboardPausedModalConfig.lunarLander() {
+    return DartboardPausedModalConfig(
+      backgroundColor: const Color(0xFF1B4965), // Earth Blue
+      borderColor: const Color(0xFFE63946), // Thruster Red
+      boxShadowColor: const Color(0xFFE63946),
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFE63946), // Thruster Red
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.orbitron(
+        color: const Color(0xFFE63946), // Thruster Red
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
+      messageTextStyle: GoogleFonts.exo2(
+        color: const Color(0xFFFAFDF6), // Star White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  factory DartboardPausedModalConfig.homeScreen() {
+    return DartboardPausedModalConfig(
+      backgroundColor: const Color(0xFF8B0000),
+      borderColor: const Color(0xFFFFC107),
+      boxShadowColor: Colors.black,
+      boxShadowOpacity: 0.5,
+      iconColor: const Color(0xFFFFC107),
+      iconSize: 56,
+      titleTextStyle: GoogleFonts.luckiestGuy(
+        color: const Color(0xFFFFC107),
+        fontSize: 28,
+      ),
+      messageTextStyle: GoogleFonts.fredoka(
+        color: Colors.white,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   factory DartboardPausedModalConfig.clockworkQuest() {
     return DartboardPausedModalConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

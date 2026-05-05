@@ -30,6 +30,7 @@ void main() {
 
       if (i == 0) {
         // First player reaches 60 and wins
+        await clickDartsRemoved(tester);
         expect(getCurrentPlayerScore(tester), 60);
         expect(hasWinner(tester), true);
         break;

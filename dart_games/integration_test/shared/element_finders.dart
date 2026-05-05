@@ -683,4 +683,88 @@ class ElementFinders {
   static Finder getResumeGameModalEmptyState() {
     return find.byKey(ResumeGameModalKeys.emptyStateText);
   }
+
+  // ==========================================================================
+  // LUNAR LANDER HOME FINDERS
+  // ==========================================================================
+
+  static Finder getLunarLanderCard() {
+    return find.byKey(HomeKeys.lunarLanderCard);
+  }
+
+  // ==========================================================================
+  // LUNAR LANDER MENU FINDERS
+  // ==========================================================================
+
+  static Finder getLunarLanderBackButton() {
+    return find.byKey(LunarLanderMenuKeys.backButton);
+  }
+
+  static Finder getLunarLanderAddPlayerButton() {
+    return find.byKey(LunarLanderMenuKeys.addPlayerButton);
+  }
+
+  static Finder getLunarLanderAddPlayerButtonEmptyState() {
+    return find.byKey(LunarLanderMenuKeys.addPlayerButtonEmptyState);
+  }
+
+  static Finder getLunarLanderPlayerTile(String playerId) {
+    return find.byKey(LunarLanderMenuKeys.playerTile(playerId));
+  }
+
+  static Finder getLunarLanderAltitudeSlider() {
+    return find.byKey(LunarLanderMenuKeys.altitudeSlider);
+  }
+
+  static Finder getLunarLanderHardLandingSwitch() {
+    return find.byKey(LunarLanderMenuKeys.hardLandingSwitch);
+  }
+
+  static Finder getLunarLanderStartButton() {
+    return find.byKey(LunarLanderMenuKeys.startGameButton);
+  }
+
+  // ==========================================================================
+  // LUNAR LANDER GAME FINDERS
+  // ==========================================================================
+
+  static Finder getLunarLanderGameBackButton() {
+    return find.byKey(LunarLanderGameKeys.backButton);
+  }
+
+  static Finder getLunarLanderSkipTurnButton() {
+    return find.byKey(LunarLanderGameKeys.skipTurnButton);
+  }
+
+  static Finder getLunarLanderEditScoreButton() {
+    return find.byKey(LunarLanderGameKeys.editScoreButton);
+  }
+
+  static Finder getLunarLanderHardLandingBadge() {
+    return find.byKey(LunarLanderGameKeys.hardLandingBadge);
+  }
+
+  static Finder getLunarLanderDescentTrack(String playerId) {
+    return find.byKey(LunarLanderGameKeys.descentTrack(playerId));
+  }
+
+  // ==========================================================================
+  // LUNAR LANDER RESULTS FINDERS
+  // ==========================================================================
+
+  static Finder getLunarLanderPlayAgainButton() {
+    return find.byKey(LunarLanderResultsKeys.playAgainButton);
+  }
+
+  static Finder getLunarLanderChangeSettingsButton() {
+    return find.byKey(LunarLanderResultsKeys.changeSettingsButton);
+  }
+
+  static Finder getLunarLanderBackToMenuButton() {
+    return find.byKey(LunarLanderResultsKeys.backToMenuButton);
+  }
+
+  static Finder getLunarLanderWinnerName() {
+    return find.byKey(LunarLanderResultsKeys.winnerName);
+  }
 }

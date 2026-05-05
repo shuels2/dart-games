@@ -24,6 +24,7 @@ void main() {
 
     // Hit the last gear
     await throwDartViaMock(tester, 20);
+    await clickDartsRemoved(tester);
 
     expect(provider.hasWinner, isTrue);
   });

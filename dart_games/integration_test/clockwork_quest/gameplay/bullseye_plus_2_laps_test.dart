@@ -23,6 +23,7 @@ void main() {
     // Complete first lap ending with bull
     provider.currentGame!.currentTarget[playerId] = 21;
     await throwBullseyeViaMock(tester);
+    await clickDartsRemoved(tester);
 
     expect(provider.getPlayerLapsCompleted(playerId), 1);
     expect(provider.getPlayerCurrentTarget(playerId), 1);
@@ -31,6 +32,7 @@ void main() {
     // Complete second lap
     provider.currentGame!.currentTarget[playerId] = 21;
     await throwBullseyeViaMock(tester);
+    await clickDartsRemoved(tester);
 
     expect(provider.hasWinner, isTrue);
   });

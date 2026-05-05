@@ -2,11 +2,11 @@
 
 ## Overview
 
-366 UI automation tests validate end-to-end user flows in Chrome browser.
+460 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Sequential time:** ~507 minutes (~8h 27m) — `run_ui_tests.bat`, interactive Chrome sessions visible
-**Parallel time:** ~143 minutes (~2h 23m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
+**Sequential time:** ~622 minutes (~10h 22m) — `run_ui_tests.bat`, interactive Chrome sessions visible
+**Parallel time:** ~153 minutes (~2h 33m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
@@ -51,6 +51,19 @@
 5. Results Screen: 11 tests
 6. Save & Resume: 16 tests
 7. Screenshot: 1 test
+
+### Lunar Lander (46 tests, ~61 minutes)
+1. Add Player: 3 tests
+2. Edit Score: 4 tests
+3. Gameplay: 10 tests
+4. Menu and Settings: 5 tests
+5. Navigation: 4 tests
+6. Play to Complete: 5 tests
+7. Results Screen: 8 tests
+8. Save & Resume: 6 tests
+9. Visual Validation: 1 test (11 screenshots)
+
+**Known infrastructure flake:** `save_resume/resumed_state_correct_test.dart` — test assertions all pass ("All tests passed!" in log) but `flutter drive` crashes during chromedriver teardown with `SocketException: errno = 1225`. Both retry attempts hit the same deterministic teardown crash. Effective pass rate: 45/46. This is a `flutter drive` infrastructure bug, not a Lunar Lander code defect.
 
 ## Mandatory Results Screen Coverage
 
@@ -221,6 +234,7 @@ Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_paralle
 | monster_mash | 9003 | 4446 |
 | reef_royale | 9004 | 4447 |
 | clockwork_quest | 9005 | 4448 |
+| lunar_lander | 9006 | 4449 |
 
 ### Infrastructure Isolation
 

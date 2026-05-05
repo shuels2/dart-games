@@ -18,6 +18,7 @@ void main() {
 
     provider.currentGame!.currentTarget[playerId] = 21;
     await throwBullseyeViaMock(tester);
+    await clickDartsRemoved(tester);
 
     // Should have completed 1 lap and won (1 lap game)
     expect(provider.hasWinner, isTrue);

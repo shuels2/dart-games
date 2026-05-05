@@ -182,6 +182,9 @@ See [Dartboard Paused Modal Integration](dartboard-paused-modal.md).
 - [ ] Use add player dialog component
 - [ ] Use edit score dialog component
 - [ ] Use dartboard paused modal component
+- [ ] Victory flow waits for DARTS REMOVED before navigating to results (no auto-navigate on hasWinner)
+- [ ] Edit score winner/stats toggle tests present (`edit_creates_winner_stats_test.dart`, `edit_removes_winner_no_stats_test.dart`)
+- [ ] Pause modal tests present (`pause_modal/menu_pause_test.dart`, `gameplay_pause_test.dart`, `results_pause_test.dart`)
 - [ ] Follow navigation rules (menu→Home, game→menu, Change Settings uses `route.isFirst`)
 - [ ] Create component config factory methods
 - [ ] Implement PlayToCompleteStrategy for the game
@@ -189,6 +192,95 @@ See [Dartboard Paused Modal Integration](dartboard-paused-modal.md).
 - [ ] Wire Play to Complete into game screen (runner, guards, callbacks)
 - [ ] Write Play to Complete UI tests (default settings + game-critical settings + mid-game)
 - [ ] Write navigation UI tests (menu→home, game→menu+settings, change settings→back→home, change settings→verify settings)
+- [ ] Outer-Stack modal pattern on game screen (Scaffold inside Stack, modals as Stack siblings -- NOT inside body)
+- [ ] AppBar back button uses size 32 + transparent hover/highlight/splash colors
+- [ ] Generic avatars on player tiles (no game character images on tiles or rankings)
+
+## Outer-Stack Modal Architecture
+
+Every game screen (menu, game, results) MUST wrap `Scaffold` in an outer `Stack` so that modals paint OVER the AppBar. The `build()` method's return value is `Stack`, NOT `Scaffold`.
+
+**Why:** Modals placed inside the Scaffold body (as body-Stack children) cannot paint over the AppBar. The back arrow remains tappable behind the modal, leading to confusing or destructive taps. Outer-Stack siblings of the Scaffold paint over the entire Scaffold, including the AppBar.
+
+**Game screen z-order** (back to front):
+1. `Scaffold` (AppBar + body content; **NO `floatingActionButton:` argument** — the FAB lives at layer 4)
+2. `RemoveDartsModal` (conditional) — covers the AppBar back arrow but NOT the FAB
+3. `DartboardEmulatorSection` (`Positioned(left:0, right:0, bottom:0, ...)`) — contains the dartboard, the disabled overlay with DARTS REMOVED button, and the Play To Complete button
+4. `DartboardEmulatorFAB` (`Positioned(right:16, bottom:16, ...)`) — moved out of `Scaffold.floatingActionButton` into the outer Stack so RemoveDartsModal does NOT block FAB taps; in real games the FAB returns `SizedBox.shrink` so this layer is a no-op outside emulator/test mode
+5. `SaveGameModal` (conditional) — covers everything below including the FAB
+6. `DartboardPausedModal` (conditional, always last -- paints on top of everything including the FAB)
+
+`EditScoreDialog` is NOT an outer-Stack child -- it is a routed dialog launched via `showDialog()` which automatically paints above the entire outer Stack.
+
+**Provider data must be hoisted to the top of `build()`** so outer-Stack modals can reference `currentPlayer`, `shouldPromptTakeout`, etc. Use `context.watch<XProvider>()` at the start of `build()` rather than inside a `Consumer<X>` builder.
+
+**Results screens must also use `context.watch` (not `context.read`) for the game/player providers in `build()`.** The results screen has early-return paths for `currentGame == null` and `winners.isEmpty`/`winnerId == null`. With `context.read`, the screen does NOT subscribe to provider changes — if it builds before the provider state is fully populated, it stays stuck on a "No game data" / "No winner found" placeholder forever, and the Play Again / Change Settings / Back to Menu buttons never appear. This breaks every results-screen UI test that asserts those buttons. Pattern recurrence: Lunar Lander, Monster Mash, Reef Royale, Target Tag have all hit this. Carnival Derby uses `Consumer2<HorseRaceProvider, PlayerProvider>` (subscribes correctly); Clockwork Quest uses `Provider.of<X>(context)` (defaults to `listen: true` ≈ `watch`). Background services accessed in `initState` / `addPostFrameCallback` (e.g. `VictoryMusicService`, `SaveGameService` cleanup) are still fine to read with `context.read` — only the build method's provider lookups need `context.watch`.
+
+## AppBar Back Button Specification
+
+The AppBar back arrow MUST follow this canonical pattern on menu AND game screens:
+
+```dart
+leading: IconButton(
+  key: YourGameMenuKeys.backButton,
+  icon: const Icon(Icons.arrow_back, color: specTextColor, size: 32),
+  onPressed: () => Navigator.of(context).pop(),
+  hoverColor: Colors.transparent,
+  highlightColor: Colors.transparent,
+  splashColor: Colors.transparent,
+),
+```
+
+- Icon size MUST be 32 (matches all 5 existing games)
+- All three hover-suppression properties MUST be `Colors.transparent` (tablet/touch UX)
+- Results screen MUST NOT have a back arrow -- set `automaticallyImplyLeading: false`
+
+## Mandatory Test Requirements
+
+This is the centralized checklist of ALL required tests for every new game. Implementers should verify all items in one place:
+
+### Navigation Tests (4 tests in `integration_test/your_game/navigation/`)
+- [ ] `menu_back_to_home_test.dart` -- back arrow on menu returns to home with >=3 game cards
+- [ ] `game_back_settings_persist_test.dart` -- back from game preserves non-default settings
+- [ ] `change_settings_back_to_home_test.dart` -- Change Settings then back to home
+- [ ] `change_settings_preserves_settings_test.dart` -- Change Settings preserves settings
+
+### Results Screen Tests (3 tests in `integration_test/your_game/results_screen/`)
+- [ ] Exit button navigates to game selection (assert >=3 game cards, use `popUntil route.isFirst`)
+- [ ] `winner_stats_updated_test.dart` -- winner `gamesWon == 1`, loser `gamesWon == 0`
+- [ ] `victory_music_initialized_test.dart` -- `VictoryMusicService().isInitialized == true`
+
+### Edit Score Tests (2 tests in `integration_test/your_game/edit_score/`)
+- [ ] `edit_creates_winner_stats_test.dart` -- edit darts to winning values, verify stats updated
+- [ ] `edit_removes_winner_no_stats_test.dart` -- edit winning darts to non-winning, verify game continues
+
+### Play-to-Complete Tests (in `integration_test/your_game/play_to_complete/`)
+- [ ] `default_settings_test.dart` -- default settings complete successfully
+- [ ] One test per game-critical setting
+- [ ] `mid_game_test.dart` -- manual darts first, then auto-complete
+
+### Player Count Tests (2 tests in `integration_test/your_game/gameplay/`)
+- [ ] `min_player_count_test.dart` -- spec minimum players, all UI elements render
+- [ ] `max_player_count_test.dart` -- spec maximum players, no overflow or layout errors
+
+### Opponent Display Test (1 test in `integration_test/your_game/gameplay/`)
+- [ ] `opponent_display_test.dart` -- inactive players visible, per-opponent state updates after turn
+
+### Game With Announcements Test (1 test in `test/screens/games/your_game/`)
+- [ ] `your_game_game_with_announcements_test.dart` -- full game flow with announcements (~18 tests)
+
+### Pause Modal Tests (3 tests in `integration_test/your_game/pause_modal/`)
+- [ ] `menu_pause_test.dart` -- dartboard disconnect on menu screen
+- [ ] `gameplay_pause_test.dart` -- dartboard disconnect during gameplay
+- [ ] `results_pause_test.dart` -- dartboard disconnect on results screen
+
+### Visual Validation (in `integration_test/your_game/visual_validation/`)
+- [ ] Screenshot test (1 file using `test_driver/screenshot_test.dart`)
+- [ ] At least 4 programmatic visual state tests:
+  - [ ] Dart indicator state test
+  - [ ] Active player highlight test
+  - [ ] Score/state display threshold test
+  - [ ] Conditional UI element test
 
 ## Critical: Game Duration Tracking for ALL Players
 

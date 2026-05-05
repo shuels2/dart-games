@@ -17,6 +17,12 @@ void main() {
     // Verify we are on the Monster Mash menu screen
     expect(find.textContaining('Monster Mash'), findsWidgets);
 
+    // Extra pump to ensure player provider finishes loading
+    // (menu body shows loading spinner until players are loaded)
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    await tester.pump();
+
     // Add first player using empty state button
     await UITestHelpers.addPlayer(tester, 'Monster Alpha', config);
 

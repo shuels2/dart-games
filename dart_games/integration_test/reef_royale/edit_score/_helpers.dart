@@ -4,6 +4,13 @@ import 'package:dart_games/services/mock_scolia_api_service.dart';
 import '../../shared/dart_throw_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
+import '../../shared/edit_score_helpers.dart';
+
+export '../../shared/ui_test_helpers.dart';
+export '../../shared/element_finders.dart';
+export '../../shared/pump_sequences.dart';
+export '../../shared/edit_score_helpers.dart';
+export '../../shared/provider_helpers.dart';
 
 final config = GameUIConfig.reefRoyale();
 
@@ -19,5 +26,25 @@ Future<void> throwDartViaMock(WidgetTester tester, int number,
 Future<void> throwMissViaMock(WidgetTester tester) =>
     DartThrowHelpers.throwMissViaMock(tester);
 
-Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config) =>
-    GameSetupHelpers.setupAndStartReefRoyale(tester, config);
+Future<void> clickDartsRemoved(WidgetTester tester) =>
+    DartThrowHelpers.clickDartsRemoved(tester);
+
+Future<void> completeTurnWithMisses(WidgetTester tester) =>
+    DartThrowHelpers.completeTurnWithMisses(tester);
+
+Future<void> throwBullseyeViaMock(WidgetTester tester) =>
+    DartThrowHelpers.throwBullseyeViaMock(tester);
+
+Future<void> throwOuterBullViaMock(WidgetTester tester) =>
+    DartThrowHelpers.throwOuterBullViaMock(tester);
+
+Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config,
+        {List<String>? playerNames}) =>
+    GameSetupHelpers.setupAndStartReefRoyale(tester, config,
+        playerNames: playerNames);
+
+Future<void> openEditScore(WidgetTester tester, GameUIConfig config) =>
+    EditScoreHelpers.openEditScore(tester, config);
+
+Future<void> updateScore(WidgetTester tester) =>
+    EditScoreHelpers.updateScore(tester);

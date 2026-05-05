@@ -65,24 +65,49 @@ class _YourGameScreenState extends State<YourGameScreen> {
 }
 ```
 
-### Step 3: Add FAB to Scaffold
+### Step 3: Add FAB to the outer Stack (NOT Scaffold.floatingActionButton)
+
+The game screen is wrapped in an outer `Stack` (see [Game integration](game-integration.md) and `game.build` skill for the full layer order). The FAB lives in that outer Stack as a `Positioned` child between the emulator section and `SaveGameModal`, NOT in `Scaffold.floatingActionButton`.
 
 ```dart
-Scaffold(
-  appBar: AppBar(/* ... */),
-  body: /* ... */,
-  floatingActionButton: DartboardEmulatorFAB(
-    controller: _dartboardEmulatorController,
-    isConnected: !dartboardProvider.isEmulator,
-    config: DartboardFABConfig.yourGame(), // Create factory for your game
+return PopScope(
+  child: Stack(
+    children: [
+      Scaffold(
+        appBar: AppBar(/* ... */),
+        body: /* ... */,
+        // NO floatingActionButton — moved to outer Stack below.
+      ),
+      if (shouldPromptTakeout) RemoveDartsModal(/* ... */),
+      Positioned(
+        left: 0, right: 0, bottom: 0,
+        child: DartboardEmulatorSection(/* ... */),
+      ),
+      // FAB — outer-Stack sibling, end-float position. Sits ABOVE
+      // RemoveDartsModal so the user can toggle emulator visibility during
+      // takeout, but BELOW SaveGameModal/PausedModal so those modals still
+      // cover the FAB when shown.
+      Positioned(
+        right: 16,
+        bottom: 16,
+        child: DartboardEmulatorFAB(
+          controller: _dartboardEmulatorController,
+          isConnected: !dartboardProvider.isEmulator,
+          config: DartboardFABConfig.yourGame(), // Create factory for your game
+        ),
+      ),
+      if (_showSaveModal) SaveGameModal(/* ... */),
+      if (/* paused condition */) DartboardPausedModal(/* ... */),
+    ],
   ),
-)
+);
 ```
 
 **FAB behavior:**
-- Only visible when `dartboardProvider.isEmulator`
-- Toggles dartboard visibility
+- Only visible when `dartboardProvider.isEmulator` (returns `SizedBox.shrink` otherwise)
+- Toggles dartboard visibility (`controller.toggle()`)
 - Uses game-specific styling
+- **Why outer Stack instead of `Scaffold.floatingActionButton`?** RemoveDartsModal is a full-screen scrim at outer-Stack layer 2. If the FAB lived inside Scaffold (layer 1), RemoveDartsModal would absorb every FAB tap during a takeout — so the user couldn't re-show a hidden emulator to tap DARTS REMOVED. Putting the FAB at outer-Stack layer 4 (above RemoveDartsModal but below SaveGameModal/PausedModal) keeps it tappable during takeout while still letting Save/Paused modals fully block it.
 
 ### Step 4: Add Dartboard Section to UI
 
@@ -328,41 +353,65 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   Widget build(BuildContext context) {
     final dartboardProvider = Provider.of<DartboardProvider>(context);
 
-    return Scaffold(
-      appBar: AppBar(/* ... */),
-      body: Column(
+    return PopScope(
+      child: Stack(
         children: [
-          // Game UI
-          // ...
-
-          // Dartboard section
-          DartboardEmulatorSection(
-            controller: _dartboardEmulatorController,
-            isConnected: !dartboardProvider.isEmulator,
-            shouldPromptTakeout: _shouldShowRemoveDarts(),
-            dartboardKey: _dartboardKey,
-            onDartThrow: (score, multiplier, baseScore, position) {
-              _mockApi?.simulateDartThrow(
-                score: score,
-                multiplier: multiplier,
-                playerName: 'Player',
-                baseScore: baseScore,
-                widgetX: position.dx,
-                widgetY: position.dy,
-                widgetSize: 250,
-              );
-            },
-            onRemoveDarts: () {
-              _mockApi?.simulateTakeoutFinished();
-            },
-            config: DartboardSectionConfig.targetTag(),
+          Scaffold(
+            appBar: AppBar(/* ... */),
+            body: Column(
+              children: [
+                // Game UI
+                // ...
+              ],
+            ),
+            // NO floatingActionButton — moved to outer Stack below.
           ),
+
+          // RemoveDartsModal (conditional) — full-screen scrim painted BEHIND
+          // the emulator so DARTS REMOVED stays tappable on top.
+          if (_shouldShowRemoveDarts()) RemoveDartsModal(/* ... */),
+
+          // Dartboard section — outer-Stack sibling at bottom strip.
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: DartboardEmulatorSection(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              shouldPromptTakeout: _shouldShowRemoveDarts(),
+              dartboardKey: _dartboardKey,
+              onDartThrow: (score, multiplier, baseScore, position) {
+                _mockApi?.simulateDartThrow(
+                  score: score,
+                  multiplier: multiplier,
+                  playerName: 'Player',
+                  baseScore: baseScore,
+                  widgetX: position.dx,
+                  widgetY: position.dy,
+                  widgetSize: 250,
+                );
+              },
+              onRemoveDarts: () {
+                _mockApi?.simulateTakeoutFinished();
+              },
+              config: DartboardSectionConfig.targetTag(),
+            ),
+          ),
+
+          // FAB — outer-Stack sibling, end-float position. Sits ABOVE
+          // RemoveDartsModal (so toggle works during takeout) but BELOW
+          // SaveGameModal/PausedModal (those still cover it).
+          Positioned(
+            right: 16, bottom: 16,
+            child: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.targetTag(),
+            ),
+          ),
+
+          // SaveGameModal + DartboardPausedModal go here as the last two
+          // outer-Stack children (omitted for brevity — see game-integration.md).
         ],
-      ),
-      floatingActionButton: DartboardEmulatorFAB(
-        controller: _dartboardEmulatorController,
-        isConnected: !dartboardProvider.isEmulator,
-        config: DartboardFABConfig.targetTag(),
       ),
     );
   }
@@ -406,6 +455,8 @@ Each game screen needs:
 6. **Dispose**: `_playToCompleteRunner?.dispose()` in `dispose()`
 
 ### Button Configuration
+
+**MANDATORY:** Every new game MUST include a `PlayToCompleteButtonConfig.[gameName]()` factory method in `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` during game screen creation.
 
 Add a factory to `PlayToCompleteButtonConfig` in `dartboard_emulator_config.dart`:
 

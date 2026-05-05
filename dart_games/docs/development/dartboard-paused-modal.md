@@ -119,6 +119,35 @@ factory DartboardPausedModalConfig.myNewGame() {
 | Monster Mash Game | `DartboardPausedModalConfig.monsterMash()` |
 | Reef Royale Game | `DartboardPausedModalConfig.reefRoyale()` |
 
+## Testing
+
+### Simulating Disconnection in UI Tests
+
+The `DartboardProvider` has `@visibleForTesting` methods to simulate disconnect/reconnect:
+
+```dart
+ProviderHelpers.simulateDartboardDisconnection(tester);  // triggers pause modal
+ProviderHelpers.simulateDartboardReconnection(tester);   // dismisses pause modal
+```
+
+### Shared Test Helpers
+
+`PauseModalHelpers` (in `integration_test/shared/pause_modal_helpers.dart`) provides:
+- `simulateDisconnectAndVerify(tester)` — disconnect + verify "Game Paused" visible
+- `simulateReconnectAndVerify(tester)` — reconnect + verify modal gone
+- `verifyPauseModalVisible(tester)` / `verifyPauseModalNotVisible(tester)`
+
+### Mandatory Tests Per Game
+
+Each game must have `integration_test/[game]/pause_modal/` with 3 test files:
+- `menu_pause_test.dart` (7 tests) — modal on menu, blocks back/start/settings, covers ResumeGameModal overlay
+- `gameplay_pause_test.dart` (8 tests) — modal during play, blocks AppBar/emulator, covers RemoveDartsModal/SaveGameModal overlays, EditScoreDialog auto-close
+- `results_pause_test.dart` (5 tests) — modal on results, blocks Play Again/Change Settings/Back to Menu
+
+### EditScoreDialog Auto-Close Behavior
+
+The EditScoreDialog (`edit_score_dialog.dart`) watches `DartboardProvider` and auto-closes when the dartboard becomes paused. This is tested in `gameplay_pause_test.dart` test #6. The dialog cannot stay open while `DartboardPausedModal` is active.
+
 ## Related Documentation
 
 - [Shared Systems](../architecture/shared-systems.md) - System #12

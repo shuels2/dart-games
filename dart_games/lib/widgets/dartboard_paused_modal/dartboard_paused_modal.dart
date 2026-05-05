@@ -26,10 +26,13 @@ class DartboardPausedModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: Container(
-        color: Colors.black.withOpacity(0.7),
-        child: Center(
-          child: _buildModalContent(),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Container(
+          color: Colors.black.withOpacity(0.7),
+          child: Center(
+            child: _buildModalContent(),
+          ),
         ),
       ),
     );

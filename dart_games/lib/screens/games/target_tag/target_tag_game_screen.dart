@@ -35,11 +35,13 @@ class TargetTagGameScreen extends StatefulWidget {
 
 class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
   StreamSubscription? _dartboardSubscription;
-  final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();
+  final GlobalKey<InteractiveDartboardState> _dartboardKey =
+      GlobalKey<InteractiveDartboardState>();
   MockScoliaApiService? _mockApi;
   TargetTagAnnouncementHelper? _audioQueue;
   final ScrollController _scrollController = ScrollController();
-  final DartboardEmulatorController _dartboardEmulatorController = DartboardEmulatorController();
+  final DartboardEmulatorController _dartboardEmulatorController =
+      DartboardEmulatorController();
 
   PlayToCompleteRunner? _playToCompleteRunner;
   bool _hasAnnouncedSuddenDeath = false;
@@ -74,7 +76,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     }
 
     // Announce game start
-    _audioQueue!.announceGameStart();
+    _audioQueue?.announceGameStart();
 
     // Announce first player
     Future.delayed(const Duration(milliseconds: 2500), () {
@@ -171,11 +173,19 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 
     // Get dart throw tracking info for the current dart (last one thrown)
     final dartIndex = dartsThrown - 1;
-    final hitOpponentTargetList = targetTagProvider.getDartThrowHitOpponentTarget(currentPlayer.id);
-    final heroBonusHitList = targetTagProvider.getDartThrowHeroBonusHit(currentPlayer.id);
+    final hitOpponentTargetList =
+        targetTagProvider.getDartThrowHitOpponentTarget(currentPlayer.id);
+    final heroBonusHitList =
+        targetTagProvider.getDartThrowHeroBonusHit(currentPlayer.id);
 
-    final didHitOpponentTarget = dartIndex >= 0 && dartIndex < hitOpponentTargetList.length ? hitOpponentTargetList[dartIndex] : false;
-    final didHitHeroBonus = dartIndex >= 0 && dartIndex < heroBonusHitList.length ? heroBonusHitList[dartIndex] : false;
+    final didHitOpponentTarget =
+        dartIndex >= 0 && dartIndex < hitOpponentTargetList.length
+            ? hitOpponentTargetList[dartIndex]
+            : false;
+    final didHitHeroBonus =
+        dartIndex >= 0 && dartIndex < heroBonusHitList.length
+            ? heroBonusHitList[dartIndex]
+            : false;
 
     // Parse sector for announcement
     final parsed = _parseSector(sector);
@@ -184,9 +194,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     // ===== PHASE 1: GATHER FACTS =====
 
     // Check current player shield changes
-    final hasShieldGain = !wasTaggedIn && !isMiss && parsed != null && shieldsAfter > shieldsBefore;
+    final hasShieldGain = !wasTaggedIn &&
+        !isMiss &&
+        parsed != null &&
+        shieldsAfter > shieldsBefore;
     final hasTaggedIn = isNowTaggedIn && !wasTaggedIn;
-    final hasSuccessfulTag = didHitOpponentTarget || (didHitHeroBonus && wasTaggedIn);
+    final hasSuccessfulTag =
+        didHitOpponentTarget || (didHitHeroBonus && wasTaggedIn);
 
     // Check opponent status changes
     final newlyEliminated = eliminatedAfter.difference(eliminatedBefore);
@@ -204,7 +218,8 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         // Check if they WERE tagged-in before this dart
         final shieldsBeforeThis = allShieldsBefore[playerId] ?? 0;
         final shieldsAfterThis = targetTagProvider.getShields(playerId);
-        if (shieldsBeforeThis >= currentGame.shieldMax && shieldsAfterThis < currentGame.shieldMax) {
+        if (shieldsBeforeThis >= currentGame.shieldMax &&
+            shieldsAfterThis < currentGame.shieldMax) {
           lostTaggedInPlayers.add(playerId);
         }
       }
@@ -238,8 +253,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final hasVulnerable = vulnerablePlayers.isNotEmpty;
 
     // Determine if any secondary effect exists
-    final hasSecondary = hasShieldGain || hasTaggedIn || hasSuccessfulTag ||
-        hasTaggedOut || hasLowShields || hasVulnerable || hasElimination;
+    final hasSecondary = hasShieldGain ||
+        hasTaggedIn ||
+        hasSuccessfulTag ||
+        hasTaggedOut ||
+        hasLowShields ||
+        hasVulnerable ||
+        hasElimination;
 
     // ===== PHASE 2: APPLY PRECEDENCE (max 1 moment announcement) =====
 
@@ -247,12 +267,12 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       // Hit/Miss: only fire if NO secondary effect exists
       if (!hasSecondary) {
         if (!isMiss && parsed != null) {
-          _audioQueue!.announceHit(
+          _audioQueue?.announceHit(
             parsed['number'] as int,
             parsed['multiplier'] as String,
           );
         } else {
-          _audioQueue!.announceHit(0, 'single', isMiss: true);
+          _audioQueue?.announceHit(0, 'single', isMiss: true);
         }
       }
 
@@ -269,12 +289,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             eliminatedTeams[teamId]!.add(player.name);
           }
           for (final playerNames in eliminatedTeams.values) {
-            _audioQueue!.announceEliminated(playerNames);
+            _audioQueue?.announceEliminated(playerNames);
           }
         } else {
           for (final eliminatedId in newlyEliminated) {
-            final eliminatedPlayer = allPlayers.firstWhere((p) => p.id == eliminatedId);
-            _audioQueue!.announceEliminated([eliminatedPlayer.name]);
+            final eliminatedPlayer =
+                allPlayers.firstWhere((p) => p.id == eliminatedId);
+            _audioQueue?.announceEliminated([eliminatedPlayer.name]);
           }
         }
       } else if (hasVulnerable) {
@@ -291,12 +312,12 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             final playerNames = teamPlayerIds
                 .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
                 .toList();
-            _audioQueue!.announceVulnerable(playerNames);
+            _audioQueue?.announceVulnerable(playerNames);
           }
         } else {
           for (final playerId in vulnerablePlayers) {
             final player = allPlayers.firstWhere((p) => p.id == playerId);
-            _audioQueue!.announceVulnerable([player.name]);
+            _audioQueue?.announceVulnerable([player.name]);
           }
         }
       } else if (hasLowShields) {
@@ -313,12 +334,12 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             final playerNames = teamPlayerIds
                 .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
                 .toList();
-            _audioQueue!.announceLowShields(playerNames);
+            _audioQueue?.announceLowShields(playerNames);
           }
         } else {
           for (final playerId in lowShieldPlayers) {
             final player = allPlayers.firstWhere((p) => p.id == playerId);
-            _audioQueue!.announceLowShields([player.name]);
+            _audioQueue?.announceLowShields([player.name]);
           }
         }
       } else if (hasTaggedOut) {
@@ -333,16 +354,16 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             final playerNames = teamPlayerIds
                 .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
                 .toList();
-            _audioQueue!.announceTaggedOut(playerNames);
+            _audioQueue?.announceTaggedOut(playerNames);
           }
         } else {
           final lostNames = lostTaggedInPlayers
               .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
               .toList();
-          _audioQueue!.announceTaggedOut(lostNames);
+          _audioQueue?.announceTaggedOut(lostNames);
         }
       } else if (hasSuccessfulTag) {
-        _audioQueue!.announceSuccessfulTag();
+        _audioQueue?.announceSuccessfulTag();
       } else if (hasTaggedIn) {
         List<String> playerNames;
         if (currentGame.mode == GameMode.team) {
@@ -354,9 +375,9 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         } else {
           playerNames = [currentPlayer.name];
         }
-        _audioQueue!.announceTaggedIn(playerNames);
+        _audioQueue?.announceTaggedIn(playerNames);
       } else if (hasShieldGain) {
-        _audioQueue!.announceShieldGained(
+        _audioQueue?.announceShieldGained(
           currentPlayer.name,
           shieldsAfter,
           targetTagProvider.currentGame!.shieldMax,
@@ -365,10 +386,11 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     }
 
     // Check if turn is over (3 darts or winner)
-    if (!_dartboardEmulatorController.isAutoPlaying && (dartsThrown >= 3 || targetTagProvider.hasWinner)) {
+    if (!_dartboardEmulatorController.isAutoPlaying &&
+        (dartsThrown >= 3 || targetTagProvider.hasWinner)) {
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) {
-          _audioQueue!.announceRemoveDarts();
+          _audioQueue?.announceRemoveDarts();
         }
       });
 
@@ -437,9 +459,10 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final targetTagProvider = context.read<TargetTagProvider>();
     final playerProvider = context.read<PlayerProvider>();
 
-    final currentPlayer = targetTagProvider.getCurrentPlayer(playerProvider.allPlayers);
+    final currentPlayer =
+        targetTagProvider.getCurrentPlayer(playerProvider.allPlayers);
     if (currentPlayer != null) {
-      _audioQueue!.announceTurn(currentPlayer.name);
+      _audioQueue?.announceTurn(currentPlayer.name);
     }
   }
 
@@ -484,7 +507,8 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 
       // Scroll to show the full tile: (row height × row number) + buffer
       // Add extra buffer to ensure entire tile is visible
-      final scrollOffset = (currentRow * (estimatedTileHeight + rowSpacing)) + 50;
+      final scrollOffset =
+          (currentRow * (estimatedTileHeight + rowSpacing)) + 50;
 
       _scrollController.animateTo(
         scrollOffset,
@@ -524,7 +548,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       final winners = targetTagProvider.getWinners(playerProvider.allPlayers);
       if (winners.isNotEmpty) {
         final winnerNames = winners.map((p) => p.name).toList();
-        _audioQueue!.announceWinner(winnerNames);
+        _audioQueue?.announceWinner(winnerNames);
       }
       Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
     }
@@ -548,304 +572,384 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final playerIds = currentGame.playerIds;
     final shouldPromptTakeout = targetTagProvider.shouldPromptTakeout;
 
-    final hasDartsThrown = currentGame.totalDartsThrown.values.any((c) => c > 0);
+    final hasDartsThrown =
+        currentGame.totalDartsThrown.values.any((c) => c > 0);
 
     return PopScope(
-      canPop: !hasDartsThrown,
+      canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
         setState(() => _showSaveModal = true);
       },
-      child: Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
-      appBar: AppBar(
-        leading: IconButton(
-          key: TargetTagGameKeys.backButton,
-          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-          onPressed: () {
-            if (hasDartsThrown) {
-              setState(() => _showSaveModal = true);
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
-        ),
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Text(
-            'Target Tag Game On!',
-            style: GoogleFonts.luckiestGuy(
-              fontSize: 36,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ),
-        backgroundColor: const Color(0xFFFF007A), // Hot pink
-        foregroundColor: Colors.white,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.targetTag(),
-            ),
-          ),
-        ],
-      ),
-      body: Stack(
+      child: Stack(
         children: [
-          // Tech/Neon background
-          const Positioned.fill(
-            child: TechNeonBackground(),
-          ),
-          // Main content
-          Column(
-            children: [
-              // Top panel row: Game Info + Active Player
-              if (currentPlayer != null)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          Scaffold(
+            backgroundColor: const Color(0xFF1A1A2E),
+            appBar: AppBar(
+              leading: IconButton(
+                key: TargetTagGameKeys.backButton,
+                icon:
+                    const Icon(Icons.arrow_back, color: Colors.white, size: 32),
+                onPressed: () {
+                  if (hasDartsThrown) {
+                    setState(() => _showSaveModal = true);
+                  } else {
+                    Navigator.of(context).pop();
+                  }
+                },
+                hoverColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                splashColor: Colors.transparent,
+              ),
+              title: Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  'Target Tag Game On!',
+                  style: GoogleFonts.luckiestGuy(
+                    fontSize: 36,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              backgroundColor: const Color(0xFFFF007A), // Hot pink
+              foregroundColor: Colors.white,
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: DartboardConnectionInfo(
+                    config: DartboardConnectionInfoConfig.targetTag(),
+                  ),
+                ),
+              ],
+            ),
+            body: Stack(
+              children: [
+                // Tech/Neon background
+                const Positioned.fill(
+                  child: TechNeonBackground(),
+                ),
+                // Main content
+                Column(
                   children: [
-                    // Game Info Panel
-                    SizedBox(
-                      width: 240,
-                      child: GameInfoPanelWidget(
-                        mode: currentGame.mode,
-                        shieldMax: currentGame.shieldMax,
-                        soloHeroBonus: currentGame.soloHeroBonus,
-                        teamAssignmentMode: null, // Will add later if needed
-                      ),
-                    ),
-                    const SizedBox(width: 16),
+                    // Top panel row: Game Info + Active Player
+                    if (currentPlayer != null)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Game Info Panel
+                              SizedBox(
+                                width: 240,
+                                child: GameInfoPanelWidget(
+                                  mode: currentGame.mode,
+                                  shieldMax: currentGame.shieldMax,
+                                  soloHeroBonus: currentGame.soloHeroBonus,
+                                  teamAssignmentMode:
+                                      null, // Will add later if needed
+                                ),
+                              ),
+                              const SizedBox(width: 16),
 
-                    // Active Player Panel
-                    Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          // Get current player's target number (same for whole team in team mode)
-                          final currentPlayerTargetNumber = targetTagProvider.getTargetNumber(currentPlayer.id) ?? 0;
+                              // Active Player Panel
+                              Expanded(
+                                child: Builder(
+                                  builder: (context) {
+                                    // Get current player's target number (same for whole team in team mode)
+                                    final currentPlayerTargetNumber =
+                                        targetTagProvider.getTargetNumber(
+                                                currentPlayer.id) ??
+                                            0;
 
-                          // Get all opponent target numbers (excluding own team and eliminated players)
-                          final opponentNumbers = <int>[];
-                          for (final playerId in currentGame.playerIds) {
-                            if (playerId != currentPlayer.id && !targetTagProvider.isEliminated(playerId)) {
-                              final targetNum = targetTagProvider.getTargetNumber(playerId);
-                              // In team mode, exclude teammates' target (which is the same as ours)
-                              // In solo mode, exclude our own target
-                              if (targetNum != null &&
-                                  targetNum != currentPlayerTargetNumber &&
-                                  !opponentNumbers.contains(targetNum)) {
-                                opponentNumbers.add(targetNum);
-                              }
-                            }
-                          }
-
-                          return ActivePlayerPanelWidget(
-                            player: currentPlayer,
-                            currentShields: targetTagProvider.getShields(currentPlayer.id),
-                            shieldMax: currentGame.shieldMax,
-                            targetNumber: currentPlayerTargetNumber,
-                            soloHeroBuffNumber: targetTagProvider.isSoloHero(currentPlayer.id)
-                                ? targetTagProvider.getSoloHeroBuffNumber(currentPlayer.id)
-                                : null,
-                            soloHeroBuffMultiplier: targetTagProvider.isSoloHero(currentPlayer.id)
-                                ? targetTagProvider.getSoloHeroBuffMultiplier(currentPlayer.id)
-                                : null,
-                            isTaggedIn: targetTagProvider.isTaggedIn(currentPlayer.id),
-                            dartSegments: targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
-                            dartTaggedInStatus: targetTagProvider.getDartThrowTaggedInStatus(currentPlayer.id),
-                            dartHeroBonusHit: targetTagProvider.getDartThrowHeroBonusHit(currentPlayer.id),
-                            dartReachedMax: targetTagProvider.getDartThrowReachedMax(currentPlayer.id),
-                            dartCausedElimination: targetTagProvider.getDartThrowCausedElimination(currentPlayer.id),
-                            dartHitOpponentTarget: targetTagProvider.getDartThrowHitOpponentTarget(currentPlayer.id),
-                            opponentTargetNumbers: opponentNumbers,
-                            onSkipTurn: () {
-                              final dartsThrown = targetTagProvider.getCurrentPlayerDartsThrown();
-
-                              // Skip the turn
-                              targetTagProvider.skipTurn();
-
-                              // If darts were thrown, show "remove darts" sequence
-                              if (dartsThrown > 0) {
-                                Future.delayed(const Duration(milliseconds: 1500), () {
-                                  if (mounted) {
-                                    _audioQueue!.announceRemoveDarts();
-                                  }
-                                });
-                                Future.delayed(const Duration(milliseconds: 3500), () {
-                                  if (mounted) {
-                                    _mockApi?.simulateTakeoutStarted();
-                                  }
-                                });
-                              } else {
-                                // No darts thrown, advance directly without showing modals.
-                                Future.delayed(const Duration(milliseconds: 500), () {
-                                  if (mounted) {
-                                    if (_mockApi != null) {
-                                      _mockApi!.simulateTakeoutFinished();
-                                    } else {
-                                      _handleTakeoutFinished();
+                                    // Get all opponent target numbers (excluding own team and eliminated players)
+                                    final opponentNumbers = <int>[];
+                                    for (final playerId
+                                        in currentGame.playerIds) {
+                                      if (playerId != currentPlayer.id &&
+                                          !targetTagProvider
+                                              .isEliminated(playerId)) {
+                                        final targetNum = targetTagProvider
+                                            .getTargetNumber(playerId);
+                                        // In team mode, exclude teammates' target (which is the same as ours)
+                                        // In solo mode, exclude our own target
+                                        if (targetNum != null &&
+                                            targetNum !=
+                                                currentPlayerTargetNumber &&
+                                            !opponentNumbers
+                                                .contains(targetNum)) {
+                                          opponentNumbers.add(targetNum);
+                                        }
+                                      }
                                     }
-                                  }
+
+                                    return ActivePlayerPanelWidget(
+                                      player: currentPlayer,
+                                      currentShields: targetTagProvider
+                                          .getShields(currentPlayer.id),
+                                      shieldMax: currentGame.shieldMax,
+                                      targetNumber: currentPlayerTargetNumber,
+                                      soloHeroBuffNumber: targetTagProvider
+                                              .isSoloHero(currentPlayer.id)
+                                          ? targetTagProvider
+                                              .getSoloHeroBuffNumber(
+                                                  currentPlayer.id)
+                                          : null,
+                                      soloHeroBuffMultiplier: targetTagProvider
+                                              .isSoloHero(currentPlayer.id)
+                                          ? targetTagProvider
+                                              .getSoloHeroBuffMultiplier(
+                                                  currentPlayer.id)
+                                          : null,
+                                      isTaggedIn: targetTagProvider
+                                          .isTaggedIn(currentPlayer.id),
+                                      dartSegments:
+                                          targetTagProvider.getCurrentTurnDarts(
+                                              currentPlayer.id),
+                                      dartTaggedInStatus: targetTagProvider
+                                          .getDartThrowTaggedInStatus(
+                                              currentPlayer.id),
+                                      dartHeroBonusHit: targetTagProvider
+                                          .getDartThrowHeroBonusHit(
+                                              currentPlayer.id),
+                                      dartReachedMax: targetTagProvider
+                                          .getDartThrowReachedMax(
+                                              currentPlayer.id),
+                                      dartCausedElimination: targetTagProvider
+                                          .getDartThrowCausedElimination(
+                                              currentPlayer.id),
+                                      dartHitOpponentTarget: targetTagProvider
+                                          .getDartThrowHitOpponentTarget(
+                                              currentPlayer.id),
+                                      opponentTargetNumbers: opponentNumbers,
+                                      onSkipTurn: () {
+                                        final dartsThrown = targetTagProvider
+                                            .getCurrentPlayerDartsThrown();
+
+                                        // Skip the turn
+                                        targetTagProvider.skipTurn();
+
+                                        // If darts were thrown, show "remove darts" sequence
+                                        if (dartsThrown > 0) {
+                                          Future.delayed(
+                                              const Duration(
+                                                  milliseconds: 1500), () {
+                                            if (mounted) {
+                                              _audioQueue
+                                                  ?.announceRemoveDarts();
+                                            }
+                                          });
+                                          Future.delayed(
+                                              const Duration(
+                                                  milliseconds: 3500), () {
+                                            if (mounted) {
+                                              _mockApi
+                                                  ?.simulateTakeoutStarted();
+                                            }
+                                          });
+                                        } else {
+                                          // No darts thrown, advance directly without showing modals.
+                                          Future.delayed(
+                                              const Duration(milliseconds: 500),
+                                              () {
+                                            if (mounted) {
+                                              if (_mockApi != null) {
+                                                _mockApi!
+                                                    .simulateTakeoutFinished();
+                                              } else {
+                                                _handleTakeoutFinished();
+                                              }
+                                            }
+                                          });
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    // Player cards grid with modal overlay
+                    Expanded(
+                      child: Container(
+                        color: const Color(0xFF1A1A2E)
+                            .withOpacity(0.0), // Transparent background
+                        child: Stack(
+                          children: [
+                            // Use LayoutBuilder to calculate tile size, then use Wrap for centering
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final entityCount =
+                                    _getEntityCount(currentGame, allPlayers);
+
+                                // Calculate tile dimensions based on 5-column layout with full width
+                                const horizontalPadding = 16.0;
+                                const crossAxisSpacing = 20.0;
+                                const mainAxisSpacing = 20.0;
+                                const fixedCrossAxisCount = 5;
+
+                                final availableWidth = constraints.maxWidth -
+                                    (2 * horizontalPadding);
+                                final totalSpacing = crossAxisSpacing *
+                                    (fixedCrossAxisCount - 1);
+                                final tileWidth =
+                                    (availableWidth - totalSpacing) /
+                                        fixedCrossAxisCount;
+
+                                // First pass: Build tiles to measure their heights
+                                final tempTiles =
+                                    List.generate(entityCount, (index) {
+                                  return SizedBox(
+                                    width: tileWidth,
+                                    child: _buildPlayerCard(
+                                      context,
+                                      currentGame,
+                                      allPlayers,
+                                      playerIds,
+                                      index,
+                                    ),
+                                  );
                                 });
-                              }
-                            },
-                          );
-                        },
+
+                                // Use LayoutBuilder to ensure all tiles on a row have the same height
+                                // by wrapping in IntrinsicHeight per row
+                                final rows = <Widget>[];
+                                for (int i = 0;
+                                    i < tempTiles.length;
+                                    i += fixedCrossAxisCount) {
+                                  final rowTiles = tempTiles.sublist(
+                                    i,
+                                    (i + fixedCrossAxisCount)
+                                        .clamp(0, tempTiles.length),
+                                  );
+
+                                  rows.add(
+                                    IntrinsicHeight(
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: rowTiles.map((tile) {
+                                          return Padding(
+                                            padding: EdgeInsets.only(
+                                              right: rowTiles.last == tile
+                                                  ? 0
+                                                  : crossAxisSpacing,
+                                            ),
+                                            child: tile,
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: horizontalPadding),
+                                  child: SingleChildScrollView(
+                                    controller: _scrollController,
+                                    child: Column(
+                                      children: [
+                                        for (int i = 0; i < rows.length; i++)
+                                          Padding(
+                                            padding: EdgeInsets.only(
+                                              bottom: i < rows.length - 1
+                                                  ? mainAxisSpacing
+                                                  : 0,
+                                            ),
+                                            child: rows[i],
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-
-          // Player cards grid with modal overlay
-          Expanded(
-            child: Container(
-              color: const Color(0xFF1A1A2E).withOpacity(0.0), // Transparent background
-              child: Stack(
-                children: [
-                  // Use LayoutBuilder to calculate tile size, then use Wrap for centering
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final entityCount = _getEntityCount(currentGame, allPlayers);
-
-                      // Calculate tile dimensions based on 5-column layout with full width
-                      const horizontalPadding = 16.0;
-                      const crossAxisSpacing = 20.0;
-                      const mainAxisSpacing = 20.0;
-                      const fixedCrossAxisCount = 5;
-
-                      final availableWidth = constraints.maxWidth - (2 * horizontalPadding);
-                      final totalSpacing = crossAxisSpacing * (fixedCrossAxisCount - 1);
-                      final tileWidth = (availableWidth - totalSpacing) / fixedCrossAxisCount;
-
-                      // First pass: Build tiles to measure their heights
-                      final tempTiles = List.generate(entityCount, (index) {
-                        return SizedBox(
-                          width: tileWidth,
-                          child: _buildPlayerCard(
-                            context,
-                            currentGame,
-                            allPlayers,
-                            playerIds,
-                            index,
-                          ),
-                        );
-                      });
-
-                      // Use LayoutBuilder to ensure all tiles on a row have the same height
-                      // by wrapping in IntrinsicHeight per row
-                      final rows = <Widget>[];
-                      for (int i = 0; i < tempTiles.length; i += fixedCrossAxisCount) {
-                        final rowTiles = tempTiles.sublist(
-                          i,
-                          (i + fixedCrossAxisCount).clamp(0, tempTiles.length),
-                        );
-
-                        rows.add(
-                          IntrinsicHeight(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: rowTiles.map((tile) {
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    right: rowTiles.last == tile ? 0 : crossAxisSpacing,
-                                  ),
-                                  child: tile,
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        );
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
-                        child: SingleChildScrollView(
-                          controller: _scrollController,
-                          child: Column(
-                            children: [
-                              for (int i = 0; i < rows.length; i++)
-                                Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: i < rows.length - 1 ? mainAxisSpacing : 0,
-                                  ),
-                                  child: rows[i],
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  // Modal overlay for remove darts prompt
-                  if (shouldPromptTakeout)
-                    RemoveDartsModal(
-                      config: RemoveDartsModalConfig.targetTag(),
-                      playerName: currentPlayer?.name ?? 'Player',
-                      editScoreButtonKey: TargetTagGameKeys.editScoreButton,
-                      onEditScore: () {
-                        if (currentPlayer == null) return;
-                        final targetTagProvider =
-                            Provider.of<TargetTagProvider>(context, listen: false);
-                        showEditScoreDialog(
-                          context: context,
-                          playerName: currentPlayer.name,
-                          initialSegments:
-                              targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
-                          onSubmit: (newSegments) => targetTagProvider
-                              .updateAllDartScores(currentPlayer.id, newSegments),
-                          config: EditScoreDialogConfig.targetTag(),
-                          dartBorderColors:
-                              _computeDartBorderColors(currentPlayer.id),
-                        );
-                      },
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
-
-          // Dartboard emulator (if not connected and visible)
-          DartboardEmulatorSection(
-            controller: _dartboardEmulatorController,
-            isConnected: !dartboardProvider.isEmulator,
-            shouldPromptTakeout: shouldPromptTakeout,
-            dartboardKey: _dartboardKey,
-            onDartThrow: (score, multiplier, baseScore, position) {
-              if (_mockApi != null) {
-                _mockApi!.simulateDartThrow(
-                  score: score,
-                  multiplier: multiplier,
-                  playerName: 'Player',
-                  baseScore: baseScore,
-                  widgetX: position.dx,
-                  widgetY: position.dy,
-                  widgetSize: 250,
+          // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
+          // block ALL screen interactions while shown.
+          // RemoveDartsModal sits BEHIND the emulator so DARTS REMOVED stays
+          // visible/tappable on top of the takeout overlay.
+          if (shouldPromptTakeout)
+            RemoveDartsModal(
+              config: RemoveDartsModalConfig.targetTag(),
+              playerName: currentPlayer?.name ?? 'Player',
+              editScoreButtonKey: TargetTagGameKeys.editScoreButton,
+              onEditScore: () {
+                if (currentPlayer == null) return;
+                final targetTagProvider =
+                    Provider.of<TargetTagProvider>(context, listen: false);
+                showEditScoreDialog(
+                  context: context,
+                  playerName: currentPlayer.name,
+                  initialSegments:
+                      targetTagProvider.getCurrentTurnDarts(currentPlayer.id),
+                  onSubmit: (newSegments) => targetTagProvider
+                      .updateAllDartScores(currentPlayer.id, newSegments),
+                  config: EditScoreDialogConfig.targetTag(),
+                  dartBorderColors: _computeDartBorderColors(currentPlayer.id),
                 );
-              }
-            },
-            onRemoveDarts: () {
-              _mockApi?.simulateTakeoutFinished();
-            },
-            config: DartboardSectionConfig.targetTag(),
-            onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-            playToCompleteConfig: _mockApi != null ? PlayToCompleteButtonConfig.targetTag() : null,
-          ),
-            ],
-          ),
-          // Dartboard connection lost modal
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.targetTag(),
+              },
             ),
-          // Save game modal
+          // Emulator above RemoveDartsModal; below SaveGameModal.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: DartboardEmulatorSection(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              shouldPromptTakeout: shouldPromptTakeout,
+              dartboardKey: _dartboardKey,
+              onDartThrow: (score, multiplier, baseScore, position) {
+                if (_mockApi != null) {
+                  _mockApi!.simulateDartThrow(
+                    score: score,
+                    multiplier: multiplier,
+                    playerName: 'Player',
+                    baseScore: baseScore,
+                    widgetX: position.dx,
+                    widgetY: position.dy,
+                    widgetSize: 250,
+                  );
+                }
+              },
+              onRemoveDarts: () {
+                _mockApi?.simulateTakeoutFinished();
+              },
+              config: DartboardSectionConfig.targetTag(),
+              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
+              playToCompleteConfig: _mockApi != null
+                  ? PlayToCompleteButtonConfig.targetTag()
+                  : null,
+            ),
+          ),
+          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
+          // can block the AppBar back arrow without also blocking the FAB).
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: DartboardEmulatorFAB(
+              controller: _dartboardEmulatorController,
+              isConnected: !dartboardProvider.isEmulator,
+              config: DartboardFABConfig.targetTag(),
+              onCancelAutoPlay: _onCancelAutoPlay,
+            ),
+          ),
+          // Save Game Modal
           if (_showSaveModal)
             SaveGameModal(
               config: SaveGameModalConfig.targetTag(),
@@ -855,16 +959,14 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
               },
               onDontSave: () => Navigator.of(context).pop(),
             ),
+          // Dartboard Paused Modal — last child, paints on top.
+          if (!dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator)
+            DartboardPausedModal(
+              config: DartboardPausedModalConfig.targetTag(),
+            ),
         ],
-      ),
-      // Floating button to toggle dartboard visibility (only show when not connected)
-      floatingActionButton: DartboardEmulatorFAB(
-        controller: _dartboardEmulatorController,
-        isConnected: !dartboardProvider.isEmulator,
-        config: DartboardFABConfig.targetTag(),
-        onCancelAutoPlay: _onCancelAutoPlay,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -927,14 +1029,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       final teamPlayerIds = targetTagProvider.getTeamPlayers(teamId) ?? [];
 
       // Sort team players by their turn order (order in playerIds list)
-      final teamPlayers = allPlayers
-          .where((p) => teamPlayerIds.contains(p.id))
-          .toList()
-        ..sort((a, b) {
-          final aIndex = playerIds.indexOf(a.id);
-          final bIndex = playerIds.indexOf(b.id);
-          return aIndex.compareTo(bIndex);
-        });
+      final teamPlayers =
+          allPlayers.where((p) => teamPlayerIds.contains(p.id)).toList()
+            ..sort((a, b) {
+              final aIndex = playerIds.indexOf(a.id);
+              final bIndex = playerIds.indexOf(b.id);
+              return aIndex.compareTo(bIndex);
+            });
 
       if (teamPlayers.isEmpty) return const SizedBox();
 
@@ -945,11 +1046,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         player: firstPlayer,
         currentShields: targetTagProvider.getShields(teamPlayerIds.first),
         shieldMax: game.shieldMax,
-        targetNumber: targetTagProvider.getTargetNumber(teamPlayerIds.first) ?? 0,
+        targetNumber:
+            targetTagProvider.getTargetNumber(teamPlayerIds.first) ?? 0,
         soloHeroBuffNumber: targetTagProvider.isSoloHero(teamPlayerIds.first)
             ? targetTagProvider.getSoloHeroBuffNumber(teamPlayerIds.first)
             : null,
-        soloHeroBuffMultiplier: targetTagProvider.isSoloHero(teamPlayerIds.first)
+        soloHeroBuffMultiplier: targetTagProvider
+                .isSoloHero(teamPlayerIds.first)
             ? targetTagProvider.getSoloHeroBuffMultiplier(teamPlayerIds.first)
             : null,
         isTaggedIn: targetTagProvider.isTaggedIn(teamPlayerIds.first),
@@ -971,8 +1074,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final dartSegments = targetTagProvider.getCurrentTurnDarts(playerId);
     final dartHeroBonusHit =
         targetTagProvider.getDartThrowHeroBonusHit(playerId);
-    final dartReachedMax =
-        targetTagProvider.getDartThrowReachedMax(playerId);
+    final dartReachedMax = targetTagProvider.getDartThrowReachedMax(playerId);
     final dartCausedElimination =
         targetTagProvider.getDartThrowCausedElimination(playerId);
     final dartTaggedInStatus =
@@ -1026,5 +1128,4 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final numberStr = segment.replaceAll(RegExp(r'[SDTsdt]'), '');
     return int.tryParse(numberStr);
   }
-
 }

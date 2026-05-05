@@ -90,6 +90,7 @@ void main() {
 
     // Round 3 - Charlie: Wins with 180+
     await throwDartViaMock(tester, 20, multiplier: 'double');
+    await clickDartsRemoved(tester);
     expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(150));
     expect(hasWinner(tester), true);
   });

@@ -311,4 +311,50 @@ void main() {
       expect(notified, true);
     });
   });
+
+  group('DartboardProvider - test simulation methods', () {
+    test('simulateDisconnection sets status to error', () async {
+      provider.useEmulator(name: 'Test Board', serialNumber: 'SN-001');
+      await _waitForAsyncUseEmulator();
+      expect(provider.status, DartboardConnectionStatus.emulator);
+
+      provider.simulateDisconnection();
+      expect(provider.status, DartboardConnectionStatus.error);
+    });
+
+    test('simulateDisconnection sets isEmulator to false', () async {
+      provider.useEmulator(name: 'Test Board', serialNumber: 'SN-001');
+      await _waitForAsyncUseEmulator();
+      expect(provider.isEmulator, true);
+
+      provider.simulateDisconnection();
+      expect(provider.isEmulator, false);
+    });
+
+    test('simulateReconnection restores emulator status', () async {
+      provider.useEmulator(name: 'Test Board', serialNumber: 'SN-001');
+      await _waitForAsyncUseEmulator();
+
+      provider.simulateDisconnection();
+      expect(provider.status, DartboardConnectionStatus.error);
+
+      provider.simulateReconnection();
+      expect(provider.status, DartboardConnectionStatus.emulator);
+      expect(provider.isEmulator, true);
+    });
+
+    test('simulateDisconnection then simulateReconnection round-trips', () async {
+      provider.useEmulator(name: 'Test Board', serialNumber: 'SN-001');
+      await _waitForAsyncUseEmulator();
+
+      provider.simulateDisconnection();
+      expect(provider.isEmulator, false);
+      expect(provider.canPlayGames, false);
+
+      provider.simulateReconnection();
+      expect(provider.isEmulator, true);
+      expect(provider.canPlayGames, true);
+      expect(provider.error, null);
+    });
+  });
 }

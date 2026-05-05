@@ -3,12 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../models/player.dart';
 import '../../../models/reef_royale_game.dart';
+import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/reef_royale_provider.dart';
 import '../../../widgets/player_list_panel/player_list_panel.dart';
 import '../../../constants/test_keys.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../models/saved_game_metadata.dart';
 import '../../../services/save_game_service.dart';
 import '../../../widgets/resume_game_modal/resume_game_modal.dart';
@@ -70,12 +72,16 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
     if (widget.initialGameMode != null) _gameMode = widget.initialGameMode!;
     if (widget.initialEasyClaim != null) _easyClaim = widget.initialEasyClaim!;
-    if (widget.initialNeighborNumbers != null) _neighborNumbers = widget.initialNeighborNumbers!;
-    if (widget.initialRandomReefs != null) _randomReefs = widget.initialRandomReefs!;
-    if (widget.initialBonusBuffs != null) _bonusBuffs = widget.initialBonusBuffs!;
+    if (widget.initialNeighborNumbers != null)
+      _neighborNumbers = widget.initialNeighborNumbers!;
+    if (widget.initialRandomReefs != null)
+      _randomReefs = widget.initialRandomReefs!;
+    if (widget.initialBonusBuffs != null)
+      _bonusBuffs = widget.initialBonusBuffs!;
     if (widget.initialShowHints != null) _showHints = widget.initialShowHints!;
     if (widget.initialSpeedPlay != null) _speedPlay = widget.initialSpeedPlay!;
-    if (widget.initialRoundLimit != null) _roundLimit = widget.initialRoundLimit!.toDouble();
+    if (widget.initialRoundLimit != null)
+      _roundLimit = widget.initialRoundLimit!.toDouble();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final playerProvider = context.read<PlayerProvider>();
@@ -120,6 +126,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dartboardProvider = context.watch<DartboardProvider>();
     return Stack(
       children: [
         Scaffold(
@@ -129,6 +136,9 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
               key: ReefRoyaleMenuKeys.backButton,
               icon: const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
               onPressed: () => Navigator.of(context).pop(),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
             ),
             title: Transform.translate(
               offset: const Offset(0, -3),
@@ -140,8 +150,12 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                   color: _pearlWhite,
                   letterSpacing: 2,
                   shadows: [
-                    Shadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
-                    const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+                    Shadow(
+                        color: _seafoamGreen.withOpacity(0.6), blurRadius: 12),
+                    const Shadow(
+                        color: Colors.black,
+                        blurRadius: 4,
+                        offset: Offset(2, 2)),
                   ],
                 ),
               ),
@@ -191,7 +205,8 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(flex: 1, child: _buildLeftPanel()),
-                      Expanded(flex: 1, child: _buildRightPanel(playerProvider)),
+                      Expanded(
+                          flex: 1, child: _buildRightPanel(playerProvider)),
                     ],
                   );
                 },
@@ -217,6 +232,13 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
               _checkForSavedGames();
             },
           ),
+        // Dartboard paused modal — last child, paints on top.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.reefRoyale(),
+          ),
       ],
     );
   }
@@ -232,100 +254,114 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'REEF ROYALE',
-                  style: GoogleFonts.fredoka(
-                    fontSize: 54,
-                    fontWeight: FontWeight.bold,
-                    color: _seafoamGreen,
-                    shadows: [
-                      Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 12),
-                      const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Dive into the reef and claim your coral! Hit your numbers to grow coral colonies, then harvest pearls from your rivals\' unclaimed reefs.',
-                  style: GoogleFonts.nunito(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: _pearlWhite,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'How to Play:',
-                  style: GoogleFonts.fredoka(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                    color: _pearlWhite,
-                    letterSpacing: 1,
-                    shadows: [
-                      Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 10),
-                      const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildStep('1', 'Mark Your Targets:', 'Hit a number 3 times to claim its coral (it blooms!).'),
-                _buildStep('2', 'Score Pearls:', 'Once claimed, keep hitting it to score pearls while opponents haven\'t claimed it.'),
-                _buildStep('3', 'Lock the Reef:', 'When ALL players claim a number, it locks — no more pearls for anyone.'),
-                _buildStep('4', 'Win the Reef:', 'Claim all 7 corals AND have the most pearls to win!'),
-                const SizedBox(height: 12),
-                Text(
-                  'Game Modes:',
-                  style: GoogleFonts.fredoka(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                    color: _pearlWhite,
-                    letterSpacing: 1,
-                    shadows: [
-                      Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 10),
-                      const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildBullet('Cursed Tide:', 'A devious twist — when you score pearls, they go to your opponents instead! The winner is the player with the fewest pearls.'),
-                _buildBullet('Random Reefs:', 'Shuffles the 7 target numbers each game so you never play the same reef twice. Bull is always the 7th coral.'),
-                const SizedBox(height: 12),
-                Text(
-                  'Beginner Tips:',
-                  style: GoogleFonts.fredoka(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                    color: _pearlWhite,
-                    letterSpacing: 1,
-                    shadows: [
-                      Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 10),
-                      const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildBullet('Easy Claim:', 'Only 2 marks needed instead of 3 — great for younger players!'),
-                _buildBullet('Neighbor Numbers:', 'Adjacent dartboard numbers also count — more hits, more fun!'),
-                _buildBullet('Show Hints:', 'Highlights valid target areas on the dartboard.'),
-                const SizedBox(height: 8),
-                Text(
-                  'Dive in and rule the reef!',
-                  style: GoogleFonts.nunito(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: _sandyGold,
-                    height: 1.5,
-                    shadows: [
-                      Shadow(color: _sandyGold.withOpacity(0.5), blurRadius: 10),
-                      const Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
-                    ],
-                  ),
-                ),
-              ],
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'REEF ROYALE',
+              style: GoogleFonts.fredoka(
+                fontSize: 54,
+                fontWeight: FontWeight.bold,
+                color: _seafoamGreen,
+                shadows: [
+                  Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 12),
+                  const Shadow(
+                      color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+                ],
+              ),
             ),
+            const SizedBox(height: 12),
+            Text(
+              'Dive into the reef and claim your coral! Hit your numbers to grow coral colonies, then harvest pearls from your rivals\' unclaimed reefs.',
+              style: GoogleFonts.nunito(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _pearlWhite,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'How to Play:',
+              style: GoogleFonts.fredoka(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                color: _pearlWhite,
+                letterSpacing: 1,
+                shadows: [
+                  Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 10),
+                  const Shadow(
+                      color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildStep('1', 'Mark Your Targets:',
+                'Hit a number 3 times to claim its coral (it blooms!).'),
+            _buildStep('2', 'Score Pearls:',
+                'Once claimed, keep hitting it to score pearls while opponents haven\'t claimed it.'),
+            _buildStep('3', 'Lock the Reef:',
+                'When ALL players claim a number, it locks — no more pearls for anyone.'),
+            _buildStep('4', 'Win the Reef:',
+                'Claim all 7 corals AND have the most pearls to win!'),
+            const SizedBox(height: 12),
+            Text(
+              'Game Modes:',
+              style: GoogleFonts.fredoka(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                color: _pearlWhite,
+                letterSpacing: 1,
+                shadows: [
+                  Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 10),
+                  const Shadow(
+                      color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildBullet('Cursed Tide:',
+                'A devious twist — when you score pearls, they go to your opponents instead! The winner is the player with the fewest pearls.'),
+            _buildBullet('Random Reefs:',
+                'Shuffles the 7 target numbers each game so you never play the same reef twice. Bull is always the 7th coral.'),
+            const SizedBox(height: 12),
+            Text(
+              'Beginner Tips:',
+              style: GoogleFonts.fredoka(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                color: _pearlWhite,
+                letterSpacing: 1,
+                shadows: [
+                  Shadow(color: _seafoamGreen.withOpacity(0.5), blurRadius: 10),
+                  const Shadow(
+                      color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildBullet('Easy Claim:',
+                'Only 2 marks needed instead of 3 — great for younger players!'),
+            _buildBullet('Neighbor Numbers:',
+                'Adjacent dartboard numbers also count — more hits, more fun!'),
+            _buildBullet('Show Hints:',
+                'Highlights valid target areas on the dartboard.'),
+            const SizedBox(height: 8),
+            Text(
+              'Dive in and rule the reef!',
+              style: GoogleFonts.nunito(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: _sandyGold,
+                height: 1.5,
+                shadows: [
+                  Shadow(color: _sandyGold.withOpacity(0.5), blurRadius: 10),
+                  const Shadow(
+                      color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -413,7 +449,8 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
 
   Widget _buildRightPanel(PlayerProvider playerProvider) {
     final selectedPlayers = playerProvider.selectedPlayers;
-    final bool canStart = selectedPlayers.length >= 2 && selectedPlayers.length <= 8;
+    final bool canStart =
+        selectedPlayers.length >= 2 && selectedPlayers.length <= 8;
 
     return Column(
       children: [
@@ -424,7 +461,8 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
             children: [
               Expanded(child: _buildGameModeBox()),
               const SizedBox(width: 8),
-              Expanded(child: _buildSwitchBox(
+              Expanded(
+                  child: _buildSwitchBox(
                 'Easy Claim',
                 _easyClaim,
                 ReefRoyaleMenuKeys.easyClaimSwitch,
@@ -439,14 +477,16 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
           padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
           child: Row(
             children: [
-              Expanded(child: _buildSwitchBox(
+              Expanded(
+                  child: _buildSwitchBox(
                 'Neighbor Numbers',
                 _neighborNumbers,
                 ReefRoyaleMenuKeys.neighborNumbersSwitch,
                 (value) => setState(() => _neighborNumbers = value),
               )),
               const SizedBox(width: 8),
-              Expanded(child: _buildSwitchBox(
+              Expanded(
+                  child: _buildSwitchBox(
                 'Random Reefs',
                 _randomReefs,
                 ReefRoyaleMenuKeys.randomReefsSwitch,
@@ -461,14 +501,16 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
           padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
           child: Row(
             children: [
-              Expanded(child: _buildSwitchBox(
+              Expanded(
+                  child: _buildSwitchBox(
                 'Bonus Buffs',
                 _bonusBuffs,
                 ReefRoyaleMenuKeys.bonusBuffsSwitch,
                 (value) => setState(() => _bonusBuffs = value),
               )),
               const SizedBox(width: 8),
-              Expanded(child: _buildSwitchBox(
+              Expanded(
+                  child: _buildSwitchBox(
                 'Show Hints',
                 _showHints,
                 ReefRoyaleMenuKeys.showHintsSwitch,
@@ -483,7 +525,8 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
           padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
           child: Row(
             children: [
-              Expanded(child: _buildSwitchBox(
+              Expanded(
+                  child: _buildSwitchBox(
                 'Speed Play',
                 _speedPlay,
                 ReefRoyaleMenuKeys.speedPlaySwitch,
@@ -504,7 +547,8 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
             child: DualPlayerListPanel(
               config: DualPlayerListPanelConfig.reefRoyale(),
               addPlayerButtonKey: ReefRoyaleMenuKeys.addPlayerButton,
-              addPlayerButtonEmptyStateKey: ReefRoyaleMenuKeys.addPlayerButtonEmptyState,
+              addPlayerButtonEmptyStateKey:
+                  ReefRoyaleMenuKeys.addPlayerButtonEmptyState,
               playerListViewKey: ReefRoyaleMenuKeys.playerListView,
               playerTileKey: (id) => ReefRoyaleMenuKeys.playerTile(id),
             ),
@@ -555,11 +599,13 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
             items: [
               DropdownMenuItem(
                 value: ReefRoyaleGameMode.standard,
-                child: Text('Standard', style: GoogleFonts.fredoka(color: _pearlWhite)),
+                child: Text('Standard',
+                    style: GoogleFonts.fredoka(color: _pearlWhite)),
               ),
               DropdownMenuItem(
                 value: ReefRoyaleGameMode.cursedTide,
-                child: Text('Cursed Tide', style: GoogleFonts.fredoka(color: _coralPink)),
+                child: Text('Cursed Tide',
+                    style: GoogleFonts.fredoka(color: _coralPink)),
               ),
             ],
             onChanged: (value) {
@@ -697,8 +743,14 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: canStart
               ? [
-                  BoxShadow(color: _seafoamGreen.withOpacity(0.6), blurRadius: 16, spreadRadius: 2),
-                  BoxShadow(color: _seafoamGreen.withOpacity(0.3), blurRadius: 32, spreadRadius: 4),
+                  BoxShadow(
+                      color: _seafoamGreen.withOpacity(0.6),
+                      blurRadius: 16,
+                      spreadRadius: 2),
+                  BoxShadow(
+                      color: _seafoamGreen.withOpacity(0.3),
+                      blurRadius: 32,
+                      spreadRadius: 4),
                 ]
               : [],
         ),
@@ -707,13 +759,16 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
           onPressed: canStart ? () => _startGame(selectedPlayers) : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: canStart ? _seafoamGreen : _deepReefBlue,
-            foregroundColor: canStart ? _deepReefBlue : _pearlWhite.withOpacity(0.5),
+            foregroundColor:
+                canStart ? _deepReefBlue : _pearlWhite.withOpacity(0.5),
             disabledBackgroundColor: _deepReefBlue.withOpacity(0.85),
             disabledForegroundColor: _pearlWhite.withOpacity(0.45),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
-                color: canStart ? _pearlWhite.withOpacity(0.5) : _seafoamGreen.withOpacity(0.3),
+                color: canStart
+                    ? _pearlWhite.withOpacity(0.5)
+                    : _seafoamGreen.withOpacity(0.3),
                 width: 2,
               ),
             ),
@@ -723,7 +778,8 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
             TextSpan(
               children: [
                 TextSpan(text: 'DI'),
-                TextSpan(text: ' ', style: TextStyle(fontSize: 2, letterSpacing: 0)),
+                TextSpan(
+                    text: ' ', style: TextStyle(fontSize: 2, letterSpacing: 0)),
                 TextSpan(text: 'VE IN!'),
               ],
             ),
@@ -733,7 +789,10 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
               letterSpacing: 3,
               shadows: canStart
                   ? [
-                      Shadow(color: _deepReefBlue.withOpacity(0.4), blurRadius: 4, offset: const Offset(1, 1)),
+                      Shadow(
+                          color: _deepReefBlue.withOpacity(0.4),
+                          blurRadius: 4,
+                          offset: const Offset(1, 1)),
                     ]
                   : [],
             ),

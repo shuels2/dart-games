@@ -41,6 +41,7 @@ void main() {
     await updateScore(tester);
 
     // Verify score updated to 140 (60+60+20) and winner
+    await clickDartsRemoved(tester);
     expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(100));
     expect(hasWinner(tester), true);
   });

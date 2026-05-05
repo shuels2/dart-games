@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../models/player.dart';
+import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/target_tag_provider.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
@@ -9,6 +10,7 @@ import '../../../widgets/player_list_panel/player_list_panel.dart';
 import '../../../constants/test_keys.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../models/saved_game_metadata.dart';
 import '../../../services/save_game_service.dart';
 import '../../../widgets/resume_game_modal/resume_game_modal.dart';
@@ -33,7 +35,8 @@ class TargetTagMenuScreen extends StatefulWidget {
   State<TargetTagMenuScreen> createState() => _TargetTagMenuScreenState();
 }
 
-class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTickerProviderStateMixin {
+class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
+    with SingleTickerProviderStateMixin {
   double _shieldMax = 5.0;
   bool _isTeamMode = false;
   bool _isRandomTeams = true;
@@ -131,83 +134,84 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final dartboardProvider = context.watch<DartboardProvider>();
     return Stack(
       children: [
         Scaffold(
           backgroundColor: const Color(0xFF1A1A2E),
           appBar: AppBar(
-        leading: IconButton(
-          key: TargetTagMenuKeys.backButton,
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-            size: 32, // Bigger size
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-          hoverColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          splashColor: Colors.transparent,
-        ),
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Text(
-            'TARGET TAG GAME SETUP',
-            style: GoogleFonts.luckiestGuy(
-              fontSize: 36,
-              letterSpacing: 1.5,
+            leading: IconButton(
+              key: TargetTagMenuKeys.backButton,
+              icon: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 32, // Bigger size
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
             ),
-          ),
-        ),
-        backgroundColor: const Color(0xFFFF007A), // Hot pink
-        foregroundColor: Colors.white,
-        actions: [
-          ResumeGameButton(
-            key: TargetTagMenuKeys.resumeGameButton,
-            hasSavedGames: _hasSavedGames,
-            onPressed: () => setState(() => _showResumeModal = true),
-            color: Colors.white,
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.targetTag(),
+            title: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'TARGET TAG GAME SETUP',
+                style: GoogleFonts.luckiestGuy(
+                  fontSize: 36,
+                  letterSpacing: 1.5,
+                ),
+              ),
             ),
+            backgroundColor: const Color(0xFFFF007A), // Hot pink
+            foregroundColor: Colors.white,
+            actions: [
+              ResumeGameButton(
+                key: TargetTagMenuKeys.resumeGameButton,
+                hasSavedGames: _hasSavedGames,
+                onPressed: () => setState(() => _showResumeModal = true),
+                color: Colors.white,
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.targetTag(),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Tech/Neon background
-          const Positioned.fill(
-            child: TechNeonBackground(),
+          body: Stack(
+            children: [
+              // Tech/Neon background
+              const Positioned.fill(
+                child: TechNeonBackground(),
+              ),
+              // Main content
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth > 800) {
+                    // Desktop/tablet: 2-column layout
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: _buildLeftPanel()),
+                        Expanded(child: _buildRightPanel(scrollable: false)),
+                      ],
+                    );
+                  } else {
+                    // Mobile: single column with scroll
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          _buildLeftPanel(),
+                          _buildRightPanel(),
+                        ],
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
           ),
-          // Main content
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth > 800) {
-                // Desktop/tablet: 2-column layout
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: _buildLeftPanel()),
-                    Expanded(child: _buildRightPanel(scrollable: false)),
-                  ],
-                );
-              } else {
-                // Mobile: single column with scroll
-                return SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _buildLeftPanel(),
-                      _buildRightPanel(),
-                    ],
-                  ),
-                );
-              }
-            },
-          ),
-        ],
-      ),
         ),
         // Resume game modal overlay - covers entire screen including AppBar
         if (_showResumeModal)
@@ -226,6 +230,13 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
               setState(() => _showResumeModal = false);
               _checkForSavedGames();
             },
+          ),
+        // Dartboard paused modal — last child, paints on top.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.targetTag(),
           ),
       ],
     );
@@ -288,13 +299,13 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             ),
             const SizedBox(height: 12),
             _buildNumberedStep('1', 'Fuel Your Shield:',
-              'Play Solo mode or as a Team of 2 and hit your assigned number to power up your lives.'),
+                'Play Solo mode or as a Team of 2 and hit your assigned number to power up your lives.'),
             _buildNumberedStep('2', 'Get "Tagged In":',
-              'Once your Shield is at max power, you\'re TAGGED IN! You\'ll glow with arcade energy and gain the power to tag your opponents out of the game.'),
+                'Once your Shield is at max power, you\'re TAGGED IN! You\'ll glow with arcade energy and gain the power to tag your opponents out of the game.'),
             _buildNumberedStep('3', 'Defend & Attack:',
-              'Stay sharp! If an opponent tags you, you\'ll lose your power-up and have to rebuild your shield.'),
+                'Stay sharp! If an opponent tags you, you\'ll lose your power-up and have to rebuild your shield.'),
             _buildNumberedStep('4', 'Be the Champion:',
-              'Outlast the competition to trigger the victory music and a confetti explosion!'),
+                'Outlast the competition to trigger the victory music and a confetti explosion!'),
             const SizedBox(height: 24),
 
             // Why You'll Love It
@@ -308,11 +319,11 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             ),
             const SizedBox(height: 12),
             _buildBulletPoint('Play Your Way:',
-              'Fly solo or team up with a buddy for 2v2 tactical action.'),
+                'Fly solo or team up with a buddy for 2v2 tactical action.'),
             _buildBulletPoint('Hero Bonus:',
-              'Hit the Hero Buff and power up your shield while taking shields away from all your opponents to change the game momentum in a single throw!'),
+                'Hit the Hero Buff and power up your shield while taking shields away from all your opponents to change the game momentum in a single throw!'),
             _buildBulletPoint('Arcade Vibes:',
-              'Massive sound effects, a high-energy announcer, and a vibrant neon design.'),
+                'Massive sound effects, a high-energy announcer, and a vibrant neon design.'),
             const SizedBox(height: 12),
 
             Text(
@@ -423,11 +434,13 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     final int maxPlayers = 10;
 
     // Check if all players meet requirements
-    bool canStart = selectedPlayers.length >= minPlayers && selectedPlayers.length <= maxPlayers;
+    bool canStart = selectedPlayers.length >= minPlayers &&
+        selectedPlayers.length <= maxPlayers;
 
     // In team manual mode, all selected players must be assigned to a team
     if (canStart && _isTeamMode && !_isRandomTeams) {
-      canStart = selectedPlayers.every((player) => _playerTeamAssignments.containsKey(player.id));
+      canStart = selectedPlayers
+          .every((player) => _playerTeamAssignments.containsKey(player.id));
     }
 
     // Check if any team has only 1 player
@@ -456,12 +469,14 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             Expanded(
               child: Container(
                 height: 60,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _isTeamMode ? const Color(0xFF00FFA3) : Colors.white24,
+                    color:
+                        _isTeamMode ? const Color(0xFF00FFA3) : Colors.white24,
                     width: 2,
                   ),
                 ),
@@ -483,7 +498,9 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           'Solo',
                           style: GoogleFonts.fredoka(
                             fontSize: 13,
-                            fontWeight: _isTeamMode ? FontWeight.normal : FontWeight.bold,
+                            fontWeight: _isTeamMode
+                                ? FontWeight.normal
+                                : FontWeight.bold,
                             color: _isTeamMode ? Colors.white60 : Colors.white,
                           ),
                         ),
@@ -506,7 +523,9 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           'Team',
                           style: GoogleFonts.fredoka(
                             fontSize: 13,
-                            fontWeight: _isTeamMode ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: _isTeamMode
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             color: _isTeamMode ? Colors.white : Colors.white60,
                           ),
                         ),
@@ -521,7 +540,8 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             Expanded(
               child: Container(
                 height: 60,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
                   borderRadius: BorderRadius.circular(8),
@@ -571,14 +591,19 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             // Team Assignment setting (always visible, disabled when not in team mode)
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: _isTeamMode ? const Color(0xFF2A2A3E).withOpacity(0.85) : const Color(0xFF1A1A2E).withOpacity(0.85),
+                  color: _isTeamMode
+                      ? const Color(0xFF2A2A3E).withOpacity(0.85)
+                      : const Color(0xFF1A1A2E).withOpacity(0.85),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: _isTeamMode
-                      ? (!_isRandomTeams ? const Color(0xFFFF007A) : Colors.white24)
-                      : Colors.white12,
+                        ? (!_isRandomTeams
+                            ? const Color(0xFFFF007A)
+                            : Colors.white24)
+                        : Colors.white12,
                     width: 2,
                   ),
                 ),
@@ -600,10 +625,14 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           'Random',
                           style: GoogleFonts.fredoka(
                             fontSize: 13,
-                            fontWeight: _isRandomTeams ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: _isRandomTeams
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             color: _isTeamMode
-                              ? (_isRandomTeams ? Colors.white : Colors.white60)
-                              : Colors.white38,
+                                ? (_isRandomTeams
+                                    ? Colors.white
+                                    : Colors.white60)
+                                : Colors.white38,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -613,11 +642,13 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                             key: TargetTagMenuKeys.manualTeamAssignmentSwitch,
                             value: !_isRandomTeams,
                             activeColor: const Color(0xFFFF007A),
-                            onChanged: _isTeamMode ? (value) {
-                              setState(() {
-                                _isRandomTeams = !value;
-                              });
-                            } : null,
+                            onChanged: _isTeamMode
+                                ? (value) {
+                                    setState(() {
+                                      _isRandomTeams = !value;
+                                    });
+                                  }
+                                : null,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -625,10 +656,14 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
                           'Manually',
                           style: GoogleFonts.fredoka(
                             fontSize: 13,
-                            fontWeight: !_isRandomTeams ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: !_isRandomTeams
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             color: _isTeamMode
-                              ? (!_isRandomTeams ? Colors.white : Colors.white60)
-                              : Colors.white38,
+                                ? (!_isRandomTeams
+                                    ? Colors.white
+                                    : Colors.white60)
+                                : Colors.white38,
                           ),
                         ),
                       ],
@@ -641,70 +676,79 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             // Hero Bonus
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                color: soloHeroBonusEnabled
-                    ? const Color(0xFF2A2A3E).withOpacity(0.85)
-                    : const Color(0xFF1A1A2E).withOpacity(0.85),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
                   color: soloHeroBonusEnabled
-                      ? (_soloHeroBonus ? const Color(0xFF00FFA3) : Colors.white24)
-                      : Colors.white12,
-                  width: 2,
+                      ? const Color(0xFF2A2A3E).withOpacity(0.85)
+                      : const Color(0xFF1A1A2E).withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: soloHeroBonusEnabled
+                        ? (_soloHeroBonus
+                            ? const Color(0xFF00FFA3)
+                            : Colors.white24)
+                        : Colors.white12,
+                    width: 2,
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Hero Bonus',
-                    style: GoogleFonts.fredoka(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: soloHeroBonusEnabled
-                          ? Colors.white
-                          : Colors.white38,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Hero Bonus',
+                      style: GoogleFonts.fredoka(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: soloHeroBonusEnabled
+                            ? Colors.white
+                            : Colors.white38,
+                      ),
                     ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Off',
-                        style: GoogleFonts.fredoka(
-                          fontSize: 13,
-                          fontWeight: !_soloHeroBonus ? FontWeight.bold : FontWeight.normal,
-                          color: !_soloHeroBonus ? Colors.white : Colors.white60,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Off',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 13,
+                            fontWeight: !_soloHeroBonus
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color:
+                                !_soloHeroBonus ? Colors.white : Colors.white60,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Transform.scale(
-                        scale: 0.8,
-                        child: Switch(
-                          key: TargetTagMenuKeys.heroBonusSwitch,
-                          value: _soloHeroBonus,
-                          activeColor: const Color(0xFF00FFA3),
-                          onChanged: (value) {
-                            setState(() {
-                              _soloHeroBonus = value;
-                            });
-                          },
+                        const SizedBox(width: 4),
+                        Transform.scale(
+                          scale: 0.8,
+                          child: Switch(
+                            key: TargetTagMenuKeys.heroBonusSwitch,
+                            value: _soloHeroBonus,
+                            activeColor: const Color(0xFF00FFA3),
+                            onChanged: (value) {
+                              setState(() {
+                                _soloHeroBonus = value;
+                              });
+                            },
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'On',
-                        style: GoogleFonts.fredoka(
-                          fontSize: 13,
-                          fontWeight: _soloHeroBonus ? FontWeight.bold : FontWeight.normal,
-                          color: _soloHeroBonus ? Colors.white : Colors.white60,
+                        const SizedBox(width: 4),
+                        Text(
+                          'On',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 13,
+                            fontWeight: _soloHeroBonus
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color:
+                                _soloHeroBonus ? Colors.white : Colors.white60,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -716,7 +760,8 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
           TeamPlayerListPanel(
             config: TeamPlayerListPanelConfig.targetTag(),
             addPlayerButtonKey: TargetTagMenuKeys.addPlayerButton,
-            addPlayerButtonEmptyStateKey: TargetTagMenuKeys.addPlayerButtonEmptyState,
+            addPlayerButtonEmptyStateKey:
+                TargetTagMenuKeys.addPlayerButtonEmptyState,
             playerListViewKey: TargetTagMenuKeys.playerListView,
             playerTileKey: (id) => TargetTagMenuKeys.playerTile(id),
             isTeamMode: _isTeamMode,
@@ -724,7 +769,8 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             teamIconPaths: _teamIconPaths,
             useFixedHeight: true,
             teamDialogContainerKey: TeamAssignmentDialogKeys.dialogContainer,
-            teamDialogDropdownKey: (id) => TeamAssignmentDialogKeys.playerTeamDropdown(id),
+            teamDialogDropdownKey: (id) =>
+                TeamAssignmentDialogKeys.playerTeamDropdown(id),
             teamDialogCancelKey: TeamAssignmentDialogKeys.cancelButton,
             onTeamAssignmentsChanged: (assignments) {
               setState(() {
@@ -737,7 +783,8 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
           TeamPlayerListPanel(
             config: TeamPlayerListPanelConfig.targetTag(),
             addPlayerButtonKey: TargetTagMenuKeys.addPlayerButton,
-            addPlayerButtonEmptyStateKey: TargetTagMenuKeys.addPlayerButtonEmptyState,
+            addPlayerButtonEmptyStateKey:
+                TargetTagMenuKeys.addPlayerButtonEmptyState,
             playerListViewKey: TargetTagMenuKeys.playerListView,
             playerTileKey: (id) => TargetTagMenuKeys.playerTile(id),
             isTeamMode: _isTeamMode,
@@ -745,7 +792,8 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
             teamIconPaths: _teamIconPaths,
             useFixedHeight: false,
             teamDialogContainerKey: TeamAssignmentDialogKeys.dialogContainer,
-            teamDialogDropdownKey: (id) => TeamAssignmentDialogKeys.playerTeamDropdown(id),
+            teamDialogDropdownKey: (id) =>
+                TeamAssignmentDialogKeys.playerTeamDropdown(id),
             teamDialogCancelKey: TeamAssignmentDialogKeys.cancelButton,
             onTeamAssignmentsChanged: (assignments) {
               setState(() {
@@ -767,12 +815,9 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
 
     return Container(
       padding: const EdgeInsets.all(24),
-      child: scrollable
-          ? SingleChildScrollView(child: column)
-          : column,
+      child: scrollable ? SingleChildScrollView(child: column) : column,
     );
   }
-
 
   Widget _buildModeButton(String label, bool isSelected, VoidCallback onTap) {
     return GestureDetector(
@@ -805,20 +850,26 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
-        final pulseValue = canStart ? (0.7 + (_pulseController.value * 0.3)) : 1.0;
+        final pulseValue =
+            canStart ? (0.7 + (_pulseController.value * 0.3)) : 1.0;
 
         return Container(
           decoration: BoxDecoration(
-            color: canStart ? const Color(0xFFFF007A).withOpacity(0.85) : Colors.grey.withOpacity(0.85),
+            color: canStart
+                ? const Color(0xFFFF007A).withOpacity(0.85)
+                : Colors.grey.withOpacity(0.85),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: canStart ? const Color(0xFFFFB3D9) : Colors.grey, // Light pink border
+              color: canStart
+                  ? const Color(0xFFFFB3D9)
+                  : Colors.grey, // Light pink border
               width: canStart ? 3 : 1,
             ),
             boxShadow: canStart
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFFF007A).withOpacity(0.8 * pulseValue),
+                      color:
+                          const Color(0xFFFF007A).withOpacity(0.8 * pulseValue),
                       blurRadius: 30 * pulseValue,
                       spreadRadius: 6 * pulseValue,
                     ),
@@ -850,7 +901,6 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen> with SingleTi
       },
     );
   }
-
 
   void _resumeGame(SavedGameMetadata savedGame) {
     context.read<TargetTagProvider>().restoreGame(savedGame);

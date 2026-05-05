@@ -118,6 +118,24 @@ class DartboardSectionConfig {
       ),
     );
   }
+
+  // Factory for Lunar Lander
+  factory DartboardSectionConfig.lunarLander() {
+    return DartboardSectionConfig(
+      backgroundColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      disabledOverlayBackgroundColor: const Color(0xFF1B4965).withOpacity(0.95), // Earth Blue
+      disabledOverlayBorderColor: const Color(0xFFF26430), // Rocket Flame
+      removeButtonBackgroundColor: const Color(0xFFF26430), // Rocket Flame
+      removeButtonBorderColor: const Color(0xFF52B788), // Mission Green
+      removeButtonTextStyle: GoogleFonts.orbitron(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+        color: const Color(0xFFFAFDF6), // Star White
+      ),
+    );
+  }
 }
 
 class DartboardFABConfig {
@@ -183,6 +201,19 @@ class DartboardFABConfig {
       iconColor: const Color(0xFFF5F0E8), // Steam White
       textColor: const Color(0xFFF5F0E8), // Steam White
       textStyle: GoogleFonts.cinzelDecorative(
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+    );
+  }
+
+  // Factory for Lunar Lander
+  factory DartboardFABConfig.lunarLander() {
+    return DartboardFABConfig(
+      backgroundColor: const Color(0xFFF26430), // Rocket Flame
+      iconColor: const Color(0xFFFAFDF6), // Star White
+      textColor: const Color(0xFFFAFDF6), // Star White
+      textStyle: GoogleFonts.orbitron(
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
       ),
@@ -273,6 +304,21 @@ class PlayToCompleteButtonConfig {
         fontWeight: FontWeight.bold,
         letterSpacing: 1.2,
         color: const Color(0xFF2C2C34),
+      ),
+    );
+  }
+
+  // Factory for Lunar Lander
+  factory PlayToCompleteButtonConfig.lunarLander() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFF52B788), // Mission Green
+      foregroundColor: const Color(0xFFFAFDF6), // Star White
+      borderColor: const Color(0xFFF26430), // Rocket Flame
+      textStyle: GoogleFonts.orbitron(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+        color: const Color(0xFFFAFDF6),
       ),
     );
   }

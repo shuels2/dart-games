@@ -49,5 +49,6 @@ void main() {
 
     // Turn 2: Win with exact score (score is 60 after bust, need 10 to reach 70)
     await throwDartViaMock(tester, 5, multiplier: 'double'); // D5 = 10 points, total = 70
+    await clickDartsRemoved(tester);
   });
 }

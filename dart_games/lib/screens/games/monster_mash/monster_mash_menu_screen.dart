@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../models/player.dart';
+import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/monster_mash_provider.dart';
 import '../../../widgets/player_list_panel/player_list_panel.dart';
 import '../../../constants/test_keys.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../models/saved_game_metadata.dart';
 import '../../../services/save_game_service.dart';
 import '../../../widgets/resume_game_modal/resume_game_modal.dart';
@@ -119,112 +121,113 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
 
   @override
   Widget build(BuildContext context) {
+    final dartboardProvider = context.watch<DartboardProvider>();
     return Stack(
       children: [
         Scaffold(
           backgroundColor: const Color(0xFF1A1A2E),
           appBar: AppBar(
-        leading: IconButton(
-          key: MonsterMashMenuKeys.backButton,
-          icon: Icon(
-            Icons.arrow_back,
-            color: const Color(0xFFF5F5DC),
-            size: 32,
-            shadows: [
-              Shadow(
-                color: const Color(0xFF7FFF00),
-                blurRadius: 20,
+            leading: IconButton(
+              key: MonsterMashMenuKeys.backButton,
+              icon: Icon(
+                Icons.arrow_back,
+                color: const Color(0xFFF5F5DC),
+                size: 32,
+                shadows: [
+                  Shadow(
+                    color: const Color(0xFF7FFF00),
+                    blurRadius: 20,
+                  ),
+                  Shadow(
+                    color: const Color(0xFF7FFF00).withOpacity(0.8),
+                    blurRadius: 40,
+                  ),
+                ],
               ),
-              Shadow(
-                color: const Color(0xFF7FFF00).withOpacity(0.8),
-                blurRadius: 40,
+              onPressed: () => Navigator.of(context).pop(),
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
+            ),
+            title: Padding(
+              padding: const EdgeInsets.only(top: 0),
+              child: Text(
+                'Monster Mash Game Setup',
+                style: GoogleFonts.creepster(
+                  fontSize: 39,
+                  letterSpacing: 1.5,
+                  color: const Color(0xFFF5F5DC),
+                  shadows: [
+                    Shadow(
+                      color: const Color(0xFF7FFF00).withOpacity(0.6),
+                      blurRadius: 12,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0xFF1A1A2E),
+                    Color(0xFF1A1A2E),
+                    Color(0xFF7FFF00),
+                  ],
+                  stops: [0.0, 0.45, 1.0],
+                ),
+              ),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              ResumeGameButton(
+                key: MonsterMashMenuKeys.resumeGameButton,
+                hasSavedGames: _hasSavedGames,
+                onPressed: () => setState(() => _showResumeModal = true),
+                color: const Color(0xFFEEF0F2), // Mist
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.monsterMash(),
+                ),
               ),
             ],
           ),
-          onPressed: () => Navigator.of(context).pop(),
-          hoverColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          splashColor: Colors.transparent,
-        ),
-        title: Padding(
-          padding: const EdgeInsets.only(top: 0),
-          child: Text(
-            'Monster Mash Game Setup',
-            style: GoogleFonts.creepster(
-              fontSize: 39,
-              letterSpacing: 1.5,
-              color: const Color(0xFFF5F5DC),
-              shadows: [
-                Shadow(
-                  color: const Color(0xFF7FFF00).withOpacity(0.6),
-                  blurRadius: 12,
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/games/monster_mash/images/MonsterMash-Background.png',
+                  fit: BoxFit.cover,
                 ),
-              ],
-            ),
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                Color(0xFF1A1A2E),
-                Color(0xFF1A1A2E),
-                Color(0xFF7FFF00),
-              ],
-              stops: [0.0, 0.45, 1.0],
-            ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          ResumeGameButton(
-            key: MonsterMashMenuKeys.resumeGameButton,
-            hasSavedGames: _hasSavedGames,
-            onPressed: () => setState(() => _showResumeModal = true),
-            color: const Color(0xFFEEF0F2), // Mist
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.monsterMash(),
-            ),
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/games/monster_mash/images/MonsterMash-Background.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Consumer<PlayerProvider>(
-            builder: (context, playerProvider, child) {
-              if (playerProvider.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
+              ),
+              Consumer<PlayerProvider>(
+                builder: (context, playerProvider, child) {
+                  if (playerProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: _buildLeftPanel(),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: _buildRightPanel(playerProvider),
-                  ),
-                ],
-              );
-            },
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: _buildLeftPanel(),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: _buildRightPanel(playerProvider),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
         ),
         // Resume game modal overlay - covers entire screen including AppBar
         if (_showResumeModal)
@@ -243,6 +246,13 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               setState(() => _showResumeModal = false);
               _checkForSavedGames();
             },
+          ),
+        // Dartboard paused modal — last child, paints on top.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.monsterMash(),
           ),
       ],
     );
@@ -338,10 +348,14 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   ),
                 ),
                 const SizedBox(height: 12),
-                _buildStep('1', 'Heal Yourself:', 'Hit YOUR assigned number to restore health points.'),
-                _buildStep('2', 'Attack Opponents:', 'Hit an OPPONENT\'S number to deal damage equal to the multiplier.'),
-                _buildStep('3', 'Bullseye Power:', 'Bullseye restores you to full health! Outer Bull heals +5.'),
-                _buildStep('4', 'Last Monster Standing:', 'Reduce opponents to 0 HP to eliminate them. Be the last one alive!'),
+                _buildStep('1', 'Heal Yourself:',
+                    'Hit YOUR assigned number to restore health points.'),
+                _buildStep('2', 'Attack Opponents:',
+                    'Hit an OPPONENT\'S number to deal damage equal to the multiplier.'),
+                _buildStep('3', 'Bullseye Power:',
+                    'Bullseye restores you to full health! Outer Bull heals +5.'),
+                _buildStep('4', 'Last Monster Standing:',
+                    'Reduce opponents to 0 HP to eliminate them. Be the last one alive!'),
                 const SizedBox(height: 24),
                 Text(
                   'Optional Features:',
@@ -362,8 +376,10 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   ),
                 ),
                 const SizedBox(height: 12),
-                _buildBullet('Bonus Buffs:', 'Random supernatural effects can trigger each round - double damage, boosted healing, shadow protection, or lightning strikes!'),
-                _buildBullet('Speed Play:', 'Set a round limit to keep games fast and competitive. When time runs out, the healthiest monster wins!'),
+                _buildBullet('Bonus Buffs:',
+                    'Random supernatural effects can trigger each round - double damage, boosted healing, shadow protection, or lightning strikes!'),
+                _buildBullet('Speed Play:',
+                    'Set a round limit to keep games fast and competitive. When time runs out, the healthiest monster wins!'),
                 const SizedBox(height: 16),
                 Text(
                   'Grab your darts and let the Monster Mash begin!',
@@ -476,7 +492,8 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
   Widget _buildRightPanel(PlayerProvider playerProvider) {
     final allPlayers = playerProvider.allPlayers;
     final selectedPlayers = playerProvider.selectedPlayers;
-    final bool canStart = selectedPlayers.length >= 2 && selectedPlayers.length <= 8;
+    final bool canStart =
+        selectedPlayers.length >= 2 && selectedPlayers.length <= 8;
 
     return Column(
       children: [
@@ -488,11 +505,14 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               Expanded(
                 child: Container(
                   height: 60,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2F4F4F).withOpacity(0.80),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFF5F5DC).withOpacity(0.3), width: 2),
+                    border: Border.all(
+                        color: const Color(0xFFF5F5DC).withOpacity(0.3),
+                        width: 2),
                   ),
                   child: Row(
                     children: [
@@ -528,12 +548,15 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               Expanded(
                 child: Container(
                   height: 60,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2F4F4F).withOpacity(0.80),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: _bonusBuffs ? const Color(0xFF7FFF00) : const Color(0xFFF5F5DC).withOpacity(0.3),
+                      color: _bonusBuffs
+                          ? const Color(0xFF7FFF00)
+                          : const Color(0xFFF5F5DC).withOpacity(0.3),
                       width: 2,
                     ),
                   ),
@@ -554,8 +577,12 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                             'Off',
                             style: GoogleFonts.montserrat(
                               fontSize: 16,
-                              fontWeight: !_bonusBuffs ? FontWeight.bold : FontWeight.normal,
-                              color: !_bonusBuffs ? const Color(0xFFF5F5DC) : const Color(0xFFF5F5DC).withOpacity(0.5),
+                              fontWeight: !_bonusBuffs
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: !_bonusBuffs
+                                  ? const Color(0xFFF5F5DC)
+                                  : const Color(0xFFF5F5DC).withOpacity(0.5),
                             ),
                           ),
                           Transform.scale(
@@ -575,8 +602,12 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                             'On',
                             style: GoogleFonts.montserrat(
                               fontSize: 16,
-                              fontWeight: _bonusBuffs ? FontWeight.bold : FontWeight.normal,
-                              color: _bonusBuffs ? const Color(0xFFF5F5DC) : const Color(0xFFF5F5DC).withOpacity(0.5),
+                              fontWeight: _bonusBuffs
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: _bonusBuffs
+                                  ? const Color(0xFFF5F5DC)
+                                  : const Color(0xFFF5F5DC).withOpacity(0.5),
                             ),
                           ),
                         ],
@@ -597,12 +628,15 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               Expanded(
                 child: Container(
                   height: 60,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2F4F4F).withOpacity(0.80),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: _speedPlay ? const Color(0xFFFF8C00) : const Color(0xFFF5F5DC).withOpacity(0.3),
+                      color: _speedPlay
+                          ? const Color(0xFFFF8C00)
+                          : const Color(0xFFF5F5DC).withOpacity(0.3),
                       width: 2,
                     ),
                   ),
@@ -623,8 +657,12 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                             'Off',
                             style: GoogleFonts.montserrat(
                               fontSize: 16,
-                              fontWeight: !_speedPlay ? FontWeight.bold : FontWeight.normal,
-                              color: !_speedPlay ? const Color(0xFFF5F5DC) : const Color(0xFFF5F5DC).withOpacity(0.5),
+                              fontWeight: !_speedPlay
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: !_speedPlay
+                                  ? const Color(0xFFF5F5DC)
+                                  : const Color(0xFFF5F5DC).withOpacity(0.5),
                             ),
                           ),
                           Transform.scale(
@@ -644,8 +682,12 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                             'On',
                             style: GoogleFonts.montserrat(
                               fontSize: 16,
-                              fontWeight: _speedPlay ? FontWeight.bold : FontWeight.normal,
-                              color: _speedPlay ? const Color(0xFFF5F5DC) : const Color(0xFFF5F5DC).withOpacity(0.5),
+                              fontWeight: _speedPlay
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: _speedPlay
+                                  ? const Color(0xFFF5F5DC)
+                                  : const Color(0xFFF5F5DC).withOpacity(0.5),
                             ),
                           ),
                         ],
@@ -658,7 +700,8 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               Expanded(
                 child: Container(
                   height: 60,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: _speedPlay
                         ? const Color(0xFF2F4F4F).withOpacity(0.80)
@@ -718,10 +761,14 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
             child: DualPlayerListPanel(
               config: DualPlayerListPanelConfig.monsterMash(),
               addPlayerButtonKey: MonsterMashMenuKeys.addPlayerButton,
-              addPlayerButtonEmptyStateKey: MonsterMashMenuKeys.addPlayerButtonEmptyState,
+              addPlayerButtonEmptyStateKey:
+                  MonsterMashMenuKeys.addPlayerButtonEmptyState,
               playerListViewKey: MonsterMashMenuKeys.playerListView,
               playerTileKey: (id) => MonsterMashMenuKeys.playerTile(id),
-              customAddPlayerButton: ({required Key key, required VoidCallback onPressed, required bool isEmptyState}) {
+              customAddPlayerButton: (
+                  {required Key key,
+                  required VoidCallback onPressed,
+                  required bool isEmptyState}) {
                 return _buildStoneNewPlayerButton(
                   key: key,
                   onPressed: onPressed,
@@ -729,7 +776,9 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   iconSize: isEmptyState ? 24 : 18,
                   width: isEmptyState ? 210 : 170,
                   height: isEmptyState ? 44 : 36,
-                  seed: isEmptyState ? 'NEW_PLAYER_EMPTY'.hashCode : 'NEW_PLAYER_HEADER'.hashCode,
+                  seed: isEmptyState
+                      ? 'NEW_PLAYER_EMPTY'.hashCode
+                      : 'NEW_PLAYER_HEADER'.hashCode,
                 );
               },
             ),
@@ -742,9 +791,11 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
     );
   }
 
-
   Widget _buildStartButton(bool canStart, List<Player> selectedPlayers) {
-    final jaggedClipper = _JaggedEdgeClipper(seed: 'MONSTER_MASH_START'.hashCode, jagAmount: 4.0, segmentsPerSide: 30);
+    final jaggedClipper = _JaggedEdgeClipper(
+        seed: 'MONSTER_MASH_START'.hashCode,
+        jagAmount: 4.0,
+        segmentsPerSide: 30);
 
     final buttonContent = SizedBox(
       width: double.infinity,
@@ -824,7 +875,8 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       image: const DecorationImage(
-                        image: AssetImage('assets/games/monster_mash/images/stone-texture.png'),
+                        image: AssetImage(
+                            'assets/games/monster_mash/images/stone-texture.png'),
                         repeat: ImageRepeat.repeat,
                         fit: BoxFit.none,
                       ),
@@ -858,12 +910,20 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                         "LET'S DO THE MONSTER MASH!",
                         style: GoogleFonts.creepster(
                           fontSize: 40,
-                          color: canStart ? const Color(0xFF1A1A1A) : const Color(0xFF555555),
+                          color: canStart
+                              ? const Color(0xFF1A1A1A)
+                              : const Color(0xFF555555),
                           letterSpacing: 1.5,
                           shadows: canStart
                               ? [
-                                  Shadow(color: Colors.white.withOpacity(0.5), offset: const Offset(1, 1), blurRadius: 0),
-                                  const Shadow(color: Colors.black, offset: Offset(-1, -1), blurRadius: 0),
+                                  Shadow(
+                                      color: Colors.white.withOpacity(0.5),
+                                      offset: const Offset(1, 1),
+                                      blurRadius: 0),
+                                  const Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(-1, -1),
+                                      blurRadius: 0),
                                 ]
                               : [],
                         ),
@@ -883,7 +943,8 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
       child: AnimatedBuilder(
         animation: _pulseController,
         builder: (context, child) {
-          final glowOpacity = canStart ? (0.3 + (_pulseController.value * 0.5)) : 0.0;
+          final glowOpacity =
+              canStart ? (0.3 + (_pulseController.value * 0.5)) : 0.0;
           return Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
@@ -895,7 +956,8 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                         spreadRadius: 2,
                       ),
                       BoxShadow(
-                        color: const Color(0xFF7FFF00).withOpacity(glowOpacity * 0.5),
+                        color: const Color(0xFF7FFF00)
+                            .withOpacity(glowOpacity * 0.5),
                         blurRadius: 40,
                         spreadRadius: 4,
                       ),
@@ -908,7 +970,6 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
       ),
     );
   }
-
 
   void _resumeGame(SavedGameMetadata savedGame) {
     context.read<MonsterMashProvider>().restoreGame(savedGame);
@@ -946,7 +1007,8 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
     required double height,
     required int seed,
   }) {
-    final jaggedClipper = _JaggedEdgeClipper(seed: seed, jagAmount: 3.0, segmentsPerSide: 20);
+    final jaggedClipper =
+        _JaggedEdgeClipper(seed: seed, jagAmount: 3.0, segmentsPerSide: 20);
 
     return SizedBox(
       width: width,
@@ -1014,7 +1076,8 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                      image: AssetImage('assets/games/monster_mash/images/stone-texture.png'),
+                      image: AssetImage(
+                          'assets/games/monster_mash/images/stone-texture.png'),
                       repeat: ImageRepeat.repeat,
                       fit: BoxFit.none,
                     ),
@@ -1028,7 +1091,8 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                   builder: (context, child) {
                     return CustomPaint(
                       painter: _LightningPainter(
-                        animationValue: (_lightningController.value + 0.5) % 1.0,
+                        animationValue:
+                            (_lightningController.value + 0.5) % 1.0,
                         lightningColor: const Color(0xFFF5F5DC),
                         seedOffset: seed,
                       ),
@@ -1047,10 +1111,19 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add, size: iconSize, color: const Color(0xFF1A1A1A),
+                          Icon(
+                            Icons.add,
+                            size: iconSize,
+                            color: const Color(0xFF1A1A1A),
                             shadows: [
-                              Shadow(color: Colors.white.withOpacity(0.5), offset: const Offset(1, 1), blurRadius: 0),
-                              const Shadow(color: Colors.black, offset: Offset(-1, -1), blurRadius: 0),
+                              Shadow(
+                                  color: Colors.white.withOpacity(0.5),
+                                  offset: const Offset(1, 1),
+                                  blurRadius: 0),
+                              const Shadow(
+                                  color: Colors.black,
+                                  offset: Offset(-1, -1),
+                                  blurRadius: 0),
                             ],
                           ),
                           const SizedBox(width: 8),
@@ -1060,8 +1133,14 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
                               fontSize: fontSize,
                               color: const Color(0xFF1A1A1A),
                               shadows: [
-                                Shadow(color: Colors.white.withOpacity(0.5), offset: const Offset(1, 1), blurRadius: 0),
-                                const Shadow(color: Colors.black, offset: Offset(-1, -1), blurRadius: 0),
+                                Shadow(
+                                    color: Colors.white.withOpacity(0.5),
+                                    offset: const Offset(1, 1),
+                                    blurRadius: 0),
+                                const Shadow(
+                                    color: Colors.black,
+                                    offset: Offset(-1, -1),
+                                    blurRadius: 0),
                               ],
                             ),
                           ),
@@ -1173,14 +1252,21 @@ class _LightningPainter extends CustomPainter {
   final Color lightningColor;
   final int seedOffset;
 
-  _LightningPainter({required this.animationValue, this.lightningColor = const Color(0xFF7FFF00), this.seedOffset = 0});
+  _LightningPainter(
+      {required this.animationValue,
+      this.lightningColor = const Color(0xFF7FFF00),
+      this.seedOffset = 0});
 
   @override
   void paint(Canvas canvas, Size size) {
-    _maybeDrawBolt(canvas, size, phase: 0.0, duration: 0.08, seed: 42 + seedOffset);
-    _maybeDrawBolt(canvas, size, phase: 0.05, duration: 0.04, seed: 43 + seedOffset);
-    _maybeDrawBolt(canvas, size, phase: 0.45, duration: 0.06, seed: 77 + seedOffset);
-    _maybeDrawBolt(canvas, size, phase: 0.50, duration: 0.03, seed: 78 + seedOffset);
+    _maybeDrawBolt(canvas, size,
+        phase: 0.0, duration: 0.08, seed: 42 + seedOffset);
+    _maybeDrawBolt(canvas, size,
+        phase: 0.05, duration: 0.04, seed: 43 + seedOffset);
+    _maybeDrawBolt(canvas, size,
+        phase: 0.45, duration: 0.06, seed: 77 + seedOffset);
+    _maybeDrawBolt(canvas, size,
+        phase: 0.50, duration: 0.03, seed: 78 + seedOffset);
 
     final flashOpacity = _getFlashOpacity();
     if (flashOpacity > 0) {
@@ -1192,7 +1278,12 @@ class _LightningPainter extends CustomPainter {
 
   double _getFlashOpacity() {
     // Flash during bolt windows
-    for (final window in [(0.0, 0.08), (0.05, 0.04), (0.45, 0.06), (0.50, 0.03)]) {
+    for (final window in [
+      (0.0, 0.08),
+      (0.05, 0.04),
+      (0.45, 0.06),
+      (0.50, 0.03)
+    ]) {
       final start = window.$1;
       final dur = window.$2;
       if (animationValue >= start && animationValue <= start + dur) {
@@ -1203,7 +1294,9 @@ class _LightningPainter extends CustomPainter {
     return 0.0;
   }
 
-  void _maybeDrawBolt(Canvas canvas, Size size, {
+  void _maybeDrawBolt(
+    Canvas canvas,
+    Size size, {
     required double phase,
     required double duration,
     required int seed,

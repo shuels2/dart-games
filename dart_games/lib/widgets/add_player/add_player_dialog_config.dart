@@ -393,6 +393,59 @@ class AddPlayerDialogConfig {
     );
   }
 
+  /// Lunar Lander theme — Earth Blue background, Rocket Flame accents, Orbitron/Exo2 fonts
+  factory AddPlayerDialogConfig.lunarLander() {
+    return AddPlayerDialogConfig(
+      backgroundColor: const Color(0xFF1B4965).withOpacity(0.95), // Earth Blue
+      textColor: const Color(0xFFFAFDF6), // Star White
+      titleStyle: GoogleFonts.orbitron(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFAFDF6), // Star White
+        letterSpacing: 1.2,
+      ),
+      inputLabelStyle: GoogleFonts.exo2(
+        fontSize: 16,
+        color: const Color(0xFFFAFDF6),
+      ),
+      inputBorderColor: const Color(0xFFF26430), // Rocket Flame
+      inputFocusedBorderColor: const Color(0xFF52B788), // Mission Green
+      inputErrorBorderColor: const Color(0xFFE63946), // Thruster Red
+      photoLabelStyle: GoogleFonts.exo2(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFFFAFDF6),
+      ),
+      photoButtonColor: const Color(0xFF1B4965), // Earth Blue
+      photoButtonForegroundColor: const Color(0xFFFAFDF6),
+      photoButtonBorderColor: const Color(0xFFF26430), // Rocket Flame
+      photoButtonTextStyle: GoogleFonts.exo2(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFAFDF6),
+      ),
+      photoButtonWidth: null,
+      addButtonColor: const Color(0xFFF26430), // Rocket Flame
+      addButtonForegroundColor: const Color(0xFFFAFDF6),
+      addButtonBorderColor: const Color(0xFFF26430),
+      addButtonTextStyle: GoogleFonts.orbitron(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+        color: const Color(0xFFFAFDF6),
+      ),
+      cancelButtonColor: const Color(0xFF0D1B2A).withOpacity(0.85), // Space Black
+      cancelButtonForegroundColor: const Color(0xFFFAFDF6),
+      cancelButtonBorderColor: const Color(0xFFC0C0C0), // Rocket Silver
+      cancelButtonTextStyle: GoogleFonts.exo2(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFFAFDF6),
+      ),
+      errorTextColor: const Color(0xFFE63946), // Thruster Red
+    );
+  }
+
   /// Options Screen theme configuration (Material Design defaults)
   factory AddPlayerDialogConfig.optionsScreen(BuildContext context) {
     final theme = Theme.of(context);

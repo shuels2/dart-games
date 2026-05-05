@@ -28,6 +28,7 @@ void main() {
 
     // Single S20 should win
     await throwDartViaMock(tester, 20);
+    await clickDartsRemoved(tester);
     expect(getCurrentPlayerScore(tester), 20);
     expect(hasWinner(tester), true);
   });

@@ -8,6 +8,7 @@ import 'providers/target_tag_provider.dart';
 import 'providers/monster_mash_provider.dart';
 import 'providers/reef_royale_provider.dart';
 import 'providers/clockwork_quest_provider.dart';
+import 'providers/lunar_lander_provider.dart';
 import 'services/api/api_client.dart';
 import 'services/api/api_config.dart';
 import 'services/app_settings.dart';
@@ -19,6 +20,9 @@ import 'screens/home_screen.dart';
 import 'screens/games/clockwork_quest/clockwork_quest_menu_screen.dart';
 import 'screens/games/clockwork_quest/clockwork_quest_game_screen.dart';
 import 'screens/games/clockwork_quest/clockwork_quest_results_screen.dart';
+import 'screens/games/lunar_lander/lunar_lander_menu_screen.dart';
+import 'screens/games/lunar_lander/lunar_lander_game_screen.dart';
+import 'screens/games/lunar_lander/lunar_lander_results_screen.dart';
 
 /// Global API client instance, shared across all services.
 ///
@@ -93,6 +97,13 @@ Future<void> _preloadFonts() async {
   GoogleFonts.lato(fontWeight: FontWeight.w600);
   GoogleFonts.lato(fontWeight: FontWeight.w700);
 
+  // Preload Lunar Lander fonts
+  GoogleFonts.orbitron(fontWeight: FontWeight.w400);
+  GoogleFonts.orbitron(fontWeight: FontWeight.w700);
+  GoogleFonts.exo2(fontWeight: FontWeight.w400);
+  GoogleFonts.exo2(fontWeight: FontWeight.w600);
+  GoogleFonts.exo2(fontWeight: FontWeight.w700);
+
   // Wait for all fonts to load
   await GoogleFonts.pendingFonts([
     GoogleFonts.nunito(),
@@ -106,6 +117,8 @@ Future<void> _preloadFonts() async {
     GoogleFonts.pirataOne(),
     GoogleFonts.cinzelDecorative(),
     GoogleFonts.lato(),
+    GoogleFonts.orbitron(),
+    GoogleFonts.exo2(),
   ]);
 }
 
@@ -131,6 +144,7 @@ class DartGamesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MonsterMashProvider(apiClient: apiClient)),
         ChangeNotifierProvider(create: (_) => ReefRoyaleProvider(apiClient: apiClient)),
         ChangeNotifierProvider(create: (_) => ClockworkQuestProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => LunarLanderProvider(apiClient: apiClient)),
       ],
       child: MaterialApp(
         title: 'Dart Games',
@@ -361,6 +375,9 @@ class DartGamesApp extends StatelessWidget {
           '/clockwork_quest_menu': (context) => const ClockworkQuestMenuScreen(),
           '/clockwork_quest_game': (context) => const ClockworkQuestGameScreen(),
           '/clockwork_quest_results': (context) => const ClockworkQuestResultsScreen(),
+          '/lunar_lander_menu': (context) => const LunarLanderMenuScreen(),
+          '/lunar_lander_game': (context) => const LunarLanderGameScreen(),
+          '/lunar_lander_results': (context) => const LunarLanderResultsScreen(),
         },
       ),
     );

@@ -36,6 +36,7 @@ void main() {
     // Turn 2: 300 total (wins)
     await throwBullseyeViaMock(tester);
     await throwBullseyeViaMock(tester);
+    await clickDartsRemoved(tester);
     expect(getCurrentPlayerScore(tester), greaterThanOrEqualTo(250));
     expect(hasWinner(tester), true);
   });

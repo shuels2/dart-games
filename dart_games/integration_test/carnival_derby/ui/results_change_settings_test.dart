@@ -29,7 +29,7 @@ void main() {
     await clickDartsRemoved(tester);
 
     await tester.pump();
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 4));
     await tester.pump();
     await tester.pump();
 

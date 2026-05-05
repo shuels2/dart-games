@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:dart_games/constants/test_keys.dart';
+import 'package:dart_games/providers/dartboard_provider.dart';
 import 'edit_score_dialog_config.dart';
 
 /// Shows a modal dialog for editing three dart scores.
@@ -36,12 +38,34 @@ Future<void> showEditScoreDialog({
     2: dart3['number'] as int?,
   };
 
+  // Guards against scheduling multiple post-frame pops when the dartboard
+  // becomes paused — the StatefulBuilder may rebuild several times before the
+  // first scheduled pop runs.
+  bool isAutoCancelling = false;
+
   await showDialog(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext dialogContext) {
       return StatefulBuilder(
         builder: (context, setState) {
+          // Auto-cancel (no onSubmit) when the dartboard transitions to a
+          // paused state — DartboardPausedModal is a body-Stack child and
+          // cannot paint above this routed dialog, so we dismiss the dialog
+          // to let the paused modal take over the screen.
+          final dartboardProvider = context.watch<DartboardProvider>();
+          final isDartboardPaused = !dartboardProvider.isEmulator &&
+              dartboardProvider.status != DartboardConnectionStatus.connected &&
+              dartboardProvider.status != DartboardConnectionStatus.emulator;
+          if (isDartboardPaused && !isAutoCancelling) {
+            isAutoCancelling = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (Navigator.of(dialogContext).canPop()) {
+                Navigator.of(dialogContext).pop();
+              }
+            });
+          }
+
           bool isValidSelection = true;
           for (int i = 0; i < 3; i++) {
             final ring = selectedRings[i];

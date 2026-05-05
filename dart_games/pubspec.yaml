@@ -159,6 +159,12 @@ flutter:
     - assets/games/clockwork_quest/images/gears/
     - assets/games/clockwork_quest/sounds/
 
+    # Lunar Lander game assets
+    - assets/games/lunar_lander/icons/
+    - assets/games/lunar_lander/images/
+    - assets/games/lunar_lander/characters/
+    - assets/games/lunar_lander/sounds/
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

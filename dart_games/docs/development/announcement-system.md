@@ -477,6 +477,23 @@ When building or modifying a game's announcement system:
 
 **The "Remove your darts" announcement must always play.** It serves a functional purpose — telling the player to physically remove their darts from the board before the next player throws. This announcement is never suppressed by precedence rules and is not counted toward the per-dart moment limit.
 
+### Max-2-Announcements: A Design-Time Convention
+
+The max-2-announcements-per-dart rule is a **design-time convention** enforced by the precedence chain structure, not a runtime limiter. The game screen's `_handleDartThrow` calls exactly ONE moment announcement (via the if/else precedence chain) plus remove darts separately -- this structure inherently limits to max 2 per dart. There is no runtime counter or enforcer; if the code is structured correctly following the gather-facts-pick-winner pattern, the limit is satisfied by construction.
+
+### Game Screen Audio Wiring Checklist
+
+Every game screen MUST wire the announcement system following this 8-point checklist:
+
+1. **`_audioQueue` field** typed as the game's `AnnouncementHelper?`
+2. **Initialized in `_initializeGame()`** via `GameAnnouncementQueueService` + `loadSettings()`
+3. **`announceGameStart()`** called after initialization
+4. **First turn announced** with 2000ms delay
+5. **Per-dart moment announcements** in `_handleDartThrow` (precedence chain + `isAutoPlaying` guard)
+6. **Remove darts announcement** at 1500ms delay when `shouldPromptTakeout`
+7. **Turn announcement** in `_handleTakeoutFinished` at 500ms delay (with `isAutoPlaying` guard)
+8. **`_audioQueue?.dispose()`** in `dispose()`
+
 ## Best Practices
 
 ### DO:

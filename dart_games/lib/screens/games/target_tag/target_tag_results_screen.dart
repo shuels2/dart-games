@@ -13,6 +13,8 @@ import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../constants/test_keys.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../providers/dartboard_provider.dart';
 import 'target_tag_menu_screen.dart';
 import 'target_tag_game_screen.dart';
 
@@ -129,7 +131,6 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
           playerCount: playerCount,
         );
       }
-
     } catch (e) {
       debugPrint('Error updating player stats: $e');
     }
@@ -160,23 +161,25 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
         if (customMusicSource.startsWith('data:')) {
           // Web: data URL
           await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => debugPrint('Audio playback timed out'),
-          );
+                const Duration(seconds: 5),
+                onTimeout: () => debugPrint('Audio playback timed out'),
+              );
         } else {
           // Native: file path
           await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => debugPrint('Audio playback timed out'),
-          );
+                const Duration(seconds: 5),
+                onTimeout: () => debugPrint('Audio playback timed out'),
+              );
         }
       } else {
         // Fallback
-        await _audioPlayer.play(UrlSource(
-            'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3')).timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => debugPrint('Audio playback timed out'),
-        );
+        await _audioPlayer
+            .play(UrlSource(
+                'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'))
+            .timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => debugPrint('Audio playback timed out'),
+            );
       }
     } catch (e) {
       debugPrint('Error playing victory music: $e');
@@ -185,8 +188,9 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final targetTagProvider = context.read<TargetTagProvider>();
-    final playerProvider = context.read<PlayerProvider>();
+    final dartboardProvider = context.watch<DartboardProvider>();
+    final targetTagProvider = context.watch<TargetTagProvider>();
+    final playerProvider = context.watch<PlayerProvider>();
 
     final currentGame = targetTagProvider.currentGame;
     if (currentGame == null) {
@@ -202,246 +206,276 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
       );
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
-      appBar: AppBar(
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Text(
-            'Target Tag Game Over',
-            style: GoogleFonts.luckiestGuy(
-              fontSize: 36,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ),
-        backgroundColor: const Color(0xFFFF007A), // Hot pink
-        foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DartboardConnectionInfo(
-              config: DartboardConnectionInfoConfig.targetTag(),
-            ),
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Tech/Neon background
-          const Positioned.fill(
-            child: TechNeonBackground(),
-          ),
-          // Confetti
-          Align(
-            alignment: Alignment.topLeft,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: pi / 4,
-              emissionFrequency: 0.05,
-              numberOfParticles: 30,
-              gravity: 0.1,
-              colors: const [
-                Color(0xFFFF007A),
-                Color(0xFF00FFA3),
-                Colors.yellow,
-                Colors.blue,
-                Colors.purple,
-              ],
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: pi / 2,
-              emissionFrequency: 0.05,
-              numberOfParticles: 30,
-              gravity: 0.1,
-              colors: const [
-                Color(0xFFFF007A),
-                Color(0xFF00FFA3),
-                Colors.yellow,
-                Colors.blue,
-                Colors.purple,
-              ],
-            ),
-          ),
-          Align(
-            alignment: Alignment.topRight,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: 3 * pi / 4,
-              emissionFrequency: 0.05,
-              numberOfParticles: 30,
-              gravity: 0.1,
-              colors: const [
-                Color(0xFFFF007A),
-                Color(0xFF00FFA3),
-                Colors.yellow,
-                Colors.blue,
-                Colors.purple,
-              ],
-            ),
-          ),
-
-          // Main content
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Trophy icon - gold and pulsing
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: ScaleTransition(
-                      scale: _pulseAnimation,
-                      child: const Icon(
-                        Icons.emoji_events,
-                        size: 120,
-                        color: Color(0xFFFFD700), // Arcade gold
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Winner announcement - larger and pulsing
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: ScaleTransition(
-                      scale: _pulseAnimation,
-                      child: Text(
-                        winners.length == 1 ? 'WINNER!' : 'WINNERS!',
-                        style: GoogleFonts.luckiestGuy(
-                          fontSize: 64, // Increased from 48
-                          color: const Color(0xFFFFD700), // Arcade gold
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Winner images and names
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Column(
-                      children: [
-                        // Player images side by side in team mode, single image in solo mode
-                        if (winners.length > 1) ...[
-                          // Team mode: Show both player images side by side
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: winners.map((winner) => Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: winner.photoPath != null
-                                  ? CircleAvatar(
-                                      radius: 60,
-                                      backgroundImage: winner.photoPath!.startsWith('data:')
-                                          ? MemoryImage(Uri.parse(winner.photoPath!).data!.contentAsBytes())
-                                          : NetworkImage(winner.photoPath!) as ImageProvider,
-                                    )
-                                  : CircleAvatar(
-                                      radius: 60,
-                                      backgroundColor: const Color(0xFFFF007A),
-                                      child: Text(
-                                        winner.name[0].toUpperCase(),
-                                        style: GoogleFonts.fredoka(
-                                          fontSize: 48,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                            )).toList(),
-                          ),
-                          const SizedBox(height: 16),
-                          // Player names below images
-                          ...winners.map((winner) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(
-                              winner.name,
-                              style: GoogleFonts.luckiestGuy(
-                                fontSize: 36,
-                                color: Colors.white,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          )),
-                        ] else ...[
-                          // Solo mode: Show single player image and name
-                          if (winners.isNotEmpty) ...[
-                            if (winners.first.photoPath != null)
-                              CircleAvatar(
-                                radius: 60,
-                                backgroundImage: winners.first.photoPath!.startsWith('data:')
-                                    ? MemoryImage(Uri.parse(winners.first.photoPath!).data!.contentAsBytes())
-                                    : NetworkImage(winners.first.photoPath!) as ImageProvider,
-                              )
-                            else
-                              CircleAvatar(
-                                radius: 60,
-                                backgroundColor: const Color(0xFFFF007A),
-                                child: Text(
-                                  winners.first.name[0].toUpperCase(),
-                                  style: GoogleFonts.fredoka(
-                                    fontSize: 48,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(height: 16),
-                            Text(
-                              winners.first.name,
-                              style: GoogleFonts.luckiestGuy(
-                                fontSize: 36,
-                                color: Colors.white,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  // Action buttons
-                  _buildActionButton(
-                    'Play Again',
-                    Icons.refresh,
-                    const Color(0xFF00FFA3),
-                    _playAgain,
-                    key: TargetTagResultsKeys.playAgainButton,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildActionButton(
-                    'Change Settings',
-                    Icons.settings,
-                    const Color(0xFFFF007A),
-                    _changeSettings,
-                    key: TargetTagResultsKeys.changeSettingsButton,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildActionButton(
-                    'Select Different Game',
-                    Icons.home,
-                    const Color(0xFF2A2A3E),
-                    _goHome,
-                    key: TargetTagResultsKeys.backToMenuButton,
-                  ),
-                ],
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: const Color(0xFF1A1A2E),
+          appBar: AppBar(
+            title: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'Target Tag Game Over',
+                style: GoogleFonts.luckiestGuy(
+                  fontSize: 36,
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
+            backgroundColor: const Color(0xFFFF007A), // Hot pink
+            foregroundColor: Colors.white,
+            automaticallyImplyLeading: false,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: DartboardConnectionInfo(
+                  config: DartboardConnectionInfoConfig.targetTag(),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+          body: Stack(
+            children: [
+              // Tech/Neon background
+              const Positioned.fill(
+                child: TechNeonBackground(),
+              ),
+              // Confetti
+              Align(
+                alignment: Alignment.topLeft,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: pi / 4,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 30,
+                  gravity: 0.1,
+                  colors: const [
+                    Color(0xFFFF007A),
+                    Color(0xFF00FFA3),
+                    Colors.yellow,
+                    Colors.blue,
+                    Colors.purple,
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: pi / 2,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 30,
+                  gravity: 0.1,
+                  colors: const [
+                    Color(0xFFFF007A),
+                    Color(0xFF00FFA3),
+                    Colors.yellow,
+                    Colors.blue,
+                    Colors.purple,
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.topRight,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: 3 * pi / 4,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 30,
+                  gravity: 0.1,
+                  colors: const [
+                    Color(0xFFFF007A),
+                    Color(0xFF00FFA3),
+                    Colors.yellow,
+                    Colors.blue,
+                    Colors.purple,
+                  ],
+                ),
+              ),
+
+              // Main content
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Trophy icon - gold and pulsing
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: ScaleTransition(
+                          scale: _pulseAnimation,
+                          child: const Icon(
+                            Icons.emoji_events,
+                            size: 120,
+                            color: Color(0xFFFFD700), // Arcade gold
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Winner announcement - larger and pulsing
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: ScaleTransition(
+                          scale: _pulseAnimation,
+                          child: Text(
+                            winners.length == 1 ? 'WINNER!' : 'WINNERS!',
+                            style: GoogleFonts.luckiestGuy(
+                              fontSize: 64, // Increased from 48
+                              color: const Color(0xFFFFD700), // Arcade gold
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Winner images and names
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: Column(
+                          children: [
+                            // Player images side by side in team mode, single image in solo mode
+                            if (winners.length > 1) ...[
+                              // Team mode: Show both player images side by side
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: winners
+                                    .map((winner) => Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12),
+                                          child: winner.photoPath != null
+                                              ? CircleAvatar(
+                                                  radius: 60,
+                                                  backgroundImage: winner
+                                                          .photoPath!
+                                                          .startsWith('data:')
+                                                      ? MemoryImage(Uri.parse(
+                                                              winner.photoPath!)
+                                                          .data!
+                                                          .contentAsBytes())
+                                                      : NetworkImage(
+                                                              winner.photoPath!)
+                                                          as ImageProvider,
+                                                )
+                                              : CircleAvatar(
+                                                  radius: 60,
+                                                  backgroundColor:
+                                                      const Color(0xFFFF007A),
+                                                  child: Text(
+                                                    winner.name[0]
+                                                        .toUpperCase(),
+                                                    style: GoogleFonts.fredoka(
+                                                      fontSize: 48,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                        ))
+                                    .toList(),
+                              ),
+                              const SizedBox(height: 16),
+                              // Player names below images
+                              ...winners.map((winner) => Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 4),
+                                    child: Text(
+                                      winner.name,
+                                      style: GoogleFonts.luckiestGuy(
+                                        fontSize: 36,
+                                        color: Colors.white,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  )),
+                            ] else ...[
+                              // Solo mode: Show single player image and name
+                              if (winners.isNotEmpty) ...[
+                                if (winners.first.photoPath != null)
+                                  CircleAvatar(
+                                    radius: 60,
+                                    backgroundImage: winners.first.photoPath!
+                                            .startsWith('data:')
+                                        ? MemoryImage(
+                                            Uri.parse(winners.first.photoPath!)
+                                                .data!
+                                                .contentAsBytes())
+                                        : NetworkImage(winners.first.photoPath!)
+                                            as ImageProvider,
+                                  )
+                                else
+                                  CircleAvatar(
+                                    radius: 60,
+                                    backgroundColor: const Color(0xFFFF007A),
+                                    child: Text(
+                                      winners.first.name[0].toUpperCase(),
+                                      style: GoogleFonts.fredoka(
+                                        fontSize: 48,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  winners.first.name,
+                                  style: GoogleFonts.luckiestGuy(
+                                    fontSize: 36,
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 48),
+
+                      // Action buttons
+                      _buildActionButton(
+                        'Play Again',
+                        Icons.refresh,
+                        const Color(0xFF00FFA3),
+                        _playAgain,
+                        key: TargetTagResultsKeys.playAgainButton,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildActionButton(
+                        'Change Settings',
+                        Icons.settings,
+                        const Color(0xFFFF007A),
+                        _changeSettings,
+                        key: TargetTagResultsKeys.changeSettingsButton,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildActionButton(
+                        'Select Different Game',
+                        Icons.home,
+                        const Color(0xFF2A2A3E),
+                        _goHome,
+                        key: TargetTagResultsKeys.backToMenuButton,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Dartboard paused modal — covers entire screen incl. AppBar when disconnected.
+        if (!dartboardProvider.isEmulator &&
+            dartboardProvider.status != DartboardConnectionStatus.connected &&
+            dartboardProvider.status != DartboardConnectionStatus.emulator)
+          DartboardPausedModal(
+            config: DartboardPausedModalConfig.targetTag(),
+          ),
+      ],
     );
   }
 
@@ -496,7 +530,8 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
         currentGame.soloHeroBonus,
       );
     } else {
-      targetTagProvider.startSoloGame(players, currentGame.shieldMax, currentGame.soloHeroBonus);
+      targetTagProvider.startSoloGame(
+          players, currentGame.shieldMax, currentGame.soloHeroBonus);
     }
 
     // Navigate to game screen
