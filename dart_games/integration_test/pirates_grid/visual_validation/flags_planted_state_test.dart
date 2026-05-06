@@ -28,15 +28,19 @@ void main() {
     expect(ElementFinders.getPiratesGridFlagsCounter(p1Id), findsOneWidget,
         reason: 'Flags counter widget should be visible');
 
-    // Plant first flag: S20 → cell [0,0]
-    await throwDartViaMock(tester, 20);
-    expect(provider.currentGame!.getFlagsPlanted(p1Id), 1,
-        reason: 'P1 should have 1 flag after S20');
+    // Read actual targets for cells [0,0] and [0,1]
+    final target00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    final target01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
 
-    // Plant second flag: S18 → cell [0,1]
-    await throwDartViaMock(tester, 18);
+    // Plant first flag
+    await throwDartViaMock(tester, target00);
+    expect(provider.currentGame!.getFlagsPlanted(p1Id), 1,
+        reason: 'P1 should have 1 flag after hitting cell [0,0] target');
+
+    // Plant second flag
+    await throwDartViaMock(tester, target01);
     expect(provider.currentGame!.getFlagsPlanted(p1Id), 2,
-        reason: 'P1 should have 2 flags after S18');
+        reason: 'P1 should have 2 flags after hitting cell [0,1] target');
 
     // Counter widget should still be present
     expect(ElementFinders.getPiratesGridFlagsCounter(p1Id), findsOneWidget,

@@ -16,9 +16,11 @@ void main() {
         playerNames: ['Player A', 'Player B']);
 
     // Throw 3 darts → RemoveDartsModal
-    await throwDartViaMock(tester, 20);
+    final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    await throwDartViaMock(tester, t00);
     await throwMissViaMock(tester);
-    await throwDartViaMock(tester, 18);
+    final t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+    await throwDartViaMock(tester, t01);
 
     // Record original segments
     final provider = ProviderHelpers.getPiratesGridProvider(tester);

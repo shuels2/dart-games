@@ -16,7 +16,8 @@ void main() {
         playerNames: ['Player A', 'Player B']);
 
     // Throw a dart so state is in-progress
-    await throwDartViaMock(tester, 20);
+    final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    await throwDartViaMock(tester, t00);
 
     // Simulate disconnection
     await simulateDisconnectAndVerify(tester);

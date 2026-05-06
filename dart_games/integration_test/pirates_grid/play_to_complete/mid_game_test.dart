@@ -17,7 +17,8 @@ void main() {
         playerNames: ['Player A', 'Player B']);
 
     // Throw a few manual darts to get mid-game state
-    await throwDartViaMock(tester, 20);
+    final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    await throwDartViaMock(tester, t00);
     await throwMissViaMock(tester);
     await throwMissViaMock(tester);
     await clickDartsRemoved(tester);

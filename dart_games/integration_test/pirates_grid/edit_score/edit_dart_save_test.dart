@@ -16,10 +16,12 @@ void main() {
     await setupAndStartGame(tester, config,
         playerNames: ['Player A', 'Player B']);
 
-    // Throw 3 darts (S20, Miss, S18) → RemoveDartsModal appears
-    await throwDartViaMock(tester, 20);
+    // Throw 3 darts (row 0 col 0, Miss, row 0 col 1) → RemoveDartsModal appears
+    final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    await throwDartViaMock(tester, t00);
     await throwMissViaMock(tester);
-    await throwDartViaMock(tester, 18);
+    final t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+    await throwDartViaMock(tester, t01);
 
     // Verify RemoveDartsModal is visible (edit button appears)
     final editButton = config.getEditScoreButton();
@@ -28,7 +30,7 @@ void main() {
     // Open Edit Score dialog
     await openEditScore(tester);
 
-    // Change dart 1 from S20 to S19 (hits a different cell)
+    // Change dart 1 to S19 (a different segment)
     await EditScoreHelpers.setDart1(tester, 'S19');
 
     // Save the edit

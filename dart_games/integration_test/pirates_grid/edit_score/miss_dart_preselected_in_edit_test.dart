@@ -18,12 +18,14 @@ void main() {
     await setupAndStartGame(tester, config,
         playerNames: ['Player A', 'Player B']);
 
-    // Dart 1: S20 (hits row 0, col 0 on Easy)
-    await throwDartViaMock(tester, 20);
+    // Dart 1: row 0, col 0
+    final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    await throwDartViaMock(tester, t00);
     // Dart 2: Miss
     await throwMissViaMock(tester);
-    // Dart 3: S18 (hits row 0, col 1 on Easy)
-    await throwDartViaMock(tester, 18);
+    // Dart 3: row 0, col 1
+    final t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+    await throwDartViaMock(tester, t01);
 
     // RemoveDartsModal should be visible now
     expect(config.getEditScoreButton(), findsOneWidget,

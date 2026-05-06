@@ -24,10 +24,13 @@ void main() {
     expect(ElementFinders.getPiratesGridRoundTracker(), findsOneWidget,
         reason: 'Round tracker should be visible for Bo3');
 
-    // Round 1: P1 throws S20, S18, S16 → wins row 0
-    await throwDartViaMock(tester, 20);
-    await throwDartViaMock(tester, 18);
-    await throwDartViaMock(tester, 16);
+    // Round 1: P1 throws row 0 cells → wins row 0
+    final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    final t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+    final t02 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 2);
+    await throwDartViaMock(tester, t00);
+    await throwDartViaMock(tester, t01);
+    await throwDartViaMock(tester, t02);
 
     expect(provider.currentGame!.roundsWon[p1Id], 1,
         reason: 'P1 should have 1 round win');

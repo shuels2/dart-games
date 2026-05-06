@@ -8,25 +8,26 @@ import '_helpers.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Gameplay: Medium difficulty — D18 plants flag in cell [0,1]',
+  testWidgets('Gameplay: Medium difficulty — D on cell [0,1] target plants flag',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config, difficulty: 'Medium',
-        playerNames: ['Player A', 'Player B']);
+    await setupAndStartGame(tester, config,
+        difficulty: 'Medium', playerNames: ['Player A', 'Player B']);
 
     final provider = ProviderHelpers.getPiratesGridProvider(tester);
     final p1Id = provider.currentGame!.playerIds[0];
 
-    // Verify cell [0,1] (target D18 on medium) is empty before
+    // Read the actual target assigned to cell [0,1] at runtime
+    final targetNum = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+
     expect(ProviderHelpers.getPiratesGridCellClaimedBy(tester, 0, 1), isNull,
         reason: 'Cell [0,1] should be empty before dart');
 
-    // Throw D18 → claims cell [0,1] (Medium: double on 18)
-    await throwDartViaMock(tester, 18, multiplier: 'double');
+    // Medium requires double or triple — throw a double
+    await throwDartViaMock(tester, targetNum, multiplier: 'double');
 
-    // Verify cell [0,1] is now claimed by P1
     expect(ProviderHelpers.getPiratesGridCellClaimedBy(tester, 0, 1), p1Id,
-        reason: 'Cell [0,1] should be claimed by P1 after D18');
+        reason: 'Cell [0,1] should be claimed by P1 after D on its target');
 
     expect(ProviderHelpers.getPiratesGridFlagsPlanted(tester, p1Id), 1,
         reason: 'P1 should have 1 flag planted');

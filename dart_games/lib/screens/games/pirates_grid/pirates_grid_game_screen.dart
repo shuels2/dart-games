@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -49,6 +50,13 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   bool _showSaveModal = false;
   PiratesGridAnnouncementHelper? _audioQueue;
 
+  // Character paths — randomized per game session
+  late List<String> _characterPaths;
+
+  // Per-dart grid-hit tracking: true = dart matched a grid cell target
+  List<bool> _currentTurnHits = [];
+  String? _lastTurnPlayerId;
+
   // Speed Play timer
   Timer? _speedPlayTimer;
   int _speedPlaySecondsRemaining = 15;
@@ -66,6 +74,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   static const Color _parchmentTan = Color(0xFFF5E6C8);
   static const Color _inkBlack = Color(0xFF1A1A1A);
 
+
   // P1 / P2 flag colors
   static const Color _p1FlagColor = Color(0xFF8B0000); // Blood Red
   static const Color _p2FlagColor = Color(0xFF2E8B8B); // Sea Foam Teal
@@ -73,6 +82,19 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   @override
   void initState() {
     super.initState();
+
+    // Shuffle all 8 pirate characters and assign one to each player
+    final allCharacters = [
+      'assets/games/pirates_grid/characters/CaptainCrossbones.png',
+      'assets/games/pirates_grid/characters/CaptainRedbeard.png',
+      'assets/games/pirates_grid/characters/PeglegPete.png',
+      'assets/games/pirates_grid/characters/NavigatorNora.png',
+      'assets/games/pirates_grid/characters/CannonballCal.png',
+      'assets/games/pirates_grid/characters/TreasureTess.png',
+      'assets/games/pirates_grid/characters/BarnacleBob.png',
+      'assets/games/pirates_grid/characters/MonkeyMike.png',
+    ]..shuffle();
+    _characterPaths = allCharacters.take(2).toList();
 
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 600),
@@ -251,6 +273,15 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       }
     }
 
+    // ── Track per-dart grid-hit status for indicator coloring ───────────────
+    if (_lastTurnPlayerId != playerId) {
+      _currentTurnHits = [];
+      _lastTurnPlayerId = playerId;
+    }
+    if (_currentTurnHits.length < 3) {
+      _currentTurnHits = [..._currentTurnHits, wasMatched];
+    }
+
     // ── Process the dart ────────────────────────────────────────────────────
     provider.processDartThrow(
       score: score,
@@ -376,6 +407,8 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   }
 
   void _handleTakeoutFinished() {
+    _currentTurnHits = [];
+    _lastTurnPlayerId = null;
     final provider = context.read<PiratesGridProvider>();
     if (!mounted) return;
 
@@ -537,7 +570,11 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               backgroundColor: _oceanNavy,
               leading: IconButton(
                 key: PiratesGridGameKeys.backButton,
-                icon: const Icon(Icons.arrow_back, color: _treasureGold, size: 32),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: _treasureGold,
+                  size: 32,
+                ),
                 onPressed: () {
                   if (hasDartsThrown) {
                     setState(() => _showSaveModal = true);
@@ -552,117 +589,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               title: Text(
                 "PIRATE'S GRID",
                 style: GoogleFonts.pirataOne(
-                  fontSize: 24,
+                  fontSize: 35,
                   color: _treasureGold,
                   letterSpacing: 1.5,
                 ),
               ),
               actions: [
-                // Skip Turn button
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: OutlinedButton(
-                    key: PiratesGridGameKeys.skipTurnButton,
-                    onPressed: shouldPromptTakeout
-                        ? null
-                        : () {
-                            _speedPlayTimer?.cancel();
-                            final p = context.read<PiratesGridProvider>();
-                            final pp = context.read<PlayerProvider>();
-                            final g = p.currentGame;
-                            final pid = g?.getCurrentPlayerId() ?? '';
-                            final pName =
-                                pp.getPlayerById(pid)?.name ?? 'Player';
-                            final darts = p.getCurrentPlayerDartsThrown();
-                            p.skipTurn();
-                            if (darts > 0) {
-                              Future.delayed(const Duration(milliseconds: 1500), () {
-                                if (mounted) _audioQueue?.announceRemoveDarts(pName);
-                              });
-                              Future.delayed(const Duration(milliseconds: 3500), () {
-                                if (mounted) _mockApi?.simulateTakeoutStarted();
-                              });
-                            } else {
-                              Future.delayed(const Duration(milliseconds: 500), () {
-                                if (mounted) {
-                                  if (_mockApi != null) {
-                                    _mockApi!.simulateTakeoutFinished();
-                                  } else {
-                                    _handleTakeoutFinished();
-                                  }
-                                }
-                              });
-                            }
-                          },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: _compassBronze, width: 1.5),
-                      foregroundColor: _compassBronze,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                    ),
-                    child: Text(
-                      'SKIP TURN',
-                      style: GoogleFonts.pirataOne(
-                        fontSize: 13,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                // D1, D2, D3 dart indicators
-                ...List.generate(3, (i) {
-                  final hasSegment = i < currentDartSegments.length;
-                  final segment = hasSegment ? currentDartSegments[i] : null;
-                  final isSkip = segment == 'Skip';
-                  final isMiss = segment == 'Miss';
-                  final hasScore = hasSegment && !isSkip;
-
-                  Color slotColor;
-                  String scoreLabel;
-                  if (!hasSegment) {
-                    slotColor = _compassBronze.withOpacity(0.5);
-                    scoreLabel = '—';
-                  } else if (isSkip || isMiss) {
-                    slotColor = _parchmentTan.withOpacity(0.5);
-                    scoreLabel = '—';
-                  } else {
-                    slotColor = _seaFoamTeal;
-                    scoreLabel = segment ?? '—';
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                    child: Container(
-                      key: PiratesGridGameKeys.dartIndicator(i),
-                      width: 50,
-                      decoration: BoxDecoration(
-                        color: hasScore
-                            ? slotColor.withOpacity(0.25)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: hasScore
-                              ? slotColor
-                              : _compassBronze.withOpacity(0.5),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          scoreLabel,
-                          style: GoogleFonts.pirataOne(
-                            fontSize: 10,
-                            color: hasScore
-                                ? slotColor
-                                : _compassBronze.withOpacity(0.5),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-                const SizedBox(width: 8),
                 DartboardConnectionInfo(
                   config: DartboardConnectionInfoConfig.piratesGrid(),
                 ),
@@ -808,76 +740,90 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 100),
-      child: Column(
-        children: [
-          // Round tracker (only for Bo3+)
-          if (game.bestOf > 1)
-            _buildRoundTracker(game, p1, p2, p1Id, p2Id),
-          // Main game row: P1 | grid | P2
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Left player column (P1)
-                Expanded(
-                  flex: 1,
-                  child: _buildPlayerColumn(
-                    game: game,
-                    player: p1,
-                    playerId: p1Id,
-                    playerIndex: 0,
-                    isActive: isP1Active,
-                    dartsThrown: isP1Active ? dartsThrown : 0,
-                    currentDartSegments: isP1Active
-                        ? context
-                            .read<PiratesGridProvider>()
-                            .getCurrentTurnDartSegments(p1Id)
-                        : [],
-                  ),
-                ),
-                // Center column (grid)
-                _buildGrid(game),
-                // Right player column (P2)
-                Expanded(
-                  flex: 1,
-                  child: _buildPlayerColumn(
-                    game: game,
-                    player: p2,
-                    playerId: p2Id,
-                    playerIndex: 1,
-                    isActive: !isP1Active,
-                    dartsThrown: !isP1Active ? dartsThrown : 0,
-                    currentDartSegments: !isP1Active
-                        ? context
-                            .read<PiratesGridProvider>()
-                            .getCurrentTurnDartSegments(p2Id)
-                        : [],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Steal Mode badge (only when stealMode ON)
-          if (game.stealMode)
-            Container(
-              key: PiratesGridGameKeys.stealModeBadge,
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: _bloodRed,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _compassBronze, width: 1.5),
-              ),
-              child: Text(
-                '⚔ STEAL MODE',
-                style: GoogleFonts.pirataOne(
-                  fontSize: 15,
-                  color: _parchmentTan,
-                  letterSpacing: 1.0,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final availW = constraints.maxWidth;
+          // Grid takes 40% of width (20% reduction); each cell = (gridW - 18px total margin) / 3
+          final gridW = availW * 0.40;
+          final cellSize = (gridW - 18.0) / 3.0;
+          final charColW = (availW - gridW) / 2.0;
+          final activeCharSize = charColW * 0.88;
+          final inactiveCharSize = activeCharSize * 0.70;
+
+          return Column(
+            children: [
+              // Round tracker (only for Bo3+)
+              if (game.bestOf > 1)
+                _buildRoundTracker(game, p1, p2, p1Id, p2Id),
+              // Main game row: P1 | grid | P2
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: charColW,
+                      child: _buildPlayerColumn(
+                        game: game,
+                        player: p1,
+                        playerId: p1Id,
+                        playerIndex: 0,
+                        isActive: isP1Active,
+                        dartsThrown: isP1Active ? dartsThrown : 0,
+                        currentDartSegments: isP1Active
+                            ? context
+                                .read<PiratesGridProvider>()
+                                .getCurrentTurnDartSegments(p1Id)
+                            : [],
+                        charSize: isP1Active ? activeCharSize : inactiveCharSize,
+                        dartHits: isP1Active ? _currentTurnHits : const [],
+                      ),
+                    ),
+                    // Center column (grid)
+                    _buildGrid(game, cellSize),
+                    SizedBox(
+                      width: charColW,
+                      child: _buildPlayerColumn(
+                        game: game,
+                        player: p2,
+                        playerId: p2Id,
+                        playerIndex: 1,
+                        isActive: !isP1Active,
+                        dartsThrown: !isP1Active ? dartsThrown : 0,
+                        currentDartSegments: !isP1Active
+                            ? context
+                                .read<PiratesGridProvider>()
+                                .getCurrentTurnDartSegments(p2Id)
+                            : [],
+                        charSize: !isP1Active ? activeCharSize : inactiveCharSize,
+                        dartHits: !isP1Active ? _currentTurnHits : const [],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-        ],
+              // Steal Mode badge (only when stealMode ON)
+              if (game.stealMode)
+                Container(
+                  key: PiratesGridGameKeys.stealModeBadge,
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _bloodRed,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _compassBronze, width: 1.5),
+                  ),
+                  child: Text(
+                    '⚔ STEAL MODE',
+                    style: GoogleFonts.pirataOne(
+                      fontSize: 15,
+                      color: _parchmentTan,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -922,62 +868,70 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     required bool isActive,
     required int dartsThrown,
     required List<String> currentDartSegments,
+    required double charSize,
+    List<bool> dartHits = const [],
   }) {
     final playerName = player?.name ?? 'Player ${playerIndex + 1}';
     final flagColor = playerIndex == 0 ? _p1FlagColor : _p2FlagColor;
     final flagsPlanted = game.getFlagsPlanted(playerId);
 
-    // Character asset: fixed by player index
-    final characterPath = playerIndex == 0
-        ? 'assets/games/pirates_grid/characters/CaptainCrossbones.png'
-        : 'assets/games/pirates_grid/characters/CaptainRedbeard.png';
-
-    final double charSize = isActive ? 200 : 140;
+    final characterPath = _characterPaths[playerIndex];
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Character image
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          child: Opacity(
-            opacity: isActive ? 1.0 : 0.75,
-            child: Container(
-              key: isActive
-                  ? PiratesGridGameKeys.playerAvatarActive
-                  : PiratesGridGameKeys.playerAvatarInactive,
-              width: charSize,
-              height: charSize,
-              decoration: BoxDecoration(
-                boxShadow: isActive
-                    ? [
-                        BoxShadow(
-                          color: flagColor.withOpacity(0.7),
-                          blurRadius: 24,
-                          spreadRadius: 4,
+        // Character — shape-following glow for active player
+        SizedBox(
+          key: isActive
+              ? PiratesGridGameKeys.playerAvatarActive
+              : PiratesGridGameKeys.playerAvatarInactive,
+          width: charSize,
+          height: charSize,
+          child: Stack(
+              clipBehavior: Clip.none,
+              fit: StackFit.expand,
+              children: [
+                // Glow: blurred colored silhouette behind the character
+                if (isActive)
+                  Positioned(
+                    left: -(charSize * 0.10),
+                    right: -(charSize * 0.10),
+                    top: -(charSize * 0.10),
+                    bottom: -(charSize * 0.10),
+                    child: ImageFiltered(
+                      imageFilter: ui.ImageFilter.blur(
+                        sigmaX: charSize * 0.07,
+                        sigmaY: charSize * 0.07,
+                      ),
+                      child: ColorFiltered(
+                        colorFilter: ColorFilter.mode(
+                          flagColor.withOpacity(0.85),
+                          BlendMode.srcIn,
                         ),
-                      ]
-                    : null,
-              ),
-              child: Image.asset(
-                characterPath,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Icon(
-                  Icons.person,
-                  color: flagColor,
-                  size: charSize * 0.7,
+                        child: Image.asset(characterPath, fit: BoxFit.contain),
+                      ),
+                    ),
+                  ),
+                // Main character image
+                Image.asset(
+                  characterPath,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.person,
+                    color: flagColor,
+                    size: charSize * 0.7,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-        ),
         const SizedBox(height: 8),
         // Player name
         Text(
           playerName,
           style: GoogleFonts.pirataOne(
-            fontSize: 20,
-            color: isActive ? _parchmentTan : _parchmentTan.withOpacity(0.7),
+            fontSize: isActive ? 30 : 20,
+            color: _parchmentTan,
             shadows: isActive
                 ? const [Shadow(color: _inkBlack, offset: Offset(1, 1), blurRadius: 3)]
                 : null,
@@ -987,73 +941,153 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         ),
         const SizedBox(height: 4),
         // Flags counter
-        Text(
-          '🚩 $flagsPlanted planted',
+        Row(
+          mainAxisSize: MainAxisSize.min,
           key: PiratesGridGameKeys.flagsCounter(playerId),
-          style: GoogleFonts.pirataOne(
-            fontSize: 16,
-            color: isActive ? flagColor : flagColor.withOpacity(0.7),
-          ),
+          children: [
+            Icon(
+              Icons.flag,
+              color: flagColor,
+              size: isActive ? 32 : 22,
+              shadows: const [
+                Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+                Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+                Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+                Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+              ],
+            ),
+            Text(
+              ' $flagsPlanted planted',
+              style: GoogleFonts.pirataOne(
+                fontSize: isActive ? 32 : 22,
+                color: flagColor,
+                shadows: const [
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+                ],
+              ),
+            ),
+          ],
         ),
         if (isActive) ...[
           const SizedBox(height: 10),
-          // Speed Play timer (active player only)
+          // Speed Play timer
           if (game.speedPlay) _buildSpeedPlayTimer(),
           const SizedBox(height: 8),
-          // Skip turn button (active player only) — no key here, canonical key is in AppBar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: context.read<PiratesGridProvider>().shouldPromptTakeout
-                    ? null
-                    : () {
-                        _speedPlayTimer?.cancel();
-                        final p = context.read<PiratesGridProvider>();
-                        final pp = context.read<PlayerProvider>();
-                        final g = p.currentGame;
-                        final pid = g?.getCurrentPlayerId() ?? '';
-                        final pName =
-                            pp.getPlayerById(pid)?.name ?? playerName;
-                        final darts = p.getCurrentPlayerDartsThrown();
-                        p.skipTurn();
-                        if (darts > 0) {
-                          Future.delayed(const Duration(milliseconds: 1500), () {
-                            if (mounted) _audioQueue?.announceRemoveDarts(pName);
-                          });
-                          Future.delayed(const Duration(milliseconds: 3500), () {
-                            if (mounted) _mockApi?.simulateTakeoutStarted();
-                          });
-                        } else {
-                          Future.delayed(const Duration(milliseconds: 500), () {
-                            if (mounted) {
-                              if (_mockApi != null) {
-                                _mockApi!.simulateTakeoutFinished();
-                              } else {
-                                _handleTakeoutFinished();
-                              }
-                            }
-                          });
+          // D1/D2/D3 dart indicators
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(3, (i) {
+              final hasSegment = i < currentDartSegments.length;
+              final segment = hasSegment ? currentDartSegments[i] : null;
+              final isSkipSeg = segment == 'Skip';
+              final isMiss = segment == 'Miss';
+              // Grid hit = dart matched a cell target (tracked at throw time)
+              final isGridHit = i < dartHits.length && dartHits[i];
+
+              final Color slotColor;
+              final String scoreLabel;
+              if (!hasSegment) {
+                // Empty slot
+                slotColor = _compassBronze;
+                scoreLabel = '—';
+              } else if (isSkipSeg || isMiss) {
+                // Explicit miss or skip
+                slotColor = _compassBronze;
+                scoreLabel = '—';
+              } else if (isGridHit) {
+                // Successfully matched a grid cell → player color
+                slotColor = flagColor;
+                scoreLabel = segment ?? '—';
+              } else {
+                // Dart thrown but not a grid target → bronze, show number
+                slotColor = _compassBronze;
+                scoreLabel = segment ?? '—';
+              }
+
+              final bool isHighlighted = isGridHit && hasSegment;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: Container(
+                  key: PiratesGridGameKeys.dartIndicator(i),
+                  width: 80,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isHighlighted ? slotColor.withOpacity(0.25) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(
+                      color: slotColor,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      scoreLabel,
+                      style: GoogleFonts.pirataOne(
+                        fontSize: 23,
+                        color: _parchmentTan,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+          // Skip turn — wraps to content + ~20% padding
+          OutlinedButton(
+            key: PiratesGridGameKeys.skipTurnButton,
+            onPressed: context.read<PiratesGridProvider>().shouldPromptTakeout
+                ? null
+                : () {
+                    _speedPlayTimer?.cancel();
+                    final p = context.read<PiratesGridProvider>();
+                    final pp = context.read<PlayerProvider>();
+                    final g = p.currentGame;
+                    final pid = g?.getCurrentPlayerId() ?? '';
+                    final pName = pp.getPlayerById(pid)?.name ?? playerName;
+                    final darts = p.getCurrentPlayerDartsThrown();
+                    _currentTurnHits = [];
+                    _lastTurnPlayerId = null;
+                    p.skipTurn();
+                    if (darts > 0) {
+                      Future.delayed(const Duration(milliseconds: 1500), () {
+                        if (mounted) _audioQueue?.announceRemoveDarts(pName);
+                      });
+                      Future.delayed(const Duration(milliseconds: 3500), () {
+                        if (mounted) _mockApi?.simulateTakeoutStarted();
+                      });
+                    } else {
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        if (mounted) {
+                          if (_mockApi != null) {
+                            _mockApi!.simulateTakeoutFinished();
+                          } else {
+                            _handleTakeoutFinished();
+                          }
                         }
-                      },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: _compassBronze,
-                  side: const BorderSide(color: _treasureGold, width: 1.5),
-                  foregroundColor: _parchmentTan,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  'SKIP TURN',
-                  style: GoogleFonts.pirataOne(
-                    fontSize: 14,
-                    color: _parchmentTan,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                      });
+                    }
+                  },
+            style: OutlinedButton.styleFrom(
+              backgroundColor: _compassBronze,
+              side: const BorderSide(color: _treasureGold, width: 1.5),
+              foregroundColor: _parchmentTan,
+              padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 8),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'SKIP TURN',
+              style: GoogleFonts.pirataOne(
+                fontSize: 15,
+                color: _parchmentTan,
+                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -1103,24 +1137,21 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     return timerWidget;
   }
 
-  Widget _buildGrid(PiratesGridGame game) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(3, (row) {
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(3, (col) {
-              return _buildGridCell(game, row, col);
-            }),
-          );
-        }),
-      ),
+  Widget _buildGrid(PiratesGridGame game, double cellSize) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (row) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (col) {
+            return _buildGridCell(game, row, col, cellSize);
+          }),
+        );
+      }),
     );
   }
 
-  Widget _buildGridCell(PiratesGridGame game, int row, int col) {
+  Widget _buildGridCell(PiratesGridGame game, int row, int col, double cellSize) {
     final cell = game.grid[row][col];
     final claimedBy = cell.claimedBy;
 
@@ -1171,8 +1202,8 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
 
     return Container(
       key: PiratesGridGameKeys.gridCell(row, col),
-      width: 90,
-      height: 90,
+      width: cellSize,
+      height: cellSize,
       margin: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: bgColor,
@@ -1196,11 +1227,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
           // Empty square texture when unclaimed
           if (claimedBy == null)
             Positioned.fill(
-              child: Image.asset(
-                'assets/games/pirates_grid/pieces/PiratesGrid-EmptySquare.png',
-                fit: BoxFit.cover,
-                opacity: const AlwaysStoppedAnimation(0.3),
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(7),
+                child: Image.asset(
+                  'assets/games/pirates_grid/pieces/PiratesGrid-EmptySquare.png',
+                  fit: BoxFit.cover,
+                  opacity: const AlwaysStoppedAnimation(0.65),
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
               ),
             ),
           // Flag image when claimed
@@ -1214,21 +1248,21 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                 errorBuilder: (_, __, ___) => const SizedBox.shrink(),
               ),
             ),
-          // Target label (centered)
+          // Target label — scales with cell size; key encodes position for tests
           Center(
             child: Text(
               targetLabel,
+              key: PiratesGridGameKeys.gridCellTargetLabel(row, col),
               style: GoogleFonts.pirataOne(
-                fontSize: game.targetDifficulty == TargetDifficulty.hard ? 22 : 28,
-                color: claimedBy != null
-                    ? Colors.white.withOpacity(0.9)
-                    : _treasureGold,
-                shadows: [
-                  const Shadow(
-                    color: Colors.black,
-                    offset: Offset(1, 1),
-                    blurRadius: 4,
-                  ),
+                fontSize: game.targetDifficulty == TargetDifficulty.hard
+                    ? cellSize * 0.24
+                    : cellSize * 0.31,
+                color: claimedBy != null ? _parchmentTan : _treasureGold,
+                shadows: const [
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
                 ],
               ),
             ),

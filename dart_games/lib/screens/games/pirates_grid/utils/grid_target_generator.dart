@@ -1,83 +1,62 @@
+import 'dart:math';
 import '../../../../models/pirates_grid_game.dart';
 
 /// Pure utility class that builds the 3x3 target layout for a given difficulty.
 ///
-/// No state. All methods are static.
+/// Numbers are randomly selected from 1–20 each game so every grid is unique
+/// and every dartboard number is eligible. No state — all methods are static.
 class GridTargetGenerator {
-  // ─── Number layout (same for Easy and Medium) ────────────────────────────────
-  //
-  //  Row 0: [20, 18, 16]
-  //  Row 1: [19, 17, 15]
-  //  Row 2: [14, 12, 10]
-  //
-  // Hard layout:
-  //  Row 0: [T20, D18, T16]     corners=tripleOnly, edges=doubleOnly
-  //  Row 1: [D19, Bull, D15]    center=bull
-  //  Row 2: [T14, D12, T10]
-  //
-  // Corner positions: (0,0), (0,2), (2,0), (2,2)
-  // Edge positions:   (0,1), (1,0), (1,2), (2,1)
-  // Center position:  (1,1)
-
-  static const List<List<int>> _numbers = [
-    [20, 18, 16],
-    [19, 17, 15],
-    [14, 12, 10],
-  ];
-
-  // Hard difficulty: which positions are corners, edges, and center
+  // Hard difficulty position sets
   static const Set<String> _corners = {'0,0', '0,2', '2,0', '2,2'};
   static const Set<String> _edges   = {'0,1', '1,0', '1,2', '2,1'};
-  static const String _center       = '1,1';
 
   /// Returns the 3x3 target grid for [difficulty].
   ///
-  /// Easy:   numbers 20/18/16 / 19/17/15 / 14/12/10 — all `any` requirement
-  /// Medium: same numbers, `doubleOrTriple` requirement
-  /// Hard:   corners T (triple), edges D (double), center Bull
-  static List<List<CellTarget>> generate(TargetDifficulty difficulty) {
+  /// Each call shuffles 1–20 and picks 9 unique numbers (8 for Hard, since
+  /// the center is always Bull). The [random] parameter is exposed for tests
+  /// that need a deterministic seed.
+  ///
+  /// Easy:   9 random numbers — all `any` requirement
+  /// Medium: 9 random numbers — `doubleOrTriple` requirement
+  /// Hard:   corners T (triple), edges D (double), center Bull; 8 random numbers
+  static List<List<CellTarget>> generate(
+    TargetDifficulty difficulty, {
+    Random? random,
+  }) {
+    final rng = random ?? Random();
+    final pool = List.generate(20, (i) => i + 1)..shuffle(rng);
+
     switch (difficulty) {
       case TargetDifficulty.easy:
-        return _buildGrid((row, col) => CellTarget(
-          number: _numbers[row][col],
+        final nums = pool.take(9).toList();
+        return List.generate(3, (r) => List.generate(3, (c) => CellTarget(
+          number: nums[r * 3 + c],
           requirement: CellRequirement.any,
-        ));
+        )));
 
       case TargetDifficulty.medium:
-        return _buildGrid((row, col) => CellTarget(
-          number: _numbers[row][col],
+        final nums = pool.take(9).toList();
+        return List.generate(3, (r) => List.generate(3, (c) => CellTarget(
+          number: nums[r * 3 + c],
           requirement: CellRequirement.doubleOrTriple,
-        ));
+        )));
 
       case TargetDifficulty.hard:
-        return _buildGrid((row, col) {
-          final key = '$row,$col';
-          if (key == _center) {
+        // Center is always Bull; pick 8 numbers for the remaining 8 cells.
+        final nums = pool.take(8).toList();
+        int idx = 0;
+        return List.generate(3, (r) => List.generate(3, (c) {
+          final key = '$r,$c';
+          if (key == '1,1') {
             return const CellTarget(number: 0, requirement: CellRequirement.bull);
-          } else if (_corners.contains(key)) {
-            return CellTarget(
-              number: _numbers[row][col],
-              requirement: CellRequirement.tripleOnly,
-            );
-          } else if (_edges.contains(key)) {
-            return CellTarget(
-              number: _numbers[row][col],
-              requirement: CellRequirement.doubleOnly,
-            );
-          } else {
-            // Fallback (should never be reached in a 3x3 grid)
-            return CellTarget(
-              number: _numbers[row][col],
-              requirement: CellRequirement.any,
-            );
           }
-        });
+          final n = nums[idx++];
+          if (_corners.contains(key)) {
+            return CellTarget(number: n, requirement: CellRequirement.tripleOnly);
+          } else {
+            return CellTarget(number: n, requirement: CellRequirement.doubleOnly);
+          }
+        }));
     }
-  }
-
-  static List<List<CellTarget>> _buildGrid(
-    CellTarget Function(int row, int col) factory,
-  ) {
-    return List.generate(3, (row) => List.generate(3, (col) => factory(row, col)));
   }
 }

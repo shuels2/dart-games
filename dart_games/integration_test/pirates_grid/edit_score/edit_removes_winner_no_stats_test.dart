@@ -12,8 +12,8 @@ void main() {
 
   // MANDATORY: edit removes winner and no stats recorded.
   // Setup: P1 has 2 cells in row 0 (programmatically).
-  // P1 throws S16 (wins row 0). Then edits dart 1 → S17 (row 1 col 2 target,
-  // not in the same row). P1 loses the win condition.
+  // P1 throws the [0,2] target (wins row 0). Then edits dart 1 → Miss
+  // (guaranteed not to complete any row). P1 loses the win condition.
   // Verify hasWinner false, click DARTS REMOVED, game still active, stats=0.
   testWidgets(
       'Edit Score: editing winning dart to non-winning value removes winner',
@@ -25,24 +25,25 @@ void main() {
     // Set up near-win state: P1 has row 0 cols 0 and 1
     await setupNearWinState(tester);
 
-    // Throw S16 → P1 wins row 0 (row 0, col 2 on Easy difficulty)
-    await throwDartViaMock(tester, 16);
+    // Throw row 0, col 2 target → P1 wins row 0
+    final t02 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 2);
+    await throwDartViaMock(tester, t02);
     // Fill remaining darts with miss
     await throwMissViaMock(tester);
     await throwMissViaMock(tester);
 
-    // At this point hasWinner should be true (round won after S16)
+    // At this point hasWinner should be true (round won after hitting [0,2])
     expect(ProviderHelpers.piratesGridHasWinner(tester), isTrue,
-        reason: 'P1 should have won row 0 with S16');
+        reason: 'P1 should have won row 0 with [0,2] target');
 
-    // Edit dart 1 from S16 → S17 (row 1, col 2 — doesn't complete row 0)
+    // Edit dart 1 from the winning throw → Miss (guaranteed not to complete row 0)
     await openEditScore(tester);
-    await EditScoreHelpers.setDart1(tester, 'S17');
+    await EditScoreHelpers.setDart1(tester, 'Miss');
     await updateScore(tester);
 
     // After edit, P1 no longer has row 0 complete → no winner
     expect(ProviderHelpers.piratesGridHasWinner(tester), isFalse,
-        reason: 'P1 should not have a winner after editing S16 → S17');
+        reason: 'P1 should not have a winner after editing winning dart to Miss');
 
     // Click DARTS REMOVED — game should continue (not navigate to results)
     await clickDartsRemoved(tester);

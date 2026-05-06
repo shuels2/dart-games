@@ -19,20 +19,28 @@ void main() {
 
     final provider = ProviderHelpers.getPiratesGridProvider(tester);
 
+    // Read row 0 target numbers dynamically (grid is randomized)
+    final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    final t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+    final t02 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 2);
+
     // Win round 1 for P1
-    await throwDartViaMock(tester, 20);
-    await throwDartViaMock(tester, 18);
-    await throwDartViaMock(tester, 16);
+    await throwDartViaMock(tester, t00);
+    await throwDartViaMock(tester, t01);
+    await throwDartViaMock(tester, t02);
     await clickDartsRemoved(tester);
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
 
     // Win round 2 for P1 (P2 alternates starting, but we fill P1's row 0 again)
     await completeTurnWithMisses(tester); // P2 misses
-    // P1 turn: throw row 0
-    await throwDartViaMock(tester, 20);
-    await throwDartViaMock(tester, 18);
-    await throwDartViaMock(tester, 16);
+    // P1 turn: throw row 0 (re-read after round reset — grid may have new layout)
+    final r2t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    final r2t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+    final r2t02 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 2);
+    await throwDartViaMock(tester, r2t00);
+    await throwDartViaMock(tester, r2t01);
+    await throwDartViaMock(tester, r2t02);
     await clickDartsRemoved(tester);
     await tester.pump(const Duration(seconds: 4));
     await tester.pump();

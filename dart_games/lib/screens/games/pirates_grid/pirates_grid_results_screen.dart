@@ -37,6 +37,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
   static const Color _parchmentTan = Color(0xFFF5E6C8);
   static const Color _inkBlack = Color(0xFF1A1A1A);
 
+
   // P1 / P2 flag colors
   static const Color _p1FlagColor = Color(0xFF8B0000);
   static const Color _p2FlagColor = Color(0xFF2E8B8B);
@@ -170,7 +171,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
             title: Text(
               "PIRATE'S GRID RESULTS",
               style: GoogleFonts.pirataOne(
-                fontSize: 24,
+                fontSize: 35,
                 color: _treasureGold,
                 letterSpacing: 1.5,
               ),
@@ -277,27 +278,18 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
 
     return Column(
       children: [
-        // Winner character — 320x320, no circle clip, BoxShadow glow
-        Container(
+        // Winner character
+        SizedBox(
           key: PiratesGridResultsKeys.winnerAvatar,
-          width: 280,
-          height: 280,
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: _treasureGold.withOpacity(0.6),
-                blurRadius: 32,
-                spreadRadius: 8,
-              ),
-            ],
-          ),
+          width: 420,
+          height: 420,
           child: Image.asset(
             characterPath,
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => Icon(
               Icons.person,
               color: winnerFlagColor,
-              size: 200,
+              size: 300,
             ),
           ),
         ),
@@ -307,23 +299,42 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           winner.name,
           key: PiratesGridResultsKeys.winnerName,
           style: GoogleFonts.pirataOne(
-            fontSize: 32,
-            color: winnerFlagColor,
+            fontSize: 48,
+            color: _parchmentTan,
             shadows: const [
-              Shadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 4),
+              Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+              Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+              Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+              Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
             ],
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         // Stats
-        Text(
-          '🚩 Flags planted: $flagsPlanted',
-          style: GoogleFonts.lora(
-            fontSize: 18,
-            color: _parchmentTan,
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.flag,
+              color: winnerFlagColor,
+              size: 22,
+              shadows: const [
+                Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+                Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+                Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+                Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+              ],
+            ),
+            Text(
+              ' Flags planted: $flagsPlanted',
+              style: GoogleFonts.lora(
+                fontSize: 18,
+                color: _parchmentTan,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
         if (game.bestOf > 1) ...[
           const SizedBox(height: 4),
@@ -450,12 +461,28 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                   ),
                 ),
                 // Stats
-                Text(
-                  '🚩 $flagsPlanted',
-                  style: GoogleFonts.lora(
-                    fontSize: 14,
-                    color: _parchmentTan.withOpacity(0.8),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.flag,
+                      color: playerFlagColor,
+                      size: 16,
+                      shadows: const [
+                        Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1, -1), blurRadius: 0),
+                        Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1, -1), blurRadius: 0),
+                        Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1,  1), blurRadius: 0),
+                        Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1,  1), blurRadius: 0),
+                      ],
+                    ),
+                    Text(
+                      ' $flagsPlanted',
+                      style: GoogleFonts.lora(
+                        fontSize: 14,
+                        color: _parchmentTan,
+                      ),
+                    ),
+                  ],
                 ),
                 if (game.bestOf > 1) ...[
                   const SizedBox(width: 8),
@@ -468,7 +495,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                   ),
                 ],
                 const SizedBox(width: 8),
-                // WIN / DRAW badge
+                // WIN / DRAW / LOSS badge
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -477,22 +504,21 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                         ? _compassBronze
                         : isWinner
                             ? _treasureGold
-                            : Colors.transparent,
+                            : _bloodRed.withOpacity(0.25),
                     borderRadius: BorderRadius.circular(12),
                     border: (!isMatchDraw && !isWinner)
-                        ? Border.all(
-                            color: _compassBronze.withOpacity(0.3), width: 1)
+                        ? Border.all(color: _bloodRed.withOpacity(0.6), width: 1)
                         : null,
                   ),
                   child: Text(
-                    isMatchDraw ? 'DRAW' : (isWinner ? 'WIN' : ''),
+                    isMatchDraw ? 'DRAW' : (isWinner ? 'WIN' : 'LOSS'),
                     style: GoogleFonts.pirataOne(
                       fontSize: 13,
                       color: isMatchDraw
                           ? _parchmentTan
                           : isWinner
                               ? _inkBlack
-                              : Colors.transparent,
+                              : _parchmentTan,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -518,7 +544,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: _compassBronze,
             foregroundColor: _parchmentTan,
-            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 28),
+            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 40),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -526,7 +552,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           child: Text(
             'SET SAIL AGAIN',
             style: GoogleFonts.pirataOne(
-              fontSize: 18,
+              fontSize: 22,
               color: _parchmentTan,
               letterSpacing: 1.0,
             ),
@@ -539,7 +565,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: _treasureGold,
             foregroundColor: _inkBlack,
-            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 28),
+            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 40),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -547,7 +573,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           child: Text(
             'NEW VOYAGE',
             style: GoogleFonts.pirataOne(
-              fontSize: 18,
+              fontSize: 22,
               color: _inkBlack,
               letterSpacing: 1.0,
             ),
@@ -560,15 +586,15 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: _bloodRed,
             foregroundColor: _parchmentTan,
-            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 28),
+            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 40),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
           child: Text(
-            'PORT HOME',
+            'HOME PORT',
             style: GoogleFonts.pirataOne(
-              fontSize: 18,
+              fontSize: 22,
               color: _parchmentTan,
               letterSpacing: 1.0,
             ),
@@ -597,9 +623,18 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
   }
 
   void _changeSettings() {
+    final game = context.read<PiratesGridProvider>().currentGame;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const PiratesGridMenuScreen()),
+      MaterialPageRoute(
+        builder: (_) => PiratesGridMenuScreen(
+          initialDifficulty: game?.targetDifficulty,
+          initialBestOf: game?.bestOf,
+          initialStealMode: game?.stealMode,
+          initialSpeedPlay: game?.speedPlay,
+          initialSelectedPlayerIds: game?.playerIds,
+        ),
+      ),
       (route) => route.isFirst,
     );
   }

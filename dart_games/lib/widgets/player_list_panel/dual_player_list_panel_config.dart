@@ -300,7 +300,7 @@ class DualPlayerListPanelConfig {
       containerBorderColor: const Color(0xFFCD7F32).withOpacity(0.5), // Compass Bronze
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.pirataOne(
-        fontSize: 18,
+        fontSize: 22,
         color: const Color(0xFFDAA520), // Treasure Gold
         letterSpacing: 1.0,
       ),
@@ -320,7 +320,7 @@ class DualPlayerListPanelConfig {
         width: 2,
       ),
       addButtonTextStyle: GoogleFonts.pirataOne(
-        fontSize: 14,
+        fontSize: 16,
         color: const Color(0xFFF5E6C8),
         letterSpacing: 0.5,
       ),
@@ -337,7 +337,7 @@ class DualPlayerListPanelConfig {
       maxPlayers: 2,
       availableContainerMargin: EdgeInsets.zero,
       selectedContainerMargin: EdgeInsets.zero,
-      listGap: 8,
+      listGap: 6,
       addPlayerDialogConfig: AddPlayerDialogConfig.piratesGrid(),
     );
   }

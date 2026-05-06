@@ -1161,6 +1161,22 @@ After the sub-agent returns:
 > (nn) **No empty `setState(() {})` as a rebuild hack** — grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_*.dart` for `setState\(\(\) \{\}\)`. If the rebuild is needed because a `Provider` field changed, the provider's own `notifyListeners()` covers it — no setState required. If local widget state is changing, give the field an actual setter call inside the setState closure (e.g. `setState(() { _foo = bar; })`). An empty setState hides the dependency, causes spurious full-subtree rebuilds, and tends to multiply over time as code is copy-pasted between games. **Permitted exception:** rebuilding after assigning a local non-Provider field (e.g. `_mockApi = ...` in `_initializeGame`) — in that case the field assignment IS the state change and an empty closure is acceptable; cite this case in the AR-4 report. Per-finding history: `docs/perf-audits/2026-05-05-full.md` finding C3.
 > (oo) **Menu screen `initState` calls `await playerProvider.loadPlayers()` then `playerProvider.clearSelection()` inside its `addPostFrameCallback`** — read the menu screen's `initState()` and verify both calls are present, in that order, before any preselect logic (`selectPlayer(...)` / `getPlayerById(...)`). Without `clearSelection()`, `_selectedPlayers` on `PlayerProvider` is shared global state that LEAKS across games — entering the new game shows whatever players were selected on the previously-visited game's menu. Without `loadPlayers()`, players added on the home / options screen since the app booted won't appear in the new game's roster. Reference: `target_tag_menu_screen.dart:93-94`, `horse_race_menu_screen.dart:52-53`, `reef_royale_menu_screen.dart:89-90`, `clockwork_quest_menu_screen.dart:59-60`, `monster_mash_menu_screen.dart:82-83`, `lunar_lander_menu_screen.dart` (post-fix). Recurring miss: Lunar Lander shipped without these calls and exhibited the cross-game selection-leak bug until 2026-05-06.
 >
+> (pp) **Accumulated Build Quality Rules compliance** — review the "## Accumulated Build Quality Rules" section at the end of this skill. For each of the 14 rules, note whether it applies to this game and verify compliance:
+> - Rule 1 (Character Randomization): applies if the game has more characters than players. Verify `_characterPaths` is shuffled in `initState`, not hardcoded by player index.
+> - Rule 2 (Shape-following glow): applies if active-player characters have transparent PNG backgrounds. Verify `ImageFiltered`+`ColorFiltered` approach, NOT `BoxShadow` on Container.
+> - Rule 3 (Per-player controls in player column): verify dart indicators and skip-turn button are in the player display column, not AppBar.
+> - Rule 4 (Dart indicator hit tracking): applies if indicators show player color for hits vs neutral for misses. Verify `_currentTurnHits` tracked at throw time, cleared on turn change.
+> - Rule 5 (All badge states): verify rankings/results badges show WIN, LOSS, and DRAW — no empty transparent loser state.
+> - Rule 6 (Icon vs emoji): verify flag/bullet indicators use `Icon(...)` not emoji where player color matters.
+> - Rule 7 (Text readability): verify significant text over background images uses 4-corner shadow outline.
+> - Rule 8 (Settings + player persistence): verify `_changeSettings` passes all settings AND `initialSelectedPlayerIds` as constructor params; menu screen re-selects players in `addPostFrameCallback`.
+> - Rule 9 (Randomized grid targets): applies to grid-based games. Verify targets shuffle from full 1–20 range with `Random?` parameter — no hardcoded layouts.
+> - Rule 10 (Play-to-complete steal loop prevention): applies if game has steal/takeover mechanics. Verify non-winner always misses, winner only targets empty cells.
+> - Rule 11 (Test keys for dynamic values): verify widget keys on runtime-determined values; ProviderHelpers expose them.
+> - Rule 12 (`completeGameToVictory` dynamic reads): verify helper reads actual targets from provider — no hardcoded numbers; `throwForCellTarget` dispatch included.
+> - Rule 13 (LayoutBuilder for game boards): verify game board elements use proportional sizing from `LayoutBuilder`, not fixed pixel sizes. Grid container margin is subtracted from available width before computing sibling column widths.
+> - Rule 14 (Background texture opacity): verify texture images use ≥ 0.50 opacity; verify files actually exist at their paths.
+>
 > For each item I will cite the file and line number, or report MISSING.
 > I will list every gap found."
 
@@ -2261,6 +2277,262 @@ ARs completed:         9/9
 Ask the user: "Would you like me to commit and create a PR?"
 
 (Per `docs/deployment/git-workflow.md` and the universal hard rule in every sub-agent prompt: NEVER commit to master/main and NEVER push to remote without explicit user permission.)
+
+---
+
+---
+
+## Accumulated Build Quality Rules
+
+These rules were learned from post-build refinement sessions on shipped games. Each one was absent from an initial build and required manual correction after delivery. All applicable rules are enforced in AR-4 item (pp).
+
+---
+
+### 1. Character Randomization (games with multiple interchangeable characters)
+If a game has more characters than players and assigns one per player, shuffle all characters at game-screen `initState` time rather than hardcoding by player index. Pattern (identical to Reef Royale):
+```dart
+late List<String> _characterPaths;
+
+@override
+void initState() {
+  super.initState();
+  final allChars = [
+    'assets/games/[GAME_NAME_SNAKE]/characters/Char1.png',
+    // ... every character ...
+  ]..shuffle();
+  _characterPaths = allChars.take(playerCount).toList();
+  // ...
+}
+```
+Use `_characterPaths[playerIndex]` everywhere character images are needed (game screen, results screen). The results screen does not share screen state with the game screen, so if the results screen hard-codes character paths it will show different characters than the game screen used.
+
+---
+
+### 2. Shape-Following Character Glow
+`BoxShadow` on a Container creates a **rectangular** glow that includes the transparent areas of the PNG. For character images with transparency, use `ImageFiltered` + `ColorFiltered(BlendMode.srcIn)` positioned just outside the character bounds:
+```dart
+import 'dart:ui' as ui;
+
+SizedBox(
+  width: charSize, height: charSize,
+  child: Stack(
+    clipBehavior: Clip.none,
+    fit: StackFit.expand,
+    children: [
+      if (isActive)
+        Positioned(
+          left: -(charSize * 0.10), right: -(charSize * 0.10),
+          top:  -(charSize * 0.10), bottom: -(charSize * 0.10),
+          child: ImageFiltered(
+            imageFilter: ui.ImageFilter.blur(sigmaX: charSize * 0.07, sigmaY: charSize * 0.07),
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(glowColor.withOpacity(0.85), BlendMode.srcIn),
+              child: Image.asset(characterPath, fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      Image.asset(characterPath, fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Icon(Icons.person, color: glowColor, size: charSize * 0.7)),
+    ],
+  ),
+)
+```
+`BlendMode.srcIn` colors only the non-transparent pixels of the image; the blur then spreads that colored silhouette outward.
+
+---
+
+### 3. Per-Player Controls Belong in the Player Column, Not the AppBar
+Dart indicators (D1/D2/D3) and the Skip Turn button are per-player controls — they belong in the active player's display column, not in the AppBar. AppBar actions should contain only global controls (DartboardConnectionInfo, ResumeGameButton).
+
+---
+
+### 4. Dart Indicator Color Logic — Track Hit Status at Throw Time
+Segment strings alone cannot distinguish "dart hit a game target" from "dart hit a valid dartboard number not in the target set." Track `wasMatched` at throw time in screen state:
+```dart
+List<bool> _currentTurnHits = [];
+String? _lastTurnPlayerId;
+
+// In _handleDartThrow, BEFORE processDartThrow:
+if (_lastTurnPlayerId != playerId) {
+  _currentTurnHits = [];
+  _lastTurnPlayerId = playerId;
+}
+_currentTurnHits = [..._currentTurnHits, wasMatched];
+
+// Clear in _handleTakeoutFinished() and in the skip-turn callback.
+```
+Pass `dartHits: _currentTurnHits` to the active player's column; use `dartHits[i]` to decide player-color vs neutral-color per slot.
+
+---
+
+### 5. All Results Badge States Must Be Implemented
+Never leave the loser badge as an empty transparent container. Implement WIN, LOSS, and DRAW explicitly:
+```dart
+isMatchDraw ? 'DRAW' : isWinner ? 'WIN' : 'LOSS'
+```
+Use a muted fill (e.g., `bloodRed.withOpacity(0.25)`) for LOSS — visible but not harsh.
+
+---
+
+### 6. Use Icon Widgets, Not Emoji, for Player-Colored Indicators
+Emoji (🚩, ⚓, ⚙, etc.) render in fixed platform colors that `TextStyle.color` cannot override. Use `Icon(Icons.flag, color: playerColor)` anywhere the indicator color is semantically meaningful (e.g., different flag colors per player). Icon shadows work identically to Text shadows:
+```dart
+Icon(
+  Icons.flag,
+  color: playerFlagColor,
+  size: 22,
+  shadows: const [
+    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+  ],
+),
+```
+
+---
+
+### 7. Text Readability on Busy Backgrounds — 4-Corner Shadow Outline
+A single drop shadow only helps from one direction. For text over background images, use a 4-corner outline (zero blur radius) so the text is readable regardless of which part of the image is behind it:
+```dart
+shadows: const [
+  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+]
+```
+Apply to: AppBar titles, player names, stat labels, and any other colored text over a background image. Also works on `Icon.shadows` (same syntax).
+
+---
+
+### 8. Settings + Selected Player Persistence on "Change Settings" Navigation
+The "Change Settings" navigation MUST pass the previous game's settings AND selected player IDs as constructor parameters to the menu screen. Do NOT rely on `provider.currentGame` surviving the navigation — it may be null by the time the new screen mounts.
+
+**Menu screen constructor** — add optional parameters for every setting and for selected player IDs:
+```dart
+class [Game]MenuScreen extends StatefulWidget {
+  final TargetDifficulty? initialDifficulty;
+  final int? initialBestOf; // etc. for each spec option
+  final List<String>? initialSelectedPlayerIds;
+  const [Game]MenuScreen({super.key, this.initialDifficulty, ..., this.initialSelectedPlayerIds});
+}
+```
+
+**Menu `initState`** — prefer widget params, then `provider.currentGame`, then defaults:
+```dart
+_difficulty = widget.initialDifficulty ?? lastGame?.targetDifficulty ?? TargetDifficulty.easy;
+```
+After `clearSelection()` in `addPostFrameCallback`, re-select previous players:
+```dart
+if (widget.initialSelectedPlayerIds != null) {
+  for (final id in widget.initialSelectedPlayerIds!) {
+    final player = playerProvider.allPlayers.where((p) => p.id == id).firstOrNull;
+    if (player != null) playerProvider.selectPlayer(player, maxPlayers: N);
+  }
+}
+```
+
+**Results screen `_changeSettings`** — read from provider before navigating:
+```dart
+void _changeSettings() {
+  final game = context.read<[Game]Provider>().currentGame;
+  Navigator.pushAndRemoveUntil(context,
+    MaterialPageRoute(builder: (_) => [Game]MenuScreen(
+      initialDifficulty: game?.targetDifficulty,
+      // ...other settings...
+      initialSelectedPlayerIds: game?.playerIds,
+    )),
+    (route) => route.isFirst,
+  );
+}
+```
+
+---
+
+### 9. Randomize Grid Targets (Grid-Based Games)
+For games with targeting grids, target numbers MUST be randomized from the full eligible range each game — never hardcoded. The generator MUST accept `Random? random` for testability:
+```dart
+import 'dart:math';
+
+static List<List<CellTarget>> generate(TargetDifficulty difficulty, {Random? random}) {
+  final rng = random ?? Random();
+  final pool = List.generate(20, (i) => i + 1)..shuffle(rng);
+  final nums = pool.take(9).toList(); // 9 for Easy/Medium; 8 + bull-center for Hard
+  // ...
+}
+```
+Hardcoded layouts (e.g., `[20,18,16 / 19,17,15 / 14,12,10]`) mean every game is identical and players memorize the grid after one session.
+
+---
+
+### 10. Play-to-Complete: Steal / Takeover Infinite Loop Prevention
+When a game has steal or takeover mechanics (player A can take player B's claimed cell/territory), the play-to-complete strategy MUST:
+1. Designate a fixed winner upfront — always `game.playerIds[0]`
+2. Have all non-winners return `null` from `getNextThrow` (deliberate miss every dart)
+3. Have the winner target only EMPTY cells — never steal from opponents
+
+Both (2) and (3) are required. Without them, P1 steals P2's cell → P2 steals it back on the next turn → infinite loop. The strategy comment must document this explicitly.
+
+---
+
+### 11. Test Keys for Runtime-Dynamic Values
+When a UI element displays a value determined at runtime (e.g., a randomized target number, a computed score), add a widget key to that element so tests can query it without going through the provider:
+```dart
+Text(
+  targetLabel,
+  key: [Game]GameKeys.gridCellTargetLabel(row, col),
+  // ...
+)
+```
+Expose the value in `ProviderHelpers` as well:
+```dart
+static int get[Game]CellTargetNumber(WidgetTester tester, int row, int col) =>
+    get[Game]Provider(tester).currentGame!.grid[row][col].target.number;
+```
+
+---
+
+### 12. `completeGameToVictory` Must Read Actual Target Values
+The `completeGameToVictory` helper MUST read actual target values from the provider at runtime — never hardcode numbers that assume a fixed grid layout. Include a `throwForCellTarget` dispatch helper:
+```dart
+import 'package:dart_games/models/[GAME_NAME_SNAKE]_game.dart';
+
+Future<void> throwForCellTarget(WidgetTester tester, CellTarget target) async {
+  switch (target.requirement) {
+    case CellRequirement.bull:
+      await DartThrowHelpers.throwBullseyeViaMock(tester);
+    case CellRequirement.tripleOnly:
+      await DartThrowHelpers.throwDartViaMock(tester, target.number, multiplier: 'triple');
+    case CellRequirement.doubleOnly:
+    case CellRequirement.doubleOrTriple:
+      await DartThrowHelpers.throwDartViaMock(tester, target.number, multiplier: 'double');
+    case CellRequirement.any:
+      await DartThrowHelpers.throwDartViaMock(tester, target.number);
+  }
+}
+```
+P2 always misses in `completeGameToVictory` — this is safe even with steal mode ON (see Rule 10).
+
+---
+
+### 13. Responsive Layout — Use LayoutBuilder for Game Boards
+Fixed-size game board elements (character images, grid cells, board tracks) that sit beside other fixed-size elements in a Row will overflow on different screen sizes. Use `LayoutBuilder` to compute proportional sizes from available width:
+```dart
+LayoutBuilder(builder: (context, constraints) {
+  final availW = constraints.maxWidth;
+  final gridW = availW * 0.40; // grid takes 40% of width
+  final cellSize = (gridW - 18.0) / 3.0; // 3×3 grid, 3px margin each side
+  final charColW = (availW - gridW) / 2.0;
+  // ...
+})
+```
+Note: any margin/padding on the grid container must be subtracted from `availW` before computing character column widths — failing to do so causes a pixel overflow equal to the total horizontal margin.
+
+---
+
+### 14. Background Texture Image Opacity
+Background texture images (`opacity: AlwaysStoppedAnimation(0.3)`) at 30% are often invisible against a dark overlay. Use 0.50–0.65 for textures meant to add visual interest, or higher if the image is a primary visual element. The `errorBuilder: (_, __, ___) => const SizedBox.shrink()` pattern silently hides missing images — verify the file actually exists at the specified path.
 
 ---
 

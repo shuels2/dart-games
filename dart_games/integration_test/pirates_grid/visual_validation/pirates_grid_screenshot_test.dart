@@ -162,15 +162,18 @@ void main() {
       // ================================================================
       // SCREENSHOT 6: Game — after some darts, flags planted
       // ================================================================
-      await throwDartViaMock(tester, 20); // P1 plants flag [0,0]
-      await throwDartViaMock(tester, 18); // P1 plants flag [0,1]
+      final s1t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+      final s1t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+      final s1t10 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 1, 0);
+      await throwDartViaMock(tester, s1t00); // P1 plants flag [0,0]
+      await throwDartViaMock(tester, s1t01); // P1 plants flag [0,1]
       await screenshot(binding, tester, '06_game_easy_flags_planted');
 
-      await throwDartViaMock(tester, 1); // P1 miss
+      await throwDartViaMock(tester, 1); // P1 miss (1 is not a grid target)
       await clickDartsRemovedViaMock(tester);
 
       // P2 throws a flag
-      await throwDartViaMock(tester, 19); // P2 plants flag [1,0]
+      await throwDartViaMock(tester, s1t10); // P2 plants flag [1,0]
       await screenshot(binding, tester, '07_game_mid_both_players');
       await throwDartViaMock(tester, 1);
       await throwDartViaMock(tester, 1);
@@ -269,9 +272,12 @@ void main() {
       // ================================================================
       // SCREENSHOT 11: Game — RemoveDartsModal visible
       // ================================================================
-      await throwDartViaMock(tester, 20);
-      await throwDartViaMock(tester, 18);
-      await throwDartViaMock(tester, 16); // P1 wins row 0
+      final s4t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+      final s4t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+      final s4t02 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 2);
+      await throwDartViaMock(tester, s4t00);
+      await throwDartViaMock(tester, s4t01);
+      await throwDartViaMock(tester, s4t02); // P1 wins row 0
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
       await screenshot(binding, tester, '11_game_remove_darts_modal');
@@ -322,9 +328,11 @@ void main() {
       // ================================================================
       // SCREENSHOT 14: Game — 2 in a row state (near win)
       // ================================================================
-      await throwDartViaMock(tester, 20);
-      await throwDartViaMock(tester, 18);
-      await throwDartViaMock(tester, 1); // miss for 3rd dart
+      final s5t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+      final s5t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+      await throwDartViaMock(tester, s5t00);
+      await throwDartViaMock(tester, s5t01);
+      await throwDartViaMock(tester, 1); // miss for 3rd dart (1 is not a grid target)
       await screenshot(binding, tester, '14_game_two_in_a_row');
       await clickDartsRemovedViaMock(tester);
 
@@ -354,10 +362,13 @@ void main() {
       await UITestHelpers.selectPlayers(tester, [pA, pB], config);
       await UITestHelpers.startGame(tester, config);
 
-      // P1 wins the match by completing row 0 (S20, S18, S16)
-      await throwDartViaMock(tester, 20);
-      await throwDartViaMock(tester, 18);
-      await throwDartViaMock(tester, 16);
+      // P1 wins the match by completing row 0
+      final s6t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+      final s6t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+      final s6t02 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 2);
+      await throwDartViaMock(tester, s6t00);
+      await throwDartViaMock(tester, s6t01);
+      await throwDartViaMock(tester, s6t02);
       await clickDartsRemovedViaMock(tester);
 
       // Wait for the 3-second Future.delayed in _handleGameWon() + navigation

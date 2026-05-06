@@ -20,7 +20,20 @@ import '../../../widgets/resume_game_modal/resume_game_modal_config.dart';
 import 'pirates_grid_game_screen.dart';
 
 class PiratesGridMenuScreen extends StatefulWidget {
-  const PiratesGridMenuScreen({super.key});
+  final TargetDifficulty? initialDifficulty;
+  final int? initialBestOf;
+  final bool? initialStealMode;
+  final bool? initialSpeedPlay;
+  final List<String>? initialSelectedPlayerIds;
+
+  const PiratesGridMenuScreen({
+    super.key,
+    this.initialDifficulty,
+    this.initialBestOf,
+    this.initialStealMode,
+    this.initialSpeedPlay,
+    this.initialSelectedPlayerIds,
+  });
 
   @override
   State<PiratesGridMenuScreen> createState() => _PiratesGridMenuScreenState();
@@ -43,24 +56,39 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
   static const Color _compassBronze = Color(0xFFCD7F32);
   static const Color _parchmentTan = Color(0xFFF5E6C8);
 
+
   @override
   void initState() {
     super.initState();
 
-    // Restore settings from previous game (CHANGE VOYAGE re-entry)
+    // Restore settings — prefer explicitly passed values (from results screen
+    // "NEW VOYAGE"), then fall back to provider's currentGame (re-entry via
+    // back button during a game), then keep defaults.
     final lastGame = context.read<PiratesGridProvider>().currentGame;
-    if (lastGame != null) {
-      _difficulty = lastGame.targetDifficulty;
-      _bestOf = lastGame.bestOf;
-      _stealMode = lastGame.stealMode;
-      _speedPlay = lastGame.speedPlay;
-    }
+    _difficulty = widget.initialDifficulty ??
+        lastGame?.targetDifficulty ??
+        TargetDifficulty.easy;
+    _bestOf = widget.initialBestOf ?? lastGame?.bestOf ?? 1;
+    _stealMode = widget.initialStealMode ?? lastGame?.stealMode ?? false;
+    _speedPlay = widget.initialSpeedPlay ?? lastGame?.speedPlay ?? false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Refresh player roster and clear cross-game selection leak
       final playerProvider = context.read<PlayerProvider>();
       await playerProvider.loadPlayers();
       playerProvider.clearSelection();
+
+      // Re-select players from the previous game if provided (NEW VOYAGE path)
+      if (widget.initialSelectedPlayerIds != null) {
+        for (final id in widget.initialSelectedPlayerIds!) {
+          final player = playerProvider.allPlayers
+              .where((p) => p.id == id)
+              .firstOrNull;
+          if (player != null) {
+            playerProvider.selectPlayer(player, maxPlayers: 2);
+          }
+        }
+      }
 
       // Initial saved-games check + auto-open resume modal
       final hasSaved = await SaveGameService().hasSavedGames('pirates_grid');
@@ -119,7 +147,11 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
             backgroundColor: _oceanNavy,
             leading: IconButton(
               key: PiratesGridMenuKeys.backButton,
-              icon: const Icon(Icons.arrow_back, color: _treasureGold, size: 32),
+              icon: const Icon(
+                Icons.arrow_back,
+                color: _treasureGold,
+                size: 32,
+              ),
               onPressed: () => Navigator.of(context).pop(),
               hoverColor: Colors.transparent,
               highlightColor: Colors.transparent,
@@ -129,15 +161,8 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
               "PIRATE'S GRID GAME SETUP",
               style: GoogleFonts.pirataOne(
                 color: _treasureGold,
-                fontSize: 28,
+                fontSize: 35,
                 letterSpacing: 1.5,
-                shadows: const [
-                  Shadow(
-                    color: Color(0xFF1A1A1A),
-                    offset: Offset(2, 2),
-                    blurRadius: 4,
-                  ),
-                ],
               ),
             ),
             actions: [
@@ -250,7 +275,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
             Text(
               'HOW TO PLAY',
               style: GoogleFonts.pirataOne(
-                fontSize: 26,
+                fontSize: 46,
                 color: _treasureGold,
                 letterSpacing: 1.5,
               ),
@@ -260,7 +285,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
               'Claim cells on a 3×3 grid by hitting the required dart targets. '
               'Get three in a row to win the round!',
               style: GoogleFonts.lora(
-                fontSize: 15,
+                fontSize: 20,
                 color: _parchmentTan,
                 height: 1.5,
               ),
@@ -280,7 +305,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
             Text(
               'BEGINNER TIPS',
               style: GoogleFonts.pirataOne(
-                fontSize: 22,
+                fontSize: 38,
                 color: _treasureGold,
                 letterSpacing: 1.0,
               ),
@@ -305,7 +330,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
           Text(
             '$number. ',
             style: GoogleFonts.pirataOne(
-              fontSize: 18,
+              fontSize: 26,
               color: _compassBronze,
             ),
           ),
@@ -316,7 +341,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
                   TextSpan(
                     text: title,
                     style: GoogleFonts.lora(
-                      fontSize: 15,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: _parchmentTan,
                     ),
@@ -324,7 +349,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
                   TextSpan(
                     text: ' $description',
                     style: GoogleFonts.lora(
-                      fontSize: 15,
+                      fontSize: 20,
                       color: _parchmentTan.withOpacity(0.85),
                       height: 1.5,
                     ),
@@ -347,7 +372,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
           Text(
             '⚓ ',
             style: GoogleFonts.lora(
-              fontSize: 14,
+              fontSize: 18,
               color: _compassBronze,
             ),
           ),
@@ -355,7 +380,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
             child: Text(
               text,
               style: GoogleFonts.lora(
-                fontSize: 14,
+                fontSize: 18,
                 color: _parchmentTan.withOpacity(0.85),
                 height: 1.4,
               ),
@@ -371,7 +396,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
     final selectedPlayers = playerProvider.selectedPlayers;
     final canStart = selectedPlayers.length == 2;
 
-    const double gap = 12.0;
+    const double gap = 6.0;
 
     // DualPlayerListPanel wrapper — Expanded for wide, SizedBox for narrow
     final Widget playerPanelWrapper = scrollable
@@ -404,7 +429,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 2x2 settings grid
+        // Single-row settings grid: Difficulty | Best Of | Steal Mode | Speed Play
         SizedBox(
           height: 68,
           child: Row(
@@ -413,15 +438,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
               Expanded(child: _buildDifficultyBox()),
               const SizedBox(width: gap),
               Expanded(child: _buildBestOfBox()),
-            ],
-          ),
-        ),
-        const SizedBox(height: gap),
-        SizedBox(
-          height: 68,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+              const SizedBox(width: gap),
               Expanded(child: _buildStealModeBox()),
               const SizedBox(width: gap),
               Expanded(child: _buildSpeedPlayBox()),
@@ -449,13 +466,16 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 elevation: 4,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
                 'SET SAIL!',
                 style: GoogleFonts.pirataOne(
-                  fontSize: 22,
+                  fontSize: 40,
                   color: _parchmentTan,
                   letterSpacing: 1.5,
+                  height: 1.0,
                 ),
               ),
             ),
@@ -465,7 +485,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
     );
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 24, 24, 24),
+      padding: const EdgeInsets.fromLTRB(8, 24, 24, 24),
       child: scrollable ? SingleChildScrollView(child: content) : content,
     );
   }
@@ -495,7 +515,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
           Text(
             'Difficulty',
             style: GoogleFonts.pirataOne(
-              fontSize: 13,
+              fontSize: 22,
               color: _parchmentTan,
               letterSpacing: 0.5,
             ),
@@ -508,23 +528,27 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
                 value: _difficulty,
                 dropdownColor: _oceanNavy,
                 style: GoogleFonts.lora(
-                  fontSize: 13,
+                  fontSize: 20,
                   color: _parchmentTan,
                   fontWeight: FontWeight.w600,
                 ),
                 iconEnabledColor: _treasureGold,
                 isExpanded: true,
+                alignment: AlignmentDirectional.centerEnd,
                 items: const [
                   DropdownMenuItem(
                     value: TargetDifficulty.easy,
+                    alignment: AlignmentDirectional.centerEnd,
                     child: Text('Easy'),
                   ),
                   DropdownMenuItem(
                     value: TargetDifficulty.medium,
+                    alignment: AlignmentDirectional.centerEnd,
                     child: Text('Medium'),
                   ),
                   DropdownMenuItem(
                     value: TargetDifficulty.hard,
+                    alignment: AlignmentDirectional.centerEnd,
                     child: Text('Hard'),
                   ),
                 ],
@@ -546,7 +570,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
           Text(
             'Best Of',
             style: GoogleFonts.pirataOne(
-              fontSize: 13,
+              fontSize: 22,
               color: _parchmentTan,
               letterSpacing: 0.5,
             ),
@@ -559,16 +583,17 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
                 value: _bestOf,
                 dropdownColor: _oceanNavy,
                 style: GoogleFonts.lora(
-                  fontSize: 13,
+                  fontSize: 20,
                   color: _parchmentTan,
                   fontWeight: FontWeight.w600,
                 ),
                 iconEnabledColor: _treasureGold,
                 isExpanded: true,
+                alignment: AlignmentDirectional.centerEnd,
                 items: const [
-                  DropdownMenuItem(value: 1, child: Text('1')),
-                  DropdownMenuItem(value: 3, child: Text('3')),
-                  DropdownMenuItem(value: 5, child: Text('5')),
+                  DropdownMenuItem(value: 1, alignment: AlignmentDirectional.centerEnd, child: Text('1')),
+                  DropdownMenuItem(value: 3, alignment: AlignmentDirectional.centerEnd, child: Text('3')),
+                  DropdownMenuItem(value: 5, alignment: AlignmentDirectional.centerEnd, child: Text('5')),
                 ],
                 onChanged: (val) {
                   if (val != null) setState(() => _bestOf = val);
@@ -590,7 +615,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
           Text(
             'Steal Mode',
             style: GoogleFonts.pirataOne(
-              fontSize: 13,
+              fontSize: 22,
               color: _stealMode ? _treasureGold : _parchmentTan,
               letterSpacing: 0.5,
             ),
@@ -601,7 +626,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
               Text(
                 'Off',
                 style: GoogleFonts.lora(
-                  fontSize: 12,
+                  fontSize: 20,
                   color: !_stealMode ? _parchmentTan : _parchmentTan.withOpacity(0.5),
                   fontWeight: !_stealMode ? FontWeight.bold : FontWeight.normal,
                 ),
@@ -620,7 +645,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
               Text(
                 'On',
                 style: GoogleFonts.lora(
-                  fontSize: 12,
+                  fontSize: 20,
                   color: _stealMode ? _treasureGold : _parchmentTan.withOpacity(0.5),
                   fontWeight: _stealMode ? FontWeight.bold : FontWeight.normal,
                 ),
@@ -641,7 +666,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
           Text(
             'Speed Play',
             style: GoogleFonts.pirataOne(
-              fontSize: 13,
+              fontSize: 22,
               color: _speedPlay ? _treasureGold : _parchmentTan,
               letterSpacing: 0.5,
             ),
@@ -652,7 +677,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
               Text(
                 'Off',
                 style: GoogleFonts.lora(
-                  fontSize: 12,
+                  fontSize: 20,
                   color: !_speedPlay ? _parchmentTan : _parchmentTan.withOpacity(0.5),
                   fontWeight: !_speedPlay ? FontWeight.bold : FontWeight.normal,
                 ),
@@ -671,7 +696,7 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
               Text(
                 'On',
                 style: GoogleFonts.lora(
-                  fontSize: 12,
+                  fontSize: 20,
                   color: _speedPlay ? _treasureGold : _parchmentTan.withOpacity(0.5),
                   fontWeight: _speedPlay ? FontWeight.bold : FontWeight.normal,
                 ),

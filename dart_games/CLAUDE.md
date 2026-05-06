@@ -110,7 +110,7 @@ flutter test test/screens/games/pirates_grid/
 
 ## Current Test Counts
 
-**Total: 2108 tests**
+**Total: 2114 tests**
 - **Flutter Non-UI Tests:** 1438 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
@@ -147,16 +147,16 @@ flutter test test/screens/games/pirates_grid/
   - Test routes: 6
   - Additional routes (added for Pirate's Grid): 12
 
-- **UI Automation Tests:** 507 tests (optional, ask before running)
+- **UI Automation Tests:** 513 tests (optional, ask before running)
   - Target Tag: 80 tests (~113 minutes) [71 functional + 4 navigation + 5 play-to-complete]
   - Carnival Derby: 51 tests (~68 minutes) [42 functional + 4 navigation + 5 play-to-complete]
   - Monster Mash: 76 tests (~103 minutes) [68 functional + 4 navigation + 4 play-to-complete]
   - Reef Royale: 92 tests (~124 minutes) [84 functional + 4 navigation + 4 play-to-complete]
   - Clockwork Quest: 116 tests (~153 minutes) [92 functional + 3 navigation + 16 save/resume + 5 play-to-complete]
   - Lunar Lander: 46 tests (~61 minutes) [37 functional + 4 navigation + 5 play-to-complete]
-  - Pirate's Grid: 63 tests (~82 minutes) [49 functional + 4 navigation + 6 play-to-complete]
-  - **Sequential (`run_ui_tests.bat`): ~704 minutes (~11h 44m) — interactive Chrome sessions**
-  - **Parallel (`run_ui_tests_parallel.bat`): ~175 minutes (~2h 55m) — fully headless, no visible Chrome**
+  - Pirate's Grid: 69 tests (~90 minutes) [55 functional + 4 navigation + 6 play-to-complete]
+  - **Sequential (`run_ui_tests.bat`): ~712 minutes (~11h 52m) — interactive Chrome sessions**
+  - **Parallel (`run_ui_tests_parallel.bat`): ~178 minutes (~2h 58m) — fully headless, no visible Chrome**
 
 ## Critical Reminders
 

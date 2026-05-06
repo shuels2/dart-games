@@ -19,10 +19,13 @@ void main() {
     final provider = ProviderHelpers.getPiratesGridProvider(tester);
     final p1Id = provider.currentGame!.playerIds[0];
 
-    // P1: throw S20, S18, S16 → row 0 (indices [0,0], [0,1], [0,2])
-    await throwDartViaMock(tester, 20);
-    await throwDartViaMock(tester, 18);
-    await throwDartViaMock(tester, 16);
+    // P1: throw row 0 cells → row 0 (indices [0,0], [0,1], [0,2])
+    final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    final t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
+    final t02 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 2);
+    await throwDartViaMock(tester, t00);
+    await throwDartViaMock(tester, t01);
+    await throwDartViaMock(tester, t02);
 
     // P1 should now have won the round (and match on Bo1)
     expect(ProviderHelpers.piratesGridHasWinner(tester), isTrue,

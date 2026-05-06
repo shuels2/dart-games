@@ -192,32 +192,11 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            Text(
-                              '1.  Hit numbers 1 through 20 on the dartboard in order. Each hit activates that gear on the clock.',
-                              style: GoogleFonts.lato(
-                                fontSize: 20,
-                                color: const Color(0xFFF5F0E8),
-                                height: 1.5,
-                              ),
-                            ),
+                            _buildNumberedStep('1.', 'Hit numbers 1 through 20 on the dartboard in order. Each hit activates that gear on the clock.'),
                             const SizedBox(height: 12),
-                            Text(
-                              '2.  You get 3 darts per turn. Only hits on your current target advance you — everything else is a miss.',
-                              style: GoogleFonts.lato(
-                                fontSize: 20,
-                                color: const Color(0xFFF5F0E8),
-                                height: 1.5,
-                              ),
-                            ),
+                            _buildNumberedStep('2.', 'You get 3 darts per turn. Only hits on your current target advance you — everything else is a miss.'),
                             const SizedBox(height: 12),
-                            Text(
-                              '3.  First inventor to activate all gears earns the Clockwork Crown!',
-                              style: GoogleFonts.lato(
-                                fontSize: 20,
-                                color: const Color(0xFFF5F0E8),
-                                height: 1.5,
-                              ),
-                            ),
+                            _buildNumberedStep('3.', 'First inventor to activate all gears earns the Clockwork Crown!'),
                             const SizedBox(height: 24),
                             Text(
                               'OPTIONS:',
@@ -229,35 +208,11 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
                               ),
                             ),
                             const SizedBox(height: 10),
-                            Text(
-                              '⚙  Include Bullseye — Adds the bullseye as gear 21, making the game longer.',
-                              style: GoogleFonts.lato(
-                                fontSize: 19,
-                                color:
-                                    const Color(0xFFF5F0E8).withOpacity(0.85),
-                                height: 1.5,
-                              ),
-                            ),
+                            _buildGearBullet('Include Bullseye — Adds the bullseye as gear 21, making the game longer.'),
                             const SizedBox(height: 10),
-                            Text(
-                              '⚙  Speed Mode — Hit any gear in any order instead of 1 to 20 in numerical order. Great for a faster, more chaotic game.',
-                              style: GoogleFonts.lato(
-                                fontSize: 19,
-                                color:
-                                    const Color(0xFFF5F0E8).withOpacity(0.85),
-                                height: 1.5,
-                              ),
-                            ),
+                            _buildGearBullet('Speed Mode — Hit any gear in any order instead of 1 to 20 in numerical order. Great for a faster, more chaotic game.'),
                             const SizedBox(height: 10),
-                            Text(
-                              '⚙  Laps — Set how many full circuits (1–5) players must complete to win.',
-                              style: GoogleFonts.lato(
-                                fontSize: 19,
-                                color:
-                                    const Color(0xFFF5F0E8).withOpacity(0.85),
-                                height: 1.5,
-                              ),
-                            ),
+                            _buildGearBullet('Laps — Set how many full circuits (1–5) players must complete to win.'),
                             const SizedBox(height: 24),
                             Text(
                               'The tower awaits — who will master the machine?',
@@ -391,6 +346,34 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
           DartboardPausedModal(
             config: DartboardPausedModalConfig.clockworkQuest(),
           ),
+      ],
+    );
+  }
+
+  Widget _buildNumberedStep(String number, String text) {
+    const style = TextStyle(fontSize: 20, color: Color(0xFFF5F0E8), height: 1.5);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(number, style: GoogleFonts.lato(textStyle: style)),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: GoogleFonts.lato(textStyle: style))),
+      ],
+    );
+  }
+
+  Widget _buildGearBullet(String text) {
+    final dimStyle = GoogleFonts.lato(
+      fontSize: 19,
+      color: const Color(0xFFF5F0E8).withOpacity(0.85),
+      height: 1.5,
+    );
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('⚙', style: dimStyle),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: dimStyle)),
       ],
     );
   }

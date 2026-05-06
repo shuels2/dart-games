@@ -96,7 +96,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: title == 'Target Tag' || title == 'Monster Mash' ? 10 : 8),
+                SizedBox(
+                  height: title == 'Target Tag' || title == 'Monster Mash'
+                      ? 10
+                      : title == "Pirate's Grid"
+                          ? 6
+                          : 8,
+                ),
                 Text(
                   title,
                   style: title == 'Carnival Derby'
@@ -140,7 +146,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 )
                           : title == "Pirate's Grid"
                               ? GoogleFonts.pirataOne(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 8,
+                                  fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.0,
                                 )

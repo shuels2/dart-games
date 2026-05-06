@@ -23,61 +23,48 @@ class PiratesGridStrategy implements PlayToCompleteStrategy {
     if (game == null) return null;
 
     final currentPlayerId = game.getCurrentPlayerId();
-    final opponentId = game.getOpponentPlayerId(currentPlayerId);
+    final p1Id = game.playerIds[0]; // Designated winner — always P1.
 
-    // Iterate grid row-major to find the first targetable cell
+    // When it's the non-winner's (P2's) turn, return null (miss deliberately).
+    // This prevents steal-mode ping-pong: if both players target each other's
+    // cells the game never ends. P2 missing every dart guarantees P1 builds
+    // their winning line without interference.
+    if (currentPlayerId != p1Id) return null;
+
+    // P1's turn: target EMPTY cells only — never steal opponent cells even
+    // when steal mode is ON. Stealing creates the same infinite-loop risk
+    // because P2 could steal back on the next turn.
     for (int r = 0; r < 3; r++) {
       for (int c = 0; c < 3; c++) {
         final cell = game.grid[r][c];
+        if (cell.claimedBy != null) continue; // skip all claimed cells
 
-        final bool isTargetable;
-        if (cell.claimedBy == null) {
-          // Empty cell — always targetable
-          isTargetable = true;
-        } else if (cell.claimedBy == opponentId && game.stealMode) {
-          // Opponent cell — targetable if steal mode is ON
-          isTargetable = true;
-        } else {
-          isTargetable = false;
-        }
-
-        if (!isTargetable) continue;
-
-        // Build the SimulatedThrow for this cell's requirement
         final target = cell.target;
-
         switch (target.requirement) {
           case CellRequirement.bull:
-            // Inner bull (double bull) — dartNumber=25, multiplier=2 in
-            // SimulatedThrow means score=50
             return SimulatedThrow(
               score: 50,
               multiplier: 'double',
               baseScore: 25,
             );
-
           case CellRequirement.tripleOnly:
             return SimulatedThrow(
               score: target.number * 3,
               multiplier: 'triple',
               baseScore: target.number,
             );
-
           case CellRequirement.doubleOnly:
             return SimulatedThrow(
               score: target.number * 2,
               multiplier: 'double',
               baseScore: target.number,
             );
-
           case CellRequirement.doubleOrTriple:
-            // Prefer double (simpler / more realistic)
             return SimulatedThrow(
               score: target.number * 2,
               multiplier: 'double',
               baseScore: target.number,
             );
-
           case CellRequirement.any:
             return SimulatedThrow(
               score: target.number,
@@ -88,7 +75,7 @@ class PiratesGridStrategy implements PlayToCompleteStrategy {
       }
     }
 
-    // No targetable cell found (all cells filled, draw imminent)
+    // All cells claimed — draw imminent; returning null triggers a miss.
     return null;
   }
 }

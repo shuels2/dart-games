@@ -71,8 +71,9 @@ void main() {
       await setupAndStartGame(tester, config,
           playerNames: ['Alice', 'Bob']);
 
-      // Throw a dart to get a real game state
-      await throwDartViaMock(tester, 20);
+      // Throw a dart to plant a flag at cell [0,0] (get a real game state)
+      final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+      await throwDartViaMock(tester, t00);
 
       // Save via back button
       await UITestHelpers.tapGameScreenBackButton(tester, config);
@@ -99,7 +100,7 @@ void main() {
       final provider = ProviderHelpers.getPiratesGridProvider(tester);
       expect(provider.isGameActive, isTrue,
           reason: 'Game should be active after resume');
-      // P1 (Alice) should have 1 flag (from S20 before save)
+      // P1 (Alice) should have 1 flag (from cell [0,0] throw before save)
       final p1Id = provider.currentGame!.playerIds[0];
       expect(provider.currentGame!.getFlagsPlanted(p1Id), 1,
           reason: 'P1 should have 1 flag after resume (state restored)');

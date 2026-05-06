@@ -755,6 +755,8 @@ class PiratesGridGameKeys {
   static const editScoreButton = Key('pirates_grid_game_edit_score_button');
   static Key gridCell(int row, int col) =>
       Key('pirates_grid_game_cell_${row}_$col');
+  static Key gridCellTargetLabel(int row, int col) =>
+      Key('pirates_grid_game_cell_target_${row}_$col');
   static const playerAvatarActive = Key('pirates_grid_game_player_avatar_active');
   static const playerAvatarInactive = Key('pirates_grid_game_player_avatar_inactive');
   static Key flagsCounter(String playerId) =>

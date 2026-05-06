@@ -29,8 +29,9 @@ void main() {
         false,
       );
 
-      // Throw a dart to create some state
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // Use the actual target number from [0,0] — works with randomized grid
+      final targetNum = provider.currentGame!.grid[0][0].target.number;
+      provider.processDartThrow(score: targetNum, multiplier: 1, sector: 'S$targetNum');
 
       await provider.saveGame(players);
 
@@ -51,7 +52,9 @@ void main() {
         false,
         false,
       );
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // Use the actual target number from [0,0] — works with randomized grid
+      final targetNum = provider.currentGame!.grid[0][0].target.number;
+      provider.processDartThrow(score: targetNum, multiplier: 1, sector: 'S$targetNum');
 
       await provider.saveGame(players);
 
@@ -69,8 +72,11 @@ void main() {
         true,
         false,
       );
-      provider.processDartThrow(score: 20, multiplier: 2, sector: 'D20');
-      provider.processDartThrow(score: 18, multiplier: 2, sector: 'D18');
+      // Use actual target numbers — works with randomized grid (medium requires double)
+      final targetNum0 = provider.currentGame!.grid[0][0].target.number;
+      final targetNum1 = provider.currentGame!.grid[0][1].target.number;
+      provider.processDartThrow(score: targetNum0, multiplier: 2, sector: 'D$targetNum0');
+      provider.processDartThrow(score: targetNum1, multiplier: 2, sector: 'D$targetNum1');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)
@@ -96,7 +102,9 @@ void main() {
         false,
         false,
       );
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // Use the actual target number from [0,0] — works with randomized grid
+      final targetNum = provider.currentGame!.grid[0][0].target.number;
+      provider.processDartThrow(score: targetNum, multiplier: 1, sector: 'S$targetNum');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)
@@ -113,7 +121,9 @@ void main() {
         false,
         false,
       );
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // Use the actual target number from [0,0] — works with randomized grid
+      final targetNum = provider.currentGame!.grid[0][0].target.number;
+      provider.processDartThrow(score: targetNum, multiplier: 1, sector: 'S$targetNum');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)
@@ -132,7 +142,9 @@ void main() {
         false,
         false,
       );
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // Use the actual target number from [0,0] — works with randomized grid
+      final targetNum = provider.currentGame!.grid[0][0].target.number;
+      provider.processDartThrow(score: targetNum, multiplier: 1, sector: 'S$targetNum');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)
@@ -153,9 +165,12 @@ void main() {
         false,
         false,
       );
+      // Use actual target numbers from [0,0] and [0,1] — works with randomized grid
+      final targetNum0 = provider.currentGame!.grid[0][0].target.number;
+      final targetNum1 = provider.currentGame!.grid[0][1].target.number;
       // p1 throws 2 darts
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
-      provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
+      provider.processDartThrow(score: targetNum0, multiplier: 1, sector: 'S$targetNum0');
+      provider.processDartThrow(score: targetNum1, multiplier: 1, sector: 'S$targetNum1');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)
@@ -166,7 +181,7 @@ void main() {
 
       final game = newProvider.currentGame!;
       expect(game.dartsThrown['p1'], 2);
-      expect(game.currentTurnDartSegments['p1'], ['S20', 'S18']);
+      expect(game.currentTurnDartSegments['p1'], ['S$targetNum0', 'S$targetNum1']);
       expect(game.totalDartsThrown['p1'], 2);
     });
 
@@ -179,15 +194,22 @@ void main() {
         false,
       );
 
-      // Easy grid row 0: [S20, S18, S16] — p1 claims all three for a win
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
-      provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
-      provider.processDartThrow(score: 16, multiplier: 1, sector: 'S16');
+      // Use actual target numbers from row 0 — works with randomized grid
+      final t00 = provider.currentGame!.grid[0][0].target.number;
+      final t01 = provider.currentGame!.grid[0][1].target.number;
+      final t02 = provider.currentGame!.grid[0][2].target.number;
+
+      // Easy grid row 0: p1 claims all three for a win
+      provider.processDartThrow(score: t00, multiplier: 1, sector: 'S$t00');
+      provider.processDartThrow(score: t01, multiplier: 1, sector: 'S$t01');
+      provider.processDartThrow(score: t02, multiplier: 1, sector: 'S$t02');
       // Round 1 is now won by p1 (three in a row in row 0); takeout needed
       provider.handleTakeoutFinished(); // transitions to round 2
 
       // Now in round 2: save mid-round
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // Use the actual target number from [0,0] — works with randomized grid
+      final targetNum = provider.currentGame!.grid[0][0].target.number;
+      provider.processDartThrow(score: targetNum, multiplier: 1, sector: 'S$targetNum');
 
       await provider.saveGame(players);
       final saved = await SaveGameService(mockServer.apiClient)
@@ -261,7 +283,10 @@ void main() {
         false,
         false,
       );
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // Use actual target numbers from [0,0] and [0,1] — works with randomized grid
+      final targetNum0 = provider.currentGame!.grid[0][0].target.number;
+      final targetNum1 = provider.currentGame!.grid[0][1].target.number;
+      provider.processDartThrow(score: targetNum0, multiplier: 1, sector: 'S$targetNum0');
 
       // First save
       await provider.saveGame(players);
@@ -272,7 +297,7 @@ void main() {
 
       // Restore and throw another dart, then save again
       provider.restoreGame(saved1[0]);
-      provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
+      provider.processDartThrow(score: targetNum1, multiplier: 1, sector: 'S$targetNum1');
       await provider.saveGame(players);
 
       // Should still be 1 saved game, same id (overwrite)
