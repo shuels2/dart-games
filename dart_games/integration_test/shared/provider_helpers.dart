@@ -7,11 +7,13 @@ import 'package:dart_games/providers/monster_mash_provider.dart';
 import 'package:dart_games/providers/reef_royale_provider.dart';
 import 'package:dart_games/providers/clockwork_quest_provider.dart';
 import 'package:dart_games/providers/lunar_lander_provider.dart';
+import 'package:dart_games/providers/pirates_grid_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/models/monster_mash_game.dart';
 import 'package:dart_games/models/reef_royale_game.dart';
+import 'package:dart_games/models/pirates_grid_game.dart';
 
 /// Helpers for accessing provider state in UI tests.
 class ProviderHelpers {
@@ -463,6 +465,97 @@ class ProviderHelpers {
   static bool isLunarLanderHardLandingEnabled(WidgetTester tester) {
     final provider = getLunarLanderProvider(tester);
     return provider.currentGame?.hardLandingEnabled ?? false;
+  }
+
+  // ==========================================================================
+  // PIRATE'S GRID HELPERS
+  // ==========================================================================
+
+  /// Get Pirate's Grid provider
+  static PiratesGridProvider getPiratesGridProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<PiratesGridProvider>(context, listen: false);
+  }
+
+  /// Pirate's Grid: Check for winner
+  static bool piratesGridHasWinner(WidgetTester tester) {
+    final provider = getPiratesGridProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Pirate's Grid: Get current player ID
+  static String? getPiratesGridCurrentPlayerId(WidgetTester tester) {
+    final provider = getPiratesGridProvider(tester);
+    return provider.currentGame?.getCurrentPlayerId();
+  }
+
+  /// Pirate's Grid: Check if game is active
+  static bool isPiratesGridGameActive(WidgetTester tester) {
+    final provider = getPiratesGridProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Pirate's Grid: Get darts thrown for current player
+  static int getPiratesGridCurrentPlayerDartsThrown(WidgetTester tester) {
+    final provider = getPiratesGridProvider(tester);
+    return provider.getCurrentPlayerDartsThrown();
+  }
+
+  /// Pirate's Grid: Get flags planted for a player
+  static int getPiratesGridFlagsPlanted(WidgetTester tester, String playerId) {
+    final provider = getPiratesGridProvider(tester);
+    return provider.currentGame?.getFlagsPlanted(playerId) ?? 0;
+  }
+
+  /// Pirate's Grid: Get the full 3x3 grid state
+  static List<List<GridCell>>? getPiratesGridGrid(WidgetTester tester) {
+    final provider = getPiratesGridProvider(tester);
+    return provider.currentGame?.grid;
+  }
+
+  /// Pirate's Grid: Get cell claimed-by at (row, col)
+  static String? getPiratesGridCellClaimedBy(
+      WidgetTester tester, int row, int col) {
+    final grid = getPiratesGridGrid(tester);
+    if (grid == null) return null;
+    return grid[row][col].claimedBy;
+  }
+
+  /// Pirate's Grid: Get match winner ID
+  static String? getPiratesGridMatchWinnerId(WidgetTester tester) {
+    final provider = getPiratesGridProvider(tester);
+    return provider.currentGame?.matchWinnerId;
+  }
+
+  /// Pirate's Grid: Get rounds won for a player
+  static int getPiratesGridRoundsWon(WidgetTester tester, String playerId) {
+    final provider = getPiratesGridProvider(tester);
+    return provider.currentGame?.roundsWon[playerId] ?? 0;
+  }
+
+  /// Pirate's Grid: Set game state programmatically (for test setup)
+  ///
+  /// Allows tests to place flags on the grid without throwing real darts.
+  /// [claimedBy] is a 3x3 list where each element is a playerId or null.
+  static void setPiratesGridGameState(
+    WidgetTester tester, {
+    required List<List<String?>> claimedBy,
+  }) {
+    final provider = getPiratesGridProvider(tester);
+    if (provider.currentGame == null) return;
+    final game = provider.currentGame!;
+    for (int r = 0; r < 3; r++) {
+      for (int c = 0; c < 3; c++) {
+        game.grid[r][c].claimedBy = claimedBy[r][c];
+      }
+    }
+    provider.notifyListeners();
+  }
+
+  /// Pirate's Grid: Check if shouldPromptTakeout
+  static bool piratesGridShouldPromptTakeout(WidgetTester tester) {
+    final provider = getPiratesGridProvider(tester);
+    return provider.shouldPromptTakeout;
   }
 
   // ==========================================================================

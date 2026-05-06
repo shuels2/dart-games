@@ -767,4 +767,124 @@ class ElementFinders {
   static Finder getLunarLanderWinnerName() {
     return find.byKey(LunarLanderResultsKeys.winnerName);
   }
+
+  // ==========================================================================
+  // PIRATE'S GRID HOME FINDERS
+  // ==========================================================================
+
+  static Finder getPiratesGridCard() {
+    return find.byKey(HomeKeys.piratesGridCard);
+  }
+
+  // ==========================================================================
+  // PIRATE'S GRID MENU FINDERS
+  // ==========================================================================
+
+  static Finder getPiratesGridBackButton() {
+    return find.byKey(PiratesGridMenuKeys.backButton);
+  }
+
+  static Finder getPiratesGridAddPlayerButton() {
+    return find.byKey(PiratesGridMenuKeys.addPlayerButton);
+  }
+
+  static Finder getPiratesGridAddPlayerButtonEmptyState() {
+    return find.byKey(PiratesGridMenuKeys.addPlayerButtonEmptyState);
+  }
+
+  static Finder getPiratesGridPlayerTile(String playerId) {
+    return find.byKey(PiratesGridMenuKeys.playerTile(playerId));
+  }
+
+  static Finder getPiratesGridDifficultyDropdown() {
+    return find.byKey(PiratesGridMenuKeys.difficultyDropdown);
+  }
+
+  static Finder getPiratesGridBestOfDropdown() {
+    return find.byKey(PiratesGridMenuKeys.bestOfDropdown);
+  }
+
+  static Finder getPiratesGridStealModeSwitch() {
+    return find.byKey(PiratesGridMenuKeys.stealModeSwitch);
+  }
+
+  static Finder getPiratesGridSpeedPlaySwitch() {
+    return find.byKey(PiratesGridMenuKeys.speedPlaySwitch);
+  }
+
+  static Finder getPiratesGridStartButton() {
+    return find.byKey(PiratesGridMenuKeys.startGameButton);
+  }
+
+  // ==========================================================================
+  // PIRATE'S GRID GAME FINDERS
+  // ==========================================================================
+
+  static Finder getPiratesGridGameBackButton() {
+    return find.byKey(PiratesGridGameKeys.backButton);
+  }
+
+  static Finder getPiratesGridSkipTurnButton() {
+    return find.byKey(PiratesGridGameKeys.skipTurnButton);
+  }
+
+  static Finder getPiratesGridEditScoreButton() {
+    return find.byKey(PiratesGridGameKeys.editScoreButton);
+  }
+
+  static Finder getPiratesGridGridCell(int row, int col) {
+    return find.byKey(PiratesGridGameKeys.gridCell(row, col));
+  }
+
+  static Finder getPiratesGridPlayerAvatarActive() {
+    return find.byKey(PiratesGridGameKeys.playerAvatarActive);
+  }
+
+  static Finder getPiratesGridPlayerAvatarInactive() {
+    return find.byKey(PiratesGridGameKeys.playerAvatarInactive);
+  }
+
+  static Finder getPiratesGridFlagsCounter(String playerId) {
+    return find.byKey(PiratesGridGameKeys.flagsCounter(playerId));
+  }
+
+  static Finder getPiratesGridDartIndicator(int index) {
+    return find.byKey(PiratesGridGameKeys.dartIndicator(index));
+  }
+
+  static Finder getPiratesGridStealModeBadge() {
+    return find.byKey(PiratesGridGameKeys.stealModeBadge);
+  }
+
+  static Finder getPiratesGridSpeedPlayTimer() {
+    return find.byKey(PiratesGridGameKeys.speedPlayTimer);
+  }
+
+  static Finder getPiratesGridRoundTracker() {
+    return find.byKey(PiratesGridGameKeys.roundTracker);
+  }
+
+  // ==========================================================================
+  // PIRATE'S GRID RESULTS FINDERS
+  // ==========================================================================
+
+  static Finder getPiratesGridPlayAgainButton() {
+    return find.byKey(PiratesGridResultsKeys.playAgainButton);
+  }
+
+  static Finder getPiratesGridChangeSettingsButton() {
+    return find.byKey(PiratesGridResultsKeys.changeSettingsButton);
+  }
+
+  static Finder getPiratesGridBackToMenuButton() {
+    return find.byKey(PiratesGridResultsKeys.backToMenuButton);
+  }
+
+  static Finder getPiratesGridWinnerName() {
+    return find.byKey(PiratesGridResultsKeys.winnerName);
+  }
+
+  static Finder getPiratesGridHeadlineText() {
+    return find.byKey(PiratesGridResultsKeys.headlineText);
+  }
 }

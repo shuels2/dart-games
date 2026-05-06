@@ -223,6 +223,39 @@ class RemoveDartsModalConfig {
     );
   }
 
+  /// Pirate's Grid — Ocean Navy bg, Compass Bronze border, PirataOne/Lora fonts
+  factory RemoveDartsModalConfig.piratesGrid() {
+    return RemoveDartsModalConfig(
+      backgroundColor: const Color(0xFF1B2838), // Ocean Navy
+      backgroundOpacity: 0.95,
+      borderColor: const Color(0xFFCD7F32), // Compass Bronze
+      borderWidth: 4,
+      boxShadowColor: const Color(0xFFCD7F32),
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFF5E6C8), // Parchment Tan
+      iconSize: 48,
+      playerNameTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFFDAA520), // Treasure Gold
+        fontSize: 22,
+        letterSpacing: 1.0,
+      ),
+      instructionTextStyle: GoogleFonts.lora(
+        color: const Color(0xFFF5E6C8), // Parchment Tan
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+      ),
+      buttonBackgroundColor: const Color(0xFFCD7F32).withOpacity(0.85), // Compass Bronze
+      buttonForegroundColor: const Color(0xFFF5E6C8),
+      buttonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 0.5,
+      ),
+      editButtonText: 'Edit player score',
+      maxWidth: 400,
+    );
+  }
+
   factory RemoveDartsModalConfig.clockworkQuest() {
     return RemoveDartsModalConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

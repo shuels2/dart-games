@@ -15,6 +15,7 @@ import 'games/monster_mash/monster_mash_menu_screen.dart';
 import 'games/reef_royale/reef_royale_menu_screen.dart';
 import 'games/clockwork_quest/clockwork_quest_menu_screen.dart';
 import 'games/lunar_lander/lunar_lander_menu_screen.dart';
+import 'games/pirates_grid/pirates_grid_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -52,6 +53,9 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'lunar_lander':
         menuScreen = const LunarLanderMenuScreen();
+        break;
+      case 'pirates_grid':
+        menuScreen = const PiratesGridMenuScreen();
         break;
       default:
         return;
@@ -131,6 +135,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? GoogleFonts.orbitron(
                                   fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 3,
                                   fontWeight: FontWeight.bold,
+                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                                  letterSpacing: 1.0,
+                                )
+                          : title == "Pirate's Grid"
+                              ? GoogleFonts.pirataOne(
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.0,
                                 )
@@ -278,6 +288,15 @@ class _HomeScreenState extends State<HomeScreen> {
         'color': const Color(0xFF1B4965), // Earth Blue
         'onTap': dartboardProvider.canPlayGames
             ? () => _navigateToMenu('lunar_lander')
+            : null,
+      },
+      {
+        'title': "Pirate's Grid",
+        'key': HomeKeys.piratesGridCard,
+        'imageAssetPath': 'assets/games/pirates_grid/icons/PiratesGrid-Icon.png',
+        'color': const Color(0xFF1B2838), // Ocean Navy
+        'onTap': dartboardProvider.canPlayGames
+            ? () => _navigateToMenu('pirates_grid')
             : null,
       },
       // Add new games here - they will automatically be sorted alphabetically

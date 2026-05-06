@@ -166,6 +166,16 @@ class UITestHelpers {
       } else {
         addButton = normalStateButton;
       }
+    } else if (config.gameName == "Pirate's Grid") {
+      // For Pirate's Grid, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getPiratesGridAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getPiratesGridAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
     } else {
       // For other games, use the config method
       addButton = config.getAddPlayerButton();

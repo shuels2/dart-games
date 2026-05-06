@@ -8,6 +8,40 @@ import 'provider_helpers.dart';
 import 'game_ui_config.dart';
 
 class GameSetupHelpers {
+  // ===== Pirate's Grid =====
+
+  static Future<void> setupAndStartPiratesGrid(
+    WidgetTester tester,
+    GameUIConfig config, {
+    String difficulty = 'Easy',
+    String bestOf = '1',
+    bool stealMode = false,
+    bool speedPlay = false,
+    List<String>? playerNames,
+  }) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+
+    if (difficulty != 'Easy') {
+      await SettingsHelpers.setPiratesGridDifficulty(tester, difficulty);
+    }
+    if (bestOf != '1') {
+      await SettingsHelpers.setPiratesGridBestOf(tester, bestOf);
+    }
+    if (stealMode) {
+      await SettingsHelpers.togglePiratesGridStealMode(tester);
+    }
+    if (speedPlay) {
+      await SettingsHelpers.togglePiratesGridSpeedPlay(tester);
+    }
+
+    final names = playerNames ?? ['Player A', 'Player B'];
+    for (final name in names) {
+      await UITestHelpers.addPlayer(tester, name, config);
+    }
+
+    await UITestHelpers.startGame(tester, config);
+  }
+
   // ===== Lunar Lander =====
 
   static Future<void> setupAndStartLunarLander(

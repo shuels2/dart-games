@@ -127,6 +127,13 @@ flutter:
     - assets/games/monster_mash/characters/
     - assets/games/monster_mash/sounds/
 
+    # Pirate's Grid game assets
+    - assets/games/pirates_grid/icons/
+    - assets/games/pirates_grid/images/
+    - assets/games/pirates_grid/characters/
+    - assets/games/pirates_grid/pieces/
+    - assets/games/pirates_grid/sounds/
+
     # Reef Royale game assets
     - assets/games/reef_royale/icons/
     - assets/games/reef_royale/images/

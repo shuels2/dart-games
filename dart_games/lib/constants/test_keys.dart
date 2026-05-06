@@ -36,6 +36,7 @@ class HomeKeys {
   static const reefRoyaleCard = Key('home_reef_royale_card');
   static const clockworkQuestCard = Key('home_clockwork_quest_card');
   static const lunarLanderCard = Key('home_lunar_lander_card');
+  static const piratesGridCard = Key('home_pirates_grid_card');
 }
 
 // ============================================================================
@@ -726,4 +727,51 @@ class LunarLanderResultsKeys {
   static const changeSettingsButton = Key('results_ll_change_settings_button');
   static const backToMenuButton = Key('results_ll_back_to_menu_button');
   static Key playerRanking(int index) => Key('results_ll_player_ranking_$index');
+}
+
+// ============================================================================
+// PIRATE'S GRID KEYS
+// ============================================================================
+
+class PiratesGridMenuKeys {
+  static const backButton = Key('pirates_grid_menu_back_button');
+  static const difficultyDropdown = Key('pirates_grid_menu_difficulty_dropdown');
+  static const bestOfDropdown = Key('pirates_grid_menu_best_of_dropdown');
+  static const stealModeSwitch = Key('pirates_grid_menu_steal_mode_switch');
+  static const speedPlaySwitch = Key('pirates_grid_menu_speed_play_switch');
+  static const startGameButton = Key('pirates_grid_menu_start_button');
+  static const addPlayerButton = Key('pirates_grid_menu_add_player_button');
+  static const addPlayerButtonEmptyState = Key('pirates_grid_menu_add_player_button_empty');
+  static const playerListView = Key('pirates_grid_menu_player_list_view');
+  static Key playerTile(String playerId) =>
+      Key('pirates_grid_menu_player_${playerId}_tile');
+  static Key removePlayerButton(String playerId) =>
+      Key('pirates_grid_menu_remove_${playerId}_button');
+}
+
+class PiratesGridGameKeys {
+  static const backButton = Key('pirates_grid_game_back_button');
+  static const skipTurnButton = Key('pirates_grid_game_skip_turn_button');
+  static const editScoreButton = Key('pirates_grid_game_edit_score_button');
+  static Key gridCell(int row, int col) =>
+      Key('pirates_grid_game_cell_${row}_$col');
+  static const playerAvatarActive = Key('pirates_grid_game_player_avatar_active');
+  static const playerAvatarInactive = Key('pirates_grid_game_player_avatar_inactive');
+  static Key flagsCounter(String playerId) =>
+      Key('pirates_grid_game_flags_counter_$playerId');
+  static Key dartIndicator(int index) =>
+      Key('pirates_grid_game_dart_indicator_$index');
+  static const stealModeBadge = Key('pirates_grid_game_steal_mode_badge');
+  static const speedPlayTimer = Key('pirates_grid_game_speed_play_timer');
+  static const roundTracker = Key('pirates_grid_game_round_tracker');
+}
+
+class PiratesGridResultsKeys {
+  static const playAgainButton = Key('pirates_grid_results_play_again_button');
+  static const changeSettingsButton = Key('pirates_grid_results_change_settings_button');
+  static const backToMenuButton = Key('pirates_grid_results_back_to_menu_button');
+  static const winnerName = Key('pirates_grid_results_winner_name');
+  static const winnerAvatar = Key('pirates_grid_results_winner_avatar');
+  static const rankingsList = Key('pirates_grid_results_rankings_list');
+  static const headlineText = Key('pirates_grid_results_headline');
 }

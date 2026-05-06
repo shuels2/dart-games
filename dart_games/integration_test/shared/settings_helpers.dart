@@ -478,6 +478,48 @@ class SettingsHelpers {
     await setDropdownValue(tester, dropdownFinder, laps.toString());
   }
 
+  // ==========================================================================
+  // PIRATE'S GRID SETTINGS
+  // ==========================================================================
+
+  /// Pirate's Grid: Set Target Difficulty (dropdown)
+  ///
+  /// Valid values: 'Easy', 'Medium', 'Hard'
+  static Future<void> setPiratesGridDifficulty(
+    WidgetTester tester,
+    String difficulty,
+  ) async {
+    await setDropdownValue(
+      tester,
+      ElementFinders.getPiratesGridDifficultyDropdown(),
+      difficulty,
+    );
+  }
+
+  /// Pirate's Grid: Set Best Of (dropdown)
+  ///
+  /// Valid values: '1', '3', '5'
+  static Future<void> setPiratesGridBestOf(
+    WidgetTester tester,
+    String bestOf,
+  ) async {
+    await setDropdownValue(
+      tester,
+      ElementFinders.getPiratesGridBestOfDropdown(),
+      bestOf,
+    );
+  }
+
+  /// Pirate's Grid: Toggle Steal Mode switch
+  static Future<void> togglePiratesGridStealMode(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getPiratesGridStealModeSwitch());
+  }
+
+  /// Pirate's Grid: Toggle Speed Play switch
+  static Future<void> togglePiratesGridSpeedPlay(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getPiratesGridSpeedPlaySwitch());
+  }
+
   /// Clockwork Quest: Full flow to add a player
   static Future<void> addClockworkQuestPlayer(
     WidgetTester tester,

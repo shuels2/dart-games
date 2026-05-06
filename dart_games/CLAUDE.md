@@ -38,10 +38,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (1913 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **1275 Flutter + 178 server + 460 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1453 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 460 UI tests (~622 minutes sequential / ~153 minutes parallel, optional)
+### 🧪 Testing (2108 tests total)
+- [Test Overview](docs/testing/test-overview.md) - **1438 Flutter + 190 server + 507 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1628 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 507 UI tests (~622 minutes sequential / ~153 minutes parallel, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Shared Helpers Reference](docs/testing/shared-helpers-reference.md) - Shared test helper files, delegate pattern, new game templates
@@ -65,18 +65,19 @@ Each game has its own unique visual identity while integrating with global syste
 - [Reef Royale](docs/games/reef-royale/) - Coral claiming game (2-8 players)
 - [Clockwork Quest](docs/games/clockwork-quest/) - Steampunk gear progression game (2-8 players)
 - [Lunar Lander](docs/games/lunar-lander/) - Retro NASA countdown game (2-8 players)
+- [Pirate's Grid](docs/games/pirates-grid/) - Treasure-map tic-tac-toe (2 players)
 
 ## Quick Reference
 
 ### Run All Non-UI Tests (MANDATORY before builds)
 ```bash
-# Flutter tests (1275 tests)
+# Flutter tests (1438 tests)
 flutter test
 
-# Server tests (178 tests)
+# Server tests (190 tests)
 cd server && dart test
 ```
-**Required:** 100% pass rate (1453 tests total)
+**Required:** 100% pass rate (1628 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -104,17 +105,18 @@ flutter test test/screens/games/monster_mash/
 flutter test test/screens/games/reef_royale/
 flutter test test/screens/games/clockwork_quest/
 flutter test test/screens/games/lunar_lander/
+flutter test test/screens/games/pirates_grid/
 ```
 
 ## Current Test Counts
 
-**Total: 1913 tests**
-- **Flutter Non-UI Tests:** 1275 tests (100% pass rate MANDATORY)
+**Total: 2108 tests**
+- **Flutter Non-UI Tests:** 1438 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
-  - Model serialization tests: 86 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19 + LunarLander 12)
+  - Model serialization tests: 110 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19 + LunarLander 12 + PiratesGrid 24)
   - Provider tests: 74 (PlayerProvider 44 + DartboardProvider 30)
-  - Provider save/restore tests: 42 (6 games x 7)
+  - Provider save/restore tests: 49 (6 prior games x 7 + PiratesGrid 12)
   - Provider game mechanics tests: 233 (HorseRace 50 + ClockworkQuest 49 + MonsterMash 44 + ReefRoyale 45 + TargetTag 45)
   - Service tests: 91 (AppSettings 20 + VictoryMusicService 22 + StorageService 24 + ApiLoggerService 25)
   - Save game service tests: 13
@@ -129,8 +131,9 @@ flutter test test/screens/games/lunar_lander/
   - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
   - Carnival Derby game logic: 8 (included in integration above)
   - Lunar Lander game logic + announcements: 66 (33 game logic + 33 announcements)
+  - Pirate's Grid game logic + announcements: 132 (31 game logic + 14 checker + 27 announcements + 24 with-announcements + 24 serialization + 12 save-restore)
 
-- **Server Tests:** 178 tests (100% pass rate MANDATORY)
+- **Server Tests:** 190 tests (100% pass rate MANDATORY)
   - Database & helpers: 25
   - Database registry & middleware: 10
   - Model roundtrips: 32
@@ -142,22 +145,24 @@ flutter test test/screens/games/lunar_lander/
   - Victory music routes: 14
   - Failed stats routes: 6
   - Test routes: 6
+  - Additional routes (added for Pirate's Grid): 12
 
-- **UI Automation Tests:** 460 tests (optional, ask before running)
+- **UI Automation Tests:** 507 tests (optional, ask before running)
   - Target Tag: 80 tests (~113 minutes) [71 functional + 4 navigation + 5 play-to-complete]
   - Carnival Derby: 51 tests (~68 minutes) [42 functional + 4 navigation + 5 play-to-complete]
   - Monster Mash: 76 tests (~103 minutes) [68 functional + 4 navigation + 4 play-to-complete]
   - Reef Royale: 92 tests (~124 minutes) [84 functional + 4 navigation + 4 play-to-complete]
   - Clockwork Quest: 116 tests (~153 minutes) [92 functional + 3 navigation + 16 save/resume + 5 play-to-complete]
   - Lunar Lander: 46 tests (~61 minutes) [37 functional + 4 navigation + 5 play-to-complete]
-  - **Sequential (`run_ui_tests.bat`): ~622 minutes (~10h 22m) — interactive Chrome sessions**
-  - **Parallel (`run_ui_tests_parallel.bat`): ~153 minutes (~2h 33m) — fully headless, no visible Chrome**
+  - Pirate's Grid: 63 tests (~82 minutes) [49 functional + 4 navigation + 6 play-to-complete]
+  - **Sequential (`run_ui_tests.bat`): ~704 minutes (~11h 44m) — interactive Chrome sessions**
+  - **Parallel (`run_ui_tests_parallel.bat`): ~175 minutes (~2h 55m) — fully headless, no visible Chrome**
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 1275 Flutter non-UI tests MUST pass
-✅ Run `cd server && dart test` - ALL 178 server tests MUST pass
+✅ Run `flutter test` - ALL 1438 Flutter non-UI tests MUST pass
+✅ Run `cd server && dart test` - ALL 190 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -264,7 +269,10 @@ dart_games/
 │       ├── carnival-derby/          # Carnival Derby docs (8 files)
 │       ├── target-tag/              # Target Tag docs (8 files)
 │       ├── monster-mash/            # Monster Mash docs (8 files)
-│       └── reef-royale/            # Reef Royale docs (8 files)
+│       ├── reef-royale/             # Reef Royale docs (8 files)
+│       ├── clockwork-quest/         # Clockwork Quest docs (8 files)
+│       ├── lunar-lander/            # Lunar Lander docs (8 files)
+│       └── pirates-grid/            # Pirate's Grid docs (8 files)
 ├── server/                          # Dart Shelf backend server
 │   ├── bin/server.dart             # Entry point
 │   ├── lib/
@@ -288,19 +296,21 @@ dart_games/
 │           ├── monster_mash/
 │           ├── reef_royale/
 │           ├── clockwork_quest/
-│           └── lunar_lander/
-├── test/                            # Flutter non-UI tests (1275 tests)
+│           ├── lunar_lander/
+│           └── pirates_grid/
+├── test/                            # Flutter non-UI tests (1438 tests)
 │   ├── shared/                     # Shared test helpers (MockApiServer, etc.)
 │   ├── services/api/               # API client tests
 │   └── ...
-├── integration_test/                # UI automation tests (460 tests)
+├── integration_test/                # UI automation tests (507 tests)
 │   ├── shared/                     # Shared test helpers
 │   ├── target_tag/                 # Target Tag UI tests
 │   ├── carnival_derby/             # Carnival Derby UI tests
 │   ├── monster_mash/               # Monster Mash UI tests
 │   ├── reef_royale/                # Reef Royale UI tests
 │   ├── clockwork_quest/            # Clockwork Quest UI tests
-│   └── lunar_lander/               # Lunar Lander UI tests
+│   ├── lunar_lander/               # Lunar Lander UI tests
+│   └── pirates_grid/               # Pirate's Grid UI tests
 └── assets/                          # Game assets
     ├── common/
     └── games/
@@ -309,7 +319,8 @@ dart_games/
         ├── monster_mash/
         ├── reef_royale/
         ├── clockwork_quest/
-        └── lunar_lander/
+        ├── lunar_lander/
+        └── pirates_grid/
 ```
 
 ## Platform Support
@@ -356,13 +367,13 @@ git push origin <branch>        # Push (with permission)
 
 ## Notes
 
-- Original CLAUDE.md (2800 lines) has been reorganized into 65+ focused documentation files
+- Original CLAUDE.md (2800 lines) has been reorganized into 93 focused documentation files
 - Each topic has its own file for better maintainability and navigation
 - Game-specific documentation lives in `docs/games/[game_name]/`
 - Shared documentation lives in topic-based folders (architecture, development, testing, etc.)
 
 ---
 
-**Last Updated:** 2026-05-03
-**Documentation Version:** 4.3 (Lunar Lander)
-**Total Documentation Files:** 85
+**Last Updated:** 2026-05-06
+**Documentation Version:** 4.4 (Pirate's Grid)
+**Total Documentation Files:** 93

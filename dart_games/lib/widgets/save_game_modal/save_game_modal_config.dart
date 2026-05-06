@@ -186,6 +186,34 @@ class SaveGameModalConfig {
     );
   }
 
+  /// Pirate's Grid — Ocean Navy bg, Compass Bronze border, pirate-themed copy
+  factory SaveGameModalConfig.piratesGrid() {
+    return SaveGameModalConfig(
+      backgroundColor: const Color(0xFF1B2838), // Ocean Navy
+      borderColor: const Color(0xFFCD7F32), // Compass Bronze
+      boxShadowColor: const Color(0xFFCD7F32),
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFCD7F32), // Compass Bronze
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFFDAA520), // Treasure Gold
+        fontSize: 24,
+        letterSpacing: 1.2,
+      ),
+      messageTextStyle: GoogleFonts.lora(
+        color: const Color(0xFFF5E6C8), // Parchment Tan
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      saveButtonColor: const Color(0xFFCD7F32), // Compass Bronze
+      saveButtonTextColor: const Color(0xFFF5E6C8),
+      saveButtonTextStyle: GoogleFonts.pirataOne(fontSize: 18, letterSpacing: 1.0),
+      dontSaveButtonColor: Colors.transparent,
+      dontSaveButtonTextColor: const Color(0xFFF5E6C8),
+      dontSaveButtonTextStyle: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w600),
+    );
+  }
+
   factory SaveGameModalConfig.clockworkQuest() {
     return SaveGameModalConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron
