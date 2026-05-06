@@ -257,13 +257,15 @@ if defined STUB_MODE (
 
 REM On first failure, check for infrastructure errors and retry once.
 REM Patterns include WebDriver/connection drops, parallel SDK-cache file
-REM lock races (PathAccessException on engine.realm), AND transient network
-REM failures fetching Google Fonts assets ("Failed to load font" /
-REM "Failed to fetch" / "ClientException"), which are flake-prone.
+REM lock races (Dart-side PathAccessException AND PowerShell-side
+REM Set-Content errors on engine.realm — the engine.realm filename is the
+REM most specific marker of this race), AND transient network failures
+REM fetching Google Fonts assets ("Failed to load font" / "Failed to
+REM fetch" / "ClientException"), which are flake-prone.
 set "_RST_RETRY=0"
 if "!_RST_PASS!"=="0" if !_RST_ATTEMPT! lss 2 (
     if not defined STUB_MODE (
-        findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"FormatException" /C:"PathAccessException" /C:"Failed to load font" /C:"Failed to fetch" /C:"ClientException" "!_RST_LOG!" >nul 2>&1
+        findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"FormatException" /C:"PathAccessException" /C:"engine.realm" /C:"GetContentWriterIOError" /C:"Failed to load font" /C:"Failed to fetch" /C:"ClientException" "!_RST_LOG!" >nul 2>&1
         if !errorlevel! equ 0 set "_RST_RETRY=1"
     )
 )
