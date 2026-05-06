@@ -922,8 +922,10 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
               if (!isMultiTarget) return indicator;
 
-              // Pulsing glow for shared neighbor multi-target hits
-              return AnimatedBuilder(
+              // Pulsing glow for shared neighbor multi-target hits.
+              // RepaintBoundary isolates the per-frame box-shadow rebuild
+              // so it doesn't dirty sibling dart indicators.
+              return RepaintBoundary(child: AnimatedBuilder(
                 animation: _pulseController,
                 builder: (context, child) {
                   return Container(
@@ -981,7 +983,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                     ),
                   ),
                 ),
-              );
+              ));
             }),
           ),
           const SizedBox(height: 8),

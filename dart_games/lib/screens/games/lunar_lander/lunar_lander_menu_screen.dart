@@ -54,6 +54,16 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Refresh the player roster from the server (picks up players added
+      // elsewhere since the app booted) and wipe the inherited selection
+      // from whichever game the user last visited — `_selectedPlayers` on
+      // PlayerProvider is shared global state, so without clearSelection()
+      // the menu would render with players from the previous game already
+      // selected. Mirrors the pattern used by all other 5 games' menus.
+      final playerProvider = context.read<PlayerProvider>();
+      await playerProvider.loadPlayers();
+      playerProvider.clearSelection();
+
       // Initial saved-games check on menu open: if any saved Lunar Lander
       // game exists, auto-open the resume modal. Subsequent re-checks (after
       // games complete or user actions) only update _hasSavedGames; they do

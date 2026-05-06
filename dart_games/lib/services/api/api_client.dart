@@ -169,6 +169,20 @@ class ApiClient {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  /// POST /api/v1/players/history/batch - Add history entries for many
+  /// players in one request. Each entry MUST include a `playerId` key plus
+  /// the same fields accepted by `addPlayerHistory`. Returns
+  /// `{"saved": <count>, "failed": [{"playerId": "...", "reason": "..."}]}`.
+  Future<Map<String, dynamic>> batchAddPlayerHistory(
+    List<Map<String, dynamic>> entries,
+  ) async {
+    final response = await _post(
+      '/api/v1/players/history/batch',
+      {'entries': entries},
+    );
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   /// PUT /api/v1/players/<id>/stats - Update player stats.
   Future<void> updatePlayerStats(
     String id, {

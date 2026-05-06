@@ -285,7 +285,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
             if (!eliminatedTeams.containsKey(teamId)) {
               eliminatedTeams[teamId] = [];
             }
-            final player = allPlayers.firstWhere((p) => p.id == eliminatedId);
+            final player = playerProvider.byId(eliminatedId)!;
             eliminatedTeams[teamId]!.add(player.name);
           }
           for (final playerNames in eliminatedTeams.values) {
@@ -294,7 +294,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         } else {
           for (final eliminatedId in newlyEliminated) {
             final eliminatedPlayer =
-                allPlayers.firstWhere((p) => p.id == eliminatedId);
+                playerProvider.byId(eliminatedId)!;
             _audioQueue?.announceEliminated([eliminatedPlayer.name]);
           }
         }
@@ -310,13 +310,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           for (final teamId in vulnerableTeams.keys) {
             final teamPlayerIds = currentGame.teamPlayers![teamId]!;
             final playerNames = teamPlayerIds
-                .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+                .map((id) => playerProvider.byId(id)!.name)
                 .toList();
             _audioQueue?.announceVulnerable(playerNames);
           }
         } else {
           for (final playerId in vulnerablePlayers) {
-            final player = allPlayers.firstWhere((p) => p.id == playerId);
+            final player = playerProvider.byId(playerId)!;
             _audioQueue?.announceVulnerable([player.name]);
           }
         }
@@ -332,13 +332,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           for (final teamId in lowShieldTeams.keys) {
             final teamPlayerIds = currentGame.teamPlayers![teamId]!;
             final playerNames = teamPlayerIds
-                .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+                .map((id) => playerProvider.byId(id)!.name)
                 .toList();
             _audioQueue?.announceLowShields(playerNames);
           }
         } else {
           for (final playerId in lowShieldPlayers) {
-            final player = allPlayers.firstWhere((p) => p.id == playerId);
+            final player = playerProvider.byId(playerId)!;
             _audioQueue?.announceLowShields([player.name]);
           }
         }
@@ -352,13 +352,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           for (final teamId in lostByTeam.keys) {
             final teamPlayerIds = currentGame.teamPlayers![teamId]!;
             final playerNames = teamPlayerIds
-                .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+                .map((id) => playerProvider.byId(id)!.name)
                 .toList();
             _audioQueue?.announceTaggedOut(playerNames);
           }
         } else {
           final lostNames = lostTaggedInPlayers
-              .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+              .map((id) => playerProvider.byId(id)!.name)
               .toList();
           _audioQueue?.announceTaggedOut(lostNames);
         }
@@ -370,7 +370,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           final teamId = currentGame.playerToTeam![currentPlayer.id]!;
           final teamPlayerIds = currentGame.teamPlayers![teamId]!;
           playerNames = teamPlayerIds
-              .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+              .map((id) => playerProvider.byId(id)!.name)
               .toList();
         } else {
           playerNames = [currentPlayer.name];
@@ -995,24 +995,25 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     int index,
   ) {
     final targetTagProvider = context.read<TargetTagProvider>();
+    final playerProvider = context.read<PlayerProvider>();
 
     final currentPlayerId = targetTagProvider.getCurrentPlayerId();
 
     if (game.mode.toString().contains('solo')) {
       // Solo mode: one card per player
       final playerId = playerIds[index];
-      final player = allPlayers.firstWhere((p) => p.id == playerId);
+      final player = playerProvider.byId(playerId)!;
       final isCurrentPlayer = playerId == currentPlayerId;
+      final isHero = targetTagProvider.isSoloHero(playerId);
 
       return PlayerCardWidget(
         player: player,
         currentShields: targetTagProvider.getShields(playerId),
         shieldMax: game.shieldMax,
         targetNumber: targetTagProvider.getTargetNumber(playerId) ?? 0,
-        soloHeroBuffNumber: targetTagProvider.isSoloHero(playerId)
-            ? targetTagProvider.getSoloHeroBuffNumber(playerId)
-            : null,
-        soloHeroBuffMultiplier: targetTagProvider.isSoloHero(playerId)
+        soloHeroBuffNumber:
+            isHero ? targetTagProvider.getSoloHeroBuffNumber(playerId) : null,
+        soloHeroBuffMultiplier: isHero
             ? targetTagProvider.getSoloHeroBuffMultiplier(playerId)
             : null,
         isTaggedIn: targetTagProvider.isTaggedIn(playerId),
@@ -1040,23 +1041,23 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       if (teamPlayers.isEmpty) return const SizedBox();
 
       final firstPlayer = teamPlayers.first;
+      final firstPlayerId = teamPlayerIds.first;
       final isCurrentPlayer = teamPlayerIds.contains(currentPlayerId);
+      final isHero = targetTagProvider.isSoloHero(firstPlayerId);
 
       return PlayerCardWidget(
         player: firstPlayer,
-        currentShields: targetTagProvider.getShields(teamPlayerIds.first),
+        currentShields: targetTagProvider.getShields(firstPlayerId),
         shieldMax: game.shieldMax,
-        targetNumber:
-            targetTagProvider.getTargetNumber(teamPlayerIds.first) ?? 0,
-        soloHeroBuffNumber: targetTagProvider.isSoloHero(teamPlayerIds.first)
-            ? targetTagProvider.getSoloHeroBuffNumber(teamPlayerIds.first)
+        targetNumber: targetTagProvider.getTargetNumber(firstPlayerId) ?? 0,
+        soloHeroBuffNumber: isHero
+            ? targetTagProvider.getSoloHeroBuffNumber(firstPlayerId)
             : null,
-        soloHeroBuffMultiplier: targetTagProvider
-                .isSoloHero(teamPlayerIds.first)
-            ? targetTagProvider.getSoloHeroBuffMultiplier(teamPlayerIds.first)
+        soloHeroBuffMultiplier: isHero
+            ? targetTagProvider.getSoloHeroBuffMultiplier(firstPlayerId)
             : null,
-        isTaggedIn: targetTagProvider.isTaggedIn(teamPlayerIds.first),
-        isEliminated: targetTagProvider.isEliminated(teamPlayerIds.first),
+        isTaggedIn: targetTagProvider.isTaggedIn(firstPlayerId),
+        isEliminated: targetTagProvider.isEliminated(firstPlayerId),
         isCurrentPlayer: isCurrentPlayer,
         isTeamMode: true,
         teamIconPath: targetTagProvider.getTeamIcon(teamId),

@@ -454,6 +454,118 @@ void main() {
       expect(body['playerCount'], isNull);
       expect(body['metadata'], isNull);
     });
+
+    test('POST /history/batch persists all entries in one request', () async {
+      await createPlayer(id: 'p1', name: 'Alice');
+      await createPlayer(id: 'p2', name: 'Bob');
+      await createPlayer(id: 'p3', name: 'Carol');
+
+      final response = await handler(
+        _jsonRequest('POST', '/history/batch', {
+          'entries': [
+            {
+              'playerId': 'p1', 'gameName': 'Reef Royale',
+              'timestamp': '2026-05-05T10:00:00.000Z',
+              'durationMs': 60000, 'dartThrows': 12, 'turns': 4,
+              'playerCount': 3, 'metadata': {'won': true},
+            },
+            {
+              'playerId': 'p2', 'gameName': 'Reef Royale',
+              'timestamp': '2026-05-05T10:00:00.000Z',
+              'durationMs': 60000, 'dartThrows': 9, 'turns': 4,
+              'playerCount': 3, 'metadata': {'won': false},
+            },
+            {
+              'playerId': 'p3', 'gameName': 'Reef Royale',
+              'timestamp': '2026-05-05T10:00:00.000Z',
+              'durationMs': 60000, 'dartThrows': 6, 'turns': 4,
+              'playerCount': 3, 'metadata': {'won': false},
+            },
+          ],
+        }),
+      );
+
+      expect(response.statusCode, 200);
+      final body = await _readJson(response) as Map<String, dynamic>;
+      expect(body['saved'], 3);
+      expect(body['failed'], isEmpty);
+
+      // Verify each player got the history entry + games_played increment.
+      for (final id in ['p1', 'p2', 'p3']) {
+        final playerResponse = await handler(
+          Request('GET', Uri.parse('http://localhost/$id')),
+        );
+        final player = await _readJson(playerResponse) as Map<String, dynamic>;
+        expect(player['gamesPlayed'], 1, reason: 'player $id');
+        expect((player['gameHistory'] as List), hasLength(1),
+            reason: 'player $id');
+      }
+
+      // Only p1 won.
+      final p1 = await _readJson(
+              await handler(Request('GET', Uri.parse('http://localhost/p1'))))
+          as Map<String, dynamic>;
+      expect(p1['gamesWon'], 1);
+      final p2 = await _readJson(
+              await handler(Request('GET', Uri.parse('http://localhost/p2'))))
+          as Map<String, dynamic>;
+      expect(p2['gamesWon'], 0);
+    });
+
+    test('POST /history/batch reports unknown player ids in failed array',
+        () async {
+      await createPlayer(id: 'real-player');
+
+      final response = await handler(
+        _jsonRequest('POST', '/history/batch', {
+          'entries': [
+            {
+              'playerId': 'real-player', 'gameName': 'Target Tag',
+              'timestamp': '2026-05-05T10:00:00.000Z',
+              'durationMs': 30000, 'metadata': {'won': false},
+            },
+            {
+              'playerId': 'ghost-player', 'gameName': 'Target Tag',
+              'timestamp': '2026-05-05T10:00:00.000Z',
+              'durationMs': 30000, 'metadata': {'won': false},
+            },
+          ],
+        }),
+      );
+
+      expect(response.statusCode, 200);
+      final body = await _readJson(response) as Map<String, dynamic>;
+      expect(body['saved'], 1);
+      final failed = body['failed'] as List;
+      expect(failed, hasLength(1));
+      expect(failed[0]['playerId'], 'ghost-player');
+      expect(failed[0]['reason'], contains('not found'));
+
+      // Real player still committed.
+      final real = await _readJson(await handler(
+              Request('GET', Uri.parse('http://localhost/real-player'))))
+          as Map<String, dynamic>;
+      expect(real['gamesPlayed'], 1);
+    });
+
+    test('POST /history/batch with empty entries returns saved=0', () async {
+      final response = await handler(
+        _jsonRequest('POST', '/history/batch', {'entries': []}),
+      );
+
+      expect(response.statusCode, 200);
+      final body = await _readJson(response) as Map<String, dynamic>;
+      expect(body['saved'], 0);
+      expect(body['failed'], isEmpty);
+    });
+
+    test('POST /history/batch returns 400 for missing entries field',
+        () async {
+      final response = await handler(
+        _jsonRequest('POST', '/history/batch', {'wrong_key': []}),
+      );
+      expect(response.statusCode, 400);
+    });
   });
 
   // ---------------------------------------------------------------------------

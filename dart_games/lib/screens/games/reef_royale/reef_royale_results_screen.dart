@@ -110,22 +110,18 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
       final winnerIds = currentGame.winnerIds ?? [];
       final playerCount = currentGame.getPlayerCount();
 
-      for (final playerId in currentGame.playerIds) {
-        if (!mounted) return;
-        final isWinner = winnerIds.contains(playerId);
-        final dartThrows = currentGame.totalDartsThrown[playerId] ?? 0;
-        final turns = currentGame.totalTurns[playerId] ?? 0;
-
-        await playerProvider.updatePlayerStats(
-          playerId,
-          won: isWinner,
-          gameName: 'Reef Royale',
-          gameDuration: gameDuration,
-          dartThrows: dartThrows,
-          turns: turns,
-          playerCount: playerCount,
-        );
-      }
+      await playerProvider.batchUpdatePlayerStats([
+        for (final playerId in currentGame.playerIds)
+          PlayerStatsUpdate(
+            playerId: playerId,
+            won: winnerIds.contains(playerId),
+            gameName: 'Reef Royale',
+            gameDuration: gameDuration,
+            dartThrows: currentGame.totalDartsThrown[playerId] ?? 0,
+            turns: currentGame.totalTurns[playerId] ?? 0,
+            playerCount: playerCount,
+          ),
+      ]);
     } catch (e) {
       debugPrint('Error updating player stats: $e');
     }

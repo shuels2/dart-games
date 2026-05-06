@@ -371,6 +371,12 @@ echo Launching Workers
 echo ========================================
 echo.
 
+REM Stagger worker launches by 2 seconds so the first worker's `flutter`
+REM bootstrap finishes writing the shared SDK cache file
+REM (C:\...\flutter\bin\cache\engine.realm) before the next worker boots.
+REM Without this, two workers race the same Set-Content and one fails with
+REM "process cannot access the file ... engine.realm" before any test runs.
+REM Skip the sleep after the LAST worker — nothing follows it to race with.
 for /l %%N in (1,1,!worker_count!) do (
     set "_g=!game%%N!"
     set /a "_cd_port=4443+%%N"
@@ -380,6 +386,7 @@ for /l %%N in (1,1,!worker_count!) do (
 
     echo Launching worker for !_g! ^(CD=!_cd_port! SRV=!_srv_port!^)...
     start "Worker: !_g!" /D "!_SCRIPT_DIR!" cmd /C ""!_SCRIPT_DIR!\run_ui_tests_parallel_worker.bat" !_g! !_cd_port! !_srv_port! %_PARALLEL_DIR% !_wt! !filter_args!"
+    if %%N lss !worker_count! timeout /T 2 /NOBREAK >nul 2>&1
 )
 
 echo.

@@ -13,6 +13,24 @@ class PlayerProvider extends ChangeNotifier {
   String? _error;
   DateTime? _lastSortedAt;
 
+  /// O(1) `id → Player` lookup, lazily built. Invalidated on every
+  /// [notifyListeners] call (which we override to clear the cache).
+  /// Beats `firstWhere` in build methods that do many lookups per render.
+  Map<String, Player>? _byIdCache;
+
+  /// Override to invalidate `_byIdCache` on every state change.
+  @override
+  void notifyListeners() {
+    _byIdCache = null;
+    super.notifyListeners();
+  }
+
+  /// O(1) lookup for a player by id. Returns null if no such player.
+  /// Use this in hot paths instead of `allPlayers.firstWhere(...)`.
+  Player? byId(String id) {
+    return (_byIdCache ??= {for (final p in _allPlayers) p.id: p})[id];
+  }
+
   /// Guard against concurrent loadPlayers() calls.  If a load is already
   /// in flight, subsequent callers await the same future instead of
   /// firing a second GET that could clobber a freshly-saved player.
@@ -370,6 +388,149 @@ class PlayerProvider extends ChangeNotifier {
     }
   }
 
+  /// Update stats for many players in a single server round-trip.
+  ///
+  /// Mirrors [updatePlayerStats] for each entry but POSTs once to
+  /// `/api/v1/players/history/batch`. Calls [notifyListeners] exactly
+  /// once after all local mutations land. Failures (unknown player ids,
+  /// server rejections) are routed to `failed_stats` per-entry, just like
+  /// the single-player path.
+  Future<void> batchUpdatePlayerStats(
+    List<PlayerStatsUpdate> updates,
+  ) async {
+    if (updates.isEmpty) return;
+
+    try {
+      // Build the payload + remember per-update local-history rows so we
+      // can apply the local mutation after the server confirms.
+      final entries = <Map<String, dynamic>>[];
+      final pending = <_PendingStatsApply>[];
+
+      for (final u in updates) {
+        final index = _allPlayers.indexWhere((p) => p.id == u.playerId);
+        if (index < 0) {
+          await _logFailedStatsToServer(
+            playerId: u.playerId,
+            won: u.won,
+            gameName: u.gameName,
+            gameDuration: u.gameDuration,
+            dartThrows: u.dartThrows,
+            turns: u.turns,
+            playerCount: u.playerCount,
+            errorMessage: 'Player not found in local list',
+          );
+          continue;
+        }
+
+        final player = _allPlayers[index];
+        final entry = GameHistoryEntry.create(
+          gameName: u.gameName,
+          duration: u.gameDuration,
+          dartThrows: u.dartThrows,
+          turns: u.turns,
+          playerCount: u.playerCount,
+          metadata: {'won': u.won},
+        );
+        entries.add({
+          'playerId': u.playerId,
+          'gameName': u.gameName,
+          'timestamp': entry.timestamp.toIso8601String(),
+          'durationMs': u.gameDuration.inMilliseconds,
+          'metadata': {'won': u.won},
+          'dartThrows': u.dartThrows,
+          'turns': u.turns,
+          'playerCount': u.playerCount,
+        });
+        pending.add(_PendingStatsApply(
+          playerId: u.playerId,
+          playerName: player.name,
+          won: u.won,
+          historyEntry: entry,
+          source: u,
+        ));
+      }
+
+      if (entries.isEmpty) return;
+
+      // Single round-trip.  Tolerate a complete server failure the same
+      // way the per-player path does — log every entry to failed_stats.
+      Map<String, dynamic>? result;
+      try {
+        result = await _api.batchAddPlayerHistory(entries);
+      } catch (e) {
+        print('batchUpdatePlayerStats: server rejected batch: $e');
+        for (final p in pending) {
+          await _logFailedStatsToServer(
+            playerId: p.playerId,
+            playerName: p.playerName,
+            won: p.won,
+            gameName: p.source.gameName,
+            gameDuration: p.source.gameDuration,
+            dartThrows: p.source.dartThrows,
+            turns: p.source.turns,
+            playerCount: p.source.playerCount,
+            errorMessage: e.toString(),
+          );
+        }
+        return;
+      }
+
+      // Per-entry failures returned by the server (e.g. unknown id).
+      final failedIds = <String>{};
+      final failed = result['failed'];
+      if (failed is List) {
+        for (final f in failed) {
+          if (f is Map && f['playerId'] is String) {
+            final id = f['playerId'] as String;
+            failedIds.add(id);
+            final reason = f['reason'] as String? ?? 'unknown';
+            final p = pending.firstWhere(
+              (e) => e.playerId == id,
+              orElse: () => _PendingStatsApply.absent(id),
+            );
+            await _logFailedStatsToServer(
+              playerId: p.playerId,
+              playerName: p.playerName,
+              won: p.won,
+              gameName: p.source.gameName,
+              gameDuration: p.source.gameDuration,
+              dartThrows: p.source.dartThrows,
+              turns: p.source.turns,
+              playerCount: p.source.playerCount,
+              errorMessage: 'server: $reason',
+            );
+          }
+        }
+      }
+
+      // Apply local mutations for the surviving entries; one notify at the end.
+      for (final p in pending) {
+        if (failedIds.contains(p.playerId)) continue;
+        final currentIndex =
+            _allPlayers.indexWhere((pl) => pl.id == p.playerId);
+        if (currentIndex < 0) continue;
+        final currentPlayer = _allPlayers[currentIndex];
+        final updatedHistory =
+            List<GameHistoryEntry>.from(currentPlayer.gameHistory)
+              ..add(p.historyEntry);
+        final updated = currentPlayer.copyWith(
+          gamesPlayed: currentPlayer.gamesPlayed + 1,
+          gamesWon: p.won ? currentPlayer.gamesWon + 1 : currentPlayer.gamesWon,
+          gameHistory: updatedHistory,
+        );
+        _allPlayers[currentIndex] = updated;
+        final selectedIndex =
+            _selectedPlayers.indexWhere((pl) => pl.id == p.playerId);
+        if (selectedIndex >= 0) {
+          _selectedPlayers[selectedIndex] = updated;
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      print('Failed to batch-update player stats: $e');
+    }
+  }
+
   /// Best-effort POST to /api/v1/stats/failed so the failure is
   /// persisted in the database for later investigation or replay.
   Future<void> _logFailedStatsToServer({
@@ -402,14 +563,8 @@ class PlayerProvider extends ChangeNotifier {
     }
   }
 
-  // Get player by ID
-  Player? getPlayerById(String id) {
-    try {
-      return _allPlayers.firstWhere((p) => p.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
+  // Get player by ID. Backed by [byId] for O(1) lookup.
+  Player? getPlayerById(String id) => byId(id);
 
   // Get game history for a player
   List<GameHistoryEntry> getPlayerHistory(String playerId) {
@@ -485,5 +640,64 @@ class PlayerProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+}
+
+/// One player's stats update, batched together with peers via
+/// [PlayerProvider.batchUpdatePlayerStats].
+class PlayerStatsUpdate {
+  final String playerId;
+  final bool won;
+  final String gameName;
+  final Duration gameDuration;
+  final int? dartThrows;
+  final int? turns;
+  final int? playerCount;
+
+  const PlayerStatsUpdate({
+    required this.playerId,
+    required this.won,
+    required this.gameName,
+    required this.gameDuration,
+    this.dartThrows,
+    this.turns,
+    this.playerCount,
+  });
+}
+
+/// Internal bookkeeping for a pending stats apply waiting on the server.
+class _PendingStatsApply {
+  final String playerId;
+  final String playerName;
+  final bool won;
+  final GameHistoryEntry historyEntry;
+  final PlayerStatsUpdate source;
+
+  _PendingStatsApply({
+    required this.playerId,
+    required this.playerName,
+    required this.won,
+    required this.historyEntry,
+    required this.source,
+  });
+
+  /// Synthetic record for an entry the server reported as failed before
+  /// we had a chance to capture the player's name (i.e. unknown id).
+  factory _PendingStatsApply.absent(String playerId) {
+    return _PendingStatsApply(
+      playerId: playerId,
+      playerName: '',
+      won: false,
+      historyEntry: GameHistoryEntry.create(
+        gameName: '',
+        duration: Duration.zero,
+      ),
+      source: PlayerStatsUpdate(
+        playerId: playerId,
+        won: false,
+        gameName: '',
+        gameDuration: Duration.zero,
+      ),
+    );
   }
 }

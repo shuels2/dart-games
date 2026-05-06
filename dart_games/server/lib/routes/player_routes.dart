@@ -55,6 +55,9 @@ class PlayerRoutes {
     // POST /api/v1/players/<id>/history - Add game history entry
     router.post('/<id>/history', _addHistory);
 
+    // POST /api/v1/players/history/batch - Add history entries for many players
+    router.post('/history/batch', _addHistoryBatch);
+
     // PUT /api/v1/players/<id>/stats - Update player stats
     router.put('/<id>/stats', _updateStats);
 
@@ -106,21 +109,79 @@ class PlayerRoutes {
   // ---------------------------------------------------------------------------
 
   /// GET / - List all players with their game history.
+  ///
+  /// Uses a single LEFT JOIN against `game_history` instead of an N+1
+  /// per-player follow-up query. With the `idx_game_history_player_id`
+  /// index from migration v3, the lookup is O(log H) per player.
   Future<Response> _getAll(Request request) async {
-    final rows = _db.select(
-      'SELECT * FROM players ORDER BY name ASC;',
-    );
-    final players = resultSetToList(rows).map((row) {
-      final player = ServerPlayer.fromDbRow(row);
-      final history = _loadHistory(player.id);
+    final rows = _db.select('''
+      SELECT
+        p.id              AS p_id,
+        p.name            AS p_name,
+        p.photo_path      AS p_photo_path,
+        p.created_at      AS p_created_at,
+        p.games_played    AS p_games_played,
+        p.games_won       AS p_games_won,
+        h.id              AS h_id,
+        h.game_name       AS h_game_name,
+        h.timestamp       AS h_timestamp,
+        h.duration_ms     AS h_duration_ms,
+        h.metadata        AS h_metadata,
+        h.dart_throws     AS h_dart_throws,
+        h.turns           AS h_turns,
+        h.player_count    AS h_player_count
+      FROM players p
+      LEFT JOIN game_history h ON h.player_id = p.id
+      ORDER BY p.name ASC, h.timestamp DESC;
+    ''');
+
+    // Group rows by player.id, preserving the players-name ordering and
+    // history-timestamp DESC ordering produced by the SQL.
+    final byId = <String, ServerPlayer>{};
+    final order = <String>[];
+    final histories = <String, List<ServerGameHistoryEntry>>{};
+
+    for (final raw in rows) {
+      final row = rowToMap(raw);
+      final pid = row['p_id'] as String;
+      if (!byId.containsKey(pid)) {
+        byId[pid] = ServerPlayer.fromDbRow({
+          'id': row['p_id'],
+          'name': row['p_name'],
+          'photo_path': row['p_photo_path'],
+          'created_at': row['p_created_at'],
+          'games_played': row['p_games_played'],
+          'games_won': row['p_games_won'],
+        });
+        histories[pid] = [];
+        order.add(pid);
+      }
+      // h_id is NULL for players with no history (LEFT JOIN).
+      if (row['h_id'] != null) {
+        histories[pid]!.add(ServerGameHistoryEntry.fromDbRow({
+          'id': row['h_id'],
+          'player_id': pid,
+          'game_name': row['h_game_name'],
+          'timestamp': row['h_timestamp'],
+          'duration_ms': row['h_duration_ms'],
+          'metadata': row['h_metadata'],
+          'dart_throws': row['h_dart_throws'],
+          'turns': row['h_turns'],
+          'player_count': row['h_player_count'],
+        }));
+      }
+    }
+
+    final players = order.map((id) {
+      final p = byId[id]!;
       return ServerPlayer(
-        id: player.id,
-        name: player.name,
-        photoPath: player.photoPath,
-        createdAt: player.createdAt,
-        gamesPlayed: player.gamesPlayed,
-        gamesWon: player.gamesWon,
-        gameHistory: history,
+        id: p.id,
+        name: p.name,
+        photoPath: p.photoPath,
+        createdAt: p.createdAt,
+        gamesPlayed: p.gamesPlayed,
+        gamesWon: p.gamesWon,
+        gameHistory: histories[id]!,
       ).toJson();
     }).toList();
 
@@ -408,6 +469,129 @@ class PlayerRoutes {
     return Response(
       201,
       body: jsonEncode(entry.toJson()),
+      headers: _jsonHeaders,
+    );
+  }
+
+  /// POST /history/batch - Add history entries for many players in one transaction.
+  ///
+  /// Body: `{"entries": [{"playerId": "...", "gameName": "...", "timestamp": "...",
+  /// "durationMs": ..., "metadata": {...}, "dartThrows": ..., "turns": ...,
+  /// "playerCount": ...}, ...]}`. Returns `{"saved": <count>, "failed":
+  /// [{"playerId": "...", "reason": "..."}]}`. Per-entry failures (unknown
+  /// player id) are captured in the `failed` array; the surviving entries
+  /// still commit. Body errors return 400.
+  Future<Response> _addHistoryBatch(Request request) async {
+    final Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Invalid JSON body'}),
+        headers: _jsonHeaders,
+      );
+    }
+
+    final entries = body['entries'];
+    if (entries is! List) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'entries must be a list'}),
+        headers: _jsonHeaders,
+      );
+    }
+
+    if (entries.isEmpty) {
+      return Response.ok(
+        jsonEncode({'saved': 0, 'failed': []}),
+        headers: _jsonHeaders,
+      );
+    }
+
+    final failed = <Map<String, String>>[];
+    var saved = 0;
+
+    _db.execute('BEGIN;');
+    try {
+      // Reuse a single prepared statement across the batch.
+      final insertHistory = _db.prepare(
+        'INSERT INTO game_history '
+        '(id, player_id, game_name, timestamp, duration_ms, metadata, '
+        'dart_throws, turns, player_count) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
+      );
+      final updateWon = _db.prepare(
+        'UPDATE players SET games_played = games_played + 1, '
+        'games_won = games_won + 1 WHERE id = ?;',
+      );
+      final updateLoss = _db.prepare(
+        'UPDATE players SET games_played = games_played + 1 WHERE id = ?;',
+      );
+
+      try {
+        for (final raw in entries) {
+          if (raw is! Map<String, dynamic>) {
+            failed.add({
+              'playerId': '<unknown>',
+              'reason': 'entry is not an object',
+            });
+            continue;
+          }
+          final playerId = raw['playerId'] as String?;
+          if (playerId == null) {
+            failed.add({
+              'playerId': '<missing>',
+              'reason': 'playerId is required',
+            });
+            continue;
+          }
+          if (!rowExists(_db, 'players', 'id = ?', [playerId])) {
+            failed.add({
+              'playerId': playerId,
+              'reason': 'Player not found',
+            });
+            continue;
+          }
+
+          final historyId = const Uuid().v4();
+          final gameName = raw['gameName'] as String;
+          final timestamp = raw['timestamp'] as String;
+          final durationMs = raw['durationMs'] as int;
+          final metadata = raw['metadata'] as Map<String, dynamic>?;
+          final dartThrows = raw['dartThrows'] as int?;
+          final turns = raw['turns'] as int?;
+          final playerCount = raw['playerCount'] as int?;
+          final metadataJson = metadata != null ? jsonEncode(metadata) : null;
+
+          insertHistory.execute([
+            historyId, playerId, gameName, timestamp, durationMs,
+            metadataJson, dartThrows, turns, playerCount,
+          ]);
+
+          final won = metadata != null && metadata['won'] == true;
+          if (won) {
+            updateWon.execute([playerId]);
+          } else {
+            updateLoss.execute([playerId]);
+          }
+          saved++;
+        }
+      } finally {
+        insertHistory.dispose();
+        updateWon.dispose();
+        updateLoss.dispose();
+      }
+
+      _db.execute('COMMIT;');
+    } catch (e) {
+      _db.execute('ROLLBACK;');
+      return Response.internalServerError(
+        body: jsonEncode({'error': e.toString()}),
+        headers: _jsonHeaders,
+      );
+    }
+
+    return Response.ok(
+      jsonEncode({'saved': saved, 'failed': failed}),
       headers: _jsonHeaders,
     );
   }

@@ -69,21 +69,18 @@ class _ClockworkQuestResultsScreenState
     final gameDuration = DateTime.now().difference(game.startedAt);
     final playerCount = game.playerIds.length;
 
-    for (final playerId in game.playerIds) {
-      final isWinner = playerId == game.winnerId;
-      final dartThrows = game.totalDartsThrown[playerId] ?? 0;
-      final turns = game.totalTurns[playerId] ?? 0;
-
-      await playerProvider.updatePlayerStats(
-        playerId,
-        won: isWinner,
-        gameName: 'Clockwork Quest',
-        gameDuration: gameDuration,
-        dartThrows: dartThrows,
-        turns: turns,
-        playerCount: playerCount,
-      );
-    }
+    await playerProvider.batchUpdatePlayerStats([
+      for (final playerId in game.playerIds)
+        PlayerStatsUpdate(
+          playerId: playerId,
+          won: playerId == game.winnerId,
+          gameName: 'Clockwork Quest',
+          gameDuration: gameDuration,
+          dartThrows: game.totalDartsThrown[playerId] ?? 0,
+          turns: game.totalTurns[playerId] ?? 0,
+          playerCount: playerCount,
+        ),
+    ]);
   }
 
   @override

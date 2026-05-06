@@ -144,22 +144,18 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
       final winnerIds = winners.map((p) => p.id).toSet();
       final playerCount = currentGame.getPlayerCount();
 
-      for (final playerId in currentGame.playerIds) {
-        if (!mounted) return;
-        final isWinner = winnerIds.contains(playerId);
-        final dartThrows = currentGame.getTotalDartsThrown(playerId);
-        final turns = currentGame.getTotalTurns(playerId);
-
-        await playerProvider.updatePlayerStats(
-          playerId,
-          won: isWinner,
-          gameName: 'Monster Mash',
-          gameDuration: gameDuration,
-          dartThrows: dartThrows,
-          turns: turns,
-          playerCount: playerCount,
-        );
-      }
+      await playerProvider.batchUpdatePlayerStats([
+        for (final playerId in currentGame.playerIds)
+          PlayerStatsUpdate(
+            playerId: playerId,
+            won: winnerIds.contains(playerId),
+            gameName: 'Monster Mash',
+            gameDuration: gameDuration,
+            dartThrows: currentGame.getTotalDartsThrown(playerId),
+            turns: currentGame.getTotalTurns(playerId),
+            playerCount: playerCount,
+          ),
+      ]);
     } catch (e) {
       debugPrint('Error updating player stats: $e');
     }
@@ -663,7 +659,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
               // Lightning effect overlay
               if (lightningColor != null)
                 Positioned.fill(
-                  child: AnimatedBuilder(
+                  child: RepaintBoundary(child: AnimatedBuilder(
                     animation: _lightningController,
                     builder: (context, child) {
                       return CustomPaint(
@@ -676,7 +672,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
                         ),
                       );
                     },
-                  ),
+                  )),
                 ),
               // Button content - chiseled text effect
               Center(
@@ -729,7 +725,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
       return GestureDetector(key: key, onTap: onTap, child: buttonContent);
     }
 
-    return AnimatedBuilder(
+    return RepaintBoundary(child: AnimatedBuilder(
       animation: glowAnimation,
       builder: (context, child) {
         final glowOpacity = glowAnimation.value;
@@ -756,7 +752,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
           ),
         );
       },
-    );
+    ));
   }
 
   void _playAgain() {

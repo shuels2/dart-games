@@ -92,16 +92,15 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
       final gameDuration = provider.gameDuration ?? Duration.zero;
       final winnerId = game.winnerId;
 
-      for (final playerId in game.playerIds) {
-        if (!mounted) return;
-        final isWinner = playerId == winnerId;
-        await playerProvider.updatePlayerStats(
-          playerId,
-          won: isWinner,
-          gameName: 'Lunar Lander',
-          gameDuration: gameDuration,
-        );
-      }
+      await playerProvider.batchUpdatePlayerStats([
+        for (final playerId in game.playerIds)
+          PlayerStatsUpdate(
+            playerId: playerId,
+            won: playerId == winnerId,
+            gameName: 'Lunar Lander',
+            gameDuration: gameDuration,
+          ),
+      ]);
     } catch (e) {
       debugPrint('Error updating player stats: $e');
     }
