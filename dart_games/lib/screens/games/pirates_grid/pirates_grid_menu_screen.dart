@@ -150,7 +150,25 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
         Scaffold(
           backgroundColor: _oceanNavy,
           appBar: AppBar(
-            backgroundColor: _oceanNavy,
+            backgroundColor: Colors.transparent,
+            // Ocean Navy → Sea Foam Teal → Blood Red 3-stop gradient.
+            // Navy holds solid for the first quarter (left), eases into teal
+            // through the middle, then warms into blood red on the far right.
+            // Shared across all three pirate's grid AppBars.
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    _oceanNavy,
+                    Color(0xFF2E8B8B), // Sea Foam Teal
+                    Color(0xFF8B0000), // Blood Red
+                  ],
+                  stops: [0.25, 0.525, 1.0], // navy 0–25%, teal 25–52.5%, red 52.5–100% (red +10% of bar width)
+                ),
+              ),
+            ),
             leading: IconButton(
               key: PiratesGridMenuKeys.backButton,
               icon: const Icon(
@@ -303,10 +321,14 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
                 'Hit a cell\'s target to claim it — your flag appears in that cell.'),
             _buildHowToStep('3', 'Three in a Row:',
                 'Get three flags in a row (horizontally, vertically, or diagonally) to win the round.'),
-            _buildHowToStep('4', 'Best Of:',
+            _buildHowToStep('4', 'Difficulty:',
+                'Easy lets you hit any number, Medium lets you hit a double or triple, and Hard requires a precise double or triple to score.'),
+            _buildHowToStep('5', 'Best Of:',
                 'In a Best Of 3 or 5 match, win the required number of rounds to become Captain!'),
-            _buildHowToStep('5', 'Steal Mode:',
+            _buildHowToStep('6', 'Steal Mode:',
                 'With Steal Mode ON, you can hit an opponent\'s cell to take it for yourself!'),
+            _buildHowToStep('7', 'Speed Play:',
+                'Finish your turn in 25 seconds or forfeit your darts. Be fast and accurate to win!'),
             const SizedBox(height: 16),
             Text(
               'BEGINNER TIPS',

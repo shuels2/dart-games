@@ -58,9 +58,11 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   List<bool> _currentTurnHits = [];
   String? _lastTurnPlayerId;
 
-  // Speed Play timer
+  // Speed Play timer — counts down across the entire turn (3 darts), not
+  // per throw. 25s gives a brisk turn budget without rushing the takeout
+  // animation between players.
   Timer? _speedPlayTimer;
-  int _speedPlaySecondsRemaining = 15;
+  int _speedPlaySecondsRemaining = 25;
 
   // Pulsing animation for timer critical state
   late AnimationController _pulseController;
@@ -348,6 +350,15 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       }
     }
 
+    // ── Stop the Speed Play timer the moment the turn ends ─────────────────
+    // shouldPromptTakeout is true when dartCount >= 3 OR the round just
+    // finished — either way the player is no longer throwing, so the
+    // 25-second turn budget should freeze instead of ticking down through
+    // the takeout/round-transition animation.
+    if (provider.shouldPromptTakeout) {
+      _speedPlayTimer?.cancel();
+    }
+
     // ── UNCONDITIONALLY announce remove darts when takeout is needed ────────
     if (provider.shouldPromptTakeout && !_dartboardEmulatorController.isAutoPlaying) {
       Future.delayed(const Duration(milliseconds: 1500), () {
@@ -482,7 +493,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   void _startSpeedPlayTimerForCurrentPlayer(PiratesGridGame game) {
     if (!game.speedPlay) return;
     _speedPlayTimer?.cancel();
-    setState(() => _speedPlaySecondsRemaining = 15);
+    setState(() => _speedPlaySecondsRemaining = 25);
     _speedPlayTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -568,7 +579,21 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
           Scaffold(
             backgroundColor: _oceanNavy,
             appBar: AppBar(
-              backgroundColor: _oceanNavy,
+              backgroundColor: Colors.transparent,
+              // Ocean Navy → Sea Foam Teal → Blood Red 3-stop gradient.
+              // Navy holds solid for the first quarter, eases into teal
+              // through the middle, then warms into blood red on the far
+              // right. Shared with the menu and results AppBars.
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [_oceanNavy, _seaFoamTeal, _bloodRed],
+                    stops: [0.25, 0.525, 1.0], // navy 0–25%, teal 25–52.5%, red 52.5–100% (red +10% of bar width)
+                  ),
+                ),
+              ),
               leading: IconButton(
                 key: PiratesGridGameKeys.backButton,
                 icon: const Icon(
@@ -745,11 +770,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         builder: (context, constraints) {
           final availW = constraints.maxWidth;
           // Grid takes 40% of width; clamp by available height so 3 stacked
-          // cells fit (round tracker + skip button + dart indicators eat ~280px).
+          // cells fit. Subtract round tracker (~80px when bestOf > 1) and
+          // STEAL MODE badge (~60px when stealMode on) — both are non-flex
+          // siblings of the Expanded(Row) and reduce its available height.
           final gridW = availW * 0.40;
           final widthBasedCell = (gridW - 18.0) / 3.0;
-          final colMaxH =
-              constraints.maxHeight - (game.bestOf > 1 ? 60.0 : 0.0);
+          final colMaxH = constraints.maxHeight
+              - (game.bestOf > 1 ? 80.0 : 0.0)
+              - (game.stealMode ? 60.0 : 0.0);
           final heightBasedCell = (colMaxH - 200.0) / 3.0;
           final cellSize = math.min(widthBasedCell, heightBasedCell);
           // Width-based desired char size; the inner LayoutBuilder inside
@@ -789,8 +817,16 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                         dartHits: isP1Active ? _currentTurnHits : const [],
                       ),
                     ),
-                    // Center column (grid)
-                    _buildGrid(game, cellSize),
+                    // Center column (grid). Wrap in fixed-width SizedBox +
+                    // Center so the grid stays horizontally centered inside
+                    // its `gridW` slot even when `heightBasedCell` clamps
+                    // cellSize below the width-based value (otherwise the
+                    // shrunken grid drifts left because the Row's default
+                    // mainAxisAlignment.start packs children to the left).
+                    SizedBox(
+                      width: gridW,
+                      child: Center(child: _buildGrid(game, cellSize)),
+                    ),
                     SizedBox(
                       width: charColW,
                       child: _buildPlayerColumn(
@@ -817,16 +853,16 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                 Container(
                   key: PiratesGridGameKeys.stealModeBadge,
                   margin: const EdgeInsets.only(top: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
                   decoration: BoxDecoration(
                     color: _bloodRed,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: _compassBronze, width: 1.5),
                   ),
                   child: Text(
                     '⚔ STEAL MODE',
                     style: GoogleFonts.pirataOne(
-                      fontSize: 15,
+                      fontSize: 22,
                       color: _parchmentTan,
                       letterSpacing: 1.0,
                     ),
@@ -854,16 +890,19 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     return Container(
       key: PiratesGridGameKeys.roundTracker,
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
       decoration: BoxDecoration(
         color: _oceanNavy.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _compassBronze, width: 1.5),
       ),
       child: Text(
-        'Round ${game.currentRound}/${game.bestOf}  —  $p1Name: $p1Wins  $p2Name: $p2Wins',
+        // Wider gaps (5 spaces) between Round / P1 / P2 segments so the
+        // two player names don't visually crowd each other.
+        'Round ${game.currentRound}/${game.bestOf}     —     '
+        '$p1Name: $p1Wins     $p2Name: $p2Wins',
         style: GoogleFonts.pirataOne(
-          fontSize: 16,
+          fontSize: 26,
           color: _parchmentTan,
           letterSpacing: 0.5,
         ),
@@ -1142,6 +1181,13 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         fontSize: 36,
         color: timerColor,
         shadows: [
+          // 4-corner ink-black outline for contrast against busy backgrounds
+          // (matches rule 7 — Text Readability on Busy Backgrounds).
+          const Shadow(color: Color(0xFF1A1A1A), offset: Offset(-2, -2), blurRadius: 0),
+          const Shadow(color: Color(0xFF1A1A1A), offset: Offset( 2, -2), blurRadius: 0),
+          const Shadow(color: Color(0xFF1A1A1A), offset: Offset(-2,  2), blurRadius: 0),
+          const Shadow(color: Color(0xFF1A1A1A), offset: Offset( 2,  2), blurRadius: 0),
+          // Existing colored glow stays — gives the warning state visual weight.
           Shadow(color: timerColor.withOpacity(0.6), blurRadius: 8),
         ],
       ),
@@ -1281,9 +1327,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               targetLabel,
               key: PiratesGridGameKeys.gridCellTargetLabel(row, col),
               style: GoogleFonts.pirataOne(
+                // 30% larger than the original sizing (0.24 → 0.31, 0.31 →
+                // 0.40). Hard's labels are wider ("T20"/"D18") so they keep
+                // a smaller scaling factor to fit inside the cell.
                 fontSize: game.targetDifficulty == TargetDifficulty.hard
-                    ? cellSize * 0.24
-                    : cellSize * 0.31,
+                    ? cellSize * 0.31
+                    : cellSize * 0.40,
                 color: claimedBy != null ? _parchmentTan : _treasureGold,
                 shadows: const [
                   Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),

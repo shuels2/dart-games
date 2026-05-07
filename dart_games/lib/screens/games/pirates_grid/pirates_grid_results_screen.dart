@@ -167,7 +167,21 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           backgroundColor: _oceanNavy,
           appBar: AppBar(
             automaticallyImplyLeading: false, // NO back arrow per spec
-            backgroundColor: _oceanNavy,
+            backgroundColor: Colors.transparent,
+            // Ocean Navy → Sea Foam Teal → Blood Red 3-stop gradient.
+            // Navy holds solid for the first quarter, eases into teal through
+            // the middle, then warms into blood red on the far right. Shared
+            // with the menu and game AppBars.
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [_oceanNavy, _seaFoamTeal, _bloodRed],
+                  stops: [0.25, 0.525, 1.0], // navy 0–25%, teal 25–52.5%, red 52.5–100% (red +10% of bar width)
+                ),
+              ),
+            ),
             title: Text(
               "PIRATE'S GRID RESULTS",
               style: GoogleFonts.pirataOne(
@@ -276,20 +290,32 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
     final roundsWon = game.roundsWon[winnerId] ?? 0;
     final totalRounds = game.currentRound;
 
-    return Column(
+    // Responsive character + name sizing — scale with available width so the
+    // winner section adapts to portrait phones, landscape tablets, and large
+    // browsers. LayoutBuilder gives us the parent's actual content width;
+    // characterSize takes ~32% of it (capped at 460px so it doesn't dominate
+    // huge desktops), and nameFontSize scales linearly with characterSize.
+    return LayoutBuilder(builder: (context, constraints) {
+      final availW = constraints.maxWidth.isFinite
+          ? constraints.maxWidth
+          : MediaQuery.of(context).size.width;
+      final characterSize = (availW * 0.32).clamp(180.0, 460.0);
+      final nameFontSize = (characterSize * 0.115).clamp(28.0, 56.0);
+
+      return Column(
       children: [
         // Winner character
         SizedBox(
           key: PiratesGridResultsKeys.winnerAvatar,
-          width: 420,
-          height: 420,
+          width: characterSize,
+          height: characterSize,
           child: Image.asset(
             characterPath,
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => Icon(
               Icons.person,
               color: winnerFlagColor,
-              size: 300,
+              size: characterSize * 0.72,
             ),
           ),
         ),
@@ -299,7 +325,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           winner.name,
           key: PiratesGridResultsKeys.winnerName,
           style: GoogleFonts.pirataOne(
-            fontSize: 48,
+            fontSize: nameFontSize,
             color: _parchmentTan,
             shadows: const [
               Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
@@ -349,6 +375,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
         ],
       ],
     );
+    });
   }
 
   Widget _buildDrawContent(dynamic game, List<Player> players) {
