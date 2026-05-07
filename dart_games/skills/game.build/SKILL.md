@@ -1161,7 +1161,7 @@ After the sub-agent returns:
 > (nn) **No empty `setState(() {})` as a rebuild hack** — grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_*.dart` for `setState\(\(\) \{\}\)`. If the rebuild is needed because a `Provider` field changed, the provider's own `notifyListeners()` covers it — no setState required. If local widget state is changing, give the field an actual setter call inside the setState closure (e.g. `setState(() { _foo = bar; })`). An empty setState hides the dependency, causes spurious full-subtree rebuilds, and tends to multiply over time as code is copy-pasted between games. **Permitted exception:** rebuilding after assigning a local non-Provider field (e.g. `_mockApi = ...` in `_initializeGame`) — in that case the field assignment IS the state change and an empty closure is acceptable; cite this case in the AR-4 report. Per-finding history: `docs/perf-audits/2026-05-05-full.md` finding C3.
 > (oo) **Menu screen `initState` calls `await playerProvider.loadPlayers()` then `playerProvider.clearSelection()` inside its `addPostFrameCallback`** — read the menu screen's `initState()` and verify both calls are present, in that order, before any preselect logic (`selectPlayer(...)` / `getPlayerById(...)`). Without `clearSelection()`, `_selectedPlayers` on `PlayerProvider` is shared global state that LEAKS across games — entering the new game shows whatever players were selected on the previously-visited game's menu. Without `loadPlayers()`, players added on the home / options screen since the app booted won't appear in the new game's roster. Reference: `target_tag_menu_screen.dart:93-94`, `horse_race_menu_screen.dart:52-53`, `reef_royale_menu_screen.dart:89-90`, `clockwork_quest_menu_screen.dart:59-60`, `monster_mash_menu_screen.dart:82-83`, `lunar_lander_menu_screen.dart` (post-fix). Recurring miss: Lunar Lander shipped without these calls and exhibited the cross-game selection-leak bug until 2026-05-06.
 >
-> (pp) **Accumulated Build Quality Rules compliance** — review the "## Accumulated Build Quality Rules" section at the end of this skill. For each of the 14 rules, note whether it applies to this game and verify compliance:
+> (pp) **Accumulated Build Quality Rules compliance** — review the "## Accumulated Build Quality Rules" section at the end of this skill. For each of the 27 rules, note whether it applies to this game and verify compliance:
 > - Rule 1 (Character Randomization): applies if the game has more characters than players. Verify `_characterPaths` is shuffled in `initState`, not hardcoded by player index.
 > - Rule 2 (Shape-following glow): applies if active-player characters have transparent PNG backgrounds. Verify `ImageFiltered`+`ColorFiltered` approach, NOT `BoxShadow` on Container.
 > - Rule 3 (Per-player controls in player column): verify dart indicators and skip-turn button are in the player display column, not AppBar.
@@ -1176,6 +1176,19 @@ After the sub-agent returns:
 > - Rule 12 (`completeGameToVictory` dynamic reads): verify helper reads actual targets from provider — no hardcoded numbers; `throwForCellTarget` dispatch included.
 > - Rule 13 (LayoutBuilder for game boards): verify game board elements use proportional sizing from `LayoutBuilder`, not fixed pixel sizes. Grid container margin is subtracted from available width before computing sibling column widths.
 > - Rule 14 (Background texture opacity): verify texture images use ≥ 0.50 opacity; verify files actually exist at their paths.
+> - Rule 15 (Inline `[DIAG]` reason strings): verify every navigation-dependent `findsOneWidget` in UI tests embeds an inline diagnostic in `reason:` — built from already-imported `ElementFinders` methods, not via a new shared helper. Apply to every nav-back, tap-then-expect, and modal-action assertion.
+> - Rule 16 (`ensureVisible` before scrollable-content taps): verify `tester.ensureVisible(button); await tester.pump();` precedes every tap on a button inside a `SingleChildScrollView` — results-screen actions, save/resume modal buttons. `clickPlayAgain`/`clickChangeSettings`/`clickSelectDifferentGame` in `shared/results_helpers.dart` must include this from day one.
+> - Rule 17 (Save/Resume real-flow): verify any test that taps Resume sets up the saved game via the in-game Save flow, NOT `preSaveGame(GameSaveConfig.foo())`. `preSaveGame` is only for tests that verify the resume modal appears in the saved-games list.
+> - Rule 18 (Resume tile selection): verify every test that taps Resume calls `UITestHelpers.selectSavedGameTile(tester, savedId)` first — the Resume button is disabled until a tile is selected.
+> - Rule 19 (`Navigator.push` not `pushReplacement`): verify `_startGame` in the menu screen uses `Navigator.push` so the menu stays on the route stack — back-from-game and Save-modal-Save both pop to menu.
+> - Rule 20 (`_resetTurnForPlayer` undoes match-level): verify the provider's edit-score reset captures `winnerId == playerId`, `matchWinnerId == playerId`, and `isMatchDraw && !thisTurnWonMatch` BEFORE clearing round-level fields, then undoes `roundsWon` decrement, `matchWinnerId = null`, `isMatchDraw = false`, `state = GameState.playing`, `gameEndTime = null` for the affected paths.
+> - Rule 21 (Edit dialog fills dropped darts): verify "edit removes winner" tests explicitly set ALL three darts in the dialog (typically `setDart1/2/3('Miss')`) — provider drops post-win Miss throws via the `!isGameActive` early return, so the initial segments only contain the winning dart.
+> - Rule 22 (`_parseSegment` Miss representations): verify the helper accepts `'Miss'`, `'M'`, `'miss'`, `'-'`, `'—'`, and empty string as miss; lowercase `d`/`t` regex prefixes; `ensureVisible` on every ring/number tap.
+> - Rule 23 (Strategy returns miss-shaped throw): verify `getNextThrow` returns `SimulatedThrow(score: 0, multiplier: 'miss', baseScore: 0)` for deliberate-miss turns, NOT `null`. Null is the runner's STOP signal.
+> - Rule 24 (Inner LayoutBuilder for player column): verify `_buildPlayerColumn` wraps its body in a `LayoutBuilder` that clamps `charSize` against `columnConstraints.maxHeight`, with reserve `220 + (game.speedPlay ? 56 : 0)` for active and `80` for inactive.
+> - Rule 25 (RGB-byte color comparison): verify visual-validation tests compare `color.red`/`green`/`blue` directly, NOT `color.value`.
+> - Rule 26 (Shared helper sync): verify every shared-helper file in `integration_test/shared/` has an identical counterpart in `test/shared/`. Run `diff -q` on each pair.
+> - Rule 27 (Runtime target lookup): if rule 9 applies (randomized targets), verify a `get[GameName]CellTargetNumber(tester, row, col)` helper exists in `provider_helpers.dart` and EVERY gameplay test that throws a specific dart uses it; verify a `throwForCellTarget(tester, target)` dispatch helper handles the `single`/`double`/`triple`/`bull` multiplier chooser.
 >
 > For each item I will cite the file and line number, or report MISSING.
 > I will list every gap found."
@@ -1540,6 +1553,12 @@ If FAIL:
 >
 >   **Carnival Derby additional constraint:** CD's `scoreDisplayTransform` converts segments to point values in the score display box (e.g., `S5` → "5"). This means `find.text('5')` matches both the score display AND the number button within a dart section. Use Double or Triple values (e.g., `D5` → score display "10", number button "5") to avoid the duplicate text match.
 >
+> **6d. Diagnostic-first test authoring (mandatory — applies to every UI test).** Every navigation-dependent `findsOneWidget` (post-tap, post-pop, after `pushReplacement` / `pushAndRemoveUntil`) MUST embed an inline `[DIAG ...]` reason string built from already-imported `ElementFinders` methods. Headless `-d web-server` mode does not pipe app stdout into the per-test log, so without this diagnostic any failure is opaque ("Multiple exceptions (2)" with no detail) and forces a re-run with added logging. **Inline at the call site — never via a new shared helper** (new shared methods have repeatedly hit "Member not found" in headless compile and block the test from running). Format: `[DIAG <label> menuStart=N gameSkip=N resultsPlayAgain=N homeCarnival=N saveModal=N resumeModal=N ...]`. See Accumulated Build Quality Rules § 15 for the canonical pattern.
+>
+> **6e. Save/Resume real-flow rule (mandatory).** Tests that *only verify the resume modal appears in the saved-games list* may use `preSaveGame(GameSaveConfig.[gameName]())`. Any test that actually taps Resume MUST set up the saved game via the in-game Save flow (`setupAndStartGame` → `throwDartViaMock` → `tapGameScreenBackButton` → tap Save Modal Save → look up `savedId` via `SaveGameService().loadSavedGames('[GAME_NAME_SNAKE]')`). Reason: `preSaveGame` writes a placeholder `gameState = {'_marker': 'test'}` which crashes `[GameName]Game.fromJson` on restore, producing a "Multiple exceptions (2)" failure with no detail in the headless log. Plus, every test that taps Resume must call `UITestHelpers.selectSavedGameTile(tester, savedId)` first — the Resume button is disabled until a tile is selected. See Accumulated Build Quality Rules § 17, 18.
+>
+> **6f. ensureVisible before tap on scrollable-content buttons (mandatory).** In headless chromedriver mode, `tester.tap` only registers a click on widgets in the visible viewport. Buttons inside a `SingleChildScrollView` (results-screen action buttons, Save Modal Save, Resume Modal Resume) need `await tester.ensureVisible(button); await tester.pump();` before `await tester.tap(button)`. Apply this in BOTH `clickPlayAgain` / `clickChangeSettings` / `clickSelectDifferentGame` shared helpers AND inline test taps. See Accumulated Build Quality Rules § 16.
+>
 > **7. Visual validation tests** (in `integration_test/[GAME_NAME_SNAKE]/visual_validation/`):
 >
 > Two categories are required: a screenshot test AND programmatic visual state tests. Together these cover both broad visual regression (screenshots) and specific UI state assertions (programmatic).
@@ -1690,6 +1709,25 @@ If FAIL: dispatch sub-agents for missing tests / fixes, re-audit, re-run BOTH su
 - **Orchestrator (Opus):** Step 2 (read every screenshot + evaluate against checklist), Step 3 (report findings), Step 4 decision, Step 6 decision, Step 8 decision, AR-7. **Visual evaluation is the highest-value Opus work in this skill — never delegate it.**
 
 **CRITICAL UNDERSTANDING:** "Screenshot test passed" does NOT mean "visual validation complete." A passing test only means screenshots were captured without runtime errors. The actual validation is reading and evaluating every screenshot against the checklist. These are two completely separate steps — NEVER conflate them.
+
+### Phase 8 pre-flight verification (orchestrator runs BEFORE Step 1)
+
+Before invoking any Sonnet sub-agent for Step 1, verify the runner scripts have the false-positive guards and stale-cache wipes:
+
+1. **Pass-detection includes `Failure Details:` as a fail marker.** Both `run_ui_tests.bat` and `run_ui_tests_parallel_worker.bat` should have:
+   ```powershell
+   $found = ($c -match 'All tests passed') `
+        -and (-not ($c -match 'Some tests failed')) `
+        -and (-not ($c -match 'Failure Details:'));
+   ```
+   Why: in `-d chrome` mode, the integration_test framework can emit BOTH `+2: All tests passed!` AND a trailing `Failure Details:` block when an assertion in the test body throws. Without this guard, the script reports PASSED on a broken test (false positive). Verified failure: pirates_grid 2026-05-07 — sub-test was failing the `Should be on menu after NEW VOYAGE` assertion in both modes; sequential reported PASS; parallel reported FAIL.
+2. **flutter_tools temp kernel cache wipe in pre-flight.** Both runners should delete `%LOCALAPPDATA%\Temp\flutter_tools.*` before any flutter command:
+   ```bat
+   for /d %%D in ("%LOCALAPPDATA%\Temp\flutter_tools.*") do rmdir /S /Q "%%D" >nul 2>&1
+   ```
+   Why: `flutter_tools` keeps an `app.dill` kernel snapshot that survives `flutter clean`. When a method is added to a file already in the cached kernel, the next `flutter drive` reuses the stale kernel and reports "Member not found" — wasting hours on what looks like a code bug.
+
+If either guard is missing, fix the runner scripts BEFORE running Phase 8 — otherwise visual-validation feedback is unreliable.
 
 ### The Iterative Validation Cycle
 
@@ -2533,6 +2571,222 @@ Note: any margin/padding on the grid container must be subtracted from `availW` 
 
 ### 14. Background Texture Image Opacity
 Background texture images (`opacity: AlwaysStoppedAnimation(0.3)`) at 30% are often invisible against a dark overlay. Use 0.50–0.65 for textures meant to add visual interest, or higher if the image is a primary visual element. The `errorBuilder: (_, __, ___) => const SizedBox.shrink()` pattern silently hides missing images — verify the file actually exists at the specified path.
+
+---
+
+### 15. Tests must include inline `[DIAG]` reason strings on navigation/findsOneWidget assertions
+Headless `-d web-server` mode does NOT pipe app stdout into `flutter drive`'s log. When a `findsOneWidget` fails, the failure block in the per-test log is *all we get* — no `print()`s, no progress markers, no audio queue trace. Without diagnostic info embedded in the failure itself, every iteration costs a full re-run.
+
+Any assertion that depends on navigation having completed (post-tap, post-pop, after `pushReplacement` / `pushAndRemoveUntil`) MUST include an inline diagnostic in its `reason:` string built from already-imported `ElementFinders` methods.
+
+**Inline at the call site — never via a new shared helper.** New shared methods have repeatedly hit "Member not found" in headless compile and block the test from running at all. Use the test's existing imports.
+
+```dart
+final diag = '[DIAG after-NEW-VOYAGE '
+    'menuStart=${ElementFinders.get[GameName]StartButton().evaluate().length} '
+    'gameSkip=${ElementFinders.get[GameName]SkipTurnButton().evaluate().length} '
+    'resultsPlayAgain=${config.getPlayAgainButton().evaluate().length} '
+    'homeCarnival=${ElementFinders.getCarnivalDerbyCard().evaluate().length} '
+    'resumeModal=${ElementFinders.getResumeGameModalOverlay().evaluate().length}]';
+expect(ElementFinders.get[GameName]StartButton(), findsOneWidget,
+    reason: 'Should be on menu after NEW VOYAGE. $diag');
+```
+
+Apply to: every nav-back test, every tap-then-expect pair, every results-screen and modal action. Build it in *during initial test authoring*, not after a failed run.
+
+---
+
+### 16. `tester.tap` requires `ensureVisible` before it for any button inside a `SingleChildScrollView`
+In headless chromedriver mode (`-d web-server`), `tester.tap` only registers a click on widgets in the visible viewport. Buttons below the fold are silently un-tappable — the tap is a no-op and the test stays exactly where it was.
+
+The results screen wraps action buttons (NEW VOYAGE / PORT HOME / SET SAIL AGAIN — or the equivalent named buttons for this game) in a `SingleChildScrollView`. With a 1080-tall viewport and a 420px winner avatar + headline + stats card, the action buttons fall off-screen. Same applies to Save Modal Save and Resume Modal Resume buttons.
+
+**Rule:** ANY shared helper that taps a button living inside a `SingleChildScrollView` (results-screen actions, save/resume modal buttons) must `ensureVisible + pump` first:
+```dart
+await tester.ensureVisible(button);
+await tester.pump();
+await tester.tap(button);
+```
+Apply this to `clickPlayAgain`, `clickChangeSettings`, `clickSelectDifferentGame` etc. in `shared/results_helpers.dart` AT INITIAL AUTHORING. Any inline tap on a results-screen / modal button in test bodies needs the same.
+
+---
+
+### 17. Save/Resume tests that tap *Resume* must use the in-game save flow, not `preSaveGame`
+`preSaveGame(GameSaveConfig.foo())` writes a placeholder `gameState = {'_marker': 'test'}`. When a test taps Resume, the menu calls `provider.restoreGame(savedGame)` → `[GameName]Game.fromJson(savedGame.gameState)` which immediately casts a required field (`json['grid'] as List<dynamic>` for grid-based games, etc.) and crashes. The screen then renders with `_currentGame == null` and crashes again — observed as "Multiple exceptions (2)" with no further detail in the headless log.
+
+**Rule:** Reserve `preSaveGame` for tests that *only verify the resume modal appears* in the saved-games list. For any test that actually taps Resume:
+```dart
+// Set up + save via the in-game flow (real toJson() lands in gameState):
+await setupAndStartGame(tester, config, playerNames: ['Alice', 'Bob']);
+await throwDartViaMock(tester, someTarget);
+await UITestHelpers.tapGameScreenBackButton(tester, config);
+final saveButton = ElementFinders.getSaveGameModalSaveButton();
+await tester.ensureVisible(saveButton);
+await tester.pump();
+await tester.tap(saveButton);
+await PumpSequences.navigation(tester);
+
+// Look up the savedId we just created:
+final savedGames = await SaveGameService().loadSavedGames('[GAME_NAME_SNAKE]');
+final savedId = savedGames.first.id;
+// Now selectSavedGameTile + tap Resume can succeed.
+```
+
+---
+
+### 18. The Resume modal's Resume button is disabled until a tile is selected
+`ResumeGameModal._buildButtons` wires `onPressed: hasSelection ? () { ... } : null` where `hasSelection = _selectedGameId != null`. The user must tap a saved-game tile first to populate `_selectedGameId`. Tests that go straight to `tap(resumeButton)` are tapping a disabled button — silent no-op, modal stays visible.
+
+**Rule:** Every test that taps Resume must first call:
+```dart
+await UITestHelpers.selectSavedGameTile(tester, savedId);
+```
+*Then* `ensureVisible + tap` the Resume button. Document with a comment so future readers know why the tile-tap is required.
+
+---
+
+### 19. `_startGame` must use `Navigator.push`, NEVER `pushReplacement`
+`pushReplacement` removes the menu route from the stack. After "back from game" or "Save modal Save" both pop one route, the user lands on Home, not Menu. Tests that expect "back-from-game returns to menu with settings preserved" (a standard pattern across all games) fail because the menu is gone.
+
+**Rule:**
+```dart
+void _startGame() {
+  // ...startGame(...)
+  Navigator.push(   // NOT pushReplacement
+    context,
+    MaterialPageRoute(builder: (_) => const [GameName]GameScreen()),
+  );
+}
+```
+Game→Results uses its own `pushReplacement` (game route is consumed). NEW VOYAGE / Change Settings on Results uses `pushAndRemoveUntil((r) => r.isFirst)` to push a fresh menu and discard everything below. Both flows still work correctly with the menu staying on the stack during gameplay.
+
+---
+
+### 20. `_resetTurnForPlayer` (edit-score replay) must undo *all* win side-effects, including match-level
+When the original turn caused a round-win that promoted to a match-win, `_applyRoundResult` already incremented `roundsWon`, set `matchWinnerId`, set `state = GameState.finished`, and set `gameEndTime`. If the reset only clears round-level fields (`winnerId` / `winningLine` / `isDraw`), `provider.hasWinner` (which reads `matchWinnerId != null || isMatchDraw`) still returns true, AND `processDartThrow` rejects the replayed segments via the `!isGameActive` early-return guard. The edit silently does nothing.
+
+**Rule:** Capture pre-reset state BEFORE clearing round-level fields, then undo match-level side-effects when the turn caused them:
+```dart
+// Capture BEFORE clearing winnerId/isDraw:
+final thisTurnWonRound  = game.winnerId == playerId;
+final thisTurnWonMatch  = game.matchWinnerId == playerId;
+final thisTurnDrewMatch = game.isMatchDraw && !thisTurnWonMatch;
+
+// ... existing reset of winnerId/winningLine/isDraw, dart counters, cell undo ...
+
+if (thisTurnWonRound) {
+  game.roundsWon[playerId] = ((game.roundsWon[playerId] ?? 0) - 1).clamp(0, 99999);
+}
+if (thisTurnWonMatch || thisTurnDrewMatch) {
+  game.matchWinnerId = null;
+  game.isMatchDraw = false;
+  game.state = GameState.playing;
+  game.gameEndTime = null;
+}
+```
+
+---
+
+### 21. `processDartThrow` silently drops darts after `state = GameState.finished` — edit dialog tests must compensate
+Provider's `processDartThrow` early-returns on `if (_currentGame == null || !isGameActive) return;`. After a Bo1 win, follow-up Miss throws don't make it into `currentTurnDartSegments`. When the edit-score dialog opens, it sees `initialSegments=['S{n}']` (only the winning dart). `_parseScore` returns `{ring: null, number: null}` for darts 2 and 3. The dialog's validation then fails: Save button stays disabled until every dart has a non-null ring.
+
+**Rule:** Edit-score "remove winner" tests must explicitly set every dart in the dialog, not just the winning one:
+```dart
+await EditScoreHelpers.setDart1(tester, 'Miss');
+await EditScoreHelpers.setDart2(tester, 'Miss');   // even if originally a Miss
+await EditScoreHelpers.setDart3(tester, 'Miss');   // — provider dropped it after the Bo1 win
+await updateScore(tester);
+```
+Document this in the test with a comment so future readers know why darts 2 and 3 are being set.
+
+---
+
+### 22. Edit-score helper `_parseSegment` must accept all common Miss representations
+Score-display widgets render Miss as `'-'`, `'—'`, or empty depending on configuration. If `_parseSegment` only recognizes literal `'Miss'`, callers passing the displayed string get an `ArgumentError: Invalid segment format`. The error gets swallowed mid-tap and the Save button stays disabled — silent failure that's hard to diagnose.
+
+**Rule:** Author `_parseSegment` (in BOTH `integration_test/shared/edit_score_helpers.dart` AND `test/shared/edit_score_helpers.dart` per rule 26) to accept the union of representations:
+```dart
+final trimmed = segment.trim();
+if (trimmed.isEmpty
+    || trimmed == '-'
+    || trimmed == '—'
+    || trimmed.toLowerCase() == 'miss'
+    || trimmed.toLowerCase() == 'm') {
+  return {'ring': 'Miss', 'number': null};
+}
+```
+Also accept lowercase `d`/`t` in the regex prefix. And `ensureVisible` before every ring-button and number-button tap inside the dialog (rule 16 applies here too).
+
+---
+
+### 23. `PlayToCompleteStrategy.getNextThrow` must NEVER return `null` for a "deliberate miss"
+The auto-play runner does `if (dart == null) break;` — null is its STOP signal. For multi-player games where one player must miss every dart (to designate the auto-play winner — see rule 10), returning null breaks the auto-play loop on the first miss-turn, leaving the game stuck and the test timing out.
+
+**Rule:** Return a miss-shaped `SimulatedThrow` for deliberate misses:
+```dart
+if (currentPlayerId != designatedWinnerId) {
+  return const SimulatedThrow(score: 0, multiplier: 'miss', baseScore: 0);
+}
+```
+Match the pattern in `target_tag_strategy.dart` (which throws a "neutral" non-targeted number for non-winner turns). Never use `return null` to mean "miss" — the runner can't tell the difference.
+
+---
+
+### 24. Player column needs an inner `LayoutBuilder` to clamp character size by actual column height
+The outer game-area `LayoutBuilder.constraints.maxHeight` is what's visible to the layout root, but by the time the player Column resolves layout inside `Expanded(Row(...))`, it receives only ~75% of that — AppBar (a 35pt title can push to ~100px) + Row crossAxis distribution + padding eat the difference. Computing `charSize` against the outer constraint produces values that overflow the inner column.
+
+**Rule:** Wrap `_buildPlayerColumn`'s body in a `LayoutBuilder` and clamp `charSize` against `columnConstraints.maxHeight`, with a reserve that varies with active state AND with whether speedPlay is on:
+```dart
+return LayoutBuilder(builder: (context, columnConstraints) {
+  final reserveH = isActive
+      ? 220.0 + (game.speedPlay ? 56.0 : 0.0)   // +56 for the 36pt timer + spacing
+      : 80.0;
+  final maxByH = (columnConstraints.maxHeight - reserveH).clamp(0.0, double.infinity);
+  final charSize = math.min(desiredCharSize, maxByH);
+  return Column(...);
+});
+```
+The OUTER LayoutBuilder should provide a `desiredCharSize` derived from width only; the inner LayoutBuilder is responsible for the height clamp.
+
+---
+
+### 25. UI test color assertions must compare RGB bytes, not `Color.value`, on Flutter web
+`Color.value` is deprecated in Flutter 3.27+, and on Dart-to-JS its int representation can flip negative for high-bit ARGB values (sign-bit issue). `0xFFCD7F32` may compare as `-3342030`, breaking equality checks against the literal even when the color is correct.
+
+**Rule:** Compare RGB bytes (always 0–255 ints):
+```dart
+return color != null
+    && color.red   == 0xCD
+    && color.green == 0x7F
+    && color.blue  == 0x32;
+```
+Apply this to every visual-validation test that asserts on a widget's border, background, or text color.
+
+---
+
+### 26. `test/shared/<helper>.dart` and `integration_test/shared/<helper>.dart` MUST be edited together — every time
+When the two drift, non-UI tests pass while UI tests fail with "Member not found" against the same-named class — the symbol is in one file but not the other, and the resolution depends on which test type is running. Drift happens silently and is hard to diagnose without reading both files.
+
+**Rule:** Whenever a Sonnet sub-agent is asked to add a method or function to *either* shared helper file, the prompt MUST instruct it to apply the IDENTICAL change to the other file in the same edit pass. Verify via `diff -q test/shared/<helper>.dart integration_test/shared/<helper>.dart` before declaring the task done. Already in CLAUDE.md but emphasize it in every helper-edit prompt.
+
+---
+
+### 27. Randomized game targets — every dart-throwing test must read the target at runtime
+When the game randomizes targets per session (rule 9), tests that hardcode dart numbers (`throwDartViaMock(tester, 20)`) hit the wrong cell or no cell at all. The lookup pattern is required everywhere a test wants to deliberately hit a specific cell.
+
+**Rule:** Add `get[GameName]CellTargetNumber(tester, row, col)` (or equivalent) to `integration_test/shared/provider_helpers.dart` AT INITIAL TEST AUTHORING when targets are randomized. Add a `throwForCellTarget(tester, target)` dispatch helper that reads the cell's target requirement (e.g. `CellTarget` for grid games) and chooses the right multiplier (`single` / `double` / `triple` / `bull`). Use these in every gameplay test. Sync to `test/shared/provider_helpers.dart` per rule 26.
+
+```dart
+// Helper in integration_test/shared/provider_helpers.dart:
+static int get[GameName]CellTargetNumber(WidgetTester tester, int row, int col) {
+  final grid = get[GameName]Grid(tester);
+  return grid![row][col].target.number;
+}
+
+// In tests:
+final t02 = ProviderHelpers.get[GameName]CellTargetNumber(tester, 0, 2);
+await throwForCellTarget(tester, provider.currentGame!.grid[0][2].target);
+```
 
 ---
 
