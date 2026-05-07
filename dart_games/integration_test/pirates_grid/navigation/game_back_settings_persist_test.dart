@@ -5,7 +5,6 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/pump_sequences.dart';
-import '../../shared/test_diagnostics.dart';
 import '_helpers.dart';
 
 void main() {
@@ -24,13 +23,13 @@ void main() {
       stealMode: true,
     );
 
-    TestDiagnostics.dumpRoute(tester, 'after-setupAndStartGame');
+    UITestHelpers.dumpRoute(tester, 'after-setupAndStartGame');
 
     // Tap back from game screen (no darts thrown — no save modal)
     await UITestHelpers.tapGameScreenBackButton(tester, config);
     await PumpSequences.navigation(tester);
 
-    TestDiagnostics.dumpRoute(tester, 'after-game-back-tap');
+    UITestHelpers.dumpRoute(tester, 'after-game-back-tap');
 
     // Verify we're on the menu
     expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,

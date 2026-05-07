@@ -4,7 +4,6 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/pump_sequences.dart';
-import '../../shared/test_diagnostics.dart';
 import '_helpers.dart';
 
 void main() {
@@ -21,7 +20,7 @@ void main() {
 
     await completeGameToVictory(tester);
 
-    TestDiagnostics.dumpRoute(tester, 'after-completeGameToVictory');
+    UITestHelpers.dumpRoute(tester, 'after-completeGameToVictory');
 
     // Verify on results screen
     expect(config.getPlayAgainButton(), findsOneWidget,
@@ -40,7 +39,7 @@ void main() {
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
 
-    TestDiagnostics.dumpRoute(tester, 'after-PORT-HOME-tap');
+    UITestHelpers.dumpRoute(tester, 'after-PORT-HOME-tap');
 
     // Verify we are on the home screen — ≥3 game cards visible
     expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget,
