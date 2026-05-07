@@ -87,6 +87,17 @@ if not exist "server\bin\server.dart" (
     exit /b 1
 )
 
+REM Wipe flutter_tools frontend-server kernel cache. flutter_tools keeps an
+REM app.dill snapshot in %LOCALAPPDATA%\Temp\flutter_tools.<hash>\flutter_tool.<hash>\
+REM that survives `flutter clean` and per-worktree .dart_tool resets. When a
+REM method is added to a file already in the cached kernel, the next
+REM `flutter drive` reuses the stale kernel and reports "Member not found".
+REM Removing this directory before any worker runs forces every worker to
+REM recompile against the current source. Must happen before worktree
+REM creation so workers don't inherit a still-warm cache.
+echo Wiping stale flutter_tools kernel cache ^(%%LOCALAPPDATA%%\Temp\flutter_tools.*^)...
+for /d %%D in ("%LOCALAPPDATA%\Temp\flutter_tools.*") do rmdir /S /Q "%%D" >nul 2>&1
+
 echo Resolving Flutter dependencies...
 call flutter pub get
 if !errorlevel! neq 0 (
