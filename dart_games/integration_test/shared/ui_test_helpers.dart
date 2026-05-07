@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/main.dart' as app;
 import 'package:dart_games/services/api/api_config.dart';
 import 'package:dart_games/widgets/player_selection_card.dart';
-import 'package:dart_games/constants/test_keys.dart';
 import 'game_ui_config.dart';
 import 'element_finders.dart';
 import 'pump_sequences.dart';
@@ -404,46 +403,5 @@ class UITestHelpers {
   static Future<void> deleteAllSavedGames(WidgetTester tester) async {
     await tester.tap(ElementFinders.getResumeGameModalDeleteAllButton());
     await PumpSequences.asyncDataLoad(tester);
-  }
-
-  // ==========================================================================
-  // DIAGNOSTICS
-  // ==========================================================================
-
-  /// Emit a one-line snapshot of which Pirate's Grid screen / modal is
-  /// currently mounted. Output goes to the per-test parallel-runner log so
-  /// failures of the form "Found 0 widgets" can be diagnosed without rerun.
-  ///
-  /// Call right before a `findsOneWidget` assertion that's failing
-  /// mysteriously. The `label` is included in the print so multiple calls
-  /// in one test are distinguishable in the log:
-  ///   `[DIAG <label>] menuStart=1 gameSkip=0 …`
-  ///
-  /// A `1` count for a marker key means that screen is mounted at the top
-  /// of the navigator stack; `0` means it isn't built.
-  static void dumpRoute(WidgetTester tester, String label) {
-    int count(Finder f) => f.evaluate().length;
-
-    final menuStart =
-        count(find.byKey(PiratesGridMenuKeys.startGameButton));
-    final menuBack = count(find.byKey(PiratesGridMenuKeys.backButton));
-    final gameSkip =
-        count(find.byKey(PiratesGridGameKeys.skipTurnButton));
-    final gameBack = count(find.byKey(PiratesGridGameKeys.backButton));
-    final resultsPlayAgain =
-        count(find.byKey(PiratesGridResultsKeys.playAgainButton));
-    final resultsBackToMenu =
-        count(find.byKey(PiratesGridResultsKeys.backToMenuButton));
-    final homeCarnival = count(find.byKey(HomeKeys.carnivalDerbyCard));
-    final saveModal = count(find.byKey(SaveGameModalKeys.container));
-    final resumeModal = count(find.byKey(ResumeGameModalKeys.overlay));
-
-    // ignore: avoid_print
-    print('[DIAG $label] '
-        'menuStart=$menuStart menuBack=$menuBack '
-        'gameSkip=$gameSkip gameBack=$gameBack '
-        'resultsPlayAgain=$resultsPlayAgain resultsBackToMenu=$resultsBackToMenu '
-        'homeCarnival=$homeCarnival '
-        'saveModal=$saveModal resumeModal=$resumeModal');
   }
 }

@@ -16,8 +16,6 @@ void main() {
 
     await completeGameToVictory(tester);
 
-    UITestHelpers.dumpRoute(tester, 'after-completeGameToVictory');
-
     // Verify on results screen
     expect(config.getPlayAgainButton(), findsOneWidget,
         reason: 'Should be on results screen');
@@ -30,8 +28,6 @@ void main() {
     await tester.pump();
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
-
-    UITestHelpers.dumpRoute(tester, 'after-SET-SAIL-AGAIN-tap');
 
     // Should restart — game screen visible with a fresh game
     expect(ElementFinders.getPiratesGridSkipTurnButton(), findsOneWidget,

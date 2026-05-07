@@ -20,8 +20,6 @@ void main() {
 
     await completeGameToVictory(tester);
 
-    UITestHelpers.dumpRoute(tester, 'after-completeGameToVictory');
-
     // Verify on results screen
     expect(config.getPlayAgainButton(), findsOneWidget,
         reason: 'Should be on results screen');
@@ -38,8 +36,6 @@ void main() {
     await tester.pump();
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
-
-    UITestHelpers.dumpRoute(tester, 'after-PORT-HOME-tap');
 
     // Verify we are on the home screen — ≥3 game cards visible
     expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget,

@@ -23,13 +23,9 @@ void main() {
       stealMode: true,
     );
 
-    UITestHelpers.dumpRoute(tester, 'after-setupAndStartGame');
-
     // Tap back from game screen (no darts thrown — no save modal)
     await UITestHelpers.tapGameScreenBackButton(tester, config);
     await PumpSequences.navigation(tester);
-
-    UITestHelpers.dumpRoute(tester, 'after-game-back-tap');
 
     // Verify we're on the menu
     expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,

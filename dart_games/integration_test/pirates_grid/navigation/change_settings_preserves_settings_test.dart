@@ -24,13 +24,9 @@ void main() {
     // Complete game to results
     await completeGameToVictory(tester);
 
-    UITestHelpers.dumpRoute(tester, 'after-completeGameToVictory');
-
     // Click NEW VOYAGE → menu
     await tester.tap(config.getChangeSettingsButton());
     await PumpSequences.navigation(tester);
-
-    UITestHelpers.dumpRoute(tester, 'after-NEW-VOYAGE-tap');
 
     // Verify on menu
     expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,

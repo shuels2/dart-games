@@ -45,8 +45,6 @@ void main() {
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
 
-      UITestHelpers.dumpRoute(tester, 'after-Save-modal-Save-tap');
-
       // Should be on menu now
       expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,
           reason: 'Should be on menu after saving');
@@ -97,8 +95,6 @@ void main() {
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
 
-      UITestHelpers.dumpRoute(tester, 'after-Resume-modal-Resume-tap');
-
       // Should be back in game with state restored
       expect(config.getSkipTurnButton(), findsOneWidget,
           reason: 'Game screen should be visible after resume');
@@ -127,8 +123,6 @@ void main() {
       await tester.tap(ElementFinders.getResumeGameModalResumeButton());
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
-
-      UITestHelpers.dumpRoute(tester, 'after-Resume-modal-Resume-tap-2');
 
       // Verify game screen
       expect(config.getSkipTurnButton(), findsOneWidget);
