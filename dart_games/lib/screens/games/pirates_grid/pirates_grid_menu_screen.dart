@@ -129,7 +129,13 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
           _speedPlay,
         );
 
-    Navigator.pushReplacement(
+    // Use push (not pushReplacement) so the menu stays on the route stack.
+    // That way:
+    //   - back-button on game screen pops to menu (with settings preserved)
+    //   - Save modal's onSave pops to menu
+    // Game→results uses its own pushReplacement, NEW VOYAGE on results uses
+    // pushAndRemoveUntil(route.isFirst); both flows are unaffected.
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const PiratesGridGameScreen()),
     );

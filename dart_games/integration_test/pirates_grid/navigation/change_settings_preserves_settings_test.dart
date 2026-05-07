@@ -24,8 +24,14 @@ void main() {
     // Complete game to results
     await completeGameToVictory(tester);
 
-    // Click NEW VOYAGE → menu
-    await tester.tap(config.getChangeSettingsButton());
+    // Click NEW VOYAGE → menu. Scroll into view first because the results
+    // screen wraps its action buttons in a SingleChildScrollView and headless
+    // chromedriver requires the target to be in the viewport for the click
+    // to register.
+    final newVoyageButton = config.getChangeSettingsButton();
+    await tester.ensureVisible(newVoyageButton);
+    await tester.pump();
+    await tester.tap(newVoyageButton);
     await PumpSequences.navigation(tester);
 
     // Verify on menu — inline diagnostic in reason string for failure logs

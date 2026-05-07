@@ -25,8 +25,14 @@ void main() {
     expect(config.getPlayAgainButton(), findsOneWidget,
         reason: 'Should be on results screen');
 
-    // Click NEW VOYAGE → menu screen
-    await tester.tap(config.getChangeSettingsButton());
+    // Click NEW VOYAGE → menu screen. Scroll into view first because the
+    // results screen wraps its action buttons in a SingleChildScrollView and
+    // headless chromedriver requires the target to be in the viewport for
+    // the click to register.
+    final newVoyageButton = config.getChangeSettingsButton();
+    await tester.ensureVisible(newVoyageButton);
+    await tester.pump();
+    await tester.tap(newVoyageButton);
     await PumpSequences.navigation(tester);
 
     // Inline diagnostic — prefixed with [DIAG] so it shows up in the

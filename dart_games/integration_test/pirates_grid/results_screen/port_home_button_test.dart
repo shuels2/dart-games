@@ -24,10 +24,15 @@ void main() {
     expect(config.getPlayAgainButton(), findsOneWidget,
         reason: 'Should be on results screen');
 
-    // Tap PORT HOME button
+    // Tap PORT HOME button. Scroll into view first because the results
+    // screen wraps its action buttons in a SingleChildScrollView and headless
+    // chromedriver requires the target to be in the viewport for the click
+    // to register.
     final portHomeButton = config.getBackToMenuButton();
     expect(portHomeButton, findsOneWidget,
         reason: 'PORT HOME button should be present on results screen');
+    await tester.ensureVisible(portHomeButton);
+    await tester.pump();
     await tester.tap(portHomeButton);
     await PumpSequences.navigation(tester);
     // Home screen reloads players/dartboard async; give it extra time so

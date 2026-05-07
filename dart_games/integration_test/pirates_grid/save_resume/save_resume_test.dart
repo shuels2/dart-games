@@ -40,8 +40,12 @@ void main() {
       await UITestHelpers.tapGameScreenBackButton(tester, config);
       await PumpSequences.simpleUpdate(tester);
 
-      // Tap Save
-      await tester.tap(ElementFinders.getSaveGameModalSaveButton());
+      // Tap Save — ensureVisible because headless chromedriver requires the
+      // target in the viewport for the click to register.
+      final saveButton = ElementFinders.getSaveGameModalSaveButton();
+      await tester.ensureVisible(saveButton);
+      await tester.pump();
+      await tester.tap(saveButton);
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
 
@@ -97,7 +101,12 @@ void main() {
           reason: 'Resume modal should appear');
 
       // Tap resume
-      await tester.tap(ElementFinders.getResumeGameModalResumeButton());
+      // ensureVisible — headless chromedriver requires the target in the
+      // viewport for the click to register.
+      final resumeButton = ElementFinders.getResumeGameModalResumeButton();
+      await tester.ensureVisible(resumeButton);
+      await tester.pump();
+      await tester.tap(resumeButton);
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
 
@@ -131,7 +140,12 @@ void main() {
       await UITestHelpers.navigateToGameMenu(tester, config);
       await PumpSequences.asyncDataLoad(tester);
 
-      await tester.tap(ElementFinders.getResumeGameModalResumeButton());
+      // ensureVisible — headless chromedriver requires the target in the
+      // viewport for the click to register.
+      final resumeButton = ElementFinders.getResumeGameModalResumeButton();
+      await tester.ensureVisible(resumeButton);
+      await tester.pump();
+      await tester.tap(resumeButton);
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
 
