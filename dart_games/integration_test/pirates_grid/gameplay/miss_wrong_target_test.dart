@@ -17,8 +17,18 @@ void main() {
     final provider = ProviderHelpers.getPiratesGridProvider(tester);
     final p1Id = provider.currentGame!.playerIds[0];
 
-    // Throw S1 — not a target on Easy grid (grid uses 20/18/16/19/17/15/14/12/10)
-    await throwDartViaMock(tester, 1);
+    // Targets are randomized per game (9 of 1–20 on Easy). Find a number
+    // 1–20 NOT in the grid and throw that — guaranteed not to match any cell.
+    final usedTargets = <int>{};
+    for (int r = 0; r < 3; r++) {
+      for (int c = 0; c < 3; c++) {
+        usedTargets.add(
+            ProviderHelpers.getPiratesGridCellTargetNumber(tester, r, c));
+      }
+    }
+    final unusedNumber =
+        List.generate(20, (i) => i + 1).firstWhere((n) => !usedTargets.contains(n));
+    await throwDartViaMock(tester, unusedNumber);
 
     // No flags should be planted
     expect(ProviderHelpers.getPiratesGridFlagsPlanted(tester, p1Id), 0,

@@ -36,9 +36,15 @@ void main() {
     expect(ProviderHelpers.piratesGridHasWinner(tester), isTrue,
         reason: 'P1 should have won row 0 with [0,2] target');
 
-    // Edit dart 1 from the winning throw → Miss (guaranteed not to complete row 0)
+    // Edit dart 1 from the winning throw → Miss (guaranteed not to complete row 0).
+    // Darts 2 and 3 were silently dropped by the provider's `!isGameActive`
+    // guard once dart 1 set state=finished, so they have no ring/number in the
+    // dialog. Save is disabled until every dart has a valid ring — set them
+    // both to Miss explicitly so updateScore can submit.
     await openEditScore(tester);
     await EditScoreHelpers.setDart1(tester, 'Miss');
+    await EditScoreHelpers.setDart2(tester, 'Miss');
+    await EditScoreHelpers.setDart3(tester, 'Miss');
     await updateScore(tester);
 
     // After edit, P1 no longer has row 0 complete → no winner

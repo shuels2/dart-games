@@ -748,10 +748,15 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
           // cells fit (round tracker + skip button + dart indicators eat ~280px).
           final gridW = availW * 0.40;
           final widthBasedCell = (gridW - 18.0) / 3.0;
-          final reservedH = (game.bestOf > 1 ? 60.0 : 0.0) + 200.0;
-          final heightBasedCell =
-              (constraints.maxHeight - reservedH) / 3.0;
+          final colMaxH =
+              constraints.maxHeight - (game.bestOf > 1 ? 60.0 : 0.0);
+          final heightBasedCell = (colMaxH - 200.0) / 3.0;
           final cellSize = math.min(widthBasedCell, heightBasedCell);
+          // Width-based desired char size; the inner LayoutBuilder inside
+          // _buildPlayerColumn will down-clamp by the column's *actual*
+          // available height (the outer constraint here is misleading —
+          // AppBar + Row crossAxis distribution eat ~240px before the
+          // column resolves its slot).
           final charColW = (availW - gridW) / 2.0;
           final activeCharSize = charColW * 0.88;
           final inactiveCharSize = activeCharSize * 0.70;
@@ -882,9 +887,19 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     final flagsPlanted = game.getFlagsPlanted(playerId);
 
     final characterPath = _characterPaths[playerIndex];
+    final desiredCharSize = charSize;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return LayoutBuilder(builder: (context, columnConstraints) {
+      // Clamp character size by the column's *actual* available height.
+      // Reserve for non-character items: active ≈ 220 (name + flags +
+      // D1/D2/D3 + skip + spacing); inactive ≈ 80 (name + flags + spacing).
+      final reserveH = isActive ? 220.0 : 80.0;
+      final maxByH =
+          (columnConstraints.maxHeight - reserveH).clamp(0.0, double.infinity);
+      final charSize = math.min(desiredCharSize, maxByH);
+
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Character — shape-following glow for active player
         SizedBox(
@@ -1100,6 +1115,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         ],
       ],
     );
+    });
   }
 
   Widget _buildSpeedPlayTimer() {

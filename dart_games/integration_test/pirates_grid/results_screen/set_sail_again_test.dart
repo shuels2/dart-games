@@ -27,6 +27,7 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
     await tester.pump();
+    await PumpSequences.fullRebuild(tester);
 
     // Should restart — game screen visible with a fresh game
     expect(ElementFinders.getPiratesGridSkipTurnButton(), findsOneWidget,

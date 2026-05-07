@@ -105,4 +105,16 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
 
     await DartThrowHelpers.clickDartsRemoved(tester);
   }
+
+  // After hasWinner becomes true the game-screen schedules navigation to
+  // the results screen via Future.delayed(3000ms) inside _handleGameWon —
+  // but only after a takeout is acknowledged. Click DARTS REMOVED to fire
+  // _handleTakeoutFinished -> _handleGameWon, then pump past the 3s delay
+  // AND give the route transition + results-screen build time to settle.
+  await DartThrowHelpers.clickDartsRemoved(tester);
+  await tester.pump(const Duration(seconds: 4));
+  await tester.pump();
+  await tester.pump();
+  await tester.pump();
+  await PumpSequences.fullRebuild(tester);
 }

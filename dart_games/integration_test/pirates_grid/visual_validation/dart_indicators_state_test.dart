@@ -42,10 +42,14 @@ Color? _dartBorderColor(WidgetTester tester, int i) {
   return border?.top.color;
 }
 
-/// Returns true when the slot border is semi-transparent (bronze — empty/miss/non-target).
+/// Returns true when the slot border is the bronze color (empty/miss/non-target).
+/// Bronze is `Color(0xFFCD7F32)`. We compare RGB bytes directly because
+/// `Color.value` is deprecated in Flutter 3.27+ and on Dart-to-JS its int
+/// representation can flip negative for high-bit ARGB values.
 bool _isBronze(WidgetTester tester, int i) {
   final color = _dartBorderColor(tester, i);
-  return color != null && color.alpha < 200;
+  if (color == null) return false;
+  return color.red == 0xCD && color.green == 0x7F && color.blue == 0x32;
 }
 
 // ---------------------------------------------------------------------------

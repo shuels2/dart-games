@@ -35,6 +35,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     await tester.pump();
+    await PumpSequences.fullRebuild(tester);
 
     // Verify we are on the home screen — ≥3 game cards visible
     expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget,

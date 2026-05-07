@@ -25,11 +25,15 @@ class PiratesGridStrategy implements PlayToCompleteStrategy {
     final currentPlayerId = game.getCurrentPlayerId();
     final p1Id = game.playerIds[0]; // Designated winner — always P1.
 
-    // When it's the non-winner's (P2's) turn, return null (miss deliberately).
+    // When it's the non-winner's (P2's) turn, throw a deliberate miss.
     // This prevents steal-mode ping-pong: if both players target each other's
     // cells the game never ends. P2 missing every dart guarantees P1 builds
-    // their winning line without interference.
-    if (currentPlayerId != p1Id) return null;
+    // their winning line without interference. We must return a miss-shaped
+    // SimulatedThrow rather than null — the auto-play runner treats null as
+    // "stop" and would break out of the loop, leaving the game stuck.
+    if (currentPlayerId != p1Id) {
+      return const SimulatedThrow(score: 0, multiplier: 'miss', baseScore: 0);
+    }
 
     // P1's turn: target EMPTY cells only — never steal opponent cells even
     // when steal mode is ON. Stealing creates the same infinite-loop risk

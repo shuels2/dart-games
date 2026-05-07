@@ -43,6 +43,7 @@ void main() {
       // Tap Save
       await tester.tap(ElementFinders.getSaveGameModalSaveButton());
       await PumpSequences.navigation(tester);
+      await PumpSequences.fullRebuild(tester);
 
       // Should be on menu now
       expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,
@@ -92,6 +93,7 @@ void main() {
       // Tap resume
       await tester.tap(ElementFinders.getResumeGameModalResumeButton());
       await PumpSequences.navigation(tester);
+      await PumpSequences.fullRebuild(tester);
 
       // Should be back in game with state restored
       expect(config.getSkipTurnButton(), findsOneWidget,
@@ -120,6 +122,7 @@ void main() {
 
       await tester.tap(ElementFinders.getResumeGameModalResumeButton());
       await PumpSequences.navigation(tester);
+      await PumpSequences.fullRebuild(tester);
 
       // Verify game screen
       expect(config.getSkipTurnButton(), findsOneWidget);
