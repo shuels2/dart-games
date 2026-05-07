@@ -145,9 +145,33 @@ void main() {
         (WidgetTester tester) async {
       await UITestHelpers.resetServerState();
 
-      // Pre-save a game
-      final savedId = await SaveResumeHelpers.preSaveGame(
-          GameSaveConfig.piratesGrid());
+      // Set up + save a real pirates_grid game via the in-game save flow.
+      // (preSaveGame's placeholder gameState `{'_marker': 'test'}` breaks
+      // PiratesGridGame.fromJson on restore — `json['grid'] as List` blows
+      // up — and the game screen then renders with currentGame=null,
+      // producing the "Multiple exceptions (2)" we saw in the parallel log.
+      // The real save flow stores PiratesGridGame.toJson() which restoreGame
+      // can deserialize cleanly.)
+      await setupAndStartGame(tester, config,
+          playerNames: ['Alice', 'Bob']);
+      final t00 =
+          ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+      await throwDartViaMock(tester, t00);
+
+      await UITestHelpers.tapGameScreenBackButton(tester, config);
+      await PumpSequences.simpleUpdate(tester);
+      final saveButton3 = ElementFinders.getSaveGameModalSaveButton();
+      await tester.ensureVisible(saveButton3);
+      await tester.pump();
+      await tester.tap(saveButton3);
+      await PumpSequences.navigation(tester);
+
+      // Look up the savedId we just created
+      final savedGames =
+          await SaveGameService().loadSavedGames('pirates_grid');
+      expect(savedGames.length, greaterThanOrEqualTo(1),
+          reason: 'Should have at least one saved game after Save tap');
+      final savedId = savedGames.first.id;
 
       // Navigate to menu and resume
       await UITestHelpers.navigateToGameMenu(tester, config);
@@ -174,8 +198,8 @@ void main() {
           'resumeModal=${ElementFinders.getResumeGameModalOverlay().evaluate().length}]';
       expect(config.getSkipTurnButton(), findsOneWidget, reason: diag2);
 
-      // Complete the game — save should be deleted on completion
-      // (The resumed game tracks the saved ID and auto-deletes it)
+      // Provider should track the saved game id so it can auto-delete the
+      // save on game completion.
       final provider = ProviderHelpers.getPiratesGridProvider(tester);
       expect(provider.resumedSavedGameId, savedId,
           reason: 'Resumed game should track the saved game ID');
