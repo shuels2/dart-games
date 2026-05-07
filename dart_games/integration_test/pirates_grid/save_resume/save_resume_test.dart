@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:dart_games/services/save_game_service.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
@@ -86,10 +87,14 @@ void main() {
       final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
       await throwDartViaMock(tester, t00);
 
-      // Save via back button
+      // Save via back button. ensureVisible because headless chromedriver
+      // requires the target in the viewport for the click to register.
       await UITestHelpers.tapGameScreenBackButton(tester, config);
       await PumpSequences.simpleUpdate(tester);
-      await tester.tap(ElementFinders.getSaveGameModalSaveButton());
+      final saveButton2 = ElementFinders.getSaveGameModalSaveButton();
+      await tester.ensureVisible(saveButton2);
+      await tester.pump();
+      await tester.tap(saveButton2);
       await PumpSequences.navigation(tester);
 
       // Re-navigate to menu
@@ -100,9 +105,17 @@ void main() {
       expect(ElementFinders.getResumeGameModalOverlay(), findsOneWidget,
           reason: 'Resume modal should appear');
 
-      // Tap resume
-      // ensureVisible — headless chromedriver requires the target in the
-      // viewport for the click to register.
+      // Select the saved-game tile FIRST — the Resume button stays disabled
+      // until a tile is selected (`onPressed: hasSelection ? ... : null`).
+      // We don't have the savedId in this sub-test (it was created via the
+      // Save modal, not preSaveGame), so look it up from the service.
+      final savedGames = await SaveGameService().loadSavedGames('pirates_grid');
+      expect(savedGames.length, greaterThanOrEqualTo(1),
+          reason: 'Should have at least one saved game after Save tap');
+      await UITestHelpers.selectSavedGameTile(tester, savedGames.first.id);
+
+      // Tap resume — ensureVisible because headless chromedriver requires the
+      // target in the viewport for the click to register.
       final resumeButton = ElementFinders.getResumeGameModalResumeButton();
       await tester.ensureVisible(resumeButton);
       await tester.pump();
@@ -139,6 +152,10 @@ void main() {
       // Navigate to menu and resume
       await UITestHelpers.navigateToGameMenu(tester, config);
       await PumpSequences.asyncDataLoad(tester);
+
+      // Select the saved-game tile FIRST — the Resume button stays disabled
+      // until a tile is selected.
+      await UITestHelpers.selectSavedGameTile(tester, savedId);
 
       // ensureVisible — headless chromedriver requires the target in the
       // viewport for the click to register.
