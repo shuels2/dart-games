@@ -891,9 +891,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
 
     return LayoutBuilder(builder: (context, columnConstraints) {
       // Clamp character size by the column's *actual* available height.
-      // Reserve for non-character items: active ≈ 220 (name + flags +
-      // D1/D2/D3 + skip + spacing); inactive ≈ 80 (name + flags + spacing).
-      final reserveH = isActive ? 220.0 : 80.0;
+      // Reserve for non-character items:
+      //   active   ≈ 220 (name + flags + D1/D2/D3 + skip + spacing)
+      //            + 56 when speedPlay is on (Speed Play timer at 36pt ≈ 46px
+      //              plus its surrounding 8px spacing).
+      //   inactive ≈ 80 (name + flags + spacing).
+      final reserveH = isActive
+          ? 220.0 + (game.speedPlay ? 56.0 : 0.0)
+          : 80.0;
       final maxByH =
           (columnConstraints.maxHeight - reserveH).clamp(0.0, double.infinity);
       final charSize = math.min(desiredCharSize, maxByH);

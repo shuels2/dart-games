@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/pump_sequences.dart';
+import '../../shared/test_diagnostics.dart';
 import '_helpers.dart';
 
 void main() {
@@ -21,6 +22,8 @@ void main() {
     // Complete game to results
     await completeGameToVictory(tester);
 
+    TestDiagnostics.dumpRoute(tester, 'after-completeGameToVictory');
+
     // Verify on results screen
     expect(config.getPlayAgainButton(), findsOneWidget,
         reason: 'Should be on results screen');
@@ -28,6 +31,8 @@ void main() {
     // Click NEW VOYAGE → menu screen
     await tester.tap(config.getChangeSettingsButton());
     await PumpSequences.navigation(tester);
+
+    TestDiagnostics.dumpRoute(tester, 'after-NEW-VOYAGE-tap');
 
     expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,
         reason: 'Should be on menu after NEW VOYAGE');
@@ -37,6 +42,8 @@ void main() {
     expect(backButton, findsOneWidget);
     await tester.tap(backButton);
     await PumpSequences.navigation(tester);
+
+    TestDiagnostics.dumpRoute(tester, 'after-menu-back-tap');
 
     // Verify home screen
     expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget);

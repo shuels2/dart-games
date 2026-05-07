@@ -530,6 +530,15 @@ class PiratesGridProvider extends ChangeNotifier {
       game.currentTurnDartSegments[playerId] ?? [],
     );
 
+    // Capture round/match-win state CAUSED by this turn before we clear
+    // the round-level fields below. Any winnerId set on the current game
+    // must have been set during this turn — there's no path that sets
+    // winnerId between turns. Same for matchWinnerId/isMatchDraw, since
+    // those are downstream of _applyRoundResult during this turn.
+    final thisTurnWonRound = game.winnerId == playerId;
+    final thisTurnWonMatch = game.matchWinnerId == playerId;
+    final thisTurnDrewMatch = game.isMatchDraw && !thisTurnWonMatch;
+
     // Count real darts (non-Skip segments) to adjust totalDartsThrown
     final realDartCount =
         currentSegments.where((s) => s != 'Skip').length;
@@ -568,9 +577,20 @@ class PiratesGridProvider extends ChangeNotifier {
       }
     }
 
-    // Re-check match state that may have been changed by undo
-    // (roundsWon is NOT decremented here — edit score doesn't change
-    //  the round history, only the current partial turn)
+    // If this turn caused round/match-win side-effects, undo them too.
+    // Without this, an edit that removes the winning hit leaves
+    // matchWinnerId/state=finished set, hasWinner returns true, and
+    // processDartThrow rejects the replayed segments via !isGameActive.
+    if (thisTurnWonRound) {
+      game.roundsWon[playerId] =
+          ((game.roundsWon[playerId] ?? 0) - 1).clamp(0, 99999);
+    }
+    if (thisTurnWonMatch || thisTurnDrewMatch) {
+      game.matchWinnerId = null;
+      game.isMatchDraw = false;
+      game.state = GameState.playing;
+      game.gameEndTime = null;
+    }
   }
 
   /// Parses a dart sector string into {score, multiplier} integers.

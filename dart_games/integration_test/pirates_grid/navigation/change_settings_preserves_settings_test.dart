@@ -5,6 +5,7 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/pump_sequences.dart';
+import '../../shared/test_diagnostics.dart';
 import '_helpers.dart';
 
 void main() {
@@ -24,9 +25,13 @@ void main() {
     // Complete game to results
     await completeGameToVictory(tester);
 
+    TestDiagnostics.dumpRoute(tester, 'after-completeGameToVictory');
+
     // Click NEW VOYAGE → menu
     await tester.tap(config.getChangeSettingsButton());
     await PumpSequences.navigation(tester);
+
+    TestDiagnostics.dumpRoute(tester, 'after-NEW-VOYAGE-tap');
 
     // Verify on menu
     expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,

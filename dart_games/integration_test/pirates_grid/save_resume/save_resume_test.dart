@@ -6,6 +6,7 @@ import '../../shared/element_finders.dart';
 import '../../shared/pump_sequences.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/save_resume_helpers.dart';
+import '../../shared/test_diagnostics.dart';
 import '_helpers.dart';
 
 void main() {
@@ -44,6 +45,8 @@ void main() {
       await tester.tap(ElementFinders.getSaveGameModalSaveButton());
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
+
+      TestDiagnostics.dumpRoute(tester, 'after-Save-modal-Save-tap');
 
       // Should be on menu now
       expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,
@@ -95,6 +98,8 @@ void main() {
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
 
+      TestDiagnostics.dumpRoute(tester, 'after-Resume-modal-Resume-tap');
+
       // Should be back in game with state restored
       expect(config.getSkipTurnButton(), findsOneWidget,
           reason: 'Game screen should be visible after resume');
@@ -123,6 +128,8 @@ void main() {
       await tester.tap(ElementFinders.getResumeGameModalResumeButton());
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
+
+      TestDiagnostics.dumpRoute(tester, 'after-Resume-modal-Resume-tap-2');
 
       // Verify game screen
       expect(config.getSkipTurnButton(), findsOneWidget);

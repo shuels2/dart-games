@@ -3,6 +3,7 @@ import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
+import '../../shared/test_diagnostics.dart';
 import '_helpers.dart';
 
 void main() {
@@ -16,6 +17,8 @@ void main() {
 
     await completeGameToVictory(tester);
 
+    TestDiagnostics.dumpRoute(tester, 'after-completeGameToVictory');
+
     // Verify on results screen
     expect(config.getPlayAgainButton(), findsOneWidget,
         reason: 'Should be on results screen');
@@ -28,6 +31,8 @@ void main() {
     await tester.pump();
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
+
+    TestDiagnostics.dumpRoute(tester, 'after-SET-SAIL-AGAIN-tap');
 
     // Should restart — game screen visible with a fresh game
     expect(ElementFinders.getPiratesGridSkipTurnButton(), findsOneWidget,
