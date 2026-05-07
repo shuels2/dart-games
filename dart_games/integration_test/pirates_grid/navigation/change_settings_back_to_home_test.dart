@@ -29,8 +29,18 @@ void main() {
     await tester.tap(config.getChangeSettingsButton());
     await PumpSequences.navigation(tester);
 
+    // Inline diagnostic — prefixed with [DIAG] so it shows up in the
+    // assertion's reason when the test fails. Tells us which screen is
+    // actually mounted when the start-button lookup misses.
+    final diag1 = '[DIAG after-NEW-VOYAGE '
+        'menuStart=${ElementFinders.getPiratesGridStartButton().evaluate().length} '
+        'menuBack=${ElementFinders.getPiratesGridBackButton().evaluate().length} '
+        'gameSkip=${ElementFinders.getPiratesGridSkipTurnButton().evaluate().length} '
+        'resultsPlayAgain=${config.getPlayAgainButton().evaluate().length} '
+        'homeCarnival=${ElementFinders.getCarnivalDerbyCard().evaluate().length} '
+        'resumeModal=${ElementFinders.getResumeGameModalOverlay().evaluate().length}]';
     expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,
-        reason: 'Should be on menu after NEW VOYAGE');
+        reason: 'Should be on menu after NEW VOYAGE. $diag1');
 
     // Tap menu back button → home
     final backButton = ElementFinders.getPiratesGridBackButton();
@@ -39,7 +49,13 @@ void main() {
     await PumpSequences.navigation(tester);
 
     // Verify home screen
-    expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget);
+    final diag2 = '[DIAG after-menu-back '
+        'menuStart=${ElementFinders.getPiratesGridStartButton().evaluate().length} '
+        'gameSkip=${ElementFinders.getPiratesGridSkipTurnButton().evaluate().length} '
+        'homeCarnival=${ElementFinders.getCarnivalDerbyCard().evaluate().length} '
+        'homeTargetTag=${ElementFinders.getTargetTagCard().evaluate().length}]';
+    expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget,
+        reason: 'Should be on home screen. $diag2');
     expect(ElementFinders.getTargetTagCard(), findsOneWidget);
     expect(ElementFinders.getMonsterMashCard(), findsOneWidget);
   });

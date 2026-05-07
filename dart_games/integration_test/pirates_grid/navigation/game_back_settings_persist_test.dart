@@ -27,9 +27,16 @@ void main() {
     await UITestHelpers.tapGameScreenBackButton(tester, config);
     await PumpSequences.navigation(tester);
 
-    // Verify we're on the menu
+    // Verify we're on the menu — inline diagnostic in reason string
+    final diag = '[DIAG after-game-back '
+        'menuStart=${ElementFinders.getPiratesGridStartButton().evaluate().length} '
+        'menuBack=${ElementFinders.getPiratesGridBackButton().evaluate().length} '
+        'gameSkip=${ElementFinders.getPiratesGridSkipTurnButton().evaluate().length} '
+        'gameBack=${ElementFinders.getPiratesGridGameBackButton().evaluate().length} '
+        'homeCarnival=${ElementFinders.getCarnivalDerbyCard().evaluate().length} '
+        'resumeModal=${ElementFinders.getResumeGameModalOverlay().evaluate().length}]';
     expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,
-        reason: 'Should be back on menu after tapping game back button');
+        reason: 'Should be back on menu after tapping game back button. $diag');
 
     // Best Of should still show 3
     expect(find.text('3'), findsWidgets,

@@ -28,9 +28,16 @@ void main() {
     await tester.tap(config.getChangeSettingsButton());
     await PumpSequences.navigation(tester);
 
-    // Verify on menu
+    // Verify on menu — inline diagnostic in reason string for failure logs
+    final diag = '[DIAG after-NEW-VOYAGE '
+        'menuStart=${ElementFinders.getPiratesGridStartButton().evaluate().length} '
+        'menuBack=${ElementFinders.getPiratesGridBackButton().evaluate().length} '
+        'gameSkip=${ElementFinders.getPiratesGridSkipTurnButton().evaluate().length} '
+        'resultsPlayAgain=${config.getPlayAgainButton().evaluate().length} '
+        'homeCarnival=${ElementFinders.getCarnivalDerbyCard().evaluate().length} '
+        'resumeModal=${ElementFinders.getResumeGameModalOverlay().evaluate().length}]';
     expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,
-        reason: 'Should be on menu after NEW VOYAGE');
+        reason: 'Should be on menu after NEW VOYAGE. $diag');
 
     // Settings should still be: Bo3
     expect(find.text('3'), findsWidgets,

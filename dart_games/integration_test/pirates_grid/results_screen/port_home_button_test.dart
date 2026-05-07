@@ -37,9 +37,16 @@ void main() {
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
 
-    // Verify we are on the home screen — ≥3 game cards visible
+    // Verify we are on the home screen — inline diagnostic in reason string
+    final diag = '[DIAG after-PORT-HOME '
+        'menuStart=${ElementFinders.getPiratesGridStartButton().evaluate().length} '
+        'gameSkip=${ElementFinders.getPiratesGridSkipTurnButton().evaluate().length} '
+        'resultsPlayAgain=${config.getPlayAgainButton().evaluate().length} '
+        'homeCarnival=${ElementFinders.getCarnivalDerbyCard().evaluate().length} '
+        'homeTargetTag=${ElementFinders.getTargetTagCard().evaluate().length} '
+        'homeMonsterMash=${ElementFinders.getMonsterMashCard().evaluate().length}]';
     expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget,
-        reason: 'Carnival Derby card should be visible on home screen');
+        reason: 'Carnival Derby card should be visible on home screen. $diag');
     expect(ElementFinders.getTargetTagCard(), findsOneWidget,
         reason: 'Target Tag card should be visible on home screen');
     expect(ElementFinders.getMonsterMashCard(), findsOneWidget,

@@ -29,8 +29,14 @@ void main() {
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
 
-    // Should restart — game screen visible with a fresh game
+    // Should restart — inline diagnostic in reason string
+    final diag = '[DIAG after-SET-SAIL-AGAIN '
+        'menuStart=${ElementFinders.getPiratesGridStartButton().evaluate().length} '
+        'gameSkip=${ElementFinders.getPiratesGridSkipTurnButton().evaluate().length} '
+        'gameBack=${ElementFinders.getPiratesGridGameBackButton().evaluate().length} '
+        'resultsPlayAgain=${config.getPlayAgainButton().evaluate().length} '
+        'homeCarnival=${ElementFinders.getCarnivalDerbyCard().evaluate().length}]';
     expect(ElementFinders.getPiratesGridSkipTurnButton(), findsOneWidget,
-        reason: 'Game screen should restart after SET SAIL AGAIN');
+        reason: 'Game screen should restart after SET SAIL AGAIN. $diag');
   });
 }

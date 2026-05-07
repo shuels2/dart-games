@@ -45,9 +45,15 @@ void main() {
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
 
-      // Should be on menu now
+      // Should be on menu now — inline diagnostic in reason string
+      final diag = '[DIAG after-Save '
+          'menuStart=${ElementFinders.getPiratesGridStartButton().evaluate().length} '
+          'gameSkip=${ElementFinders.getPiratesGridSkipTurnButton().evaluate().length} '
+          'homeCarnival=${ElementFinders.getCarnivalDerbyCard().evaluate().length} '
+          'saveModal=${ElementFinders.getSaveGameModalContainer().evaluate().length} '
+          'resumeModal=${ElementFinders.getResumeGameModalOverlay().evaluate().length}]';
       expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget,
-          reason: 'Should be on menu after saving');
+          reason: 'Should be on menu after saving. $diag');
     });
 
     testWidgets('Save/Resume: resume modal appears on menu when saved games exist',
@@ -95,9 +101,14 @@ void main() {
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
 
-      // Should be back in game with state restored
+      // Should be back in game with state restored — inline diagnostic
+      final diag = '[DIAG after-Resume '
+          'menuStart=${ElementFinders.getPiratesGridStartButton().evaluate().length} '
+          'gameSkip=${ElementFinders.getPiratesGridSkipTurnButton().evaluate().length} '
+          'gameBack=${ElementFinders.getPiratesGridGameBackButton().evaluate().length} '
+          'resumeModal=${ElementFinders.getResumeGameModalOverlay().evaluate().length}]';
       expect(config.getSkipTurnButton(), findsOneWidget,
-          reason: 'Game screen should be visible after resume');
+          reason: 'Game screen should be visible after resume. $diag');
 
       final provider = ProviderHelpers.getPiratesGridProvider(tester);
       expect(provider.isGameActive, isTrue,
@@ -124,8 +135,13 @@ void main() {
       await PumpSequences.navigation(tester);
       await PumpSequences.fullRebuild(tester);
 
-      // Verify game screen
-      expect(config.getSkipTurnButton(), findsOneWidget);
+      // Verify game screen — inline diagnostic in reason string
+      final diag2 = '[DIAG after-Resume-2 '
+          'menuStart=${ElementFinders.getPiratesGridStartButton().evaluate().length} '
+          'gameSkip=${ElementFinders.getPiratesGridSkipTurnButton().evaluate().length} '
+          'gameBack=${ElementFinders.getPiratesGridGameBackButton().evaluate().length} '
+          'resumeModal=${ElementFinders.getResumeGameModalOverlay().evaluate().length}]';
+      expect(config.getSkipTurnButton(), findsOneWidget, reason: diag2);
 
       // Complete the game — save should be deleted on completion
       // (The resumed game tracks the saved ID and auto-deletes it)
