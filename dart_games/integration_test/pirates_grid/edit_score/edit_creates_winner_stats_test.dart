@@ -33,13 +33,17 @@ void main() {
     expect(ProviderHelpers.piratesGridHasWinner(tester), isFalse,
         reason: 'No winner after 3 misses');
 
-    // Edit dart 1 from Miss → S16 (row 0, col 2 target on Easy)
+    // Edit dart 1 from Miss → S{target at [0,2]} (Easy difficulty: any hit
+    // claims). Targets are randomized per game, so read the actual number.
+    final winningTarget =
+        ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 2);
     await openEditScore(tester);
-    await EditScoreHelpers.setDart1(tester, 'S16');
+    await EditScoreHelpers.setDart1(tester, 'S$winningTarget');
     await updateScore(tester);
 
     expect(ProviderHelpers.piratesGridHasWinner(tester), isTrue,
-        reason: 'P1 should win after editing dart 1 to S16 (completes row 0)');
+        reason:
+            'P1 should win after editing dart 1 to S$winningTarget (completes row 0)');
 
     // Tap DARTS REMOVED to navigate to results
     await clickDartsRemoved(tester);

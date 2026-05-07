@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
+import 'package:dart_games/models/pirates_grid_game.dart';
 
 import '../../shared/dart_throw_helpers.dart';
 import '../../shared/pump_sequences.dart';
@@ -55,3 +56,53 @@ Future<void> simulateDisconnectAndVerify(WidgetTester tester) =>
 
 Future<void> simulateReconnectAndVerify(WidgetTester tester) =>
     PauseModalHelpers.simulateReconnectAndVerify(tester);
+
+// ===== GAME-SPECIFIC HELPERS =====
+
+/// Throw the correct dart for a grid cell's target requirement.
+Future<void> throwForCellTarget(WidgetTester tester, CellTarget target) async {
+  switch (target.requirement) {
+    case CellRequirement.bull:
+      await DartThrowHelpers.throwBullseyeViaMock(tester);
+    case CellRequirement.tripleOnly:
+      await DartThrowHelpers.throwDartViaMock(tester, target.number,
+          multiplier: 'triple');
+    case CellRequirement.doubleOnly:
+    case CellRequirement.doubleOrTriple:
+      await DartThrowHelpers.throwDartViaMock(tester, target.number,
+          multiplier: 'double');
+    case CellRequirement.any:
+      await DartThrowHelpers.throwDartViaMock(tester, target.number);
+  }
+}
+
+/// Complete the game to victory by planting flags in row 0 for P1.
+/// P2 always misses so steal mode can't create a ping-pong loop.
+Future<void> completeGameToVictory(WidgetTester tester) async {
+  final provider = ProviderHelpers.getPiratesGridProvider(tester);
+
+  for (int attempt = 0; attempt < 20; attempt++) {
+    if (provider.hasWinner) break;
+
+    final currentPlayerId = provider.currentGame?.getCurrentPlayerId();
+    if (currentPlayerId == null) break;
+
+    final p1Id = provider.currentGame!.playerIds[0];
+
+    if (currentPlayerId == p1Id) {
+      for (int col = 0; col < 3; col++) {
+        if (provider.hasWinner) break;
+        await throwForCellTarget(
+            tester, provider.currentGame!.grid[0][col].target);
+      }
+    } else {
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+    }
+
+    if (provider.hasWinner) break;
+
+    await DartThrowHelpers.clickDartsRemoved(tester);
+  }
+}

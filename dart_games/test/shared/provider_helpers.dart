@@ -521,6 +521,17 @@ class ProviderHelpers {
     return grid[row][col].claimedBy;
   }
 
+  /// Pirate's Grid: Get the CellTarget at (row, col)
+  static CellTarget getPiratesGridCellTarget(WidgetTester tester, int row, int col) {
+    final grid = getPiratesGridGrid(tester);
+    return grid![row][col].target;
+  }
+
+  /// Pirate's Grid: Get the target number at (row, col)
+  static int getPiratesGridCellTargetNumber(WidgetTester tester, int row, int col) {
+    return getPiratesGridCellTarget(tester, row, col).number;
+  }
+
   /// Pirate's Grid: Get match winner ID
   static String? getPiratesGridMatchWinnerId(WidgetTester tester) {
     final provider = getPiratesGridProvider(tester);

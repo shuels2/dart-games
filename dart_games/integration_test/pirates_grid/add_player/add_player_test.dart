@@ -38,7 +38,7 @@ void main() {
 
       // Open add player dialog
       await SettingsHelpers.openAddPlayerDialog(
-          tester, ElementFinders.getPiratesGridAddPlayerButton());
+          tester, ElementFinders.getPiratesGridAddPlayerButtonEmptyState());
 
       // Verify name field and photo-related elements exist
       expect(ElementFinders.getAddPlayerNameField(), findsOneWidget);
@@ -55,7 +55,7 @@ void main() {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await SettingsHelpers.openAddPlayerDialog(
-          tester, ElementFinders.getPiratesGridAddPlayerButton());
+          tester, ElementFinders.getPiratesGridAddPlayerButtonEmptyState());
 
       // Tap Add without entering a name
       await tester.tap(ElementFinders.getAddPlayerAddButton());
@@ -73,7 +73,7 @@ void main() {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await SettingsHelpers.openAddPlayerDialog(
-          tester, ElementFinders.getPiratesGridAddPlayerButton());
+          tester, ElementFinders.getPiratesGridAddPlayerButtonEmptyState());
 
       await tester.enterText(ElementFinders.getAddPlayerNameField(), '   ');
       await PumpSequences.textEntry(tester);
@@ -93,7 +93,7 @@ void main() {
       await UITestHelpers.navigateToGameMenu(tester, config);
 
       await SettingsHelpers.openAddPlayerDialog(
-          tester, ElementFinders.getPiratesGridAddPlayerButton());
+          tester, ElementFinders.getPiratesGridAddPlayerButtonEmptyState());
 
       await tester.enterText(
           ElementFinders.getAddPlayerNameField(), 'Should Not Appear');

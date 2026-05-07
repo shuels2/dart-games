@@ -22,6 +22,11 @@ void main() {
 
     // Tap SET SAIL AGAIN
     await clickPlayAgain(tester);
+    // Game screen rebuilds after pushReplacement; one extra render pass for
+    // the skip button (only painted once an active player's column exists).
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    await tester.pump();
 
     // Should restart — game screen visible with a fresh game
     expect(ElementFinders.getPiratesGridSkipTurnButton(), findsOneWidget,

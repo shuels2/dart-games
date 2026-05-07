@@ -30,6 +30,11 @@ void main() {
         reason: 'PORT HOME button should be present on results screen');
     await tester.tap(portHomeButton);
     await PumpSequences.navigation(tester);
+    // Home screen reloads players/dartboard async; give it extra time so
+    // canPlayGames-gated game cards have rebuilt before we look for them.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+    await tester.pump();
 
     // Verify we are on the home screen — ≥3 game cards visible
     expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget,

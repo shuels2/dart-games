@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -743,9 +744,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       child: LayoutBuilder(
         builder: (context, constraints) {
           final availW = constraints.maxWidth;
-          // Grid takes 40% of width (20% reduction); each cell = (gridW - 18px total margin) / 3
+          // Grid takes 40% of width; clamp by available height so 3 stacked
+          // cells fit (round tracker + skip button + dart indicators eat ~280px).
           final gridW = availW * 0.40;
-          final cellSize = (gridW - 18.0) / 3.0;
+          final widthBasedCell = (gridW - 18.0) / 3.0;
+          final reservedH = (game.bestOf > 1 ? 60.0 : 0.0) + 200.0;
+          final heightBasedCell =
+              (constraints.maxHeight - reservedH) / 3.0;
+          final cellSize = math.min(widthBasedCell, heightBasedCell);
           final charColW = (availW - gridW) / 2.0;
           final activeCharSize = charColW * 0.88;
           final inactiveCharSize = activeCharSize * 0.70;

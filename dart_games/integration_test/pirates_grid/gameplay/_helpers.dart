@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
+import 'package:dart_games/models/pirates_grid_game.dart';
 
 import '../../shared/dart_throw_helpers.dart';
 import '../../shared/pump_sequences.dart';
@@ -71,12 +72,17 @@ Future<void> fillGridForDraw(WidgetTester tester) async {
     [p2Id, p1Id, p2Id],
     [p2Id, p1Id, p2Id],
   ]);
-  // Force the round-end detection by simulating the last dart
-  // The grid is now full — we simulate by throwing a dart that doesn't match
-  // any empty cell (grid full → isDraw will be set in _checkRoundEnd).
-  // Instead, set isDraw directly for the test:
+  // Synthesize the post-_applyRoundResult state. _checkRoundEnd would set
+  // isDraw=true and call _applyRoundResult which (for Bo1) sets isMatchDraw
+  // and state=finished. We mirror those side-effects so that hasWinner is
+  // true AND the results screen renders the STALEMATE state correctly.
   provider.currentGame!.isDraw = true;
   provider.currentGame!.winnerId = null;
+  if (provider.currentGame!.currentRound >= provider.currentGame!.bestOf) {
+    provider.currentGame!.isMatchDraw = true;
+    provider.currentGame!.state = GameState.finished;
+    provider.currentGame!.gameEndTime = DateTime.now();
+  }
   provider.notifyListeners();
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
