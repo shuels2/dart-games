@@ -31,6 +31,12 @@ class MultiSelectFilterDropdown<T> extends StatefulWidget {
   /// Test key applied to each menu item — caller computes per-value keys.
   final Key Function(T value)? menuItemKey;
 
+  /// Fixed width applied to the trigger button. Without this, the button
+  /// width changes when the selected-count badge appears/disappears,
+  /// which makes a row of dropdowns visually jitter as the user toggles.
+  /// Pass enough width to fit the longest expected label + " (N)" suffix.
+  final double width;
+
   const MultiSelectFilterDropdown({
     super.key,
     required this.label,
@@ -39,6 +45,7 @@ class MultiSelectFilterDropdown<T> extends StatefulWidget {
     required this.onChanged,
     this.buttonKey,
     this.menuItemKey,
+    this.width = 200,
   });
 
   @override
@@ -90,7 +97,18 @@ class _MultiSelectFilterDropdownState<T>
                   dense: true,
                   controlAffinity: ListTileControlAffinity.leading,
                   value: isSelected,
-                  title: Text(entry.value),
+                  // Darken the title so option labels are clearly readable
+                  // against the menu's white background. Default
+                  // CheckboxListTile inherits a faded body-text color that
+                  // reads as low-contrast on white.
+                  title: Text(
+                    entry.value,
+                    style: const TextStyle(
+                      color: Color(0xFF1A1A1A),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   onChanged: (next) {
                     setMenuState(() {
                       if (next == true) {
@@ -117,40 +135,55 @@ class _MultiSelectFilterDropdownState<T>
         ? widget.label
         : '${widget.label} ($selectedCount)';
 
-    return OutlinedButton(
-      key: widget.buttonKey ?? _buttonKey,
-      onPressed: _open,
-      style: OutlinedButton.styleFrom(
-        backgroundColor: selectedCount > 0
-            ? theme.colorScheme.primary.withValues(alpha: 0.08)
-            : Colors.white,
-        foregroundColor: theme.colorScheme.onSurface,
-        side: BorderSide(
-          color: selectedCount > 0
-              ? theme.colorScheme.primary
-              : Colors.grey.shade400,
-          width: selectedCount > 0 ? 1.5 : 1.0,
+    return SizedBox(
+      // Lock width so the button doesn't reflow when the (N) badge appears
+      // or disappears. Width is sized to fit the longest expected label
+      // plus " (3)" with comfortable padding — see `width` arg default (200).
+      width: widget.width,
+      child: OutlinedButton(
+        key: widget.buttonKey ?? _buttonKey,
+        onPressed: _open,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: selectedCount > 0
+              ? theme.colorScheme.primary.withValues(alpha: 0.10)
+              : Colors.white,
+          foregroundColor: const Color(0xFF1A1A1A),
+          side: BorderSide(
+            color: selectedCount > 0
+                ? theme.colorScheme.primary
+                : Colors.grey.shade400,
+            width: selectedCount > 0 ? 1.5 : 1.0,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        textStyle: const TextStyle(fontSize: 14),
-      ),
-      child: Container(
-        // Re-uses the GlobalKey so the popup positioning anchors here.
-        key: _buttonKey,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(summary),
-            const SizedBox(width: 6),
-            Icon(
-              Icons.arrow_drop_down,
-              size: 20,
-              color: theme.colorScheme.onSurface,
-            ),
-          ],
+        child: Container(
+          // Re-uses the GlobalKey so the popup positioning anchors here.
+          key: _buttonKey,
+          child: Row(
+            // Distribute the label and the trailing arrow icon to opposite
+            // edges so the label sits left-aligned regardless of how short
+            // it is — the locked SizedBox.width gives us the room.
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  summary,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFF1A1A1A)),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.arrow_drop_down,
+                size: 20,
+                color: Color(0xFF1A1A1A),
+              ),
+            ],
+          ),
         ),
       ),
     );

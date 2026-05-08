@@ -61,80 +61,81 @@ class GameFilterBar extends StatelessWidget {
         (filters[FilterCriterion.soloTeam] ?? <Object>{})
             .cast<SoloTeamSupport>();
 
-    return Material(
+    // No Material/elevation/color — the bar is transparent, just the
+    // dropdown buttons sit directly on top of the home-screen background.
+    // The parent Column[FilterBar, Expanded(grid)] layout still keeps the
+    // bar sticky while the grid scrolls.
+    const gap = SizedBox(width: 16);
+    return Container(
       key: HomeKeys.filterBar,
-      elevation: 2,
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: SingleChildScrollView(
-          // Horizontal scroll so a narrow viewport doesn't clip the
-          // last dropdown. The bar itself stays vertically sticky thanks
-          // to the parent Column[FilterBar, Expanded(grid)] layout.
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              MultiSelectFilterDropdown<MaxPlayersBucket>(
-                buttonKey: HomeKeys.filterMaxPlayersButton,
-                menuItemKey: HomeKeys.filterMaxPlayersOption,
-                label: FilterCriterion.maxPlayers.label,
-                options: {
-                  for (final v in MaxPlayersBucket.values) v: v.label,
-                },
-                selected: maxPlayersSel,
-                onChanged: (s) => _setSelection(FilterCriterion.maxPlayers, s),
-              ),
-              const SizedBox(width: 8),
-              MultiSelectFilterDropdown<GameplayStyle>(
-                buttonKey: HomeKeys.filterGameplayStyleButton,
-                menuItemKey: HomeKeys.filterGameplayStyleOption,
-                label: FilterCriterion.gameplayStyle.label,
-                options: {
-                  for (final v in GameplayStyle.values) v: v.label,
-                },
-                selected: styleSel,
-                onChanged: (s) =>
-                    _setSelection(FilterCriterion.gameplayStyle, s),
-              ),
-              const SizedBox(width: 8),
-              MultiSelectFilterDropdown<PlayerInteraction>(
-                buttonKey: HomeKeys.filterPlayerInteractionButton,
-                menuItemKey: HomeKeys.filterPlayerInteractionOption,
-                label: FilterCriterion.playerInteraction.label,
-                options: {
-                  for (final v in PlayerInteraction.values) v: v.label,
-                },
-                selected: interactionSel,
-                onChanged: (s) =>
-                    _setSelection(FilterCriterion.playerInteraction, s),
-              ),
-              const SizedBox(width: 8),
-              MultiSelectFilterDropdown<GameLength>(
-                buttonKey: HomeKeys.filterGameLengthButton,
-                menuItemKey: HomeKeys.filterGameLengthOption,
-                label: FilterCriterion.gameLength.label,
-                options: {
-                  for (final v in GameLength.values) v: v.label,
-                },
-                selected: lengthSel,
-                onChanged: (s) =>
-                    _setSelection(FilterCriterion.gameLength, s),
-              ),
-              const SizedBox(width: 8),
-              MultiSelectFilterDropdown<SoloTeamSupport>(
-                buttonKey: HomeKeys.filterSoloTeamButton,
-                menuItemKey: HomeKeys.filterSoloTeamOption,
-                label: FilterCriterion.soloTeam.label,
-                options: {
-                  for (final v in SoloTeamSupport.values) v: v.label,
-                },
-                selected: soloTeamSel,
-                onChanged: (s) =>
-                    _setSelection(FilterCriterion.soloTeam, s),
-              ),
-            ],
-          ),
+      color: Colors.transparent,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: SingleChildScrollView(
+        // Horizontal scroll so a narrow viewport doesn't clip the
+        // last dropdown.
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            MultiSelectFilterDropdown<MaxPlayersBucket>(
+              buttonKey: HomeKeys.filterMaxPlayersButton,
+              menuItemKey: HomeKeys.filterMaxPlayersOption,
+              label: FilterCriterion.maxPlayers.label,
+              options: {
+                for (final v in MaxPlayersBucket.values) v: v.label,
+              },
+              selected: maxPlayersSel,
+              onChanged: (s) => _setSelection(FilterCriterion.maxPlayers, s),
+            ),
+            gap,
+            MultiSelectFilterDropdown<GameplayStyle>(
+              buttonKey: HomeKeys.filterGameplayStyleButton,
+              menuItemKey: HomeKeys.filterGameplayStyleOption,
+              label: FilterCriterion.gameplayStyle.label,
+              options: {
+                for (final v in GameplayStyle.values) v: v.label,
+              },
+              selected: styleSel,
+              onChanged: (s) =>
+                  _setSelection(FilterCriterion.gameplayStyle, s),
+            ),
+            gap,
+            MultiSelectFilterDropdown<PlayerInteraction>(
+              buttonKey: HomeKeys.filterPlayerInteractionButton,
+              menuItemKey: HomeKeys.filterPlayerInteractionOption,
+              label: FilterCriterion.playerInteraction.label,
+              options: {
+                for (final v in PlayerInteraction.values) v: v.label,
+              },
+              selected: interactionSel,
+              onChanged: (s) =>
+                  _setSelection(FilterCriterion.playerInteraction, s),
+            ),
+            gap,
+            MultiSelectFilterDropdown<GameLength>(
+              buttonKey: HomeKeys.filterGameLengthButton,
+              menuItemKey: HomeKeys.filterGameLengthOption,
+              label: FilterCriterion.gameLength.label,
+              options: {
+                for (final v in GameLength.values) v: v.label,
+              },
+              selected: lengthSel,
+              onChanged: (s) =>
+                  _setSelection(FilterCriterion.gameLength, s),
+            ),
+            gap,
+            MultiSelectFilterDropdown<SoloTeamSupport>(
+              buttonKey: HomeKeys.filterSoloTeamButton,
+              menuItemKey: HomeKeys.filterSoloTeamOption,
+              label: FilterCriterion.soloTeam.label,
+              options: {
+                for (final v in SoloTeamSupport.values) v: v.label,
+              },
+              selected: soloTeamSel,
+              onChanged: (s) =>
+                  _setSelection(FilterCriterion.soloTeam, s),
+            ),
+          ],
         ),
       ),
     );
