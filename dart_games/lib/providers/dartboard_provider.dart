@@ -175,7 +175,16 @@ class DartboardProvider with ChangeNotifier {
   }
 
   // Use emulator mode
-  void useEmulator({required String name, required String serialNumber}) async {
+  //
+  // Flips status to `emulator` SYNCHRONOUSLY and notifies listeners before
+  // awaiting the configuration persist. Without this ordering, the dartboard
+  // setup screen's `pushReplacementNamed('/home')` runs while `_status` is
+  // still its previous value (e.g. `disconnected` from a failed connect),
+  // causing the home screen to briefly render its conditional
+  // DartboardPausedModal overlay before the post-await `_activateEmulator()`
+  // notification arrives. Persistence runs in the background — a save
+  // failure shouldn't block the UI from entering emulator mode.
+  void useEmulator({required String name, required String serialNumber}) {
     // Stop any status checking for physical dartboard
     stopStatusChecking();
 
@@ -185,8 +194,10 @@ class DartboardProvider with ChangeNotifier {
     );
     _useEmulatorMode = true;
 
-    await _saveConfiguration(name, serialNumber, null, true);
     _activateEmulator();
+    // Background-persist; intentionally not awaited.
+    // ignore: discarded_futures
+    _saveConfiguration(name, serialNumber, null, true);
   }
 
   // Activate emulator
