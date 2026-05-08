@@ -142,10 +142,15 @@ dart_games/
 **Purpose:** Game selection menu
 
 **Functionality:**
-- Display available games as cards
+- Display available games as cards (responsive grid wrapped in `SingleChildScrollView` for vertical scroll once cards exceed the viewport)
+- Sticky filter bar between AppBar and grid — 5 multi-select dropdowns (Max Players, Gameplay Style, Player Interaction, Game Length, Solo / Team) — see [Game Filter Bar](../development/game-filter-bar.md)
 - Show dartboard connection status
 - Navigate to System Settings
 - Navigate to selected game
+
+**Layout:** body is `Column[GameFilterBar (sticky), Expanded(scrollable grid)]`. The bar stays pinned below the AppBar; only the grid scrolls.
+
+**Game registration:** every game card in this screen MUST have a corresponding `GameMetadata` entry in `lib/constants/game_filter_registry.dart`. Without it, the card shows but never matches any filtered view. See [Game Filter Bar — Registering a new game](../development/game-filter-bar.md#registering-a-new-game).
 
 ### Options Screen (System Settings)
 **File:** `lib/screens/options_screen.dart`

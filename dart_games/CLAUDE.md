@@ -35,6 +35,7 @@ Each game has its own unique visual identity while integrating with global syste
 - [Resume Game Button](docs/development/resume-game-button.md) - Shared resume game button component
 - [Save & Resume Game](docs/development/save-resume-game.md) - Save and resume game feature
 - [Player List Panel](docs/development/player-list-panel.md) - Shared player list panel component
+- [Game Filter Bar](docs/development/game-filter-bar.md) - Home-screen filter bar + GameMetadata registry (every new game registers here)
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 

@@ -466,15 +466,40 @@ See [Widget Keys](widget-keys.md) for complete guide.
 **File:** `lib/screens/home_screen.dart`
 
 ```dart
-// Add to game cards list
-GameCard(
-  title: 'Your Game',
-  icon: 'assets/games/your_game/icons/icon.png',
-  onTap: () {
-    Navigator.pushNamed(context, '/your_game_menu');
-  },
-)
+// Add to the `games` list inside _getAvailableGames
+{
+  'gameId': 'your_game',                                   // ← matches the registry id (step 13a)
+  'title': 'Your Game',
+  'key': HomeKeys.yourGameCard,
+  'imageAssetPath': 'assets/games/your_game/icons/icon.png',
+  'color': const Color(0xFF...),
+  'onTap': dartboardProvider.canPlayGames
+      ? () => _navigateToMenu('your_game')
+      : null,
+},
 ```
+
+### 13a. Register filter metadata
+
+**File:** `lib/constants/game_filter_registry.dart`
+
+The home-screen filter bar reads this registry to decide which cards to render given the user's filter selections. Every game MUST register an entry — without it, the card shows but the user can't filter to it.
+
+```dart
+GameMetadata(
+  gameId: 'your_game',                              // matches the card's gameId
+  displayName: 'Your Game',
+  maxPlayers: MaxPlayersBucket.upToEight,           // twoOnly | upToEight | upToTen
+  gameplayStyles: {GameplayStyle.race},             // race | versus | strategy (Set, multi-style allowed)
+  playerInteraction: PlayerInteraction.parallel,    // parallel | light | heavy
+  gameLength: GameLength.medium,                    // quick | medium | long (at default settings)
+  soloTeam: SoloTeamSupport.soloOnly,               // soloOnly | soloOrTeam
+),
+```
+
+Also update `test/models/game_metadata_test.dart`'s `expectedIds` Set to include the new game id, so the registry-coverage test still passes.
+
+See [Game Filter Bar](game-filter-bar.md) for the full criteria reference and the procedure for adding a brand-new filter dimension.
 
 ### 14. Add Routes
 
@@ -663,7 +688,9 @@ Use this checklist to ensure complete integration:
 - [ ] Created component configurations
 - [ ] Created sound effects service (if needed)
 - [ ] Added widget keys
-- [ ] Added game card to home screen
+- [ ] Added game card to home screen (with `gameId` key matching the filter registry)
+- [ ] Registered `GameMetadata` entry in `lib/constants/game_filter_registry.dart`
+- [ ] Updated `expectedIds` Set in `test/models/game_metadata_test.dart`
 - [ ] Added routes
 - [ ] Created all tests
 - [ ] Created navigation UI tests (4 tests in `integration_test/your_game/navigation/`)
