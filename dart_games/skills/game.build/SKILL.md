@@ -315,6 +315,7 @@ After the sub-agent returns, run `git status` and read the modified `pubspec.yam
 > (e) No assets are in the wrong subdirectory (e.g., character images in sounds/)
 > (f) No spec assets were overlooked
 > (g) The asset path manifest at `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md` was written and lists every asset with its CANONICAL POST-RENAME path. Read the manifest and verify every listed path resolves to a real file (`if [ -f "$path" ]`). This manifest is the source of truth for Phases 2 (wireframes) and 3 (model `assetPath`) — a path mismatch here cascades into the model and screens, causing silent runtime image-load failures.
+> (h) **Background image suitability check.** Read `[GameName]-Background.png` (and any per-screen background) using the Read tool. Evaluate it against the spec's Style section: is the image a TEXTURE (parchment, gradient, low-detail wash) suitable as a backdrop for UI overlays, OR a fully ILLUSTRATED SCENE (characters, dense detail, high-contrast features) that will visually compete with foreground elements? Past failure: Pirate's Grid shipped with a fully illustrated pirate scene as `PiratesGrid-Background.png`; UI elements (settings boxes, player tiles, dart indicators) were buried against the busy art and had to be polished with a 65% Ocean Navy overlay after the build. If the image looks too detailed for an overlay backdrop, surface this to the user IMMEDIATELY ('the user-provided background is illustrated rather than textured — recommend either (a) replace with a low-detail texture, OR (b) plan to add a translucent color overlay (e.g., `Container(color: navy.withOpacity(0.65))`) on top of the bg in every screen so UI is readable'). The Stage A wireframe sub-agent in Phase 2 needs this decision baked in, not discovered later.
 >
 > I will list every discrepancy found."
 
@@ -344,13 +345,23 @@ After each stage, the user can request changes cheaply. Visual direction confirm
 The wireframes are NOT generic placeholders. Reference the actual character images, background images, and icon via `<img src="../../assets/games/[GAME_NAME_SNAKE]/...">` paths. Apply the spec's exact color palette + Google Fonts to ALL elements: list boxes, settings panels, modal overlays, AppBars, buttons, everything. The wireframe must be visually close to the final game so the user can give meaningful feedback.
 
 - Use the actual icon for the home-screen card mock-up
-- Use the actual background image as the page background on game and results screens
+- **Use the actual background image as the page background on EVERY screen — menu, game, AND results.** This is non-negotiable. Past failure: the Pirate's Grid initial wireframes used a parchment-style placeholder background; the actual user-provided `PiratesGrid-Background.png` was a fully illustrated scene that buried UI elements. Two recurrences across multiple games where Stage A/B/C wireframes silently reverted to a CSS gradient or a plain dark fill instead of `background-image: url('../../assets/games/[GAME_NAME_SNAKE]/images/[GameName]-Background.png')`. Verification: `grep -c '[GameName]-Background' temp_wireframes/[GAME_NAME_SNAKE]/*.html` must report ≥ 1 hit per HTML file.
 - Use the actual character images on player tiles, descent tracks, winner card, etc.
 - Use the spec's exact hex codes (no "approximate" colors)
 - Load the spec's Google Fonts via `<link>` tags
 - Match the spec's Style section closely — the wireframe should be nearly indistinguishable from the final game in colors/fonts/imagery
 
 The ONLY stylistic restriction: do NOT use the container app's tokens (Nunito font, Flame Orange `#FF6B35`, etc.).
+
+**CRITICAL — Design for the default headless test viewport (1366×768):**
+
+The parallel UI test runner uses Chrome in headless mode at the default Chrome viewport (1366×768 wide on Windows, sometimes 1280×800 on macOS). Wireframes that look fine at desktop monitor sizes (1920×1080+) but overflow at 1366×768 produce screenshot tests that pass capture but fail layout (clipped buttons, overflowing text, RenderFlex errors). Past failures from the Pirate's Grid build: 76px player-column overflow at default viewport; grid not centered when the height-based cell size shrunk below the width-based one; winner character overflowing on small viewports because the Column had a fixed 420px size. Each cost an iteration round on screenshot review.
+
+- Author every wireframe HTML with a fixed wrapper of `width: 1366px; height: 768px` for the orchestrator's visual review (so the HTML matches what tests see)
+- Inside that wrapper, use responsive layout primitives (`LayoutBuilder` equivalents: % widths, `min/max` clamps, flex/grid) so the design adapts gracefully when run-time constraints differ
+- Verify in the browser dev tools at exactly 1366×768 — no horizontal scroll, no clipped buttons, no overflow indicators
+
+The orchestrator's AR-2 review explicitly checks the wireframe at this viewport before approving the stage.
 
 ### Stage A: Menu screen wireframe + approval
 
@@ -415,11 +426,11 @@ Present the menu wireframe to the user:
 > - `game_early_2p.html` — game screen at the START of a game (2 players, all at starting state)
 >
 > **Layout requirements:**
+> - **Game UI fills the full screen height. The dartboard emulator is a transparent OVERLAY anchored to the bottom — NOT a sibling that competes for vertical space.** The most common Phase 2 mistake (re-occurring across at least 3 game builds) is to lay out the wireframe as `Column[gameContent, dartboardEmulator]` where the emulator gets ~150-200px of inline height and the game content gets the rest. That model is WRONG. The emulator only renders when `!dartboardProvider.isConnected`; in production gameplay (board connected) the game content has the FULL screen height. The wireframe must reflect this: gameContent is the entire screen, dartboardEmulator is `position: absolute; bottom: 0; left: 0; right: 0;` at z-index 1 (or `Positioned(bottom: 0)` inside the OUTER Stack — sibling of Scaffold, NOT inside the body Stack). Otherwise the actual game-screen layout shrinks vertically when transplanted from wireframe to Flutter, and per-player columns / grids / tracks overflow at the default 1366×768 headless viewport. Past failure: PG game-screen layout overflowed by 76px because cellSize was clamped against the wireframe's reduced height that already accounted for an inline emulator.
 > - AppBar: back button, title, DartboardConnectionInfo on the right (NO ResumeGameButton on game screen)
 > - Active player panel (LEFT, 200px wide per spec Section 10B if specified): use the player's CHARACTER IMAGE rendered NATIVELY (no circle clipping, `object-fit: contain`). Apply a shape-conformal `filter: drop-shadow` for active-player glow.
 > - Player progress visualization (descent track / coral cards / shields / etc. per spec): use REAL CHARACTER IMAGES, not rocket/circle placeholders. Render them at native size with no circle masking.
-> - Background: use the real background image from `assets/games/[GAME_NAME_SNAKE]/images/...` if the spec specifies one. The background must be visible on the game screen (recurring miss in past sessions).
-> - **The dartboard emulator section is a TEMPORARY OVERLAY at the bottom — NOT space-reserving infrastructure.** The primary game UI should fill the FULL available height as if the dartboard didn't exist. The emulator overlaps the bottom portion at run time. Reference: in the actual implementation, DartboardEmulatorSection is a `Positioned(bottom: 0)` child of the **outer Stack** (sibling of Scaffold, NOT inside the body Stack), on top of the game UI. Mirror this in the wireframe by drawing the game content full-height and placing the dartboard label as an overlay at the bottom edge.
+> - **Background: use the real background image** from `assets/games/[GAME_NAME_SNAKE]/images/...`. Even if the spec doesn't explicitly call for one on the game screen, use the same background image the menu uses (visual continuity). The background must be visible on the game screen (recurring miss in past sessions).
 > - Skip Turn button visible (per spec's screen design)
 > - Show every option's visible effect from the Options section (e.g., "HARD LANDING" badge if HL ON, altitude readout, etc.)
 >
@@ -1463,6 +1474,52 @@ If FAIL:
 > - ONLY add genuinely game-specific logic that doesn't belong in shared helpers (e.g., a `completeGameToVictory()` that knows how to drive THIS game's win condition)
 > - When unsure whether new logic belongs in `_helpers.dart` or in the shared helpers, follow the decision tree in `shared-helpers-reference.md` (used by ≥2 games → shared; used only by this game → `_helpers.dart`).
 >
+> **1.6. Iterative authoring workflow — DO NOT write all UI tests in one pass.**
+>
+> Past UI test rounds for Pirate's Grid took 7+ debugging cycles (rounds B, C, D, then 2/3/4/5/6 in commit titles) because the entire test pack was authored before any of it was run. Once one test failed, similar tests had similar failures, but you had to iterate one bug class at a time across many files. The user explicitly requested an iterative approach to compress this loop.
+>
+> **Order of authoring (easiest to hardest, one category at a time):**
+>   1. **`visual_validation/[GAME_NAME_SNAKE]_screenshot_test.dart`** FIRST. The screenshot test is the cheapest and most informative end-to-end probe: it validates that all widget keys exist, that menu→game→results navigation works, that screen layouts don't overflow, and that backgrounds/characters render. ONE deliverable, one run, ten captured states. Use the result of this run as the foundation for everything else.
+>   2. **`menu_and_settings/`** — pure menu interactions (sliders, dropdowns, toggles). No game lifecycle, no dartboard, no modals. Easiest UI surface.
+>   3. **`add_player/`** — dialog-based, isolated. Easy second category.
+>   4. **`navigation/`** — the 4 mandatory tests. Tests menu↔home + back-from-game + Change Settings round-trip. Validates the navigation pattern for all later tests.
+>   5. **`gameplay/`** — core dart-throwing flows. Now you have menu setup proven and navigation proven; only the gameplay surface is new.
+>   6. **`pause_modal/`** — disconnect/reconnect overlays. Builds on gameplay+navigation.
+>   7. **`results_screen/`** — completing a game and verifying results. Builds on gameplay.
+>   8. **`save_resume/`** — full save/resume cycles. Builds on results+navigation.
+>   9. **`edit_score/`** — RemoveDartsModal + EditScoreDialog. Most complex modal stacking.
+>   10. **`play_to_complete/`** — strategy-driven full game runs. Most fragile category (depends on the strategy + every game mechanic).
+>
+> **Per-category authoring loop:**
+>   1. Author ONE test file in the category (the most representative — typically the "default settings happy path").
+>   2. Run it through the parallel runner immediately. Inspect the failure log if any.
+>   3. Fix the screen / provider / helpers / shared infrastructure based on what the failure reveals — every fix benefits the remaining tests in the category.
+>   4. ONLY when the first test passes, author the rest of the category in one pass. They will share infrastructure with the first.
+>   5. Run the entire category. Triage any remaining failures.
+>   6. Move to the next category.
+>
+> The orchestrator MUST resist the temptation to delegate "write all 47 UI tests in parallel" to a sub-agent in a single batch. Past sessions tried this; the test author wrote 47 tests sharing the same bug class (e.g., missing ensureVisible, hardcoded grid targets, missing in-game save flow) and the user spent days debugging each instance instead of fixing the root once and replicating.
+>
+> **1.7. Every UI test must wrap its body in `FailureScreenshotHelper.runWithFailureScreenshot` from initial creation.**
+>
+> When a UI test fails in the parallel runner the only artifact available for debugging is the per-test log — no screen state, no DOM, no rendered pixels. The `FailureScreenshotHelper.runWithFailureScreenshot(tester, testName, body)` helper (in `integration_test/shared/failure_screenshot_helper.dart`) captures a PNG of the screen at the moment of failure and writes it to `temp_screenshots/failures/<testName>_<timestamp>.png` so the orchestrator can read the image with the Read tool and see what actually rendered.
+>
+> Pattern for every test (mandatory — included in initial test creation, NOT added later when something fails):
+> ```dart
+> testWidgets('foo', (tester) async {
+>   await FailureScreenshotHelper.runWithFailureScreenshot(
+>     tester,
+>     '[GAME_NAME_SNAKE]_<subdir>_<test_basename>',  // e.g. 'pirates_grid_save_resume_save_modal_save_button'
+>     () async {
+>       await UITestHelpers.resetServerState();
+>       // ... existing test body ...
+>     },
+>   );
+> });
+> ```
+>
+> The `testName` argument is used as the filename prefix; embed `<game>_<subdir>_<test_basename>` so PNGs from parallel workers don't collide and reviewers can find the right image quickly. The helper sanitizes the name and appends a millisecond timestamp.
+>
 > **2. Create UI test files using the SUBDIRECTORY layout** (NOT flat files):
 >
 > **Reference layouts vary across the 5 existing games — follow Clockwork Quest as the canonical fully-subdivided example.** Layout differences:
@@ -1843,7 +1900,9 @@ STEP 7 → STEP 8 decision
 
 ### STEP 1: CAPTURE (Sonnet sub-agent)
 
-**Hung-process safety:** Past sessions have seen the screenshot test deadlock for 25+ minutes when the game UI has a build error or missing widget. The orchestrator imposes a **60-second progress timeout** on the screenshot test process — if no new screenshot files appear in `temp_screenshots/` for 60 seconds AND the flutter_drive process hasn't exited, the orchestrator instructs the sub-agent to KILL chromedriver + chrome + flutter_drive, read the partial log, and assess what's wrong before retrying. Don't let a single deadlocked run burn 10+ minutes.
+**Hung-process safety:** Past sessions have seen the screenshot test deadlock for 25+ minutes when the game UI has a build error or missing widget. The orchestrator imposes a **25-second progress timeout** on the screenshot test process — if no new screenshot file appears in `temp_screenshots/` for 25 seconds AND the flutter_drive process hasn't exited, the orchestrator instructs the sub-agent to KILL chromedriver + chrome + flutter_drive, read the partial log, and assess what's wrong before retrying. The 25s threshold matches the actual per-screenshot capture time observed in healthy runs (5–15s typical, with margin for the initial app boot of the first capture). Past failure: Pirate's Grid screenshot test halted at #12 of 15 (the speed-play timer transition) and we waited 4 minutes before killing it — wasted iteration time. Tighter timeout = faster failure detection = faster fix loop.
+
+**Known problem area — timer-based UI states:** Screenshot tests that capture a state involving a continuously-running `Timer` (e.g., a Speed Play countdown, an animation that loops indefinitely) deadlock if the test pumps `pump(Duration)` on a continuously-firing timer — the timer keeps emitting events and `pumpAndSettle` never completes, freezing capture. The screenshot test for any timer-driven UI state MUST: (a) freeze the timer before capturing — set the screen state to a fixed timer value via `provider.<setTimerForTest>(...)` if a hook exists, OR (b) capture immediately on the same frame the timer was started (no `pump(Duration)`), OR (c) skip that visual state and document it in the spec coverage report as a known gap. Reference: PG `game_speed_play_timer` capture at index #12; the screen had an active `Timer.periodic` and `pumpAndSettle` never settled.
 
 **Sub-agent prompt template:**
 
@@ -2977,6 +3036,58 @@ Consumer<PlayerProvider>(
 The post-frame callback in `initState` (which calls `loadPlayers()` → sets `_isLoading=true` → notifies → loads → `_isLoading=false` → `clearSelection()`) takes over the rendering window between first paint and load completion. The Consumer rebuilds during that window, the spinner replaces the layout, and the user sees "spinner → empty list" instead of "stale list → empty list".
 
 **How to apply:** in Phase 4 (Screens), the menu screen sub-agent must include this guard. AR-4 audit row should grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart` for `playerProvider.isLoading` and `CircularProgressIndicator` — both must be present in the menu's build tree. Reference: monster_mash menu lines 208-228, reef_royale menu lines 198-213.
+
+---
+
+### 35. Real background image used in EVERY wireframe + EVERY screen
+The mockups must reference the actual `[GameName]-Background.png` asset on every screen — menu, game, results — via `<img>` or CSS `background-image: url(...)`. CSS gradients or solid fills as a "stand-in" silently teach the wireframe sub-agent that the background is generic, and the same omission then carries into the Flutter screens.
+
+**Why:** Pirate's Grid Stage A wireframe used a CSS parchment-style gradient as the menu background; the actual user-provided `PiratesGrid-Background.png` is a fully illustrated pirate scene. The discrepancy wasn't caught until late visual validation, by which time UI elements had been laid out without an overlay budget for the busy art. Recurring across at least 3 game builds.
+
+**How to apply:** Phase 2 staged approval gates — the orchestrator's AR-2 review for each stage must `grep -c "[GameName]-Background\|[GameName]-Bg" temp_wireframes/[GAME_NAME_SNAKE]/<stage>.html`. Must report ≥ 1 hit per HTML. AR-1 (Phase 1) also adds a background-image suitability check: read the image, classify as TEXTURE (suitable backdrop) vs ILLUSTRATED SCENE (will compete with UI), surface to user as an overlay-budget decision before Phase 2 starts.
+
+---
+
+### 36. Game UI fills full screen height; dartboard emulator is a transparent OVERLAY
+The dartboard emulator section only renders when `!dartboardProvider.isConnected`; in production gameplay (board connected) the game content has the FULL screen height. Wireframes that reserve vertical space for the emulator (treating it as a `Column[gameContent, dartboardEmulator]` sibling) propagate a too-short content area into the Flutter screens, which then overflow at the headless 1366×768 viewport.
+
+**Why:** Pirate's Grid wireframes laid out the gameplay screen with the emulator as an inline child, eating ~150-200px of vertical height. When the screen was implemented in Flutter, the player column / grid clamped against this reduced height; cellSize was wrong, character size was wrong, RenderFlex overflowed by 76px. Multiple round-trip fixes (`_buildPlayerColumn` inner LayoutBuilder, speedPlay reserve, grid centering) addressed the symptoms but the wireframe model had been wrong from the start.
+
+**How to apply:** Phase 2 Stage B requires the wireframe to draw `gameContent` at `width: 100%; height: 100%` and the dartboard emulator as `position: absolute; bottom: 0` (or a `Positioned(bottom: 0)` Stack child OUTSIDE the body Stack — sibling of Scaffold). The `position: absolute` model mirrors the actual Flutter widget tree and prevents the wireframe from baking in a phantom height reservation. AR-2 review checks the wireframe HTML for `position: absolute; bottom` on the emulator block.
+
+---
+
+### 37. Wireframes must validate at the headless test viewport (1366×768)
+Wireframes designed at desktop monitor sizes (1920×1080+) look great in the browser preview but overflow at the parallel runner's default headless Chrome viewport. The screenshot test then captures a clipped/overflowed state that the orchestrator must triage as a layout bug — usually requiring screen code changes after the fact.
+
+**Why:** PG wireframes were authored at desktop dimensions and looked clean in browser preview. The actual screenshot tests captured a 1366×768 viewport showing 76px column overflow, off-center grid, oversized winner character. Each was a separate fix-and-recapture cycle.
+
+**How to apply:** Phase 2 every wireframe HTML wraps content in `<div style="width: 1366px; height: 768px; overflow: hidden; ...">` for the visual review. Inside this wrapper, layout primitives (% widths, `min/max` clamps, flex/grid) MUST adapt without introducing horizontal scroll, clipped buttons, or content overflow. AR-2 review opens the HTML at exactly 1366×768 in dev tools and confirms no overflow indicators.
+
+---
+
+### 38. Every UI test must wrap its body in `FailureScreenshotHelper.runWithFailureScreenshot` from initial creation
+When a UI test fails in the parallel runner the only artifact available is the per-test text log — no screen state, no DOM, no rendered pixels. Authors who add the helper retroactively (after a failure) waste an iteration cycle: failed run → inspect blank log → instrument with diag/screenshot → re-run. Building the failure capture into every test from the start removes that cycle.
+
+**Why:** Multiple PG debug rounds (rounds 2-7) consisted entirely of "test fails → add diagnostics → re-run". Each round cost 5-15 minutes of test execution time. The user explicitly requested that diagnostic instrumentation be included from initial creation so the first run produces actionable failure data instead of an opaque "Multiple exceptions (2)".
+
+**How to apply:** Phase 7 Step 7A (sub-rule 1.7) mandates the wrap pattern. Reference helper: `integration_test/shared/failure_screenshot_helper.dart` (`FailureScreenshotHelper.runWithFailureScreenshot(tester, testName, body)`). Driver: `test_driver/integration_test.dart` uses the EXTENDED `integrationDriver` so `binding.takeScreenshot(name)` can write to disk. Failure PNGs land in `temp_screenshots/failures/<testName>_<timestamp>.png` (timestamp-suffixed so parallel workers don't collide). AR-6 audit grep: every `*_test.dart` under `integration_test/[GAME_NAME_SNAKE]/` (excluding `_helpers.dart`) MUST contain `FailureScreenshotHelper.runWithFailureScreenshot`.
+
+---
+
+### 39. UI tests authored iteratively: screenshot first, then 1 per category easiest-to-hardest
+Authoring all UI tests in one batch and running them all at once produces a wall of failures sharing the same root causes (missing ensureVisible, hardcoded grid targets, missing in-game save flow, etc.). The orchestrator then debugs one category at a time across many files instead of fixing the root once and replicating.
+
+**Why:** PG had 7+ debugging cycles (commit titles "Round 2/3/4/5/6 fixes ...") because all 47 UI tests were authored upfront. Each round fixed a single bug class across dozens of files. The user requested that future builds author one test per category at a time, run it, fix the root, then replicate.
+
+**How to apply:** Phase 7 Step 7A sub-rule 1.6 specifies the order of categories (visual_validation screenshot test → menu_and_settings → add_player → navigation → gameplay → pause_modal → results_screen → save_resume → edit_score → play_to_complete) and the per-category loop (author one → run → fix → replicate). The orchestrator MUST resist the temptation to delegate "write all tests in parallel" to a single sub-agent batch.
+
+---
+
+### 40. Screenshot test for timer-driven UI states must freeze the timer
+Screenshot test entry that captures a state involving an active `Timer.periodic` (Speed Play countdown, animation loop) deadlocks: pumping `pump(Duration)` on a continuously-firing timer never settles. Past failure: PG screenshot test halted at #12 of 15 ("game_speed_play_timer transition"). The orchestrator waited 4 minutes before killing — wasted iteration time.
+
+**How to apply:** Phase 8 STEP 1 imposes a 25-second per-screenshot progress timeout (down from 60s). For the timer-driven scene specifically: (a) freeze the timer before capturing — set the screen state to a fixed timer value via a `provider.setSpeedPlayTimerForTest(...)` hook if exposed, OR (b) capture immediately on the same frame the timer was started (no `pump(Duration)`), OR (c) skip that visual state and document it in the spec coverage report as a known gap. The screen and provider may need a test hook (`@visibleForTesting void setTimerForCapture(int seconds) { ... }`) added in Phase 4 to support this without exposing private state production-side.
 
 ---
 
