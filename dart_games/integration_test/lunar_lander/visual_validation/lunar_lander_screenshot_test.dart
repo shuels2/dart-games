@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
@@ -12,7 +12,7 @@ import '../../shared/provider_helpers.dart';
 import '../../shared/element_finders.dart';
 
 // ==========================================================================
-// HELPER METHODS (screenshot test — inline, not shared)
+// HELPER METHODS (screenshot test â€” inline, not shared)
 // ==========================================================================
 
 MockScoliaApiService? getMockApi(WidgetTester tester) {
@@ -65,8 +65,8 @@ Future<void> clickDartsRemovedViaMock(WidgetTester tester) async {
 }
 
 /// Take screenshot with extra pumps to ensure rendering is current.
-/// CRITICAL: Uses binding.takeScreenshot() — must use screenshot_test.dart driver.
-/// Do NOT use pumpAndSettle() — continuous animations prevent settling.
+/// CRITICAL: Uses binding.takeScreenshot() â€” must use screenshot_test.dart driver.
+/// Do NOT use pumpAndSettle() â€” continuous animations prevent settling.
 Future<void> screenshot(IntegrationTestWidgetsFlutterBinding binding,
     WidgetTester tester, String name) async {
   await tester.pump(const Duration(seconds: 2));
@@ -93,10 +93,10 @@ void main() {
       await UITestHelpers.resetServerState();
     });
 
-    // Single continuous E2E flow capturing all spec §12C states
+    // Single continuous E2E flow capturing all spec Â§12C states
     testWidgets('Full screenshot flow', (WidgetTester tester) async {
       // ================================================================
-      // SCREENSHOT 1: Menu — default settings, no players
+      // SCREENSHOT 1: Menu â€” default settings, no players
       // ================================================================
       print('SCREENSHOT: === PART 1: MENU SCREEN STATES ===');
 
@@ -104,7 +104,7 @@ void main() {
       await screenshot(binding, tester, '01_menu_default_no_players');
 
       // ================================================================
-      // SCREENSHOT 2: Menu — Hard Landing toggle ON
+      // SCREENSHOT 2: Menu â€” Hard Landing toggle ON
       // ================================================================
       await SettingsHelpers.setLunarLanderHardLanding(tester, enabled: true);
       await screenshot(binding, tester, '02_menu_hard_landing_on');
@@ -112,7 +112,7 @@ void main() {
       await SettingsHelpers.setLunarLanderHardLanding(tester, enabled: false);
 
       // ================================================================
-      // SCREENSHOT 3: Menu — altitude changed to 300
+      // SCREENSHOT 3: Menu â€” altitude changed to 300
       // ================================================================
       await SettingsHelpers.setLunarLanderAltitude(tester, 300);
       await screenshot(binding, tester, '03_menu_altitude_300');
@@ -120,7 +120,7 @@ void main() {
       await SettingsHelpers.setLunarLanderAltitude(tester, 200);
 
       // ================================================================
-      // SCREENSHOT 4: Menu — 4 players added, ready to start
+      // SCREENSHOT 4: Menu â€” 4 players added, ready to start
       // ================================================================
       await UITestHelpers.addPlayer(tester, 'Space Dog', config);
       await UITestHelpers.addPlayer(tester, 'Moon Cat', config);
@@ -142,13 +142,13 @@ void main() {
       await UITestHelpers.startGame(tester, config);
 
       // ================================================================
-      // SCREENSHOT 5: Game — start state (all rockets at top, alt=200)
+      // SCREENSHOT 5: Game â€” start state (all rockets at top, alt=200)
       // ================================================================
       expect(ProviderHelpers.isLunarLanderGameActive(tester), isTrue);
       await screenshot(binding, tester, '05_game_start_all_rockets_top');
 
       // ================================================================
-      // SCREENSHOT 6: Game — mid-game (altitudes varied)
+      // SCREENSHOT 6: Game â€” mid-game (altitudes varied)
       // ================================================================
       // P1: throw 20+20+20 = -60
       await throwDartViaMock(tester, 20);
@@ -162,7 +162,7 @@ void main() {
       await screenshot(binding, tester, '07_game_mid_varied_altitudes');
       await clickDartsRemovedViaMock(tester);
 
-      // P3 and P4: misses — skip extra players back to P1
+      // P3 and P4: misses â€” skip extra players back to P1
       {
         final extraMockApi = getMockApi(tester);
         for (int attempt = 0; attempt < 2; attempt++) {
@@ -184,7 +184,7 @@ void main() {
       }
 
       // ================================================================
-      // SCREENSHOT 7: Game — Hard Landing badge visible
+      // SCREENSHOT 7: Game â€” Hard Landing badge visible
       // ================================================================
       // Complete current round, navigate back to menu to enable Hard Landing
       // Strategy: navigate back without saving, re-start with Hard Landing ON
@@ -220,15 +220,14 @@ void main() {
       await tester.pump();
 
       // Re-enter the Lunar Lander menu fresh by tapping its home-screen card
-      await tester.tap(config.getGameCard());
-      await PumpSequences.navigation(tester);
+      await UITestHelpers.tapGameCard(tester, config);
       await PumpSequences.asyncDataLoad(tester);
 
       // Confirm we're on the menu
       expect(ElementFinders.getLunarLanderStartButton(), findsOneWidget,
           reason: 'Should be on Lunar Lander menu after fresh re-entry');
 
-      // On menu — enable Hard Landing
+      // On menu â€” enable Hard Landing
       await SettingsHelpers.setLunarLanderHardLanding(tester, enabled: true);
 
       // Re-add players (selection is empty after fresh menu entry)
@@ -238,7 +237,7 @@ void main() {
       await screenshot(binding, tester, '08_game_hard_landing_badge_visible');
 
       // ================================================================
-      // SCREENSHOT 8: Game — Remove Darts modal visible
+      // SCREENSHOT 8: Game â€” Remove Darts modal visible
       // ================================================================
       await throwDartViaMock(tester, 20);
       await throwDartViaMock(tester, 20);
@@ -250,7 +249,7 @@ void main() {
       await clickDartsRemovedViaMock(tester);
 
       // ================================================================
-      // SCREENSHOT 9: Game — near-landing state (alt <= 20)
+      // SCREENSHOT 9: Game â€” near-landing state (alt <= 20)
       // ================================================================
       // P2 misses all
       final mockApiInstance = getMockApi(tester);
@@ -266,7 +265,7 @@ void main() {
       await clickDartsRemovedViaMock(tester);
 
       // P1 at 140 (200 - 60), throw more to reach near-landing (< 20)
-      // Throw 20+20+20 = 60 more → 80 remaining
+      // Throw 20+20+20 = 60 more â†’ 80 remaining
       await throwDartViaMock(tester, 20);
       await throwDartViaMock(tester, 20);
       await throwDartViaMock(tester, 20);
@@ -284,8 +283,8 @@ void main() {
       }
       await clickDartsRemovedViaMock(tester);
 
-      // P1 now at 80. Throw triple 20 = 60 → 20 remaining
-      // Throw single 20 → at exactly 20 (near-landing)
+      // P1 now at 80. Throw triple 20 = 60 â†’ 20 remaining
+      // Throw single 20 â†’ at exactly 20 (near-landing)
       await throwDartViaMock(tester, 20, multiplier: 'triple');
       await screenshot(binding, tester, '10_game_near_landing_alt_20');
 
@@ -295,7 +294,7 @@ void main() {
       print('SCREENSHOT: === PART 4: RESULTS SCREEN ===');
 
       // Now win: throw single 20 to reach exactly 0
-      // Hard Landing ON — we need to be at exactly 20 to land exactly
+      // Hard Landing ON â€” we need to be at exactly 20 to land exactly
       // Check if we're at exactly 20, if so throw 20 to win
       final provider = ProviderHelpers.getLunarLanderProvider(tester);
       final currentId = provider.getCurrentPlayerId()!;
@@ -328,7 +327,7 @@ void main() {
       await tester.pump();
 
       // ================================================================
-      // SCREENSHOT 10: Results — winner display + rankings + 3 buttons
+      // SCREENSHOT 10: Results â€” winner display + rankings + 3 buttons
       // ================================================================
       await screenshot(binding, tester, '11_results_winner_rankings_buttons');
 

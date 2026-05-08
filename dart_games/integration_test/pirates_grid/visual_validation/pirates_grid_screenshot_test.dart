@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
@@ -63,8 +63,8 @@ Future<void> clickDartsRemovedViaMock(WidgetTester tester) async {
 }
 
 /// Take screenshot with extra pumps to ensure rendering is current.
-/// CRITICAL: Uses binding.takeScreenshot() — must use screenshot_test.dart driver.
-/// Do NOT use pumpAndSettle() — continuous animations prevent settling.
+/// CRITICAL: Uses binding.takeScreenshot() â€” must use screenshot_test.dart driver.
+/// Do NOT use pumpAndSettle() â€” continuous animations prevent settling.
 Future<void> screenshot(IntegrationTestWidgetsFlutterBinding binding,
     WidgetTester tester, String name) async {
   await tester.pump(const Duration(seconds: 2));
@@ -93,7 +93,7 @@ void main() {
 
     testWidgets('Full screenshot flow', (WidgetTester tester) async {
       // ================================================================
-      // SCREENSHOT 1: Menu — default settings, no players
+      // SCREENSHOT 1: Menu â€” default settings, no players
       // ================================================================
       print('SCREENSHOT: === PART 1: MENU SCREEN STATES ===');
 
@@ -101,11 +101,11 @@ void main() {
       await screenshot(binding, tester, '01_menu_default_no_players');
 
       // ================================================================
-      // SCREENSHOT 2: Menu — Hard difficulty selected
+      // SCREENSHOT 2: Menu â€” Hard difficulty selected
       // ================================================================
       await SettingsHelpers.setPiratesGridDifficulty(tester, 'Hard');
       await screenshot(binding, tester, '02_menu_hard_difficulty');
-      // No reset here — screenshot 03 also needs Hard difficulty.
+      // No reset here â€” screenshot 03 also needs Hard difficulty.
 
       // Extra pumps after takeScreenshot() to allow the widget tree to
       // settle before the next dropdown interaction.
@@ -114,7 +114,7 @@ void main() {
       await tester.pump();
 
       // ================================================================
-      // SCREENSHOT 3: Menu — Best Of 3, Hard Difficulty
+      // SCREENSHOT 3: Menu â€” Best Of 3, Hard Difficulty
       // ================================================================
       // Difficulty is already Hard from screenshot 02.
       // Ensure the BestOf dropdown is visible before interacting with it.
@@ -132,12 +132,11 @@ void main() {
       await PumpSequences.navigation(tester);
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
-      await tester.tap(config.getGameCard());
-      await PumpSequences.navigation(tester);
+      await UITestHelpers.tapGameCard(tester, config);
       await PumpSequences.asyncDataLoad(tester);
 
       // ================================================================
-      // SCREENSHOT 4: Menu — 2 players added, ready to start
+      // SCREENSHOT 4: Menu â€” 2 players added, ready to start
       // ================================================================
       await UITestHelpers.addPlayer(tester, 'Captain Jack', config);
       await UITestHelpers.addPlayer(tester, 'Captain Redbeard', config);
@@ -148,19 +147,19 @@ void main() {
       await screenshot(binding, tester, '04_menu_2_players_ready');
 
       // ================================================================
-      // PART 2: GAME SCREEN — Easy difficulty
+      // PART 2: GAME SCREEN â€” Easy difficulty
       // ================================================================
       print('SCREENSHOT: === PART 2: GAME SCREEN STATES ===');
 
       await UITestHelpers.startGame(tester, config);
 
       // ================================================================
-      // SCREENSHOT 5: Game — start state (all cells empty, Easy)
+      // SCREENSHOT 5: Game â€” start state (all cells empty, Easy)
       // ================================================================
       await screenshot(binding, tester, '05_game_start_easy');
 
       // ================================================================
-      // SCREENSHOT 6: Game — after some darts, flags planted
+      // SCREENSHOT 6: Game â€” after some darts, flags planted
       // ================================================================
       final s1t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
       final s1t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
@@ -180,7 +179,7 @@ void main() {
       await clickDartsRemovedViaMock(tester);
 
       // ================================================================
-      // PART 3: GAME SCREEN — Medium difficulty
+      // PART 3: GAME SCREEN â€” Medium difficulty
       // ================================================================
       print('SCREENSHOT: === PART 3: MEDIUM DIFFICULTY ===');
 
@@ -196,8 +195,7 @@ void main() {
       await tester.pump();
 
       // Re-enter menu
-      await tester.tap(config.getGameCard());
-      await PumpSequences.navigation(tester);
+      await UITestHelpers.tapGameCard(tester, config);
       await PumpSequences.asyncDataLoad(tester);
 
       await SettingsHelpers.setPiratesGridDifficulty(tester, 'Medium');
@@ -208,12 +206,12 @@ void main() {
       await UITestHelpers.startGame(tester, config);
 
       // ================================================================
-      // SCREENSHOT 8: Game — Medium difficulty with D badges
+      // SCREENSHOT 8: Game â€” Medium difficulty with D badges
       // ================================================================
       await screenshot(binding, tester, '08_game_medium_d_badges');
 
       // ================================================================
-      // PART 4: GAME SCREEN — Hard difficulty
+      // PART 4: GAME SCREEN â€” Hard difficulty
       // ================================================================
       print('SCREENSHOT: === PART 4: HARD DIFFICULTY ===');
 
@@ -227,8 +225,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
-      await tester.tap(config.getGameCard());
-      await PumpSequences.navigation(tester);
+      await UITestHelpers.tapGameCard(tester, config);
       await PumpSequences.asyncDataLoad(tester);
 
       await SettingsHelpers.setPiratesGridDifficulty(tester, 'Hard');
@@ -236,7 +233,7 @@ void main() {
       await UITestHelpers.startGame(tester, config);
 
       // ================================================================
-      // SCREENSHOT 9: Game — Hard difficulty with T/D/Bull badges
+      // SCREENSHOT 9: Game â€” Hard difficulty with T/D/Bull badges
       // ================================================================
       await screenshot(binding, tester, '09_game_hard_tdb_badges');
 
@@ -255,8 +252,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
-      await tester.tap(config.getGameCard());
-      await PumpSequences.navigation(tester);
+      await UITestHelpers.tapGameCard(tester, config);
       await PumpSequences.asyncDataLoad(tester);
 
       // Difficulty is already Easy and BestOf is already 1 after re-entering menu.
@@ -265,12 +261,12 @@ void main() {
       await UITestHelpers.startGame(tester, config);
 
       // ================================================================
-      // SCREENSHOT 10: Game — Steal Mode badge visible
+      // SCREENSHOT 10: Game â€” Steal Mode badge visible
       // ================================================================
       await screenshot(binding, tester, '10_game_steal_mode_badge');
 
       // ================================================================
-      // SCREENSHOT 11: Game — RemoveDartsModal visible
+      // SCREENSHOT 11: Game â€” RemoveDartsModal visible
       // ================================================================
       final s4t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
       final s4t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
@@ -304,8 +300,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
-      await tester.tap(config.getGameCard());
-      await PumpSequences.navigation(tester);
+      await UITestHelpers.tapGameCard(tester, config);
       await PumpSequences.asyncDataLoad(tester);
 
       // Difficulty is already Easy and BestOf is already 1 after re-entering menu.
@@ -316,17 +311,17 @@ void main() {
       await UITestHelpers.startGame(tester, config);
 
       // ================================================================
-      // SCREENSHOT 12: Game — Speed Play timer visible
+      // SCREENSHOT 12: Game â€” Speed Play timer visible
       // ================================================================
       await screenshot(binding, tester, '12_game_speed_play_timer');
 
       // ================================================================
-      // SCREENSHOT 13: Game — Bo3 round tracker visible
+      // SCREENSHOT 13: Game â€” Bo3 round tracker visible
       // ================================================================
       await screenshot(binding, tester, '13_game_bo3_round_tracker');
 
       // ================================================================
-      // SCREENSHOT 14: Game — 2 in a row state (near win)
+      // SCREENSHOT 14: Game â€” 2 in a row state (near win)
       // ================================================================
       final s5t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
       final s5t01 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 1);
@@ -354,11 +349,10 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
-      await tester.tap(config.getGameCard());
-      await PumpSequences.navigation(tester);
+      await UITestHelpers.tapGameCard(tester, config);
       await PumpSequences.asyncDataLoad(tester);
 
-      // Start BestOf 1, Easy (defaults — no extra settings needed)
+      // Start BestOf 1, Easy (defaults â€” no extra settings needed)
       await UITestHelpers.selectPlayers(tester, [pA, pB], config);
       await UITestHelpers.startGame(tester, config);
 

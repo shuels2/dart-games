@@ -135,16 +135,43 @@ class UITestHelpers {
     await tester.pump();
     print('UITestHelpers.navigateToGameMenu: Waited for cards to load');
 
-    // Tap game card
-    final gameCard = config.getGameCard();
-    print('UITestHelpers.navigateToGameMenu: Found ${gameCard.evaluate().length} game cards');
-
-    expect(gameCard, findsOneWidget);
-    await tester.tap(gameCard);
-
-    // Wait for navigation
-    await PumpSequences.navigation(tester);
+    // Tap game card via the scroll-aware helper so cards in the bottom rows
+    // (offscreen at default 1366x768 viewport once the GAMES list grows past
+    // 6) are scrolled into view before the tap.
+    await tapGameCard(tester, config);
     print('UITestHelpers.navigateToGameMenu: COMPLETE');
+  }
+
+  /// Tap the home-screen game card for [config], scrolling it into view first.
+  ///
+  /// The home screen wraps its game-card grid in a `SingleChildScrollView`, so
+  /// cards that sit in the bottom rows can be offscreen at the default
+  /// headless viewport (1366x768). Calling `tester.tap` directly on an
+  /// offscreen widget is a silent no-op under chromedriver — the test then
+  /// fails downstream with "menu screen never mounted" or similar without
+  /// surfacing the real cause.
+  ///
+  /// This helper:
+  ///   1. Asserts the card is in the widget tree (`findsOneWidget`)
+  ///   2. Calls `tester.ensureVisible(card)` so the scrollview brings it
+  ///      into the viewport
+  ///   3. Pumps a frame so the scroll animation completes
+  ///   4. Taps
+  ///   5. Pumps the standard navigation sequence
+  ///
+  /// Use this anywhere a test taps the home card. The pattern
+  /// `await tester.tap(config.getGameCard())` is brittle once 7+ games are
+  /// in the list and should be replaced with `await UITestHelpers.tapGameCard(tester, config)`.
+  static Future<void> tapGameCard(
+    WidgetTester tester,
+    GameUIConfig config,
+  ) async {
+    final gameCard = config.getGameCard();
+    expect(gameCard, findsOneWidget);
+    await tester.ensureVisible(gameCard);
+    await tester.pump();
+    await tester.tap(gameCard);
+    await PumpSequences.navigation(tester);
   }
 
   /// Start the game from menu screen

@@ -2804,6 +2804,13 @@ await tester.tap(button);
 ```
 Apply this to `clickPlayAgain`, `clickChangeSettings`, `clickSelectDifferentGame` etc. in `shared/results_helpers.dart` AT INITIAL AUTHORING. Any inline tap on a results-screen / modal button in test bodies needs the same.
 
+**Home-screen game cards are also a `SingleChildScrollView`.** As the GAMES list grew past 6 entries, bottom-row cards started landing offscreen at the default 1366×768 viewport. Direct `tester.tap(config.getGameCard())` was a silent no-op for those cards. Use the shared helper:
+```dart
+await UITestHelpers.tapGameCard(tester, config);
+// (does ensureVisible + pump + tap + PumpSequences.navigation internally)
+```
+NEVER use `await tester.tap(config.getGameCard())` directly — it works at the moment a game is added but starts failing silently once enough other games are added that the new game's card lands below the fold. AR-6 grep enforces this: `grep -rE 'tester\.tap\(config\.getGameCard\(\)\)' integration_test/` (excluding `ui_test_helpers.dart` which references the deprecated pattern in docs) must return nothing.
+
 ---
 
 ### 17. Save/Resume tests that tap *Resume* must use the in-game save flow, not `preSaveGame`

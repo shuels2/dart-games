@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
 import 'package:dart_games/services/save_game_service.dart';
@@ -32,9 +32,8 @@ void main() {
     await tester.tap(find.byKey(LunarLanderMenuKeys.backButton));
     await PumpSequences.navigation(tester);
 
-    // Tap game card on home — navigates to menu screen
-    await tester.tap(config.getGameCard());
-    await PumpSequences.navigation(tester);
+    // Tap game card on home â€” navigates to menu screen
+    await UITestHelpers.tapGameCard(tester, config);
     await PumpSequences.asyncDataLoad(tester);
 
     // Resume the saved game
