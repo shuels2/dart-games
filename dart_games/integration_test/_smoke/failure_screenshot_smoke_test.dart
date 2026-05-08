@@ -1,34 +1,53 @@
-/// Smoke test for FailureScreenshotHelper.
+/// Smoke test for `UITestHelpers.runWithFailureScreenshot`.
 ///
-/// Deliberately fails so we can verify a PNG appears in
-/// `temp_screenshots/failures/`. Once the mechanism is confirmed working,
-/// this file can be deleted (it's not part of any game's test pack and is
-/// not invoked by the parallel runner — it lives under `_smoke/` for that
-/// reason).
+/// Run via:
+///   flutter drive
+///     --driver=test_driver/screenshot_test.dart
+///     --target=integration_test/_smoke/failure_screenshot_smoke_test.dart
+///     -d chrome
+///     --dart-define=SERVER_PORT=9000
+///     --browser-dimension=1366x768
+///
+/// Expected outcome:
+///   1. Test fails with the deliberate `expect(true, isFalse)`
+///   2. A PNG appears in `temp_screenshots/failures/` showing the home
+///      screen content at the moment of failure
+///
+/// Lives under `integration_test/_smoke/` — outside any game directory —
+/// so neither `run_ui_tests.bat` (iterates the GAMES list) nor
+/// `run_ui_tests_parallel.bat` (same) picks it up. Invoke directly via
+/// `flutter drive` when verifying the helper after a Flutter SDK upgrade
+/// or driver change.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import '../shared/failure_screenshot_helper.dart';
 import '../shared/ui_test_helpers.dart';
 import '../shared/game_ui_config.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('smoke: capture a failure screenshot from a deliberately-failing assertion',
+  testWidgets(
+      'smoke: capture a failure screenshot from a deliberately-failing assertion',
       (tester) async {
-    await FailureScreenshotHelper.runWithFailureScreenshot(
+    await UITestHelpers.runWithFailureScreenshot(
       tester,
       'smoke_failure_screenshot',
       () async {
         await UITestHelpers.resetServerState();
 
-        // Land on the home screen so the screenshot has identifiable content.
-        await UITestHelpers.navigateToGameMenu(tester, GameUIConfig.piratesGrid());
+        await UITestHelpers.navigateToGameMenu(
+            tester, GameUIConfig.piratesGrid());
 
-        // Deliberately fail so the helper triggers a screenshot.
+        // Settle so the captured screenshot reflects a fully-rendered screen.
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Deliberately fail.
         expect(true, isFalse,
-            reason: 'Smoke test for FailureScreenshotHelper — '
+            reason: 'Smoke test for failure-screenshot mechanism — '
                 'this assertion is intentionally false to trigger capture.');
       },
     );

@@ -1500,14 +1500,16 @@ If FAIL:
 >
 > The orchestrator MUST resist the temptation to delegate "write all 47 UI tests in parallel" to a sub-agent in a single batch. Past sessions tried this; the test author wrote 47 tests sharing the same bug class (e.g., missing ensureVisible, hardcoded grid targets, missing in-game save flow) and the user spent days debugging each instance instead of fixing the root once and replicating.
 >
-> **1.7. Every UI test must wrap its body in `FailureScreenshotHelper.runWithFailureScreenshot` from initial creation.**
+> **1.7. Every UI test must wrap its body in `UITestHelpers.runWithFailureScreenshot` DURING THE BUILD PHASE.**
 >
-> When a UI test fails in the parallel runner the only artifact available for debugging is the per-test log — no screen state, no DOM, no rendered pixels. The `FailureScreenshotHelper.runWithFailureScreenshot(tester, testName, body)` helper (in `integration_test/shared/failure_screenshot_helper.dart`) captures a PNG of the screen at the moment of failure and writes it to `temp_screenshots/failures/<testName>_<timestamp>.png` so the orchestrator can read the image with the Read tool and see what actually rendered.
+> When a UI test fails the only artifact available for debugging in the standard log is text — no screen state, no DOM, no rendered pixels. The `UITestHelpers.runWithFailureScreenshot(tester, testName, body)` helper captures a PNG of the screen at the moment of failure and writes it to `temp_screenshots/failures/<testName>_<timestamp>.png` so the orchestrator can read the image with the Read tool and see what actually rendered.
 >
-> Pattern for every test (mandatory — included in initial test creation, NOT added later when something fails):
+> **The wrap is BUILD-PHASE ONLY.** It exists to compress the iterate-fix loop while a new game's tests are being authored. It is REMOVED at the Phase 9 Gate 4 transition (see "Failure-screenshot wrap removal" below). After removal, the new game's tests look identical to every other game's tests and run via the standard runner with no per-test screenshot overhead.
+>
+> Pattern during build (every test in the new game's pack):
 > ```dart
 > testWidgets('foo', (tester) async {
->   await FailureScreenshotHelper.runWithFailureScreenshot(
+>   await UITestHelpers.runWithFailureScreenshot(
 >     tester,
 >     '[GAME_NAME_SNAKE]_<subdir>_<test_basename>',  // e.g. 'pirates_grid_save_resume_save_modal_save_button'
 >     () async {
@@ -1517,6 +1519,10 @@ If FAIL:
 >   );
 > });
 > ```
+>
+> **Driver during build:** `flutter drive --driver=test_driver/screenshot_test.dart --target=integration_test/[GAME_NAME_SNAKE]/<category>/foo_test.dart -d chrome --dart-define=SERVER_PORT=<port> --browser-dimension=1366x768`. The screenshot test driver's `onScreenshot` callback writes PNG bytes to `temp_screenshots/<name>.png` — the helper passes `failures/<sanitized-test-name>_<ts>` as the name, so files land in `temp_screenshots/failures/`. Verified end-to-end via `integration_test/_smoke/failure_screenshot_smoke_test.dart` (kept in tree as a self-test artifact for use after Flutter SDK upgrades).
+>
+> **Production runner driver:** `test_driver/integration_test.dart` (the basic `integrationDriver()` with no `onScreenshot`). The runner scripts (`run_ui_tests.bat`, `run_ui_tests_parallel.bat`) use this driver. Since failure-screenshot wraps are removed at the Phase 9 transition, post-build tests have no dependency on screenshot capture in the runner.
 >
 > The `testName` argument is used as the filename prefix; embed `<game>_<subdir>_<test_basename>` so PNGs from parallel workers don't collide and reviewers can find the right image quickly. The helper sanitizes the name and appends a millisecond timestamp.
 >
@@ -2183,6 +2189,46 @@ If a check CANNOT be run:
 - Tell the user which check cannot be run and why.
 - Ask the user how to proceed.
 - **Do NOT skip the check. Do NOT proceed without it.**
+
+### Failure-screenshot wrap removal (mandatory once Gate 4 passes)
+
+The `UITestHelpers.runWithFailureScreenshot` wraps in every UI test in the new game's pack were build-phase aids — they let the orchestrator inspect failure pixels during Phase 7 iteration. Now that Gate 4 has passed, the wraps are no longer needed: tests are stable, the runner uses `test_driver/integration_test.dart` (no `onScreenshot`), and the wrap would be inert there anyway. Removing the wraps also matches the form every other game's tests use, eliminating per-test boilerplate.
+
+**Trigger:** Gate 4 = PASS in this phase. (If Gate 4 has not yet passed, the wraps stay — they may be needed for the next iteration.)
+
+**Delegate to Sonnet sub-agent:**
+
+> You are completing the failure-screenshot wrap removal for the **[GAME_NAME_DISPLAY]** game.
+>
+> **Read first:**
+> - One existing test file in `integration_test/[GAME_NAME_SNAKE]/<any subdir>/<any>_test.dart` to confirm the current wrap pattern.
+>
+> **Tasks:**
+> 1. For every `*_test.dart` file under `integration_test/[GAME_NAME_SNAKE]/` (excluding `_helpers.dart` files), unwrap the `UITestHelpers.runWithFailureScreenshot(tester, '<name>', () async { <body> })` call:
+>    - Remove the `await UITestHelpers.runWithFailureScreenshot(tester, '<name>', () async {` line
+>    - Remove the matching closing `});` two lines from the end of the testWidgets body (or wherever the closure ends)
+>    - Adjust indentation of the body so it sits at the original test level (typically 4 spaces less)
+> 2. Save each file. Verify with `flutter analyze integration_test/[GAME_NAME_SNAKE]/`.
+> 3. Run the parallel runner for the new game ONLY: `./run_ui_tests_parallel.bat [GAME_NAME_SNAKE]`. All tests must still pass — the unwrap is a pure mechanical change with no behavioral effect.
+>
+> **Hard rules:**
+> - DO NOT modify any test logic. Only remove the wrap.
+> - DO NOT remove the wrap from the smoke test at `integration_test/_smoke/failure_screenshot_smoke_test.dart` — it stays as a self-test artifact for the helper itself.
+> - DO NOT modify `integration_test/shared/ui_test_helpers.dart` — the helper STAYS in shared so future game builds can use it again.
+> - DO NOT commit. DO NOT push.
+>
+> **Report back:**
+> - Count of files modified
+> - `flutter analyze` result for the new game's integration_test tree
+> - Parallel runner result (X/Y passing)
+> - `git diff --stat` summary
+
+After the sub-agent returns:
+- Read 2-3 of the modified test files yourself to spot-check the unwrap
+- Confirm the parallel runner result matches Gate 4's UI test count
+- If the runner now reports failures the wraps were masking (unlikely but possible), STOP and analyze on the orchestrator
+
+The helper itself (`UITestHelpers.runWithFailureScreenshot`) STAYS in `integration_test/shared/ui_test_helpers.dart` indefinitely. Future game builds will use it again during their own Phase 7. Only the per-test wraps are removed at this transition.
 
 ---
 
@@ -3066,12 +3112,20 @@ Wireframes designed at desktop monitor sizes (1920×1080+) look great in the bro
 
 ---
 
-### 38. Every UI test must wrap its body in `FailureScreenshotHelper.runWithFailureScreenshot` from initial creation
-When a UI test fails in the parallel runner the only artifact available is the per-test text log — no screen state, no DOM, no rendered pixels. Authors who add the helper retroactively (after a failure) waste an iteration cycle: failed run → inspect blank log → instrument with diag/screenshot → re-run. Building the failure capture into every test from the start removes that cycle.
+### 38. UI tests wrap their bodies in `UITestHelpers.runWithFailureScreenshot` during the build phase
+When a UI test fails the only artifact available in the standard text log is a stack trace — no screen state, no DOM, no rendered pixels. Authors who add screenshot capture retroactively (after a failure) waste an iteration cycle: failed run → inspect log → instrument → re-run. Building the failure capture into every test from initial creation removes that cycle and turns the first failed run into an actionable diagnostic.
 
-**Why:** Multiple PG debug rounds (rounds 2-7) consisted entirely of "test fails → add diagnostics → re-run". Each round cost 5-15 minutes of test execution time. The user explicitly requested that diagnostic instrumentation be included from initial creation so the first run produces actionable failure data instead of an opaque "Multiple exceptions (2)".
+**Why:** Multiple PG debug rounds (rounds 2-7 of the post-build refinement) consisted entirely of "test fails → add diagnostics → re-run". Each round cost 5-15 minutes of test execution time. The user explicitly requested that diagnostic instrumentation be included from initial creation so the first failed run produces a screenshot the orchestrator can read instead of an opaque "Multiple exceptions (2)".
 
-**How to apply:** Phase 7 Step 7A (sub-rule 1.7) mandates the wrap pattern. Reference helper: `integration_test/shared/failure_screenshot_helper.dart` (`FailureScreenshotHelper.runWithFailureScreenshot(tester, testName, body)`). Driver: `test_driver/integration_test.dart` uses the EXTENDED `integrationDriver` so `binding.takeScreenshot(name)` can write to disk. Failure PNGs land in `temp_screenshots/failures/<testName>_<timestamp>.png` (timestamp-suffixed so parallel workers don't collide). AR-6 audit grep: every `*_test.dart` under `integration_test/[GAME_NAME_SNAKE]/` (excluding `_helpers.dart`) MUST contain `FailureScreenshotHelper.runWithFailureScreenshot`.
+**Why build-phase-only:** the wraps add per-test boilerplate that's noise once tests are stable. The production runner uses `test_driver/integration_test.dart` which has no `onScreenshot` callback — the wrap would be inert there anyway, but its presence still adds visual clutter. Removing the wraps at the Phase 9 transition aligns the new game's tests with every other game's tests in form.
+
+**How to apply:**
+- **During build (Phase 7 iterative authoring):** every test in the new game's pack wraps its body in `UITestHelpers.runWithFailureScreenshot(tester, '[GAME_NAME_SNAKE]_<subdir>_<test_basename>', () async { /* body */ })`. Tests run via `flutter drive --driver=test_driver/screenshot_test.dart --target=<test> -d chrome --dart-define=SERVER_PORT=<port> --browser-dimension=1366x768`. Failure PNGs land in `temp_screenshots/failures/<sanitized-test-name>_<timestamp>.png`.
+- **At Phase 9 transition (after Gate 4 passes):** the "Failure-screenshot wrap removal" step in Phase 9 dispatches a Sonnet sub-agent to unwrap every test in the new game's pack. The helper itself stays in `integration_test/shared/ui_test_helpers.dart` — only the per-test wraps are removed. Future game builds will use the helper again during their own Phase 7.
+- **Helper location:** `UITestHelpers.runWithFailureScreenshot` (a static method on `UITestHelpers` in `integration_test/shared/ui_test_helpers.dart`). The helper is part of `UITestHelpers` rather than a standalone file because brand-new files under `integration_test/shared/` are silently ignored by flutter drive's web compile cache (documented in commit `4d1377e` and Rule 26).
+- **Driver:** the `test_driver/screenshot_test.dart` driver has the `onScreenshot` callback that writes PNG bytes to disk (with `mkdir -p` for subdirectory paths). The default `test_driver/integration_test.dart` driver does NOT have `onScreenshot` — that's intentional, since post-build tests don't need it.
+- **Verification:** `integration_test/_smoke/failure_screenshot_smoke_test.dart` is a deliberately-failing test that exercises the helper. Lives outside any game directory so neither runner picks it up. Invoke directly via `flutter drive` after a Flutter SDK upgrade or driver change to confirm the mechanism still works.
+- **AR-4 audit during build:** every `*_test.dart` under `integration_test/[GAME_NAME_SNAKE]/` (excluding `_helpers.dart` and the smoke test) MUST contain `UITestHelpers.runWithFailureScreenshot`. AR-4 enforces this until Gate 4 passes; after Gate 4, AR-4 enforces the OPPOSITE (no wraps in any test).
 
 ---
 

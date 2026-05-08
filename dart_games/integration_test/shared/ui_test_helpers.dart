@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/main.dart' as app;
 import 'package:dart_games/services/api/api_config.dart';
 import 'package:dart_games/widgets/player_selection_card.dart';
@@ -12,6 +13,70 @@ import 'settings_helpers.dart';
 /// Provides game-agnostic test helpers that work with any game configuration.
 /// All operations use widget keys for reliable element finding.
 class UITestHelpers {
+  // ==========================================================================
+  // FAILURE SCREENSHOT HELPER
+  // ==========================================================================
+
+  /// Wrap a test body so any exception triggers a failure screenshot before
+  /// rethrowing. The screenshot lands at
+  /// `temp_screenshots/failures/<testName>_<timestampMs>.png` (the timestamp
+  /// suffix prevents collisions when parallel workers fail at similar moments).
+  ///
+  /// **Build phase only.** This wrap is applied to every UI test during
+  /// Phase 7 of the game.build skill (iterative test authoring), where
+  /// failure pixels accelerate triage. Tests run with
+  /// `--driver=test_driver/screenshot_test.dart`; that driver's
+  /// `onScreenshot` callback writes the bytes to disk.
+  ///
+  /// At Phase 9 Gate 4 (all UI + non-UI + screenshots simultaneously green)
+  /// the wraps are removed by an unwrap sub-agent so tests match the form
+  /// every other game's tests use. Production CI runs via
+  /// `test_driver/integration_test.dart` (no `onScreenshot`); the wrap would
+  /// be inert there anyway, but removing it eliminates per-test boilerplate.
+  ///
+  /// Usage during build:
+  /// ```dart
+  /// testWidgets('foo', (tester) async {
+  ///   await UITestHelpers.runWithFailureScreenshot(
+  ///     tester,
+  ///     '[GAME_NAME_SNAKE]_<subdir>_<test_basename>',
+  ///     () async {
+  ///       // existing test body
+  ///     },
+  ///   );
+  /// });
+  /// ```
+  static Future<void> runWithFailureScreenshot(
+    WidgetTester tester,
+    String testName,
+    Future<void> Function() body,
+  ) async {
+    try {
+      await body();
+    } catch (_) {
+      // Best-effort capture. Never let a screenshot failure mask the real
+      // test failure — wrap in its own try/catch and swallow internal errors.
+      try {
+        final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+        // Settle a few frames so the canvas reflects the post-failure state
+        // before takeScreenshot reads it.
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+        await tester.pump();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final safeName = testName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+        final fullName = 'failures/${safeName}_$timestamp';
+        await binding.takeScreenshot(fullName);
+        // ignore: avoid_print
+        print('[FAILURE_SCREENSHOT] saved as temp_screenshots/$fullName.png');
+      } catch (sse) {
+        // ignore: avoid_print
+        print('[FAILURE_SCREENSHOT] capture failed: $sse');
+      }
+      rethrow;
+    }
+  }
+
   // ==========================================================================
   // STATE RESET HELPERS
   // ==========================================================================
