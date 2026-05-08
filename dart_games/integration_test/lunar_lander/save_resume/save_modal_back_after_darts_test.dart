@@ -7,7 +7,7 @@ import '_helpers.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Save: back button after darts thrown shows save modal',
+  testWidgets('back button after darts thrown shows save modal',
       (tester) async {
     await UITestHelpers.resetServerState();
     await navigateToGameScreen(tester);
@@ -17,7 +17,10 @@ void main() {
 
     UITestHelpers.verifySaveGameModal();
 
-    // Dismiss modal to avoid state bleed
+    // Dismiss the modal so this test leaves no widget tree state that
+    // could bleed into the next test (lingering provider listeners and
+    // postFrameCallbacks would otherwise fire against the next test's
+    // freshly-reset server and corrupt its state).
     await UITestHelpers.tapDontSaveButton(tester);
   });
 }

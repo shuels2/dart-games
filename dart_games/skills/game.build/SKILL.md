@@ -1703,14 +1703,34 @@ After the sub-agent returns:
 
 Per `docs/testing/spec-coverage-audit.md`:
 
+**CRITICAL — Ground the audit in the IMPLEMENTATION, not the spec aspiration.** The spec describes what the game *should* render; the screen code describes what the game *does* render. These can diverge: the spec may describe an element that was deliberately simplified out during build (e.g., LL spec describes a rocket icon with flame trail; the screen renders animal characters with a Flame Orange descent line — a deliberate design pivot). Writing tests for spec elements that don't exist in code produces noise, not coverage.
+
+For every spec element, classify it as one of three states by reading the actual code:
+
+| State | Definition | Action |
+|---|---|---|
+| **Implemented + Tested** | Spec describes X. Screen renders X. ≥1 test asserts X. | None — already covered. |
+| **Implemented + Not tested** | Spec describes X. Screen renders X. No test asserts X. | **GENUINE TEST GAP** — write the missing test. |
+| **Not implemented** | Spec describes X. Screen does NOT render X (deliberate simplification or oversight). | **NOT a test gap** — escalate to user as a separate "spec/code divergence" decision: either implement X or update the spec to reflect the simplified design. Do NOT write tests for non-existent features. |
+
+**How to verify "implemented":**
+- For visual elements: `grep -nE '<keyword from spec>' lib/screens/games/[GAME_NAME_SNAKE]/` — does the keyword/widget appear in the screen source?
+- For provider behavior: `grep -nE '<method or field>' lib/providers/[GAME_NAME_SNAKE]_provider.dart` — does the code path exist?
+- For widget keys: `grep -n '<KeyName>' lib/constants/test_keys.dart` — is the key defined?
+
+If the audit produces a gap list mixing "test gaps" and "spec/code divergences", separate them in the report — do NOT delegate "write the missing test" to a sub-agent for elements in the third category, because the test will fail by definition (the feature isn't there).
+
+**Audit workflow:**
 1. **Extract** every option from the spec's Options section, every visual element from Screen Designs, every test requirement from Testing Plan.
-2. **Map** every non-UI test and UI test (from the actual test files) to these requirements.
-3. **Build** the coverage matrix:
-   | Requirement | Source (spec heading) | Non-UI test(s) | UI test(s) |
-   |-------------|----------------------|----------------|------------|
-4. **Identify gaps** — any row where Non-UI or UI is MISSING.
-5. If gaps exist, dispatch a Sonnet sub-agent with the specific missing tests to write. Re-audit after.
-6. Repeat until 100% coverage.
+2. **Verify implementation** — for each spec element, grep the screen/provider/keys to confirm it exists in code. Flag any "not implemented" rows separately.
+3. **Map** every non-UI test and UI test (from the actual test files) to the implemented requirements.
+4. **Build** the coverage matrix:
+   | Requirement | Source (spec heading) | Implemented in code? | Non-UI test(s) | UI test(s) |
+   |-------------|----------------------|----------------------|----------------|------------|
+5. **Identify gaps** — separate into two lists:
+   - **Test gaps** (Implemented=Yes, Tests=Missing) → dispatch a Sonnet sub-agent to write
+   - **Spec/code divergences** (Implemented=No) → surface to user with both options (implement vs. update spec); do NOT auto-write tests
+6. Repeat until both lists are empty (test gaps closed; divergences resolved).
 
 ### Adversarial Review AR-6: Spec Coverage Matrix
 
@@ -1740,7 +1760,7 @@ Per `docs/testing/spec-coverage-audit.md`:
 >
 > (k) **Verify `visual_validation/` contains the screenshot test PLUS at least 4 programmatic visual state tests** covering the mandatory concerns: (1) dart indicator state, (2) active player highlight, (3) score/state display threshold, (4) conditional UI element. List each programmatic test file by name and the concern it covers.
 >
-> (l) **Build a "Visual element" coverage matrix from spec Section 10** (Screen Designs) — list every distinct UI state (e.g., "Active player track is orange", "Altitude pill turns red when negative", "Hard Landing badge appears in AppBar", "Win flag shows on results"). For each visual state, identify the programmatic UI test that verifies it. List any visual state without a corresponding test.
+> (l) **Build a "Visual element" coverage matrix from spec Section 10** (Screen Designs) — list every distinct UI state (e.g., "Active player track is orange", "Altitude pill turns red when negative", "Hard Landing badge appears in AppBar", "Win flag shows on results"). For each visual state, **first verify it exists in `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart`** by grep — record one of three statuses: `implemented+tested`, `implemented+missing-test`, or `not-implemented`. The first is fine; the second is a real test gap to close; the **third is NOT a test gap** — it is a spec/code divergence that must be surfaced to the user as an implementation decision (build the feature OR update the spec to reflect the simplified design). Do NOT propose tests for non-existent features. Past failure: a Lunar Lander test-coverage audit produced 5 visual_validation test recommendations for spec elements (rocket icon, ORBIT/MOON markers, tick marks, turn summary text, CRASH overlay) that did not exist in `lunar_lander_game_screen.dart` — the screen rendered animal characters with a Flame Orange descent line instead. Writing those tests would have produced 5 failing tests, not 5 closed gaps.
 >
 > (m) **Pause modal canonical pack count.** Run `for f in integration_test/[GAME_NAME_SNAKE]/pause_modal/{menu,gameplay,results}_pause_test.dart; do grep -c 'testWidgets(' "$f"; done` — must report **7, 8, 5** in that order (total 20). Any deviation is a failure. Past failure: Pirate's Grid had 1, 1, 1.
 >
@@ -2912,6 +2932,20 @@ A visual_validation test that only checks `findsOneWidget` for a spec-Section-10
 **Why:** Pirate's Grid spec Section 10B says "Winning cells get Treasure Gold pulsing glow + sparkle overlay" — no test asserted the glow color. The spec says "P1 cells get Blood Red border glow, P2 cells get Sea Foam Teal border glow" — no test asserted the colors. The spec says "Round tracker shows P1 wins in Blood Red, P2 wins in Sea Foam Teal" — only widget existence was tested. Six visible spec elements shipped with logical-only assertions and zero visual checks.
 
 **How to apply:** When authoring a visual_validation test, for each assertion ask: "If the screen rendered this element with the WRONG color/text/icon/border, would my test still pass?" If yes, add the appearance assertion using RGB byte comparison (Rule 25), `find.descendant` for inner Text content, or BoxDecoration introspection for borders/shadows. AR-6 audit check (l) builds the visual-element coverage matrix; check (o) extends it to per-option-value visuals.
+
+---
+
+### 33. Test-coverage audits must be grounded in IMPLEMENTATION, not spec aspiration
+The spec describes what the game *should* render; the screen code describes what the game *does* render. These diverge constantly: a designer simplifies during build (animal characters in place of a rocket icon), a feature is deferred (no "Round Complete" overlay yet), or a section was rewritten without updating the spec. A coverage audit that maps spec → tests without verifying implementation produces three classes of finding mixed together — and only one is a real test gap.
+
+**Why:** A Lunar Lander coverage audit run from the spec alone produced 5 visual_validation test recommendations (rocket icon position, flame trail, ORBIT/MOON markers, tick marks, "CRASH!" overlay) for elements that did not exist in `lunar_lander_game_screen.dart`. The screen renders animal character images on a Flame Orange descent line — a deliberate design pivot. Writing those 5 tests would have produced 5 failing tests, not 5 closed gaps.
+
+**Rule:** Every spec element being audited must be classified by reading the actual code:
+- **Implemented + Tested** → no action
+- **Implemented + Not tested** → real test gap; write the test
+- **Not implemented** → NOT a test gap; surface as a separate "implement vs. update spec" decision to the user
+
+**How to apply:** before proposing any test addition, grep the screen/provider/test_keys for the spec keyword. If the keyword is not in the code, the gap is a spec/code divergence — do not generate a test prompt for it. AR-6 audit check (l) enforces this for visual elements; the same principle applies to options, behaviors, and any other spec claim.
 
 ---
 

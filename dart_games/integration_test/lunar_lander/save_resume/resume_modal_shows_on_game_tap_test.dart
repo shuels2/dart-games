@@ -8,16 +8,15 @@ import '_helpers.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Resume: pre-saved game shows resume modal on menu open',
+  testWidgets('tapping game with saved games shows resume modal',
       (tester) async {
     await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToHomeScreen(tester);
     await preSaveGame();
-
-    // Navigate to game menu (will trigger resume modal since saved game exists)
-    await UITestHelpers.navigateToGameMenu(tester, config);
+    await tester.tap(config.getGameCard());
+    await PumpSequences.navigation(tester);
     await PumpSequences.asyncDataLoad(tester);
 
-    // Resume modal should be visible
     UITestHelpers.verifyResumeGameModal();
   });
 }

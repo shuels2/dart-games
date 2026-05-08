@@ -2,26 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
+import '../../shared/element_finders.dart';
+import '../../shared/pump_sequences.dart';
 import '_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Save: tapping Don\'t Save on save modal returns to game screen',
+  testWidgets('back button with 0 darts navigates without save modal',
       (tester) async {
     await UITestHelpers.resetServerState();
     await navigateToGameScreen(tester);
-    await throwOneDart(tester);
 
-    // Tap back — shows save modal
     await UITestHelpers.tapGameScreenBackButton(tester, config);
-    UITestHelpers.verifySaveGameModal();
+    await PumpSequences.navigation(tester);
 
-    // Tap Don't Save
-    await UITestHelpers.tapDontSaveButton(tester);
-
-    // Should have navigated back to menu (not game — the back pops the game screen)
-    // Verify we're on menu (not game screen and not home)
+    expect(ElementFinders.getSaveGameModalOverlay(), findsNothing);
     expect(config.getStartButton(), findsOneWidget);
   });
 }

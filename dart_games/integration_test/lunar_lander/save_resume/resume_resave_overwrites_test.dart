@@ -4,20 +4,28 @@ import 'package:dart_games/constants/test_keys.dart';
 import 'package:dart_games/services/save_game_service.dart';
 
 import '../../shared/ui_test_helpers.dart';
-import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
 import '_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Resume: resumed game loads correct game state', (tester) async {
+  testWidgets('resumed game re-save overwrites instead of duplicating',
+      (tester) async {
     await UITestHelpers.resetServerState();
-    // Full roundtrip: navigate -> throw -> save -> home -> resume
+
+    // Full roundtrip: navigate -> throw -> save -> home -> resume -> throw -> save again.
+    // Uses in-game save flow because preSaveGame's placeholder gameState
+    // (`{'_marker': 'test'}`) causes LunarLanderGame.fromJson to crash on restore.
     await navigateToGameScreen(tester);
     await throwOneDart(tester);
     await UITestHelpers.tapGameScreenBackButton(tester, config);
     await UITestHelpers.tapSaveGameButton(tester);
+
+    // Verify 1 saved game
+    var saved = await SaveGameService().loadSavedGames(gameType);
+    expect(saved, hasLength(1));
+    final originalId = saved[0].id;
 
     // Back to home from menu
     await tester.tap(find.byKey(LunarLanderMenuKeys.backButton));
@@ -28,25 +36,21 @@ void main() {
     await PumpSequences.navigation(tester);
     await PumpSequences.asyncDataLoad(tester);
 
-    // Get saved game ID and select it
-    final saved = await SaveGameService().loadSavedGames(gameType);
-    expect(saved, hasLength(1));
+    // Select saved game and resume
+    saved = await SaveGameService().loadSavedGames(gameType);
     await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
     await UITestHelpers.tapResumeGameButton(tester);
 
-    // Verify game screen loaded
-    expect(config.getSkipTurnButton(), findsOneWidget);
+    // Throw another dart in resumed game
+    await throwOneDart(tester);
 
-    // Verify players exist in resumed game
-    final alice = ProviderHelpers.findPlayerByName(tester, 'Alice');
-    final bob = ProviderHelpers.findPlayerByName(tester, 'Bob');
-    expect(alice, isNotNull);
-    expect(bob, isNotNull);
+    // Save again via back button
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapSaveGameButton(tester);
 
-    // Verify game is active
-    expect(ProviderHelpers.isLunarLanderGameActive(tester), true);
-
-    // Verify 1 dart was thrown before save (darts thrown counter = 1)
-    expect(ProviderHelpers.getLunarLanderCurrentPlayerDartsThrown(tester), 1);
+    // Should still be 1 saved game (overwritten, not duplicated)
+    saved = await SaveGameService().loadSavedGames(gameType);
+    expect(saved, hasLength(1));
+    expect(saved[0].id, originalId);
   });
 }
