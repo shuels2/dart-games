@@ -1752,8 +1752,10 @@ If FAIL:
 > - `run_ui_tests_stub.bat`
 > - `run_ui_tests_parallel.bat` — TWO places to update:
 >   1. The `GAMES` variable (top of file, ~line 15) — add `[GAME_NAME_SNAKE]`
->   2. The pre-run worktree cleanup `for %%G in (...)` loop (~line 272) — add `[GAME_NAME_SNAKE]` to the hardcoded list. Without this, stale worktrees from a previous failed run for the new game won't be auto-cleaned at startup, which can cause `git worktree add` to fail and abort the entire run. Grep `run_ui_tests_parallel.bat` for the existing list of game names; both occurrences must include the new game.
+>   2. The pre-run worktree cleanup `for %%G in (...)` loop (~line 283) — add `[GAME_NAME_SNAKE]` to the hardcoded list. Without this, stale worktrees from a previous failed run for the new game won't be auto-cleaned at startup, which can cause `git worktree add` to fail and abort the entire run. Grep `run_ui_tests_parallel.bat` for the existing list of game names; both occurrences must include the new game.
 > - `run_ui_tests_parallel_stub.bat` — same dual-update if the stub variant has the same hardcoded cleanup list
+>
+> The `GAMES` variable is misleadingly named: it's really "every top-level subdirectory under `integration_test/` that holds tests." Today that includes per-game directories (`target_tag`, `carnival_derby`, ...) AND non-game test categories (`home_screen`, `pause_modal`). When introducing a NEW non-game category — e.g. an integration test for a shared widget that doesn't belong under any one game — add the directory's name here too, exactly like a game. Each entry gets its own port + isolated server + worker slot. Directories the runners intentionally skip: `_smoke/` (manual self-tests, run via direct `flutter drive`) and `shared/` (helper files, no `*_test.dart`).
 >
 > Also update the port-assignment table in `docs/testing/ui-automation.md` for the new game (Server = `9000 + N`, ChromeDriver = `4443 + N`, where N is the new index).
 >

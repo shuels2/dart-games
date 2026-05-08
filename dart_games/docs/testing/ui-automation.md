@@ -237,9 +237,9 @@ The parallel runner executes all 5 game categories simultaneously, reducing wall
 
 ### Port Assignments
 
-Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_parallel.bat` (Server = 9000+N, ChromeDriver = 4443+N):
+Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_parallel.bat` (Server = 9000+N, ChromeDriver = 4443+N). The list includes per-game directories AND non-game test categories (`home_screen`, `pause_modal`) — every top-level subdirectory under `integration_test/` that holds tests gets its own worker, port, and isolated server.
 
-| Game | Server Port | ChromeDriver Port |
+| Test Category | Server Port | ChromeDriver Port |
 |------|------------|-------------------|
 | target_tag | 9001 | 4444 |
 | carnival_derby | 9002 | 4445 |
@@ -248,6 +248,10 @@ Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_paralle
 | clockwork_quest | 9005 | 4448 |
 | lunar_lander | 9006 | 4449 |
 | pirates_grid | 9007 | 4450 |
+| home_screen | 9008 | 4451 |
+| pause_modal | 9009 | 4452 |
+
+Directories the runners intentionally skip: `_smoke/` (manual self-tests for the failure-screenshot helper, run via direct `flutter drive` invocation) and `shared/` (helper files, no tests).
 
 ### Infrastructure Isolation
 

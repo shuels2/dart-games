@@ -359,8 +359,15 @@ REM DISCOVER AND RUN TESTS
 REM ============================================================
 :discover_tests
 
-REM Define game categories in execution order
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid"
+REM Define test categories in execution order. The variable is named GAMES
+REM for historical reasons but it lists every top-level subdirectory under
+REM integration_test/ that contains tests — not just per-game folders.
+REM
+REM home_screen and pause_modal hold non-game-specific tests (filter bar,
+REM home-screen pause modal). They get the same per-category treatment
+REM (own port, own data dir, own server boot) so they never share state
+REM with each other or with a game's tests.
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid home_screen pause_modal"
 
 for %%G in (%GAMES%) do (
     set "_GAME=%%G"

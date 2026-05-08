@@ -12,7 +12,14 @@ REM Supports STUB_MODE env var for testing orchestration without
 REM real infrastructure (set by run_ui_tests_parallel_stub.bat).
 REM ============================================================
 
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid"
+REM Test categories. Variable is named GAMES for historical reasons but it
+REM lists every top-level subdirectory under integration_test/ that holds
+REM tests, including non-game categories (home_screen, pause_modal).
+REM Adding entries here automatically:
+REM   - assigns the next port (server = 9000+N, chromedriver = 4443+N)
+REM   - reserves a worker slot (one parallel worker per entry)
+REM   - includes the dir in pre-run worktree cleanup (loop below at ~line 283)
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid home_screen pause_modal"
 
 REM Strip trailing backslash from script directory to avoid \" quoting
 REM issues when paths contain spaces (e.g. /D "path\" breaks start).
@@ -280,7 +287,8 @@ echo.
 REM Remove any leftover worktrees from a previous failed run
 if exist "!_WORKTREE_BASE!" (
     echo Cleaning up previous worker worktrees...
-    for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid) do (
+    REM Keep this list in sync with the GAMES variable at the top of the file.
+    for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid home_screen pause_modal) do (
         git worktree remove --force "!_WORKTREE_BASE!\%%G" >nul 2>&1
     )
     git worktree prune >nul 2>&1
