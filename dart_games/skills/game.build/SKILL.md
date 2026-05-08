@@ -3246,18 +3246,23 @@ The parallel UI runner clones the repo into one git worktree per worker so each 
 
 **Why:** A user's UI run produced 27 failures across 4 games (target_tag, lunar_lander, pirates_grid, reef_royale). All test logs ended after the runner's "Worktree: ..." prefix line — no compile output, no test output, just "FAILED". Investigation showed `git worktree list` had only the main repo registered: `git worktree add` had failed silently for 6 of 9 workers, leaving the runner pressing on with workers pointed at empty paths. The worktree creation loop's `_wt_ok=0` check existed but didn't catch every failure mode (e.g., when leftover dirs from a prior run blocked rmdir → blocked `git worktree add` because destination exists → errorlevel propagation through nested IFs got confused).
 
-**Rule:** `run_ui_tests_parallel.bat` worktree setup follows three invariants:
+**Rule:** `run_ui_tests_parallel.bat` worktree setup follows four invariants:
 1. **Errors go to a log, not /dev/null.** Replace every `git worktree <op> ... >nul 2>&1` with `... >> "!_WT_LOG!" 2>&1` (where `_WT_LOG = !_PARALLEL_DIR!\worktree_setup.log`). When a `git worktree add` fails, the script prints the worker name, points at the log, and aborts.
 2. **Prune metadata before cleanup.** A `git worktree prune` runs BEFORE the rmdir loop. Without this, stale `.git/worktrees/<name>` metadata pointing at deleted directories will make subsequent `git worktree add` fail with "fatal: '<path>' already exists" even though the dir was removed.
-3. **Existence check before workers launch.** After the creation loop, verify every expected worktree project dir contains a `pubspec.yaml`. If any are missing or incomplete, abort with the worker name(s) printed — workers MUST NOT spawn pointed at missing paths.
+3. **Pre-flight kill of orphaned test processes.** Before the cleanup, kill leftover `chromedriver.exe` and `flutter_tester.exe` processes (blanket-safe — test-only) and port-scoped `dart.exe` instances bound to ports 9001-9020 (so we don't accidentally kill the user's IDE-launched dart server on a different port). A previous run that was force-killed leaves orphaned processes that hold worktree files open, blocking rmdir, and bind test ports — preventing the new run's setup. Past failure: a parallel run produced 8+ leftover chromedriver.exe processes that blocked all subsequent worktree creation.
+4. **Existence check before workers launch.** After the creation loop, verify every expected worktree project dir contains a `pubspec.yaml`. If any are missing or incomplete, abort with the worker name(s) printed — workers MUST NOT spawn pointed at missing paths.
 
-**Plus:** if rmdir leaves any leftover dir in `_WORKTREE_BASE` (because a prior chromedriver/dart process has files locked), surface it loudly with the dir name — `git worktree add` will fail because the destination already exists, and the user needs to know to kill leftover processes before re-running.
+**Plus:** if rmdir leaves any leftover dir in `_WORKTREE_BASE` (because a prior chromedriver/dart process STILL has files locked despite the pre-flight kill), surface it loudly with the dir name and a hint about killing leftover processes before re-running.
 
-**How to apply:** verify the runner has all three invariants:
+**Absolute path for `_WORKTREE_BASE`:** the variable is computed as `!_SCRIPT_DIR!\integration_test_output\parallel\worktrees`, NOT a relative path. Past failure: relative `_WORKTREE_BASE` worked for `git worktree add` (called from the bat's cwd) but flutter sub-processes inherited a different cwd and `flutter pub get` printed "The system cannot find the path specified." for every worker. Absolute paths remove that variable.
+
+**How to apply:** verify the runner has all four invariants:
 ```bash
 grep -c '>> "!_WT_LOG!" 2>&1' run_ui_tests_parallel.bat   # must be > 0 (errors logged)
 grep -c 'git worktree prune' run_ui_tests_parallel.bat   # must be ≥ 2 (before AND after rmdir)
+grep -c 'taskkill /F /IM chromedriver' run_ui_tests_parallel.bat  # must be > 0 (pre-flight kill)
 grep -c 'pubspec.yaml' run_ui_tests_parallel.bat         # must be > 0 (existence check)
+grep '_WORKTREE_BASE=' run_ui_tests_parallel.bat | grep -c '_SCRIPT_DIR'  # must be > 0 (absolute path)
 ```
 
 ---

@@ -78,6 +78,33 @@ del /Q "%_PARALLEL_DIR%\*.txt" 2>nul
 del /Q "%_PARALLEL_DIR%\*.log" 2>nul
 for /d %%d in ("%_PARALLEL_DIR%\test_data_*") do rmdir /S /Q "%%d" >nul 2>&1
 
+REM ============================================================
+REM Pre-flight: kill leftover test processes from a prior run.
+REM
+REM A previous run that was force-killed (Ctrl+C, OS reboot, parent
+REM cmd window closed) leaves orphaned chromedriver.exe and
+REM flutter_tester.exe processes plus dart.exe servers on the test
+REM ports. They hold worktree files open, blocking rmdir cleanup, and
+REM bind ports we need. Past failure: 8+ leftover chromedriver.exe
+REM processes blocked the next run's worktree creation entirely.
+REM
+REM Safe-to-kill blanket:
+REM   - chromedriver.exe (test-only, no other use on this machine)
+REM   - flutter_tester.exe (left over by crashed flutter test runs)
+REM
+REM Port-scoped (DO NOT blanket-kill dart.exe — user may have an
+REM IDE-launched dart server on a different port):
+REM   - dart.exe instances bound to ports 9001-9020 (our test port range)
+REM ============================================================
+echo Killing leftover test processes from prior runs...
+taskkill /F /IM chromedriver.exe >nul 2>&1
+taskkill /F /IM flutter_tester.exe >nul 2>&1
+for /l %%P in (9001,1,9020) do (
+    for /f "tokens=5" %%a in ('netstat -aon ^| findstr "LISTENING" ^| findstr ":%%P "') do taskkill /F /PID %%a >nul 2>&1
+)
+REM Brief settle so killed processes release file handles before rmdir.
+timeout /t 1 /nobreak >nul
+
 if defined STUB_MODE goto :skip_preflight
 
 echo Verifying ChromeDriver version matches Chrome...

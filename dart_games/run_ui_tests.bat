@@ -57,6 +57,21 @@ echo Cleaning previous test results...
 del /Q integration_test_output\*.txt 2>nul
 del /Q integration_test_output\*.log 2>nul
 
+REM ============================================================
+REM Pre-flight: kill leftover test processes from a prior run.
+REM See run_ui_tests_parallel.bat for the full rationale. Same scope:
+REM blanket-kill chromedriver.exe + flutter_tester.exe (test-only),
+REM port-scope dart.exe to our test port range so we don't kill the
+REM user's IDE-launched dart server.
+REM ============================================================
+echo Killing leftover test processes from prior runs...
+taskkill /F /IM chromedriver.exe >nul 2>&1
+taskkill /F /IM flutter_tester.exe >nul 2>&1
+for /l %%P in (9001,1,9020) do (
+    for /f "tokens=5" %%a in ('netstat -aon ^| findstr "LISTENING" ^| findstr ":%%P "') do taskkill /F /PID %%a >nul 2>&1
+)
+timeout /t 1 /nobreak >nul
+
 echo Verifying ChromeDriver version matches Chrome...
 call update_chromedriver.bat
 if !errorlevel! neq 0 (
