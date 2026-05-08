@@ -135,10 +135,16 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
     //   - Save modal's onSave pops to menu
     // Game→results uses its own pushReplacement, NEW VOYAGE on results uses
     // pushAndRemoveUntil(route.isFirst); both flows are unaffected.
+    //
+    // The .then callback refreshes _hasSavedGames after the game pops back
+    // to the menu — required so the AppBar's conditional ResumeGameButton
+    // appears after a SaveGameModal save. Mirrors MM/LL/CD pattern (and
+    // the existing _resumeGame above). Without this callback, the resume
+    // button stays hidden after an in-game save.
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const PiratesGridGameScreen()),
-    );
+    ).then((_) => _checkForSavedGames());
   }
 
   @override

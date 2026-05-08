@@ -2741,20 +2741,26 @@ await UITestHelpers.selectSavedGameTile(tester, savedId);
 
 ---
 
-### 19. `_startGame` must use `Navigator.push`, NEVER `pushReplacement`
+### 19. `_startGame` must use `Navigator.push`, NEVER `pushReplacement` — AND register `.then((_) => _checkForSavedGames())`
 `pushReplacement` removes the menu route from the stack. After "back from game" or "Save modal Save" both pop one route, the user lands on Home, not Menu. Tests that expect "back-from-game returns to menu with settings preserved" (a standard pattern across all games) fail because the menu is gone.
 
-**Rule:**
+**Rule (push, not pushReplacement):**
 ```dart
 void _startGame() {
   // ...startGame(...)
   Navigator.push(   // NOT pushReplacement
     context,
     MaterialPageRoute(builder: (_) => const [GameName]GameScreen()),
-  );
+  ).then((_) => _checkForSavedGames());   // ← MANDATORY
 }
 ```
 Game→Results uses its own `pushReplacement` (game route is consumed). NEW VOYAGE / Change Settings on Results uses `pushAndRemoveUntil((r) => r.isFirst)` to push a fresh menu and discard everything below. Both flows still work correctly with the menu staying on the stack during gameplay.
+
+**Rule (refresh `_hasSavedGames` after the game pops):** BOTH `_startGame` AND `_resumeGame` MUST register `.then((_) => _checkForSavedGames())` on the `Navigator.push`. The AppBar's conditional `ResumeGameButton` (rendered when `_hasSavedGames == true`) only shows after the menu's `_hasSavedGames` flag flips to true — which requires re-running the saved-games API check after the game-screen pops back. Without the callback, a user who saves their game via SaveGameModal returns to a menu where the resume button stays hidden, even though a saved game now exists.
+
+**Why:** Pirate's Grid shipped with this asymmetry — `_resumeGame` had the `.then` but `_startGame` did not. Five canonical save_resume tests (`resume_button_color_when_enabled_test`, `resume_button_enabled_after_save_test`, `resume_button_hidden_after_resume_test`, `resume_button_shows_modal_test`, `resume_modal_start_new_game_test`) failed because their setup goes save → return → expect ResumeGameButton, and the button was never added to the AppBar. The fix was a one-line addition to `_startGame`. The asymmetry was caught only when the canonical 16-file save_resume pack was added; the pre-existing 6-sub-test file didn't exercise the in-game save flow that depends on this callback.
+
+**How to apply:** AR-4 audit must grep `_startGame` and `_resumeGame` in every menu and confirm both push calls have `.then((_) => _checkForSavedGames())`. Reference: monster_mash menu lines 976-979 (`_startGame`) + 993-998 (`_resumeGame`); lunar_lander menu lines 116-121 + 136-139; carnival_horse_race menu (`_startGame` and `_resumeGame`). Pirates Grid menu lines 113-116 + 138-145 (after fix).
 
 ---
 
