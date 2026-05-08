@@ -1,44 +1,105 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import '../../shared/ui_test_helpers.dart';
-import '../../shared/pump_sequences.dart';
+import '../../shared/element_finders.dart';
 import '_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
-      'Pause Modal: disconnection on results screen blocks action buttons and dismisses on reconnect',
+  testWidgets('Test 1: Pause modal appears on results screen',
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config,
-        playerNames: ['Player A', 'Player B']);
+    await setupAndStartGame(tester, config);
 
-    // Complete game to reach results screen
     await completeGameToVictory(tester);
 
-    // Verify on results screen
-    expect(config.getPlayAgainButton(), findsOneWidget,
-        reason: 'Should be on results screen');
+    // Verify we are on results screen
+    expect(config.getPlayAgainButton(), findsOneWidget);
 
-    // Simulate disconnection on results screen
-    await simulateDisconnectAndVerify(tester);
+    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
 
-    // Pause modal should be visible
-    expect(find.text('Game Paused'), findsOneWidget,
-        reason: 'Pause modal should appear on results screen on disconnect');
+    // Still on results screen
+    expect(config.getPlayAgainButton(), findsOneWidget);
 
-    // Verify results buttons still in tree
-    expect(config.getPlayAgainButton(), findsOneWidget,
-        reason: 'Play again button should be in tree (blocked by pause modal)');
+    await PauseModalHelpers.simulateReconnectAndVerify(tester);
+  });
 
-    // Simulate reconnect
-    await simulateReconnectAndVerify(tester);
+  testWidgets('Test 2: Pause blocks Play Again button',
+      (WidgetTester tester) async {
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, config);
 
-    // Results should be accessible again
+    await completeGameToVictory(tester);
+
+    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
+
+    // Try tapping Play Again — overlay should block it
+    await tester.tap(config.getPlayAgainButton(), warnIfMissed: false);
     await PumpSequences.simpleUpdate(tester);
-    expect(config.getPlayAgainButton(), findsOneWidget,
-        reason: 'Results buttons should be accessible after reconnect');
+
+    // Should still be on results screen
+    PauseModalHelpers.verifyPauseModalVisible(tester);
+    expect(config.getPlayAgainButton(), findsOneWidget);
+
+    await PauseModalHelpers.simulateReconnectAndVerify(tester);
+  });
+
+  testWidgets('Test 3: Pause blocks Change Settings button',
+      (WidgetTester tester) async {
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, config);
+
+    await completeGameToVictory(tester);
+
+    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
+
+    // Try tapping Change Settings — overlay should block it
+    await tester.tap(config.getChangeSettingsButton(), warnIfMissed: false);
+    await PumpSequences.simpleUpdate(tester);
+
+    // Should still be on results screen
+    PauseModalHelpers.verifyPauseModalVisible(tester);
+    expect(config.getPlayAgainButton(), findsOneWidget);
+
+    await PauseModalHelpers.simulateReconnectAndVerify(tester);
+  });
+
+  testWidgets('Test 4: Pause blocks Back to Menu button',
+      (WidgetTester tester) async {
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, config);
+
+    await completeGameToVictory(tester);
+
+    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
+
+    // Try tapping Back to Menu — overlay should block it
+    await tester.tap(config.getBackToMenuButton(), warnIfMissed: false);
+    await PumpSequences.simpleUpdate(tester);
+
+    // Should still be on results screen
+    PauseModalHelpers.verifyPauseModalVisible(tester);
+    expect(config.getPlayAgainButton(), findsOneWidget);
+
+    await PauseModalHelpers.simulateReconnectAndVerify(tester);
+  });
+
+  testWidgets('Test 5: Pause dismisses and buttons work',
+      (WidgetTester tester) async {
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, config);
+
+    await completeGameToVictory(tester);
+
+    // Disconnect then reconnect
+    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
+    await PauseModalHelpers.simulateReconnectAndVerify(tester);
+
+    // Buttons should work now — tap Back to Menu
+    await UITestHelpers.clickBackToMenu(tester, config);
+
+    // Should be back on home screen
+    expect(ElementFinders.getPiratesGridCard(), findsOneWidget);
   });
 }

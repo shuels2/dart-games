@@ -64,6 +64,11 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   Timer? _speedPlayTimer;
   int _speedPlaySecondsRemaining = 25;
 
+  // Round Complete overlay state — true for 3 seconds after a non-final round ends
+  bool _showRoundCompleteOverlay = false;
+  int _roundCompleteRound = 1;
+  Timer? _roundCompleteTimer;
+
   // Pulsing animation for timer critical state
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -161,6 +166,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     _dartboardSubscription?.cancel();
     _dartboardEmulatorController.dispose();
     _speedPlayTimer?.cancel();
+    _roundCompleteTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
   }
@@ -350,6 +356,11 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       }
     }
 
+    // ── Show Round Complete overlay for non-final round ends ───────────────
+    if ((justWonRound || justDrewRound) && !justWonMatch && !justDrewMatch) {
+      _triggerRoundCompleteOverlay(gameAfter.currentRound);
+    }
+
     // ── Stop the Speed Play timer the moment the turn ends ─────────────────
     // shouldPromptTakeout is true when dartCount >= 3 OR the round just
     // finished — either way the player is no longer throwing, so the
@@ -416,6 +427,22 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     if (prefix == 'T') multiplier = 3;
 
     return {'score': number, 'multiplier': multiplier};
+  }
+
+  // ─── Round Complete overlay ────────────────────────────────────────────────
+
+  void _triggerRoundCompleteOverlay(int round) {
+    if (!mounted) return;
+    _roundCompleteTimer?.cancel();
+    setState(() {
+      _showRoundCompleteOverlay = true;
+      _roundCompleteRound = round;
+    });
+    _roundCompleteTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() => _showRoundCompleteOverlay = false);
+      }
+    });
   }
 
   void _handleTakeoutFinished() {
@@ -645,7 +672,26 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               ],
             ),
           ),
-          // 2. RemoveDartsModal (conditional)
+          // 2. Round Complete overlay (bestOf > 1, non-final round)
+          if (_showRoundCompleteOverlay && game.bestOf > 1)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.black54,
+                  child: Center(
+                    child: Text(
+                      'Round $_roundCompleteRound Complete!',
+                      key: const Key('pirates_grid_round_complete_overlay'),
+                      style: GoogleFonts.pirataOne(
+                        fontSize: 28,
+                        color: _treasureGold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // 3. RemoveDartsModal (conditional)
           if (shouldPromptTakeout)
             RemoveDartsModal(
               config: RemoveDartsModalConfig.piratesGrid(),
@@ -685,7 +731,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                 );
               },
             ),
-          // 3. DartboardEmulatorSection — Positioned bottom 0
+          // 4. DartboardEmulatorSection — Positioned bottom 0
           Positioned(
             left: 0,
             right: 0,
@@ -717,7 +763,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                   _mockApi != null ? PlayToCompleteButtonConfig.piratesGrid() : null,
             ),
           ),
-          // 4. DartboardEmulatorFAB — Positioned bottom-right 16,16
+          // 5. DartboardEmulatorFAB — Positioned bottom-right 16,16
           Positioned(
             right: 16,
             bottom: 16,
@@ -728,7 +774,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               onCancelAutoPlay: _onCancelAutoPlay,
             ),
           ),
-          // 5. SaveGameModal (conditional)
+          // 6. SaveGameModal (conditional)
           if (_showSaveModal)
             SaveGameModal(
               config: SaveGameModalConfig.piratesGrid(),
@@ -738,7 +784,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               },
               onDontSave: () => Navigator.of(context).pop(),
             ),
-          // 6. DartboardPausedModal — last child, paints on top
+          // 7. DartboardPausedModal — last child, paints on top
           if (!dartboardProvider.isEmulator &&
               dartboardProvider.status != DartboardConnectionStatus.connected &&
               dartboardProvider.status != DartboardConnectionStatus.emulator)
@@ -896,15 +942,33 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _compassBronze, width: 1.5),
       ),
-      child: Text(
+      child: Text.rich(
         // Wider gaps (5 spaces) between Round / P1 / P2 segments so the
         // two player names don't visually crowd each other.
-        'Round ${game.currentRound}/${game.bestOf}     —     '
-        '$p1Name: $p1Wins     $p2Name: $p2Wins',
-        style: GoogleFonts.pirataOne(
-          fontSize: 26,
-          color: _parchmentTan,
-          letterSpacing: 0.5,
+        // P1 name+score: Blood Red; P2 name+score: Sea Foam Teal; rest: Parchment Tan.
+        TextSpan(
+          style: GoogleFonts.pirataOne(
+            fontSize: 26,
+            letterSpacing: 0.5,
+          ),
+          children: [
+            TextSpan(
+              text: 'Round ${game.currentRound}/${game.bestOf}     —     ',
+              style: const TextStyle(color: _parchmentTan),
+            ),
+            TextSpan(
+              text: '$p1Name: $p1Wins',
+              style: const TextStyle(color: _p1FlagColor),
+            ),
+            const TextSpan(
+              text: '     ',
+              style: TextStyle(color: _parchmentTan),
+            ),
+            TextSpan(
+              text: '$p2Name: $p2Wins',
+              style: const TextStyle(color: _p2FlagColor),
+            ),
+          ],
         ),
       ),
     );
@@ -1269,9 +1333,15 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         default:
           targetLabel = '${target.number}';
       }
+    } else if (game.targetDifficulty == TargetDifficulty.medium) {
+      targetLabel = 'D${target.number}';
     } else {
       targetLabel = '${target.number}';
     }
+
+    // Medium difficulty: show a "D" badge in Sea Foam Teal in the top-right corner
+    final bool showMediumBadge = game.targetDifficulty == TargetDifficulty.medium &&
+        target.requirement != CellRequirement.bull;
 
     return Container(
       key: PiratesGridGameKeys.gridCell(row, col),
@@ -1327,10 +1397,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               targetLabel,
               key: PiratesGridGameKeys.gridCellTargetLabel(row, col),
               style: GoogleFonts.pirataOne(
-                // 30% larger than the original sizing (0.24 → 0.31, 0.31 →
-                // 0.40). Hard's labels are wider ("T20"/"D18") so they keep
-                // a smaller scaling factor to fit inside the cell.
-                fontSize: game.targetDifficulty == TargetDifficulty.hard
+                // Hard's labels are wider ("T20"/"D18") so they keep a
+                // smaller scaling factor to fit inside the cell.
+                // Medium's labels include a "D" prefix so also use the
+                // slightly smaller factor to avoid overflow.
+                fontSize: (game.targetDifficulty == TargetDifficulty.hard ||
+                            game.targetDifficulty == TargetDifficulty.medium)
                     ? cellSize * 0.31
                     : cellSize * 0.40,
                 color: claimedBy != null ? _parchmentTan : _treasureGold,
@@ -1343,6 +1415,28 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               ),
             ),
           ),
+          // Medium difficulty: "D" badge in Sea Foam Teal in the top-right corner
+          if (showMediumBadge)
+            Positioned(
+              top: 3,
+              right: 3,
+              child: Container(
+                key: Key('pirates_grid_medium_badge_${row}_$col'),
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                decoration: BoxDecoration(
+                  color: _seaFoamTeal,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'D',
+                  style: GoogleFonts.pirataOne(
+                    fontSize: cellSize * 0.18,
+                    color: _parchmentTan,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

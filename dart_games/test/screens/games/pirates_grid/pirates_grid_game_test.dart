@@ -2,6 +2,72 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/models/pirates_grid_game.dart';
 import 'package:dart_games/providers/pirates_grid_provider.dart';
 
+// ─── Runtime helpers ──────────────────────────────────────────────────────────
+
+/// Returns the target number at [row],[col].
+int _n(PiratesGridProvider p, int row, int col) =>
+    p.currentGame!.grid[row][col].target.number;
+
+/// Returns the requirement at [row],[col].
+CellRequirement _req(PiratesGridProvider p, int row, int col) =>
+    p.currentGame!.grid[row][col].target.requirement;
+
+/// Builds the sector string for a hit on cell [row],[col] given [multiplier].
+String _sector(int number, int multiplier) {
+  if (multiplier == 2) return 'D$number';
+  if (multiplier == 3) return 'T$number';
+  return 'S$number';
+}
+
+/// Returns the required multiplier for a cell's requirement in Easy/Medium.
+/// For Hard, position rules apply: corner=triple, edge=double, center=bull.
+int _multiplierFor(CellRequirement req) {
+  switch (req) {
+    case CellRequirement.tripleOnly:
+      return 3;
+    case CellRequirement.doubleOnly:
+    case CellRequirement.doubleOrTriple:
+      return 2;
+    case CellRequirement.any:
+      return 1;
+    case CellRequirement.bull:
+      return 1; // handled specially
+  }
+}
+
+/// Throws a dart that successfully claims cell [row],[col].
+/// Handles bull specially for Hard mode center.
+///
+/// Note: [score] is the BASE number (1–20), not the total. The provider's
+/// processDartThrow uses score=dartNumber to match against cell.target.number.
+void _hitCell(PiratesGridProvider p, int row, int col) {
+  final req = _req(p, row, col);
+  if (req == CellRequirement.bull) {
+    // Bull: outer bull score=25 multiplier=1 sector='Bull'
+    p.processDartThrow(score: 25, multiplier: 1, sector: 'Bull');
+  } else {
+    final n = _n(p, row, col);
+    final mult = _multiplierFor(req);
+    // score = base number (not n*mult) — matches() checks dartNumber == number
+    p.processDartThrow(score: n, multiplier: mult, sector: _sector(n, mult));
+  }
+}
+
+/// Throws a miss dart (score 99, never in grid).
+void _miss(PiratesGridProvider p) =>
+    p.processDartThrow(score: 99, multiplier: 1, sector: 'S99');
+
+/// Fills remaining darts for the current player with misses then calls
+/// handleTakeoutFinished.
+void _completeTurn(PiratesGridProvider p) {
+  while (p.getCurrentPlayerDartsThrown() < 3) {
+    _miss(p);
+  }
+  p.handleTakeoutFinished();
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
 void main() {
   group("Pirate's Grid game logic", () {
     late PiratesGridProvider provider;
@@ -21,18 +87,16 @@ void main() {
         expect(grid.length, equals(3));
         expect(grid[0].length, equals(3));
 
-        // Row 0: 20, 18, 16
-        expect(grid[0][0].target.number, equals(20));
-        expect(grid[0][1].target.number, equals(18));
-        expect(grid[0][2].target.number, equals(16));
-        // Row 1: 19, 17, 15
-        expect(grid[1][0].target.number, equals(19));
-        expect(grid[1][1].target.number, equals(17));
-        expect(grid[1][2].target.number, equals(15));
-        // Row 2: 14, 12, 10
-        expect(grid[2][0].target.number, equals(14));
-        expect(grid[2][1].target.number, equals(12));
-        expect(grid[2][2].target.number, equals(10));
+        // All 9 cells have numbers in range 1–20 (shuffled per game)
+        final numbers = <int>{};
+        for (final row in grid) {
+          for (final cell in row) {
+            expect(cell.target.number, inInclusiveRange(1, 20));
+            numbers.add(cell.target.number);
+          }
+        }
+        // All 9 numbers must be unique
+        expect(numbers.length, equals(9));
 
         // All cells have 'any' requirement
         for (final row in grid) {
@@ -55,10 +119,15 @@ void main() {
         final game = provider.currentGame!;
         final grid = game.grid;
 
-        // Same number layout as Easy
-        expect(grid[0][0].target.number, equals(20));
-        expect(grid[1][1].target.number, equals(17));
-        expect(grid[2][2].target.number, equals(10));
+        // 9 unique numbers in 1–20
+        final numbers = <int>{};
+        for (final row in grid) {
+          for (final cell in row) {
+            expect(cell.target.number, inInclusiveRange(1, 20));
+            numbers.add(cell.target.number);
+          }
+        }
+        expect(numbers.length, equals(9));
 
         // All cells require double or triple
         for (final row in grid) {
@@ -76,28 +145,37 @@ void main() {
         final game = provider.currentGame!;
         final grid = game.grid;
 
-        // Corners: (0,0) T20, (0,2) T16, (2,0) T14, (2,2) T10
-        expect(grid[0][0].target.number, equals(20));
-        expect(grid[0][0].target.requirement, equals(CellRequirement.tripleOnly));
-        expect(grid[0][2].target.number, equals(16));
-        expect(grid[0][2].target.requirement, equals(CellRequirement.tripleOnly));
-        expect(grid[2][0].target.number, equals(14));
-        expect(grid[2][0].target.requirement, equals(CellRequirement.tripleOnly));
-        expect(grid[2][2].target.number, equals(10));
-        expect(grid[2][2].target.requirement, equals(CellRequirement.tripleOnly));
+        // Corners: (0,0), (0,2), (2,0), (2,2) — tripleOnly, numbers 1–20
+        for (final pos in [(0, 0), (0, 2), (2, 0), (2, 2)]) {
+          final cell = grid[pos.$1][pos.$2];
+          expect(cell.target.number, inInclusiveRange(1, 20),
+              reason: 'Corner (${pos.$1},${pos.$2}) number should be 1–20');
+          expect(cell.target.requirement, equals(CellRequirement.tripleOnly),
+              reason: 'Corner (${pos.$1},${pos.$2}) should be tripleOnly');
+        }
 
-        // Edges: (0,1) D18, (1,0) D19, (1,2) D15, (2,1) D12
-        expect(grid[0][1].target.number, equals(18));
-        expect(grid[0][1].target.requirement, equals(CellRequirement.doubleOnly));
-        expect(grid[1][0].target.number, equals(19));
-        expect(grid[1][0].target.requirement, equals(CellRequirement.doubleOnly));
-        expect(grid[1][2].target.number, equals(15));
-        expect(grid[1][2].target.requirement, equals(CellRequirement.doubleOnly));
-        expect(grid[2][1].target.number, equals(12));
-        expect(grid[2][1].target.requirement, equals(CellRequirement.doubleOnly));
+        // Edges: (0,1), (1,0), (1,2), (2,1) — doubleOnly, numbers 1–20
+        for (final pos in [(0, 1), (1, 0), (1, 2), (2, 1)]) {
+          final cell = grid[pos.$1][pos.$2];
+          expect(cell.target.number, inInclusiveRange(1, 20),
+              reason: 'Edge (${pos.$1},${pos.$2}) number should be 1–20');
+          expect(cell.target.requirement, equals(CellRequirement.doubleOnly),
+              reason: 'Edge (${pos.$1},${pos.$2}) should be doubleOnly');
+        }
 
         // Center: (1,1) Bull
         expect(grid[1][1].target.requirement, equals(CellRequirement.bull));
+
+        // All non-center numbers are unique and in range
+        final numbers = <int>{};
+        for (int r = 0; r < 3; r++) {
+          for (int c = 0; c < 3; c++) {
+            if (r == 1 && c == 1) continue; // center is Bull (number=0)
+            expect(grid[r][c].target.number, inInclusiveRange(1, 20));
+            numbers.add(grid[r][c].target.number);
+          }
+        }
+        expect(numbers.length, equals(8));
       });
     });
 
@@ -106,42 +184,49 @@ void main() {
     group('Flag Placement', () {
       test('Single hit on Easy cell plants flag', () {
         provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
-        // S20 hits (0,0) in Easy mode
-        provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+        // Use the actual target number at (0,0) — Easy uses CellRequirement.any
+        final n = _n(provider, 0, 0);
+        provider.processDartThrow(score: n, multiplier: 1, sector: 'S$n');
         final cell = provider.currentGame!.grid[0][0];
         expect(cell.claimedBy, equals('p1'));
       });
 
       test('Double hit on D cell plants flag (Medium)', () {
         provider.startGame(['p1', 'p2'], TargetDifficulty.medium, 1, false, false);
-        // D18 hits (0,1)
-        provider.processDartThrow(score: 18, multiplier: 2, sector: 'D18');
+        // Medium requires doubleOrTriple; use a double on (0,1)
+        // score = base number (not n*2) — processDartThrow matches on base number
+        final n = _n(provider, 0, 1);
+        provider.processDartThrow(score: n, multiplier: 2, sector: 'D$n');
         final cell = provider.currentGame!.grid[0][1];
         expect(cell.claimedBy, equals('p1'));
       });
 
       test('Triple hit on T cell plants flag (Hard)', () {
         provider.startGame(['p1', 'p2'], TargetDifficulty.hard, 1, false, false);
-        // T20 hits (0,0) tripleOnly
-        provider.processDartThrow(score: 20, multiplier: 3, sector: 'T20');
+        // (0,0) is a corner — requires tripleOnly
+        // score = base number (not n*3) — processDartThrow matches on base number
+        final n = _n(provider, 0, 0);
+        provider.processDartThrow(score: n, multiplier: 3, sector: 'T$n');
         final cell = provider.currentGame!.grid[0][0];
         expect(cell.claimedBy, equals('p1'));
       });
 
       test('Single hit on D cell does NOT plant flag (Medium)', () {
         provider.startGame(['p1', 'p2'], TargetDifficulty.medium, 1, false, false);
-        // S18 does not satisfy doubleOrTriple for (0,1)
-        provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
+        // Medium requires doubleOrTriple; single hit must fail
+        final n = _n(provider, 0, 1);
+        provider.processDartThrow(score: n, multiplier: 1, sector: 'S$n');
         final cell = provider.currentGame!.grid[0][1];
         expect(cell.claimedBy, isNull);
       });
 
       test('Hit on already-owned cell has no effect', () {
         provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
-        // P1 plants flag
-        provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+        final n = _n(provider, 0, 0);
+        // P1 plants flag at (0,0)
+        provider.processDartThrow(score: n, multiplier: 1, sector: 'S$n');
         // P1 throws again at same cell (within 3 darts, still p1's turn)
-        provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+        provider.processDartThrow(score: n, multiplier: 1, sector: 'S$n');
         final cell = provider.currentGame!.grid[0][0];
         // Still p1 — cell ownership unchanged
         expect(cell.claimedBy, equals('p1'));
@@ -149,30 +234,32 @@ void main() {
 
       test('Hit on opponent cell with Steal Mode OFF has no effect', () {
         provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
+        final n = _n(provider, 0, 0);
         // P1 plants flag at (0,0)
-        provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+        provider.processDartThrow(score: n, multiplier: 1, sector: 'S$n');
         // Advance to P2 (simulate 3 darts total then takeout)
         provider.processDartThrow(score: 99, multiplier: 1, sector: 'S99'); // miss
         provider.processDartThrow(score: 99, multiplier: 1, sector: 'S99'); // miss
         provider.handleTakeoutFinished(); // advance to P2
 
-        // P2 hits S20 with Steal OFF
-        provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+        // P2 hits same cell with Steal OFF
+        provider.processDartThrow(score: n, multiplier: 1, sector: 'S$n');
         final cell = provider.currentGame!.grid[0][0];
         expect(cell.claimedBy, equals('p1'), reason: 'Steal OFF should not replace p1 flag');
       });
 
       test('Hit on opponent cell with Steal Mode ON replaces opponent flag', () {
         provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, true, false);
+        final n = _n(provider, 0, 0);
         // P1 plants flag at (0,0)
-        provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+        provider.processDartThrow(score: n, multiplier: 1, sector: 'S$n');
         // 2 more misses to end p1's turn
         provider.processDartThrow(score: 99, multiplier: 1, sector: 'S99');
         provider.processDartThrow(score: 99, multiplier: 1, sector: 'S99');
         provider.handleTakeoutFinished(); // advance to P2
 
-        // P2 hits S20 with Steal ON → takes (0,0) from P1
-        provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+        // P2 hits same cell with Steal ON → takes (0,0) from P1
+        provider.processDartThrow(score: n, multiplier: 1, sector: 'S$n');
         final cell = provider.currentGame!.grid[0][0];
         expect(cell.claimedBy, equals('p2'), reason: 'Steal ON should give p2 the cell');
       });
@@ -195,8 +282,8 @@ void main() {
         // Plant 2 flags for p1 manually in top row
         plantFlag(provider, 'p1', 0, 0);
         plantFlag(provider, 'p1', 0, 1);
-        // Throw S16 to claim (0,2) — completes top row
-        provider.processDartThrow(score: 16, multiplier: 1, sector: 'S16');
+        // Throw a single to claim (0,2) — read actual number at (0,2)
+        _hitCell(provider, 0, 2);
 
         expect(game.winnerId, equals('p1'));
         expect(game.winningLine, isNotNull);
@@ -209,8 +296,8 @@ void main() {
 
         plantFlag(provider, 'p1', 0, 0);
         plantFlag(provider, 'p1', 1, 0);
-        // Claim (2,0) by throwing S14
-        provider.processDartThrow(score: 14, multiplier: 1, sector: 'S14');
+        // Claim (2,0) using the actual number
+        _hitCell(provider, 2, 0);
 
         expect(game.winnerId, equals('p1'));
         expect(game.winningLine, isNotNull);
@@ -223,8 +310,8 @@ void main() {
 
         plantFlag(provider, 'p1', 0, 0);
         plantFlag(provider, 'p1', 1, 1);
-        // Claim (2,2) by throwing S10
-        provider.processDartThrow(score: 10, multiplier: 1, sector: 'S10');
+        // Claim (2,2) using the actual number
+        _hitCell(provider, 2, 2);
 
         expect(game.winnerId, equals('p1'));
         expect(game.winningLine, isNotNull);
@@ -236,8 +323,8 @@ void main() {
 
         plantFlag(provider, 'p1', 0, 2);
         plantFlag(provider, 'p1', 1, 1);
-        // Claim (2,0) by throwing S14
-        provider.processDartThrow(score: 14, multiplier: 1, sector: 'S14');
+        // Claim (2,0) using the actual number
+        _hitCell(provider, 2, 0);
 
         expect(game.winnerId, equals('p1'));
         expect(game.winningLine, isNotNull);
@@ -267,8 +354,8 @@ void main() {
         game.grid[2][0].claimedBy = 'p1';
         game.grid[2][2].claimedBy = 'p2';
         // Leave (2,1) empty — p1 will claim it via processDartThrow
-        // (2,1) target in Easy is number 12 (row 2, col 1)
-        provider.processDartThrow(score: 12, multiplier: 1, sector: 'S12');
+        // Read the actual number at (2,1) — shuffled per game
+        _hitCell(provider, 2, 1);
 
         expect(game.isDraw, isTrue,
             reason: 'Grid full with no 3-in-a-row should be a draw');
@@ -344,12 +431,14 @@ void main() {
         game.grid[0][0].claimedBy = 'p1';
         game.grid[0][1].claimedBy = 'p1';
 
-        // P1 claims (0,2) → round win
-        provider.processDartThrow(score: 16, multiplier: 1, sector: 'S16');
+        // P1 claims (0,2) → round win using actual number
+        _hitCell(provider, 0, 2);
         expect(game.winnerId, equals('p1'));
 
         // Try to process another dart — should be ignored (round won)
-        provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
+        // Use a number that would match (0,1) which is p1's but round is over
+        final n01 = _n(provider, 0, 1);
+        provider.processDartThrow(score: n01, multiplier: 1, sector: 'S$n01');
         // (0,1) is still p1's (not overwritten or caused issues)
         expect(game.winnerId, equals('p1'));
         expect(game.grid[0][1].claimedBy, equals('p1'));
@@ -367,8 +456,8 @@ void main() {
         // Pre-plant 2 flags
         game.grid[0][0].claimedBy = playerId;
         game.grid[0][1].claimedBy = playerId;
-        // Throw winning dart
-        p.processDartThrow(score: 16, multiplier: 1, sector: 'S16');
+        // Throw winning dart at (0,2) using actual target number
+        _hitCell(p, 0, 2);
         // Trigger takeout to process round transition
         p.handleTakeoutFinished();
       }
@@ -489,8 +578,9 @@ void main() {
         provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
         final game = provider.currentGame!;
 
-        // P1 throws S20 — claims (0,0)
-        provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+        // P1 throws a dart hitting (0,0) — use actual number
+        final n = _n(provider, 0, 0);
+        provider.processDartThrow(score: n, multiplier: 1, sector: 'S$n');
         expect(game.grid[0][0].claimedBy, equals('p1'));
 
         // Edit: replace that dart with S99 (miss)
@@ -523,8 +613,10 @@ void main() {
         provider.startGame(['p1', 'p2'], TargetDifficulty.hard, 3, true, true);
         final game = provider.currentGame!;
 
-        // Make some moves
-        provider.processDartThrow(score: 20, multiplier: 3, sector: 'T20');
+        // Make some moves — hit corner (0,0) which requires triple, then a miss
+        // score = base number (not n*3) — processDartThrow matches on base number
+        final n00 = _n(provider, 0, 0);
+        provider.processDartThrow(score: n00, multiplier: 3, sector: 'T$n00');
         provider.processDartThrow(score: 99, multiplier: 1, sector: 'S99');
 
         final json = game.toJson();

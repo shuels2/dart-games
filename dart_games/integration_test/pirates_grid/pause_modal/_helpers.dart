@@ -8,12 +8,14 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/pause_modal_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/edit_score_helpers.dart';
 
 export '../../shared/ui_test_helpers.dart';
 export '../../shared/element_finders.dart';
 export '../../shared/pump_sequences.dart';
 export '../../shared/pause_modal_helpers.dart';
 export '../../shared/provider_helpers.dart';
+export '../../shared/edit_score_helpers.dart';
 
 final config = GameUIConfig.piratesGrid();
 
@@ -56,6 +58,9 @@ Future<void> simulateDisconnectAndVerify(WidgetTester tester) =>
 
 Future<void> simulateReconnectAndVerify(WidgetTester tester) =>
     PauseModalHelpers.simulateReconnectAndVerify(tester);
+
+Future<void> openEditScore(WidgetTester tester, GameUIConfig config) =>
+    EditScoreHelpers.openEditScore(tester, config);
 
 // ===== GAME-SPECIFIC HELPERS =====
 

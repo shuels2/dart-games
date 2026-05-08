@@ -17,6 +17,54 @@ import '../../../mocks/mock_pirates_grid_audio_queue_service.dart';
 ///   Group 4 — Stacking (worst-case max 2; remove-darts always fires)
 ///   Group 5 — Auto-play suppression
 
+// ─── Runtime grid helpers ─────────────────────────────────────────────────────
+
+/// Returns the target number at [row],[col].
+int _n(PiratesGridProvider p, int row, int col) =>
+    p.currentGame!.grid[row][col].target.number;
+
+/// Returns the requirement at [row],[col].
+CellRequirement _req(PiratesGridProvider p, int row, int col) =>
+    p.currentGame!.grid[row][col].target.requirement;
+
+/// Returns the required multiplier for a CellRequirement.
+int _multiplierFor(CellRequirement req) {
+  switch (req) {
+    case CellRequirement.tripleOnly:
+      return 3;
+    case CellRequirement.doubleOnly:
+    case CellRequirement.doubleOrTriple:
+      return 2;
+    case CellRequirement.any:
+      return 1;
+    case CellRequirement.bull:
+      return 1; // handled specially
+  }
+}
+
+/// Builds the sector string for [number] and [multiplier].
+String _sector(int number, int multiplier) {
+  if (multiplier == 2) return 'D$number';
+  if (multiplier == 3) return 'T$number';
+  return 'S$number';
+}
+
+/// Returns a (score, multiplier, sector) tuple for hitting cell [row],[col].
+/// Bull cells use outer bull (score=25, multiplier=1, sector='Bull').
+///
+/// Note: [score] is the BASE number (1–20), not the total. The provider's
+/// processDartThrow uses score=dartNumber which matches cell.target.number.
+({int score, int multiplier, String sector}) _dartFor(PiratesGridProvider p, int row, int col) {
+  final req = _req(p, row, col);
+  if (req == CellRequirement.bull) {
+    return (score: 25, multiplier: 1, sector: 'Bull');
+  }
+  final n = _n(p, row, col);
+  final mult = _multiplierFor(req);
+  // score = base number (not n*mult) — matches() checks dartNumber == number
+  return (score: n, multiplier: mult, sector: _sector(n, mult));
+}
+
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
 /// Simulates the "gather facts, pick winner" pattern from _handleDartThrow.
@@ -235,8 +283,6 @@ void main() {
 
     test('3. announceRemoveDarts fires unconditionally after 3 darts thrown', () {
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
-      // Throw 3 darts (S20 misses the grid since Easy uses numbers 20,18,16,...)
-      // Actually S20 hits cell [0][0]; S18 hits [0][1]; S16 hits [0][2]
       // Throw 3 misses (sector 'None' → score 0)
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
@@ -293,35 +339,39 @@ void main() {
     test('6. Flag planted — empty cell hit → announceFlagPlanted fires', () {
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
-      // S20 → cell [0][0] = 20 (easy, any hit)
+      // Read actual number at (0,0) — Easy, any hit
+      final d = _dartFor(provider, 0, 0);
+
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S20',
-        score: 20,
-        multiplier: 1,
+        sector: d.sector,
+        score: d.score,
+        multiplier: d.multiplier,
         suppressRemoveDarts: true,
       );
 
       expect(mock.announcementCount, 1);
       expect(mock.recordedAnnouncements[0], contains('plants a flag'));
-      expect(mock.recordedAnnouncements[0], contains('20'));
+      // The announcement contains the actual target number at (0,0)
+      expect(mock.recordedAnnouncements[0], contains('${_n(provider, 0, 0)}'));
     });
 
     test('7. Already claimed own — hit own flag cell → announceAlreadyClaimed(isOwn: true) fires', () {
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
-      // Plant at S20 first
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // Plant at (0,0) first using actual number
+      final d = _dartFor(provider, 0, 0);
+      provider.processDartThrow(score: d.score, multiplier: d.multiplier, sector: d.sector);
       mock.clearAnnouncements();
 
       // Hit it again (own flag)
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S20',
-        score: 20,
-        multiplier: 1,
+        sector: d.sector,
+        score: d.score,
+        multiplier: d.multiplier,
         suppressRemoveDarts: true,
       );
 
@@ -333,21 +383,22 @@ void main() {
     test('8. Already claimed opponent (no steal) → announceAlreadyClaimed(isOwn: false) fires', () {
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
-      // p1 plants at S20
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // p1 plants at (0,0) using actual number
+      final d = _dartFor(provider, 0, 0);
+      provider.processDartThrow(score: d.score, multiplier: d.multiplier, sector: d.sector);
       // Fill p1 turn
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
       provider.handleTakeoutFinished();
 
-      // Now p2 tries to hit S20 (already claimed by p1, Steal Mode OFF)
+      // Now p2 tries to hit (0,0) (already claimed by p1, Steal Mode OFF)
       mock.clearAnnouncements();
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S20',
-        score: 20,
-        multiplier: 1,
+        sector: d.sector,
+        score: d.score,
+        multiplier: d.multiplier,
         suppressRemoveDarts: true,
       );
 
@@ -359,20 +410,21 @@ void main() {
       // stealMode ON
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, true, false);
 
-      // p1 plants at S20
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // p1 plants at (0,0) using actual number
+      final d = _dartFor(provider, 0, 0);
+      provider.processDartThrow(score: d.score, multiplier: d.multiplier, sector: d.sector);
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
       provider.handleTakeoutFinished();
 
-      // p2 steals S20 (Steal Mode ON)
+      // p2 steals (0,0) with Steal Mode ON
       mock.clearAnnouncements();
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S20',
-        score: 20,
-        multiplier: 1,
+        sector: d.sector,
+        score: d.score,
+        multiplier: d.multiplier,
         suppressRemoveDarts: true,
       );
 
@@ -384,17 +436,19 @@ void main() {
     test('10. Two in a row — 2nd flag in a line with empty 3rd → announceTwoInARow fires', () {
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
-      // p1 plants at S20 [0][0], then S18 [0][1] — 2 in top row, [0][2] still empty
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // p1 plants at (0,0), then (0,1) — 2 in top row, (0,2) still empty
+      final d00 = _dartFor(provider, 0, 0);
+      provider.processDartThrow(score: d00.score, multiplier: d00.multiplier, sector: d00.sector);
       mock.clearAnnouncements();
 
-      // S18 → [0][1] gives two-in-a-row on the top row
+      // (0,1) gives two-in-a-row on the top row
+      final d01 = _dartFor(provider, 0, 1);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S18',
-        score: 18,
-        multiplier: 1,
+        sector: d01.sector,
+        score: d01.score,
+        multiplier: d01.multiplier,
         suppressRemoveDarts: true,
       );
 
@@ -406,18 +460,21 @@ void main() {
       // Bo3: round win does NOT immediately win the match (need 2 round wins)
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 3, false, false);
 
-      // Plant [0][0] and [0][1] first
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
-      provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
+      // Plant (0,0) and (0,1) first
+      final d00 = _dartFor(provider, 0, 0);
+      final d01 = _dartFor(provider, 0, 1);
+      provider.processDartThrow(score: d00.score, multiplier: d00.multiplier, sector: d00.sector);
+      provider.processDartThrow(score: d01.score, multiplier: d01.multiplier, sector: d01.sector);
       mock.clearAnnouncements();
 
-      // S16 → [0][2] completes top row — round victory (match NOT over, needs 2 wins)
+      // (0,2) completes top row — round victory (match NOT over, needs 2 wins)
+      final d02 = _dartFor(provider, 0, 2);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S16',
-        score: 16,
-        multiplier: 1,
+        sector: d02.sector,
+        score: d02.score,
+        multiplier: d02.multiplier,
         suppressRemoveDarts: true,
       );
 
@@ -432,16 +489,19 @@ void main() {
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
       // Bo1: winning the round = winning the match
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
-      provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
+      final d00 = _dartFor(provider, 0, 0);
+      final d01 = _dartFor(provider, 0, 1);
+      provider.processDartThrow(score: d00.score, multiplier: d00.multiplier, sector: d00.sector);
+      provider.processDartThrow(score: d01.score, multiplier: d01.multiplier, sector: d01.sector);
       mock.clearAnnouncements();
 
+      final d02 = _dartFor(provider, 0, 2);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S16',
-        score: 16,
-        multiplier: 1,
+        sector: d02.sector,
+        score: d02.score,
+        multiplier: d02.multiplier,
         suppressRemoveDarts: true,
       );
 
@@ -467,17 +527,19 @@ void main() {
     test('14. Two in a Row suppresses Flag Planted (flag+2-in-a-row on same dart)', () {
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
-      // Plant [0][0] first to set up 1-in-row
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
+      // Plant (0,0) first to set up 1-in-row
+      final d00 = _dartFor(provider, 0, 0);
+      provider.processDartThrow(score: d00.score, multiplier: d00.multiplier, sector: d00.sector);
       mock.clearAnnouncements();
 
-      // S18 → [0][1] gives two-in-a-row AND plants flag — two-in-a-row must win
+      // (0,1) gives two-in-a-row AND plants flag — two-in-a-row must win
+      final d01 = _dartFor(provider, 0, 1);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S18',
-        score: 18,
-        multiplier: 1,
+        sector: d01.sector,
+        score: d01.score,
+        multiplier: d01.multiplier,
         suppressRemoveDarts: true,
       );
 
@@ -496,18 +558,21 @@ void main() {
       // Match Victory (highest priority) suppresses Two in a Row.
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
-      // Plant [0][0] and [0][1]
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
-      provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
+      // Plant (0,0) and (0,1)
+      final d00 = _dartFor(provider, 0, 0);
+      final d01 = _dartFor(provider, 0, 1);
+      provider.processDartThrow(score: d00.score, multiplier: d00.multiplier, sector: d00.sector);
+      provider.processDartThrow(score: d01.score, multiplier: d01.multiplier, sector: d01.sector);
       mock.clearAnnouncements();
 
-      // S16 → [0][2] — plants flag AND completes top row = MATCH WIN in Bo1
+      // (0,2) — plants flag AND completes top row = MATCH WIN in Bo1
+      final d02 = _dartFor(provider, 0, 2);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S16',
-        score: 16,
-        multiplier: 1,
+        sector: d02.sector,
+        score: d02.score,
+        multiplier: d02.multiplier,
         suppressRemoveDarts: true,
       );
 
@@ -528,10 +593,13 @@ void main() {
       // Bo3: first to 2 round wins
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 3, false, false);
 
-      // Round 1 — p1 wins
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
-      provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
-      provider.processDartThrow(score: 16, multiplier: 1, sector: 'S16');
+      // Round 1 — p1 wins top row
+      final d00r1 = _dartFor(provider, 0, 0);
+      final d01r1 = _dartFor(provider, 0, 1);
+      final d02r1 = _dartFor(provider, 0, 2);
+      provider.processDartThrow(score: d00r1.score, multiplier: d00r1.multiplier, sector: d00r1.sector);
+      provider.processDartThrow(score: d01r1.score, multiplier: d01r1.multiplier, sector: d01r1.sector);
+      provider.processDartThrow(score: d02r1.score, multiplier: d02r1.multiplier, sector: d02r1.sector);
       // p1 won round 1 (match NOT over — needs 2 wins)
       expect(provider.currentGame!.winnerId, isNotNull);
       expect(provider.currentGame!.matchWinnerId, isNull);
@@ -540,29 +608,30 @@ void main() {
       mock.clearAnnouncements();
 
       // Round 2 — p1 wins again → match victory
-      // p1 starts (alternating start: round 2 starts with p2, but let's check)
       final game2 = provider.currentGame!;
       expect(game2.currentRound, 2);
 
-      // p2 starts round 2 (alternating). Get to p1's turn.
-      // Throw 3 misses for p2
+      // p2 starts round 2 (alternating). Throw 3 misses for p2
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
       provider.handleTakeoutFinished();
       mock.clearAnnouncements();
 
-      // p1's turn in round 2 — win top row again
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
-      provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
+      // p1's turn in round 2 — win top row again (grid is re-shuffled, read new numbers)
+      final d00r2 = _dartFor(provider, 0, 0);
+      final d01r2 = _dartFor(provider, 0, 1);
+      provider.processDartThrow(score: d00r2.score, multiplier: d00r2.multiplier, sector: d00r2.sector);
+      provider.processDartThrow(score: d01r2.score, multiplier: d01r2.multiplier, sector: d01r2.sector);
       mock.clearAnnouncements();
 
+      final d02r2 = _dartFor(provider, 0, 2);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S16',
-        score: 16,
-        multiplier: 1,
+        sector: d02r2.sector,
+        score: d02r2.score,
+        multiplier: d02r2.multiplier,
         suppressRemoveDarts: true,
       );
 
@@ -577,38 +646,44 @@ void main() {
     });
 
     test('17. Round Draw suppresses Flag Planted (grid fills on last dart with no winner)', () {
-      // Build a Bo1 game and fill the grid so the last dart is a miss BUT the
-      // grid is full → draw. We simulate the draw scenario differently:
-      // Manufacture a game state where the board is full after one more dart.
+      // Build a Bo1 game and fill the grid so the last dart fills the grid → draw.
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
       final game = provider.currentGame!;
 
-      // Manually fill all 9 cells — 7 for p2, 0 for p1 (won't be 3-in-a-row)
-      // Pattern: p2 gets alternating cells, p1 gets none → full grid, no winner
-      // p2: [0][0],[0][2],[1][1],[2][0],[2][2] = 5 (no 3-in-a-row for p2)
-      // p1: [0][1],[1][0],[1][2],[2][1]        = 4 (no 3-in-a-row for p1)
+      // Manually fill all cells except (2,2) — 8 cells pre-filled, (2,2) is last.
+      // Pattern: p2 gets (0,0),(0,2),(1,1),(2,0) = 4; p1 gets (0,1),(1,0),(1,2),(2,1) = 4
+      // Neither has 3-in-a-row. Then p1 claims (2,2) → grid full → draw.
+      //
+      // Check rows: row0=[p2,p1,p2] row1=[p1,p2,p1] row2=[p2,p1,p2(new)]
+      // Diagonals: (0,0)p2-(1,1)p2-(2,2)p2 → would be p2 win! Avoid.
+      // Use: p2: (0,0),(0,2),(1,0),(2,1) = 4; p1: (0,1),(1,1),(1,2),(2,0) = 4
+      //      row0=[p2,p1,p2] row1=[p2,p1,p1] row2=[p1,p2,__]
+      //      After p1 claims (2,2): row2=[p1,p2,p1]
+      //      Diag (0,0)p2-(1,1)p1-(2,2)p1 → no win. Diag (0,2)p2-(1,1)p1-(2,0)p1 → no win.
+      //      Col0: p2,p2,p1 → no. Col1: p1,p1,p2 → no. Col2: p2,p1,p1 → no.
+      //      Row0: p2,p1,p2 → no. Row1: p2,p1,p1 → no. Row2: p1,p2,p1 → no. OK.
       game.grid[0][0].claimedBy = 'p2';
       game.grid[0][1].claimedBy = 'p1';
       game.grid[0][2].claimedBy = 'p2';
-      game.grid[1][0].claimedBy = 'p1';
-      game.grid[1][1].claimedBy = 'p2';
+      game.grid[1][0].claimedBy = 'p2';
+      game.grid[1][1].claimedBy = 'p1';
       game.grid[1][2].claimedBy = 'p1';
-      game.grid[2][0].claimedBy = 'p2';
-      game.grid[2][1].claimedBy = 'p1';
-      // [2][2] is still empty — next dart at S10 (p1's turn) → grid full → draw
+      game.grid[2][0].claimedBy = 'p1';
+      game.grid[2][1].claimedBy = 'p2';
+      // (2,2) is still empty — p1 will claim it via _simulateDartThrow
       mock.clearAnnouncements();
 
+      final d22 = _dartFor(provider, 2, 2);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S10',
-        score: 10,
-        multiplier: 1,
+        sector: d22.sector,
+        score: d22.score,
+        multiplier: d22.multiplier,
         suppressRemoveDarts: true,
       );
 
       // After this dart the grid is full — should be a draw (Bo1 → match draw)
-      // Round draw fires (match draw in Bo1)
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
@@ -639,22 +714,23 @@ void main() {
             ['p1', 'p2'], TargetDifficulty.easy, 1, true, false);
         final game = provider.currentGame!;
 
-        // Arrange grid: p1 has [0][0] and [0][1] (needs [0][2] = 16 to win)
-        // Opponent p2 has claimed [0][2]
-        // So when p1 hits S16, they steal p2's [0][2] AND complete top row AND win match
+        // Arrange grid: p1 has (0,0) and (0,1) (needs (0,2) to win)
+        // Opponent p2 has claimed (0,2)
+        // So when p1 hits (0,2), they steal p2's cell AND complete top row AND win match
         game.grid[0][0].claimedBy = 'p1';
         game.grid[0][1].claimedBy = 'p1';
         game.grid[0][2].claimedBy = 'p2'; // p2 owns this — will be stolen
 
         mock.clearAnnouncements();
 
-        // p1 hits S16 → steals [0][2] from p2 → 3-in-a-row for p1 → match win
+        // p1 hits (0,2) → steals from p2 → 3-in-a-row for p1 → match win
+        final d02 = _dartFor(provider, 0, 2);
         _simulateDartThrow(
           provider: provider,
           mock: mock,
-          sector: 'S16',
-          score: 16,
-          multiplier: 1,
+          sector: d02.sector,
+          score: d02.score,
+          multiplier: d02.multiplier,
           suppressRemoveDarts: false,
         );
 
@@ -701,12 +777,13 @@ void main() {
 
         mock.clearAnnouncements();
 
+        final d02 = _dartFor(provider, 0, 2);
         _simulateDartThrow(
           provider: provider,
           mock: mock,
-          sector: 'S16',
-          score: 16,
-          multiplier: 1,
+          sector: d02.sector,
+          score: d02.score,
+          multiplier: d02.multiplier,
           suppressRemoveDarts: false,
         );
 
@@ -764,13 +841,14 @@ void main() {
       provider.processDartThrow(score: 0, multiplier: 1, sector: 'None');
       mock.clearAnnouncements();
 
-      // 3rd dart → plant flag + takeout triggers
+      // 3rd dart → plant flag + takeout triggers; use actual number at (0,0)
+      final d00 = _dartFor(provider, 0, 0);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S20',
-        score: 20,
-        multiplier: 1,
+        sector: d00.sector,
+        score: d00.score,
+        multiplier: d00.multiplier,
         suppressRemoveDarts: false,
       );
 
@@ -792,13 +870,14 @@ void main() {
       () {
         provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
-        // Throw a dart with isAutoPlaying=true — no announcements should fire
+        // Throw a dart at (0,0) with isAutoPlaying=true — no announcements should fire
+        final d00 = _dartFor(provider, 0, 0);
         _simulateDartThrow(
           provider: provider,
           mock: mock,
-          sector: 'S20',
-          score: 20,
-          multiplier: 1,
+          sector: d00.sector,
+          score: d00.score,
+          multiplier: d00.multiplier,
           isAutoPlaying: true,
           suppressRemoveDarts: false,
         );
@@ -814,15 +893,19 @@ void main() {
     test('23. Auto-play suppression: even match victory is suppressed when isAutoPlaying=true', () {
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
-      provider.processDartThrow(score: 20, multiplier: 1, sector: 'S20');
-      provider.processDartThrow(score: 18, multiplier: 1, sector: 'S18');
+      // Plant (0,0) and (0,1) then auto-play the winning dart at (0,2)
+      final d00 = _dartFor(provider, 0, 0);
+      final d01 = _dartFor(provider, 0, 1);
+      provider.processDartThrow(score: d00.score, multiplier: d00.multiplier, sector: d00.sector);
+      provider.processDartThrow(score: d01.score, multiplier: d01.multiplier, sector: d01.sector);
 
+      final d02 = _dartFor(provider, 0, 2);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S16',
-        score: 16,
-        multiplier: 1,
+        sector: d02.sector,
+        score: d02.score,
+        multiplier: d02.multiplier,
         isAutoPlaying: true,
         suppressRemoveDarts: false,
       );
@@ -837,12 +920,14 @@ void main() {
     test('24. Auto-play suppression OFF: normal announcements resume when isAutoPlaying=false', () {
       provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 1, false, false);
 
+      // Throw dart at (0,0) with isAutoPlaying=false
+      final d00 = _dartFor(provider, 0, 0);
       _simulateDartThrow(
         provider: provider,
         mock: mock,
-        sector: 'S20',
-        score: 20,
-        multiplier: 1,
+        sector: d00.sector,
+        score: d00.score,
+        multiplier: d00.multiplier,
         isAutoPlaying: false,
         suppressRemoveDarts: true,
       );

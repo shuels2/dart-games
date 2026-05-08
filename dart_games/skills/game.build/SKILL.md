@@ -578,10 +578,23 @@ Do NOT proceed to Phase 3 until the user explicitly approves the full wireframe 
 > 3. `test/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_test.dart`
 >    - Every test listed in the spec's Testing Plan game-logic section
 >    - At least one test per Options-section option exercising its effect
+> 4. `test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` (**MANDATORY** — every other game has one; missing it is a coverage hole)
+>    - Pure-provider game-mechanics tests (no widget pumping). Construct provider directly, call methods, assert state.
+>    - **Minimum 40 tests** (canonical games range 44–50: HorseRace 50, ClockworkQuest 49, MonsterMash 44, ReefRoyale 45, TargetTag 45). The screen-level `_game_test.dart` is NOT a substitute — that file tests via the screen wrapper; this file isolates provider logic so regressions surface clearly when the screen changes.
+>    - Required groups (one or more `group(...)` blocks):
+>      - **Initial state** — `isGameActive` before/after `startGame`, randomized layout invariants (if applicable), default-state assertions
+>      - **`processDartThrow` per difficulty/option** — for each option-value combination from spec Section 7 that affects the dart-processing path, a group with hit/miss/edge cases. (Pirate's Grid example: Easy / Medium / Hard groups, each with hit-claims-cell and miss-no-claim cases.)
+>      - **Turn advancement** — advances after 3 darts, `skipTurn` forfeits + advances, dart counter resets per turn, `processDartThrow` no-ops when `state == finished`
+>      - **Win detection** — every win path the game supports (rows, columns, diagonals, score thresholds, elimination, etc.); plus draw/no-winner end conditions
+>      - **Per-option side-effects** — for each on/off toggle and dropdown value from spec Section 7, one or more tests asserting the provider state change (e.g., Steal Mode replaces opponent flag; Hard Landing reduces altitude differently; Speed Mode advances turn on time)
+>      - **Round / match transitions** (best-of, multi-round games) — round increment, alternating starting player, match-end on threshold
+>      - **`_resetTurnForPlayer` / edit-score replay** — undoes ALL win side-effects including match-level (`matchWinnerId`, `isMatchDraw`, `state`, `gameEndTime`, round counters); see Accumulated Build Quality Rules § 20
+>      - **Randomized targets / shuffled state** (if applicable) — invariants on the randomized state across new games
+>      - **`endGame` and resumed save id tracking** — `endGame` clears active flag; `resumedSavedGameId` tracks the source save id
 >
 > **Verification:**
-> - Run `flutter test test/screens/games/[GAME_NAME_SNAKE]/`
-> - Confirm 100% pass rate
+> - Run `flutter test test/screens/games/[GAME_NAME_SNAKE]/ test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart`
+> - Confirm 100% pass rate on BOTH
 >
 > **Report back:**
 > - File paths created
@@ -591,11 +604,12 @@ Do NOT proceed to Phase 3 until the user explicitly approves the full wireframe 
 >
 > **Hard rules — Do NOT:**
 > - Commit to master/main. Do NOT push to remote.
-> - Modify any files outside the three created above
+> - Modify any files outside the four created above
 > - Modify any existing game's code
 > - Create the screens (those come in Phase 4)
 > - Skip running the tests
 > - Swallow exceptions in `updatePlayerStats` calls (the platform auto-logs failures via `/api/v1/stats/failed`)
+> - **Skip authoring `[GAME_NAME_SNAKE]_provider_game_test.dart`** — Lunar Lander and Pirate's Grid both shipped without it (only realized post-launch via the test-count gap audit). Every game needs this file; treat it as a Phase 3 hard requirement, not optional.
 
 After the sub-agent returns, read `lib/providers/[GAME_NAME_SNAKE]_provider.dart` yourself and verify Options-section coverage independently before AR-3.
 
@@ -606,13 +620,14 @@ After the sub-agent returns, read `lib/providers/[GAME_NAME_SNAKE]_provider.dart
 > (b) There is at least one test that exercises this option (cite the test name)
 > (c) **Turn increment rule:** `grep -n 'totalTurns' lib/models/[GAME_NAME_SNAKE]_game.dart lib/providers/[GAME_NAME_SNAKE]_provider.dart` — the increment (`totalTurns[...] = ... + 1`) MUST appear in EXACTLY ONE place: the provider's `processDartThrow` guarded by `if (game.dartsThrown[playerId] == 1)`. Any increment in `advanceToNextPlayer` or anywhere else is a double-count bug.
 > (d) **Asset paths in model match Phase 1 manifest:** for every enum value in the model with an `assetPath` getter, the returned path MUST exist on disk. Run `flutter test test/screens/games/[GAME_NAME_SNAKE]/` — if any character image fails to load, the unit tests still pass (they don't load images). The check is: read the model file and grep each `return 'assets/...'` path, then confirm the file exists.
+> (e) **`test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` exists with ≥ 40 tests.** This is the dedicated provider-game-mechanics test file (separate from screen-level `_game_test.dart`). Run `grep -c '^  test(\|^    test(' test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must report ≥ 40. The file MUST cover every option-value combination from spec Section 7 that affects dart-processing in its own group, plus the standard groups listed in Phase 3 file #4 (initial state, turn advancement, win detection, round transitions, `_resetTurnForPlayer` undo, `endGame`). Past failure: Lunar Lander and Pirate's Grid both shipped without this file; the gap was caught only by a manual cross-game test-count audit weeks later.
 >
 > Coverage matrix:
-> | Option | Provider Logic | Test Coverage |
-> |--------|---------------|---------------|
-> | [name] | [method]      | [test name]   |
+> | Option | Provider Logic | Screen-level Test | Provider-level Test |
+> |--------|---------------|-------------------|---------------------|
+> | [name] | [method]      | [test name]       | [test name]         |
 >
-> I will report any option that lacks either provider logic or test coverage, plus any turn-increment double-count or any model assetPath that doesn't exist on disk."
+> Every row must have BOTH a screen-level test AND a provider-level test. I will report any option that lacks either, plus any turn-increment double-count, any model assetPath that doesn't exist on disk, or absence of `[GAME_NAME_SNAKE]_provider_game_test.dart`."
 
 Report AR-3 findings. Dispatch a corrective Sonnet sub-agent for any gaps before proceeding.
 
@@ -1462,11 +1477,20 @@ If FAIL:
 > - `gameplay/` — Core gameplay tests
 > - `menu_and_settings/` — Menu screen + settings tests
 > - `results_screen/` — Results screen tests, INCLUDING the three mandatory tests below. **Use `results_screen/` (matches Target Tag, Monster Mash, Reef Royale — 3 of 5 games) unless your spec explicitly mandates `results/`.**
-> - `save_resume/` — Save/Resume tests
+> - `save_resume/` — Save/Resume tests. **MANDATORY: 16 separate test files, one testWidget per file**, mirroring the canonical pack used by Target Tag, Monster Mash, Reef Royale, Clockwork Quest:
+>   - `save_modal_save_button_test.dart`, `save_modal_dont_save_test.dart`, `save_modal_back_0_darts_test.dart`, `save_modal_back_after_darts_test.dart`
+>   - `resume_button_disabled_no_saves_test.dart`, `resume_button_color_when_enabled_test.dart`, `resume_button_enabled_after_save_test.dart`, `resume_button_hidden_after_resume_test.dart`, `resume_button_shows_modal_test.dart`
+>   - `resume_modal_shows_on_game_tap_test.dart`, `resume_modal_start_new_game_test.dart`, `resume_modal_delete_individual_test.dart`, `resume_modal_delete_all_test.dart`
+>   - `resume_game_loads_screen_test.dart`, `resume_resave_overwrites_test.dart`, `resume_auto_deletes_on_completion_test.dart`
+>   - **Reference:** mirror `integration_test/monster_mash/save_resume/*` 1-for-1. Past failure: Pirate's Grid and Lunar Lander shipped with 6 sub-tests in a single combined file — the 10 missing edge cases were never written. The 3 "real-flow" files (resume_game_loads_screen, resume_resave_overwrites, resume_auto_deletes_on_completion) MUST use the in-game save flow per Rule 17 — not `preSaveGame`.
 > - **`navigation/`** — the 4 mandatory navigation tests (see below)
 > - **`play_to_complete/`** — Play-to-Complete tests (see below)
 > - `visual_validation/` — Screenshot test (Step 7 below)
-> - **`pause_modal/`** — Dartboard pause modal tests (3 files: `menu_pause_test.dart`, `gameplay_pause_test.dart`, `results_pause_test.dart`)
+> - **`pause_modal/`** — Dartboard pause modal tests. **MANDATORY: 20 testWidgets total across 3 files** matching the canonical pack used by Target Tag, Monster Mash, Reef Royale, Clockwork Quest, Lunar Lander:
+>   - `menu_pause_test.dart` — **7 testWidgets**: pause appears on menu, blocks AppBar back, blocks start button, blocks settings controls, blocks add player button, dismiss-and-resume, post-reconnect back button works
+>   - `gameplay_pause_test.dart` — **8 testWidgets**: pause appears during gameplay, blocks AppBar back, blocks dartboard emulator, pause over RemoveDartsModal, pause over SaveGameModal (save button blocked), EditScoreDialog auto-closes on disconnect, pause dismisses on reconnect, RemoveDartsModal still visible after reconnect
+>   - `results_pause_test.dart` — **5 testWidgets**: pause appears on results, blocks Play Again, blocks Change Settings, blocks Back to Menu, dismiss-and-buttons-work
+>   - **Reference:** mirror `integration_test/monster_mash/pause_modal/*` 1-for-1, replacing MM-specific finders with the new game's. Past failure: Pirate's Grid shipped with only 3 testWidgets (1 per file) — caught post-launch by a cross-game test-count audit. A skeleton "1 test per file" version is NOT acceptable — the modal-stacking edge cases (pause-over-RemoveDartsModal, EditScoreDialog auto-close) only exist in the full pack.
 >
 > **3. Mandatory navigation tests** (4 separate files in `integration_test/[GAME_NAME_SNAKE]/navigation/`, per `docs/development/game-integration.md` and `docs/development/navigation-ui-tests-plan.md`):
 >
@@ -1502,6 +1526,36 @@ If FAIL:
 >
 > - `opponent_display_test.dart` — in a 3+ player game, verify inactive (non-current) players are visually present (their tiles, tracks, panels, or whichever UI element represents them). After throwing darts as the current player and advancing turn, verify the previous player's per-player state (score, health, altitude, position, marks) is now visible and correct on their tile/track.
 > - **Rationale:** Many games show only the current player prominently; without this test, regressions where opponent panels disappear, never update, or show stale state are caught only by manual testing. Reference: Clockwork Quest `opponent_tiles_visible_test.dart`, Reef Royale `opponent_summary_bar_updates_test.dart`.
+>
+> **5c. Mandatory per-option-value functional gameplay tests** (in `integration_test/[GAME_NAME_SNAKE]/gameplay/`):
+>
+> Every row in spec Section 7 (Game Options & Settings) requires **one functional gameplay UI test per VALUE** (not per option). A 3-value dropdown like Difficulty (Easy/Medium/Hard) needs 3 tests; an on/off toggle needs 2 (one per state); a numeric option with N defaults the spec calls out needs N. The functional test sets up a game with that option-value and asserts a behavioral outcome — not just that the dropdown's text changed.
+>
+> **Test naming convention** — one of:
+>   - `<option>_<value>_<behavior>_test.dart` (e.g., `difficulty_hard_corner_triple_required_test.dart`)
+>   - or `<behavior>_<option>_<value>_test.dart` (e.g., `plant_flag_hard_test.dart`)
+>
+> **Coverage table** — at the start of Phase 7, build this table from spec Section 7 and confirm every row has a planned test file:
+>   | Option | Value | Spec Visual/Behavioral Effect | Functional Gameplay Test File |
+>   |--------|-------|------------------------------|-------------------------------|
+>
+> **Past failure:** Pirate's Grid shipped with `plant_flag_easy_test.dart` and `plant_flag_medium_test.dart` but no Hard test, no Best Of 5 test, and no Speed Play timer-expires test — three Section 7 values had zero functional UI coverage. The screen-level non-UI tests covered them logically but the UI flow (which is where most regressions hit) had gaps. Caught only by post-launch audit.
+>
+> **Rationale:** Provider-level tests prove the option's logic works; UI tests prove the option is actually wired through the menu → screen path and renders the expected behavior under the real frame loop. The two test layers catch different classes of bugs.
+>
+> **5d. Mandatory per-option-value visual_validation tests** (in `integration_test/[GAME_NAME_SNAKE]/visual_validation/`):
+>
+> Every spec Section 7 option that has a *visible* effect on the game screen ALSO requires one visual_validation UI test per visible value. This is in addition to the functional gameplay test in 5c — the functional test asserts the BEHAVIOR; the visual_validation test asserts the VISUAL APPEARANCE (badge presence, color, glow, text content, icon).
+>
+> Examples (from Pirate's Grid):
+>   - Difficulty: Easy → no D/T/Bull badges visible | Medium → "D" badge in Sea Foam Teal on every cell | Hard → corners "T" Blood Red, edges "D" Sea Foam Teal, center "Bull"
+>   - Best Of 1 → no round tracker visible | Best Of 3/5 → round tracker text reads "Round X/Y" with player score colors
+>   - Steal Mode ON → STEAL MODE badge visible (Blood Red pill) | OFF → badge absent
+>   - Speed Play ON → countdown timer visible with color tier transitions (gold→bronze→red) | OFF → no timer
+>
+> Group by option, one file per option (3 testWidgets within a Difficulty file is fine), or split per value (separate files). Match the `dart_indicators_state_test.dart` style — RGB byte comparison for colors, `find.byKey` for widget keys, `find.descendant` for badge contents.
+>
+> **Past failure:** Pirate's Grid shipped without difficulty-badges visual test, cell-flag-colors visual test, winning-row-glow visual test, round-tracker-text visual test, speed-play-timer-colors visual test, or round-complete-overlay visual test — six visible spec elements with zero visual assertion. `conditional_ui_test.dart` checked widget *visibility* but not *appearance*.
 >
 > **6. Every UI test must call `await UITestHelpers.resetServerState()` at the start.** This is required for per-session DB isolation (Flutter Bug #67090 spawns a phantom 2nd browser; without per-session DBs the phantom contaminates results — see `docs/testing/ui-automation.md`).
 >
@@ -1599,6 +1653,17 @@ If FAIL:
 >
 > **The 4 above are the floor, not the ceiling.** If the game's spec includes additional visual mechanics (gradients, animations, multi-state badges, dynamic sizing), add one programmatic test per concern.
 >
+> **7c. Mandatory per-spec-Section-10 visual element coverage.** In addition to the 4 mandatory categories above and the per-option-value visual tests from 5d, every distinct visual element described in spec Section 10 (Screen Designs) requires at least one programmatic visual_validation test that asserts its appearance under its trigger condition. Build this table at the start of Phase 7 and confirm every row has a planned test file:
+>   | Spec Section 10 Element | Trigger Condition | Visual Assertion | Test File |
+>   |-------------------------|-------------------|------------------|-----------|
+>   | (e.g., Winning row gold pulsing glow) | 3-in-a-row achieved | Treasure Gold border on 3 cells | winning_row_glow_test.dart |
+>   | (e.g., P1 cell flag border) | P1 claims a cell | Blood Red border glow | cell_flag_colors_test.dart |
+>   | (e.g., Round complete overlay) | Round ends in Bo3/Bo5 | "Round X Complete!" text in Treasure Gold for ~3s | round_complete_overlay_test.dart |
+>
+> **Past failure:** Pirate's Grid spec Section 10B describes "Winning cells get Treasure Gold pulsing glow + sparkle overlay" — no test asserted this; only logical `state == finished` was checked. Cell flag border colors (P1 Blood Red glow / P2 Sea Foam Teal glow) were undocumented in tests. Round tracker text content (`"Round 1/3 — Alice: 0  Bob: 0"`) was tested for visibility but never for content/color. The gap was caught only post-launch.
+>
+> **Rule of thumb:** if the spec says "X is rendered as Y" and the only test you have asserts X *exists* (via `findsOneWidget`), you are missing the visual test. Add one that asserts Y (text content, RGB color, border, icon).
+>
 > **8. Update ALL FOUR batch files** with the new game:
 > - `run_ui_tests.bat`
 > - `run_ui_tests_stub.bat`
@@ -1676,6 +1741,17 @@ Per `docs/testing/spec-coverage-audit.md`:
 > (k) **Verify `visual_validation/` contains the screenshot test PLUS at least 4 programmatic visual state tests** covering the mandatory concerns: (1) dart indicator state, (2) active player highlight, (3) score/state display threshold, (4) conditional UI element. List each programmatic test file by name and the concern it covers.
 >
 > (l) **Build a "Visual element" coverage matrix from spec Section 10** (Screen Designs) — list every distinct UI state (e.g., "Active player track is orange", "Altitude pill turns red when negative", "Hard Landing badge appears in AppBar", "Win flag shows on results"). For each visual state, identify the programmatic UI test that verifies it. List any visual state without a corresponding test.
+>
+> (m) **Pause modal canonical pack count.** Run `for f in integration_test/[GAME_NAME_SNAKE]/pause_modal/{menu,gameplay,results}_pause_test.dart; do grep -c 'testWidgets(' "$f"; done` — must report **7, 8, 5** in that order (total 20). Any deviation is a failure. Past failure: Pirate's Grid had 1, 1, 1.
+>
+> (n) **Save/resume canonical pack count.** Run `ls integration_test/[GAME_NAME_SNAKE]/save_resume/*_test.dart | wc -l` — must report **16**. Run `for f in integration_test/[GAME_NAME_SNAKE]/save_resume/*_test.dart; do n=$(grep -c 'testWidgets(' "$f"); [ "$n" -ne 1 ] && echo "FAIL: $f has $n testWidgets (expected 1)"; done` — must report nothing (every file is exactly 1 test). Past failure: Pirate's Grid had 1 file with 6 sub-tests; Lunar Lander had similar.
+>
+> (o) **Per-option-value functional gameplay test coverage.** For every row in spec Section 7, build the table:
+>   | Option | Value | Functional Gameplay Test File | Visual Validation Test File |
+>   |--------|-------|------------------------------|------------------------------|
+>   Every value of every option that has a behavioral effect MUST have an entry in BOTH columns (or note when one column is N/A — e.g., a numeric option without a visible badge has no visual_validation test). Past failures (PG): no Hard difficulty functional test; no Best Of 5 test; no Speed Play timer-expires test; no difficulty-badges visual test; no cell-flag-colors visual test; no winning-row-glow visual test; no round-tracker-text visual test; no speed-play-timer-colors visual test; no round-complete-overlay visual test.
+>
+> (p) **Provider game-mechanics test file exists.** `flutter test test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must run and pass. `grep -c '^  test(\|^    test(' test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must report ≥ 40 tests. Past failure: Pirate's Grid and Lunar Lander shipped without this file.
 >
 > Spec coverage: X% (N/M requirements covered)
 > Missing coverage: [list]"
@@ -2787,6 +2863,55 @@ static int get[GameName]CellTargetNumber(WidgetTester tester, int row, int col) 
 final t02 = ProviderHelpers.get[GameName]CellTargetNumber(tester, 0, 2);
 await throwForCellTarget(tester, provider.currentGame!.grid[0][2].target);
 ```
+
+---
+
+### 28. Pause Modal canonical 20-test pack (7 menu + 8 gameplay + 5 results) is mandatory
+A "minimal" pause modal pack of 1 testWidget per file misses the modal-stacking edge cases (pause-over-RemoveDartsModal, pause-over-SaveGameModal, EditScoreDialog auto-closes on disconnect, RemoveDartsModal still visible after reconnect) that are the actual bug-prone seam between the dartboard layer and per-screen overlays. These cases ONLY exist in the full 20-test pack.
+
+**Why:** Pirate's Grid shipped with 3 testWidgets (1 per file). A cross-game test-count audit weeks later showed every other game had 20 (Carnival Derby, Target Tag, Monster Mash, Reef Royale, Clockwork Quest, Lunar Lander). The gap was invisible inside the "I wrote pause tests" claim — only counting tests across games surfaced it.
+
+**How to apply:** In Phase 7, the `pause_modal/` subdirectory's three files MUST contain exactly 7, 8, 5 testWidgets respectively (canonical names listed in Phase 7 Step 7A's `pause_modal/` bullet). The pack is mirrored 1-for-1 from `integration_test/monster_mash/pause_modal/*` with finder substitutions only — no game-specific test additions/omissions. AR-6 audit check (m) verifies the count.
+
+---
+
+### 29. Save/Resume canonical 16-file pack (one testWidget per file) is mandatory
+The "16 separate files, one testWidget each" structure is not a stylistic preference — it's the canonical helper pack used by the shared `SaveResumeHelpers` to map cleanly onto the user-flow surface. Collapsing into one file with multiple sub-tests OR shipping with fewer than 16 file names elides specific edge cases (resume-button-color-when-enabled, resume-button-hidden-after-resume, resume-modal-start-new-game, resume-modal-delete-individual, resume-modal-delete-all, resume-resave-overwrites).
+
+**Why:** Pirate's Grid shipped with 1 file containing 6 sub-tests. Lunar Lander shipped with 6 separate files. Both missed 10 of the 16 canonical edge cases. The 3 "real-flow" tests (resume_game_loads_screen, resume_resave_overwrites, resume_auto_deletes_on_completion) are the *only* ones that catch `[GameName]Game.fromJson` regressions on actual restore — without all three, only the metadata-list happy path is verified.
+
+**How to apply:** Phase 7's `save_resume/` subdirectory MUST contain the 16 files listed in Phase 7 Step 7A's `save_resume/` bullet, each with exactly 1 testWidget. The 3 real-flow files MUST use the in-game save flow (Rule 17) since `preSaveGame`'s placeholder gameState crashes restore. AR-6 audit check (n) verifies the file count and per-file testWidget count.
+
+---
+
+### 30. `test/providers/[game]_provider_game_test.dart` is mandatory — NOT optional, NOT replaced by screen-level tests
+Every game except Lunar Lander and Pirate's Grid (both shipped without it, both caught only post-launch) has a dedicated `test/providers/[game]_provider_game_test.dart` with 44–50 pure-provider tests. The screen-level `test/screens/games/[game]/[game]_game_test.dart` tests via the screen wrapper and inherits the screen's coupling; the provider-level file isolates `processDartThrow` / `skipTurn` / win detection / turn advancement / `_resetTurnForPlayer` / option side-effects so regressions surface clearly when the screen layer changes.
+
+**Why:** A screen-level test that passes after a provider regression is common — the screen often masks provider-level bugs by re-rendering reasonable state from stale data. Provider-isolated tests fail loudly. The two layers catch different classes of bugs.
+
+**How to apply:** Phase 3 file list now requires this as file #4 (alongside model, provider, screen-level test). Minimum 40 tests, with required groups: initial state, `processDartThrow` per option/difficulty, turn advancement, win detection, per-option side-effects, round/match transitions, `_resetTurnForPlayer` undo (Rule 20), randomized targets (if applicable), `endGame` + `resumedSavedGameId`. AR-3 audit check (e) verifies file existence and ≥ 40 tests.
+
+---
+
+### 31. Per-option-value test coverage — one functional + one visual test per spec Section 7 value
+A common failure pattern: spec Section 7 lists an option with N values (e.g., Difficulty: Easy/Medium/Hard); the implementer writes ONE test (typically Easy or default) and assumes the "option logic" is covered. The remaining N-1 values ship with zero functional UI coverage. Provider tests prove the option's logic; UI tests prove the option is wired through menu → screen and renders the expected behavior under the real frame loop.
+
+**Why:** Pirate's Grid shipped with `plant_flag_easy_test.dart` and `plant_flag_medium_test.dart` but NO Hard test, NO Best Of 5 test, NO Speed Play timer-expires test. Three Section 7 values had zero functional UI coverage. Spec coverage audits passed because each option had "a test"; the per-VALUE gap was missed.
+
+**How to apply:** In Phase 7 Step 7A, build the option-value coverage table (Section 5c) BEFORE writing tests. For every Section 7 row × every distinct value, plan one functional gameplay test file. For every option that has a *visible* effect (badge, color, glow, text), additionally plan one visual_validation test (Section 5d). AR-6 audit check (o) verifies the matrix is complete.
+
+Test-naming conventions:
+- Functional: `<option>_<value>_<behavior>_test.dart` (e.g., `difficulty_hard_corner_triple_required_test.dart`) or `<behavior>_<option>_<value>_test.dart` (e.g., `plant_flag_hard_test.dart`)
+- Visual: `<option>_badges_test.dart` (groups Easy/Medium/Hard sub-tests) or `<element>_<state>_test.dart` (e.g., `cell_flag_colors_test.dart`, `winning_row_glow_test.dart`)
+
+---
+
+### 32. Visual-validation tests must assert APPEARANCE, not just EXISTENCE
+A visual_validation test that only checks `findsOneWidget` for a spec-Section-10 element is incomplete. The spec says "X is rendered as Y" — your test must assert Y (text content, RGB color, border properties, icon presence), not just that X exists.
+
+**Why:** Pirate's Grid spec Section 10B says "Winning cells get Treasure Gold pulsing glow + sparkle overlay" — no test asserted the glow color. The spec says "P1 cells get Blood Red border glow, P2 cells get Sea Foam Teal border glow" — no test asserted the colors. The spec says "Round tracker shows P1 wins in Blood Red, P2 wins in Sea Foam Teal" — only widget existence was tested. Six visible spec elements shipped with logical-only assertions and zero visual checks.
+
+**How to apply:** When authoring a visual_validation test, for each assertion ask: "If the screen rendered this element with the WRONG color/text/icon/border, would my test still pass?" If yes, add the appearance assertion using RGB byte comparison (Rule 25), `find.descendant` for inner Text content, or BoxDecoration introspection for borders/shadows. AR-6 audit check (l) builds the visual-element coverage matrix; check (o) extends it to per-option-value visuals.
 
 ---
 
