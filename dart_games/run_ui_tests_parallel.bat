@@ -284,27 +284,64 @@ echo Creating Worker Worktrees
 echo ========================================
 echo.
 
+REM ============================================================
+REM Worktree setup is FAIL-LOUD by design.
+REM
+REM Past failure: silent `git worktree add ... >nul 2>&1` masked errors so
+REM half the workers ran in non-existent paths. Tests then fail with
+REM "the system cannot find the path specified" and the runner has no
+REM idea why. Every worktree-setup operation now writes to a setup log,
+REM and a post-creation existence check aborts the run if any worktree
+REM dir is missing.
+REM ============================================================
+set "_WT_LOG=!_PARALLEL_DIR!\worktree_setup.log"
+echo === Worktree setup log === > "!_WT_LOG!"
+
+REM Prune stale .git/worktrees/<name> metadata FIRST. If a previous run was
+REM force-killed mid-cleanup, git's metadata can point at directories that
+REM no longer exist; subsequent `git worktree add` then fails with cryptic
+REM errors. `git worktree prune` is safe to run unconditionally.
+echo Pruning stale git worktree metadata...
+git worktree prune >> "!_WT_LOG!" 2>&1
+
 REM Remove any leftover worktrees from a previous failed run
 if exist "!_WORKTREE_BASE!" (
     echo Cleaning up previous worker worktrees...
     REM Keep this list in sync with the GAMES variable at the top of the file.
     for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid home_screen pause_modal) do (
-        git worktree remove --force "!_WORKTREE_BASE!\%%G" >nul 2>&1
+        git worktree remove --force "!_WORKTREE_BASE!\%%G" >> "!_WT_LOG!" 2>&1
     )
-    git worktree prune >nul 2>&1
-    rmdir /S /Q "!_WORKTREE_BASE!" >nul 2>&1
+    git worktree prune >> "!_WT_LOG!" 2>&1
+    rmdir /S /Q "!_WORKTREE_BASE!" >> "!_WT_LOG!" 2>&1
+)
+
+REM If rmdir couldn't fully delete (some files locked by a prior run's
+REM chromedriver/dart process that's still alive), surface that loudly
+REM rather than press on. A leftover dir at !_WORKTREE_BASE!\<game>\ will
+REM make `git worktree add` fail because the destination already exists.
+if exist "!_WORKTREE_BASE!" (
+    for /d %%G in ("!_WORKTREE_BASE!\*") do (
+        echo ERROR: leftover worktree dir not removed: %%G >> "!_WT_LOG!"
+        echo ERROR: leftover worktree dir not removed: %%G
+        echo        Likely cause: a chromedriver/dart process from a prior
+        echo        run has the dir locked. Kill all chromedriver.exe and
+        echo        dart.exe processes, then re-run.
+        set "_wt_ok=0"
+    )
 )
 if not exist "!_WORKTREE_BASE!" mkdir "!_WORKTREE_BASE!"
 
-set "_wt_ok=1"
+if not defined _wt_ok set "_wt_ok=1"
 for /l %%N in (1,1,!worker_count!) do (
     if "!_wt_ok!"=="1" (
         set "_g=!game%%N!"
         set "_wt=!_WORKTREE_BASE!\!_g!"
         echo [%%N/!worker_count!] Creating worktree for !_g!...
-        git worktree add "!_wt!" HEAD >nul 2>&1
+        echo --- worktree add: !_g! --- >> "!_WT_LOG!"
+        git worktree add "!_wt!" HEAD >> "!_WT_LOG!" 2>&1
         if !errorlevel! neq 0 (
-            echo ERROR: Failed to create worktree for !_g!. Aborting.
+            echo ERROR: Failed to create worktree for !_g!. See !_WT_LOG! for details.
+            type "!_WT_LOG!" | findstr /C:"--- worktree add: !_g! ---" /C:"fatal" /C:"error"
             set "_wt_ok=0"
         )
         if "!_wt_ok!"=="1" (
@@ -312,9 +349,9 @@ for /l %%N in (1,1,!worker_count!) do (
             if not "!_GIT_PREFIX!"=="" set "_wt_proj=!_wt!\!_GIT_PREFIX!"
             pushd "!_wt_proj!"
             echo   Resolving dependencies...
-            call flutter pub get >nul 2>&1
+            call flutter pub get >> "!_WT_LOG!" 2>&1
             echo   Pre-building Flutter web app ^(warms compiler cache^)...
-            call flutter build web >nul 2>&1
+            call flutter build web >> "!_WT_LOG!" 2>&1
             popd
             set "worktree%%N=!_wt_proj!"
             echo   Ready.
@@ -322,6 +359,37 @@ for /l %%N in (1,1,!worker_count!) do (
     )
 )
 if "!_wt_ok!"=="0" goto :cleanup
+
+REM Existence check — every expected worktree project dir must exist on
+REM disk AND contain a `pubspec.yaml` (the canonical Flutter project
+REM marker) before we launch workers. A worker pointed at a missing path
+REM runs flutter drive in a non-existent cwd, which fails with "the
+REM system cannot find the path specified" for every test in that game's
+REM pack — and the runner has no idea why because git worktree errors
+REM were swallowed.
+echo.
+echo Verifying all worktrees exist on disk...
+set "_wt_missing=0"
+for /l %%N in (1,1,!worker_count!) do (
+    set "_g=!game%%N!"
+    set "_wt_check=!worktree%%N!"
+    if not exist "!_wt_check!\pubspec.yaml" (
+        echo ERROR: worktree for !_g! missing or incomplete: !_wt_check!
+        echo        Expected pubspec.yaml at !_wt_check!\pubspec.yaml.
+        echo        Worker !_g! would run flutter drive in a non-existent
+        echo        / non-Flutter directory and every test in its pack
+        echo        would fail with "the system cannot find the path".
+        set "_wt_missing=1"
+    )
+)
+if "!_wt_missing!"=="1" (
+    echo.
+    echo One or more worktrees missing or incomplete — aborting before
+    echo workers spawn. See !_WT_LOG! for the git worktree add output.
+    set "_wt_ok=0"
+    goto :cleanup
+)
+
 echo.
 echo All worktrees ready.
 echo.
