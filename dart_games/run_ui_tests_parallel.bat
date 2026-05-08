@@ -327,7 +327,12 @@ REM idea why. Every worktree-setup operation now writes to a setup log,
 REM and a post-creation existence check aborts the run if any worktree
 REM dir is missing.
 REM ============================================================
-set "_WT_LOG=!_PARALLEL_DIR!\worktree_setup.log"
+REM Absolute log path — relative paths break after pushd into a worktree.
+REM Past failure: relative _WT_LOG appended to `<wt>\dart_games\integration_test_output\parallel\worktree_setup.log`
+REM after pushd, which doesn't exist, so every `>> "!_WT_LOG!" 2>&1` line
+REM emitted "The system cannot find the path specified." — once for each
+REM flutter pub get and flutter build web call inside the loop.
+set "_WT_LOG=!_SCRIPT_DIR!\!_PARALLEL_DIR!\worktree_setup.log"
 echo === Worktree setup log === > "!_WT_LOG!"
 
 REM Prune stale .git/worktrees/<name> metadata FIRST. If a previous run was
