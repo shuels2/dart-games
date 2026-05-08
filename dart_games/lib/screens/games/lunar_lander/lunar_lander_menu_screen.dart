@@ -18,7 +18,20 @@ import '../../../widgets/resume_game_modal/resume_game_modal_config.dart';
 import 'lunar_lander_game_screen.dart';
 
 class LunarLanderMenuScreen extends StatefulWidget {
-  const LunarLanderMenuScreen({super.key});
+  /// CHANGE MISSION on the results screen passes the prior game's settings
+  /// here so they persist into the new menu instance. Falls back to the
+  /// provider's currentGame when not provided (e.g. menu reached via
+  /// game-screen back button).
+  final double? initialAltitude;
+  final bool? initialHardLandingEnabled;
+  final List<String>? initialSelectedPlayerIds;
+
+  const LunarLanderMenuScreen({
+    super.key,
+    this.initialAltitude,
+    this.initialHardLandingEnabled,
+    this.initialSelectedPlayerIds,
+  });
 
   @override
   State<LunarLanderMenuScreen> createState() => _LunarLanderMenuScreenState();
@@ -42,16 +55,16 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
   void initState() {
     super.initState();
 
-    // Restore settings from the most recent game (if any). The provider
-    // retains `currentGame` after a game finishes, and CHANGE MISSION on the
-    // results screen pushes a fresh menu without clearing it. Reading those
-    // values here makes the menu remember the user's last settings instead
-    // of resetting to defaults.
+    // Restore settings — prefer explicitly passed values from CHANGE MISSION,
+    // fall back to provider's currentGame for re-entry via back button, then
+    // keep defaults. Same precedence chain as pirates_grid (Rule 8).
     final lastGame = context.read<LunarLanderProvider>().currentGame;
-    if (lastGame != null) {
-      _startingAltitude = lastGame.startingAltitude.toDouble();
-      _hardLandingEnabled = lastGame.hardLandingEnabled;
-    }
+    _startingAltitude = widget.initialAltitude
+        ?? lastGame?.startingAltitude.toDouble()
+        ?? _startingAltitude;
+    _hardLandingEnabled = widget.initialHardLandingEnabled
+        ?? lastGame?.hardLandingEnabled
+        ?? _hardLandingEnabled;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Refresh the player roster from the server (picks up players added
@@ -63,6 +76,21 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
       final playerProvider = context.read<PlayerProvider>();
       await playerProvider.loadPlayers();
       playerProvider.clearSelection();
+
+      // Re-select players from the previous game when CHANGE MISSION passes
+      // their IDs forward. This is the players-persistence half of Rule 8;
+      // settings persistence is handled above by the widget.initial*
+      // precedence chain.
+      if (widget.initialSelectedPlayerIds != null) {
+        for (final id in widget.initialSelectedPlayerIds!) {
+          final player = playerProvider.allPlayers
+              .where((p) => p.id == id)
+              .firstOrNull;
+          if (player != null) {
+            playerProvider.selectPlayer(player, maxPlayers: 8);
+          }
+        }
+      }
 
       // Initial saved-games check on menu open: if any saved Lunar Lander
       // game exists, auto-open the resume modal. Subsequent re-checks (after

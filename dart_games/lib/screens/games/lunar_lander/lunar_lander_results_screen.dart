@@ -599,10 +599,17 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
   }
 
   void _changeSettings() {
+    final game = context.read<LunarLanderProvider>().currentGame;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => const LunarLanderMenuScreen(),
+        builder: (_) => LunarLanderMenuScreen(
+          // Pass settings + players forward so the new menu instance
+          // restores them after its post-frame clearSelection() runs.
+          initialAltitude: game?.startingAltitude.toDouble(),
+          initialHardLandingEnabled: game?.hardLandingEnabled,
+          initialSelectedPlayerIds: game?.playerIds,
+        ),
       ),
       (route) => route.isFirst,
     );
