@@ -530,7 +530,15 @@ for /l %%N in (1,1,!worker_count!) do (
     if "!_wt!"=="" set "_wt=stub"
 
     echo Launching worker for !_g! ^(CD=!_cd_port! SRV=!_srv_port!^)...
-    start "Worker: !_g!" /D "!_SCRIPT_DIR!" cmd /C ""!_SCRIPT_DIR!\run_ui_tests_parallel_worker.bat" !_g! !_cd_port! !_srv_port! %_PARALLEL_DIR% !_wt! !filter_args!"
+    REM Quote arguments that may contain spaces. Past failure: when
+    REM `_WORKTREE_BASE` was made absolute (commit 4834b12), `!_wt!` became
+    REM a path containing spaces (`C:\Projects\Claude Code Projects\...`).
+    REM Without quoting, cmd's arg splitter broke `!_wt!` into multiple
+    REM tokens so the worker's %5 was just the first token before a space.
+    REM Test discovery then ran against a non-existent path and every
+    REM worker reported TOTAL=0. Same hazard applies to %_PARALLEL_DIR%
+    REM and !_SCRIPT_DIR! if either ever lives under a path with spaces.
+    start "Worker: !_g!" /D "!_SCRIPT_DIR!" cmd /C ""!_SCRIPT_DIR!\run_ui_tests_parallel_worker.bat" !_g! !_cd_port! !_srv_port! "%_PARALLEL_DIR%" "!_wt!" !filter_args!"
     if %%N lss !worker_count! timeout /T 2 /NOBREAK >nul 2>&1
 )
 
