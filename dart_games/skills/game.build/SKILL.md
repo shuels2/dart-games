@@ -3091,6 +3091,32 @@ Screenshot test entry that captures a state involving an active `Timer.periodic`
 
 ---
 
+### 41. Cross-game parity audit — grep all 6 existing screens before creating the 7th
+Three production bugs in the last two months followed the same shape: 5 or 6 of the 6 existing games' screens implemented some pattern; the new (7th) game's screen omitted it. Each was caught only post-launch by a user observing the inconsistency, not by AR review.
+
+**Past failures matching this shape:**
+- **Cross-game selection leak (commit `d96c19f`)** — 5 of 6 menus called `playerProvider.loadPlayers()` then `playerProvider.clearSelection()` in their `addPostFrameCallback`. Lunar Lander did not. Result: selecting players in CD then opening LL left those players already selected. Caught after 6 menus had shipped.
+- **`isLoading` spinner guard (commit `d96bac2`)** — 3 of 7 menus (CD, MM, RR) wrapped their main content in `Consumer<PlayerProvider>` returning `CircularProgressIndicator` while loading. TT, CQ, LL, PG did not. Result: brief flash of stale selection on each of those 4 menus. Caught after 7 menus had shipped, when a user reported the flash on PG.
+- **`.then((_) => _checkForSavedGames())` after `_startGame` (commit `042d791`)** — 6 menus had this callback on BOTH `_startGame` and `_resumeGame`. PG had it on `_resumeGame` only — `_startGame` was missing it. Result: 5 canonical save_resume tests failed because the AppBar's conditional `ResumeGameButton` never appeared after the in-game save flow. Caught when the canonical 16-file save_resume pack ran for the first time on PG.
+
+In every case, the omission was invisible to the new game's tests in isolation; only cross-game comparison surfaced it.
+
+**Rule:** AR-4 (Phase 4 review) MUST execute a parity grep for every shared pattern before approving the screens. The audit:
+
+1. **Enumerate each lifecycle hook** (initState, post-frame callbacks, dispose, addPostFrameCallback bodies, button onTap handlers, Navigator.push call sites) in EVERY existing game's three screens (`menu_screen.dart`, `game_screen.dart`, `results_screen.dart`).
+2. For each method/handler, run `grep -n '<canonical-line>' lib/screens/games/*/[gN]_<screen>.dart` across ALL games — check the new game's file is in the result list. Examples:
+   - `grep -n 'playerProvider.loadPlayers' lib/screens/games/*/[g]_menu_screen.dart`
+   - `grep -n 'playerProvider.clearSelection' lib/screens/games/*/[g]_menu_screen.dart`
+   - `grep -n 'playerProvider.isLoading' lib/screens/games/*/[g]_menu_screen.dart`
+   - `grep -n '_checkForSavedGames()' lib/screens/games/*/[g]_menu_screen.dart` — and verify it appears AFTER both `_startGame`'s push AND `_resumeGame`'s push
+   - `grep -n '\.then((_)' lib/screens/games/*/[g]_menu_screen.dart` — every Navigator.push from a menu should have a `.then` callback
+3. **For every grep, the new game's file MUST appear in the output.** Any omission is a parity violation surfaced to the user as a corrective sub-agent dispatch BEFORE the screens are accepted into Phase 5.
+4. **Add new patterns to the parity grep list** as they're discovered. The list is intentionally append-only — every recurrence-prevention rule (Rules §8, §19, §34, §41 itself) adds a new grep line.
+
+**How to apply:** AR-4 audit must include a "Cross-game parity grep" section listing every grep line and the new game's name in each result. If any grep returns zero hits for the new game, AR-4 fails and the orchestrator dispatches a corrective sub-agent. This rule is the meta-protection: every individual rule (§8 player persistence, §19 _checkForSavedGames, §34 isLoading guard) gets enforced via the parity grep, even if the individual rule's "How to apply" section drifts out of date.
+
+---
+
 ## Error Handling Rules
 
 These rules apply throughout ALL phases:
