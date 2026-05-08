@@ -2949,6 +2949,31 @@ The spec describes what the game *should* render; the screen code describes what
 
 ---
 
+### 34. Menu screens must guard the player section with `playerProvider.isLoading`
+`PlayerProvider._selectedPlayers` is shared global state that persists across games. The menu's post-frame `clearSelection()` runs AFTER the first paint, so without a loading guard the user briefly sees a flash of the previous game's players in the "Selected" column before the post-frame callback wipes them. On a slow `loadPlayers()` round-trip (cold start, slow server) the flash can last 100–500ms and is clearly visible.
+
+**Why:** Pirate's Grid, Lunar Lander, Target Tag, and Clockwork Quest all shipped without this guard and exhibited the flash. Carnival Derby, Monster Mash, and Reef Royale had the guard from the start and behaved correctly. The asymmetry was caught only when a user reported "the previously selected players show briefly and then get unselected" on PG/LL — every other game looked empty from the start because the spinner masked the 1-frame initial paint with stale state.
+
+**Rule:** Every menu screen MUST wrap its main content (the LayoutBuilder/Row containing left+right panels) in a `Consumer<PlayerProvider>` that returns a centered `CircularProgressIndicator` while `playerProvider.isLoading` is true:
+```dart
+Consumer<PlayerProvider>(
+  builder: (context, playerProvider, child) {
+    if (playerProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return LayoutBuilder( /* or Row */
+      builder: (context, constraints) { ... },
+    );
+  },
+),
+```
+
+The post-frame callback in `initState` (which calls `loadPlayers()` → sets `_isLoading=true` → notifies → loads → `_isLoading=false` → `clearSelection()`) takes over the rendering window between first paint and load completion. The Consumer rebuilds during that window, the spinner replaces the layout, and the user sees "spinner → empty list" instead of "stale list → empty list".
+
+**How to apply:** in Phase 4 (Screens), the menu screen sub-agent must include this guard. AR-4 audit row should grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart` for `playerProvider.isLoading` and `CircularProgressIndicator` — both must be present in the menu's build tree. Reference: monster_mash menu lines 208-228, reef_royale menu lines 198-213.
+
+---
+
 ## Error Handling Rules
 
 These rules apply throughout ALL phases:

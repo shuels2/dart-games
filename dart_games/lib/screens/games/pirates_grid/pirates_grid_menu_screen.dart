@@ -220,35 +220,46 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
                   color: const Color(0xA61B2838),
                 ),
               ),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth > 800) {
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          flex: 40,
-                          child: Align(
-                            alignment: Alignment.topCenter,
-                            child: _buildLeftPanel(),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 60,
-                          child: _buildRightPanel(scrollable: false),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          _buildLeftPanel(),
-                          _buildRightPanel(),
-                        ],
-                      ),
-                    );
+              // Mask the brief flash of stale `selectedPlayers` from the
+              // previous game by hiding the layout while PlayerProvider is
+              // loading — matches CD/MM/RR. See lunar_lander menu for the
+              // full rationale.
+              Consumer<PlayerProvider>(
+                builder: (context, playerProvider, child) {
+                  if (playerProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
                   }
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 800) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              flex: 40,
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: _buildLeftPanel(),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 60,
+                              child: _buildRightPanel(scrollable: false),
+                            ),
+                          ],
+                        );
+                      } else {
+                        return SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              _buildLeftPanel(),
+                              _buildRightPanel(),
+                            ],
+                          ),
+                        );
+                      }
+                    },
+                  );
                 },
               ),
             ],

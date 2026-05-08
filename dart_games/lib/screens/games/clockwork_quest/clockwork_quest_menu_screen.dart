@@ -152,7 +152,16 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
                 ),
               ),
 
-              Row(
+              // Mask the brief flash of stale `selectedPlayers` from the
+              // previous game by hiding the layout while PlayerProvider is
+              // loading — matches CD/MM/RR. See lunar_lander menu for the
+              // full rationale.
+              Consumer<PlayerProvider>(
+                builder: (context, playerProvider, child) {
+                  if (playerProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Left Panel - Game Description
@@ -313,6 +322,8 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
                     ),
                   ),
                 ],
+              );
+                },
               ),
             ],
           ),

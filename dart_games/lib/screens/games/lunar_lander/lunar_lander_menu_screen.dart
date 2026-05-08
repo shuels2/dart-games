@@ -188,35 +188,49 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
                   fit: BoxFit.cover,
                 ),
               ),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth > 800) {
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          flex: 40,
-                          child: Align(
-                            alignment: Alignment.topCenter,
-                            child: _buildLeftPanel(),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 60,
-                          child: _buildRightPanel(scrollable: false),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          _buildLeftPanel(),
-                          _buildRightPanel(),
-                        ],
-                      ),
-                    );
+              // Mask the brief flash of stale `selectedPlayers` from the
+              // previous game by hiding the layout while PlayerProvider is
+              // loading — matches CD/MM/RR. The post-frame callback in
+              // initState fires loadPlayers() which sets isLoading=true and
+              // notifies; the Consumer rebuilds and shows the spinner before
+              // the stale state can be perceived. clearSelection runs as
+              // soon as the load completes, so the next paint is empty.
+              Consumer<PlayerProvider>(
+                builder: (context, playerProvider, child) {
+                  if (playerProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
                   }
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 800) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              flex: 40,
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: _buildLeftPanel(),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 60,
+                              child: _buildRightPanel(scrollable: false),
+                            ),
+                          ],
+                        );
+                      } else {
+                        return SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              _buildLeftPanel(),
+                              _buildRightPanel(),
+                            ],
+                          ),
+                        );
+                      }
+                    },
+                  );
                 },
               ),
             ],
