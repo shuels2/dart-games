@@ -125,7 +125,7 @@ ARs are independent critiques of the implementer's work. Run them on the orchest
 > - `lib/main.dart` — additive: provider + 3 routes
 > - `lib/screens/home_screen.dart` — additive: new game card
 > - `lib/widgets/*/[*]_config.dart` — additive: new `.[gameName]()` factory only
-> - 12 mirrored shared helpers — additive only (new game-specific helpers)
+> - Mirrored shared helpers in `test/shared/` and `integration_test/shared/` — additive only (new game-specific helpers); see Rule §26 for the dynamic-discovery rule
 > - 4 batch files — additive: game name appended to GAMES list
 > - `pubspec.yaml` — additive: asset directory entries
 >
@@ -1417,7 +1417,7 @@ If FAIL:
 
 ## Phase 7: UI Automation Tests, Spec Coverage Audit, and Mandatory Coverage
 
-**Goal:** Write all UI tests in the proper subdirectory layout (including mandatory navigation, results, and play-to-complete tests), synchronize the 12 shared helpers, update all 4 batch files, run the spec coverage audit.
+**Goal:** Write all UI tests in the proper subdirectory layout (including mandatory navigation, results, and play-to-complete tests), synchronize the mirrored shared helpers, update all 4 batch files, run the spec coverage audit.
 
 **Model:** Sonnet sub-agent for shared helper sync + UI test files + screenshot test + batch file updates; orchestrator (Opus) for the spec coverage audit + AR-6 + Gate 3.
 
@@ -1431,7 +1431,7 @@ If FAIL:
 > - Spec file: `[SPEC_PATH]` — Testing Plan section (UI test list and screenshot test states)
 > - Section map: [PASTE SECTION MAP TABLE]
 > - `docs/testing/test-maintenance.md` — **CRITICAL: shared helper synchronization rules**
-> - `docs/testing/shared-helpers-reference.md` — **authoritative reference for all 12 mirrored shared helpers, the `_helpers.dart` delegate pattern for per-subdirectory game-specific helpers, and the decision tree for where new helper functions belong**
+> - `docs/testing/shared-helpers-reference.md` — **authoritative reference for the mirrored shared helpers, the `_helpers.dart` delegate pattern for per-subdirectory game-specific helpers, and the decision tree for where new helper functions belong**
 > - `docs/testing/ui-automation.md` — including the per-session DB isolation pattern (`X-DB-Session` header, `resetServerState()`) and the parallel runner port-assignment table
 > - `docs/testing/continuous-animations.md` — `pumpAndSettle()` rules
 > - `docs/development/adding-games.md` — **including mandatory navigation tests (4), mandatory results-screen tests (3), and mandatory play-to-complete tests, with rationales for each**
@@ -1445,26 +1445,20 @@ If FAIL:
 >
 > **1. Update shared test helpers in BOTH locations (mandatory synchronization).**
 >
-> There are **12 mirrored shared helper files** that must stay byte-identical between `test/shared/` and `integration_test/shared/`:
+> The mirrored set is **discovered dynamically**, not enumerated. The rule (Rule §26): every `*.dart` file present in BOTH `integration_test/shared/` and `test/shared/` MUST stay byte-identical between the two. Files present in only one directory are intentionally non-mirrored (e.g. `mock_api_helpers.dart`, `player_test_utils.dart`, and `sector_parser.dart` in `test/shared/` import non-UI testing packages and have no UI-test counterpart).
 >
-> - `dart_throw_helpers.dart`
-> - `edit_score_helpers.dart`
-> - `element_finders.dart`
-> - `game_setup_helpers.dart`
-> - `game_ui_config.dart`
-> - `play_to_complete_helpers.dart`
-> - `provider_helpers.dart`
-> - `pump_sequences.dart`
-> - `results_helpers.dart`
-> - `save_resume_helpers.dart`
-> - `settings_helpers.dart`
-> - `ui_test_helpers.dart`
+> When adding a method/function to a shared helper, apply the IDENTICAL change to BOTH copies in the same edit pass.
 >
-> Apply game-specific changes to each that needs them in BOTH directories.
+> When CREATING a new shared helper, decide first whether it can compile in both contexts:
+> - **If yes:** create it in BOTH directories from the start. Mirror byte-identical.
+> - **If no** (e.g. it imports `package:integration_test` and uses `IntegrationTestWidgetsFlutterBinding`): create it in ONLY the directory that can compile it. The other directory has no copy and the mirror rule does not apply.
+> - **Caveat — `flutter drive` web compile cache:** brand-new files under `integration_test/shared/` are silently ignored by the web compile cache (commit `4d1377e`). When a UI test imports such a new file, compilation fails with `org-dartlang-app:/...File not found` even though `dart analyze` finds the file. Workaround: add the new functionality as a static method on an existing long-lived helper class (e.g. `UITestHelpers`) instead of creating a new shared file. See Rule §26 for the full pattern.
 >
-> **Note:** `test/shared/` also contains additional non-UI-only files (`mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart`, plus their `_test.dart` files) that have NO `integration_test/shared/` counterpart. The byte-identical synchronization rule applies ONLY to the 12 mirrored files above.
->
-> After editing, for every pair `test/shared/X.dart` ↔ `integration_test/shared/X.dart` in the 12-file list, run `diff` and confirm byte-identical (apart from the path, contents must match).
+> **Verification (use this exact command — do NOT walk an enumerated list):**
+> ```bash
+> diff -rq integration_test/shared test/shared 2>&1 | grep "differ" || echo "OK: all mirrored helpers byte-identical"
+> ```
+> The `diff -rq` output emits one line per pair that differs (`Files X and Y differ`). The `grep "differ"` filter strips expected `Only in test/shared: <file>` lines for non-mirrored helpers. Anything the grep prints is a parity violation that must be fixed.
 >
 > **1.5. Create per-subdirectory `_helpers.dart` files** (delegate pattern from `docs/testing/shared-helpers-reference.md`):
 >
@@ -1739,7 +1733,7 @@ If FAIL:
 >
 > **Report back:**
 > - File paths created and modified, organized by subdirectory
-> - For each pair of shared helpers (12 pairs), `diff` result (must be byte-identical)
+> - Output of `diff -rq integration_test/shared test/shared 2>&1 | grep "differ"` — must be empty (any output is a parity violation)
 > - Total count of UI tests added across all subdirectories
 > - Confirmation that every UI test starts with `await UITestHelpers.resetServerState();`
 > - Confirmation that the 4 navigation tests, 3 results tests, and play-to-complete tests are all present (cite filenames)
@@ -1757,7 +1751,7 @@ If FAIL:
 > - Run the UI tests yourself in this phase (orchestrator runs them in Phase 8)
 
 After the sub-agent returns:
-- Run `diff` on each of the 12 shared-helper pairs yourself
+- Run `diff -rq integration_test/shared test/shared 2>&1 | grep "differ"` and confirm the output is empty (any line is a parity violation)
 - `find integration_test/[GAME_NAME_SNAKE] -type d` to confirm subdirectory layout
 - `grep -rL 'resetServerState' integration_test/[GAME_NAME_SNAKE]` (must return zero — every test file must contain a `resetServerState` call)
 - Confirm the 4 batch files were updated
@@ -1807,7 +1801,7 @@ If the audit produces a gap list mixing "test gaps" and "spec/code divergences",
 >
 > (c) **Verify all FOUR batch files include the new game:** `run_ui_tests.bat`, `run_ui_tests_stub.bat`, `run_ui_tests_parallel.bat`, `run_ui_tests_parallel_stub.bat`. For `run_ui_tests_parallel.bat` SPECIFICALLY: grep for the new game name and verify it appears in BOTH (1) the `GAMES` variable AND (2) the pre-run worktree cleanup `for %%G in (...)` loop near line 272. Past failure: Lunar Lander was added to GAMES but not to the cleanup loop, leaving stale worktrees uncleaned across runs. Also verify the port-assignment table in `docs/testing/ui-automation.md` was updated.
 >
-> (d) Verify all 12 mirrored shared helpers in `test/shared/` and `integration_test/shared/` are synchronized — diff each pair and report any mismatches. (Non-mirrored `test/shared/` files like `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` are excluded from this check.)
+> (d) Verify mirrored shared helpers stay byte-identical between `test/shared/` and `integration_test/shared/` via the dynamic-discovery audit (Rule §26): run `diff -rq integration_test/shared test/shared 2>&1 | grep "differ"`. The command emits nothing on success; any line printed is a parity violation that must be reported and fixed. The `grep "differ"` filter automatically excludes `Only in <dir>: <file>` lines for intentionally non-mirrored helpers (e.g. `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` in `test/shared/` only). The audit picks up new helpers added since the last build without any change to the rule.
 >
 > (e) **Verify the 4 mandatory navigation tests exist** in `integration_test/[GAME_NAME_SNAKE]/navigation/`: menu_back_to_home, game_back_settings_persist, change_settings_back_to_home, change_settings_preserves_settings.
 >
@@ -2464,7 +2458,7 @@ Verify EVERY item:
 - [ ] **Pause modal tests present and passing** (3 files in `pause_modal/`: `menu_pause_test.dart`, `gameplay_pause_test.dart`, `results_pause_test.dart`)
 - [ ] **Visual validation contains screenshot test PLUS at least 4 programmatic tests** (dart indicators, active player highlight, score/state threshold, conditional UI)
 - [ ] All 4 batch files updated (run_ui_tests, run_ui_tests_stub, run_ui_tests_parallel, run_ui_tests_parallel_stub)
-- [ ] All 12 mirrored shared helpers synchronized (test/shared/ matches integration_test/shared/)
+- [ ] All mirrored shared helpers synchronized (`diff -rq integration_test/shared test/shared 2>&1 | grep "differ"` returns empty)
 - [ ] Every UI test calls `resetServerState()`
 
 **Visual Validation:**
@@ -2971,10 +2965,22 @@ Apply this to every visual-validation test that asserts on a widget's border, ba
 
 ---
 
-### 26. `test/shared/<helper>.dart` and `integration_test/shared/<helper>.dart` MUST be edited together — every time
+### 26. Every shared helper that compiles in both contexts MUST stay byte-identical between `test/shared/` and `integration_test/shared/`
 When the two drift, non-UI tests pass while UI tests fail with "Member not found" against the same-named class — the symbol is in one file but not the other, and the resolution depends on which test type is running. Drift happens silently and is hard to diagnose without reading both files.
 
-**Rule:** Whenever a Sonnet sub-agent is asked to add a method or function to *either* shared helper file, the prompt MUST instruct it to apply the IDENTICAL change to the other file in the same edit pass. Verify via `diff -q test/shared/<helper>.dart integration_test/shared/<helper>.dart` before declaring the task done. Already in CLAUDE.md but emphasize it in every helper-edit prompt.
+**The set of mirrored helpers is dynamic, not enumerated.** Past versions of this skill listed "12 mirrored shared helpers" by name. That list went stale (a 13th, `pause_modal_helpers.dart`, was added at some point without the list being updated; `failure_screenshot_helper.dart` was nearly added as a 14th before being merged into `ui_test_helpers.dart`). Any rule that depends on a specific count is wrong by construction. The actual rule: for every `*.dart` file present in BOTH `integration_test/shared/` and `test/shared/`, the two copies MUST be byte-identical. Files present in only one directory (e.g. `mock_api_helpers.dart` and `player_test_utils.dart` in `test/shared/` only — they import packages non-UI tests have but UI tests don't, OR have widget-only dependencies the other way around) are intentionally non-mirrored and excluded from the parity check.
+
+**Rule:** Whenever a Sonnet sub-agent is asked to add a method or function to a shared helper that exists in both directories, the prompt MUST instruct it to apply the IDENTICAL change to the other file in the same edit pass. Whenever a sub-agent CREATES a new shared helper, the prompt MUST decide up front whether the helper compiles in both contexts:
+- **If yes** (no `package:integration_test` import, no widget-tree-only types, etc.), create it in BOTH directories from the start.
+- **If no** (e.g. uses `IntegrationTestWidgetsFlutterBinding`, `WidgetTester`, etc.), create it ONLY in the directory that can compile it.
+
+**Verification command (use this exact form — do NOT enumerate by name):**
+```bash
+diff -rq integration_test/shared test/shared 2>&1 | grep "differ" || echo "OK: all mirrored helpers byte-identical"
+```
+The `diff -rq` output emits one line per pair that differs (`Files X and Y differ`). The `grep "differ"` filter strips the expected `Only in test/shared: <file>` lines for non-mirrored helpers. If the grep finds anything, it's a parity violation that must be fixed before the build can proceed. AR-4 and AR-6 audits use this command directly, not a hardcoded list.
+
+**Caveat — flutter drive web compile cache:** brand-new files under `integration_test/shared/` are silently ignored by the web compile cache (commit `4d1377e`). When a UI test imports a brand-new shared file, the compile fails with `org-dartlang-app:/...File not found` even though `dart analyze` and disk reads confirm the file exists. Workaround: add the new functionality as a static method on an existing long-lived helper class (e.g. `UITestHelpers`) instead of creating a new shared file. The `UITestHelpers.runWithFailureScreenshot` helper was placed inside `ui_test_helpers.dart` for exactly this reason — see `failure_screenshot_helper.dart` in commit `3cafc83` (deleted) for the pattern that didn't work.
 
 ---
 
@@ -3196,7 +3202,7 @@ Per `docs/critical-rules/dartboard-protection.md`:
 
 ### When Shared Test Helpers Need Changes
 Per `docs/testing/test-maintenance.md`:
-1. Sub-agent must update BOTH `test/shared/` AND `integration_test/shared/` (all 12 mirrored files in each — non-mirrored `test/shared/` files like `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` are excluded).
+1. Sub-agent must update BOTH `test/shared/` AND `integration_test/shared/` for every helper that exists in both directories. Verify with `diff -rq integration_test/shared test/shared 2>&1 | grep "differ"` — must return empty. Files present in only one directory (e.g. `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` in `test/shared/` only) are intentionally non-mirrored and excluded.
 2. Verify synchronization by diffing every corresponding pair (orchestrator runs the diff).
 3. Run both test suites to verify.
 

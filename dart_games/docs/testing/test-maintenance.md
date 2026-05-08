@@ -25,28 +25,43 @@ When modifying any file in either shared folder:
    - Settings manipulation functions
 4. **Test both suites** - Run both non-UI tests (`flutter test`) and UI tests to verify
 
-### Files That Must Stay in Sync
+### Files That Must Stay in Sync — Discovered Dynamically
 
-- `ui_test_helpers.dart` - Navigation, player management
-- `element_finders.dart` - Widget key-based finders
-- `provider_helpers.dart` - Provider state access
-- `settings_helpers.dart` - Settings and configuration
-- `edit_score_helpers.dart` - Edit score dialog operations
-- `results_helpers.dart` - Results screen verification
-- `pump_sequences.dart` - Animation and async waiting
-- `game_ui_config.dart` - Game-specific UI configuration
-- `dart_throw_helpers.dart` - Dart simulation via mock API
-- `game_setup_helpers.dart` - Per-game setup with settings
-- `save_resume_helpers.dart` - Save/resume test patterns
+The set of mirrored helpers is NOT a hardcoded list. The rule:
 
-### Exception: Integration-Test-Only Files
+> **For every `*.dart` file present in BOTH `integration_test/shared/` and `test/shared/`, the two copies MUST stay byte-identical.**
 
-Some files only exist in `integration_test/shared/` because they're specific to UI automation:
-- Screenshot test helpers
-- Web driver utilities
-- Browser-specific functions
+Discover the current set with `ls`:
 
-**Rule:** If a file exists in both locations, keep them in sync. If it only exists in one, that's intentional.
+```bash
+ls integration_test/shared/*.dart
+ls test/shared/*.dart        # superset — includes non-UI-only helpers
+```
+
+Earlier versions of this doc enumerated "11 mirrored helpers" and "the 12 mirrored files" by name. Those lists went stale every time a new helper was added without doc updates. The list-free rule auto-tracks reality: when a helper is added to both folders, it's automatically in scope; when one is removed, it's automatically out of scope.
+
+**Verify all mirrored pairs are byte-identical:**
+
+```bash
+diff -rq integration_test/shared test/shared 2>&1 | grep "differ" || echo "OK"
+```
+
+`diff -rq` walks both directories and emits one line per file pair. The `grep "differ"` filter strips expected `Only in <dir>: <file>` lines for intentionally non-mirrored helpers and shows only divergence (`Files X and Y differ`). On a clean tree, the output is empty.
+
+### Exception: Single-Directory Files Are Intentional
+
+Some files exist in only one directory because they import packages or use APIs only available in that directory's compile context:
+
+- `test/shared/` only: `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` — and their `*_test.dart` counterparts. These import non-UI testing packages (e.g. `package:test`) and have no UI-test analogue.
+- `integration_test/shared/` only: any helper that imports `package:integration_test` or uses `IntegrationTestWidgetsFlutterBinding`, `WidgetTester`-only types, etc. Currently none, but the category exists by design.
+
+**Rule:** if a file exists in both locations, keep them in sync. If it exists in only one, that's intentional — the parity audit (`diff -rq … | grep differ`) automatically excludes it via the `Only in` exclusion.
+
+### Caveat — `flutter drive` web compile cache
+
+Brand-new files under `integration_test/shared/` are silently ignored by the web compile cache (commit `4d1377e`). When a UI test imports such a file, compilation fails with `org-dartlang-app:/...File not found` even though `dart analyze` finds the file.
+
+**Workaround:** add the new functionality as a static method on an existing long-lived helper class (e.g. `UITestHelpers` in `ui_test_helpers.dart`) instead of creating a new shared file. The `UITestHelpers.runWithFailureScreenshot` method was placed inside `ui_test_helpers.dart` for exactly this reason — see `failure_screenshot_helper.dart` in commit `3cafc83` (deleted) for the pattern that didn't work.
 
 ### Game-Specific `_helpers.dart` Convention
 
