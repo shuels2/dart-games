@@ -201,7 +201,13 @@ for /l %%N in (1,1,!worker_count!) do (
 )
 echo.
 
-set "_WORKTREE_BASE=integration_test_output\parallel\worktrees"
+REM Make worktree base ABSOLUTE so cwd shifts (pushd/popd, sub-process
+REM working dirs) don't break path resolution. Past failure: relative
+REM `_WORKTREE_BASE` worked for git worktree add (which was called from
+REM the bat's cwd) but flutter sub-processes inherited a different cwd
+REM and `flutter pub get` printed "The system cannot find the path
+REM specified." for every worker.
+set "_WORKTREE_BASE=!_SCRIPT_DIR!\integration_test_output\parallel\worktrees"
 
 REM Detect subdirectory offset from git root to the Flutter project.
 REM Worktrees mirror the full repo; flutter commands must run from
@@ -347,14 +353,34 @@ for /l %%N in (1,1,!worker_count!) do (
         if "!_wt_ok!"=="1" (
             set "_wt_proj=!_wt!"
             if not "!_GIT_PREFIX!"=="" set "_wt_proj=!_wt!\!_GIT_PREFIX!"
-            pushd "!_wt_proj!"
-            echo   Resolving dependencies...
-            call flutter pub get >> "!_WT_LOG!" 2>&1
-            echo   Pre-building Flutter web app ^(warms compiler cache^)...
-            call flutter build web >> "!_WT_LOG!" 2>&1
-            popd
-            set "worktree%%N=!_wt_proj!"
-            echo   Ready.
+            REM Diagnostic — log exact path before pushd so failures are
+            REM debuggable. If pushd reports "The system cannot find the
+            REM path specified.", inspecting !_WT_LOG! reveals what path
+            REM was actually attempted.
+            echo --- pushd to: [!_wt_proj!] --- >> "!_WT_LOG!"
+            if not exist "!_wt_proj!\pubspec.yaml" (
+                echo ERROR: project root missing pubspec.yaml: !_wt_proj!
+                echo        worktree was created but does not contain a
+                echo        Flutter project at the expected path. Likely
+                echo        cause: _GIT_PREFIX [!_GIT_PREFIX!] doesn't match
+                echo        the actual project subdirectory layout.
+                set "_wt_ok=0"
+            ) else (
+                pushd "!_wt_proj!" 2>> "!_WT_LOG!"
+                if !errorlevel! neq 0 (
+                    echo ERROR: pushd failed for !_g!: !_wt_proj!
+                    echo        See !_WT_LOG! for details.
+                    set "_wt_ok=0"
+                ) else (
+                    echo   Resolving dependencies...
+                    call flutter pub get >> "!_WT_LOG!" 2>&1
+                    echo   Pre-building Flutter web app ^(warms compiler cache^)...
+                    call flutter build web >> "!_WT_LOG!" 2>&1
+                    popd
+                    set "worktree%%N=!_wt_proj!"
+                    echo   Ready.
+                )
+            )
         )
     )
 )
