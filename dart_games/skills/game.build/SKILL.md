@@ -1100,8 +1100,34 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > **7. Add the game card to `lib/screens/home_screen.dart`:**
 > - Use the icon from `assets/games/[GAME_NAME_SNAKE]/icons/icon.png` (or whatever the spec specifies)
 > - Tag the card with `key: HomeKeys.[gameName]Card` (added in step 1)
+> - Set `'gameId': '[GAME_NAME_SNAKE]'` on the card map so the filter bar can match it against the filter registry (per Rule §42)
 > - Wire navigation to the route name (added in step 8)
 > - Match the visual style of existing cards
+>
+> **7a. Register filter metadata in `lib/constants/game_filter_registry.dart`:**
+>
+> The home-screen filter bar reads `GameFilterRegistry` to decide which cards to render given the user's filter selections. Every game MUST register an entry — without it, the card shows but the user can't filter to it / away from it consistently.
+>
+> Add a `GameMetadata` entry with all five fields populated:
+> ```dart
+> GameMetadata(
+>   gameId: '[GAME_NAME_SNAKE]',          // matches the card's gameId
+>   displayName: '[GAME_NAME_DISPLAY]',   // e.g. "Pirate's Grid"
+>   maxPlayers: MaxPlayersBucket.<one>,   // twoOnly | upToEight | upToTen
+>   gameplayStyles: {GameplayStyle.<one or more>}, // race | versus | strategy
+>   playerInteraction: PlayerInteraction.<one>,    // parallel | light | heavy
+>   gameLength: GameLength.<one>,         // quick | medium | long (at default settings)
+>   soloTeam: SoloTeamSupport.<one>,      // soloOnly | soloOrTeam
+> ),
+> ```
+> Decision guide:
+> - **maxPlayers** — `MaxPlayersBucket.twoOnly` if exactly 2; `upToEight` if up to 8; `upToTen` if up to 10. Add a new bucket if the new game has a different cap.
+> - **gameplayStyles** — `race` (first to a goal, no inter-player effects), `versus` (direct attacks/eliminations), `strategy` (claim positions/patterns). Set may contain multiple if the game spans styles; existing games each have one.
+> - **playerInteraction** — `parallel` (no inter-player effects, side-by-side races), `light` (occasional disruption like steal/buff/claim), `heavy` (direct attacks/damage/eliminations).
+> - **gameLength** — `quick` (< 10 min at defaults), `medium` (10–25 min), `long` (25+ min). At-default-settings duration only.
+> - **soloTeam** — `soloOrTeam` if the spec calls out a Team mode toggle; `soloOnly` otherwise.
+>
+> If the spec introduces a new filter criterion entirely (e.g. "Family-friendly" / "Adult"), add the enum to `lib/models/game_metadata.dart`, add the field to `GameMetadata`, populate it for ALL existing games' registry entries, and add a dropdown to `lib/widgets/game_filter_bar/game_filter_bar.dart`. Then add a `FilterCriterion` enum value and the `HomeKeys.filter<NewCriterion>Button` + per-option key in `lib/constants/test_keys.dart`. Past failure: if the registry entry is missing, the card silently fails the orphan check in `test/models/game_metadata_test.dart` → game appears unfiltered but doesn't appear in any filtered view.
 >
 > **8. Register the provider in `lib/main.dart` MultiProvider, and add routes for the three new screens.**
 >
@@ -3181,6 +3207,35 @@ In every case, the omission was invisible to the new game's tests in isolation; 
 4. **Add new patterns to the parity grep list** as they're discovered. The list is intentionally append-only — every recurrence-prevention rule (Rules §8, §19, §34, §41 itself) adds a new grep line.
 
 **How to apply:** AR-4 audit must include a "Cross-game parity grep" section listing every grep line and the new game's name in each result. If any grep returns zero hits for the new game, AR-4 fails and the orchestrator dispatches a corrective sub-agent. This rule is the meta-protection: every individual rule (§8 player persistence, §19 _checkForSavedGames, §34 isLoading guard) gets enforced via the parity grep, even if the individual rule's "How to apply" section drifts out of date.
+
+---
+
+### 42. Every new game registers a `GameMetadata` entry in the filter registry
+The home-screen filter bar reads `lib/constants/game_filter_registry.dart` to decide which cards to render given the user's selections. A new game whose card is added to `home_screen.dart` but whose registry entry is missing will:
+- Show in the unfiltered view (because home_screen falls back to "show all" when the registry lookup returns null)
+- Be invisible in EVERY filtered view (because no metadata = no match)
+- Trigger the orphan-bucket check in `test/models/game_metadata_test.dart` if a filter value loses its only game
+
+This is exactly the kind of asymmetry Rule §41's parity audit catches — the new game's id should appear in `home_screen.dart`'s `games` list AND in the registry's `_all` list AND in `test/models/game_metadata_test.dart`'s `expectedIds` set. Any of those three missing is a parity violation.
+
+**Rule:** Phase 4 step 7a (Add the game card) is followed immediately by step 7b (Register filter metadata). Both happen in the SAME edit pass — the card and the registry entry are added together so they can't drift.
+
+**How to apply:** AR-4 grep adds:
+- `grep -n "'[GAME_NAME_SNAKE]'" lib/screens/home_screen.dart` — must match (the card's `gameId`)
+- `grep -n "gameId: '[GAME_NAME_SNAKE]'" lib/constants/game_filter_registry.dart` — must match (the registry entry)
+- `grep -n "'[GAME_NAME_SNAKE]'" test/models/game_metadata_test.dart` — must match (the `expectedIds` Set)
+All three must hit. If any returns zero, AR-4 fails. Update `test/models/game_metadata_test.dart`'s `expectedIds` Set in the same change to keep the registry-coverage test passing.
+
+**Adding a new filter criterion** (rare but supported):
+1. Add a new enum to `lib/models/game_metadata.dart` and a field on `GameMetadata`.
+2. Update EVERY existing entry in `GameFilterRegistry` to set the new field.
+3. Add a new `FilterCriterion` enum value.
+4. Add a dropdown in `lib/widgets/game_filter_bar/game_filter_bar.dart`.
+5. Add `HomeKeys.filter<New>Button` and `filter<New>Option` in `lib/constants/test_keys.dart`.
+6. Add a UI test in `integration_test/home_screen/filter_bar/`.
+7. Add an OR-within-criterion case to `test/models/game_metadata_test.dart`.
+
+The `matchesFilters` switch must cover every `FilterCriterion` — if a new criterion is added without a switch case, Dart's exhaustive-switch analyzer fails the build. That's the compile-time backstop.
 
 ---
 

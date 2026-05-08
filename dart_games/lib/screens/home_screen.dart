@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../constants/game_filter_registry.dart';
 import '../constants/test_keys.dart';
+import '../models/game_metadata.dart';
 import '../providers/dartboard_provider.dart';
 import '../services/dart_announcer_service.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
+import '../widgets/game_filter_bar/game_filter_bar.dart';
 import 'options_screen.dart';
 import 'games/carnival_horse_race/horse_race_menu_screen.dart';
 import 'games/target_tag/target_tag_menu_screen.dart';
@@ -26,6 +29,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final DartAnnouncerService _announcer = DartAnnouncerService();
+
+  /// Active filter selections, keyed by criterion. Empty / missing entries
+  /// mean "no filter applied" for that criterion. See game_metadata.dart for
+  /// AND/OR semantics.
+  Map<FilterCriterion, Set<Object>> _filters = const {};
 
   @override
   void dispose() {
@@ -241,9 +249,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Map<String, dynamic>> _getAvailableGames(DartboardProvider dartboardProvider) {
-    // Define all available games here
+    // Define all available games here. Each entry's `gameId` matches the
+    // registry id in lib/constants/game_filter_registry.dart so the filter
+    // bar can match cards by id.
     final games = [
       {
+        'gameId': 'carnival_derby',
         'title': 'Carnival Derby',
         'key': HomeKeys.carnivalDerbyCard,
         'imageAssetPath': 'assets/common/icons/icon.png',
@@ -253,6 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : null,
       },
       {
+        'gameId': 'target_tag',
         'title': 'Target Tag',
         'key': HomeKeys.targetTagCard,
         'imageAssetPath': 'assets/games/target_tag/icons/TargetTag-Icon.png',
@@ -262,6 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : null,
       },
       {
+        'gameId': 'monster_mash',
         'title': 'Monster Mash',
         'key': HomeKeys.monsterMashCard,
         'imageAssetPath': 'assets/games/monster_mash/icons/MonsterMash-Icon.png',
@@ -271,6 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : null,
       },
       {
+        'gameId': 'reef_royale',
         'title': 'Reef Royale',
         'key': HomeKeys.reefRoyaleCard,
         'imageAssetPath': 'assets/games/reef_royale/icons/ReefRoyale-Icon.png',
@@ -280,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : null,
       },
       {
+        'gameId': 'clockwork_quest',
         'title': 'Clockwork Quest',
         'key': HomeKeys.clockworkQuestCard,
         'imageAssetPath': 'assets/games/clockwork_quest/icons/icon.png',
@@ -289,6 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : null,
       },
       {
+        'gameId': 'lunar_lander',
         'title': 'Lunar Lander',
         'key': HomeKeys.lunarLanderCard,
         'imageAssetPath': 'assets/games/lunar_lander/icons/LunarLander-Icon.png',
@@ -298,6 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : null,
       },
       {
+        'gameId': 'pirates_grid',
         'title': "Pirate's Grid",
         'key': HomeKeys.piratesGridCard,
         'imageAssetPath': 'assets/games/pirates_grid/icons/PiratesGrid-Icon.png',
@@ -315,10 +332,25 @@ class _HomeScreenState extends State<HomeScreen> {
     return games;
   }
 
+  /// Apply the current `_filters` selections to the games list, dropping
+  /// any whose registry metadata doesn't match. Games not registered in
+  /// [GameFilterRegistry] (shouldn't happen, AR-4 enforces registration)
+  /// are kept — better to show an unfiltered card than hide it silently.
+  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> games) {
+    if (_filters.isEmpty) return games;
+    return games.where((g) {
+      final id = g['gameId'] as String;
+      final metadata = GameFilterRegistry.byId(id);
+      if (metadata == null) return true;
+      return metadata.matchesFilters(_filters);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final dartboardProvider = context.watch<DartboardProvider>();
-    final games = _getAvailableGames(dartboardProvider);
+    final allGames = _getAvailableGames(dartboardProvider);
+    final games = _applyFilters(allGames);
 
     return Stack(
       children: [
@@ -396,62 +428,87 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
             foregroundColor: Colors.white,
           ),
-          body: Stack(
-            fit: StackFit.expand,
+          // Body: Column[FilterBar (sticky), Expanded(scrollable grid)].
+          // The filter bar stays pinned below the AppBar; only the grid scrolls.
+          body: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    const tileWidth = 360.0;
-                    const minSpacing = 12.0;
-                    final availableWidth = constraints.maxWidth;
+              GameFilterBar(
+                filters: _filters,
+                onFiltersChanged: (next) => setState(() => _filters = next),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const tileWidth = 360.0;
+                      const minSpacing = 12.0;
+                      final availableWidth = constraints.maxWidth;
 
-                    int itemsPerRow = ((availableWidth + minSpacing) / (tileWidth + minSpacing)).floor();
-                    itemsPerRow = itemsPerRow.clamp(1, games.length);
-
-                    final justifiedSpacing = itemsPerRow > 1
-                        ? (availableWidth - (itemsPerRow * tileWidth)) / (itemsPerRow - 1)
-                        : 0.0;
-
-                    final rows = <List<Map<String, dynamic>>>[];
-                    for (var i = 0; i < games.length; i += itemsPerRow) {
-                      rows.add(games.sublist(i, (i + itemsPerRow).clamp(0, games.length)));
-                    }
-
-                    return SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
-                            if (rowIndex > 0) const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: rows[rowIndex].length == itemsPerRow
-                                  ? MainAxisAlignment.spaceBetween
-                                  : MainAxisAlignment.start,
-                              children: [
-                                for (var i = 0; i < rows[rowIndex].length; i++) ...[
-                                  if (i > 0 && rows[rowIndex].length < itemsPerRow)
-                                    SizedBox(width: justifiedSpacing),
-                                  SizedBox(
-                                    width: tileWidth,
-                                    height: 400,
-                                    child: _buildGameCard(
-                                      context: context,
-                                      key: rows[rowIndex][i]['key'] as Key?,
-                                      imageAssetPath: rows[rowIndex][i]['imageAssetPath'] as String?,
-                                      title: rows[rowIndex][i]['title'] as String,
-                                      color: rows[rowIndex][i]['color'] as Color,
-                                      onTap: rows[rowIndex][i]['onTap'] as VoidCallback?,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                      // Guard against the filtered list being empty —
+                      // games.length=0 would crash itemsPerRow.clamp(1, 0).
+                      if (games.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Text(
+                              'No games match the selected filters.\nTry clearing one or more filters.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.fredoka(
+                                fontSize: 18,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
+                          ),
+                        );
+                      }
+
+                      int itemsPerRow = ((availableWidth + minSpacing) / (tileWidth + minSpacing)).floor();
+                      itemsPerRow = itemsPerRow.clamp(1, games.length);
+
+                      final justifiedSpacing = itemsPerRow > 1
+                          ? (availableWidth - (itemsPerRow * tileWidth)) / (itemsPerRow - 1)
+                          : 0.0;
+
+                      final rows = <List<Map<String, dynamic>>>[];
+                      for (var i = 0; i < games.length; i += itemsPerRow) {
+                        rows.add(games.sublist(i, (i + itemsPerRow).clamp(0, games.length)));
+                      }
+
+                      return SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
+                              if (rowIndex > 0) const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: rows[rowIndex].length == itemsPerRow
+                                    ? MainAxisAlignment.spaceBetween
+                                    : MainAxisAlignment.start,
+                                children: [
+                                  for (var i = 0; i < rows[rowIndex].length; i++) ...[
+                                    if (i > 0 && rows[rowIndex].length < itemsPerRow)
+                                      SizedBox(width: justifiedSpacing),
+                                    SizedBox(
+                                      width: tileWidth,
+                                      height: 400,
+                                      child: _buildGameCard(
+                                        context: context,
+                                        key: rows[rowIndex][i]['key'] as Key?,
+                                        imageAssetPath: rows[rowIndex][i]['imageAssetPath'] as String?,
+                                        title: rows[rowIndex][i]['title'] as String,
+                                        color: rows[rowIndex][i]['color'] as Color,
+                                        onTap: rows[rowIndex][i]['onTap'] as VoidCallback?,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ],
-                        ],
-                      ),
-                    );
-                  },
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
             ],

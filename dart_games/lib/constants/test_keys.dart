@@ -37,6 +37,30 @@ class HomeKeys {
   static const clockworkQuestCard = Key('home_clockwork_quest_card');
   static const lunarLanderCard = Key('home_lunar_lander_card');
   static const piratesGridCard = Key('home_pirates_grid_card');
+
+  // ──── Filter bar (home screen) ────
+  static const filterBar = Key('home_filter_bar');
+  static const filterMaxPlayersButton = Key('home_filter_max_players_button');
+  static const filterGameplayStyleButton =
+      Key('home_filter_gameplay_style_button');
+  static const filterPlayerInteractionButton =
+      Key('home_filter_player_interaction_button');
+  static const filterGameLengthButton = Key('home_filter_game_length_button');
+  static const filterSoloTeamButton = Key('home_filter_solo_team_button');
+
+  /// Per-option menu item key. Caller passes the enum value's `name` (e.g.
+  /// 'twoOnly', 'race', 'parallel') so each menu entry has a stable key
+  /// that UI tests can target.
+  static Key filterMaxPlayersOption(Object value) =>
+      Key('home_filter_max_players_option_${(value as Enum).name}');
+  static Key filterGameplayStyleOption(Object value) =>
+      Key('home_filter_gameplay_style_option_${(value as Enum).name}');
+  static Key filterPlayerInteractionOption(Object value) =>
+      Key('home_filter_player_interaction_option_${(value as Enum).name}');
+  static Key filterGameLengthOption(Object value) =>
+      Key('home_filter_game_length_option_${(value as Enum).name}');
+  static Key filterSoloTeamOption(Object value) =>
+      Key('home_filter_solo_team_option_${(value as Enum).name}');
 }
 
 // ============================================================================
