@@ -2,7 +2,7 @@
 
 ## Overview
 
-1453 non-UI tests (1275 Flutter + 178 server) validate models, providers, services, widgets, game logic, API client, and server routes.
+1628 non-UI tests (1438 Flutter + 190 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
 **Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
@@ -49,6 +49,16 @@
 - Per-player altitude maps, dart tracking arrays, turn start altitude state
 - Hard landing mode, all game states, character assignments
 
+**PiratesGridGame (24 tests)** - `test/models/pirates_grid_serialization_test.dart`
+- toJson/fromJson roundtrip for all PiratesGridGame fields
+- Grid serialization: 3x3 List<List<GridCell>> preserved exactly
+- Cell owner IDs (null/P1/P2) serialize and deserialize correctly
+- winningLine (nullable List<GridPosition>) roundtrip
+- matchWinnerId, isMatchDraw, roundsWon Map, currentRound preserved
+- TargetDifficulty enum roundtrip (Easy/Medium/Hard)
+- Best Of setting (1/3/5), Steal Mode, Speed Play booleans preserved
+- Backward compatibility: missing optional fields default gracefully
+
 ### Provider Tests (74 tests)
 
 **PlayerProvider (44 tests)** - `test/providers/player_provider_test.dart`
@@ -74,6 +84,7 @@
 **ReefRoyaleProvider (7 tests)** - `test/providers/reef_royale_provider_save_restore_test.dart`
 **ClockworkQuestProvider (7 tests)** - `test/providers/clockwork_quest_provider_save_restore_test.dart`
 **LunarLanderProvider (7 tests)** - `test/providers/lunar_lander_save_restore_test.dart`
+**PiratesGridProvider (12 tests)** - `test/providers/pirates_grid_save_restore_test.dart`
 - Save game metadata creation
 - Full game state restore via SaveGameService
 - Gameplay continuation after restore
@@ -261,6 +272,30 @@
 - "Remove your darts" unconditional behavior
 - Priority level assignments (turnTransition, hitConfirm, statusChange, victory)
 
+**Pirate's Grid Game Logic (31 tests)** - `test/screens/games/pirates_grid/pirates_grid_game_test.dart`
+- Grid setup for Easy/Medium/Hard difficulty with correct 3x3 target layouts
+- Flag placement: empty cell (Easy/Medium/Hard), already-owned, opponent (Steal OFF), opponent (Steal ON)
+- Win detection: horizontal/vertical/diagonal 3-in-a-row; full grid draw; win ends round immediately
+- Best Of 1/3/5 round win requirements; grid resets between rounds; starting player alternates
+- Speed Play timer: starts, expires, resets per turn
+
+**Pirate's Grid Three-In-A-Row Checker (14 tests)** - `test/screens/games/pirates_grid/three_in_a_row_checker_test.dart`
+- Empty grid returns null; 2-in-a-row returns null; mixed grid with no winner returns null
+- Horizontal win (all 3 rows); vertical win (all 3 columns); both diagonal wins
+- Returns correct GridPosition list (3 positions) for the winning line
+
+**Pirate's Grid Announcements (27 tests)** - `test/screens/games/pirates_grid/pirates_grid_announcement_test.dart`
+- All 14 announcement events with correct text and sound effects
+- Priority ordering: Match Victory > Round Victory > Two in a Row > Flag Planted
+- MAX 2 announcements per dart enforcement
+- Remove Darts fires unconditionally
+
+**Pirate's Grid Game With Announcements (24 tests)** - `test/screens/games/pirates_grid/pirates_grid_game_with_announcements_test.dart`
+- Full dart processing triggering correct announcements
+- Steal Mode + 3-in-a-row stacking (Match Victory fires, Square Stolen suppressed)
+- Steal Mode + Round Win; Two in a Row after steal; miss announcement
+- Best Of 3 round transition announcement; Speed Play expiry turn end
+
 ### Utility Tests (34 tests)
 
 **DartboardLayout (34 tests)** - `test/utils/dartboard_layout_test.dart`
@@ -371,10 +406,10 @@
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests (1275 tests)
+# Flutter tests (1438 tests)
 flutter test
 
-# Server tests (178 tests)
+# Server tests (190 tests)
 cd server && dart test
 ```
 
@@ -396,6 +431,7 @@ flutter test test/screens/games/monster_mash/
 flutter test test/screens/games/reef_royale/
 flutter test test/screens/games/clockwork_quest/
 flutter test test/screens/games/lunar_lander/
+flutter test test/screens/games/pirates_grid/
 ```
 
 ## Test Patterns

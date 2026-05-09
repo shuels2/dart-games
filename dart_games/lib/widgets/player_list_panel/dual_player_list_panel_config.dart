@@ -291,6 +291,57 @@ class DualPlayerListPanelConfig {
     );
   }
 
+  /// Pirate's Grid theme — Ocean Navy containers, Compass Bronze accents, PirataOne/Lora fonts
+  /// Exactly 2 players (no team mode).
+  factory DualPlayerListPanelConfig.piratesGrid() {
+    return DualPlayerListPanelConfig(
+      containerColor: const Color(0xFF1B2838), // Ocean Navy
+      containerOpacity: 0.85,
+      containerBorderColor: const Color(0xFFCD7F32).withOpacity(0.5), // Compass Bronze
+      containerBorderWidth: 2,
+      headerTextStyle: GoogleFonts.pirataOne(
+        fontSize: 22,
+        color: const Color(0xFFDAA520), // Treasure Gold
+        letterSpacing: 1.0,
+      ),
+      selectedBorderColorWhenReady: const Color(0xFFDAA520), // Treasure Gold
+      selectedBorderWidthWhenReady: 2,
+      minPlayersForReady: 2,
+      selectedHeaderColorWhenReady: const Color(0xFFDAA520),
+      emptyStateTextStyle: GoogleFonts.lora(
+        color: const Color(0xFFF5E6C8).withOpacity(0.7),
+        fontSize: 16,
+      ),
+      selectedEmptyText: 'Select exactly 2 players',
+      addButtonColor: const Color(0xFF1B2838),
+      addButtonForegroundColor: const Color(0xFFF5E6C8),
+      addButtonBorderSide: const BorderSide(
+        color: Color(0xFFCD7F32), // Compass Bronze
+        width: 2,
+      ),
+      addButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        color: const Color(0xFFF5E6C8),
+        letterSpacing: 0.5,
+      ),
+      selectedColor: const Color(0xFFCD7F32).withOpacity(0.2),
+      selectedBorderColor: const Color(0xFFCD7F32),
+      unselectedBackgroundColor: const Color(0xFF1B2838).withOpacity(0.6),
+      unselectedBorderColor: const Color(0xFFCD7F32).withOpacity(0.3),
+      cardNameStyle: GoogleFonts.lora(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5E6C8),
+      ),
+      nameStatsSpacing: 1.4,
+      maxPlayers: 2,
+      availableContainerMargin: EdgeInsets.zero,
+      selectedContainerMargin: EdgeInsets.zero,
+      listGap: 6,
+      addPlayerDialogConfig: AddPlayerDialogConfig.piratesGrid(),
+    );
+  }
+
   factory DualPlayerListPanelConfig.clockworkQuest() {
     return DualPlayerListPanelConfig(
       containerColor: const Color(0xFF2C2C34), // Dark Iron

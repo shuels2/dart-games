@@ -316,6 +316,53 @@ class EditScoreDialogConfig {
     return '$number';
   }
 
+  /// Pirate's Grid — Ocean Navy bg, Compass Bronze border, PirataOne/Lora fonts
+  /// Pattern B (Dart Throw Display): no scoreDisplayTransform — raw segment strings shown
+  factory EditScoreDialogConfig.piratesGrid() {
+    return EditScoreDialogConfig(
+      backgroundColor: const Color(0xFF1B2838).withOpacity(0.95), // Ocean Navy
+      borderColor: const Color(0xFFCD7F32), // Compass Bronze
+      borderWidth: 4,
+      titleStyle: GoogleFonts.pirataOne(
+        fontSize: 22,
+        color: const Color(0xFFDAA520), // Treasure Gold
+        letterSpacing: 1.0,
+      ),
+      dartLabelStyle: GoogleFonts.lora(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5E6C8).withOpacity(0.7),
+      ),
+      scoreBoxBackgroundColor: const Color(0xFF1B2838),
+      scoreBoxDefaultBorderColor: const Color(0xFFCD7F32).withOpacity(0.5),
+      scoreTextStyle: GoogleFonts.pirataOne(
+        fontSize: 18,
+        color: const Color(0xFFF5E6C8),
+      ),
+      buttonUnselectedColor: const Color(0xFF1A1A1A), // Ink Black
+      buttonUnselectedForeground: const Color(0xFFF5E6C8),
+      buttonSelectedColor: const Color(0xFFDAA520), // Treasure Gold
+      buttonSelectedForeground: const Color(0xFF1A1A1A),
+      buttonTextStyle: GoogleFonts.lora(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      cancelButtonColor: const Color(0xFF1B2838).withOpacity(0.85),
+      cancelButtonForeground: const Color(0xFFF5E6C8),
+      cancelButtonTextStyle: GoogleFonts.lora(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      submitButtonColor: const Color(0xFFCD7F32).withOpacity(0.85), // Compass Bronze
+      submitButtonForeground: const Color(0xFFF5E6C8),
+      submitButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 1.0,
+      ),
+      // No scoreDisplayTransform — raw dart segment strings shown (T20, D18, Bull, etc.)
+    );
+  }
+
   factory EditScoreDialogConfig.clockworkQuest() {
     return EditScoreDialogConfig(
       backgroundColor: const Color(0xFF2C2C34).withOpacity(0.95), // Dark Iron

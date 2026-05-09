@@ -136,6 +136,23 @@ class DartboardSectionConfig {
       ),
     );
   }
+
+  // Factory for Pirate's Grid
+  factory DartboardSectionConfig.piratesGrid() {
+    return DartboardSectionConfig(
+      backgroundColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      disabledOverlayBackgroundColor: const Color(0xFF1B2838).withOpacity(0.95), // Ocean Navy
+      disabledOverlayBorderColor: const Color(0xFFCD7F32), // Compass Bronze
+      removeButtonBackgroundColor: const Color(0xFFCD7F32), // Compass Bronze
+      removeButtonBorderColor: const Color(0xFFDAA520), // Treasure Gold
+      removeButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 1.2,
+        color: const Color(0xFFF5E6C8), // Parchment Tan
+      ),
+    );
+  }
 }
 
 class DartboardFABConfig {
@@ -215,6 +232,18 @@ class DartboardFABConfig {
       textColor: const Color(0xFFFAFDF6), // Star White
       textStyle: GoogleFonts.orbitron(
         fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+    );
+  }
+
+  // Factory for Pirate's Grid
+  factory DartboardFABConfig.piratesGrid() {
+    return DartboardFABConfig(
+      backgroundColor: const Color(0xFFCD7F32), // Compass Bronze
+      iconColor: const Color(0xFFF5E6C8), // Parchment Tan
+      textColor: const Color(0xFFF5E6C8), // Parchment Tan
+      textStyle: GoogleFonts.pirataOne(
         letterSpacing: 1.0,
       ),
     );
@@ -319,6 +348,20 @@ class PlayToCompleteButtonConfig {
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
         color: const Color(0xFFFAFDF6),
+      ),
+    );
+  }
+
+  // Factory for Pirate's Grid
+  factory PlayToCompleteButtonConfig.piratesGrid() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFF2E8B8B), // Sea Foam Teal
+      foregroundColor: const Color(0xFFF5E6C8), // Parchment Tan
+      borderColor: const Color(0xFFDAA520), // Treasure Gold
+      textStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 1.0,
+        color: const Color(0xFFF5E6C8),
       ),
     );
   }

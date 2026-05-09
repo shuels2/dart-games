@@ -9,6 +9,7 @@ import 'providers/monster_mash_provider.dart';
 import 'providers/reef_royale_provider.dart';
 import 'providers/clockwork_quest_provider.dart';
 import 'providers/lunar_lander_provider.dart';
+import 'providers/pirates_grid_provider.dart';
 import 'services/api/api_client.dart';
 import 'services/api/api_config.dart';
 import 'services/app_settings.dart';
@@ -23,6 +24,9 @@ import 'screens/games/clockwork_quest/clockwork_quest_results_screen.dart';
 import 'screens/games/lunar_lander/lunar_lander_menu_screen.dart';
 import 'screens/games/lunar_lander/lunar_lander_game_screen.dart';
 import 'screens/games/lunar_lander/lunar_lander_results_screen.dart';
+import 'screens/games/pirates_grid/pirates_grid_menu_screen.dart';
+import 'screens/games/pirates_grid/pirates_grid_game_screen.dart';
+import 'screens/games/pirates_grid/pirates_grid_results_screen.dart';
 
 /// Global API client instance, shared across all services.
 ///
@@ -104,6 +108,11 @@ Future<void> _preloadFonts() async {
   GoogleFonts.exo2(fontWeight: FontWeight.w600);
   GoogleFonts.exo2(fontWeight: FontWeight.w700);
 
+  // Preload Pirate's Grid fonts (PirataOne already loaded for Monster Mash)
+  GoogleFonts.lora(fontWeight: FontWeight.w400);
+  GoogleFonts.lora(fontWeight: FontWeight.w600);
+  GoogleFonts.lora(fontWeight: FontWeight.w700);
+
   // Wait for all fonts to load
   await GoogleFonts.pendingFonts([
     GoogleFonts.nunito(),
@@ -119,6 +128,7 @@ Future<void> _preloadFonts() async {
     GoogleFonts.lato(),
     GoogleFonts.orbitron(),
     GoogleFonts.exo2(),
+    GoogleFonts.lora(),
   ]);
 }
 
@@ -145,6 +155,7 @@ class DartGamesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ReefRoyaleProvider(apiClient: apiClient)),
         ChangeNotifierProvider(create: (_) => ClockworkQuestProvider(apiClient: apiClient)),
         ChangeNotifierProvider(create: (_) => LunarLanderProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => PiratesGridProvider(apiClient: apiClient)),
       ],
       child: MaterialApp(
         title: 'Dart Games',
@@ -378,6 +389,9 @@ class DartGamesApp extends StatelessWidget {
           '/lunar_lander_menu': (context) => const LunarLanderMenuScreen(),
           '/lunar_lander_game': (context) => const LunarLanderGameScreen(),
           '/lunar_lander_results': (context) => const LunarLanderResultsScreen(),
+          '/pirates_grid_menu': (context) => const PiratesGridMenuScreen(),
+          '/pirates_grid_game': (context) => const PiratesGridGameScreen(),
+          '/pirates_grid_results': (context) => const PiratesGridResultsScreen(),
         },
       ),
     );

@@ -12,7 +12,14 @@ REM Supports STUB_MODE env var for testing orchestration without
 REM real infrastructure (set by run_ui_tests_parallel_stub.bat).
 REM ============================================================
 
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander"
+REM Test categories. Variable is named GAMES for historical reasons but it
+REM lists every top-level subdirectory under integration_test/ that holds
+REM tests, including non-game categories (home_screen, pause_modal).
+REM Adding entries here automatically:
+REM   - assigns the next port (server = 9000+N, chromedriver = 4443+N)
+REM   - reserves a worker slot (one parallel worker per entry)
+REM   - includes the dir in pre-run worktree cleanup (loop below at ~line 283)
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid home_screen pause_modal"
 
 REM Strip trailing backslash from script directory to avoid \" quoting
 REM issues when paths contain spaces (e.g. /D "path\" breaks start).
@@ -71,6 +78,33 @@ del /Q "%_PARALLEL_DIR%\*.txt" 2>nul
 del /Q "%_PARALLEL_DIR%\*.log" 2>nul
 for /d %%d in ("%_PARALLEL_DIR%\test_data_*") do rmdir /S /Q "%%d" >nul 2>&1
 
+REM ============================================================
+REM Pre-flight: kill leftover test processes from a prior run.
+REM
+REM A previous run that was force-killed (Ctrl+C, OS reboot, parent
+REM cmd window closed) leaves orphaned chromedriver.exe and
+REM flutter_tester.exe processes plus dart.exe servers on the test
+REM ports. They hold worktree files open, blocking rmdir cleanup, and
+REM bind ports we need. Past failure: 8+ leftover chromedriver.exe
+REM processes blocked the next run's worktree creation entirely.
+REM
+REM Safe-to-kill blanket:
+REM   - chromedriver.exe (test-only, no other use on this machine)
+REM   - flutter_tester.exe (left over by crashed flutter test runs)
+REM
+REM Port-scoped (DO NOT blanket-kill dart.exe — user may have an
+REM IDE-launched dart server on a different port):
+REM   - dart.exe instances bound to ports 9001-9020 (our test port range)
+REM ============================================================
+echo Killing leftover test processes from prior runs...
+taskkill /F /IM chromedriver.exe >nul 2>&1
+taskkill /F /IM flutter_tester.exe >nul 2>&1
+for /l %%P in (9001,1,9020) do (
+    for /f "tokens=5" %%a in ('netstat -aon ^| findstr "LISTENING" ^| findstr ":%%P "') do taskkill /F /PID %%a >nul 2>&1
+)
+REM Brief settle so killed processes release file handles before rmdir.
+timeout /t 1 /nobreak >nul
+
 if defined STUB_MODE goto :skip_preflight
 
 echo Verifying ChromeDriver version matches Chrome...
@@ -86,6 +120,17 @@ if not exist "server\bin\server.dart" (
     pause
     exit /b 1
 )
+
+REM Wipe flutter_tools frontend-server kernel cache. flutter_tools keeps an
+REM app.dill snapshot in %LOCALAPPDATA%\Temp\flutter_tools.<hash>\flutter_tool.<hash>\
+REM that survives `flutter clean` and per-worktree .dart_tool resets. When a
+REM method is added to a file already in the cached kernel, the next
+REM `flutter drive` reuses the stale kernel and reports "Member not found".
+REM Removing this directory before any worker runs forces every worker to
+REM recompile against the current source. Must happen before worktree
+REM creation so workers don't inherit a still-warm cache.
+echo Wiping stale flutter_tools kernel cache ^(%%LOCALAPPDATA%%\Temp\flutter_tools.*^)...
+for /d %%D in ("%LOCALAPPDATA%\Temp\flutter_tools.*") do rmdir /S /Q "%%D" >nul 2>&1
 
 echo Resolving Flutter dependencies...
 call flutter pub get
@@ -183,7 +228,13 @@ for /l %%N in (1,1,!worker_count!) do (
 )
 echo.
 
-set "_WORKTREE_BASE=integration_test_output\parallel\worktrees"
+REM Make worktree base ABSOLUTE so cwd shifts (pushd/popd, sub-process
+REM working dirs) don't break path resolution. Past failure: relative
+REM `_WORKTREE_BASE` worked for git worktree add (which was called from
+REM the bat's cwd) but flutter sub-processes inherited a different cwd
+REM and `flutter pub get` printed "The system cannot find the path
+REM specified." for every worker.
+set "_WORKTREE_BASE=!_SCRIPT_DIR!\integration_test_output\parallel\worktrees"
 
 REM Detect subdirectory offset from git root to the Flutter project.
 REM Worktrees mirror the full repo; flutter commands must run from
@@ -266,43 +317,137 @@ echo Creating Worker Worktrees
 echo ========================================
 echo.
 
+REM ============================================================
+REM Worktree setup is FAIL-LOUD by design.
+REM
+REM Past failure: silent `git worktree add ... >nul 2>&1` masked errors so
+REM half the workers ran in non-existent paths. Tests then fail with
+REM "the system cannot find the path specified" and the runner has no
+REM idea why. Every worktree-setup operation now writes to a setup log,
+REM and a post-creation existence check aborts the run if any worktree
+REM dir is missing.
+REM ============================================================
+REM Absolute log path — relative paths break after pushd into a worktree.
+REM Past failure: relative _WT_LOG appended to `<wt>\dart_games\integration_test_output\parallel\worktree_setup.log`
+REM after pushd, which doesn't exist, so every `>> "!_WT_LOG!" 2>&1` line
+REM emitted "The system cannot find the path specified." — once for each
+REM flutter pub get and flutter build web call inside the loop.
+set "_WT_LOG=!_SCRIPT_DIR!\!_PARALLEL_DIR!\worktree_setup.log"
+echo === Worktree setup log === > "!_WT_LOG!"
+
+REM Prune stale .git/worktrees/<name> metadata FIRST. If a previous run was
+REM force-killed mid-cleanup, git's metadata can point at directories that
+REM no longer exist; subsequent `git worktree add` then fails with cryptic
+REM errors. `git worktree prune` is safe to run unconditionally.
+echo Pruning stale git worktree metadata...
+git worktree prune >> "!_WT_LOG!" 2>&1
+
 REM Remove any leftover worktrees from a previous failed run
 if exist "!_WORKTREE_BASE!" (
     echo Cleaning up previous worker worktrees...
-    for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander) do (
-        git worktree remove --force "!_WORKTREE_BASE!\%%G" >nul 2>&1
+    REM Keep this list in sync with the GAMES variable at the top of the file.
+    for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid home_screen pause_modal) do (
+        git worktree remove --force "!_WORKTREE_BASE!\%%G" >> "!_WT_LOG!" 2>&1
     )
-    git worktree prune >nul 2>&1
-    rmdir /S /Q "!_WORKTREE_BASE!" >nul 2>&1
+    git worktree prune >> "!_WT_LOG!" 2>&1
+    rmdir /S /Q "!_WORKTREE_BASE!" >> "!_WT_LOG!" 2>&1
+)
+
+REM If rmdir couldn't fully delete (some files locked by a prior run's
+REM chromedriver/dart process that's still alive), surface that loudly
+REM rather than press on. A leftover dir at !_WORKTREE_BASE!\<game>\ will
+REM make `git worktree add` fail because the destination already exists.
+if exist "!_WORKTREE_BASE!" (
+    for /d %%G in ("!_WORKTREE_BASE!\*") do (
+        echo ERROR: leftover worktree dir not removed: %%G >> "!_WT_LOG!"
+        echo ERROR: leftover worktree dir not removed: %%G
+        echo        Likely cause: a chromedriver/dart process from a prior
+        echo        run has the dir locked. Kill all chromedriver.exe and
+        echo        dart.exe processes, then re-run.
+        set "_wt_ok=0"
+    )
 )
 if not exist "!_WORKTREE_BASE!" mkdir "!_WORKTREE_BASE!"
 
-set "_wt_ok=1"
+if not defined _wt_ok set "_wt_ok=1"
 for /l %%N in (1,1,!worker_count!) do (
     if "!_wt_ok!"=="1" (
         set "_g=!game%%N!"
         set "_wt=!_WORKTREE_BASE!\!_g!"
         echo [%%N/!worker_count!] Creating worktree for !_g!...
-        git worktree add "!_wt!" HEAD >nul 2>&1
+        echo --- worktree add: !_g! --- >> "!_WT_LOG!"
+        git worktree add "!_wt!" HEAD >> "!_WT_LOG!" 2>&1
         if !errorlevel! neq 0 (
-            echo ERROR: Failed to create worktree for !_g!. Aborting.
+            echo ERROR: Failed to create worktree for !_g!. See !_WT_LOG! for details.
+            type "!_WT_LOG!" | findstr /C:"--- worktree add: !_g! ---" /C:"fatal" /C:"error"
             set "_wt_ok=0"
         )
         if "!_wt_ok!"=="1" (
             set "_wt_proj=!_wt!"
             if not "!_GIT_PREFIX!"=="" set "_wt_proj=!_wt!\!_GIT_PREFIX!"
-            pushd "!_wt_proj!"
-            echo   Resolving dependencies...
-            call flutter pub get >nul 2>&1
-            echo   Pre-building Flutter web app ^(warms compiler cache^)...
-            call flutter build web >nul 2>&1
-            popd
-            set "worktree%%N=!_wt_proj!"
-            echo   Ready.
+            REM Diagnostic — log exact path before pushd so failures are
+            REM debuggable. If pushd reports "The system cannot find the
+            REM path specified.", inspecting !_WT_LOG! reveals what path
+            REM was actually attempted.
+            echo --- pushd to: [!_wt_proj!] --- >> "!_WT_LOG!"
+            if not exist "!_wt_proj!\pubspec.yaml" (
+                echo ERROR: project root missing pubspec.yaml: !_wt_proj!
+                echo        worktree was created but does not contain a
+                echo        Flutter project at the expected path. Likely
+                echo        cause: _GIT_PREFIX [!_GIT_PREFIX!] doesn't match
+                echo        the actual project subdirectory layout.
+                set "_wt_ok=0"
+            ) else (
+                pushd "!_wt_proj!" 2>> "!_WT_LOG!"
+                if !errorlevel! neq 0 (
+                    echo ERROR: pushd failed for !_g!: !_wt_proj!
+                    echo        See !_WT_LOG! for details.
+                    set "_wt_ok=0"
+                ) else (
+                    echo   Resolving dependencies...
+                    call flutter pub get >> "!_WT_LOG!" 2>&1
+                    echo   Pre-building Flutter web app ^(warms compiler cache^)...
+                    call flutter build web >> "!_WT_LOG!" 2>&1
+                    popd
+                    set "worktree%%N=!_wt_proj!"
+                    echo   Ready.
+                )
+            )
         )
     )
 )
 if "!_wt_ok!"=="0" goto :cleanup
+
+REM Existence check — every expected worktree project dir must exist on
+REM disk AND contain a `pubspec.yaml` (the canonical Flutter project
+REM marker) before we launch workers. A worker pointed at a missing path
+REM runs flutter drive in a non-existent cwd, which fails with "the
+REM system cannot find the path specified" for every test in that game's
+REM pack — and the runner has no idea why because git worktree errors
+REM were swallowed.
+echo.
+echo Verifying all worktrees exist on disk...
+set "_wt_missing=0"
+for /l %%N in (1,1,!worker_count!) do (
+    set "_g=!game%%N!"
+    set "_wt_check=!worktree%%N!"
+    if not exist "!_wt_check!\pubspec.yaml" (
+        echo ERROR: worktree for !_g! missing or incomplete: !_wt_check!
+        echo        Expected pubspec.yaml at !_wt_check!\pubspec.yaml.
+        echo        Worker !_g! would run flutter drive in a non-existent
+        echo        / non-Flutter directory and every test in its pack
+        echo        would fail with "the system cannot find the path".
+        set "_wt_missing=1"
+    )
+)
+if "!_wt_missing!"=="1" (
+    echo.
+    echo One or more worktrees missing or incomplete — aborting before
+    echo workers spawn. See !_WT_LOG! for the git worktree add output.
+    set "_wt_ok=0"
+    goto :cleanup
+)
+
 echo.
 echo All worktrees ready.
 echo.
@@ -385,7 +530,15 @@ for /l %%N in (1,1,!worker_count!) do (
     if "!_wt!"=="" set "_wt=stub"
 
     echo Launching worker for !_g! ^(CD=!_cd_port! SRV=!_srv_port!^)...
-    start "Worker: !_g!" /D "!_SCRIPT_DIR!" cmd /C ""!_SCRIPT_DIR!\run_ui_tests_parallel_worker.bat" !_g! !_cd_port! !_srv_port! %_PARALLEL_DIR% !_wt! !filter_args!"
+    REM Quote arguments that may contain spaces. Past failure: when
+    REM `_WORKTREE_BASE` was made absolute (commit 4834b12), `!_wt!` became
+    REM a path containing spaces (`C:\Projects\Claude Code Projects\...`).
+    REM Without quoting, cmd's arg splitter broke `!_wt!` into multiple
+    REM tokens so the worker's %5 was just the first token before a space.
+    REM Test discovery then ran against a non-existent path and every
+    REM worker reported TOTAL=0. Same hazard applies to %_PARALLEL_DIR%
+    REM and !_SCRIPT_DIR! if either ever lives under a path with spaces.
+    start "Worker: !_g!" /D "!_SCRIPT_DIR!" cmd /C ""!_SCRIPT_DIR!\run_ui_tests_parallel_worker.bat" !_g! !_cd_port! !_srv_port! "%_PARALLEL_DIR%" "!_wt!" !filter_args!"
     if %%N lss !worker_count! timeout /T 2 /NOBREAK >nul 2>&1
 )
 

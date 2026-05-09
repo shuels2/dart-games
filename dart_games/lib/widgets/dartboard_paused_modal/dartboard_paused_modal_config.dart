@@ -168,6 +168,28 @@ class DartboardPausedModalConfig {
     );
   }
 
+  /// Pirate's Grid — Ocean Navy bg, Blood Red border, PirataOne/Lora fonts
+  factory DartboardPausedModalConfig.piratesGrid() {
+    return DartboardPausedModalConfig(
+      backgroundColor: const Color(0xFF1B2838), // Ocean Navy
+      borderColor: const Color(0xFF8B0000), // Blood Red
+      boxShadowColor: const Color(0xFF8B0000),
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFF8B0000), // Blood Red
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFF8B0000), // Blood Red
+        fontSize: 24,
+        letterSpacing: 1.2,
+      ),
+      messageTextStyle: GoogleFonts.lora(
+        color: const Color(0xFFF5E6C8), // Parchment Tan
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   factory DartboardPausedModalConfig.clockworkQuest() {
     return DartboardPausedModalConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

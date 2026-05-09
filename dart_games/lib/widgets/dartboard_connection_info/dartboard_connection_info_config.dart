@@ -276,6 +276,35 @@ class DartboardConnectionInfoConfig {
     );
   }
 
+  /// Pirate's Grid — Ocean Navy bg, Compass Bronze/Treasure Gold, Lora font
+  factory DartboardConnectionInfoConfig.piratesGrid() {
+    return DartboardConnectionInfoConfig(
+      backgroundColor: const Color(0xFF1B2838), // Ocean Navy
+      backgroundOpacity: 0.95,
+      emulatorBorderColor: const Color(0xFFCD7F32), // Compass Bronze
+      hardwareBorderColor: const Color(0xFFDAA520), // Treasure Gold
+      nameTextStyle: GoogleFonts.lora(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5E6C8), // Parchment Tan
+      ),
+      statusTextStyle: GoogleFonts.lora(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      emulatorLabelTextStyle: GoogleFonts.lora(
+        fontSize: 10,
+        color: const Color(0xFFCD7F32), // Compass Bronze
+      ),
+      emulatorIconColor: const Color(0xFFCD7F32), // Compass Bronze
+      hardwareIconColor: const Color(0xFFDAA520), // Treasure Gold
+      connectedColor: const Color(0xFF2E8B8B), // Sea Foam Teal
+      connectingColor: const Color(0xFFDAA520), // Treasure Gold
+      disconnectedColor: const Color(0xFF8B0000), // Blood Red
+      errorColor: const Color(0xFF8B0000), // Blood Red
+    );
+  }
+
   factory DartboardConnectionInfoConfig.clockworkQuest() {
     return DartboardConnectionInfoConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

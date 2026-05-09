@@ -125,7 +125,7 @@ ARs are independent critiques of the implementer's work. Run them on the orchest
 > - `lib/main.dart` — additive: provider + 3 routes
 > - `lib/screens/home_screen.dart` — additive: new game card
 > - `lib/widgets/*/[*]_config.dart` — additive: new `.[gameName]()` factory only
-> - 12 mirrored shared helpers — additive only (new game-specific helpers)
+> - Mirrored shared helpers in `test/shared/` and `integration_test/shared/` — additive only (new game-specific helpers); see Rule §26 for the dynamic-discovery rule
 > - 4 batch files — additive: game name appended to GAMES list
 > - `pubspec.yaml` — additive: asset directory entries
 >
@@ -315,6 +315,7 @@ After the sub-agent returns, run `git status` and read the modified `pubspec.yam
 > (e) No assets are in the wrong subdirectory (e.g., character images in sounds/)
 > (f) No spec assets were overlooked
 > (g) The asset path manifest at `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md` was written and lists every asset with its CANONICAL POST-RENAME path. Read the manifest and verify every listed path resolves to a real file (`if [ -f "$path" ]`). This manifest is the source of truth for Phases 2 (wireframes) and 3 (model `assetPath`) — a path mismatch here cascades into the model and screens, causing silent runtime image-load failures.
+> (h) **Background image suitability check.** Read `[GameName]-Background.png` (and any per-screen background) using the Read tool. Evaluate it against the spec's Style section: is the image a TEXTURE (parchment, gradient, low-detail wash) suitable as a backdrop for UI overlays, OR a fully ILLUSTRATED SCENE (characters, dense detail, high-contrast features) that will visually compete with foreground elements? Past failure: Pirate's Grid shipped with a fully illustrated pirate scene as `PiratesGrid-Background.png`; UI elements (settings boxes, player tiles, dart indicators) were buried against the busy art and had to be polished with a 65% Ocean Navy overlay after the build. If the image looks too detailed for an overlay backdrop, surface this to the user IMMEDIATELY ('the user-provided background is illustrated rather than textured — recommend either (a) replace with a low-detail texture, OR (b) plan to add a translucent color overlay (e.g., `Container(color: navy.withOpacity(0.65))`) on top of the bg in every screen so UI is readable'). The Stage A wireframe sub-agent in Phase 2 needs this decision baked in, not discovered later.
 >
 > I will list every discrepancy found."
 
@@ -344,13 +345,23 @@ After each stage, the user can request changes cheaply. Visual direction confirm
 The wireframes are NOT generic placeholders. Reference the actual character images, background images, and icon via `<img src="../../assets/games/[GAME_NAME_SNAKE]/...">` paths. Apply the spec's exact color palette + Google Fonts to ALL elements: list boxes, settings panels, modal overlays, AppBars, buttons, everything. The wireframe must be visually close to the final game so the user can give meaningful feedback.
 
 - Use the actual icon for the home-screen card mock-up
-- Use the actual background image as the page background on game and results screens
+- **Use the actual background image as the page background on EVERY screen — menu, game, AND results.** This is non-negotiable. Past failure: the Pirate's Grid initial wireframes used a parchment-style placeholder background; the actual user-provided `PiratesGrid-Background.png` was a fully illustrated scene that buried UI elements. Two recurrences across multiple games where Stage A/B/C wireframes silently reverted to a CSS gradient or a plain dark fill instead of `background-image: url('../../assets/games/[GAME_NAME_SNAKE]/images/[GameName]-Background.png')`. Verification: `grep -c '[GameName]-Background' temp_wireframes/[GAME_NAME_SNAKE]/*.html` must report ≥ 1 hit per HTML file.
 - Use the actual character images on player tiles, descent tracks, winner card, etc.
 - Use the spec's exact hex codes (no "approximate" colors)
 - Load the spec's Google Fonts via `<link>` tags
 - Match the spec's Style section closely — the wireframe should be nearly indistinguishable from the final game in colors/fonts/imagery
 
 The ONLY stylistic restriction: do NOT use the container app's tokens (Nunito font, Flame Orange `#FF6B35`, etc.).
+
+**CRITICAL — Design for the default headless test viewport (1366×768):**
+
+The parallel UI test runner uses Chrome in headless mode at the default Chrome viewport (1366×768 wide on Windows, sometimes 1280×800 on macOS). Wireframes that look fine at desktop monitor sizes (1920×1080+) but overflow at 1366×768 produce screenshot tests that pass capture but fail layout (clipped buttons, overflowing text, RenderFlex errors). Past failures from the Pirate's Grid build: 76px player-column overflow at default viewport; grid not centered when the height-based cell size shrunk below the width-based one; winner character overflowing on small viewports because the Column had a fixed 420px size. Each cost an iteration round on screenshot review.
+
+- Author every wireframe HTML with a fixed wrapper of `width: 1366px; height: 768px` for the orchestrator's visual review (so the HTML matches what tests see)
+- Inside that wrapper, use responsive layout primitives (`LayoutBuilder` equivalents: % widths, `min/max` clamps, flex/grid) so the design adapts gracefully when run-time constraints differ
+- Verify in the browser dev tools at exactly 1366×768 — no horizontal scroll, no clipped buttons, no overflow indicators
+
+The orchestrator's AR-2 review explicitly checks the wireframe at this viewport before approving the stage.
 
 ### Stage A: Menu screen wireframe + approval
 
@@ -415,11 +426,11 @@ Present the menu wireframe to the user:
 > - `game_early_2p.html` — game screen at the START of a game (2 players, all at starting state)
 >
 > **Layout requirements:**
+> - **Game UI fills the full screen height. The dartboard emulator is a transparent OVERLAY anchored to the bottom — NOT a sibling that competes for vertical space.** The most common Phase 2 mistake (re-occurring across at least 3 game builds) is to lay out the wireframe as `Column[gameContent, dartboardEmulator]` where the emulator gets ~150-200px of inline height and the game content gets the rest. That model is WRONG. The emulator only renders when `!dartboardProvider.isConnected`; in production gameplay (board connected) the game content has the FULL screen height. The wireframe must reflect this: gameContent is the entire screen, dartboardEmulator is `position: absolute; bottom: 0; left: 0; right: 0;` at z-index 1 (or `Positioned(bottom: 0)` inside the OUTER Stack — sibling of Scaffold, NOT inside the body Stack). Otherwise the actual game-screen layout shrinks vertically when transplanted from wireframe to Flutter, and per-player columns / grids / tracks overflow at the default 1366×768 headless viewport. Past failure: PG game-screen layout overflowed by 76px because cellSize was clamped against the wireframe's reduced height that already accounted for an inline emulator.
 > - AppBar: back button, title, DartboardConnectionInfo on the right (NO ResumeGameButton on game screen)
 > - Active player panel (LEFT, 200px wide per spec Section 10B if specified): use the player's CHARACTER IMAGE rendered NATIVELY (no circle clipping, `object-fit: contain`). Apply a shape-conformal `filter: drop-shadow` for active-player glow.
 > - Player progress visualization (descent track / coral cards / shields / etc. per spec): use REAL CHARACTER IMAGES, not rocket/circle placeholders. Render them at native size with no circle masking.
-> - Background: use the real background image from `assets/games/[GAME_NAME_SNAKE]/images/...` if the spec specifies one. The background must be visible on the game screen (recurring miss in past sessions).
-> - **The dartboard emulator section is a TEMPORARY OVERLAY at the bottom — NOT space-reserving infrastructure.** The primary game UI should fill the FULL available height as if the dartboard didn't exist. The emulator overlaps the bottom portion at run time. Reference: in the actual implementation, DartboardEmulatorSection is a `Positioned(bottom: 0)` child of the **outer Stack** (sibling of Scaffold, NOT inside the body Stack), on top of the game UI. Mirror this in the wireframe by drawing the game content full-height and placing the dartboard label as an overlay at the bottom edge.
+> - **Background: use the real background image** from `assets/games/[GAME_NAME_SNAKE]/images/...`. Even if the spec doesn't explicitly call for one on the game screen, use the same background image the menu uses (visual continuity). The background must be visible on the game screen (recurring miss in past sessions).
 > - Skip Turn button visible (per spec's screen design)
 > - Show every option's visible effect from the Options section (e.g., "HARD LANDING" badge if HL ON, altitude readout, etc.)
 >
@@ -578,10 +589,23 @@ Do NOT proceed to Phase 3 until the user explicitly approves the full wireframe 
 > 3. `test/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_test.dart`
 >    - Every test listed in the spec's Testing Plan game-logic section
 >    - At least one test per Options-section option exercising its effect
+> 4. `test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` (**MANDATORY** — every other game has one; missing it is a coverage hole)
+>    - Pure-provider game-mechanics tests (no widget pumping). Construct provider directly, call methods, assert state.
+>    - **Minimum 40 tests** (canonical games range 44–50: HorseRace 50, ClockworkQuest 49, MonsterMash 44, ReefRoyale 45, TargetTag 45). The screen-level `_game_test.dart` is NOT a substitute — that file tests via the screen wrapper; this file isolates provider logic so regressions surface clearly when the screen changes.
+>    - Required groups (one or more `group(...)` blocks):
+>      - **Initial state** — `isGameActive` before/after `startGame`, randomized layout invariants (if applicable), default-state assertions
+>      - **`processDartThrow` per difficulty/option** — for each option-value combination from spec Section 7 that affects the dart-processing path, a group with hit/miss/edge cases. (Pirate's Grid example: Easy / Medium / Hard groups, each with hit-claims-cell and miss-no-claim cases.)
+>      - **Turn advancement** — advances after 3 darts, `skipTurn` forfeits + advances, dart counter resets per turn, `processDartThrow` no-ops when `state == finished`
+>      - **Win detection** — every win path the game supports (rows, columns, diagonals, score thresholds, elimination, etc.); plus draw/no-winner end conditions
+>      - **Per-option side-effects** — for each on/off toggle and dropdown value from spec Section 7, one or more tests asserting the provider state change (e.g., Steal Mode replaces opponent flag; Hard Landing reduces altitude differently; Speed Mode advances turn on time)
+>      - **Round / match transitions** (best-of, multi-round games) — round increment, alternating starting player, match-end on threshold
+>      - **`_resetTurnForPlayer` / edit-score replay** — undoes ALL win side-effects including match-level (`matchWinnerId`, `isMatchDraw`, `state`, `gameEndTime`, round counters); see Accumulated Build Quality Rules § 20
+>      - **Randomized targets / shuffled state** (if applicable) — invariants on the randomized state across new games
+>      - **`endGame` and resumed save id tracking** — `endGame` clears active flag; `resumedSavedGameId` tracks the source save id
 >
 > **Verification:**
-> - Run `flutter test test/screens/games/[GAME_NAME_SNAKE]/`
-> - Confirm 100% pass rate
+> - Run `flutter test test/screens/games/[GAME_NAME_SNAKE]/ test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart`
+> - Confirm 100% pass rate on BOTH
 >
 > **Report back:**
 > - File paths created
@@ -591,11 +615,12 @@ Do NOT proceed to Phase 3 until the user explicitly approves the full wireframe 
 >
 > **Hard rules — Do NOT:**
 > - Commit to master/main. Do NOT push to remote.
-> - Modify any files outside the three created above
+> - Modify any files outside the four created above
 > - Modify any existing game's code
 > - Create the screens (those come in Phase 4)
 > - Skip running the tests
 > - Swallow exceptions in `updatePlayerStats` calls (the platform auto-logs failures via `/api/v1/stats/failed`)
+> - **Skip authoring `[GAME_NAME_SNAKE]_provider_game_test.dart`** — Lunar Lander and Pirate's Grid both shipped without it (only realized post-launch via the test-count gap audit). Every game needs this file; treat it as a Phase 3 hard requirement, not optional.
 
 After the sub-agent returns, read `lib/providers/[GAME_NAME_SNAKE]_provider.dart` yourself and verify Options-section coverage independently before AR-3.
 
@@ -606,13 +631,14 @@ After the sub-agent returns, read `lib/providers/[GAME_NAME_SNAKE]_provider.dart
 > (b) There is at least one test that exercises this option (cite the test name)
 > (c) **Turn increment rule:** `grep -n 'totalTurns' lib/models/[GAME_NAME_SNAKE]_game.dart lib/providers/[GAME_NAME_SNAKE]_provider.dart` — the increment (`totalTurns[...] = ... + 1`) MUST appear in EXACTLY ONE place: the provider's `processDartThrow` guarded by `if (game.dartsThrown[playerId] == 1)`. Any increment in `advanceToNextPlayer` or anywhere else is a double-count bug.
 > (d) **Asset paths in model match Phase 1 manifest:** for every enum value in the model with an `assetPath` getter, the returned path MUST exist on disk. Run `flutter test test/screens/games/[GAME_NAME_SNAKE]/` — if any character image fails to load, the unit tests still pass (they don't load images). The check is: read the model file and grep each `return 'assets/...'` path, then confirm the file exists.
+> (e) **`test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` exists with ≥ 40 tests.** This is the dedicated provider-game-mechanics test file (separate from screen-level `_game_test.dart`). Run `grep -c '^  test(\|^    test(' test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must report ≥ 40. The file MUST cover every option-value combination from spec Section 7 that affects dart-processing in its own group, plus the standard groups listed in Phase 3 file #4 (initial state, turn advancement, win detection, round transitions, `_resetTurnForPlayer` undo, `endGame`). Past failure: Lunar Lander and Pirate's Grid both shipped without this file; the gap was caught only by a manual cross-game test-count audit weeks later.
 >
 > Coverage matrix:
-> | Option | Provider Logic | Test Coverage |
-> |--------|---------------|---------------|
-> | [name] | [method]      | [test name]   |
+> | Option | Provider Logic | Screen-level Test | Provider-level Test |
+> |--------|---------------|-------------------|---------------------|
+> | [name] | [method]      | [test name]       | [test name]         |
 >
-> I will report any option that lacks either provider logic or test coverage, plus any turn-increment double-count or any model assetPath that doesn't exist on disk."
+> Every row must have BOTH a screen-level test AND a provider-level test. I will report any option that lacks either, plus any turn-increment double-count, any model assetPath that doesn't exist on disk, or absence of `[GAME_NAME_SNAKE]_provider_game_test.dart`."
 
 Report AR-3 findings. Dispatch a corrective Sonnet sub-agent for any gaps before proceeding.
 
@@ -1074,8 +1100,34 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > **7. Add the game card to `lib/screens/home_screen.dart`:**
 > - Use the icon from `assets/games/[GAME_NAME_SNAKE]/icons/icon.png` (or whatever the spec specifies)
 > - Tag the card with `key: HomeKeys.[gameName]Card` (added in step 1)
+> - Set `'gameId': '[GAME_NAME_SNAKE]'` on the card map so the filter bar can match it against the filter registry (per Rule §42)
 > - Wire navigation to the route name (added in step 8)
 > - Match the visual style of existing cards
+>
+> **7a. Register filter metadata in `lib/constants/game_filter_registry.dart`:**
+>
+> The home-screen filter bar reads `GameFilterRegistry` to decide which cards to render given the user's filter selections. Every game MUST register an entry — without it, the card shows but the user can't filter to it / away from it consistently.
+>
+> Add a `GameMetadata` entry with all five fields populated:
+> ```dart
+> GameMetadata(
+>   gameId: '[GAME_NAME_SNAKE]',          // matches the card's gameId
+>   displayName: '[GAME_NAME_DISPLAY]',   // e.g. "Pirate's Grid"
+>   maxPlayers: MaxPlayersBucket.<one>,   // twoOnly | upToEight | upToTen
+>   gameplayStyles: {GameplayStyle.<one or more>}, // race | versus | strategy
+>   playerInteraction: PlayerInteraction.<one>,    // parallel | light | heavy
+>   gameLength: GameLength.<one>,         // quick | medium | long (at default settings)
+>   soloTeam: SoloTeamSupport.<one>,      // soloOnly | soloOrTeam
+> ),
+> ```
+> Decision guide:
+> - **maxPlayers** — `MaxPlayersBucket.twoOnly` if exactly 2; `upToEight` if up to 8; `upToTen` if up to 10. Add a new bucket if the new game has a different cap.
+> - **gameplayStyles** — `race` (first to a goal, no inter-player effects), `versus` (direct attacks/eliminations), `strategy` (claim positions/patterns). Set may contain multiple if the game spans styles; existing games each have one.
+> - **playerInteraction** — `parallel` (no inter-player effects, side-by-side races), `light` (occasional disruption like steal/buff/claim), `heavy` (direct attacks/damage/eliminations).
+> - **gameLength** — `quick` (< 10 min at defaults), `medium` (10–25 min), `long` (25+ min). At-default-settings duration only.
+> - **soloTeam** — `soloOrTeam` if the spec calls out a Team mode toggle; `soloOnly` otherwise.
+>
+> If the spec introduces a new filter criterion entirely (e.g. "Family-friendly" / "Adult"), add the enum to `lib/models/game_metadata.dart`, add the field to `GameMetadata`, populate it for ALL existing games' registry entries, and add a dropdown to `lib/widgets/game_filter_bar/game_filter_bar.dart`. Then add a `FilterCriterion` enum value and the `HomeKeys.filter<NewCriterion>Button` + per-option key in `lib/constants/test_keys.dart`. Past failure: if the registry entry is missing, the card silently fails the orphan check in `test/models/game_metadata_test.dart` → game appears unfiltered but doesn't appear in any filtered view.
 >
 > **8. Register the provider in `lib/main.dart` MultiProvider, and add routes for the three new screens.**
 >
@@ -1160,6 +1212,35 @@ After the sub-agent returns:
 > (mm) **No `Opacity`/`Transform`/`Color` inside `AnimatedBuilder.builder` driven by an AnimationController** — grep for `Opacity(opacity:` inside `AnimatedBuilder(...).builder` callbacks. Use `FadeTransition(opacity: anim, ...)` (or `SlideTransition`/`ScaleTransition`/`RotationTransition`) outside the builder instead — `Opacity` allocates a saveLayer per frame whereas the transition widgets short-circuit. Same rule for animated `Transform.translate`/`Transform.rotate` inside a builder. Per-finding history: `docs/perf-audits/2026-05-05-full.md` finding A5.
 > (nn) **No empty `setState(() {})` as a rebuild hack** — grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_*.dart` for `setState\(\(\) \{\}\)`. If the rebuild is needed because a `Provider` field changed, the provider's own `notifyListeners()` covers it — no setState required. If local widget state is changing, give the field an actual setter call inside the setState closure (e.g. `setState(() { _foo = bar; })`). An empty setState hides the dependency, causes spurious full-subtree rebuilds, and tends to multiply over time as code is copy-pasted between games. **Permitted exception:** rebuilding after assigning a local non-Provider field (e.g. `_mockApi = ...` in `_initializeGame`) — in that case the field assignment IS the state change and an empty closure is acceptable; cite this case in the AR-4 report. Per-finding history: `docs/perf-audits/2026-05-05-full.md` finding C3.
 > (oo) **Menu screen `initState` calls `await playerProvider.loadPlayers()` then `playerProvider.clearSelection()` inside its `addPostFrameCallback`** — read the menu screen's `initState()` and verify both calls are present, in that order, before any preselect logic (`selectPlayer(...)` / `getPlayerById(...)`). Without `clearSelection()`, `_selectedPlayers` on `PlayerProvider` is shared global state that LEAKS across games — entering the new game shows whatever players were selected on the previously-visited game's menu. Without `loadPlayers()`, players added on the home / options screen since the app booted won't appear in the new game's roster. Reference: `target_tag_menu_screen.dart:93-94`, `horse_race_menu_screen.dart:52-53`, `reef_royale_menu_screen.dart:89-90`, `clockwork_quest_menu_screen.dart:59-60`, `monster_mash_menu_screen.dart:82-83`, `lunar_lander_menu_screen.dart` (post-fix). Recurring miss: Lunar Lander shipped without these calls and exhibited the cross-game selection-leak bug until 2026-05-06.
+>
+> (pp) **Accumulated Build Quality Rules compliance** — review the "## Accumulated Build Quality Rules" section at the end of this skill. For each of the 27 rules, note whether it applies to this game and verify compliance:
+> - Rule 1 (Character Randomization): applies if the game has more characters than players. Verify `_characterPaths` is shuffled in `initState`, not hardcoded by player index.
+> - Rule 2 (Shape-following glow): applies if active-player characters have transparent PNG backgrounds. Verify `ImageFiltered`+`ColorFiltered` approach, NOT `BoxShadow` on Container.
+> - Rule 3 (Per-player controls in player column): verify dart indicators and skip-turn button are in the player display column, not AppBar.
+> - Rule 4 (Dart indicator hit tracking): applies if indicators show player color for hits vs neutral for misses. Verify `_currentTurnHits` tracked at throw time, cleared on turn change.
+> - Rule 5 (All badge states): verify rankings/results badges show WIN, LOSS, and DRAW — no empty transparent loser state.
+> - Rule 6 (Icon vs emoji): verify flag/bullet indicators use `Icon(...)` not emoji where player color matters.
+> - Rule 7 (Text readability): verify significant text over background images uses 4-corner shadow outline.
+> - Rule 8 (Settings + player persistence): verify `_changeSettings` passes all settings AND `initialSelectedPlayerIds` as constructor params; menu screen re-selects players in `addPostFrameCallback`.
+> - Rule 9 (Randomized grid targets): applies to grid-based games. Verify targets shuffle from full 1–20 range with `Random?` parameter — no hardcoded layouts.
+> - Rule 10 (Play-to-complete steal loop prevention): applies if game has steal/takeover mechanics. Verify non-winner always misses, winner only targets empty cells.
+> - Rule 11 (Test keys for dynamic values): verify widget keys on runtime-determined values; ProviderHelpers expose them.
+> - Rule 12 (`completeGameToVictory` dynamic reads): verify helper reads actual targets from provider — no hardcoded numbers; `throwForCellTarget` dispatch included.
+> - Rule 13 (LayoutBuilder for game boards): verify game board elements use proportional sizing from `LayoutBuilder`, not fixed pixel sizes. Grid container margin is subtracted from available width before computing sibling column widths.
+> - Rule 14 (Background texture opacity): verify texture images use ≥ 0.50 opacity; verify files actually exist at their paths.
+> - Rule 15 (Inline `[DIAG]` reason strings): verify every navigation-dependent `findsOneWidget` in UI tests embeds an inline diagnostic in `reason:` — built from already-imported `ElementFinders` methods, not via a new shared helper. Apply to every nav-back, tap-then-expect, and modal-action assertion.
+> - Rule 16 (`ensureVisible` before scrollable-content taps): verify `tester.ensureVisible(button); await tester.pump();` precedes every tap on a button inside a `SingleChildScrollView` — results-screen actions, save/resume modal buttons. `clickPlayAgain`/`clickChangeSettings`/`clickSelectDifferentGame` in `shared/results_helpers.dart` must include this from day one.
+> - Rule 17 (Save/Resume real-flow): verify any test that taps Resume sets up the saved game via the in-game Save flow, NOT `preSaveGame(GameSaveConfig.foo())`. `preSaveGame` is only for tests that verify the resume modal appears in the saved-games list.
+> - Rule 18 (Resume tile selection): verify every test that taps Resume calls `UITestHelpers.selectSavedGameTile(tester, savedId)` first — the Resume button is disabled until a tile is selected.
+> - Rule 19 (`Navigator.push` not `pushReplacement`): verify `_startGame` in the menu screen uses `Navigator.push` so the menu stays on the route stack — back-from-game and Save-modal-Save both pop to menu.
+> - Rule 20 (`_resetTurnForPlayer` undoes match-level): verify the provider's edit-score reset captures `winnerId == playerId`, `matchWinnerId == playerId`, and `isMatchDraw && !thisTurnWonMatch` BEFORE clearing round-level fields, then undoes `roundsWon` decrement, `matchWinnerId = null`, `isMatchDraw = false`, `state = GameState.playing`, `gameEndTime = null` for the affected paths.
+> - Rule 21 (Edit dialog fills dropped darts): verify "edit removes winner" tests explicitly set ALL three darts in the dialog (typically `setDart1/2/3('Miss')`) — provider drops post-win Miss throws via the `!isGameActive` early return, so the initial segments only contain the winning dart.
+> - Rule 22 (`_parseSegment` Miss representations): verify the helper accepts `'Miss'`, `'M'`, `'miss'`, `'-'`, `'—'`, and empty string as miss; lowercase `d`/`t` regex prefixes; `ensureVisible` on every ring/number tap.
+> - Rule 23 (Strategy returns miss-shaped throw): verify `getNextThrow` returns `SimulatedThrow(score: 0, multiplier: 'miss', baseScore: 0)` for deliberate-miss turns, NOT `null`. Null is the runner's STOP signal.
+> - Rule 24 (Inner LayoutBuilder for player column): verify `_buildPlayerColumn` wraps its body in a `LayoutBuilder` that clamps `charSize` against `columnConstraints.maxHeight`, with reserve `220 + (game.speedPlay ? 56 : 0)` for active and `80` for inactive.
+> - Rule 25 (RGB-byte color comparison): verify visual-validation tests compare `color.red`/`green`/`blue` directly, NOT `color.value`.
+> - Rule 26 (Shared helper sync): verify every shared-helper file in `integration_test/shared/` has an identical counterpart in `test/shared/`. Run `diff -q` on each pair.
+> - Rule 27 (Runtime target lookup): if rule 9 applies (randomized targets), verify a `get[GameName]CellTargetNumber(tester, row, col)` helper exists in `provider_helpers.dart` and EVERY gameplay test that throws a specific dart uses it; verify a `throwForCellTarget(tester, target)` dispatch helper handles the `single`/`double`/`triple`/`bull` multiplier chooser.
 >
 > For each item I will cite the file and line number, or report MISSING.
 > I will list every gap found."
@@ -1362,7 +1443,7 @@ If FAIL:
 
 ## Phase 7: UI Automation Tests, Spec Coverage Audit, and Mandatory Coverage
 
-**Goal:** Write all UI tests in the proper subdirectory layout (including mandatory navigation, results, and play-to-complete tests), synchronize the 12 shared helpers, update all 4 batch files, run the spec coverage audit.
+**Goal:** Write all UI tests in the proper subdirectory layout (including mandatory navigation, results, and play-to-complete tests), synchronize the mirrored shared helpers, update all 4 batch files, run the spec coverage audit.
 
 **Model:** Sonnet sub-agent for shared helper sync + UI test files + screenshot test + batch file updates; orchestrator (Opus) for the spec coverage audit + AR-6 + Gate 3.
 
@@ -1376,7 +1457,7 @@ If FAIL:
 > - Spec file: `[SPEC_PATH]` — Testing Plan section (UI test list and screenshot test states)
 > - Section map: [PASTE SECTION MAP TABLE]
 > - `docs/testing/test-maintenance.md` — **CRITICAL: shared helper synchronization rules**
-> - `docs/testing/shared-helpers-reference.md` — **authoritative reference for all 12 mirrored shared helpers, the `_helpers.dart` delegate pattern for per-subdirectory game-specific helpers, and the decision tree for where new helper functions belong**
+> - `docs/testing/shared-helpers-reference.md` — **authoritative reference for the mirrored shared helpers, the `_helpers.dart` delegate pattern for per-subdirectory game-specific helpers, and the decision tree for where new helper functions belong**
 > - `docs/testing/ui-automation.md` — including the per-session DB isolation pattern (`X-DB-Session` header, `resetServerState()`) and the parallel runner port-assignment table
 > - `docs/testing/continuous-animations.md` — `pumpAndSettle()` rules
 > - `docs/development/adding-games.md` — **including mandatory navigation tests (4), mandatory results-screen tests (3), and mandatory play-to-complete tests, with rationales for each**
@@ -1390,26 +1471,20 @@ If FAIL:
 >
 > **1. Update shared test helpers in BOTH locations (mandatory synchronization).**
 >
-> There are **12 mirrored shared helper files** that must stay byte-identical between `test/shared/` and `integration_test/shared/`:
+> The mirrored set is **discovered dynamically**, not enumerated. The rule (Rule §26): every `*.dart` file present in BOTH `integration_test/shared/` and `test/shared/` MUST stay byte-identical between the two. Files present in only one directory are intentionally non-mirrored (e.g. `mock_api_helpers.dart`, `player_test_utils.dart`, and `sector_parser.dart` in `test/shared/` import non-UI testing packages and have no UI-test counterpart).
 >
-> - `dart_throw_helpers.dart`
-> - `edit_score_helpers.dart`
-> - `element_finders.dart`
-> - `game_setup_helpers.dart`
-> - `game_ui_config.dart`
-> - `play_to_complete_helpers.dart`
-> - `provider_helpers.dart`
-> - `pump_sequences.dart`
-> - `results_helpers.dart`
-> - `save_resume_helpers.dart`
-> - `settings_helpers.dart`
-> - `ui_test_helpers.dart`
+> When adding a method/function to a shared helper, apply the IDENTICAL change to BOTH copies in the same edit pass.
 >
-> Apply game-specific changes to each that needs them in BOTH directories.
+> When CREATING a new shared helper, decide first whether it can compile in both contexts:
+> - **If yes:** create it in BOTH directories from the start. Mirror byte-identical.
+> - **If no** (e.g. it imports `package:integration_test` and uses `IntegrationTestWidgetsFlutterBinding`): create it in ONLY the directory that can compile it. The other directory has no copy and the mirror rule does not apply.
+> - **Caveat — `flutter drive` web compile cache:** brand-new files under `integration_test/shared/` are silently ignored by the web compile cache (commit `4d1377e`). When a UI test imports such a new file, compilation fails with `org-dartlang-app:/...File not found` even though `dart analyze` finds the file. Workaround: add the new functionality as a static method on an existing long-lived helper class (e.g. `UITestHelpers`) instead of creating a new shared file. See Rule §26 for the full pattern.
 >
-> **Note:** `test/shared/` also contains additional non-UI-only files (`mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart`, plus their `_test.dart` files) that have NO `integration_test/shared/` counterpart. The byte-identical synchronization rule applies ONLY to the 12 mirrored files above.
->
-> After editing, for every pair `test/shared/X.dart` ↔ `integration_test/shared/X.dart` in the 12-file list, run `diff` and confirm byte-identical (apart from the path, contents must match).
+> **Verification (use this exact command — do NOT walk an enumerated list):**
+> ```bash
+> diff -rq integration_test/shared test/shared 2>&1 | grep "differ" || echo "OK: all mirrored helpers byte-identical"
+> ```
+> The `diff -rq` output emits one line per pair that differs (`Files X and Y differ`). The `grep "differ"` filter strips expected `Only in test/shared: <file>` lines for non-mirrored helpers. Anything the grep prints is a parity violation that must be fixed.
 >
 > **1.5. Create per-subdirectory `_helpers.dart` files** (delegate pattern from `docs/testing/shared-helpers-reference.md`):
 >
@@ -1418,6 +1493,58 @@ If FAIL:
 > - Expose **one-line delegate functions** that preserve the local function names test files already use (e.g., `Future<void> setupGame(...) => GameSetupHelpers.setupGame(...)`)
 > - ONLY add genuinely game-specific logic that doesn't belong in shared helpers (e.g., a `completeGameToVictory()` that knows how to drive THIS game's win condition)
 > - When unsure whether new logic belongs in `_helpers.dart` or in the shared helpers, follow the decision tree in `shared-helpers-reference.md` (used by ≥2 games → shared; used only by this game → `_helpers.dart`).
+>
+> **1.6. Iterative authoring workflow — DO NOT write all UI tests in one pass.**
+>
+> Past UI test rounds for Pirate's Grid took 7+ debugging cycles (rounds B, C, D, then 2/3/4/5/6 in commit titles) because the entire test pack was authored before any of it was run. Once one test failed, similar tests had similar failures, but you had to iterate one bug class at a time across many files. The user explicitly requested an iterative approach to compress this loop.
+>
+> **Order of authoring (easiest to hardest, one category at a time):**
+>   1. **`visual_validation/[GAME_NAME_SNAKE]_screenshot_test.dart`** FIRST. The screenshot test is the cheapest and most informative end-to-end probe: it validates that all widget keys exist, that menu→game→results navigation works, that screen layouts don't overflow, and that backgrounds/characters render. ONE deliverable, one run, ten captured states. Use the result of this run as the foundation for everything else.
+>   2. **`menu_and_settings/`** — pure menu interactions (sliders, dropdowns, toggles). No game lifecycle, no dartboard, no modals. Easiest UI surface.
+>   3. **`add_player/`** — dialog-based, isolated. Easy second category.
+>   4. **`navigation/`** — the 4 mandatory tests. Tests menu↔home + back-from-game + Change Settings round-trip. Validates the navigation pattern for all later tests.
+>   5. **`gameplay/`** — core dart-throwing flows. Now you have menu setup proven and navigation proven; only the gameplay surface is new.
+>   6. **`pause_modal/`** — disconnect/reconnect overlays. Builds on gameplay+navigation.
+>   7. **`results_screen/`** — completing a game and verifying results. Builds on gameplay.
+>   8. **`save_resume/`** — full save/resume cycles. Builds on results+navigation.
+>   9. **`edit_score/`** — RemoveDartsModal + EditScoreDialog. Most complex modal stacking.
+>   10. **`play_to_complete/`** — strategy-driven full game runs. Most fragile category (depends on the strategy + every game mechanic).
+>
+> **Per-category authoring loop:**
+>   1. Author ONE test file in the category (the most representative — typically the "default settings happy path").
+>   2. Run it through the parallel runner immediately. Inspect the failure log if any.
+>   3. Fix the screen / provider / helpers / shared infrastructure based on what the failure reveals — every fix benefits the remaining tests in the category.
+>   4. ONLY when the first test passes, author the rest of the category in one pass. They will share infrastructure with the first.
+>   5. Run the entire category. Triage any remaining failures.
+>   6. Move to the next category.
+>
+> The orchestrator MUST resist the temptation to delegate "write all 47 UI tests in parallel" to a sub-agent in a single batch. Past sessions tried this; the test author wrote 47 tests sharing the same bug class (e.g., missing ensureVisible, hardcoded grid targets, missing in-game save flow) and the user spent days debugging each instance instead of fixing the root once and replicating.
+>
+> **1.7. Every UI test must wrap its body in `UITestHelpers.runWithFailureScreenshot` DURING THE BUILD PHASE.**
+>
+> When a UI test fails the only artifact available for debugging in the standard log is text — no screen state, no DOM, no rendered pixels. The `UITestHelpers.runWithFailureScreenshot(tester, testName, body)` helper captures a PNG of the screen at the moment of failure and writes it to `temp_screenshots/failures/<testName>_<timestamp>.png` so the orchestrator can read the image with the Read tool and see what actually rendered.
+>
+> **The wrap is BUILD-PHASE ONLY.** It exists to compress the iterate-fix loop while a new game's tests are being authored. It is REMOVED at the Phase 9 Gate 4 transition (see "Failure-screenshot wrap removal" below). After removal, the new game's tests look identical to every other game's tests and run via the standard runner with no per-test screenshot overhead.
+>
+> Pattern during build (every test in the new game's pack):
+> ```dart
+> testWidgets('foo', (tester) async {
+>   await UITestHelpers.runWithFailureScreenshot(
+>     tester,
+>     '[GAME_NAME_SNAKE]_<subdir>_<test_basename>',  // e.g. 'pirates_grid_save_resume_save_modal_save_button'
+>     () async {
+>       await UITestHelpers.resetServerState();
+>       // ... existing test body ...
+>     },
+>   );
+> });
+> ```
+>
+> **Driver during build:** `flutter drive --driver=test_driver/screenshot_test.dart --target=integration_test/[GAME_NAME_SNAKE]/<category>/foo_test.dart -d chrome --dart-define=SERVER_PORT=<port> --browser-dimension=1366x768`. The screenshot test driver's `onScreenshot` callback writes PNG bytes to `temp_screenshots/<name>.png` — the helper passes `failures/<sanitized-test-name>_<ts>` as the name, so files land in `temp_screenshots/failures/`. Verified end-to-end via `integration_test/_smoke/failure_screenshot_smoke_test.dart` (kept in tree as a self-test artifact for use after Flutter SDK upgrades).
+>
+> **Production runner driver:** `test_driver/integration_test.dart` (the basic `integrationDriver()` with no `onScreenshot`). The runner scripts (`run_ui_tests.bat`, `run_ui_tests_parallel.bat`) use this driver. Since failure-screenshot wraps are removed at the Phase 9 transition, post-build tests have no dependency on screenshot capture in the runner.
+>
+> The `testName` argument is used as the filename prefix; embed `<game>_<subdir>_<test_basename>` so PNGs from parallel workers don't collide and reviewers can find the right image quickly. The helper sanitizes the name and appends a millisecond timestamp.
 >
 > **2. Create UI test files using the SUBDIRECTORY layout** (NOT flat files):
 >
@@ -1433,11 +1560,20 @@ If FAIL:
 > - `gameplay/` — Core gameplay tests
 > - `menu_and_settings/` — Menu screen + settings tests
 > - `results_screen/` — Results screen tests, INCLUDING the three mandatory tests below. **Use `results_screen/` (matches Target Tag, Monster Mash, Reef Royale — 3 of 5 games) unless your spec explicitly mandates `results/`.**
-> - `save_resume/` — Save/Resume tests
+> - `save_resume/` — Save/Resume tests. **MANDATORY: 16 separate test files, one testWidget per file**, mirroring the canonical pack used by Target Tag, Monster Mash, Reef Royale, Clockwork Quest:
+>   - `save_modal_save_button_test.dart`, `save_modal_dont_save_test.dart`, `save_modal_back_0_darts_test.dart`, `save_modal_back_after_darts_test.dart`
+>   - `resume_button_disabled_no_saves_test.dart`, `resume_button_color_when_enabled_test.dart`, `resume_button_enabled_after_save_test.dart`, `resume_button_hidden_after_resume_test.dart`, `resume_button_shows_modal_test.dart`
+>   - `resume_modal_shows_on_game_tap_test.dart`, `resume_modal_start_new_game_test.dart`, `resume_modal_delete_individual_test.dart`, `resume_modal_delete_all_test.dart`
+>   - `resume_game_loads_screen_test.dart`, `resume_resave_overwrites_test.dart`, `resume_auto_deletes_on_completion_test.dart`
+>   - **Reference:** mirror `integration_test/monster_mash/save_resume/*` 1-for-1. Past failure: Pirate's Grid and Lunar Lander shipped with 6 sub-tests in a single combined file — the 10 missing edge cases were never written. The 3 "real-flow" files (resume_game_loads_screen, resume_resave_overwrites, resume_auto_deletes_on_completion) MUST use the in-game save flow per Rule 17 — not `preSaveGame`.
 > - **`navigation/`** — the 4 mandatory navigation tests (see below)
 > - **`play_to_complete/`** — Play-to-Complete tests (see below)
 > - `visual_validation/` — Screenshot test (Step 7 below)
-> - **`pause_modal/`** — Dartboard pause modal tests (3 files: `menu_pause_test.dart`, `gameplay_pause_test.dart`, `results_pause_test.dart`)
+> - **`pause_modal/`** — Dartboard pause modal tests. **MANDATORY: 20 testWidgets total across 3 files** matching the canonical pack used by Target Tag, Monster Mash, Reef Royale, Clockwork Quest, Lunar Lander:
+>   - `menu_pause_test.dart` — **7 testWidgets**: pause appears on menu, blocks AppBar back, blocks start button, blocks settings controls, blocks add player button, dismiss-and-resume, post-reconnect back button works
+>   - `gameplay_pause_test.dart` — **8 testWidgets**: pause appears during gameplay, blocks AppBar back, blocks dartboard emulator, pause over RemoveDartsModal, pause over SaveGameModal (save button blocked), EditScoreDialog auto-closes on disconnect, pause dismisses on reconnect, RemoveDartsModal still visible after reconnect
+>   - `results_pause_test.dart` — **5 testWidgets**: pause appears on results, blocks Play Again, blocks Change Settings, blocks Back to Menu, dismiss-and-buttons-work
+>   - **Reference:** mirror `integration_test/monster_mash/pause_modal/*` 1-for-1, replacing MM-specific finders with the new game's. Past failure: Pirate's Grid shipped with only 3 testWidgets (1 per file) — caught post-launch by a cross-game test-count audit. A skeleton "1 test per file" version is NOT acceptable — the modal-stacking edge cases (pause-over-RemoveDartsModal, EditScoreDialog auto-close) only exist in the full pack.
 >
 > **3. Mandatory navigation tests** (4 separate files in `integration_test/[GAME_NAME_SNAKE]/navigation/`, per `docs/development/game-integration.md` and `docs/development/navigation-ui-tests-plan.md`):
 >
@@ -1473,6 +1609,36 @@ If FAIL:
 >
 > - `opponent_display_test.dart` — in a 3+ player game, verify inactive (non-current) players are visually present (their tiles, tracks, panels, or whichever UI element represents them). After throwing darts as the current player and advancing turn, verify the previous player's per-player state (score, health, altitude, position, marks) is now visible and correct on their tile/track.
 > - **Rationale:** Many games show only the current player prominently; without this test, regressions where opponent panels disappear, never update, or show stale state are caught only by manual testing. Reference: Clockwork Quest `opponent_tiles_visible_test.dart`, Reef Royale `opponent_summary_bar_updates_test.dart`.
+>
+> **5c. Mandatory per-option-value functional gameplay tests** (in `integration_test/[GAME_NAME_SNAKE]/gameplay/`):
+>
+> Every row in spec Section 7 (Game Options & Settings) requires **one functional gameplay UI test per VALUE** (not per option). A 3-value dropdown like Difficulty (Easy/Medium/Hard) needs 3 tests; an on/off toggle needs 2 (one per state); a numeric option with N defaults the spec calls out needs N. The functional test sets up a game with that option-value and asserts a behavioral outcome — not just that the dropdown's text changed.
+>
+> **Test naming convention** — one of:
+>   - `<option>_<value>_<behavior>_test.dart` (e.g., `difficulty_hard_corner_triple_required_test.dart`)
+>   - or `<behavior>_<option>_<value>_test.dart` (e.g., `plant_flag_hard_test.dart`)
+>
+> **Coverage table** — at the start of Phase 7, build this table from spec Section 7 and confirm every row has a planned test file:
+>   | Option | Value | Spec Visual/Behavioral Effect | Functional Gameplay Test File |
+>   |--------|-------|------------------------------|-------------------------------|
+>
+> **Past failure:** Pirate's Grid shipped with `plant_flag_easy_test.dart` and `plant_flag_medium_test.dart` but no Hard test, no Best Of 5 test, and no Speed Play timer-expires test — three Section 7 values had zero functional UI coverage. The screen-level non-UI tests covered them logically but the UI flow (which is where most regressions hit) had gaps. Caught only by post-launch audit.
+>
+> **Rationale:** Provider-level tests prove the option's logic works; UI tests prove the option is actually wired through the menu → screen path and renders the expected behavior under the real frame loop. The two test layers catch different classes of bugs.
+>
+> **5d. Mandatory per-option-value visual_validation tests** (in `integration_test/[GAME_NAME_SNAKE]/visual_validation/`):
+>
+> Every spec Section 7 option that has a *visible* effect on the game screen ALSO requires one visual_validation UI test per visible value. This is in addition to the functional gameplay test in 5c — the functional test asserts the BEHAVIOR; the visual_validation test asserts the VISUAL APPEARANCE (badge presence, color, glow, text content, icon).
+>
+> Examples (from Pirate's Grid):
+>   - Difficulty: Easy → no D/T/Bull badges visible | Medium → "D" badge in Sea Foam Teal on every cell | Hard → corners "T" Blood Red, edges "D" Sea Foam Teal, center "Bull"
+>   - Best Of 1 → no round tracker visible | Best Of 3/5 → round tracker text reads "Round X/Y" with player score colors
+>   - Steal Mode ON → STEAL MODE badge visible (Blood Red pill) | OFF → badge absent
+>   - Speed Play ON → countdown timer visible with color tier transitions (gold→bronze→red) | OFF → no timer
+>
+> Group by option, one file per option (3 testWidgets within a Difficulty file is fine), or split per value (separate files). Match the `dart_indicators_state_test.dart` style — RGB byte comparison for colors, `find.byKey` for widget keys, `find.descendant` for badge contents.
+>
+> **Past failure:** Pirate's Grid shipped without difficulty-badges visual test, cell-flag-colors visual test, winning-row-glow visual test, round-tracker-text visual test, speed-play-timer-colors visual test, or round-complete-overlay visual test — six visible spec elements with zero visual assertion. `conditional_ui_test.dart` checked widget *visibility* but not *appearance*.
 >
 > **6. Every UI test must call `await UITestHelpers.resetServerState()` at the start.** This is required for per-session DB isolation (Flutter Bug #67090 spawns a phantom 2nd browser; without per-session DBs the phantom contaminates results — see `docs/testing/ui-automation.md`).
 >
@@ -1524,6 +1690,12 @@ If FAIL:
 >
 >   **Carnival Derby additional constraint:** CD's `scoreDisplayTransform` converts segments to point values in the score display box (e.g., `S5` → "5"). This means `find.text('5')` matches both the score display AND the number button within a dart section. Use Double or Triple values (e.g., `D5` → score display "10", number button "5") to avoid the duplicate text match.
 >
+> **6d. Diagnostic-first test authoring (mandatory — applies to every UI test).** Every navigation-dependent `findsOneWidget` (post-tap, post-pop, after `pushReplacement` / `pushAndRemoveUntil`) MUST embed an inline `[DIAG ...]` reason string built from already-imported `ElementFinders` methods. Headless `-d web-server` mode does not pipe app stdout into the per-test log, so without this diagnostic any failure is opaque ("Multiple exceptions (2)" with no detail) and forces a re-run with added logging. **Inline at the call site — never via a new shared helper** (new shared methods have repeatedly hit "Member not found" in headless compile and block the test from running). Format: `[DIAG <label> menuStart=N gameSkip=N resultsPlayAgain=N homeCarnival=N saveModal=N resumeModal=N ...]`. See Accumulated Build Quality Rules § 15 for the canonical pattern.
+>
+> **6e. Save/Resume real-flow rule (mandatory).** Tests that *only verify the resume modal appears in the saved-games list* may use `preSaveGame(GameSaveConfig.[gameName]())`. Any test that actually taps Resume MUST set up the saved game via the in-game Save flow (`setupAndStartGame` → `throwDartViaMock` → `tapGameScreenBackButton` → tap Save Modal Save → look up `savedId` via `SaveGameService().loadSavedGames('[GAME_NAME_SNAKE]')`). Reason: `preSaveGame` writes a placeholder `gameState = {'_marker': 'test'}` which crashes `[GameName]Game.fromJson` on restore, producing a "Multiple exceptions (2)" failure with no detail in the headless log. Plus, every test that taps Resume must call `UITestHelpers.selectSavedGameTile(tester, savedId)` first — the Resume button is disabled until a tile is selected. See Accumulated Build Quality Rules § 17, 18.
+>
+> **6f. ensureVisible before tap on scrollable-content buttons (mandatory).** In headless chromedriver mode, `tester.tap` only registers a click on widgets in the visible viewport. Buttons inside a `SingleChildScrollView` (results-screen action buttons, Save Modal Save, Resume Modal Resume) need `await tester.ensureVisible(button); await tester.pump();` before `await tester.tap(button)`. Apply this in BOTH `clickPlayAgain` / `clickChangeSettings` / `clickSelectDifferentGame` shared helpers AND inline test taps. See Accumulated Build Quality Rules § 16.
+>
 > **7. Visual validation tests** (in `integration_test/[GAME_NAME_SNAKE]/visual_validation/`):
 >
 > Two categories are required: a screenshot test AND programmatic visual state tests. Together these cover both broad visual regression (screenshots) and specific UI state assertions (programmatic).
@@ -1564,19 +1736,32 @@ If FAIL:
 >
 > **The 4 above are the floor, not the ceiling.** If the game's spec includes additional visual mechanics (gradients, animations, multi-state badges, dynamic sizing), add one programmatic test per concern.
 >
+> **7c. Mandatory per-spec-Section-10 visual element coverage.** In addition to the 4 mandatory categories above and the per-option-value visual tests from 5d, every distinct visual element described in spec Section 10 (Screen Designs) requires at least one programmatic visual_validation test that asserts its appearance under its trigger condition. Build this table at the start of Phase 7 and confirm every row has a planned test file:
+>   | Spec Section 10 Element | Trigger Condition | Visual Assertion | Test File |
+>   |-------------------------|-------------------|------------------|-----------|
+>   | (e.g., Winning row gold pulsing glow) | 3-in-a-row achieved | Treasure Gold border on 3 cells | winning_row_glow_test.dart |
+>   | (e.g., P1 cell flag border) | P1 claims a cell | Blood Red border glow | cell_flag_colors_test.dart |
+>   | (e.g., Round complete overlay) | Round ends in Bo3/Bo5 | "Round X Complete!" text in Treasure Gold for ~3s | round_complete_overlay_test.dart |
+>
+> **Past failure:** Pirate's Grid spec Section 10B describes "Winning cells get Treasure Gold pulsing glow + sparkle overlay" — no test asserted this; only logical `state == finished` was checked. Cell flag border colors (P1 Blood Red glow / P2 Sea Foam Teal glow) were undocumented in tests. Round tracker text content (`"Round 1/3 — Alice: 0  Bob: 0"`) was tested for visibility but never for content/color. The gap was caught only post-launch.
+>
+> **Rule of thumb:** if the spec says "X is rendered as Y" and the only test you have asserts X *exists* (via `findsOneWidget`), you are missing the visual test. Add one that asserts Y (text content, RGB color, border, icon).
+>
 > **8. Update ALL FOUR batch files** with the new game:
 > - `run_ui_tests.bat`
 > - `run_ui_tests_stub.bat`
 > - `run_ui_tests_parallel.bat` — TWO places to update:
 >   1. The `GAMES` variable (top of file, ~line 15) — add `[GAME_NAME_SNAKE]`
->   2. The pre-run worktree cleanup `for %%G in (...)` loop (~line 272) — add `[GAME_NAME_SNAKE]` to the hardcoded list. Without this, stale worktrees from a previous failed run for the new game won't be auto-cleaned at startup, which can cause `git worktree add` to fail and abort the entire run. Grep `run_ui_tests_parallel.bat` for the existing list of game names; both occurrences must include the new game.
+>   2. The pre-run worktree cleanup `for %%G in (...)` loop (~line 283) — add `[GAME_NAME_SNAKE]` to the hardcoded list. Without this, stale worktrees from a previous failed run for the new game won't be auto-cleaned at startup, which can cause `git worktree add` to fail and abort the entire run. Grep `run_ui_tests_parallel.bat` for the existing list of game names; both occurrences must include the new game.
 > - `run_ui_tests_parallel_stub.bat` — same dual-update if the stub variant has the same hardcoded cleanup list
+>
+> The `GAMES` variable is misleadingly named: it's really "every top-level subdirectory under `integration_test/` that holds tests." Today that includes per-game directories (`target_tag`, `carnival_derby`, ...) AND non-game test categories (`home_screen`, `pause_modal`). When introducing a NEW non-game category — e.g. an integration test for a shared widget that doesn't belong under any one game — add the directory's name here too, exactly like a game. Each entry gets its own port + isolated server + worker slot. Directories the runners intentionally skip: `_smoke/` (manual self-tests, run via direct `flutter drive`) and `shared/` (helper files, no `*_test.dart`).
 >
 > Also update the port-assignment table in `docs/testing/ui-automation.md` for the new game (Server = `9000 + N`, ChromeDriver = `4443 + N`, where N is the new index).
 >
 > **Report back:**
 > - File paths created and modified, organized by subdirectory
-> - For each pair of shared helpers (12 pairs), `diff` result (must be byte-identical)
+> - Output of `diff -rq integration_test/shared test/shared 2>&1 | grep "differ"` — must be empty (any output is a parity violation)
 > - Total count of UI tests added across all subdirectories
 > - Confirmation that every UI test starts with `await UITestHelpers.resetServerState();`
 > - Confirmation that the 4 navigation tests, 3 results tests, and play-to-complete tests are all present (cite filenames)
@@ -1594,7 +1779,7 @@ If FAIL:
 > - Run the UI tests yourself in this phase (orchestrator runs them in Phase 8)
 
 After the sub-agent returns:
-- Run `diff` on each of the 12 shared-helper pairs yourself
+- Run `diff -rq integration_test/shared test/shared 2>&1 | grep "differ"` and confirm the output is empty (any line is a parity violation)
 - `find integration_test/[GAME_NAME_SNAKE] -type d` to confirm subdirectory layout
 - `grep -rL 'resetServerState' integration_test/[GAME_NAME_SNAKE]` (must return zero — every test file must contain a `resetServerState` call)
 - Confirm the 4 batch files were updated
@@ -1603,14 +1788,34 @@ After the sub-agent returns:
 
 Per `docs/testing/spec-coverage-audit.md`:
 
+**CRITICAL — Ground the audit in the IMPLEMENTATION, not the spec aspiration.** The spec describes what the game *should* render; the screen code describes what the game *does* render. These can diverge: the spec may describe an element that was deliberately simplified out during build (e.g., LL spec describes a rocket icon with flame trail; the screen renders animal characters with a Flame Orange descent line — a deliberate design pivot). Writing tests for spec elements that don't exist in code produces noise, not coverage.
+
+For every spec element, classify it as one of three states by reading the actual code:
+
+| State | Definition | Action |
+|---|---|---|
+| **Implemented + Tested** | Spec describes X. Screen renders X. ≥1 test asserts X. | None — already covered. |
+| **Implemented + Not tested** | Spec describes X. Screen renders X. No test asserts X. | **GENUINE TEST GAP** — write the missing test. |
+| **Not implemented** | Spec describes X. Screen does NOT render X (deliberate simplification or oversight). | **NOT a test gap** — escalate to user as a separate "spec/code divergence" decision: either implement X or update the spec to reflect the simplified design. Do NOT write tests for non-existent features. |
+
+**How to verify "implemented":**
+- For visual elements: `grep -nE '<keyword from spec>' lib/screens/games/[GAME_NAME_SNAKE]/` — does the keyword/widget appear in the screen source?
+- For provider behavior: `grep -nE '<method or field>' lib/providers/[GAME_NAME_SNAKE]_provider.dart` — does the code path exist?
+- For widget keys: `grep -n '<KeyName>' lib/constants/test_keys.dart` — is the key defined?
+
+If the audit produces a gap list mixing "test gaps" and "spec/code divergences", separate them in the report — do NOT delegate "write the missing test" to a sub-agent for elements in the third category, because the test will fail by definition (the feature isn't there).
+
+**Audit workflow:**
 1. **Extract** every option from the spec's Options section, every visual element from Screen Designs, every test requirement from Testing Plan.
-2. **Map** every non-UI test and UI test (from the actual test files) to these requirements.
-3. **Build** the coverage matrix:
-   | Requirement | Source (spec heading) | Non-UI test(s) | UI test(s) |
-   |-------------|----------------------|----------------|------------|
-4. **Identify gaps** — any row where Non-UI or UI is MISSING.
-5. If gaps exist, dispatch a Sonnet sub-agent with the specific missing tests to write. Re-audit after.
-6. Repeat until 100% coverage.
+2. **Verify implementation** — for each spec element, grep the screen/provider/keys to confirm it exists in code. Flag any "not implemented" rows separately.
+3. **Map** every non-UI test and UI test (from the actual test files) to the implemented requirements.
+4. **Build** the coverage matrix:
+   | Requirement | Source (spec heading) | Implemented in code? | Non-UI test(s) | UI test(s) |
+   |-------------|----------------------|----------------------|----------------|------------|
+5. **Identify gaps** — separate into two lists:
+   - **Test gaps** (Implemented=Yes, Tests=Missing) → dispatch a Sonnet sub-agent to write
+   - **Spec/code divergences** (Implemented=No) → surface to user with both options (implement vs. update spec); do NOT auto-write tests
+6. Repeat until both lists are empty (test gaps closed; divergences resolved).
 
 ### Adversarial Review AR-6: Spec Coverage Matrix
 
@@ -1624,7 +1829,7 @@ Per `docs/testing/spec-coverage-audit.md`:
 >
 > (c) **Verify all FOUR batch files include the new game:** `run_ui_tests.bat`, `run_ui_tests_stub.bat`, `run_ui_tests_parallel.bat`, `run_ui_tests_parallel_stub.bat`. For `run_ui_tests_parallel.bat` SPECIFICALLY: grep for the new game name and verify it appears in BOTH (1) the `GAMES` variable AND (2) the pre-run worktree cleanup `for %%G in (...)` loop near line 272. Past failure: Lunar Lander was added to GAMES but not to the cleanup loop, leaving stale worktrees uncleaned across runs. Also verify the port-assignment table in `docs/testing/ui-automation.md` was updated.
 >
-> (d) Verify all 12 mirrored shared helpers in `test/shared/` and `integration_test/shared/` are synchronized — diff each pair and report any mismatches. (Non-mirrored `test/shared/` files like `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` are excluded from this check.)
+> (d) Verify mirrored shared helpers stay byte-identical between `test/shared/` and `integration_test/shared/` via the dynamic-discovery audit (Rule §26): run `diff -rq integration_test/shared test/shared 2>&1 | grep "differ"`. The command emits nothing on success; any line printed is a parity violation that must be reported and fixed. The `grep "differ"` filter automatically excludes `Only in <dir>: <file>` lines for intentionally non-mirrored helpers (e.g. `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` in `test/shared/` only). The audit picks up new helpers added since the last build without any change to the rule.
 >
 > (e) **Verify the 4 mandatory navigation tests exist** in `integration_test/[GAME_NAME_SNAKE]/navigation/`: menu_back_to_home, game_back_settings_persist, change_settings_back_to_home, change_settings_preserves_settings.
 >
@@ -1640,7 +1845,18 @@ Per `docs/testing/spec-coverage-audit.md`:
 >
 > (k) **Verify `visual_validation/` contains the screenshot test PLUS at least 4 programmatic visual state tests** covering the mandatory concerns: (1) dart indicator state, (2) active player highlight, (3) score/state display threshold, (4) conditional UI element. List each programmatic test file by name and the concern it covers.
 >
-> (l) **Build a "Visual element" coverage matrix from spec Section 10** (Screen Designs) — list every distinct UI state (e.g., "Active player track is orange", "Altitude pill turns red when negative", "Hard Landing badge appears in AppBar", "Win flag shows on results"). For each visual state, identify the programmatic UI test that verifies it. List any visual state without a corresponding test.
+> (l) **Build a "Visual element" coverage matrix from spec Section 10** (Screen Designs) — list every distinct UI state (e.g., "Active player track is orange", "Altitude pill turns red when negative", "Hard Landing badge appears in AppBar", "Win flag shows on results"). For each visual state, **first verify it exists in `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart`** by grep — record one of three statuses: `implemented+tested`, `implemented+missing-test`, or `not-implemented`. The first is fine; the second is a real test gap to close; the **third is NOT a test gap** — it is a spec/code divergence that must be surfaced to the user as an implementation decision (build the feature OR update the spec to reflect the simplified design). Do NOT propose tests for non-existent features. Past failure: a Lunar Lander test-coverage audit produced 5 visual_validation test recommendations for spec elements (rocket icon, ORBIT/MOON markers, tick marks, turn summary text, CRASH overlay) that did not exist in `lunar_lander_game_screen.dart` — the screen rendered animal characters with a Flame Orange descent line instead. Writing those tests would have produced 5 failing tests, not 5 closed gaps.
+>
+> (m) **Pause modal canonical pack count.** Run `for f in integration_test/[GAME_NAME_SNAKE]/pause_modal/{menu,gameplay,results}_pause_test.dart; do grep -c 'testWidgets(' "$f"; done` — must report **7, 8, 5** in that order (total 20). Any deviation is a failure. Past failure: Pirate's Grid had 1, 1, 1.
+>
+> (n) **Save/resume canonical pack count.** Run `ls integration_test/[GAME_NAME_SNAKE]/save_resume/*_test.dart | wc -l` — must report **16**. Run `for f in integration_test/[GAME_NAME_SNAKE]/save_resume/*_test.dart; do n=$(grep -c 'testWidgets(' "$f"); [ "$n" -ne 1 ] && echo "FAIL: $f has $n testWidgets (expected 1)"; done` — must report nothing (every file is exactly 1 test). Past failure: Pirate's Grid had 1 file with 6 sub-tests; Lunar Lander had similar.
+>
+> (o) **Per-option-value functional gameplay test coverage.** For every row in spec Section 7, build the table:
+>   | Option | Value | Functional Gameplay Test File | Visual Validation Test File |
+>   |--------|-------|------------------------------|------------------------------|
+>   Every value of every option that has a behavioral effect MUST have an entry in BOTH columns (or note when one column is N/A — e.g., a numeric option without a visible badge has no visual_validation test). Past failures (PG): no Hard difficulty functional test; no Best Of 5 test; no Speed Play timer-expires test; no difficulty-badges visual test; no cell-flag-colors visual test; no winning-row-glow visual test; no round-tracker-text visual test; no speed-play-timer-colors visual test; no round-complete-overlay visual test.
+>
+> (p) **Provider game-mechanics test file exists.** `flutter test test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must run and pass. `grep -c '^  test(\|^    test(' test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must report ≥ 40 tests. Past failure: Pirate's Grid and Lunar Lander shipped without this file.
 >
 > Spec coverage: X% (N/M requirements covered)
 > Missing coverage: [list]"
@@ -1675,6 +1891,25 @@ If FAIL: dispatch sub-agents for missing tests / fixes, re-audit, re-run BOTH su
 
 **CRITICAL UNDERSTANDING:** "Screenshot test passed" does NOT mean "visual validation complete." A passing test only means screenshots were captured without runtime errors. The actual validation is reading and evaluating every screenshot against the checklist. These are two completely separate steps — NEVER conflate them.
 
+### Phase 8 pre-flight verification (orchestrator runs BEFORE Step 1)
+
+Before invoking any Sonnet sub-agent for Step 1, verify the runner scripts have the false-positive guards and stale-cache wipes:
+
+1. **Pass-detection includes `Failure Details:` as a fail marker.** Both `run_ui_tests.bat` and `run_ui_tests_parallel_worker.bat` should have:
+   ```powershell
+   $found = ($c -match 'All tests passed') `
+        -and (-not ($c -match 'Some tests failed')) `
+        -and (-not ($c -match 'Failure Details:'));
+   ```
+   Why: in `-d chrome` mode, the integration_test framework can emit BOTH `+2: All tests passed!` AND a trailing `Failure Details:` block when an assertion in the test body throws. Without this guard, the script reports PASSED on a broken test (false positive). Verified failure: pirates_grid 2026-05-07 — sub-test was failing the `Should be on menu after NEW VOYAGE` assertion in both modes; sequential reported PASS; parallel reported FAIL.
+2. **flutter_tools temp kernel cache wipe in pre-flight.** Both runners should delete `%LOCALAPPDATA%\Temp\flutter_tools.*` before any flutter command:
+   ```bat
+   for /d %%D in ("%LOCALAPPDATA%\Temp\flutter_tools.*") do rmdir /S /Q "%%D" >nul 2>&1
+   ```
+   Why: `flutter_tools` keeps an `app.dill` kernel snapshot that survives `flutter clean`. When a method is added to a file already in the cached kernel, the next `flutter drive` reuses the stale kernel and reports "Member not found" — wasting hours on what looks like a code bug.
+
+If either guard is missing, fix the runner scripts BEFORE running Phase 8 — otherwise visual-validation feedback is unreliable.
+
 ### The Iterative Validation Cycle
 
 ```
@@ -1693,7 +1928,9 @@ STEP 7 → STEP 8 decision
 
 ### STEP 1: CAPTURE (Sonnet sub-agent)
 
-**Hung-process safety:** Past sessions have seen the screenshot test deadlock for 25+ minutes when the game UI has a build error or missing widget. The orchestrator imposes a **60-second progress timeout** on the screenshot test process — if no new screenshot files appear in `temp_screenshots/` for 60 seconds AND the flutter_drive process hasn't exited, the orchestrator instructs the sub-agent to KILL chromedriver + chrome + flutter_drive, read the partial log, and assess what's wrong before retrying. Don't let a single deadlocked run burn 10+ minutes.
+**Hung-process safety:** Past sessions have seen the screenshot test deadlock for 25+ minutes when the game UI has a build error or missing widget. The orchestrator imposes a **25-second progress timeout** on the screenshot test process — if no new screenshot file appears in `temp_screenshots/` for 25 seconds AND the flutter_drive process hasn't exited, the orchestrator instructs the sub-agent to KILL chromedriver + chrome + flutter_drive, read the partial log, and assess what's wrong before retrying. The 25s threshold matches the actual per-screenshot capture time observed in healthy runs (5–15s typical, with margin for the initial app boot of the first capture). Past failure: Pirate's Grid screenshot test halted at #12 of 15 (the speed-play timer transition) and we waited 4 minutes before killing it — wasted iteration time. Tighter timeout = faster failure detection = faster fix loop.
+
+**Known problem area — timer-based UI states:** Screenshot tests that capture a state involving a continuously-running `Timer` (e.g., a Speed Play countdown, an animation that loops indefinitely) deadlock if the test pumps `pump(Duration)` on a continuously-firing timer — the timer keeps emitting events and `pumpAndSettle` never completes, freezing capture. The screenshot test for any timer-driven UI state MUST: (a) freeze the timer before capturing — set the screen state to a fixed timer value via `provider.<setTimerForTest>(...)` if a hook exists, OR (b) capture immediately on the same frame the timer was started (no `pump(Duration)`), OR (c) skip that visual state and document it in the spec coverage report as a known gap. Reference: PG `game_speed_play_timer` capture at index #12; the screen had an active `Timer.periodic` and `pumpAndSettle` never settled.
 
 **Sub-agent prompt template:**
 
@@ -1975,6 +2212,46 @@ If a check CANNOT be run:
 - Ask the user how to proceed.
 - **Do NOT skip the check. Do NOT proceed without it.**
 
+### Failure-screenshot wrap removal (mandatory once Gate 4 passes)
+
+The `UITestHelpers.runWithFailureScreenshot` wraps in every UI test in the new game's pack were build-phase aids — they let the orchestrator inspect failure pixels during Phase 7 iteration. Now that Gate 4 has passed, the wraps are no longer needed: tests are stable, the runner uses `test_driver/integration_test.dart` (no `onScreenshot`), and the wrap would be inert there anyway. Removing the wraps also matches the form every other game's tests use, eliminating per-test boilerplate.
+
+**Trigger:** Gate 4 = PASS in this phase. (If Gate 4 has not yet passed, the wraps stay — they may be needed for the next iteration.)
+
+**Delegate to Sonnet sub-agent:**
+
+> You are completing the failure-screenshot wrap removal for the **[GAME_NAME_DISPLAY]** game.
+>
+> **Read first:**
+> - One existing test file in `integration_test/[GAME_NAME_SNAKE]/<any subdir>/<any>_test.dart` to confirm the current wrap pattern.
+>
+> **Tasks:**
+> 1. For every `*_test.dart` file under `integration_test/[GAME_NAME_SNAKE]/` (excluding `_helpers.dart` files), unwrap the `UITestHelpers.runWithFailureScreenshot(tester, '<name>', () async { <body> })` call:
+>    - Remove the `await UITestHelpers.runWithFailureScreenshot(tester, '<name>', () async {` line
+>    - Remove the matching closing `});` two lines from the end of the testWidgets body (or wherever the closure ends)
+>    - Adjust indentation of the body so it sits at the original test level (typically 4 spaces less)
+> 2. Save each file. Verify with `flutter analyze integration_test/[GAME_NAME_SNAKE]/`.
+> 3. Run the parallel runner for the new game ONLY: `./run_ui_tests_parallel.bat [GAME_NAME_SNAKE]`. All tests must still pass — the unwrap is a pure mechanical change with no behavioral effect.
+>
+> **Hard rules:**
+> - DO NOT modify any test logic. Only remove the wrap.
+> - DO NOT remove the wrap from the smoke test at `integration_test/_smoke/failure_screenshot_smoke_test.dart` — it stays as a self-test artifact for the helper itself.
+> - DO NOT modify `integration_test/shared/ui_test_helpers.dart` — the helper STAYS in shared so future game builds can use it again.
+> - DO NOT commit. DO NOT push.
+>
+> **Report back:**
+> - Count of files modified
+> - `flutter analyze` result for the new game's integration_test tree
+> - Parallel runner result (X/Y passing)
+> - `git diff --stat` summary
+
+After the sub-agent returns:
+- Read 2-3 of the modified test files yourself to spot-check the unwrap
+- Confirm the parallel runner result matches Gate 4's UI test count
+- If the runner now reports failures the wraps were masking (unlikely but possible), STOP and analyze on the orchestrator
+
+The helper itself (`UITestHelpers.runWithFailureScreenshot`) STAYS in `integration_test/shared/ui_test_helpers.dart` indefinitely. Future game builds will use it again during their own Phase 7. Only the per-test wraps are removed at this transition.
+
 ---
 
 ## Phase 10: Documentation and Definition of Done
@@ -2209,7 +2486,7 @@ Verify EVERY item:
 - [ ] **Pause modal tests present and passing** (3 files in `pause_modal/`: `menu_pause_test.dart`, `gameplay_pause_test.dart`, `results_pause_test.dart`)
 - [ ] **Visual validation contains screenshot test PLUS at least 4 programmatic tests** (dart indicators, active player highlight, score/state threshold, conditional UI)
 - [ ] All 4 batch files updated (run_ui_tests, run_ui_tests_stub, run_ui_tests_parallel, run_ui_tests_parallel_stub)
-- [ ] All 12 mirrored shared helpers synchronized (test/shared/ matches integration_test/shared/)
+- [ ] All mirrored shared helpers synchronized (`diff -rq integration_test/shared test/shared 2>&1 | grep "differ"` returns empty)
 - [ ] Every UI test calls `resetServerState()`
 
 **Visual Validation:**
@@ -2264,6 +2541,732 @@ Ask the user: "Would you like me to commit and create a PR?"
 
 ---
 
+---
+
+## Accumulated Build Quality Rules
+
+These rules were learned from post-build refinement sessions on shipped games. Each one was absent from an initial build and required manual correction after delivery. All applicable rules are enforced in AR-4 item (pp).
+
+---
+
+### 1. Character Randomization (games with multiple interchangeable characters)
+If a game has more characters than players and assigns one per player, shuffle all characters at game-screen `initState` time rather than hardcoding by player index. Pattern (identical to Reef Royale):
+```dart
+late List<String> _characterPaths;
+
+@override
+void initState() {
+  super.initState();
+  final allChars = [
+    'assets/games/[GAME_NAME_SNAKE]/characters/Char1.png',
+    // ... every character ...
+  ]..shuffle();
+  _characterPaths = allChars.take(playerCount).toList();
+  // ...
+}
+```
+Use `_characterPaths[playerIndex]` everywhere character images are needed (game screen, results screen). The results screen does not share screen state with the game screen, so if the results screen hard-codes character paths it will show different characters than the game screen used.
+
+---
+
+### 2. Shape-Following Character Glow
+`BoxShadow` on a Container creates a **rectangular** glow that includes the transparent areas of the PNG. For character images with transparency, use `ImageFiltered` + `ColorFiltered(BlendMode.srcIn)` positioned just outside the character bounds:
+```dart
+import 'dart:ui' as ui;
+
+SizedBox(
+  width: charSize, height: charSize,
+  child: Stack(
+    clipBehavior: Clip.none,
+    fit: StackFit.expand,
+    children: [
+      if (isActive)
+        Positioned(
+          left: -(charSize * 0.10), right: -(charSize * 0.10),
+          top:  -(charSize * 0.10), bottom: -(charSize * 0.10),
+          child: ImageFiltered(
+            imageFilter: ui.ImageFilter.blur(sigmaX: charSize * 0.07, sigmaY: charSize * 0.07),
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(glowColor.withOpacity(0.85), BlendMode.srcIn),
+              child: Image.asset(characterPath, fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      Image.asset(characterPath, fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Icon(Icons.person, color: glowColor, size: charSize * 0.7)),
+    ],
+  ),
+)
+```
+`BlendMode.srcIn` colors only the non-transparent pixels of the image; the blur then spreads that colored silhouette outward.
+
+---
+
+### 3. Per-Player Controls Belong in the Player Column, Not the AppBar
+Dart indicators (D1/D2/D3) and the Skip Turn button are per-player controls — they belong in the active player's display column, not in the AppBar. AppBar actions should contain only global controls (DartboardConnectionInfo, ResumeGameButton).
+
+---
+
+### 4. Dart Indicator Color Logic — Track Hit Status at Throw Time
+Segment strings alone cannot distinguish "dart hit a game target" from "dart hit a valid dartboard number not in the target set." Track `wasMatched` at throw time in screen state:
+```dart
+List<bool> _currentTurnHits = [];
+String? _lastTurnPlayerId;
+
+// In _handleDartThrow, BEFORE processDartThrow:
+if (_lastTurnPlayerId != playerId) {
+  _currentTurnHits = [];
+  _lastTurnPlayerId = playerId;
+}
+_currentTurnHits = [..._currentTurnHits, wasMatched];
+
+// Clear in _handleTakeoutFinished() and in the skip-turn callback.
+```
+Pass `dartHits: _currentTurnHits` to the active player's column; use `dartHits[i]` to decide player-color vs neutral-color per slot.
+
+---
+
+### 5. All Results Badge States Must Be Implemented
+Never leave the loser badge as an empty transparent container. Implement WIN, LOSS, and DRAW explicitly:
+```dart
+isMatchDraw ? 'DRAW' : isWinner ? 'WIN' : 'LOSS'
+```
+Use a muted fill (e.g., `bloodRed.withOpacity(0.25)`) for LOSS — visible but not harsh.
+
+---
+
+### 6. Use Icon Widgets, Not Emoji, for Player-Colored Indicators
+Emoji (🚩, ⚓, ⚙, etc.) render in fixed platform colors that `TextStyle.color` cannot override. Use `Icon(Icons.flag, color: playerColor)` anywhere the indicator color is semantically meaningful (e.g., different flag colors per player). Icon shadows work identically to Text shadows:
+```dart
+Icon(
+  Icons.flag,
+  color: playerFlagColor,
+  size: 22,
+  shadows: const [
+    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+  ],
+),
+```
+
+---
+
+### 7. Text Readability on Busy Backgrounds — 4-Corner Shadow Outline
+A single drop shadow only helps from one direction. For text over background images, use a 4-corner outline (zero blur radius) so the text is readable regardless of which part of the image is behind it:
+```dart
+shadows: const [
+  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+]
+```
+Apply to: AppBar titles, player names, stat labels, and any other colored text over a background image. Also works on `Icon.shadows` (same syntax).
+
+---
+
+### 8. Settings + Selected Player Persistence on "Change Settings" Navigation
+The "Change Settings" navigation MUST pass the previous game's settings AND selected player IDs as constructor parameters to the menu screen. Do NOT rely on `provider.currentGame` surviving the navigation — it may be null by the time the new screen mounts.
+
+**Menu screen constructor** — add optional parameters for every setting and for selected player IDs:
+```dart
+class [Game]MenuScreen extends StatefulWidget {
+  final TargetDifficulty? initialDifficulty;
+  final int? initialBestOf; // etc. for each spec option
+  final List<String>? initialSelectedPlayerIds;
+  const [Game]MenuScreen({super.key, this.initialDifficulty, ..., this.initialSelectedPlayerIds});
+}
+```
+
+**Menu `initState`** — prefer widget params, then `provider.currentGame`, then defaults:
+```dart
+_difficulty = widget.initialDifficulty ?? lastGame?.targetDifficulty ?? TargetDifficulty.easy;
+```
+After `clearSelection()` in `addPostFrameCallback`, re-select previous players:
+```dart
+if (widget.initialSelectedPlayerIds != null) {
+  for (final id in widget.initialSelectedPlayerIds!) {
+    final player = playerProvider.allPlayers.where((p) => p.id == id).firstOrNull;
+    if (player != null) playerProvider.selectPlayer(player, maxPlayers: N);
+  }
+}
+```
+
+**Results screen `_changeSettings`** — read from provider before navigating:
+```dart
+void _changeSettings() {
+  final game = context.read<[Game]Provider>().currentGame;
+  Navigator.pushAndRemoveUntil(context,
+    MaterialPageRoute(builder: (_) => [Game]MenuScreen(
+      initialDifficulty: game?.targetDifficulty,
+      // ...other settings...
+      initialSelectedPlayerIds: game?.playerIds,
+    )),
+    (route) => route.isFirst,
+  );
+}
+```
+
+---
+
+### 9. Randomize Grid Targets (Grid-Based Games)
+For games with targeting grids, target numbers MUST be randomized from the full eligible range each game — never hardcoded. The generator MUST accept `Random? random` for testability:
+```dart
+import 'dart:math';
+
+static List<List<CellTarget>> generate(TargetDifficulty difficulty, {Random? random}) {
+  final rng = random ?? Random();
+  final pool = List.generate(20, (i) => i + 1)..shuffle(rng);
+  final nums = pool.take(9).toList(); // 9 for Easy/Medium; 8 + bull-center for Hard
+  // ...
+}
+```
+Hardcoded layouts (e.g., `[20,18,16 / 19,17,15 / 14,12,10]`) mean every game is identical and players memorize the grid after one session.
+
+---
+
+### 10. Play-to-Complete: Steal / Takeover Infinite Loop Prevention
+When a game has steal or takeover mechanics (player A can take player B's claimed cell/territory), the play-to-complete strategy MUST:
+1. Designate a fixed winner upfront — always `game.playerIds[0]`
+2. Have all non-winners return `null` from `getNextThrow` (deliberate miss every dart)
+3. Have the winner target only EMPTY cells — never steal from opponents
+
+Both (2) and (3) are required. Without them, P1 steals P2's cell → P2 steals it back on the next turn → infinite loop. The strategy comment must document this explicitly.
+
+---
+
+### 11. Test Keys for Runtime-Dynamic Values
+When a UI element displays a value determined at runtime (e.g., a randomized target number, a computed score), add a widget key to that element so tests can query it without going through the provider:
+```dart
+Text(
+  targetLabel,
+  key: [Game]GameKeys.gridCellTargetLabel(row, col),
+  // ...
+)
+```
+Expose the value in `ProviderHelpers` as well:
+```dart
+static int get[Game]CellTargetNumber(WidgetTester tester, int row, int col) =>
+    get[Game]Provider(tester).currentGame!.grid[row][col].target.number;
+```
+
+---
+
+### 12. `completeGameToVictory` Must Read Actual Target Values
+The `completeGameToVictory` helper MUST read actual target values from the provider at runtime — never hardcode numbers that assume a fixed grid layout. Include a `throwForCellTarget` dispatch helper:
+```dart
+import 'package:dart_games/models/[GAME_NAME_SNAKE]_game.dart';
+
+Future<void> throwForCellTarget(WidgetTester tester, CellTarget target) async {
+  switch (target.requirement) {
+    case CellRequirement.bull:
+      await DartThrowHelpers.throwBullseyeViaMock(tester);
+    case CellRequirement.tripleOnly:
+      await DartThrowHelpers.throwDartViaMock(tester, target.number, multiplier: 'triple');
+    case CellRequirement.doubleOnly:
+    case CellRequirement.doubleOrTriple:
+      await DartThrowHelpers.throwDartViaMock(tester, target.number, multiplier: 'double');
+    case CellRequirement.any:
+      await DartThrowHelpers.throwDartViaMock(tester, target.number);
+  }
+}
+```
+P2 always misses in `completeGameToVictory` — this is safe even with steal mode ON (see Rule 10).
+
+---
+
+### 13. Responsive Layout — Use LayoutBuilder for Game Boards
+Fixed-size game board elements (character images, grid cells, board tracks) that sit beside other fixed-size elements in a Row will overflow on different screen sizes. Use `LayoutBuilder` to compute proportional sizes from available width:
+```dart
+LayoutBuilder(builder: (context, constraints) {
+  final availW = constraints.maxWidth;
+  final gridW = availW * 0.40; // grid takes 40% of width
+  final cellSize = (gridW - 18.0) / 3.0; // 3×3 grid, 3px margin each side
+  final charColW = (availW - gridW) / 2.0;
+  // ...
+})
+```
+Note: any margin/padding on the grid container must be subtracted from `availW` before computing character column widths — failing to do so causes a pixel overflow equal to the total horizontal margin.
+
+---
+
+### 14. Background Texture Image Opacity
+Background texture images (`opacity: AlwaysStoppedAnimation(0.3)`) at 30% are often invisible against a dark overlay. Use 0.50–0.65 for textures meant to add visual interest, or higher if the image is a primary visual element. The `errorBuilder: (_, __, ___) => const SizedBox.shrink()` pattern silently hides missing images — verify the file actually exists at the specified path.
+
+---
+
+### 15. Tests must include inline `[DIAG]` reason strings on navigation/findsOneWidget assertions
+Headless `-d web-server` mode does NOT pipe app stdout into `flutter drive`'s log. When a `findsOneWidget` fails, the failure block in the per-test log is *all we get* — no `print()`s, no progress markers, no audio queue trace. Without diagnostic info embedded in the failure itself, every iteration costs a full re-run.
+
+Any assertion that depends on navigation having completed (post-tap, post-pop, after `pushReplacement` / `pushAndRemoveUntil`) MUST include an inline diagnostic in its `reason:` string built from already-imported `ElementFinders` methods.
+
+**Inline at the call site — never via a new shared helper.** New shared methods have repeatedly hit "Member not found" in headless compile and block the test from running at all. Use the test's existing imports.
+
+```dart
+final diag = '[DIAG after-NEW-VOYAGE '
+    'menuStart=${ElementFinders.get[GameName]StartButton().evaluate().length} '
+    'gameSkip=${ElementFinders.get[GameName]SkipTurnButton().evaluate().length} '
+    'resultsPlayAgain=${config.getPlayAgainButton().evaluate().length} '
+    'homeCarnival=${ElementFinders.getCarnivalDerbyCard().evaluate().length} '
+    'resumeModal=${ElementFinders.getResumeGameModalOverlay().evaluate().length}]';
+expect(ElementFinders.get[GameName]StartButton(), findsOneWidget,
+    reason: 'Should be on menu after NEW VOYAGE. $diag');
+```
+
+Apply to: every nav-back test, every tap-then-expect pair, every results-screen and modal action. Build it in *during initial test authoring*, not after a failed run.
+
+---
+
+### 16. `tester.tap` requires `ensureVisible` before it for any button inside a `SingleChildScrollView`
+In headless chromedriver mode (`-d web-server`), `tester.tap` only registers a click on widgets in the visible viewport. Buttons below the fold are silently un-tappable — the tap is a no-op and the test stays exactly where it was.
+
+The results screen wraps action buttons (NEW VOYAGE / PORT HOME / SET SAIL AGAIN — or the equivalent named buttons for this game) in a `SingleChildScrollView`. With a 1080-tall viewport and a 420px winner avatar + headline + stats card, the action buttons fall off-screen. Same applies to Save Modal Save and Resume Modal Resume buttons.
+
+**Rule:** ANY shared helper that taps a button living inside a `SingleChildScrollView` (results-screen actions, save/resume modal buttons) must `ensureVisible + pump` first:
+```dart
+await tester.ensureVisible(button);
+await tester.pump();
+await tester.tap(button);
+```
+Apply this to `clickPlayAgain`, `clickChangeSettings`, `clickSelectDifferentGame` etc. in `shared/results_helpers.dart` AT INITIAL AUTHORING. Any inline tap on a results-screen / modal button in test bodies needs the same.
+
+**Home-screen game cards are also a `SingleChildScrollView`.** As the GAMES list grew past 6 entries, bottom-row cards started landing offscreen at the default 1366×768 viewport. Direct `tester.tap(config.getGameCard())` was a silent no-op for those cards. Use the shared helper:
+```dart
+await UITestHelpers.tapGameCard(tester, config);
+// (does ensureVisible + pump + tap + PumpSequences.navigation internally)
+```
+NEVER use `await tester.tap(config.getGameCard())` directly — it works at the moment a game is added but starts failing silently once enough other games are added that the new game's card lands below the fold. AR-6 grep enforces this: `grep -rE 'tester\.tap\(config\.getGameCard\(\)\)' integration_test/` (excluding `ui_test_helpers.dart` which references the deprecated pattern in docs) must return nothing.
+
+---
+
+### 17. Save/Resume tests that tap *Resume* must use the in-game save flow, not `preSaveGame`
+`preSaveGame(GameSaveConfig.foo())` writes a placeholder `gameState = {'_marker': 'test'}`. When a test taps Resume, the menu calls `provider.restoreGame(savedGame)` → `[GameName]Game.fromJson(savedGame.gameState)` which immediately casts a required field (`json['grid'] as List<dynamic>` for grid-based games, etc.) and crashes. The screen then renders with `_currentGame == null` and crashes again — observed as "Multiple exceptions (2)" with no further detail in the headless log.
+
+**Rule:** Reserve `preSaveGame` for tests that *only verify the resume modal appears* in the saved-games list. For any test that actually taps Resume:
+```dart
+// Set up + save via the in-game flow (real toJson() lands in gameState):
+await setupAndStartGame(tester, config, playerNames: ['Alice', 'Bob']);
+await throwDartViaMock(tester, someTarget);
+await UITestHelpers.tapGameScreenBackButton(tester, config);
+final saveButton = ElementFinders.getSaveGameModalSaveButton();
+await tester.ensureVisible(saveButton);
+await tester.pump();
+await tester.tap(saveButton);
+await PumpSequences.navigation(tester);
+
+// Look up the savedId we just created:
+final savedGames = await SaveGameService().loadSavedGames('[GAME_NAME_SNAKE]');
+final savedId = savedGames.first.id;
+// Now selectSavedGameTile + tap Resume can succeed.
+```
+
+---
+
+### 18. The Resume modal's Resume button is disabled until a tile is selected
+`ResumeGameModal._buildButtons` wires `onPressed: hasSelection ? () { ... } : null` where `hasSelection = _selectedGameId != null`. The user must tap a saved-game tile first to populate `_selectedGameId`. Tests that go straight to `tap(resumeButton)` are tapping a disabled button — silent no-op, modal stays visible.
+
+**Rule:** Every test that taps Resume must first call:
+```dart
+await UITestHelpers.selectSavedGameTile(tester, savedId);
+```
+*Then* `ensureVisible + tap` the Resume button. Document with a comment so future readers know why the tile-tap is required.
+
+---
+
+### 19. `_startGame` must use `Navigator.push`, NEVER `pushReplacement` — AND register `.then((_) => _checkForSavedGames())`
+`pushReplacement` removes the menu route from the stack. After "back from game" or "Save modal Save" both pop one route, the user lands on Home, not Menu. Tests that expect "back-from-game returns to menu with settings preserved" (a standard pattern across all games) fail because the menu is gone.
+
+**Rule (push, not pushReplacement):**
+```dart
+void _startGame() {
+  // ...startGame(...)
+  Navigator.push(   // NOT pushReplacement
+    context,
+    MaterialPageRoute(builder: (_) => const [GameName]GameScreen()),
+  ).then((_) => _checkForSavedGames());   // ← MANDATORY
+}
+```
+Game→Results uses its own `pushReplacement` (game route is consumed). NEW VOYAGE / Change Settings on Results uses `pushAndRemoveUntil((r) => r.isFirst)` to push a fresh menu and discard everything below. Both flows still work correctly with the menu staying on the stack during gameplay.
+
+**Rule (refresh `_hasSavedGames` after the game pops):** BOTH `_startGame` AND `_resumeGame` MUST register `.then((_) => _checkForSavedGames())` on the `Navigator.push`. The AppBar's conditional `ResumeGameButton` (rendered when `_hasSavedGames == true`) only shows after the menu's `_hasSavedGames` flag flips to true — which requires re-running the saved-games API check after the game-screen pops back. Without the callback, a user who saves their game via SaveGameModal returns to a menu where the resume button stays hidden, even though a saved game now exists.
+
+**Why:** Pirate's Grid shipped with this asymmetry — `_resumeGame` had the `.then` but `_startGame` did not. Five canonical save_resume tests (`resume_button_color_when_enabled_test`, `resume_button_enabled_after_save_test`, `resume_button_hidden_after_resume_test`, `resume_button_shows_modal_test`, `resume_modal_start_new_game_test`) failed because their setup goes save → return → expect ResumeGameButton, and the button was never added to the AppBar. The fix was a one-line addition to `_startGame`. The asymmetry was caught only when the canonical 16-file save_resume pack was added; the pre-existing 6-sub-test file didn't exercise the in-game save flow that depends on this callback.
+
+**How to apply:** AR-4 audit must grep `_startGame` and `_resumeGame` in every menu and confirm both push calls have `.then((_) => _checkForSavedGames())`. Reference: monster_mash menu lines 976-979 (`_startGame`) + 993-998 (`_resumeGame`); lunar_lander menu lines 116-121 + 136-139; carnival_horse_race menu (`_startGame` and `_resumeGame`). Pirates Grid menu lines 113-116 + 138-145 (after fix).
+
+---
+
+### 20. `_resetTurnForPlayer` (edit-score replay) must undo *all* win side-effects, including match-level
+When the original turn caused a round-win that promoted to a match-win, `_applyRoundResult` already incremented `roundsWon`, set `matchWinnerId`, set `state = GameState.finished`, and set `gameEndTime`. If the reset only clears round-level fields (`winnerId` / `winningLine` / `isDraw`), `provider.hasWinner` (which reads `matchWinnerId != null || isMatchDraw`) still returns true, AND `processDartThrow` rejects the replayed segments via the `!isGameActive` early-return guard. The edit silently does nothing.
+
+**Rule:** Capture pre-reset state BEFORE clearing round-level fields, then undo match-level side-effects when the turn caused them:
+```dart
+// Capture BEFORE clearing winnerId/isDraw:
+final thisTurnWonRound  = game.winnerId == playerId;
+final thisTurnWonMatch  = game.matchWinnerId == playerId;
+final thisTurnDrewMatch = game.isMatchDraw && !thisTurnWonMatch;
+
+// ... existing reset of winnerId/winningLine/isDraw, dart counters, cell undo ...
+
+if (thisTurnWonRound) {
+  game.roundsWon[playerId] = ((game.roundsWon[playerId] ?? 0) - 1).clamp(0, 99999);
+}
+if (thisTurnWonMatch || thisTurnDrewMatch) {
+  game.matchWinnerId = null;
+  game.isMatchDraw = false;
+  game.state = GameState.playing;
+  game.gameEndTime = null;
+}
+```
+
+---
+
+### 21. `processDartThrow` silently drops darts after `state = GameState.finished` — edit dialog tests must compensate
+Provider's `processDartThrow` early-returns on `if (_currentGame == null || !isGameActive) return;`. After a Bo1 win, follow-up Miss throws don't make it into `currentTurnDartSegments`. When the edit-score dialog opens, it sees `initialSegments=['S{n}']` (only the winning dart). `_parseScore` returns `{ring: null, number: null}` for darts 2 and 3. The dialog's validation then fails: Save button stays disabled until every dart has a non-null ring.
+
+**Rule:** Edit-score "remove winner" tests must explicitly set every dart in the dialog, not just the winning one:
+```dart
+await EditScoreHelpers.setDart1(tester, 'Miss');
+await EditScoreHelpers.setDart2(tester, 'Miss');   // even if originally a Miss
+await EditScoreHelpers.setDart3(tester, 'Miss');   // — provider dropped it after the Bo1 win
+await updateScore(tester);
+```
+Document this in the test with a comment so future readers know why darts 2 and 3 are being set.
+
+---
+
+### 22. Edit-score helper `_parseSegment` must accept all common Miss representations
+Score-display widgets render Miss as `'-'`, `'—'`, or empty depending on configuration. If `_parseSegment` only recognizes literal `'Miss'`, callers passing the displayed string get an `ArgumentError: Invalid segment format`. The error gets swallowed mid-tap and the Save button stays disabled — silent failure that's hard to diagnose.
+
+**Rule:** Author `_parseSegment` (in BOTH `integration_test/shared/edit_score_helpers.dart` AND `test/shared/edit_score_helpers.dart` per rule 26) to accept the union of representations:
+```dart
+final trimmed = segment.trim();
+if (trimmed.isEmpty
+    || trimmed == '-'
+    || trimmed == '—'
+    || trimmed.toLowerCase() == 'miss'
+    || trimmed.toLowerCase() == 'm') {
+  return {'ring': 'Miss', 'number': null};
+}
+```
+Also accept lowercase `d`/`t` in the regex prefix. And `ensureVisible` before every ring-button and number-button tap inside the dialog (rule 16 applies here too).
+
+---
+
+### 23. `PlayToCompleteStrategy.getNextThrow` must NEVER return `null` for a "deliberate miss"
+The auto-play runner does `if (dart == null) break;` — null is its STOP signal. For multi-player games where one player must miss every dart (to designate the auto-play winner — see rule 10), returning null breaks the auto-play loop on the first miss-turn, leaving the game stuck and the test timing out.
+
+**Rule:** Return a miss-shaped `SimulatedThrow` for deliberate misses:
+```dart
+if (currentPlayerId != designatedWinnerId) {
+  return const SimulatedThrow(score: 0, multiplier: 'miss', baseScore: 0);
+}
+```
+Match the pattern in `target_tag_strategy.dart` (which throws a "neutral" non-targeted number for non-winner turns). Never use `return null` to mean "miss" — the runner can't tell the difference.
+
+---
+
+### 24. Player column needs an inner `LayoutBuilder` to clamp character size by actual column height
+The outer game-area `LayoutBuilder.constraints.maxHeight` is what's visible to the layout root, but by the time the player Column resolves layout inside `Expanded(Row(...))`, it receives only ~75% of that — AppBar (a 35pt title can push to ~100px) + Row crossAxis distribution + padding eat the difference. Computing `charSize` against the outer constraint produces values that overflow the inner column.
+
+**Rule:** Wrap `_buildPlayerColumn`'s body in a `LayoutBuilder` and clamp `charSize` against `columnConstraints.maxHeight`, with a reserve that varies with active state AND with whether speedPlay is on:
+```dart
+return LayoutBuilder(builder: (context, columnConstraints) {
+  final reserveH = isActive
+      ? 220.0 + (game.speedPlay ? 56.0 : 0.0)   // +56 for the 36pt timer + spacing
+      : 80.0;
+  final maxByH = (columnConstraints.maxHeight - reserveH).clamp(0.0, double.infinity);
+  final charSize = math.min(desiredCharSize, maxByH);
+  return Column(...);
+});
+```
+The OUTER LayoutBuilder should provide a `desiredCharSize` derived from width only; the inner LayoutBuilder is responsible for the height clamp.
+
+---
+
+### 25. UI test color assertions must compare RGB bytes, not `Color.value`, on Flutter web
+`Color.value` is deprecated in Flutter 3.27+, and on Dart-to-JS its int representation can flip negative for high-bit ARGB values (sign-bit issue). `0xFFCD7F32` may compare as `-3342030`, breaking equality checks against the literal even when the color is correct.
+
+**Rule:** Compare RGB bytes (always 0–255 ints):
+```dart
+return color != null
+    && color.red   == 0xCD
+    && color.green == 0x7F
+    && color.blue  == 0x32;
+```
+Apply this to every visual-validation test that asserts on a widget's border, background, or text color.
+
+---
+
+### 26. Every shared helper that compiles in both contexts MUST stay byte-identical between `test/shared/` and `integration_test/shared/`
+When the two drift, non-UI tests pass while UI tests fail with "Member not found" against the same-named class — the symbol is in one file but not the other, and the resolution depends on which test type is running. Drift happens silently and is hard to diagnose without reading both files.
+
+**The set of mirrored helpers is dynamic, not enumerated.** Past versions of this skill listed "12 mirrored shared helpers" by name. That list went stale (a 13th, `pause_modal_helpers.dart`, was added at some point without the list being updated; `failure_screenshot_helper.dart` was nearly added as a 14th before being merged into `ui_test_helpers.dart`). Any rule that depends on a specific count is wrong by construction. The actual rule: for every `*.dart` file present in BOTH `integration_test/shared/` and `test/shared/`, the two copies MUST be byte-identical. Files present in only one directory (e.g. `mock_api_helpers.dart` and `player_test_utils.dart` in `test/shared/` only — they import packages non-UI tests have but UI tests don't, OR have widget-only dependencies the other way around) are intentionally non-mirrored and excluded from the parity check.
+
+**Rule:** Whenever a Sonnet sub-agent is asked to add a method or function to a shared helper that exists in both directories, the prompt MUST instruct it to apply the IDENTICAL change to the other file in the same edit pass. Whenever a sub-agent CREATES a new shared helper, the prompt MUST decide up front whether the helper compiles in both contexts:
+- **If yes** (no `package:integration_test` import, no widget-tree-only types, etc.), create it in BOTH directories from the start.
+- **If no** (e.g. uses `IntegrationTestWidgetsFlutterBinding`, `WidgetTester`, etc.), create it ONLY in the directory that can compile it.
+
+**Verification command (use this exact form — do NOT enumerate by name):**
+```bash
+diff -rq integration_test/shared test/shared 2>&1 | grep "differ" || echo "OK: all mirrored helpers byte-identical"
+```
+The `diff -rq` output emits one line per pair that differs (`Files X and Y differ`). The `grep "differ"` filter strips the expected `Only in test/shared: <file>` lines for non-mirrored helpers. If the grep finds anything, it's a parity violation that must be fixed before the build can proceed. AR-4 and AR-6 audits use this command directly, not a hardcoded list.
+
+**Caveat — flutter drive web compile cache:** brand-new files under `integration_test/shared/` are silently ignored by the web compile cache (commit `4d1377e`). When a UI test imports a brand-new shared file, the compile fails with `org-dartlang-app:/...File not found` even though `dart analyze` and disk reads confirm the file exists. Workaround: add the new functionality as a static method on an existing long-lived helper class (e.g. `UITestHelpers`) instead of creating a new shared file. The `UITestHelpers.runWithFailureScreenshot` helper was placed inside `ui_test_helpers.dart` for exactly this reason — see `failure_screenshot_helper.dart` in commit `3cafc83` (deleted) for the pattern that didn't work.
+
+---
+
+### 27. Randomized game targets — every dart-throwing test must read the target at runtime
+When the game randomizes targets per session (rule 9), tests that hardcode dart numbers (`throwDartViaMock(tester, 20)`) hit the wrong cell or no cell at all. The lookup pattern is required everywhere a test wants to deliberately hit a specific cell.
+
+**Rule:** Add `get[GameName]CellTargetNumber(tester, row, col)` (or equivalent) to `integration_test/shared/provider_helpers.dart` AT INITIAL TEST AUTHORING when targets are randomized. Add a `throwForCellTarget(tester, target)` dispatch helper that reads the cell's target requirement (e.g. `CellTarget` for grid games) and chooses the right multiplier (`single` / `double` / `triple` / `bull`). Use these in every gameplay test. Sync to `test/shared/provider_helpers.dart` per rule 26.
+
+```dart
+// Helper in integration_test/shared/provider_helpers.dart:
+static int get[GameName]CellTargetNumber(WidgetTester tester, int row, int col) {
+  final grid = get[GameName]Grid(tester);
+  return grid![row][col].target.number;
+}
+
+// In tests:
+final t02 = ProviderHelpers.get[GameName]CellTargetNumber(tester, 0, 2);
+await throwForCellTarget(tester, provider.currentGame!.grid[0][2].target);
+```
+
+---
+
+### 28. Pause Modal canonical 20-test pack (7 menu + 8 gameplay + 5 results) is mandatory
+A "minimal" pause modal pack of 1 testWidget per file misses the modal-stacking edge cases (pause-over-RemoveDartsModal, pause-over-SaveGameModal, EditScoreDialog auto-closes on disconnect, RemoveDartsModal still visible after reconnect) that are the actual bug-prone seam between the dartboard layer and per-screen overlays. These cases ONLY exist in the full 20-test pack.
+
+**Why:** Pirate's Grid shipped with 3 testWidgets (1 per file). A cross-game test-count audit weeks later showed every other game had 20 (Carnival Derby, Target Tag, Monster Mash, Reef Royale, Clockwork Quest, Lunar Lander). The gap was invisible inside the "I wrote pause tests" claim — only counting tests across games surfaced it.
+
+**How to apply:** In Phase 7, the `pause_modal/` subdirectory's three files MUST contain exactly 7, 8, 5 testWidgets respectively (canonical names listed in Phase 7 Step 7A's `pause_modal/` bullet). The pack is mirrored 1-for-1 from `integration_test/monster_mash/pause_modal/*` with finder substitutions only — no game-specific test additions/omissions. AR-6 audit check (m) verifies the count.
+
+---
+
+### 29. Save/Resume canonical 16-file pack (one testWidget per file) is mandatory
+The "16 separate files, one testWidget each" structure is not a stylistic preference — it's the canonical helper pack used by the shared `SaveResumeHelpers` to map cleanly onto the user-flow surface. Collapsing into one file with multiple sub-tests OR shipping with fewer than 16 file names elides specific edge cases (resume-button-color-when-enabled, resume-button-hidden-after-resume, resume-modal-start-new-game, resume-modal-delete-individual, resume-modal-delete-all, resume-resave-overwrites).
+
+**Why:** Pirate's Grid shipped with 1 file containing 6 sub-tests. Lunar Lander shipped with 6 separate files. Both missed 10 of the 16 canonical edge cases. The 3 "real-flow" tests (resume_game_loads_screen, resume_resave_overwrites, resume_auto_deletes_on_completion) are the *only* ones that catch `[GameName]Game.fromJson` regressions on actual restore — without all three, only the metadata-list happy path is verified.
+
+**How to apply:** Phase 7's `save_resume/` subdirectory MUST contain the 16 files listed in Phase 7 Step 7A's `save_resume/` bullet, each with exactly 1 testWidget. The 3 real-flow files MUST use the in-game save flow (Rule 17) since `preSaveGame`'s placeholder gameState crashes restore. AR-6 audit check (n) verifies the file count and per-file testWidget count.
+
+---
+
+### 30. `test/providers/[game]_provider_game_test.dart` is mandatory — NOT optional, NOT replaced by screen-level tests
+Every game except Lunar Lander and Pirate's Grid (both shipped without it, both caught only post-launch) has a dedicated `test/providers/[game]_provider_game_test.dart` with 44–50 pure-provider tests. The screen-level `test/screens/games/[game]/[game]_game_test.dart` tests via the screen wrapper and inherits the screen's coupling; the provider-level file isolates `processDartThrow` / `skipTurn` / win detection / turn advancement / `_resetTurnForPlayer` / option side-effects so regressions surface clearly when the screen layer changes.
+
+**Why:** A screen-level test that passes after a provider regression is common — the screen often masks provider-level bugs by re-rendering reasonable state from stale data. Provider-isolated tests fail loudly. The two layers catch different classes of bugs.
+
+**How to apply:** Phase 3 file list now requires this as file #4 (alongside model, provider, screen-level test). Minimum 40 tests, with required groups: initial state, `processDartThrow` per option/difficulty, turn advancement, win detection, per-option side-effects, round/match transitions, `_resetTurnForPlayer` undo (Rule 20), randomized targets (if applicable), `endGame` + `resumedSavedGameId`. AR-3 audit check (e) verifies file existence and ≥ 40 tests.
+
+---
+
+### 31. Per-option-value test coverage — one functional + one visual test per spec Section 7 value
+A common failure pattern: spec Section 7 lists an option with N values (e.g., Difficulty: Easy/Medium/Hard); the implementer writes ONE test (typically Easy or default) and assumes the "option logic" is covered. The remaining N-1 values ship with zero functional UI coverage. Provider tests prove the option's logic; UI tests prove the option is wired through menu → screen and renders the expected behavior under the real frame loop.
+
+**Why:** Pirate's Grid shipped with `plant_flag_easy_test.dart` and `plant_flag_medium_test.dart` but NO Hard test, NO Best Of 5 test, NO Speed Play timer-expires test. Three Section 7 values had zero functional UI coverage. Spec coverage audits passed because each option had "a test"; the per-VALUE gap was missed.
+
+**How to apply:** In Phase 7 Step 7A, build the option-value coverage table (Section 5c) BEFORE writing tests. For every Section 7 row × every distinct value, plan one functional gameplay test file. For every option that has a *visible* effect (badge, color, glow, text), additionally plan one visual_validation test (Section 5d). AR-6 audit check (o) verifies the matrix is complete.
+
+Test-naming conventions:
+- Functional: `<option>_<value>_<behavior>_test.dart` (e.g., `difficulty_hard_corner_triple_required_test.dart`) or `<behavior>_<option>_<value>_test.dart` (e.g., `plant_flag_hard_test.dart`)
+- Visual: `<option>_badges_test.dart` (groups Easy/Medium/Hard sub-tests) or `<element>_<state>_test.dart` (e.g., `cell_flag_colors_test.dart`, `winning_row_glow_test.dart`)
+
+---
+
+### 32. Visual-validation tests must assert APPEARANCE, not just EXISTENCE
+A visual_validation test that only checks `findsOneWidget` for a spec-Section-10 element is incomplete. The spec says "X is rendered as Y" — your test must assert Y (text content, RGB color, border properties, icon presence), not just that X exists.
+
+**Why:** Pirate's Grid spec Section 10B says "Winning cells get Treasure Gold pulsing glow + sparkle overlay" — no test asserted the glow color. The spec says "P1 cells get Blood Red border glow, P2 cells get Sea Foam Teal border glow" — no test asserted the colors. The spec says "Round tracker shows P1 wins in Blood Red, P2 wins in Sea Foam Teal" — only widget existence was tested. Six visible spec elements shipped with logical-only assertions and zero visual checks.
+
+**How to apply:** When authoring a visual_validation test, for each assertion ask: "If the screen rendered this element with the WRONG color/text/icon/border, would my test still pass?" If yes, add the appearance assertion using RGB byte comparison (Rule 25), `find.descendant` for inner Text content, or BoxDecoration introspection for borders/shadows. AR-6 audit check (l) builds the visual-element coverage matrix; check (o) extends it to per-option-value visuals.
+
+---
+
+### 33. Test-coverage audits must be grounded in IMPLEMENTATION, not spec aspiration
+The spec describes what the game *should* render; the screen code describes what the game *does* render. These diverge constantly: a designer simplifies during build (animal characters in place of a rocket icon), a feature is deferred (no "Round Complete" overlay yet), or a section was rewritten without updating the spec. A coverage audit that maps spec → tests without verifying implementation produces three classes of finding mixed together — and only one is a real test gap.
+
+**Why:** A Lunar Lander coverage audit run from the spec alone produced 5 visual_validation test recommendations (rocket icon position, flame trail, ORBIT/MOON markers, tick marks, "CRASH!" overlay) for elements that did not exist in `lunar_lander_game_screen.dart`. The screen renders animal character images on a Flame Orange descent line — a deliberate design pivot. Writing those 5 tests would have produced 5 failing tests, not 5 closed gaps.
+
+**Rule:** Every spec element being audited must be classified by reading the actual code:
+- **Implemented + Tested** → no action
+- **Implemented + Not tested** → real test gap; write the test
+- **Not implemented** → NOT a test gap; surface as a separate "implement vs. update spec" decision to the user
+
+**How to apply:** before proposing any test addition, grep the screen/provider/test_keys for the spec keyword. If the keyword is not in the code, the gap is a spec/code divergence — do not generate a test prompt for it. AR-6 audit check (l) enforces this for visual elements; the same principle applies to options, behaviors, and any other spec claim.
+
+---
+
+### 34. Menu screens must guard the player section with `playerProvider.isLoading`
+`PlayerProvider._selectedPlayers` is shared global state that persists across games. The menu's post-frame `clearSelection()` runs AFTER the first paint, so without a loading guard the user briefly sees a flash of the previous game's players in the "Selected" column before the post-frame callback wipes them. On a slow `loadPlayers()` round-trip (cold start, slow server) the flash can last 100–500ms and is clearly visible.
+
+**Why:** Pirate's Grid, Lunar Lander, Target Tag, and Clockwork Quest all shipped without this guard and exhibited the flash. Carnival Derby, Monster Mash, and Reef Royale had the guard from the start and behaved correctly. The asymmetry was caught only when a user reported "the previously selected players show briefly and then get unselected" on PG/LL — every other game looked empty from the start because the spinner masked the 1-frame initial paint with stale state.
+
+**Rule:** Every menu screen MUST wrap its main content (the LayoutBuilder/Row containing left+right panels) in a `Consumer<PlayerProvider>` that returns a centered `CircularProgressIndicator` while `playerProvider.isLoading` is true:
+```dart
+Consumer<PlayerProvider>(
+  builder: (context, playerProvider, child) {
+    if (playerProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return LayoutBuilder( /* or Row */
+      builder: (context, constraints) { ... },
+    );
+  },
+),
+```
+
+The post-frame callback in `initState` (which calls `loadPlayers()` → sets `_isLoading=true` → notifies → loads → `_isLoading=false` → `clearSelection()`) takes over the rendering window between first paint and load completion. The Consumer rebuilds during that window, the spinner replaces the layout, and the user sees "spinner → empty list" instead of "stale list → empty list".
+
+**How to apply:** in Phase 4 (Screens), the menu screen sub-agent must include this guard. AR-4 audit row should grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart` for `playerProvider.isLoading` and `CircularProgressIndicator` — both must be present in the menu's build tree. Reference: monster_mash menu lines 208-228, reef_royale menu lines 198-213.
+
+---
+
+### 35. Real background image used in EVERY wireframe + EVERY screen
+The mockups must reference the actual `[GameName]-Background.png` asset on every screen — menu, game, results — via `<img>` or CSS `background-image: url(...)`. CSS gradients or solid fills as a "stand-in" silently teach the wireframe sub-agent that the background is generic, and the same omission then carries into the Flutter screens.
+
+**Why:** Pirate's Grid Stage A wireframe used a CSS parchment-style gradient as the menu background; the actual user-provided `PiratesGrid-Background.png` is a fully illustrated pirate scene. The discrepancy wasn't caught until late visual validation, by which time UI elements had been laid out without an overlay budget for the busy art. Recurring across at least 3 game builds.
+
+**How to apply:** Phase 2 staged approval gates — the orchestrator's AR-2 review for each stage must `grep -c "[GameName]-Background\|[GameName]-Bg" temp_wireframes/[GAME_NAME_SNAKE]/<stage>.html`. Must report ≥ 1 hit per HTML. AR-1 (Phase 1) also adds a background-image suitability check: read the image, classify as TEXTURE (suitable backdrop) vs ILLUSTRATED SCENE (will compete with UI), surface to user as an overlay-budget decision before Phase 2 starts.
+
+---
+
+### 36. Game UI fills full screen height; dartboard emulator is a transparent OVERLAY
+The dartboard emulator section only renders when `!dartboardProvider.isConnected`; in production gameplay (board connected) the game content has the FULL screen height. Wireframes that reserve vertical space for the emulator (treating it as a `Column[gameContent, dartboardEmulator]` sibling) propagate a too-short content area into the Flutter screens, which then overflow at the headless 1366×768 viewport.
+
+**Why:** Pirate's Grid wireframes laid out the gameplay screen with the emulator as an inline child, eating ~150-200px of vertical height. When the screen was implemented in Flutter, the player column / grid clamped against this reduced height; cellSize was wrong, character size was wrong, RenderFlex overflowed by 76px. Multiple round-trip fixes (`_buildPlayerColumn` inner LayoutBuilder, speedPlay reserve, grid centering) addressed the symptoms but the wireframe model had been wrong from the start.
+
+**How to apply:** Phase 2 Stage B requires the wireframe to draw `gameContent` at `width: 100%; height: 100%` and the dartboard emulator as `position: absolute; bottom: 0` (or a `Positioned(bottom: 0)` Stack child OUTSIDE the body Stack — sibling of Scaffold). The `position: absolute` model mirrors the actual Flutter widget tree and prevents the wireframe from baking in a phantom height reservation. AR-2 review checks the wireframe HTML for `position: absolute; bottom` on the emulator block.
+
+---
+
+### 37. Wireframes must validate at the headless test viewport (1366×768)
+Wireframes designed at desktop monitor sizes (1920×1080+) look great in the browser preview but overflow at the parallel runner's default headless Chrome viewport. The screenshot test then captures a clipped/overflowed state that the orchestrator must triage as a layout bug — usually requiring screen code changes after the fact.
+
+**Why:** PG wireframes were authored at desktop dimensions and looked clean in browser preview. The actual screenshot tests captured a 1366×768 viewport showing 76px column overflow, off-center grid, oversized winner character. Each was a separate fix-and-recapture cycle.
+
+**How to apply:** Phase 2 every wireframe HTML wraps content in `<div style="width: 1366px; height: 768px; overflow: hidden; ...">` for the visual review. Inside this wrapper, layout primitives (% widths, `min/max` clamps, flex/grid) MUST adapt without introducing horizontal scroll, clipped buttons, or content overflow. AR-2 review opens the HTML at exactly 1366×768 in dev tools and confirms no overflow indicators.
+
+---
+
+### 38. UI tests wrap their bodies in `UITestHelpers.runWithFailureScreenshot` during the build phase
+When a UI test fails the only artifact available in the standard text log is a stack trace — no screen state, no DOM, no rendered pixels. Authors who add screenshot capture retroactively (after a failure) waste an iteration cycle: failed run → inspect log → instrument → re-run. Building the failure capture into every test from initial creation removes that cycle and turns the first failed run into an actionable diagnostic.
+
+**Why:** Multiple PG debug rounds (rounds 2-7 of the post-build refinement) consisted entirely of "test fails → add diagnostics → re-run". Each round cost 5-15 minutes of test execution time. The user explicitly requested that diagnostic instrumentation be included from initial creation so the first failed run produces a screenshot the orchestrator can read instead of an opaque "Multiple exceptions (2)".
+
+**Why build-phase-only:** the wraps add per-test boilerplate that's noise once tests are stable. The production runner uses `test_driver/integration_test.dart` which has no `onScreenshot` callback — the wrap would be inert there anyway, but its presence still adds visual clutter. Removing the wraps at the Phase 9 transition aligns the new game's tests with every other game's tests in form.
+
+**How to apply:**
+- **During build (Phase 7 iterative authoring):** every test in the new game's pack wraps its body in `UITestHelpers.runWithFailureScreenshot(tester, '[GAME_NAME_SNAKE]_<subdir>_<test_basename>', () async { /* body */ })`. Tests run via `flutter drive --driver=test_driver/screenshot_test.dart --target=<test> -d chrome --dart-define=SERVER_PORT=<port> --browser-dimension=1366x768`. Failure PNGs land in `temp_screenshots/failures/<sanitized-test-name>_<timestamp>.png`.
+- **At Phase 9 transition (after Gate 4 passes):** the "Failure-screenshot wrap removal" step in Phase 9 dispatches a Sonnet sub-agent to unwrap every test in the new game's pack. The helper itself stays in `integration_test/shared/ui_test_helpers.dart` — only the per-test wraps are removed. Future game builds will use the helper again during their own Phase 7.
+- **Helper location:** `UITestHelpers.runWithFailureScreenshot` (a static method on `UITestHelpers` in `integration_test/shared/ui_test_helpers.dart`). The helper is part of `UITestHelpers` rather than a standalone file because brand-new files under `integration_test/shared/` are silently ignored by flutter drive's web compile cache (documented in commit `4d1377e` and Rule 26).
+- **Driver:** the `test_driver/screenshot_test.dart` driver has the `onScreenshot` callback that writes PNG bytes to disk (with `mkdir -p` for subdirectory paths). The default `test_driver/integration_test.dart` driver does NOT have `onScreenshot` — that's intentional, since post-build tests don't need it.
+- **Verification:** `integration_test/_smoke/failure_screenshot_smoke_test.dart` is a deliberately-failing test that exercises the helper. Lives outside any game directory so neither runner picks it up. Invoke directly via `flutter drive` after a Flutter SDK upgrade or driver change to confirm the mechanism still works.
+- **AR-4 audit during build:** every `*_test.dart` under `integration_test/[GAME_NAME_SNAKE]/` (excluding `_helpers.dart` and the smoke test) MUST contain `UITestHelpers.runWithFailureScreenshot`. AR-4 enforces this until Gate 4 passes; after Gate 4, AR-4 enforces the OPPOSITE (no wraps in any test).
+
+---
+
+### 39. UI tests authored iteratively: screenshot first, then 1 per category easiest-to-hardest
+Authoring all UI tests in one batch and running them all at once produces a wall of failures sharing the same root causes (missing ensureVisible, hardcoded grid targets, missing in-game save flow, etc.). The orchestrator then debugs one category at a time across many files instead of fixing the root once and replicating.
+
+**Why:** PG had 7+ debugging cycles (commit titles "Round 2/3/4/5/6 fixes ...") because all 47 UI tests were authored upfront. Each round fixed a single bug class across dozens of files. The user requested that future builds author one test per category at a time, run it, fix the root, then replicate.
+
+**How to apply:** Phase 7 Step 7A sub-rule 1.6 specifies the order of categories (visual_validation screenshot test → menu_and_settings → add_player → navigation → gameplay → pause_modal → results_screen → save_resume → edit_score → play_to_complete) and the per-category loop (author one → run → fix → replicate). The orchestrator MUST resist the temptation to delegate "write all tests in parallel" to a single sub-agent batch.
+
+---
+
+### 40. Screenshot test for timer-driven UI states must freeze the timer
+Screenshot test entry that captures a state involving an active `Timer.periodic` (Speed Play countdown, animation loop) deadlocks: pumping `pump(Duration)` on a continuously-firing timer never settles. Past failure: PG screenshot test halted at #12 of 15 ("game_speed_play_timer transition"). The orchestrator waited 4 minutes before killing — wasted iteration time.
+
+**How to apply:** Phase 8 STEP 1 imposes a 25-second per-screenshot progress timeout (down from 60s). For the timer-driven scene specifically: (a) freeze the timer before capturing — set the screen state to a fixed timer value via a `provider.setSpeedPlayTimerForTest(...)` hook if exposed, OR (b) capture immediately on the same frame the timer was started (no `pump(Duration)`), OR (c) skip that visual state and document it in the spec coverage report as a known gap. The screen and provider may need a test hook (`@visibleForTesting void setTimerForCapture(int seconds) { ... }`) added in Phase 4 to support this without exposing private state production-side.
+
+---
+
+### 41. Cross-game parity audit — grep all 6 existing screens before creating the 7th
+Three production bugs in the last two months followed the same shape: 5 or 6 of the 6 existing games' screens implemented some pattern; the new (7th) game's screen omitted it. Each was caught only post-launch by a user observing the inconsistency, not by AR review.
+
+**Past failures matching this shape:**
+- **Cross-game selection leak (commit `d96c19f`)** — 5 of 6 menus called `playerProvider.loadPlayers()` then `playerProvider.clearSelection()` in their `addPostFrameCallback`. Lunar Lander did not. Result: selecting players in CD then opening LL left those players already selected. Caught after 6 menus had shipped.
+- **`isLoading` spinner guard (commit `d96bac2`)** — 3 of 7 menus (CD, MM, RR) wrapped their main content in `Consumer<PlayerProvider>` returning `CircularProgressIndicator` while loading. TT, CQ, LL, PG did not. Result: brief flash of stale selection on each of those 4 menus. Caught after 7 menus had shipped, when a user reported the flash on PG.
+- **`.then((_) => _checkForSavedGames())` after `_startGame` (commit `042d791`)** — 6 menus had this callback on BOTH `_startGame` and `_resumeGame`. PG had it on `_resumeGame` only — `_startGame` was missing it. Result: 5 canonical save_resume tests failed because the AppBar's conditional `ResumeGameButton` never appeared after the in-game save flow. Caught when the canonical 16-file save_resume pack ran for the first time on PG.
+
+In every case, the omission was invisible to the new game's tests in isolation; only cross-game comparison surfaced it.
+
+**Rule:** AR-4 (Phase 4 review) MUST execute a parity grep for every shared pattern before approving the screens. The audit:
+
+1. **Enumerate each lifecycle hook** (initState, post-frame callbacks, dispose, addPostFrameCallback bodies, button onTap handlers, Navigator.push call sites) in EVERY existing game's three screens (`menu_screen.dart`, `game_screen.dart`, `results_screen.dart`).
+2. For each method/handler, run `grep -n '<canonical-line>' lib/screens/games/*/[gN]_<screen>.dart` across ALL games — check the new game's file is in the result list. Examples:
+   - `grep -n 'playerProvider.loadPlayers' lib/screens/games/*/[g]_menu_screen.dart`
+   - `grep -n 'playerProvider.clearSelection' lib/screens/games/*/[g]_menu_screen.dart`
+   - `grep -n 'playerProvider.isLoading' lib/screens/games/*/[g]_menu_screen.dart`
+   - `grep -n '_checkForSavedGames()' lib/screens/games/*/[g]_menu_screen.dart` — and verify it appears AFTER both `_startGame`'s push AND `_resumeGame`'s push
+   - `grep -n '\.then((_)' lib/screens/games/*/[g]_menu_screen.dart` — every Navigator.push from a menu should have a `.then` callback
+3. **For every grep, the new game's file MUST appear in the output.** Any omission is a parity violation surfaced to the user as a corrective sub-agent dispatch BEFORE the screens are accepted into Phase 5.
+4. **Add new patterns to the parity grep list** as they're discovered. The list is intentionally append-only — every recurrence-prevention rule (Rules §8, §19, §34, §41 itself) adds a new grep line.
+
+**How to apply:** AR-4 audit must include a "Cross-game parity grep" section listing every grep line and the new game's name in each result. If any grep returns zero hits for the new game, AR-4 fails and the orchestrator dispatches a corrective sub-agent. This rule is the meta-protection: every individual rule (§8 player persistence, §19 _checkForSavedGames, §34 isLoading guard) gets enforced via the parity grep, even if the individual rule's "How to apply" section drifts out of date.
+
+---
+
+### 42. Every new game registers a `GameMetadata` entry in the filter registry
+The home-screen filter bar reads `lib/constants/game_filter_registry.dart` to decide which cards to render given the user's selections. A new game whose card is added to `home_screen.dart` but whose registry entry is missing will:
+- Show in the unfiltered view (because home_screen falls back to "show all" when the registry lookup returns null)
+- Be invisible in EVERY filtered view (because no metadata = no match)
+- Trigger the orphan-bucket check in `test/models/game_metadata_test.dart` if a filter value loses its only game
+
+This is exactly the kind of asymmetry Rule §41's parity audit catches — the new game's id should appear in `home_screen.dart`'s `games` list AND in the registry's `_all` list AND in `test/models/game_metadata_test.dart`'s `expectedIds` set. Any of those three missing is a parity violation.
+
+**Rule:** Phase 4 step 7a (Add the game card) is followed immediately by step 7b (Register filter metadata). Both happen in the SAME edit pass — the card and the registry entry are added together so they can't drift.
+
+**How to apply:** AR-4 grep adds:
+- `grep -n "'[GAME_NAME_SNAKE]'" lib/screens/home_screen.dart` — must match (the card's `gameId`)
+- `grep -n "gameId: '[GAME_NAME_SNAKE]'" lib/constants/game_filter_registry.dart` — must match (the registry entry)
+- `grep -n "'[GAME_NAME_SNAKE]'" test/models/game_metadata_test.dart` — must match (the `expectedIds` Set)
+All three must hit. If any returns zero, AR-4 fails. Update `test/models/game_metadata_test.dart`'s `expectedIds` Set in the same change to keep the registry-coverage test passing.
+
+**Adding a new filter criterion** (rare but supported):
+1. Add a new enum to `lib/models/game_metadata.dart` and a field on `GameMetadata`.
+2. Update EVERY existing entry in `GameFilterRegistry` to set the new field.
+3. Add a new `FilterCriterion` enum value.
+4. Add a dropdown in `lib/widgets/game_filter_bar/game_filter_bar.dart`.
+5. Add `HomeKeys.filter<New>Button` and `filter<New>Option` in `lib/constants/test_keys.dart`.
+6. Add a UI test in `integration_test/home_screen/filter_bar/`.
+7. Add an OR-within-criterion case to `test/models/game_metadata_test.dart`.
+
+The `matchesFilters` switch must cover every `FilterCriterion` — if a new criterion is added without a switch case, Dart's exhaustive-switch analyzer fails the build. That's the compile-time backstop.
+
+---
+
+### 43. Parallel runner worktree setup is FAIL-LOUD; existence check before workers spawn
+The parallel UI runner clones the repo into one git worktree per worker so each worker has an isolated `build/` and `.dart_tool/`. If any worktree fails to create, that worker runs `flutter drive` in a non-existent directory and every test in its pack fails with `the system cannot find the path specified` — but the swallowed-error pattern (`>nul 2>&1` on `git worktree add`) masks the real cause.
+
+**Why:** A user's UI run produced 27 failures across 4 games (target_tag, lunar_lander, pirates_grid, reef_royale). All test logs ended after the runner's "Worktree: ..." prefix line — no compile output, no test output, just "FAILED". Investigation showed `git worktree list` had only the main repo registered: `git worktree add` had failed silently for 6 of 9 workers, leaving the runner pressing on with workers pointed at empty paths. The worktree creation loop's `_wt_ok=0` check existed but didn't catch every failure mode (e.g., when leftover dirs from a prior run blocked rmdir → blocked `git worktree add` because destination exists → errorlevel propagation through nested IFs got confused).
+
+**Rule:** `run_ui_tests_parallel.bat` worktree setup follows four invariants:
+1. **Errors go to a log, not /dev/null.** Replace every `git worktree <op> ... >nul 2>&1` with `... >> "!_WT_LOG!" 2>&1` (where `_WT_LOG = !_PARALLEL_DIR!\worktree_setup.log`). When a `git worktree add` fails, the script prints the worker name, points at the log, and aborts.
+2. **Prune metadata before cleanup.** A `git worktree prune` runs BEFORE the rmdir loop. Without this, stale `.git/worktrees/<name>` metadata pointing at deleted directories will make subsequent `git worktree add` fail with "fatal: '<path>' already exists" even though the dir was removed.
+3. **Pre-flight kill of orphaned test processes.** Before the cleanup, kill leftover `chromedriver.exe` and `flutter_tester.exe` processes (blanket-safe — test-only) and port-scoped `dart.exe` instances bound to ports 9001-9020 (so we don't accidentally kill the user's IDE-launched dart server on a different port). A previous run that was force-killed leaves orphaned processes that hold worktree files open, blocking rmdir, and bind test ports — preventing the new run's setup. Past failure: a parallel run produced 8+ leftover chromedriver.exe processes that blocked all subsequent worktree creation.
+4. **Existence check before workers launch.** After the creation loop, verify every expected worktree project dir contains a `pubspec.yaml`. If any are missing or incomplete, abort with the worker name(s) printed — workers MUST NOT spawn pointed at missing paths.
+
+**Plus:** if rmdir leaves any leftover dir in `_WORKTREE_BASE` (because a prior chromedriver/dart process STILL has files locked despite the pre-flight kill), surface it loudly with the dir name and a hint about killing leftover processes before re-running.
+
+**Absolute path for `_WORKTREE_BASE`:** the variable is computed as `!_SCRIPT_DIR!\integration_test_output\parallel\worktrees`, NOT a relative path. Past failure: relative `_WORKTREE_BASE` worked for `git worktree add` (called from the bat's cwd) but flutter sub-processes inherited a different cwd and `flutter pub get` printed "The system cannot find the path specified." for every worker. Absolute paths remove that variable.
+
+**How to apply:** verify the runner has all four invariants:
+```bash
+grep -c '>> "!_WT_LOG!" 2>&1' run_ui_tests_parallel.bat   # must be > 0 (errors logged)
+grep -c 'git worktree prune' run_ui_tests_parallel.bat   # must be ≥ 2 (before AND after rmdir)
+grep -c 'taskkill /F /IM chromedriver' run_ui_tests_parallel.bat  # must be > 0 (pre-flight kill)
+grep -c 'pubspec.yaml' run_ui_tests_parallel.bat         # must be > 0 (existence check)
+grep '_WORKTREE_BASE=' run_ui_tests_parallel.bat | grep -c '_SCRIPT_DIR'  # must be > 0 (absolute path)
+```
+
+---
+
 ## Error Handling Rules
 
 These rules apply throughout ALL phases:
@@ -2289,7 +3292,7 @@ Per `docs/critical-rules/dartboard-protection.md`:
 
 ### When Shared Test Helpers Need Changes
 Per `docs/testing/test-maintenance.md`:
-1. Sub-agent must update BOTH `test/shared/` AND `integration_test/shared/` (all 12 mirrored files in each — non-mirrored `test/shared/` files like `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` are excluded).
+1. Sub-agent must update BOTH `test/shared/` AND `integration_test/shared/` for every helper that exists in both directories. Verify with `diff -rq integration_test/shared test/shared 2>&1 | grep "differ"` — must return empty. Files present in only one directory (e.g. `mock_api_helpers.dart`, `player_test_utils.dart`, `sector_parser.dart` in `test/shared/` only) are intentionally non-mirrored and excluded.
 2. Verify synchronization by diffing every corresponding pair (orchestrator runs the diff).
 3. Run both test suites to verify.
 

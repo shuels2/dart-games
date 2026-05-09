@@ -57,6 +57,21 @@ echo Cleaning previous test results...
 del /Q integration_test_output\*.txt 2>nul
 del /Q integration_test_output\*.log 2>nul
 
+REM ============================================================
+REM Pre-flight: kill leftover test processes from a prior run.
+REM See run_ui_tests_parallel.bat for the full rationale. Same scope:
+REM blanket-kill chromedriver.exe + flutter_tester.exe (test-only),
+REM port-scope dart.exe to our test port range so we don't kill the
+REM user's IDE-launched dart server.
+REM ============================================================
+echo Killing leftover test processes from prior runs...
+taskkill /F /IM chromedriver.exe >nul 2>&1
+taskkill /F /IM flutter_tester.exe >nul 2>&1
+for /l %%P in (9001,1,9020) do (
+    for /f "tokens=5" %%a in ('netstat -aon ^| findstr "LISTENING" ^| findstr ":%%P "') do taskkill /F /PID %%a >nul 2>&1
+)
+timeout /t 1 /nobreak >nul
+
 echo Verifying ChromeDriver version matches Chrome...
 call update_chromedriver.bat
 if !errorlevel! neq 0 (
@@ -70,6 +85,15 @@ if not exist "server\bin\server.dart" (
     pause
     exit /b 1
 )
+
+REM Wipe flutter_tools frontend-server kernel cache. flutter_tools keeps an
+REM app.dill snapshot in %LOCALAPPDATA%\Temp\flutter_tools.<hash>\flutter_tool.<hash>\
+REM that survives `flutter clean` (which only touches build/ and .dart_tool/).
+REM When a method is added to a file already in the cached kernel, the next
+REM `flutter drive` reuses the stale kernel and reports "Member not found".
+REM Removing this directory before running tests forces a fresh compile.
+echo Wiping stale flutter_tools kernel cache ^(%%LOCALAPPDATA%%\Temp\flutter_tools.*^)...
+for /d %%D in ("%LOCALAPPDATA%\Temp\flutter_tools.*") do rmdir /S /Q "%%D" >nul 2>&1
 
 echo Cleaning Flutter build caches ^(build/, .dart_tool/^)...
 call flutter clean
@@ -309,7 +333,7 @@ if "!_RST_ABORT!"=="1" goto :run_single_test_done
 
 start /B "" cmd /C "flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --dart-define=SERVER_PORT=!_CAT_PORT! --web-browser-flag=--start-maximized --browser-dimension=1920x1080 >> "!_RST_LOG!" 2>&1"
 
-powershell -NoProfile -Command "$log='!_RST_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+powershell -NoProfile -Command "$log='!_RST_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed')) -and (-not ($c -match 'Failure Details:'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 
 if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
 
@@ -350,8 +374,15 @@ REM DISCOVER AND RUN TESTS
 REM ============================================================
 :discover_tests
 
-REM Define game categories in execution order
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander"
+REM Define test categories in execution order. The variable is named GAMES
+REM for historical reasons but it lists every top-level subdirectory under
+REM integration_test/ that contains tests — not just per-game folders.
+REM
+REM home_screen and pause_modal hold non-game-specific tests (filter bar,
+REM home-screen pause modal). They get the same per-category treatment
+REM (own port, own data dir, own server boot) so they never share state
+REM with each other or with a game's tests.
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid home_screen pause_modal"
 
 for %%G in (%GAMES%) do (
     set "_GAME=%%G"

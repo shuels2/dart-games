@@ -65,21 +65,31 @@ class EditScoreHelpers {
   // ==========================================================================
 
   /// Parse a segment string into ring and number components
-  /// Returns a map with 'ring' (String) and 'number' (int?) keys
+  /// Returns a map with 'ring' (String) and 'number' (int?) keys.
+  ///
+  /// Miss is accepted in several forms ('Miss', 'M', 'miss', '-', '') so
+  /// callers can pass whatever the score-display widget rendered without
+  /// having to normalize. This avoids a class of bug where the test silently
+  /// throws ArgumentError mid-tap and the Save button stays disabled.
   static Map<String, dynamic> _parseSegment(String segment) {
-    if (segment == 'Bull') {
+    final trimmed = segment.trim();
+    if (trimmed == 'Bull' || trimmed == 'B') {
       return {'ring': 'Bullseye', 'number': null};
     }
-    if (segment == '25') {
+    if (trimmed == '25') {
       return {'ring': 'Outer Bull', 'number': null};
     }
-    if (segment == 'Miss') {
+    if (trimmed.isEmpty ||
+        trimmed == '-' ||
+        trimmed == '—' ||
+        trimmed.toLowerCase() == 'miss' ||
+        trimmed.toLowerCase() == 'm') {
       return {'ring': 'Miss', 'number': null};
     }
 
     // Parse S20, s20, D20, T20 format
-    final pattern = RegExp(r'^([SDTsd])(\d+)$');
-    final match = pattern.firstMatch(segment);
+    final pattern = RegExp(r'^([SDTsdt])(\d+)$');
+    final match = pattern.firstMatch(trimmed);
     if (match == null) {
       throw ArgumentError('Invalid segment format: $segment');
     }
@@ -92,9 +102,9 @@ class EditScoreHelpers {
       ring = 'Single (outer)';
     } else if (prefix == 's') {
       ring = 'Single (inner)';
-    } else if (prefix == 'D') {
+    } else if (prefix == 'D' || prefix == 'd') {
       ring = 'Double';
-    } else if (prefix == 'T') {
+    } else if (prefix == 'T' || prefix == 't') {
       ring = 'Triple';
     } else {
       throw ArgumentError('Unknown prefix: $prefix');
@@ -134,6 +144,11 @@ class EditScoreHelpers {
     expect(ringButtonFinder, findsOneWidget,
         reason: 'Ring button "$ring" should be present in dart ${dartIndex + 1} section');
 
+    // Scroll into view in case the dialog is taller than the viewport. tap
+    // silently fails on widgets outside the hit-test area; ensureVisible
+    // guarantees the ring button is on-screen before we tap.
+    await tester.ensureVisible(ringButtonFinder);
+    await tester.pump();
     await tester.tap(ringButtonFinder);
     await PumpSequences.simpleUpdate(tester);
 
@@ -147,6 +162,8 @@ class EditScoreHelpers {
       expect(numberButtonFinder, findsOneWidget,
           reason: 'Number button "$number" should be present and enabled in dart ${dartIndex + 1} section');
 
+      await tester.ensureVisible(numberButtonFinder);
+      await tester.pump();
       await tester.tap(numberButtonFinder);
       await PumpSequences.simpleUpdate(tester);
     }

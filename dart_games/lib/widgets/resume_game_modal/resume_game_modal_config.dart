@@ -360,6 +360,63 @@ class ResumeGameModalConfig {
     );
   }
 
+  /// Pirate's Grid — Ocean Navy bg, Compass Bronze border, PirataOne/Lora fonts
+  factory ResumeGameModalConfig.piratesGrid() {
+    return ResumeGameModalConfig(
+      backgroundColor: const Color(0xFF1B2838), // Ocean Navy
+      borderColor: const Color(0xFFCD7F32), // Compass Bronze
+      boxShadowColor: const Color(0xFFCD7F32),
+      boxShadowOpacity: 0.3,
+      titleTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFFDAA520), // Treasure Gold
+        fontSize: 22,
+        letterSpacing: 1.2,
+      ),
+      tileBackgroundColor: const Color(0xFF1B2838).withOpacity(0.6),
+      tileSelectedBackgroundColor: const Color(0xFFCD7F32).withOpacity(0.15),
+      tileBorderColor: const Color(0xFFF5E6C8).withOpacity(0.3),
+      tileSelectedBorderColor: const Color(0xFFCD7F32),
+      tileDateTextStyle: GoogleFonts.lora(
+        color: const Color(0xFFF5E6C8).withOpacity(0.7),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      tilePlayersTextStyle: GoogleFonts.lora(
+        color: const Color(0xFFF5E6C8),
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      tileProgressTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFFDAA520),
+        fontSize: 14,
+      ),
+      tileModeTextStyle: GoogleFonts.lora(
+        color: const Color(0xFFF5E6C8).withOpacity(0.7),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      tileLeaderTextStyle: GoogleFonts.lora(
+        color: const Color(0xFFF5E6C8),
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+      deleteButtonColor: const Color(0xFF8B0000), // Blood Red
+      resumeButtonColor: const Color(0xFFCD7F32), // Compass Bronze
+      resumeButtonTextColor: const Color(0xFFF5E6C8),
+      resumeButtonTextStyle: GoogleFonts.pirataOne(fontSize: 18, letterSpacing: 1.0),
+      resumeButtonDisabledColor: Colors.grey,
+      startNewButtonColor: const Color(0xFFF5E6C8).withOpacity(0.2),
+      startNewButtonTextColor: const Color(0xFFF5E6C8),
+      startNewButtonTextStyle: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w600),
+      deleteAllButtonColor: const Color(0xFF8B0000), // Blood Red
+      deleteAllButtonTextStyle: GoogleFonts.lora(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF8B0000),
+      ),
+    );
+  }
+
   factory ResumeGameModalConfig.clockworkQuest() {
     return ResumeGameModalConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

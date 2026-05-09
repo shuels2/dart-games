@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/main.dart' as app;
 import 'package:dart_games/services/api/api_config.dart';
 import 'package:dart_games/widgets/player_selection_card.dart';
@@ -12,6 +13,70 @@ import 'settings_helpers.dart';
 /// Provides game-agnostic test helpers that work with any game configuration.
 /// All operations use widget keys for reliable element finding.
 class UITestHelpers {
+  // ==========================================================================
+  // FAILURE SCREENSHOT HELPER
+  // ==========================================================================
+
+  /// Wrap a test body so any exception triggers a failure screenshot before
+  /// rethrowing. The screenshot lands at
+  /// `temp_screenshots/failures/<testName>_<timestampMs>.png` (the timestamp
+  /// suffix prevents collisions when parallel workers fail at similar moments).
+  ///
+  /// **Build phase only.** This wrap is applied to every UI test during
+  /// Phase 7 of the game.build skill (iterative test authoring), where
+  /// failure pixels accelerate triage. Tests run with
+  /// `--driver=test_driver/screenshot_test.dart`; that driver's
+  /// `onScreenshot` callback writes the bytes to disk.
+  ///
+  /// At Phase 9 Gate 4 (all UI + non-UI + screenshots simultaneously green)
+  /// the wraps are removed by an unwrap sub-agent so tests match the form
+  /// every other game's tests use. Production CI runs via
+  /// `test_driver/integration_test.dart` (no `onScreenshot`); the wrap would
+  /// be inert there anyway, but removing it eliminates per-test boilerplate.
+  ///
+  /// Usage during build:
+  /// ```dart
+  /// testWidgets('foo', (tester) async {
+  ///   await UITestHelpers.runWithFailureScreenshot(
+  ///     tester,
+  ///     '[GAME_NAME_SNAKE]_<subdir>_<test_basename>',
+  ///     () async {
+  ///       // existing test body
+  ///     },
+  ///   );
+  /// });
+  /// ```
+  static Future<void> runWithFailureScreenshot(
+    WidgetTester tester,
+    String testName,
+    Future<void> Function() body,
+  ) async {
+    try {
+      await body();
+    } catch (_) {
+      // Best-effort capture. Never let a screenshot failure mask the real
+      // test failure — wrap in its own try/catch and swallow internal errors.
+      try {
+        final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+        // Settle a few frames so the canvas reflects the post-failure state
+        // before takeScreenshot reads it.
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+        await tester.pump();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final safeName = testName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+        final fullName = 'failures/${safeName}_$timestamp';
+        await binding.takeScreenshot(fullName);
+        // ignore: avoid_print
+        print('[FAILURE_SCREENSHOT] saved as temp_screenshots/$fullName.png');
+      } catch (sse) {
+        // ignore: avoid_print
+        print('[FAILURE_SCREENSHOT] capture failed: $sse');
+      }
+      rethrow;
+    }
+  }
+
   // ==========================================================================
   // STATE RESET HELPERS
   // ==========================================================================
@@ -70,16 +135,43 @@ class UITestHelpers {
     await tester.pump();
     print('UITestHelpers.navigateToGameMenu: Waited for cards to load');
 
-    // Tap game card
-    final gameCard = config.getGameCard();
-    print('UITestHelpers.navigateToGameMenu: Found ${gameCard.evaluate().length} game cards');
-
-    expect(gameCard, findsOneWidget);
-    await tester.tap(gameCard);
-
-    // Wait for navigation
-    await PumpSequences.navigation(tester);
+    // Tap game card via the scroll-aware helper so cards in the bottom rows
+    // (offscreen at default 1366x768 viewport once the GAMES list grows past
+    // 6) are scrolled into view before the tap.
+    await tapGameCard(tester, config);
     print('UITestHelpers.navigateToGameMenu: COMPLETE');
+  }
+
+  /// Tap the home-screen game card for [config], scrolling it into view first.
+  ///
+  /// The home screen wraps its game-card grid in a `SingleChildScrollView`, so
+  /// cards that sit in the bottom rows can be offscreen at the default
+  /// headless viewport (1366x768). Calling `tester.tap` directly on an
+  /// offscreen widget is a silent no-op under chromedriver — the test then
+  /// fails downstream with "menu screen never mounted" or similar without
+  /// surfacing the real cause.
+  ///
+  /// This helper:
+  ///   1. Asserts the card is in the widget tree (`findsOneWidget`)
+  ///   2. Calls `tester.ensureVisible(card)` so the scrollview brings it
+  ///      into the viewport
+  ///   3. Pumps a frame so the scroll animation completes
+  ///   4. Taps
+  ///   5. Pumps the standard navigation sequence
+  ///
+  /// Use this anywhere a test taps the home card. The pattern
+  /// `await tester.tap(config.getGameCard())` is brittle once 7+ games are
+  /// in the list and should be replaced with `await UITestHelpers.tapGameCard(tester, config)`.
+  static Future<void> tapGameCard(
+    WidgetTester tester,
+    GameUIConfig config,
+  ) async {
+    final gameCard = config.getGameCard();
+    expect(gameCard, findsOneWidget);
+    await tester.ensureVisible(gameCard);
+    await tester.pump();
+    await tester.tap(gameCard);
+    await PumpSequences.navigation(tester);
   }
 
   /// Start the game from menu screen
@@ -160,6 +252,16 @@ class UITestHelpers {
       // For Lunar Lander, check which button exists (empty state or normal state)
       final emptyStateButton = ElementFinders.getLunarLanderAddPlayerButtonEmptyState();
       final normalStateButton = ElementFinders.getLunarLanderAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
+    } else if (config.gameName == "Pirate's Grid") {
+      // For Pirate's Grid, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getPiratesGridAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getPiratesGridAddPlayerButton();
 
       if (emptyStateButton.evaluate().isNotEmpty) {
         addButton = emptyStateButton;

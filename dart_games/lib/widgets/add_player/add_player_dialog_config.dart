@@ -446,6 +446,60 @@ class AddPlayerDialogConfig {
     );
   }
 
+  /// Pirate's Grid theme — Ocean Navy bg, Compass Rose Bronze/Treasure Gold accents, PirataOne/Lora fonts
+  factory AddPlayerDialogConfig.piratesGrid() {
+    return AddPlayerDialogConfig(
+      backgroundColor: const Color(0xFF1B2838).withOpacity(0.95), // Ocean Navy
+      textColor: const Color(0xFFF5E6C8), // Parchment Tan
+      titleStyle: GoogleFonts.pirataOne(
+        fontSize: 22,
+        color: const Color(0xFFDAA520), // Treasure Gold
+        letterSpacing: 1.2,
+        shadows: const [
+          Shadow(color: Color(0xFF1A1A1A), blurRadius: 4, offset: Offset(1, 1)),
+        ],
+      ),
+      inputLabelStyle: GoogleFonts.lora(
+        fontSize: 16,
+        color: const Color(0xFFF5E6C8),
+      ),
+      inputBorderColor: const Color(0xFFCD7F32), // Compass Bronze
+      inputFocusedBorderColor: const Color(0xFFDAA520), // Treasure Gold
+      inputErrorBorderColor: const Color(0xFF8B0000), // Blood Red
+      photoLabelStyle: GoogleFonts.lora(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFFF5E6C8),
+      ),
+      photoButtonColor: const Color(0xFF1B2838), // Ocean Navy
+      photoButtonForegroundColor: const Color(0xFFF5E6C8),
+      photoButtonBorderColor: const Color(0xFFCD7F32), // Compass Bronze
+      photoButtonTextStyle: GoogleFonts.lora(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5E6C8),
+      ),
+      photoButtonWidth: null,
+      addButtonColor: const Color(0xFFCD7F32), // Compass Bronze
+      addButtonForegroundColor: const Color(0xFFF5E6C8),
+      addButtonBorderColor: const Color(0xFFDAA520), // Treasure Gold
+      addButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 1.0,
+        color: const Color(0xFFF5E6C8),
+      ),
+      cancelButtonColor: const Color(0xFF1B2838).withOpacity(0.85), // Ocean Navy
+      cancelButtonForegroundColor: const Color(0xFFF5E6C8),
+      cancelButtonBorderColor: const Color(0xFFCD7F32).withOpacity(0.6),
+      cancelButtonTextStyle: GoogleFonts.lora(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFF5E6C8),
+      ),
+      errorTextColor: const Color(0xFF8B0000), // Blood Red
+    );
+  }
+
   /// Options Screen theme configuration (Material Design defaults)
   factory AddPlayerDialogConfig.optionsScreen(BuildContext context) {
     final theme = Theme.of(context);

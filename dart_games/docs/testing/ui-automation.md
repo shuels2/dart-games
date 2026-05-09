@@ -2,11 +2,11 @@
 
 ## Overview
 
-460 UI automation tests validate end-to-end user flows in Chrome browser.
+507 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Sequential time:** ~622 minutes (~10h 22m) — `run_ui_tests.bat`, interactive Chrome sessions visible
-**Parallel time:** ~153 minutes (~2h 33m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
+**Sequential time:** ~704 minutes (~11h 44m) — `run_ui_tests.bat`, interactive Chrome sessions visible
+**Parallel time:** ~175 minutes (~2h 55m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
@@ -62,6 +62,18 @@
 7. Results Screen: 8 tests
 8. Save & Resume: 6 tests
 9. Visual Validation: 1 test (11 screenshots)
+
+### Pirate's Grid (63 tests, ~82 minutes)
+1. Add Player: 6 tests
+2. Edit Score: 5 tests
+3. Gameplay: 14 tests
+4. Menu and Settings: 7 tests
+5. Navigation: 4 tests
+6. Pause Modal: 3 tests
+7. Play to Complete: 6 tests
+8. Results Screen: 7 tests
+9. Save & Resume: 6 tests
+10. Visual Validation: 5 tests (1 screenshot test + 4 programmatic)
 
 **Known infrastructure flake:** `save_resume/resumed_state_correct_test.dart` — test assertions all pass ("All tests passed!" in log) but `flutter drive` crashes during chromedriver teardown with `SocketException: errno = 1225`. Both retry attempts hit the same deterministic teardown crash. Effective pass rate: 45/46. This is a `flutter drive` infrastructure bug, not a Lunar Lander code defect.
 
@@ -225,9 +237,9 @@ The parallel runner executes all 5 game categories simultaneously, reducing wall
 
 ### Port Assignments
 
-Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_parallel.bat` (Server = 9000+N, ChromeDriver = 4443+N):
+Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_parallel.bat` (Server = 9000+N, ChromeDriver = 4443+N). The list includes per-game directories AND non-game test categories (`home_screen`, `pause_modal`) — every top-level subdirectory under `integration_test/` that holds tests gets its own worker, port, and isolated server.
 
-| Game | Server Port | ChromeDriver Port |
+| Test Category | Server Port | ChromeDriver Port |
 |------|------------|-------------------|
 | target_tag | 9001 | 4444 |
 | carnival_derby | 9002 | 4445 |
@@ -235,6 +247,11 @@ Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_paralle
 | reef_royale | 9004 | 4447 |
 | clockwork_quest | 9005 | 4448 |
 | lunar_lander | 9006 | 4449 |
+| pirates_grid | 9007 | 4450 |
+| home_screen | 9008 | 4451 |
+| pause_modal | 9009 | 4452 |
+
+Directories the runners intentionally skip: `_smoke/` (manual self-tests for the failure-screenshot helper, run via direct `flutter drive` invocation) and `shared/` (helper files, no tests).
 
 ### Infrastructure Isolation
 

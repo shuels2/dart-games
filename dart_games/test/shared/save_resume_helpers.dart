@@ -128,6 +128,25 @@ class GameSaveConfig {
         leadingPlayerScore: 'Gear 1',
       );
 
+  factory GameSaveConfig.piratesGrid() => const GameSaveConfig(
+        gameType: 'pirates_grid',
+        playerNames: ['Alice', 'Bob'],
+        progressInfo: 'Round 1/1 — Alice: 0  Bob: 0',
+        gameModeName: 'Easy, Best Of 1',
+        leadingPlayerName: 'Alice',
+        leadingPlayerScore: '0 rounds won',
+      );
+
+  factory GameSaveConfig.piratesGridSecond() => const GameSaveConfig(
+        gameType: 'pirates_grid',
+        playerNames: ['Charlie', 'Diana'],
+        progressInfo: 'Round 2/3 — Charlie: 1  Diana: 0',
+        gameModeName: 'Medium, Best Of 3, Steal',
+        leadingPlayerName: 'Charlie',
+        leadingPlayerScore: '1 round won',
+        gameState: {'_marker': 'test2'},
+      );
+
   factory GameSaveConfig.clockworkQuestSecond() => const GameSaveConfig(
         gameType: 'clockwork_quest',
         playerNames: ['Charlie', 'Diana'],

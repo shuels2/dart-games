@@ -16,6 +16,11 @@ class ResultsHelpers {
     final playAgainButton = config.getPlayAgainButton();
     expect(playAgainButton, findsOneWidget,
         reason: 'Play Again button should be present on results screen');
+    // Scroll into view — results-screen action buttons sit at the bottom of
+    // a SingleChildScrollView and headless chromedriver requires the target
+    // in the viewport for the click to register.
+    await tester.ensureVisible(playAgainButton);
+    await tester.pump();
     await tester.tap(playAgainButton);
     await PumpSequences.navigation(tester);
   }

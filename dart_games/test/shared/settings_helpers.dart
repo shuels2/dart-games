@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart' show Slider, Switch;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 import 'package:dart_games/models/player.dart';
 import 'package:dart_games/services/api/api_config.dart';
 import 'package:dart_games/services/victory_music_service.dart';
@@ -15,8 +16,20 @@ class SettingsHelpers {
   // TEST INITIALIZATION HELPERS
   // ==========================================================================
 
-  /// Full server reset: wipes all data and configures dartboard.
+  /// Full server reset: assigns a unique DB session, wipes data, configures
+  /// dartboard.
+  ///
+  /// Each browser instance gets its own isolated database via the
+  /// `X-DB-Session` header, so the duplicate browser spawned by Flutter
+  /// bug #67090 cannot create duplicate saves.
   static Future<void> resetServerState({bool useEmulator = true}) async {
+    // Generate a unique session ID so this browser instance gets its
+    // own isolated database on the server.
+    if (ApiConfig.dbSession == null) {
+      final sessionId = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+      ApiConfig.setDbSession('session-$sessionId');
+    }
+
     await _waitForServer();
 
     VictoryMusicService().resetForTesting();
@@ -26,8 +39,11 @@ class SettingsHelpers {
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'X-Request-Id': requestId,
-      ..._sessionHeaders(),
     };
+    final session = ApiConfig.dbSession;
+    if (session != null) {
+      headers['X-DB-Session'] = session;
+    }
     final resetResponse = await http.post(
       Uri.parse(ApiConfig.url('/api/v1/test/reset')),
       headers: headers,
@@ -41,9 +57,10 @@ class SettingsHelpers {
     }
 
     // Verify the reset took effect
+    final sessionHeaders = _sessionHeaders();
     final verifyResponse = await http.get(
       _bustCache('/api/v1/players'),
-      headers: _sessionHeaders(),
+      headers: sessionHeaders,
     );
     if (verifyResponse.statusCode != 200) {
       throw Exception(
@@ -61,7 +78,7 @@ class SettingsHelpers {
 
     final verifySavedGamesResponse = await http.get(
       _bustCache('/api/v1/games'),
-      headers: _sessionHeaders(),
+      headers: sessionHeaders,
     );
     if (verifySavedGamesResponse.statusCode != 200) {
       throw Exception(
@@ -80,10 +97,10 @@ class SettingsHelpers {
     }
 
     // Configure dartboard for emulator mode
-    final dartboardHeaders = <String, String>{
-      'Content-Type': 'application/json',
-      ..._sessionHeaders(),
-    };
+    final dartboardHeaders = <String, String>{'Content-Type': 'application/json'};
+    if (session != null) {
+      dartboardHeaders['X-DB-Session'] = session;
+    }
     final dartboardResponse = await http.put(
       Uri.parse(ApiConfig.url('/api/v1/dartboard')),
       headers: dartboardHeaders,
@@ -130,9 +147,9 @@ class SettingsHelpers {
     return '$ts-$rnd';
   }
 
-  static Map<String, String> _sessionHeaders() {
+  static Map<String, String>? _sessionHeaders() {
     final session = ApiConfig.dbSession;
-    if (session == null) return {};
+    if (session == null) return null;
     return {'X-DB-Session': session};
   }
 
@@ -161,10 +178,11 @@ class SettingsHelpers {
   static Future<void> savePlayersToApi(List<Player> players) async {
     for (final player in players) {
       final url = Uri.parse(ApiConfig.url('/api/v1/players'));
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-        ..._sessionHeaders(),
-      };
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      final session = ApiConfig.dbSession;
+      if (session != null) {
+        headers['X-DB-Session'] = session;
+      }
       final response = await http.post(
         url,
         headers: headers,
@@ -458,6 +476,48 @@ class SettingsHelpers {
   ) async {
     final dropdownFinder = ElementFinders.getClockworkQuestNumberOfLapsDropdown();
     await setDropdownValue(tester, dropdownFinder, laps.toString());
+  }
+
+  // ==========================================================================
+  // PIRATE'S GRID SETTINGS
+  // ==========================================================================
+
+  /// Pirate's Grid: Set Target Difficulty (dropdown)
+  ///
+  /// Valid values: 'Easy', 'Medium', 'Hard'
+  static Future<void> setPiratesGridDifficulty(
+    WidgetTester tester,
+    String difficulty,
+  ) async {
+    await setDropdownValue(
+      tester,
+      ElementFinders.getPiratesGridDifficultyDropdown(),
+      difficulty,
+    );
+  }
+
+  /// Pirate's Grid: Set Best Of (dropdown)
+  ///
+  /// Valid values: '1', '3', '5'
+  static Future<void> setPiratesGridBestOf(
+    WidgetTester tester,
+    String bestOf,
+  ) async {
+    await setDropdownValue(
+      tester,
+      ElementFinders.getPiratesGridBestOfDropdown(),
+      bestOf,
+    );
+  }
+
+  /// Pirate's Grid: Toggle Steal Mode switch
+  static Future<void> togglePiratesGridStealMode(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getPiratesGridStealModeSwitch());
+  }
+
+  /// Pirate's Grid: Toggle Speed Play switch
+  static Future<void> togglePiratesGridSpeedPlay(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getPiratesGridSpeedPlaySwitch());
   }
 
   /// Clockwork Quest: Full flow to add a player

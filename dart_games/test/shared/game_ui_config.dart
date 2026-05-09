@@ -161,6 +161,27 @@ class GameUIConfig {
     );
   }
 
+  /// Pirate's Grid game configuration
+  factory GameUIConfig.piratesGrid() {
+    return GameUIConfig._(
+      gameName: "Pirate's Grid",
+      getGameCard: ElementFinders.getPiratesGridCard,
+      getAddPlayerButton: ElementFinders.getPiratesGridAddPlayerButton,
+      getPlayerTile: ElementFinders.getPiratesGridPlayerTile,
+      getStartButton: ElementFinders.getPiratesGridStartButton,
+      getSkipTurnButton: ElementFinders.getPiratesGridSkipTurnButton,
+      getEditScoreButton: ElementFinders.getPiratesGridEditScoreButton,
+      getDartButton: (multiplier, number) => find.text('Not used in PiratesGrid directly'),
+      getBullseyeButton: () => find.text('Not used in PiratesGrid directly'),
+      getOuterBullButton: () => find.text('Not used in PiratesGrid directly'),
+      getMissButton: () => find.text('Not used in PiratesGrid directly'),
+      getPlayAgainButton: ElementFinders.getPiratesGridPlayAgainButton,
+      getChangeSettingsButton: ElementFinders.getPiratesGridChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getPiratesGridBackToMenuButton,
+      getGameBackButton: ElementFinders.getPiratesGridGameBackButton,
+    );
+  }
+
   /// Clockwork Quest game configuration
   factory GameUIConfig.clockworkQuest() {
     return GameUIConfig._(

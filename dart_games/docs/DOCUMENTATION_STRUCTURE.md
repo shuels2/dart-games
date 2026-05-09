@@ -108,15 +108,25 @@ dart_games/
         │   ├── assets.md             # 8 inventor characters, 1 icon, 1 background, sounds
         │   └── implementation-notes.md # Gear activation, speed mode, stacking modal pattern
         │
-        └── lunar-lander/
-            ├── README.md             # "Lunar Lander is a retro NASA countdown dart game..."
-            ├── game-rules.md         # Countdown/descent rules, Hard Landing bust rule, win conditions
-            ├── design-system.md      # Space Black/Earth Blue/Rocket Flame theme, Orbitron+Exo2 fonts
-            ├── components.md         # DualPlayerListPanel configs, all shared widget factory methods
-            ├── announcements.md      # LunarLanderAnnouncementHelper, 8 sound effects, stacking chain
-            ├── testing.md            # 46 UI tests, 85 non-UI tests, known chromedriver flake
-            ├── assets.md             # 8 astronaut characters, 1 icon, 1 background, 8 sounds
-            └── implementation-notes.md # Random character assignment, stacking modal, totalTurns pattern
+        ├── lunar-lander/
+        │   ├── README.md             # "Lunar Lander is a retro NASA countdown dart game..."
+        │   ├── game-rules.md         # Countdown/descent rules, Hard Landing bust rule, win conditions
+        │   ├── design-system.md      # Space Black/Earth Blue/Rocket Flame theme, Orbitron+Exo2 fonts
+        │   ├── components.md         # DualPlayerListPanel configs, all shared widget factory methods
+        │   ├── announcements.md      # LunarLanderAnnouncementHelper, 8 sound effects, stacking chain
+        │   ├── testing.md            # 46 UI tests, 85 non-UI tests, known chromedriver flake
+        │   ├── assets.md             # 8 astronaut characters, 1 icon, 1 background, 8 sounds
+        │   └── implementation-notes.md # Random character assignment, stacking modal, totalTurns pattern
+        │
+        └── pirates-grid/
+            ├── README.md             # "Pirate's Grid is a dart-based tic-tac-toe game for 2 players..."
+            ├── game-rules.md         # 3x3 grid rules, difficulty layouts, Best Of rounds, Steal/Speed Play
+            ├── design-system.md      # Parchment/Ocean Navy/Treasure Gold theme, Pirata One + Lora fonts
+            ├── components.md         # DualPlayerListPanel (max 2), ThreeInARowChecker, GridTargetGenerator
+            ├── announcements.md      # PiratesGridAnnouncementHelper, 7 sound effects, steal stacking rules
+            ├── testing.md            # 63 UI tests, 132 non-UI tests, Pattern B edit score, grid cell finders
+            ├── assets.md             # 8 pirate characters, 1 icon, 1 background, 3 pieces, 7 sounds
+            └── implementation-notes.md # Bull cell (number=0), timer in screen state, Best Of serialization
 ```
 
 ## Documentation Purpose by Category
