@@ -38,9 +38,13 @@ void main() {
 
     expect(ProviderHelpers.targetTagHasWinner(tester), isTrue);
 
-    // Edit dart 3 to S1 (neutral, not anyone's target) — removes winner
+    // Edit dart 3 to a number that is verifiably not anyone's target so the
+    // replay does not re-trigger the win. TT assigns target numbers randomly
+    // from 1-20, so a hardcoded 'S1' is flaky — pick dynamically.
+    final neutralNumber = List.generate(20, (i) => i + 1)
+        .firstWhere((n) => n != p1Target && n != p2Target);
     await EditScoreHelpers.editScoreAndSave(tester, config,
-        dart3: 'S1');
+        dart3: 'S$neutralNumber');
 
     expect(ProviderHelpers.targetTagHasWinner(tester), isFalse);
 

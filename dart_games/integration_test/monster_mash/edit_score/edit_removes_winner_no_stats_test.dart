@@ -40,9 +40,17 @@ void main() {
 
     expect(ProviderHelpers.monsterMashHasWinner(tester), isTrue);
 
-    // Edit dart 3 to S1 (not anyone's target) — removes winner
+    // Edit dart 3 to a number that is verifiably not anyone's target so the
+    // replay deals zero damage. MM assigns target numbers randomly from 1-20,
+    // so a hardcoded 'S1' is flaky — pick dynamically.
+    final p1Target =
+        ProviderHelpers.getMonsterMashPlayerTarget(tester, p1Id)!;
+    final p2Target =
+        ProviderHelpers.getMonsterMashPlayerTarget(tester, p2.id)!;
+    final neutralNumber = List.generate(20, (i) => i + 1)
+        .firstWhere((n) => n != p1Target && n != p2Target);
     await EditScoreHelpers.editScoreAndSave(tester, config,
-        dart3: 'S1');
+        dart3: 'S$neutralNumber');
 
     // Winner should be removed
     expect(ProviderHelpers.monsterMashHasWinner(tester), isFalse);
