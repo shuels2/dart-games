@@ -1182,6 +1182,18 @@ class _OptionsScreenState extends State<OptionsScreen> {
       await playerProvider.savePlayer(player);
     }
 
+    // Persist each player's pre-populated gameHistory to the server so
+    // games_played and games_won accumulate correctly. Without this, the
+    // stats only live in PlayerProvider's local cache until any subsequent
+    // loadPlayers() (e.g., navigating to a game menu) wipes them.
+    for (final player in testPlayers) {
+      await playerProvider.seedPlayerHistory(player.id, player.gameHistory);
+    }
+
+    // Refresh local cache from the server so optimistic local stats match
+    // the persisted state.
+    await playerProvider.loadPlayers();
+
     // Generate and save test victory music files (embedded as data URLs)
     final musicService = VictoryMusicService();
     final testMusicDataUrls = TestDataService.getTestVictoryMusicDataUrls();
@@ -1254,11 +1266,19 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     if (confirmed != true) return;
 
-    // Delete all players
+    // Delete all players (game_history rows cascade via FK ON DELETE CASCADE)
     final allPlayers = playerProvider.allPlayers;
     for (final player in allPlayers) {
       await playerProvider.deletePlayer(player.id);
     }
+
+    // Bulk-delete the orphan tables that DON'T cascade from players:
+    //   - failed_stats: no FK constraint (rows persist after player delete).
+    //   - saved_games: stores player NAMES (not ids), unrelated to players table.
+    // Without these calls, "Clear All Data" leaves orphan rows behind that
+    // re-surface in the Resume modal and the failed-stats inspection UI.
+    await playerProvider.deleteAllFailedStats();
+    await playerProvider.deleteAllSavedGames();
 
     // Delete all victory music files
     final musicService = VictoryMusicService();

@@ -725,6 +725,49 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   - In wide layout (constraints.maxWidth > 800): `Expanded(child: DualPlayerListPanel(...))` so the panel takes remaining vertical space in the right-panel Column.
 >   - In narrow scrollable layout (constraints.maxWidth <= 800): `SizedBox(height: 400, child: DualPlayerListPanel(...))` because `Expanded` cannot live inside a `SingleChildScrollView`.
 >   - Reference: `monster_mash_menu_screen.dart` line 715 — `Expanded(child: DualPlayerListPanel(...))`.
+> - **DualPlayerListPanel alignment + spacing — MUST match the options-row exactly** (recurring miss across builds — Carnival Derby, Reef Royale, Clockwork Quest, Lunar Lander, Pirate's Grid, AND Gladiator Arena all shipped with this wrong on first cycle and required a polish pass). The two list panes must visually align with the option boxes above them: the AVAILABLE pane's left edge = the left option box's left edge, the SELECTED pane's right edge = the right option box's right edge, and the gap between the two panes = the gap between the two option boxes in a row.
+>
+>   The `DualPlayerListPanelConfig` has THREE knobs that control this:
+>   - `availableContainerMargin` (defaults to `EdgeInsets.only(left: 16.0)`)
+>   - `selectedContainerMargin` (defaults to `EdgeInsets.only(right: 16.0)`)
+>   - `listGap` (defaults to `16`)
+>
+>   **The defaults are wrong for the canonical menu layout.** Every game's factory MUST explicitly override:
+>   ```dart
+>   availableContainerMargin: EdgeInsets.zero,
+>   selectedContainerMargin: EdgeInsets.zero,
+>   listGap: 4,  // ← NOT the same as the SizedBox(width: N) in the options row — see below
+>   ```
+>
+>   **CRITICAL — `listGap` value is COUNTERINTUITIVE.** The instinct is to make `listGap` equal to the `SizedBox(width: N)` between the option boxes (e.g. `8` if options use `SizedBox(width: 8)`). **THAT IS WRONG.** Using `listGap: 8` produces a VISIBLY WIDER gap between the panes than between the options because the SHARED `dual_player_list_panel.dart` widget hardcodes `padding: EdgeInsets.all(16.0)` inside each section (lines 89 + 212). That 16px inner padding pushes the list content (player tiles) 16px in from each pane's visible border, while options-row content typically only has 12-16px horizontal padding inside its boxes. The net visual gap between PANES (including the 16+16 inner padding) is much wider than the visual gap between OPTIONS at the same `listGap == option-row-SizedBox` value. Empirically, `listGap: 4` (HALF of the options-row SizedBox value) compensates for this and makes the visible BOX-to-BOX gap appear to match.
+>
+>   **Recommended option-box internal padding:** `EdgeInsets.symmetric(horizontal: 16, vertical: 8)` to match the panes' inner 16px horizontal padding. With both at 16px horizontal, the option-content x-positions and player-tile x-positions visually align (the option labels/controls sit at the same indent inside the option box as the player tiles do inside the pane). Combined with `listGap: 4`, this produces a visually balanced layout.
+>
+>   **Recipe (apply EXACTLY in the new game's factory + menu screen):**
+>   - In `DualPlayerListPanelConfig.[gameName]()`:
+>     ```dart
+>     availableContainerMargin: EdgeInsets.zero,
+>     selectedContainerMargin: EdgeInsets.zero,
+>     listGap: 4,
+>     ```
+>   - In the menu's `_buildTargetScoreBox()` and `_buildToggleBox()`:
+>     ```dart
+>     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+>     ```
+>   - In the settings row's `Row` between option boxes:
+>     ```dart
+>     const SizedBox(width: 8),  // visible options-row gap
+>     ```
+>
+>   Why these specific values: the SHARED widget's hardcoded `EdgeInsets.all(16)` is the constant that drives everything else. Until the shared widget is updated to expose a `sectionPadding` config knob, every game must work around it via the smaller `listGap`. If you need a different visual gap, scale `listGap` proportionally — but document it in your factory with a comment explaining the perceived-vs-actual distinction.
+>
+>   **AR-4 audit (mandatory grep):**
+>   ```
+>   grep -nA1 '[GAME_NAME_PASCAL]\b\|gladiatorArena\b' \
+>     lib/widgets/player_list_panel/dual_player_list_panel_config.dart \
+>     | grep -E 'availableContainerMargin|selectedContainerMargin|listGap'
+>   ```
+>   Must show: `availableContainerMargin: EdgeInsets.zero`, `selectedContainerMargin: EdgeInsets.zero`, `listGap: 4` (NOT 8 — see counterintuitive note above). Then visually compare the screenshot at the menu_4_players_ready or menu_default state — the gap between AVAILABLE/SELECTED panes should look EQUAL to the gap between TARGET SCORE/DOUBLE FINISH boxes, and the player tiles' left edge should align with the option labels' left edge.
 > - **Generic avatars only on player TILE — do NOT assign game character images to player tile avatars**
 > - All settings from the Options section with correct controls bound to provider state. **Option boxes MUST have IDENTICAL heights** regardless of control type (slider/toggle/dropdown). Use a fixed `min-height` so visual rhythm stays consistent across the settings row.
 > - Add Player Dialog integration

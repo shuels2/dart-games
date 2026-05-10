@@ -342,7 +342,11 @@ class DartboardConnectionInfoConfig {
       backgroundOpacity: 0.95,
       emulatorBorderColor: const Color(0xFFCD7F32), // Bronze
       hardwareBorderColor: const Color(0xFFDAA520), // Gladiator Gold
-      nameTextStyle: GoogleFonts.cinzel(
+      // Lato (mixed-case) matches every other game's dartboard-name styling.
+      // Cinzel renders lowercase as capital letterforms (Roman-inscription
+      // font), which made the dartboard name appear upcased — inconsistent
+      // with the other 7 games' connection widgets.
+      nameTextStyle: GoogleFonts.lato(
         fontSize: 12,
         fontWeight: FontWeight.bold,
         height: 1.0,

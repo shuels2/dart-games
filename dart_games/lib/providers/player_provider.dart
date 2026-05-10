@@ -209,6 +209,59 @@ class PlayerProvider extends ChangeNotifier {
     }
   }
 
+  /// Persist a list of pre-existing GameHistoryEntries to the server for a
+  /// given player. Used by the "Load Test Data" feature to seed games_played
+  /// and games_won on player records that have a populated `gameHistory`
+  /// list. Each entry's `metadata.won` flag drives whether `games_won` is
+  /// incremented server-side.
+  ///
+  /// Does NOT update local state — callers should call [loadPlayers] after
+  /// to refresh from the server.
+  Future<void> seedPlayerHistory(
+      String playerId, List<GameHistoryEntry> history) async {
+    if (history.isEmpty) return;
+    final entries = history.map((h) => {
+          'playerId': playerId,
+          'gameName': h.gameName,
+          'timestamp': h.timestamp.toIso8601String(),
+          'durationMs': h.duration.inMilliseconds,
+          'metadata': h.metadata ?? <String, dynamic>{},
+          'dartThrows': h.dartThrows,
+          'turns': h.turns,
+          'playerCount': h.playerCount,
+        }).toList();
+    try {
+      await _api.batchAddPlayerHistory(entries);
+    } catch (e) {
+      print('seedPlayerHistory: failed for $playerId: $e');
+      // Best-effort — caller will refresh via loadPlayers anyway.
+    }
+  }
+
+  /// Bulk-delete every saved game on the server. Used by the System
+  /// Settings "Clear All Data" flow. Saved games are NOT cascaded by
+  /// player delete (the saved_games table stores player NAMES, not ids,
+  /// and has no FK to players), so this must be called explicitly.
+  Future<void> deleteAllSavedGames() async {
+    try {
+      await _api.deleteAllSavedGames();
+    } catch (e) {
+      print('deleteAllSavedGames failed: $e');
+    }
+  }
+
+  /// Bulk-delete every failed_stats row on the server. Used by the
+  /// System Settings "Clear All Data" flow. failed_stats has no FK to
+  /// players, so its rows persist after player delete unless we wipe
+  /// them explicitly.
+  Future<void> deleteAllFailedStats() async {
+    try {
+      await _api.deleteAllFailedStats();
+    } catch (e) {
+      print('deleteAllFailedStats failed: $e');
+    }
+  }
+
   // Delete a player
   Future<void> deletePlayer(String id) async {
     try {

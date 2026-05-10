@@ -211,7 +211,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
             title: Text(
               'GLADIATOR ARENA GAME SETUP',
               style: GoogleFonts.cinzel(
-                fontSize: 20,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: _kMarbleWhite,
                 letterSpacing: 1.5,
@@ -339,7 +339,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
             Text(
               'HOW TO PLAY',
               style: GoogleFonts.cinzel(
-                fontSize: 22,
+                fontSize: 30,
                 fontWeight: FontWeight.bold,
                 color: _kGladiatorGold,
                 letterSpacing: 1.5,
@@ -351,20 +351,45 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
               'but beware — land on an opponent\'s exact score and you\'ll knock them '
               'off their podium back to zero!',
               style: GoogleFonts.lato(
-                fontSize: 16,
+                fontSize: 20,
                 color: _kMarbleWhite,
                 height: 1.5,
               ),
             ),
             const SizedBox(height: 16),
             _buildStep('1', 'Throw darts to score Glory Points and race to the target.'),
-            _buildStep('2', 'If your score EXACTLY matches an opponent\'s score, THEY get reset to zero!'),
-            _buildStep('3', 'First to reach the target score wins! (Double Finish = last dart must be a double)'),
+            _buildStep(
+                '2',
+                'Keep your opponents at bay. If your score at the end of a turn '
+                "EXACTLY matches an opponents score, they are knocked off the "
+                'podium and reset to 0 points.'),
+            _buildStep('3', 'First to reach the target score wins!'),
+            const SizedBox(height: 16),
+            Text(
+              'OPTIONS:',
+              style: GoogleFonts.cinzel(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: _kGladiatorGold,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildOptionBullet(
+                'Double Finish',
+                'If Double Finish is on, your last dart to win must be a double '
+                'or your score is reset to the start of your turn.'),
+            _buildOptionBullet(
+                'Shield Round',
+                'Every 5th round you cannot knock an opponent off their podium.'),
+            _buildOptionBullet(
+                'Speed Play',
+                'Keep the game moving with a 25 second turn clock.'),
             const SizedBox(height: 16),
             Text(
               'BEGINNER TIPS:',
               style: GoogleFonts.cinzel(
-                fontSize: 16,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: _kGladiatorGold,
                 letterSpacing: 1.0,
@@ -389,13 +414,13 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
         children: [
           Text('$number. ',
               style: GoogleFonts.cinzel(
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: _kGladiatorGold)),
           Expanded(
             child: Text(text,
                 style: GoogleFonts.lato(
-                    fontSize: 16, color: _kMarbleWhite, height: 1.4)),
+                    fontSize: 20, color: _kMarbleWhite, height: 1.4)),
           ),
         ],
       ),
@@ -410,13 +435,51 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
         children: [
           Text('• ',
               style: GoogleFonts.lato(
-                  fontSize: 16, color: _kBronze)),
+                  fontSize: 20, color: _kBronze)),
           Expanded(
             child: Text(text,
                 style: GoogleFonts.lato(
-                    fontSize: 16,
+                    fontSize: 20,
                     color: _kMarbleWhite.withOpacity(0.85),
                     height: 1.4)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Bullet with a bold "Name:" prefix followed by a normal description.
+  /// Used in the OPTIONS section so the option names stand out.
+  Widget _buildOptionBullet(String name, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('• ',
+              style: GoogleFonts.lato(
+                  fontSize: 20, color: _kBronze)),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                style: GoogleFonts.lato(
+                    fontSize: 20,
+                    color: _kMarbleWhite.withOpacity(0.85),
+                    height: 1.4),
+                children: [
+                  TextSpan(
+                    text: '$name:',
+                    style: GoogleFonts.lato(
+                      fontSize: 20,
+                      color: _kMarbleWhite,
+                      fontWeight: FontWeight.bold,
+                      height: 1.4,
+                    ),
+                  ),
+                  TextSpan(text: ' $description'),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -502,6 +565,10 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kBronze,
                 foregroundColor: _kMarbleWhite,
+                // Tighter padding so the larger text fits inside the
+                // fixed 56px button height (default vertical padding
+                // would push 26pt text outside the box).
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: const BorderSide(color: _kGladiatorGold, width: 1.5),
@@ -511,7 +578,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
               child: Text(
                 'ENTER THE ARENA!',
                 style: GoogleFonts.cinzel(
-                  fontSize: 22,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: _kMarbleWhite,
                   letterSpacing: 1.5,
@@ -531,7 +598,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
 
   Widget _buildTargetScoreBox() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: _kArenaSand.withOpacity(0.9),
         borderRadius: BorderRadius.circular(8),
@@ -539,31 +606,38 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
       ),
       child: Row(
         children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Target Score',
-                  style: GoogleFonts.cinzel(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: _kDarkArena)),
-              Text(
-                '${_targetScore.toInt()}',
-                key: GladiatorArenaMenuKeys.targetScoreValue,
-                style: GoogleFonts.cinzel(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: _kImperialPurple),
-              ),
-            ],
+          // Target Score label + value on a single horizontal line
+          Text('Target Score:',
+              style: GoogleFonts.cinzel(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                  color: _kDarkArena)),
+          const SizedBox(width: 8),
+          Text(
+            '${_targetScore.toInt()}',
+            key: GladiatorArenaMenuKeys.targetScoreValue,
+            style: GoogleFonts.cinzel(
+                fontSize: 19,
+                fontWeight: FontWeight.bold,
+                color: _kImperialPurple),
           ),
+          // Gap between the target-score number and the slider's left edge —
+          // the previous SliderTheme(noOverlay) + Slider(padding: zero) tweak
+          // pushed the slider track flush against the value text.
+          const SizedBox(width: 16),
           Expanded(
             child: SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 activeTrackColor: _kImperialPurple,
                 inactiveTrackColor: _kBronze.withOpacity(0.4),
                 thumbColor: _kGladiatorGold,
+                // Tighter overlay/thumb so the visible track extends closer
+                // to the slider's right edge — aligns the track end with
+                // the toggle boxes' "On" label x-position.
+                overlayShape: SliderComponentShape.noOverlay,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                trackShape: const RectangularSliderTrackShape(),
+                trackHeight: 4,
               ),
               child: Slider(
                 key: GladiatorArenaMenuKeys.targetScoreSlider,
@@ -572,6 +646,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
                 max: 500,
                 divisions: 16, // (500-100)/25 = 16 stops
                 label: '${_targetScore.toInt()}',
+                padding: EdgeInsets.zero,
                 onChanged: (value) {
                   setState(() => _targetScore =
                       (value / 25).round() * 25.0);
@@ -592,7 +667,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
     required ValueChanged<bool> onChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: _kArenaSand.withOpacity(0.9),
         borderRadius: BorderRadius.circular(8),
@@ -608,7 +683,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
             child: Text(
               label,
               style: GoogleFonts.cinzel(
-                fontSize: 13,
+                fontSize: 19,
                 fontWeight: FontWeight.bold,
                 color: _kDarkArena,
               ),
@@ -620,7 +695,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
             children: [
               Text('Off',
                   style: GoogleFonts.lato(
-                      fontSize: 12,
+                      fontSize: 18,
                       fontWeight:
                           !value ? FontWeight.bold : FontWeight.normal,
                       color: !value ? _kDarkArena : _kColosseumGray)),
@@ -635,7 +710,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
               ),
               Text('On',
                   style: GoogleFonts.lato(
-                      fontSize: 12,
+                      fontSize: 18,
                       fontWeight:
                           value ? FontWeight.bold : FontWeight.normal,
                       color: value ? _kImperialPurple : _kColosseumGray)),

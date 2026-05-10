@@ -229,6 +229,12 @@ class ApiClient {
     await _delete('/api/v1/games/type/$gameType');
   }
 
+  /// DELETE /api/v1/games - Delete EVERY saved game (no type filter).
+  /// Used by the System Settings "Clear All Data" flow.
+  Future<void> deleteAllSavedGames() async {
+    await _delete('/api/v1/games');
+  }
+
   // ---------------------------------------------------------------------------
   // Victory Music
   // ---------------------------------------------------------------------------
@@ -300,6 +306,14 @@ class ApiClient {
   /// POST /api/v1/stats/failed - Log a failed stats update.
   Future<void> logFailedStats(Map<String, dynamic> entry) async {
     await _post('/api/v1/stats/failed', entry);
+  }
+
+  /// DELETE /api/v1/stats/failed - Clear EVERY failed-stats entry.
+  /// Used by the System Settings "Clear All Data" flow. Note: failed_stats
+  /// rows are NOT cascaded by player delete (no FK constraint), so this
+  /// must be called explicitly to fully wipe player-related data.
+  Future<void> deleteAllFailedStats() async {
+    await _delete('/api/v1/stats/failed');
   }
 
   // ---------------------------------------------------------------------------

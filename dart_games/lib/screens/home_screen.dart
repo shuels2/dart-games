@@ -484,12 +484,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       }
 
+                      // Natural fit per the screen width (NOT clamped to
+                      // games.length). With 2 games on a wide screen this
+                      // stays at e.g. 5 — so the single row of 2 is treated
+                      // as a partial row (left-justified with minSpacing)
+                      // rather than being stretched to fill the row width.
                       int itemsPerRow = ((availableWidth + minSpacing) / (tileWidth + minSpacing)).floor();
-                      itemsPerRow = itemsPerRow.clamp(1, games.length);
-
-                      final justifiedSpacing = itemsPerRow > 1
-                          ? (availableWidth - (itemsPerRow * tileWidth)) / (itemsPerRow - 1)
-                          : 0.0;
+                      if (itemsPerRow < 1) itemsPerRow = 1;
 
                       final rows = <List<Map<String, dynamic>>>[];
                       for (var i = 0; i < games.length; i += itemsPerRow) {
@@ -502,13 +503,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
                               if (rowIndex > 0) const SizedBox(height: 12),
                               Row(
+                                // Full row → fully justify via spaceBetween.
+                                // Partial row (last row with < itemsPerRow
+                                // tiles) → left-justify with minSpacing
+                                // between tiles instead of the wider
+                                // justifiedSpacing, so 2 tiles on a wide
+                                // screen look compact, not stretched.
                                 mainAxisAlignment: rows[rowIndex].length == itemsPerRow
                                     ? MainAxisAlignment.spaceBetween
                                     : MainAxisAlignment.start,
                                 children: [
                                   for (var i = 0; i < rows[rowIndex].length; i++) ...[
                                     if (i > 0 && rows[rowIndex].length < itemsPerRow)
-                                      SizedBox(width: justifiedSpacing),
+                                      const SizedBox(width: minSpacing),
                                     SizedBox(
                                       width: tileWidth,
                                       height: 400,

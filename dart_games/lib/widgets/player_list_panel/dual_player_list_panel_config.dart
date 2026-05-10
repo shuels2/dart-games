@@ -350,7 +350,7 @@ class DualPlayerListPanelConfig {
       containerBorderColor: const Color(0xFFCD7F32).withOpacity(0.5), // Bronze
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.cinzel(
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: FontWeight.bold,
         color: const Color(0xFFDAA520), // Gladiator Gold
         letterSpacing: 1.0,
@@ -396,7 +396,15 @@ class DualPlayerListPanelConfig {
       maxPlayers: 8,
       availableContainerMargin: EdgeInsets.zero,
       selectedContainerMargin: EdgeInsets.zero,
-      listGap: 8,
+      // listGap deliberately set to 4 (not 8) to compensate for the
+      // hardcoded EdgeInsets.all(16.0) inside each section in the SHARED
+      // widget — that 16px inner padding makes the visible "gap" between
+      // the two lists' content (player tiles) appear wider than the
+      // 8px gap between the options-row option boxes (which now use
+      // EdgeInsets.symmetric(horizontal: 16, vertical: 8)). Keeping
+      // listGap at 4 brings the visible BOX-to-BOX gap closer to what
+      // the user perceives as matching the options-row gap.
+      listGap: 4,
       addPlayerDialogConfig: AddPlayerDialogConfig.gladiatorArena(),
     );
   }
