@@ -1135,11 +1135,11 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         // Podium bar — rendered as a marble Roman column with vertical
         // fluting and cylindrical shading. Active players get an Imperial
         // Purple wash over the marble; inactive players a subtle Colosseum
-        // Gray wash. Pillar width is anchored to charSize × 0.9 so the
+        // Gray wash. Pillar width is anchored to charSize × 0.945 so the
         // column reads as a slightly-narrower plinth under the character.
         AnimatedContainer(
           duration: const Duration(milliseconds: 400),
-          width: charSize * 0.9,
+          width: charSize * 0.945,
           height: barHeight,
           child: ClipRRect(
             borderRadius:
