@@ -253,20 +253,24 @@ If any check fails, STOP and surface to the user. Do not proceed.
 > You are completing Phase 1 (Asset Setup) for the **[GAME_NAME_DISPLAY]** game build in the Dart Games Flutter project.
 >
 > **Read first:**
-> - Spec file: `[SPEC_PATH]` — focus on the "Asset Checklist" section (Section [N]) and "Development Workflow" (Section [M]) per the section map below.
+> - Spec file: `[SPEC_PATH]` — focus on the "Asset Checklist" section (Section [N]) and "Development Workflow" (Section [M]) per the section map below. The Asset Checklist MUST have BOTH a "Source File" column (where the user dropped the raw asset, typically under `C:\Users\steve\Downloads\<GameName>\...`) AND a "File Path" column (canonical target path under `assets/games/[GAME_NAME_SNAKE]/...` with the project's `[GameName]-[Element].ext` PascalCase convention). The skill auto-copies + renames from Source → File Path; the user does NOT pre-stage assets in the project tree.
 > - Section map (from Phase 0): [PASTE SECTION MAP TABLE]
-> - `docs/development/asset-organization.md` — pay attention to the filename convention `[GameName]-[Element]-[Variant].ext` (lowercase, hyphens, prefixed with game name).
+> - `docs/development/asset-organization.md` — pay attention to the filename convention `[GameName]-[Element]-[Variant].ext` (PascalCase, hyphens between game name and element, prefixed with game name).
 >
 > **Tasks (in order):**
 > 1. Run `git branch --show-current`. If not on `[BRANCH_NAME]`:
 >    - If the branch exists: `git checkout [BRANCH_NAME]`
 >    - Otherwise: `git checkout -b [BRANCH_NAME]`
-> 2. Verify the asset folder structure exists under `assets/games/[GAME_NAME_SNAKE]/` with subdirectories required by the spec (typically `icons/`, `images/`, `characters/`, `sounds/`).
-> 3. **Verify the home-screen card icon exists** at the path the spec specifies (typically `assets/games/[GAME_NAME_SNAKE]/icons/icon.png` per `docs/development/adding-games.md`). This will be referenced by the home_screen.dart card in Phase 4.
-> 4. For every asset listed in the spec's Asset Checklist, build a table:
->    | Asset (spec) | Expected path | Filename convention OK? | PRESENT / MISSING |
->    Filename convention: `[GameName]-[Element]-[Variant].ext`, lowercase with hyphens, no spaces, prefixed with the game name (per `docs/development/asset-organization.md`).
-> 5. If ANY asset is MISSING or has a non-conforming filename, do NOT continue. Report the issue and STOP — assets are user-provided and renaming requires user approval.
+> 2. Create the asset folder structure under `assets/games/[GAME_NAME_SNAKE]/` (use `mkdir -p`). Include every subdirectory the spec's Asset Checklist references (typically `icons/`, `images/`, `characters/`, `sounds/`) — create them ALL up front, even if some asset types are absent.
+> 3. **Auto-copy + rename every asset** from the spec's Asset Checklist Source File column → File Path column. For each row:
+>    - If the **target File Path already exists**, skip (idempotent re-run safety) — log "SKIP (already in place): <target>".
+>    - Else if the **Source File exists**, copy with renaming via `cp "<source>" "<target>"`. Create any missing intermediate directories. Log "COPY: <source> → <target>".
+>    - Else (both missing) — STOP immediately, do NOT proceed. Report the missing asset(s) to the orchestrator: list every row where neither source nor target exists. The user must place the source files at the spec's listed Source paths before re-running.
+>    - The renaming is mechanical and unconditional — the spec's File Path column IS the canonical target. Do NOT prompt the user before renaming; the spec's File Path column is the authority.
+> 4. **Verify the home-screen card icon is now at the expected target path** (typically `assets/games/[GAME_NAME_SNAKE]/icons/[GameName]-Icon.png` per the spec's Asset Checklist + `docs/development/adding-games.md`). This will be referenced by the home_screen.dart card in Phase 4.
+> 5. For every asset listed in the spec's Asset Checklist, build a verification table AFTER the copy pass:
+>    | Asset (spec) | Source path | Target path | Filename convention OK? | PRESENT (post-copy)? |
+>    Filename convention: `[GameName]-[Element]-[Variant].ext`, PascalCase, hyphens between game name and element, no spaces, prefixed with the game name. Every row's "PRESENT (post-copy)?" column MUST be YES; if any is NO, dispatch the copy logic again or stop and surface to the orchestrator.
 > 6. Read `pubspec.yaml`. If the game's asset directories are not listed under `flutter.assets`, add them in alphabetical order with the existing games.
 > 7. Run `flutter pub get` and confirm exit code 0.
 > 8. **Write the asset path manifest** at `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md`. This is consumed by Phase 2 (wireframes) and Phase 3 (model `assetPath` getter). Format:
@@ -289,8 +293,9 @@ If any check fails, STOP and surface to the user. Do not proceed.
 >    Phase 3 sub-agent reads this file to populate the model's `assetPath` getter using the renamed paths, NOT the spec's original (potentially pre-rename) names.
 >
 > **Report back:**
-> - The asset table from step 4 (paths, naming, present/missing)
-> - Confirmation the home-screen icon is at the expected path
+> - The copy-pass log from step 3 (each row: COPY / SKIP / FAIL)
+> - The verification table from step 5 (paths, naming, present-post-copy)
+> - Confirmation the home-screen icon is at the expected target path
 > - The diff applied to `pubspec.yaml` (or "no changes needed")
 > - The output of `flutter pub get`
 > - Confirmation that `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md` was written
@@ -298,10 +303,11 @@ If any check fails, STOP and surface to the user. Do not proceed.
 >
 > **Hard rules — Do NOT:**
 > - Commit to master/main. Do NOT push to remote. All work stays on `[BRANCH_NAME]`.
-> - Modify any files outside `pubspec.yaml`
-> - Create any placeholder asset files
-> - Rename mis-named assets without first reporting and waiting for orchestrator instruction
+> - Modify any files outside `pubspec.yaml` and the new `assets/games/[GAME_NAME_SNAKE]/` tree (the asset copies and the directories required for them are the ONLY allowed creations).
+> - Create any placeholder asset files (only copy real source files from the spec's Source paths)
+> - Overwrite an asset that already exists at the target path (skip — see step 3 idempotency rule)
 > - Skip `flutter pub get`
+> - Proceed if any source AND target are both missing — STOP and surface to the orchestrator instead
 
 After the sub-agent returns, run `git status` and read the modified `pubspec.yaml` yourself to confirm.
 
@@ -2055,19 +2061,89 @@ Present the full report to the user.
 
 ### STEP 5: Run UI automation tests (Sonnet sub-agent)
 
+**CRITICAL — driver choice during build vs production:**
+
+During build (Phase 7 + Phase 8, while failure-screenshot wraps from Rule §38 are still in place), tests MUST be invoked via `flutter drive --driver=test_driver/screenshot_test.dart` per test file in foreground. This is the SAME invocation pattern the visual-validation screenshot test uses in Phase 8 STEP 1. Reasons:
+
+- The wraps' `runWithFailureScreenshot` calls write PNG bytes to `temp_screenshots/failures/` ONLY when the `screenshot_test.dart` driver's `onScreenshot` callback is registered. The standard `test_driver/integration_test.dart` driver has no `onScreenshot`, so the wraps silently no-op (no failure pixels written) under the production runner.
+- The parallel runner (`run_ui_tests_parallel.bat`) uses the production driver and additionally relies on Windows `start "Worker"` + `git worktree add` to spawn parallel workers. Those Windows-specific commands silently no-op in the orchestrator's MSYS2/Bash sandbox, so the runner returns exit 0 without actually running anything. The orchestrator therefore CANNOT use the parallel runner during the build cycle — it must invoke `flutter drive` directly per test file.
+
+The parallel runner is intended for the post-build pack (Phase 9 onward, after the wraps are removed). Until then: foreground `flutter drive` per file is the only way to actually exercise the tests AND get failure pixels.
+
+**Foreground invocation pattern (canonical):**
+
+```bash
+# Reset state ONCE per category before invoking
+taskkill /F /IM chromedriver.exe 2>&1 || true
+taskkill /F /FI "WINDOWTITLE eq Dart Games*" 2>&1 || true
+for /d %D in ("%LOCALAPPDATA%\Temp\flutter_tools.*") do rmdir /S /Q "%D" 2>&1
+rm -rf temp_screenshots/failures/*
+
+# Start backend server in background (port 9008 for gladiator_arena per
+# docs/testing/ui-automation.md port table)
+cd server && dart run bin/server.dart --port 9008 --data-dir ../ui_test_data &
+
+# Start chromedriver in background (port 4444 — flutter drive default)
+chromedriver/chromedriver-win64/chromedriver.exe --port=4444 &
+
+# Run each test file individually (sub-agent loops through every *.dart in
+# integration_test/[GAME_NAME_SNAKE]/<subdir>/ except _helpers.dart)
+flutter drive \
+  --driver=test_driver/screenshot_test.dart \
+  --target=integration_test/[GAME_NAME_SNAKE]/<subdir>/<test_file>.dart \
+  -d chrome \
+  --dart-define=SERVER_PORT=9008 \
+  --web-browser-flag=--start-maximized \
+  --browser-dimension=1920x1080 \
+  --web-browser-flag=--no-restore-last-session
+```
+
 **Sub-agent prompt template:**
 
-> Run the UI automation tests for the **[GAME_NAME_DISPLAY]** game and report results.
+> Run the UI automation tests for the **[GAME_NAME_DISPLAY]** game and report results. Use the FOREGROUND `flutter drive` per-file invocation pattern (NOT the parallel runner — see skill Phase 8 STEP 5 driver-choice note for why).
 >
-> Run: `./run_ui_tests.bat [GAME_NAME_SNAKE]`
+> **Pre-flight:**
+> 1. `taskkill /F /IM chromedriver.exe 2>&1 || true`
+> 2. `taskkill /F /FI "WINDOWTITLE eq Dart Games*" 2>&1 || true`
+> 3. Wipe `%LOCALAPPDATA%\Temp\flutter_tools.*`
+> 4. Clear `temp_screenshots/failures/`
+> 5. Start backend server background: `cd server && dart run bin/server.dart --port 9008 --data-dir ../ui_test_data`
+> 6. Start chromedriver background on port 4444
 >
-> Report back:
-> - Total tests run, broken down by subdirectory (add_player, edit_score, gameplay, menu_and_settings, navigation, play_to_complete, results, save_resume)
-> - Pass/fail count
-> - Full failure output for any failing tests (test name + error message + relevant stack trace)
+> **Test loop:**
+> For each subdirectory in `integration_test/[GAME_NAME_SNAKE]/` (in skill-mandated order: visual_validation, menu_and_settings, add_player, navigation, gameplay, pause_modal, results_screen, save_resume, edit_score, play_to_complete), for each `*_test.dart` file (skip `_helpers.dart`):
+>
+> ```
+> flutter drive \
+>   --driver=test_driver/screenshot_test.dart \
+>   --target=integration_test/[GAME_NAME_SNAKE]/<subdir>/<test>.dart \
+>   -d chrome --dart-define=SERVER_PORT=9008 \
+>   --web-browser-flag=--start-maximized --browser-dimension=1920x1080 \
+>   --web-browser-flag=--no-restore-last-session
+> ```
+>
+> Capture exit code + look for "All tests passed!" / "Some tests failed:" / "Failure Details:" in output.
+>
+> **For each failing test:**
+> - Note the test file path
+> - Read the failure stack trace from flutter drive output
+> - List any failure screenshots in `temp_screenshots/failures/` (path + size)
+>
+> **Hung-process safety:** if a single `flutter drive` invocation runs longer than 5 minutes, KILL it (taskkill chromedriver + close test windows) and mark the test FAILED with a "TIMEOUT" reason.
+>
+> **Tear down:** kill chromedriver, kill backend server.
+>
+> **Report back:**
+> - Total tests attempted
+> - Pass/fail count broken down by subdirectory
+> - For each failure: test path + error message excerpt + failure screenshot path (if captured)
 > - Total runtime
 >
-> Do NOT attempt to fix failing tests — only report them.
+> **Hard rules:**
+> - Do NOT attempt to fix failing tests — only report them. Orchestrator triages root causes.
+> - Do NOT use the parallel runner.
+> - Do NOT skip individual tests. Every test must be attempted.
+> - Do NOT kill chrome.exe globally — only chromedriver.exe and test windows by title.
 
 If chromedriver is not available or tests cannot run:
 - Orchestrator STOPs immediately.
