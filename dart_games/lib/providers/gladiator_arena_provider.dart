@@ -179,10 +179,13 @@ class GladiatorArenaProvider extends ChangeNotifier {
     game.currentTurnDartValues[playerId]!.add(dartValue);
     game.currentTurnDartSegments[playerId]!.add(sector);
 
-    // 4. Check if 3 darts have been thrown
-    if ((game.dartsThrown[playerId] ?? 0) >= 3) {
-      _processTurnEnd(playerId, isLastDart: true);
-    }
+    // 4. Per-dart evaluation: a dart can win or bust the turn at any point —
+    //    matches the pattern used by Lunar Lander, Carnival Derby, etc.
+    //    `isLastDart` only controls whether a non-winning, non-busting turn
+    //    commits its accumulated score (which still happens after dart 3,
+    //    skipTurn, or the speed-play timer expiring).
+    final dartsThrown = game.dartsThrown[playerId] ?? 0;
+    _processTurnEnd(playerId, isLastDart: dartsThrown >= 3);
 
     notifyListeners();
   }
@@ -209,11 +212,17 @@ class GladiatorArenaProvider extends ChangeNotifier {
 
   // ─── _processTurnEnd ──────────────────────────────────────────────────────────
 
-  /// Evaluates victory/bust conditions at turn end and runs knockoff check.
-  /// Called after 3 darts are thrown OR from skipTurn/onSpeedPlayTimerExpired.
+  /// Evaluates victory / bust / advance conditions per dart.
+  ///
+  /// Called after EVERY dart (per-dart evaluation, matching the pattern used
+  /// by Lunar Lander, Carnival Derby, etc.) and from skipTurn /
+  /// onSpeedPlayTimerExpired. A dart can:
+  ///   - Win the game immediately (commit score, trigger win, end turn)
+  ///   - Bust the turn immediately (revert / no commit, end turn)
+  ///   - Continue (no state change until [isLastDart] is true, at which
+  ///     point the accumulated turn total commits and the next player gets
+  ///     the takeout prompt).
   void _processTurnEnd(String playerId, {required bool isLastDart}) {
-    if (!isLastDart) return;
-
     final game = _currentGame!;
     final currentScore = game.scores[playerId] ?? 0;
     final turnTotal = (game.currentTurnDartValues[playerId] ?? [])
@@ -223,46 +232,52 @@ class GladiatorArenaProvider extends ChangeNotifier {
     if (game.doubleFinishEnabled) {
       // --- Double Finish ON path ---
       if (prospective > game.targetScore) {
-        // BUST: overshoot — score unchanged
-        // dartsThrown stays at 3 to trigger takeout
+        // BUST: overshoot at any point — score stays at preTurnScore.
+        // Forfeit remaining darts so takeout fires immediately.
+        game.dartsThrown[playerId] = 3;
         _waitingForTakeout = true;
         return;
       }
       if (prospective == game.targetScore) {
-        // Must finish on a double
+        // Hit target exactly — must be on a double for the win.
         final segments = game.currentTurnDartSegments[playerId] ?? [];
         final lastSegment = segments.isNotEmpty ? segments.last : '';
         final isDouble = lastSegment.startsWith('D');
         if (isDouble) {
           // VICTORY!
+          game.scores[playerId] = game.targetScore;
           _triggerWin(playerId);
-          _waitingForTakeout = true;
-          return;
-        } else {
-          // BUST: reached target but not on a double
-          // score unchanged, advance turn
+          game.dartsThrown[playerId] = 3;
           _waitingForTakeout = true;
           return;
         }
-      }
-      // prospective < targetScore — normal score update
-      game.scores[playerId] = prospective;
-      _runKnockoffCheck(playerId);
-    } else {
-      // --- Double Finish OFF path ---
-      if (prospective >= game.targetScore) {
-        // VICTORY: any dart reaching or exceeding target wins
-        game.scores[playerId] = game.targetScore; // cap at target for display
-        _triggerWin(playerId);
+        // BUST: reached target but not on a double — forfeit remaining darts.
+        game.dartsThrown[playerId] = 3;
         _waitingForTakeout = true;
         return;
       }
-      // Normal score update
-      game.scores[playerId] = prospective;
-      _runKnockoffCheck(playerId);
+      // prospective < targetScore — only commit at turn end
+      if (isLastDart) {
+        game.scores[playerId] = prospective;
+        _runKnockoffCheck(playerId);
+        _waitingForTakeout = true;
+      }
+    } else {
+      // --- Double Finish OFF path ---
+      if (prospective >= game.targetScore) {
+        // VICTORY at any dart that reaches or exceeds target.
+        game.scores[playerId] = game.targetScore; // cap at target for display
+        _triggerWin(playerId);
+        game.dartsThrown[playerId] = 3;
+        _waitingForTakeout = true;
+        return;
+      }
+      if (isLastDart) {
+        game.scores[playerId] = prospective;
+        _runKnockoffCheck(playerId);
+        _waitingForTakeout = true;
+      }
     }
-
-    _waitingForTakeout = true;
   }
 
   // ─── _triggerWin ─────────────────────────────────────────────────────────────

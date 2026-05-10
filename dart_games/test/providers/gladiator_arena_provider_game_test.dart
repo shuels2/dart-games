@@ -290,20 +290,18 @@ void main() {
     });
 
     test('3.6 processDartThrow no-ops when state=finished', () {
-      // Win detection in DF OFF happens at turn end (after 3 darts).
-      // Win the game, then verify a 4th throw is no-op.
+      // Per-dart win evaluation: dart 1 ends the game on a winning total.
+      // Subsequent throws must be no-ops once state=finished.
       final p = _makeProvider(targetScore: 200, doubleFinishEnabled: false);
       _forcePlayer(p, 'p1');
       p.currentGame!.scores['p1'] = 190;
-      // Throw all 3 darts; turn ends with prospective=210 ≥ 200 → VICTORY
-      _dart(p, 20, 'single', 'S20'); // dart 1: 20 → 210
-      _miss(p);                         // dart 2: 0
-      _miss(p);                         // dart 3: 0 → turn ends → WIN
+      // Dart 1: 20 → prospective 210 ≥ 200 → VICTORY immediately
+      _dart(p, 20, 'single', 'S20');
       expect(p.hasWinner, isTrue);
-      expect(p.currentGame!.totalDartsThrown['p1'], 3);
-      // 4th dart: no-op because state=finished
+      expect(p.currentGame!.totalDartsThrown['p1'], 1);
+      // Any subsequent dart: no-op because state=finished
       _dart(p, 10, 'single', 'S10');
-      expect(p.currentGame!.totalDartsThrown['p1'], 3); // still 3
+      expect(p.currentGame!.totalDartsThrown['p1'], 1); // still 1
     });
   });
 
@@ -388,23 +386,25 @@ void main() {
       expect(p.currentGame!.scores['p1'], 180);
     });
 
-    test('4.7 DF ON: win/bust evaluation runs at turn end (not per-dart)', () {
-      // If dart 1 adds enough to reach exactly target without being a double,
-      // the turn should still continue (no per-dart evaluation)
-      // score=180, dart1=S20 → 200 exact but NOT last dart yet → no bust mid-turn
+    test('4.7 DF ON: win/bust evaluation runs per-dart (matches other games)', () {
+      // Per-dart evaluation: hitting target on a non-double busts on that
+      // dart — remaining darts are forfeited and takeout fires immediately.
+      // score=180, dart1=S20 → prospective 200, last segment 'S20' is not a
+      // double → BUST on dart 1.
       final p = _makeProvider(targetScore: 200, doubleFinishEnabled: true);
       _forcePlayer(p, 'p1');
       p.currentGame!.scores['p1'] = 180;
 
-      _dart(p, 20, 'single', 'S20'); // 200 exact (not a double) — but NOT turn end yet
-      // After dart 1: turn NOT ended, no bust/win evaluated
-      expect(p.shouldPromptTakeout, isFalse);
+      _dart(p, 20, 'single', 'S20');
+      expect(p.shouldPromptTakeout, isTrue,
+          reason: 'BUST on dart 1 ends the turn immediately');
       expect(p.hasWinner, isFalse);
-      // Throw darts 2 and 3
-      _dart(p, 1, 'single', 'S1'); // 1 → prospective 201 > 200 → BUST at turn end
-      _dart(p, 0, 'miss', 'Miss'); // 0 → prospective still 201 > 200
-      expect(p.hasWinner, isFalse);
-      expect(p.currentGame!.scores['p1'], 180); // bust → revert
+      expect(p.currentGame!.scores['p1'], 180,
+          reason: 'bust → score reverts to pre-turn value');
+      // Subsequent throws are no-ops while waitingForTakeout=true
+      _dart(p, 1, 'single', 'S1');
+      expect(p.currentGame!.totalDartsThrown['p1'], 1,
+          reason: 'extra darts after bust are no-ops');
     });
 
     test('4.8 DF ON Bull finish: score=150, miss+miss+Bull → 150+50=200, Bull starts with "B" not "D" → BUST', () {

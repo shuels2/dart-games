@@ -36,21 +36,8 @@ const _kGladiatorGold = Color(0xFFDAA520);
 const _kArenaSand = Color(0xFFD2B48C);
 const _kImperialPurple = Color(0xFF7B2D8E);
 const _kBloodRed = Color(0xFFC0392B);
-const _kBronze = Color(0xFFCD7F32);
 const _kColosseumGray = Color(0xFF8B8682);
 const _kLaurelGreen = Color(0xFF4A7C59);
-
-// Player accent colors (P1-P8)
-const _kPlayerColors = [
-  _kImperialPurple,
-  _kBronze,
-  _kLaurelGreen,
-  Color(0xFF1B4965), // Navy Blue
-  Color(0xFF8B0000), // Dark Red
-  Color(0xFF2E8B57), // Sea Green
-  Color(0xFF4B0082), // Indigo
-  Color(0xFF8B6914), // Dark Gold
-];
 
 class GladiatorArenaGameScreen extends StatefulWidget {
   const GladiatorArenaGameScreen({super.key});
@@ -457,7 +444,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     final currentPlayerName = currentPlayer?.name ?? 'Player';
 
     return PopScope(
-      canPop: _showSaveModal,
+      canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
         setState(() => _showSaveModal = true);
@@ -471,7 +458,11 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                 key: GladiatorArenaGameKeys.backButton,
                 icon: const Icon(Icons.arrow_back, color: _kMarbleWhite, size: 32),
                 onPressed: () {
-                  setState(() => _showSaveModal = true);
+                  if (hasDartsThrown) {
+                    setState(() => _showSaveModal = true);
+                  } else {
+                    Navigator.of(context).pop();
+                  }
                 },
                 hoverColor: Colors.transparent,
                 highlightColor: Colors.transparent,
@@ -493,26 +484,10 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               backgroundColor: const Color(0xFF4A3520),
               foregroundColor: _kMarbleWhite,
               actions: [
-                // Speed Play timer (conditional)
-                if (game.speedPlayEnabled)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                    child: Text(
-                      '$_speedPlaySecondsRemaining',
-                      key: GladiatorArenaGameKeys.timerDisplay,
-                      style: GoogleFonts.cinzel(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: _speedPlaySecondsRemaining <= 5
-                            ? _kBloodRed
-                            : _kMarbleWhite,
-                      ),
-                    ),
-                  ),
                 // Skip Turn button
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: OutlinedButton(
+                  child: ElevatedButton(
                     key: GladiatorArenaGameKeys.skipTurnButton,
                     onPressed: shouldPromptTakeout
                         ? null
@@ -542,15 +517,20 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                               });
                             }
                           },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: _kImperialPurple, width: 1.5),
-                      foregroundColor: _kImperialPurple,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _kImperialPurple,
+                      foregroundColor: _kMarbleWhite,
+                      disabledBackgroundColor:
+                          _kImperialPurple.withOpacity(0.4),
+                      disabledForegroundColor: _kMarbleWhite.withOpacity(0.6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      elevation: 2,
                     ),
                     child: Text(
                       'SKIP TURN',
                       style: GoogleFonts.cinzel(
-                        fontSize: 11,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -572,11 +552,12 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                   Color labelColor;
 
                   if (!hasValue) {
-                    // Empty slot
-                    slotBg = Colors.transparent;
-                    slotBorder = _kImperialPurple.withOpacity(0.5);
+                    // Empty slot — Marble White on a faint sand tint reads
+                    // clearly against the dark brown app bar.
+                    slotBg = _kArenaSand.withOpacity(0.12);
+                    slotBorder = _kMarbleWhite.withOpacity(0.85);
                     label = '—';
-                    labelColor = _kImperialPurple.withOpacity(0.5);
+                    labelColor = _kMarbleWhite;
                   } else if (segment == 'Skip' || segment == 'X') {
                     // Skipped dart
                     slotBg = _kColosseumGray.withOpacity(0.15);
@@ -622,7 +603,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                     ),
                   );
                 }),
-                const SizedBox(width: 4),
+                const SizedBox(width: 24),
                 DartboardConnectionInfo(
                   config: DartboardConnectionInfoConfig.gladiatorArena(),
                 ),
@@ -672,58 +653,58 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                           ],
                         ),
                       ),
-                    // Goal display row
+                    // Goal / Double Finish badge / Round row — centered
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 6),
-                      child: Row(
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Goal: ${game.targetScore}',
-                                key: GladiatorArenaGameKeys.goalDisplay,
-                                style: GoogleFonts.cinzel(
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.bold,
-                                  color: _kGladiatorGold,
-                                ),
-                              ),
-                              if (game.doubleFinishEnabled) ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  key: GladiatorArenaGameKeys.doubleBadge,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: _kGladiatorGold.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                        color: _kGladiatorGold, width: 1),
-                                  ),
-                                  child: Text(
-                                    '2×',
-                                    style: GoogleFonts.cinzel(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.bold,
-                                      color: _kGladiatorGold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const Spacer(),
-                          if (game.speedPlayEnabled)
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Text(
-                              'Round ${game.round}',
+                              'Goal: ${game.targetScore}',
+                              key: GladiatorArenaGameKeys.goalDisplay,
                               style: GoogleFonts.cinzel(
-                                fontSize: 14,
+                                fontSize: 23,
                                 fontWeight: FontWeight.bold,
-                                color: _kMarbleWhite,
+                                color: _kGladiatorGold,
                               ),
                             ),
-                        ],
+                            if (game.doubleFinishEnabled) ...[
+                              const SizedBox(width: 12),
+                              Container(
+                                key: GladiatorArenaGameKeys.doubleBadge,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _kGladiatorGold.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                      color: _kGladiatorGold, width: 1),
+                                ),
+                                child: Text(
+                                  'Double Finish',
+                                  style: GoogleFonts.cinzel(
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.bold,
+                                    color: _kGladiatorGold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (game.speedPlayEnabled) ...[
+                              const SizedBox(width: 12),
+                              Text(
+                                'Round ${game.round}',
+                                style: GoogleFonts.cinzel(
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.bold,
+                                  color: _kMarbleWhite,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                     // Arena Podium Display
@@ -733,8 +714,8 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                     ),
                     // Elimination Zone
                     _buildEliminationZone(game, allPlayers),
-                    // Bottom padding for emulator overlay
-                    const SizedBox(height: 120),
+                    // Bottom padding for emulator overlay (halved per design)
+                    const SizedBox(height: 60),
                   ],
                 ),
               ],
@@ -832,46 +813,50 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final playerCount = game.playerIds.length;
-        // Proportional character image size based on player count
+        // Character HEIGHT (target render height — all characters fill this
+        // same height regardless of source aspect ratio, via BoxFit.fitHeight).
         final charSize = _charSizeForCount(playerCount, constraints.maxWidth);
-        final barWidth = _barWidthForCount(playerCount, constraints.maxWidth);
+        // Character BOX WIDTH — sized for the widest expected source aspect
+        // (~1.3:1 for AquilaEagle with wings spread). With fitHeight inside
+        // this box, narrower characters center horizontally; the widest fills
+        // the box.
+        final charBoxWidth = charSize * 1.3;
+        // Podium / column width — just a little wider than the widest
+        // character box.
+        final barWidth = charBoxWidth + 16;
+
+        // Reserve vertical space above the bar for the column's other
+        // children — sized for the worst case (active player with Speed Play
+        // ON and Double Range visible) so the bar never pushes content past
+        // the available height.
+        //   Name pill           ~28  (font 18 + 4 pad + line gap)
+        //   Speed-timer pill    ~34  (font 16 + 6 pad + 2 border + 6 outer)
+        //   Double-range label  ~20  (font 12 + 4 bottom pad)
+        //   Score text          ~20  (font 14 + line gap)
+        //   Gap before bar       ~4
+        //   Buffer               ~4
+        const reservedAbove = 28.0 + 34.0 + 20.0 + 20.0 + 4.0 + 4.0;
+        final barMaxHeight =
+            (constraints.maxHeight - charSize - reservedAbove)
+                .clamp(120.0, 500.0);
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-          child: Column(
-            children: [
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: game.playerIds.asMap().entries.map<Widget>((e) {
-                    final idx = e.key;
-                    final playerId = e.value as String;
-                    return _buildPodium(
-                      game: game,
-                      playerId: playerId,
-                      playerIndex: idx,
-                      currentPlayerId: currentPlayerId,
-                      allPlayers: allPlayers,
-                      charSize: charSize,
-                      barWidth: barWidth,
-                    );
-                  }).toList(),
-                ),
-              ),
-              // Arena floor bar
-              Container(
-                height: 14,
-                decoration: const BoxDecoration(
-                  color: _kArenaSand,
-                  border: Border(
-                    top: BorderSide(color: _kBronze, width: 1.5),
-                  ),
-                ),
-              ),
-              // (Player names now appear ABOVE each character inside
-              //  _buildPodium — no separate active-name area below the floor.)
-            ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: game.playerIds.map<Widget>((id) {
+              return _buildPodium(
+                game: game,
+                playerId: id as String,
+                currentPlayerId: currentPlayerId,
+                allPlayers: allPlayers,
+                charSize: charSize,
+                charBoxWidth: charBoxWidth,
+                barWidth: barWidth,
+                barMaxHeight: barMaxHeight,
+              );
+            }).toList(),
           ),
         );
       },
@@ -879,35 +864,80 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
   }
 
   double _charSizeForCount(int count, double availableWidth) {
-    if (count <= 2) return (availableWidth / count * 0.6).clamp(100.0, 200.0);
-    if (count <= 5) return (availableWidth / count * 0.7).clamp(80.0, 140.0);
-    return (availableWidth / count * 0.75).clamp(60.0, 110.0);
+    // Per-count clamp ceilings + per-column multipliers, anchored on:
+    //   • 2-player head-to-head feel (ceiling 280)
+    //   • 4-player target (ceiling 254, +15% over the previous tweak)
+    // Counts 3 and 5–8 are calibrated so the total podium row at the clamp
+    // ceiling fills a consistent ~96% of a wide tablet/desktop screen
+    // (≈1385 px row at 1440 px width). Pillar width tracks automatically via
+    // charBoxWidth = charSize × 1.3 and barWidth = charBoxWidth + 16.
+    if (count <= 2) return (availableWidth / count * 0.42).clamp(140.0, 280.0);
+    if (count == 3) return (availableWidth / count * 0.70).clamp(135.0, 267.0);
+    if (count == 4) return (availableWidth / count * 1.00).clamp(125.0, 254.0);
+    if (count == 5) return (availableWidth / count * 0.85).clamp(105.0, 200.0);
+    if (count == 6) return (availableWidth / count * 0.85).clamp(85.0, 165.0);
+    if (count == 7) return (availableWidth / count * 0.85).clamp(70.0, 140.0);
+    return (availableWidth / count * 0.85).clamp(60.0, 121.0); // 8 players
   }
 
-  double _barWidthForCount(int count, double availableWidth) {
-    return ((availableWidth - 32) / count - 8).clamp(60.0, 150.0);
+  /// Computes the active player's displayed score, factoring in darts thrown
+  /// during the current turn. With Double Finish enabled, a prospective bust
+  /// (overshoot, or reaching target without a double) reverts to the pre-turn
+  /// base so the podium snaps back visually.
+  ///
+  /// Once the turn has ended (3 darts thrown), `game.scores` already reflects
+  /// the final outcome — including a no-update on bust — so we read it
+  /// directly to avoid double-counting the dart values still held in
+  /// `currentTurnDartValues` until takeout finishes.
+  int _liveActiveScore(dynamic game, String playerId, int base, int target) {
+    final dartsThrown = (game.dartsThrown[playerId] as int?) ?? 0;
+    if (dartsThrown >= 3) return base;
+
+    final values = (game.currentTurnDartValues[playerId] as List?) ?? const [];
+    if (values.isEmpty) return base;
+    final segments =
+        (game.currentTurnDartSegments[playerId] as List?) ?? const [];
+    final sum = values.fold<int>(0, (s, v) => s + (v as int));
+    final prospective = base + sum;
+
+    if (game.doubleFinishEnabled == true) {
+      if (prospective > target) return base;
+      if (prospective == target) {
+        final last = segments.isNotEmpty ? segments.last as String : '';
+        return last.startsWith('D') ? target : base;
+      }
+      return prospective;
+    }
+    return prospective.clamp(0, target);
   }
 
   Widget _buildPodium({
     required dynamic game,
     required String playerId,
-    required int playerIndex,
     required String currentPlayerId,
     required List<dynamic> allPlayers,
     required double charSize,
+    required double charBoxWidth,
     required double barWidth,
+    required double barMaxHeight,
   }) {
     final isActive = playerId == currentPlayerId;
     final score = game.scores[playerId] as int? ?? 0;
     final target = game.targetScore as int;
-    final progress = (score / target).clamp(0.0, 1.0);
-    final barMaxHeight = 120.0;
+
+    // Live podium height: for the active player, grow with each dart thrown
+    // this turn. If Double Finish is on and the in-progress total would bust
+    // (overshoot, or hits target on a non-double), snap back to the pre-turn
+    // score so the bar visibly resets.
+    final liveScore = isActive
+        ? _liveActiveScore(game, playerId, score, target)
+        : score;
+    final progress = (liveScore / target).clamp(0.0, 1.0);
     // Bumped min from 12 → 24 so empty bars are clearly visible at game start.
     final barHeight = (progress * barMaxHeight).clamp(24.0, barMaxHeight);
 
     final player = allPlayers.where((p) => p.id == playerId).firstOrNull;
     final playerName = player?.name ?? '';
-    final playerColor = _kPlayerColors[playerIndex % _kPlayerColors.length];
 
     // Character image path from game model
     final characterPath = game.playerCharacterPaths[playerId] as String?;
@@ -924,29 +954,45 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     // ImageFiltered (blur) + ColorFiltered(BlendMode.srcIn) applied to a copy
     // of the same Image.asset means the glow follows the alpha mask of the
     // character art — NOT a rectangular box around the bounding rect.
+    //
+    // BoxFit.fitHeight ensures every character renders at the same visual
+    // height (charSize) regardless of source aspect ratio. The enclosing
+    // SizedBox is wider than tall to accommodate the widest expected
+    // character (~1.3:1 aspect for AquilaEagle); narrower characters center
+    // horizontally inside the box.
     Widget buildCharacterImage() {
       final fallbackIcon = Icon(
         Icons.person,
         color: isActive ? _kGladiatorGold : _kMarbleWhite,
         size: charSize * 0.7,
       );
-      if (characterPath == null) return fallbackIcon;
+      if (characterPath == null) {
+        return SizedBox(
+          width: charBoxWidth,
+          height: charSize,
+          child: Center(child: fallbackIcon),
+        );
+      }
 
       final foreground = Image.asset(
         characterPath,
-        width: charSize,
-        height: charSize,
-        fit: BoxFit.contain,
+        fit: BoxFit.fitHeight,
         errorBuilder: (_, __, ___) => fallbackIcon,
       );
 
-      if (!isActive) return foreground;
+      if (!isActive) {
+        return SizedBox(
+          width: charBoxWidth,
+          height: charSize,
+          child: foreground,
+        );
+      }
 
       // Active: render a blurred Imperial Purple silhouette behind the
       // foreground at slightly larger bounds so the glow extends outward.
       final glowPad = charSize * 0.10;
       return SizedBox(
-        width: charSize,
+        width: charBoxWidth,
         height: charSize,
         child: Stack(
           clipBehavior: Clip.none,
@@ -965,7 +1011,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                       _kImperialPurple.withOpacity(0.85), BlendMode.srcIn),
                   child: Image.asset(
                     characterPath,
-                    fit: BoxFit.contain,
+                    fit: BoxFit.fitHeight,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                   ),
                 ),
@@ -984,9 +1030,11 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         children: [
           // Player name label — ABOVE the character for ALL players (active +
           // inactive). Active player's name renders in Imperial Purple to
-          // mirror the active glow; inactive players use Marble White.
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+          // mirror the active glow; inactive players use Marble White. Wrapped
+          // in a Container with horizontal padding + ellipsis truncation so
+          // names fit cleanly within the podium column (lunar-lander pattern).
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             child: Text(
               playerName,
               key: isActive
@@ -995,7 +1043,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               style: GoogleFonts.cinzel(
                 fontSize: isActive ? 18 : 16,
                 fontWeight: FontWeight.bold,
-                color: isActive ? _kImperialPurple : _kMarbleWhite,
+                color: _kMarbleWhite,
                 shadows: const [
                   Shadow(
                       color: Color(0xCC000000),
@@ -1008,6 +1056,38 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          // Speed Play timer (active player only, when Speed Play is enabled).
+          if (isActive && game.speedPlayEnabled == true)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4, top: 2),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _speedPlaySecondsRemaining <= 5
+                      ? _kBloodRed.withOpacity(0.25)
+                      : _kImperialPurple.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _speedPlaySecondsRemaining <= 5
+                        ? _kBloodRed
+                        : _kImperialPurple,
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  '$_speedPlaySecondsRemaining',
+                  key: GladiatorArenaGameKeys.timerDisplay,
+                  style: GoogleFonts.cinzel(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _speedPlaySecondsRemaining <= 5
+                        ? _kBloodRed
+                        : _kMarbleWhite,
+                  ),
+                ),
+              ),
+            ),
           // Double range indicator (active only, between name and character)
           if (showDoubleRange)
             Padding(
@@ -1028,9 +1108,9 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
             key: GladiatorArenaGameKeys.podium(playerId),
             child: buildCharacterImage(),
           ),
-          // Score
+          // Score (active player shows the live in-turn total to match bar)
           Text(
-            '$score',
+            '$liveScore',
             style: GoogleFonts.cinzel(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -1038,21 +1118,17 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
             ),
           ),
           const SizedBox(height: 2),
-          // Podium bar — active uses Gladiator Gold (distinct from other
-          // players); inactive uses the player's accent color at 0.7 opacity.
+          // Podium bar — active uses Imperial Purple to match the active
+          // player's silhouette glow; inactive uses Colosseum Gray for a
+          // uniform colosseum-stone look.
           AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             width: barWidth - 8,
             height: barHeight,
             decoration: BoxDecoration(
-              color: isActive
-                  ? _kGladiatorGold
-                  : playerColor.withOpacity(0.7),
+              color: isActive ? _kImperialPurple : _kColosseumGray,
               borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(4)),
-              border: isActive
-                  ? Border.all(color: _kImperialPurple, width: 2)
-                  : null,
             ),
           ),
         ],
@@ -1080,14 +1156,8 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
 
     return Container(
       key: GladiatorArenaGameKeys.eliminationZone,
-      height: 60,
+      height: 30,
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: _kBloodRed.withOpacity(0.15),
-        border: const Border(
-          top: BorderSide(color: _kBloodRed, width: 1),
-        ),
-      ),
       child: Center(
         child: showKnockoff
             ? Text(
