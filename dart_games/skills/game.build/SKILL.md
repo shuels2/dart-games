@@ -1689,6 +1689,47 @@ If FAIL:
 >
 > **Past failure:** Pirate's Grid shipped without difficulty-badges visual test, cell-flag-colors visual test, winning-row-glow visual test, round-tracker-text visual test, speed-play-timer-colors visual test, or round-complete-overlay visual test — six visible spec elements with zero visual assertion. `conditional_ui_test.dart` checked widget *visibility* but not *appearance*.
 >
+> **5e. Mandatory per-dart win-evaluation regression test** (in `integration_test/[GAME_NAME_SNAKE]/gameplay/`):
+>
+> - `win_on_early_dart_test.dart` — set up a game state where the winning condition is met on dart 1 OR dart 2 of a turn (NOT dart 3), throw exactly that dart, and assert `hasWinner == true` IMMEDIATELY afterward without throwing additional darts. Then click DARTS REMOVED, pump for ~4 s, and assert the results screen renders.
+>
+> **Rationale:** every dart-game title evaluates win conditions per-dart inside `processDartThrow`, not at turn end. A regression that gates win detection on `dartsThrown >= maxDartsPerTurn` (e.g. by calling `_processTurnEnd` only when `dartsThrown >= 3`) is silent against tests that always throw 3 darts and check at the end — but breaks the game the moment a player legitimately wins on dart 1 or 2 (e.g. Gladiator Arena Double Finish on the opening D20). Past failure: Gladiator Arena shipped with `_processTurnEnd(... isLastDart: dartsThrown >= 3)` gating evaluation to dart 3 only — caught only when a user reported the game not ending on a dart-1 double finish, weeks after launch. The fix had to update the provider AND two existing provider tests that had baked in the wrong assumption.
+>
+> **Test pattern:**
+> ```dart
+> testWidgets('Gameplay: dart 1 win ends the game immediately', (tester) async {
+>   await UITestHelpers.resetServerState();
+>   await setupAndStartGame(tester, config, /* quick-win settings */);
+>
+>   // Throw the winning dart — dart 1 or dart 2 of the turn.
+>   await throwDartViaMock(tester, X, multiplier: 'Y');
+>
+>   // Game must end without further darts.
+>   expect(ProviderHelpers.[gameName]HasWinner(tester), isTrue,
+>       reason: 'Winning dart must end the game on dart 1');
+>
+>   await clickDartsRemoved(tester);
+>   await tester.pump(const Duration(seconds: 4));
+>   await tester.pump();
+>   await tester.pump();
+>   expect(config.getPlayAgainButton(), findsOneWidget);
+> });
+> ```
+>
+> Reference implementations across shipped games:
+>   - `integration_test/gladiator_arena/gameplay/win_on_early_dart_test.dart` — Double Finish on/off, dart 1 + dart 2 (T20 with target=60; S20 + D20 with DF ON)
+>   - `integration_test/lunar_lander/gameplay/win_on_early_dart_test.dart` — Hard Landing OFF overshoot touchdown on dart 2 (altitude=100, T20 + T20)
+>   - `integration_test/target_tag/gameplay/win_on_early_dart_test.dart` — ShieldMax=1, dart 1 of turn 3 eliminates the last opponent
+>   - `integration_test/pirates_grid/gameplay/win_on_early_dart_test.dart` — `setPiratesGridGameState` pre-claims two row cells; dart 1 plants the winning third flag
+>   - `integration_test/carnival_derby/ui/game_single_player_quick_win_test.dart` — target=60, T20 wins on dart 1
+>
+> Games whose existing tests already qualify (dart 1 / dart 2 of the final turn explicitly asserts `hasWinner == true`):
+>   - `integration_test/monster_mash/gameplay/game_won_last_monster_standing_test.dart` (single dart finishes opponent at 1 HP)
+>   - `integration_test/reef_royale/gameplay/game_ends_all_7_targets_test.dart` (outer bull on dart 2 of turn 3 claims the 7th target)
+>   - `integration_test/clockwork_quest/gameplay/full_game_p1_wins_test.dart` (target=20 dart wins as dart 2 of turn 7)
+>
+> Either pattern satisfies the requirement; new games SHOULD prefer the dedicated `win_on_early_dart_test.dart` filename so the audit grep is uniform.
+>
 > **6. Every UI test must call `await UITestHelpers.resetServerState()` at the start.** This is required for per-session DB isolation (Flutter Bug #67090 spawns a phantom 2nd browser; without per-session DBs the phantom contaminates results — see `docs/testing/ui-automation.md`).
 >
 > **6a. Edit Score test design rule (mandatory):** the Edit Score button lives INSIDE the RemoveDartsModal which only renders after 3 darts thrown OR after Skip Turn. Tests trying to open the Edit Score modal MUST throw 3 darts (or 2 misses + 1 scoring dart) BEFORE calling `openEditScore`. A test that throws only 1 dart and immediately calls `openEditScore` will fail to find the button — Edit Score is part of the turn-end takeout flow.
@@ -1906,6 +1947,8 @@ If the audit produces a gap list mixing "test gaps" and "spec/code divergences",
 >   Every value of every option that has a behavioral effect MUST have an entry in BOTH columns (or note when one column is N/A — e.g., a numeric option without a visible badge has no visual_validation test). Past failures (PG): no Hard difficulty functional test; no Best Of 5 test; no Speed Play timer-expires test; no difficulty-badges visual test; no cell-flag-colors visual test; no winning-row-glow visual test; no round-tracker-text visual test; no speed-play-timer-colors visual test; no round-complete-overlay visual test.
 >
 > (p) **Provider game-mechanics test file exists.** `flutter test test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must run and pass. `grep -c '^  test(\|^    test(' test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must report ≥ 40 tests. Past failure: Pirate's Grid and Lunar Lander shipped without this file.
+>
+> (q) **Per-dart win regression coverage exists** (rule 5e). Run `ls integration_test/[GAME_NAME_SNAKE]/gameplay/win_on_early_dart_test.dart` — if present, accept. Otherwise, identify any other gameplay or UI test that throws fewer than 3 darts in the winning turn and asserts `hasWinner == true` IMMEDIATELY (grep for `expect(.*HasWinner.*isTrue` and inspect the surrounding lines for the dart count in the final turn). If no such test exists, this is a gap — write `win_on_early_dart_test.dart` per the 5e pattern. Past failure: Gladiator Arena gated win evaluation to dart 3 only and shipped without this regression test; the bug surfaced in production weeks later when a user hit a winning Double Finish on dart 1.
 >
 > Spec coverage: X% (N/M requirements covered)
 > Missing coverage: [list]"
