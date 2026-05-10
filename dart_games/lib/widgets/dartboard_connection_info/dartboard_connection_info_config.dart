@@ -335,4 +335,35 @@ class DartboardConnectionInfoConfig {
       errorColor: const Color(0xFFFF6B6B),
     );
   }
+
+  factory DartboardConnectionInfoConfig.gladiatorArena() {
+    return DartboardConnectionInfoConfig(
+      backgroundColor: const Color(0xFF3A2010), // Dark Arena
+      backgroundOpacity: 0.95,
+      emulatorBorderColor: const Color(0xFFCD7F32), // Bronze
+      hardwareBorderColor: const Color(0xFFDAA520), // Gladiator Gold
+      nameTextStyle: GoogleFonts.cinzel(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        height: 1.0,
+        color: const Color(0xFFF5F0E8), // Marble White
+      ),
+      statusTextStyle: GoogleFonts.lato(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        height: 1.0,
+      ),
+      emulatorLabelTextStyle: GoogleFonts.lato(
+        fontSize: 10,
+        height: 1.0,
+        color: const Color(0xFFCD7F32), // Bronze
+      ),
+      emulatorIconColor: const Color(0xFFCD7F32), // Bronze
+      hardwareIconColor: const Color(0xFFDAA520), // Gladiator Gold
+      connectedColor: const Color(0xFF4A7C59), // Laurel Green
+      connectingColor: const Color(0xFFDAA520), // Gladiator Gold
+      disconnectedColor: const Color(0xFFC0392B), // Blood Red
+      errorColor: const Color(0xFFC0392B), // Blood Red
+    );
+  }
 }

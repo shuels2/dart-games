@@ -887,4 +887,144 @@ class ElementFinders {
   static Finder getPiratesGridHeadlineText() {
     return find.byKey(PiratesGridResultsKeys.headlineText);
   }
+
+  // ==========================================================================
+  // GLADIATOR ARENA HOME FINDERS
+  // ==========================================================================
+
+  static Finder getGladiatorArenaCard() {
+    return find.byKey(HomeKeys.gladiatorArenaCard);
+  }
+
+  // ==========================================================================
+  // GLADIATOR ARENA MENU FINDERS
+  // ==========================================================================
+
+  static Finder getGladiatorArenaBackButton() {
+    return find.byKey(GladiatorArenaMenuKeys.backButton);
+  }
+
+  static Finder getGladiatorArenaAddPlayerButton() {
+    return find.byKey(GladiatorArenaMenuKeys.addPlayerButton);
+  }
+
+  static Finder getGladiatorArenaAddPlayerButtonEmptyState() {
+    return find.byKey(GladiatorArenaMenuKeys.addPlayerButtonEmptyState);
+  }
+
+  static Finder getGladiatorArenaPlayerTile(String playerId) {
+    return find.byKey(GladiatorArenaMenuKeys.playerTile(playerId));
+  }
+
+  static Finder getGladiatorArenaTargetScoreSlider() {
+    return find.byKey(GladiatorArenaMenuKeys.targetScoreSlider);
+  }
+
+  static Finder getGladiatorArenaTargetScoreValue() {
+    return find.byKey(GladiatorArenaMenuKeys.targetScoreValue);
+  }
+
+  static Finder getGladiatorArenaDoubleFinishSwitch() {
+    return find.byKey(GladiatorArenaMenuKeys.doubleFinishSwitch);
+  }
+
+  static Finder getGladiatorArenaShieldRoundSwitch() {
+    return find.byKey(GladiatorArenaMenuKeys.shieldRoundSwitch);
+  }
+
+  static Finder getGladiatorArenaSpeedPlaySwitch() {
+    return find.byKey(GladiatorArenaMenuKeys.speedPlaySwitch);
+  }
+
+  static Finder getGladiatorArenaStartButton() {
+    return find.byKey(GladiatorArenaMenuKeys.startGameButton);
+  }
+
+  // ==========================================================================
+  // GLADIATOR ARENA GAME FINDERS
+  // ==========================================================================
+
+  static Finder getGladiatorArenaGameBackButton() {
+    return find.byKey(GladiatorArenaGameKeys.backButton);
+  }
+
+  static Finder getGladiatorArenaSkipTurnButton() {
+    return find.byKey(GladiatorArenaGameKeys.skipTurnButton);
+  }
+
+  static Finder getGladiatorArenaEditScoreButton() {
+    return find.byKey(GladiatorArenaGameKeys.editScoreButton);
+  }
+
+  static Finder getGladiatorArenaGoalDisplay() {
+    return find.byKey(GladiatorArenaGameKeys.goalDisplay);
+  }
+
+  static Finder getGladiatorArenaDoubleRangeIndicator() {
+    return find.byKey(GladiatorArenaGameKeys.doubleRangeIndicator);
+  }
+
+  static Finder getGladiatorArenaTimerDisplay() {
+    return find.byKey(GladiatorArenaGameKeys.timerDisplay);
+  }
+
+  static Finder getGladiatorArenaShieldBanner() {
+    return find.byKey(GladiatorArenaGameKeys.shieldBanner);
+  }
+
+  static Finder getGladiatorArenaEliminationZone() {
+    return find.byKey(GladiatorArenaGameKeys.eliminationZone);
+  }
+
+  static Finder getGladiatorArenaDoubleBadge() {
+    return find.byKey(GladiatorArenaGameKeys.doubleBadge);
+  }
+
+  static Finder getGladiatorArenaActivePlayerNameLabel() {
+    return find.byKey(GladiatorArenaGameKeys.activePlayerNameLabel);
+  }
+
+  static Finder getGladiatorArenaDartIndicator(int index) {
+    return find.byKey(GladiatorArenaGameKeys.dartIndicator(index));
+  }
+
+  static Finder getGladiatorArenaPodium(String playerId) {
+    return find.byKey(GladiatorArenaGameKeys.podium(playerId));
+  }
+
+  // ==========================================================================
+  // GLADIATOR ARENA RESULTS FINDERS
+  // ==========================================================================
+
+  static Finder getGladiatorArenaPlayAgainButton() {
+    return find.byKey(GladiatorArenaResultsKeys.playAgainButton);
+  }
+
+  static Finder getGladiatorArenaChangeSettingsButton() {
+    return find.byKey(GladiatorArenaResultsKeys.changeSettingsButton);
+  }
+
+  static Finder getGladiatorArenaBackToMenuButton() {
+    return find.byKey(GladiatorArenaResultsKeys.backToMenuButton);
+  }
+
+  static Finder getGladiatorArenaWinnerName() {
+    return find.byKey(GladiatorArenaResultsKeys.winnerName);
+  }
+
+  static Finder getGladiatorArenaWinnerScore() {
+    return find.byKey(GladiatorArenaResultsKeys.winnerScore);
+  }
+
+  static Finder getGladiatorArenaRankingsList() {
+    return find.byKey(GladiatorArenaResultsKeys.rankingsList);
+  }
+
+  static Finder getGladiatorArenaRankRow(int index) {
+    return find.byKey(GladiatorArenaResultsKeys.rankRow(index));
+  }
+
+  static Finder getGladiatorArenaKnockoffStats() {
+    return find.byKey(GladiatorArenaResultsKeys.knockoffStats);
+  }
 }

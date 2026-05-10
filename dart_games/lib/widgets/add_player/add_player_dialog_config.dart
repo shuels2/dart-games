@@ -500,6 +500,62 @@ class AddPlayerDialogConfig {
     );
   }
 
+  /// Gladiator Arena theme — Arena Sand/Imperial Purple bg, Gladiator Gold/Bronze accents, Cinzel/Lato fonts
+  factory AddPlayerDialogConfig.gladiatorArena() {
+    return AddPlayerDialogConfig(
+      backgroundColor: const Color(0xFF4A3520).withOpacity(0.97), // Dark Arena Brown
+      textColor: const Color(0xFFF5F0E8), // Marble White
+      titleStyle: GoogleFonts.cinzel(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFDAA520), // Gladiator Gold
+        letterSpacing: 1.2,
+        shadows: const [
+          Shadow(color: Color(0xFF1A0A00), blurRadius: 4, offset: Offset(1, 1)),
+        ],
+      ),
+      inputLabelStyle: GoogleFonts.lato(
+        fontSize: 16,
+        color: const Color(0xFFF5F0E8), // Marble White
+      ),
+      inputBorderColor: const Color(0xFFCD7F32), // Bronze
+      inputFocusedBorderColor: const Color(0xFFDAA520), // Gladiator Gold
+      inputErrorBorderColor: const Color(0xFFC0392B), // Blood Red
+      photoLabelStyle: GoogleFonts.lato(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFFF5F0E8), // Marble White
+      ),
+      photoButtonColor: const Color(0xFF4A3520),
+      photoButtonForegroundColor: const Color(0xFFF5F0E8),
+      photoButtonBorderColor: const Color(0xFFCD7F32), // Bronze
+      photoButtonTextStyle: GoogleFonts.lato(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8),
+      ),
+      photoButtonWidth: null,
+      addButtonColor: const Color(0xFFCD7F32), // Bronze
+      addButtonForegroundColor: const Color(0xFFF5F0E8), // Marble White
+      addButtonBorderColor: const Color(0xFFDAA520), // Gladiator Gold
+      addButtonTextStyle: GoogleFonts.cinzel(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+        color: const Color(0xFFF5F0E8),
+      ),
+      cancelButtonColor: const Color(0xFF4A3520).withOpacity(0.85),
+      cancelButtonForegroundColor: const Color(0xFFF5F0E8),
+      cancelButtonBorderColor: const Color(0xFFCD7F32).withOpacity(0.6),
+      cancelButtonTextStyle: GoogleFonts.lato(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFF5F0E8),
+      ),
+      errorTextColor: const Color(0xFFC0392B), // Blood Red
+    );
+  }
+
   /// Options Screen theme configuration (Material Design defaults)
   factory AddPlayerDialogConfig.optionsScreen(BuildContext context) {
     final theme = Theme.of(context);

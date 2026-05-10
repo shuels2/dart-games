@@ -520,6 +520,56 @@ class SettingsHelpers {
     await toggleSwitch(tester, ElementFinders.getPiratesGridSpeedPlaySwitch());
   }
 
+  // ==========================================================================
+  // GLADIATOR ARENA SETTINGS
+  // ==========================================================================
+
+  /// Gladiator Arena: Set Target Score (slider)
+  ///
+  /// Valid values: 100-500 (step 25)
+  static Future<void> setGladiatorArenaTargetScore(
+    WidgetTester tester,
+    int value,
+  ) async {
+    final sliderFinder = ElementFinders.getGladiatorArenaTargetScoreSlider();
+    expect(sliderFinder, findsOneWidget);
+
+    Slider sliderWidget = tester.widget<Slider>(sliderFinder);
+    if (sliderWidget.onChanged != null) {
+      sliderWidget.onChanged!(value.toDouble());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+    }
+
+    await PumpSequences.simpleUpdate(tester);
+
+    sliderWidget = tester.widget<Slider>(sliderFinder);
+    expect(sliderWidget.value.toInt(), value,
+        reason: 'Target Score should be set to $value');
+  }
+
+  /// Gladiator Arena: Toggle Double Finish switch
+  static Future<void> toggleGladiatorArenaDoubleFinish(
+      WidgetTester tester) async {
+    await toggleSwitch(
+        tester, ElementFinders.getGladiatorArenaDoubleFinishSwitch());
+  }
+
+  /// Gladiator Arena: Toggle Shield Round switch
+  static Future<void> toggleGladiatorArenaShieldRound(
+      WidgetTester tester) async {
+    await toggleSwitch(
+        tester, ElementFinders.getGladiatorArenaShieldRoundSwitch());
+  }
+
+  /// Gladiator Arena: Toggle Speed Play switch
+  static Future<void> toggleGladiatorArenaSpeedPlay(
+      WidgetTester tester) async {
+    await toggleSwitch(
+        tester, ElementFinders.getGladiatorArenaSpeedPlaySwitch());
+  }
+
   /// Clockwork Quest: Full flow to add a player
   static Future<void> addClockworkQuestPlayer(
     WidgetTester tester,

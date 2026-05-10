@@ -8,6 +8,40 @@ import 'provider_helpers.dart';
 import 'game_ui_config.dart';
 
 class GameSetupHelpers {
+  // ===== Gladiator Arena =====
+
+  static Future<void> setupAndStartGladiatorArena(
+    WidgetTester tester,
+    GameUIConfig config, {
+    int targetScore = 200,
+    bool doubleFinishEnabled = true,
+    bool shieldRoundEnabled = false,
+    bool speedPlayEnabled = false,
+    List<String>? playerNames,
+  }) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+
+    if (targetScore != 200) {
+      await SettingsHelpers.setGladiatorArenaTargetScore(tester, targetScore);
+    }
+    if (!doubleFinishEnabled) {
+      await SettingsHelpers.toggleGladiatorArenaDoubleFinish(tester);
+    }
+    if (shieldRoundEnabled) {
+      await SettingsHelpers.toggleGladiatorArenaShieldRound(tester);
+    }
+    if (speedPlayEnabled) {
+      await SettingsHelpers.toggleGladiatorArenaSpeedPlay(tester);
+    }
+
+    final names = playerNames ?? ['Player A', 'Player B'];
+    for (final name in names) {
+      await UITestHelpers.addPlayer(tester, name, config);
+    }
+
+    await UITestHelpers.startGame(tester, config);
+  }
+
   // ===== Pirate's Grid =====
 
   static Future<void> setupAndStartPiratesGrid(

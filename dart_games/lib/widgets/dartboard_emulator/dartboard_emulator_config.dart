@@ -153,6 +153,24 @@ class DartboardSectionConfig {
       ),
     );
   }
+
+  // Factory for Gladiator Arena
+  factory DartboardSectionConfig.gladiatorArena() {
+    return DartboardSectionConfig(
+      backgroundColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      disabledOverlayBackgroundColor: const Color(0xFF3A2010).withOpacity(0.95), // Dark Arena
+      disabledOverlayBorderColor: const Color(0xFFDAA520), // Gladiator Gold
+      removeButtonBackgroundColor: const Color(0xFFCD7F32), // Bronze
+      removeButtonBorderColor: const Color(0xFFDAA520), // Gladiator Gold
+      removeButtonTextStyle: GoogleFonts.cinzel(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+        color: const Color(0xFFF5F0E8), // Marble White
+      ),
+    );
+  }
 }
 
 class DartboardFABConfig {
@@ -244,6 +262,19 @@ class DartboardFABConfig {
       iconColor: const Color(0xFFF5E6C8), // Parchment Tan
       textColor: const Color(0xFFF5E6C8), // Parchment Tan
       textStyle: GoogleFonts.pirataOne(
+        letterSpacing: 1.0,
+      ),
+    );
+  }
+
+  // Factory for Gladiator Arena
+  factory DartboardFABConfig.gladiatorArena() {
+    return DartboardFABConfig(
+      backgroundColor: const Color(0xFFDAA520), // Gladiator Gold
+      iconColor: const Color(0xFF1A0A00), // Near Black
+      textColor: const Color(0xFF1A0A00), // Near Black
+      textStyle: GoogleFonts.cinzel(
+        fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
       ),
     );
@@ -362,6 +393,21 @@ class PlayToCompleteButtonConfig {
         fontSize: 16,
         letterSpacing: 1.0,
         color: const Color(0xFFF5E6C8),
+      ),
+    );
+  }
+
+  // Factory for Gladiator Arena
+  factory PlayToCompleteButtonConfig.gladiatorArena() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFF4A7C59), // Laurel Green
+      foregroundColor: const Color(0xFFF5F0E8), // Marble White
+      borderColor: const Color(0xFFDAA520), // Gladiator Gold
+      textStyle: GoogleFonts.cinzel(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+        color: const Color(0xFFF5F0E8),
       ),
     );
   }

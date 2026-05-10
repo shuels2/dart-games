@@ -156,6 +156,25 @@ class GameSaveConfig {
         leadingPlayerScore: 'Gear 5',
         gameState: {'_marker': 'test2'},
       );
+
+  factory GameSaveConfig.gladiatorArena() => const GameSaveConfig(
+        gameType: 'gladiator_arena',
+        playerNames: ['Alice', 'Bob'],
+        progressInfo: 'Leading: 40 pts',
+        gameModeName: 'Target: 200, Double Finish',
+        leadingPlayerName: 'Alice',
+        leadingPlayerScore: '40 pts',
+      );
+
+  factory GameSaveConfig.gladiatorArenaSecond() => const GameSaveConfig(
+        gameType: 'gladiator_arena',
+        playerNames: ['Charlie', 'Diana'],
+        progressInfo: 'Leading: 80 pts',
+        gameModeName: 'Target: 300, Shield Round',
+        leadingPlayerName: 'Charlie',
+        leadingPlayerScore: '80 pts',
+        gameState: {'_marker': 'test2'},
+      );
 }
 
 class SaveResumeHelpers {

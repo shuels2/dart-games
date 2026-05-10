@@ -214,6 +214,43 @@ class SaveGameModalConfig {
     );
   }
 
+  /// Gladiator Arena — Dark Arena bg, Bronze/Gold border, Cinzel/Lato fonts
+  /// "LEAVE THE ARENA?" title, SAVE & EXIT (Bronze), DON'T SAVE (Blood Red), CANCEL (Colosseum Gray)
+  factory SaveGameModalConfig.gladiatorArena() {
+    return SaveGameModalConfig(
+      backgroundColor: const Color(0xFF3A2010), // Dark Arena
+      borderColor: const Color(0xFFCD7F32), // Bronze
+      boxShadowColor: const Color(0xFFDAA520), // Gladiator Gold
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFCD7F32), // Bronze
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.cinzel(
+        color: const Color(0xFFDAA520), // Gladiator Gold
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
+      messageTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8), // Marble White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      saveButtonColor: const Color(0xFFCD7F32), // Bronze — SAVE & EXIT
+      saveButtonTextColor: const Color(0xFFF5F0E8), // Marble White
+      saveButtonTextStyle: GoogleFonts.cinzel(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+      dontSaveButtonColor: const Color(0xFFC0392B), // Blood Red — DON'T SAVE
+      dontSaveButtonTextColor: const Color(0xFFF5F0E8), // Marble White
+      dontSaveButtonTextStyle: GoogleFonts.lato(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   factory SaveGameModalConfig.clockworkQuest() {
     return SaveGameModalConfig(
       backgroundColor: const Color(0xFF2C2C34), // Dark Iron

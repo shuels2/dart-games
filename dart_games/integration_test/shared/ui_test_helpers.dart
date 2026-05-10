@@ -268,6 +268,16 @@ class UITestHelpers {
       } else {
         addButton = normalStateButton;
       }
+    } else if (config.gameName == 'Gladiator Arena') {
+      // For Gladiator Arena, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getGladiatorArenaAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getGladiatorArenaAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
     } else {
       // For other games, use the config method
       addButton = config.getAddPlayerButton();

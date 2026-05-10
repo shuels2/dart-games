@@ -478,4 +478,71 @@ class ResumeGameModalConfig {
       ),
     );
   }
+
+  /// Gladiator Arena — Dark Arena bg, Gladiator Gold border, Cinzel/Lato fonts
+  factory ResumeGameModalConfig.gladiatorArena() {
+    return ResumeGameModalConfig(
+      backgroundColor: const Color(0xFF3A2010), // Dark Arena
+      borderColor: const Color(0xFFDAA520), // Gladiator Gold
+      boxShadowColor: const Color(0xFFDAA520),
+      boxShadowOpacity: 0.3,
+      titleTextStyle: GoogleFonts.cinzel(
+        color: const Color(0xFFDAA520), // Gladiator Gold
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
+      tileBackgroundColor: const Color(0xFF3A2010).withOpacity(0.6),
+      tileSelectedBackgroundColor: const Color(0xFFDAA520).withOpacity(0.15),
+      tileBorderColor: const Color(0xFFF5F0E8).withOpacity(0.3),
+      tileSelectedBorderColor: const Color(0xFFDAA520), // Gladiator Gold
+      tileDateTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      tilePlayersTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8),
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      tileProgressTextStyle: GoogleFonts.cinzel(
+        color: const Color(0xFFDAA520), // Gladiator Gold
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+      ),
+      tileModeTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+      ),
+      tileLeaderTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8),
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+      deleteButtonColor: const Color(0xFFC0392B), // Blood Red
+      resumeButtonColor: const Color(0xFFCD7F32), // Bronze
+      resumeButtonTextColor: const Color(0xFFF5F0E8), // Marble White
+      resumeButtonTextStyle: GoogleFonts.cinzel(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+      resumeButtonPadding: const EdgeInsets.only(top: 14, bottom: 14),
+      resumeButtonDisabledColor: const Color(0xFF8B8682), // Colosseum Gray
+      startNewButtonColor: const Color(0xFFF5F0E8).withOpacity(0.2),
+      startNewButtonTextColor: const Color(0xFFF5F0E8),
+      startNewButtonTextStyle: GoogleFonts.lato(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      deleteAllButtonColor: const Color(0xFFC0392B), // Blood Red
+      deleteAllButtonTextStyle: GoogleFonts.lato(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFC0392B),
+      ),
+    );
+  }
 }

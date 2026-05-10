@@ -342,6 +342,65 @@ class DualPlayerListPanelConfig {
     );
   }
 
+  /// Gladiator Arena theme — Arena Sand containers, Bronze/Gold accents, Cinzel/Lato fonts
+  factory DualPlayerListPanelConfig.gladiatorArena() {
+    return DualPlayerListPanelConfig(
+      containerColor: const Color(0xFF4A3520), // Dark Arena Brown
+      containerOpacity: 0.85,
+      containerBorderColor: const Color(0xFFCD7F32).withOpacity(0.5), // Bronze
+      containerBorderWidth: 2,
+      headerTextStyle: GoogleFonts.cinzel(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFDAA520), // Gladiator Gold
+        letterSpacing: 1.0,
+      ),
+      selectedBorderColorWhenReady: const Color(0xFFDAA520), // Gladiator Gold
+      selectedBorderWidthWhenReady: 2,
+      minPlayersForReady: 2,
+      selectedHeaderColorWhenReady: const Color(0xFFDAA520), // Gladiator Gold
+      emptyStateTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8).withOpacity(0.7), // Marble White
+        fontSize: 16,
+      ),
+      selectedEmptyText: 'Select at least 2 gladiators',
+      addButtonColor: const Color(0xFF4A3520),
+      addButtonForegroundColor: const Color(0xFFF5F0E8),
+      addButtonBorderSide: const BorderSide(
+        color: Color(0xFFCD7F32), // Bronze
+        width: 2,
+      ),
+      addButtonTextStyle: GoogleFonts.cinzel(
+        fontSize: 13,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8),
+        letterSpacing: 0.5,
+      ),
+      selectedColor: const Color(0xFFDAA520).withOpacity(0.2),
+      selectedBorderColor: const Color(0xFFDAA520), // Gladiator Gold
+      unselectedBackgroundColor: const Color(0xFF4A3520).withOpacity(0.6),
+      unselectedBorderColor: const Color(0xFFCD7F32).withOpacity(0.3),
+      cardNameStyle: GoogleFonts.cinzel(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8), // Marble White
+        letterSpacing: 0.5,
+      ),
+      cardStatsStyle: GoogleFonts.lato(
+        fontSize: 13,
+        color: const Color(0xFFF5F0E8),
+      ),
+      checkIconColor: const Color(0xFFDAA520), // Gladiator Gold
+      removeIconColor: const Color(0xFFC0392B), // Blood Red
+      nameStatsSpacing: 1.4,
+      maxPlayers: 8,
+      availableContainerMargin: EdgeInsets.zero,
+      selectedContainerMargin: EdgeInsets.zero,
+      listGap: 8,
+      addPlayerDialogConfig: AddPlayerDialogConfig.gladiatorArena(),
+    );
+  }
+
   factory DualPlayerListPanelConfig.clockworkQuest() {
     return DualPlayerListPanelConfig(
       containerColor: const Color(0xFF2C2C34), // Dark Iron

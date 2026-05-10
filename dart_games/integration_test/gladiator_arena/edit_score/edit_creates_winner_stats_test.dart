@@ -1,0 +1,88 @@
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+
+import '../../shared/ui_test_helpers.dart';
+import '../../shared/element_finders.dart';
+import '../../shared/provider_helpers.dart';
+import '../../shared/pump_sequences.dart';
+import '_helpers.dart';
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets(
+      'Edit Score: editing dart 3 to winning value creates winner and stats',
+      (tester) async {
+    await UITestHelpers.resetServerState();
+    // Target=100, DF OFF: win by reaching 100
+    await setupAndStartGame(
+      tester,
+      config,
+      targetScore: 100,
+      doubleFinishEnabled: false,
+      playerNames: ['Player A', 'Player B'],
+    );
+
+    final p1Id =
+        ProviderHelpers.getGladiatorArenaCurrentPlayerId(tester)!;
+
+    // Get to 80 over 2 turns: Turn1=60 (S20*3), Turn2=20 (S20)
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+    await clickDartsRemoved(tester);
+
+    await completeTurnWithMisses(tester);
+
+    await throwDartViaMock(tester, 20);
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await clickDartsRemoved(tester);
+
+    await completeTurnWithMisses(tester);
+
+    // P1 at 80. Throw 3 non-winning darts: S1 + S1 + S1 = 83
+    await throwDartViaMock(tester, 1);
+    await throwDartViaMock(tester, 1);
+    await throwDartViaMock(tester, 1);
+
+    // Edit dart 3: change S1 to D10 (20) → 80 + 1 + 1 + 20 = 102 >= 100 = WIN (DF OFF)
+    await openEditScore(tester, config);
+    await setDart3(tester, 'D10');
+    await updateScore(tester);
+
+    // Click darts removed
+    await tester.pump(const Duration(seconds: 1));
+    await clickDartsRemoved(tester);
+
+    // Wait for results navigation (3s delayed) and stats update.
+    // Pattern mirrors monster_mash/edit_score/edit_creates_winner_stats_test.dart
+    // which uses 4s + pumps + 5s + pumps + fullRebuild.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    await PumpSequences.fullRebuild(tester);
+    // Extra wait for server stats round-trip (batchAddPlayerHistory HTTP call)
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    // Should be on results screen
+    expect(ElementFinders.getGladiatorArenaPlayAgainButton(), findsOneWidget,
+        reason: 'Should be on results screen after winning via edit');
+
+    // Winner stats should be updated
+    final winner = ProviderHelpers.findPlayerByName(tester, 'Player A');
+    expect(winner, isNotNull);
+    expect(winner!.gamesWon, 1,
+        reason: 'Winner gamesWon should be 1');
+    expect(winner.gamesPlayed, 1,
+        reason: 'Winner gamesPlayed should be 1');
+  });
+}

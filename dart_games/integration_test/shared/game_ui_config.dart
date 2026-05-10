@@ -182,6 +182,31 @@ class GameUIConfig {
     );
   }
 
+  /// Gladiator Arena game configuration
+  factory GameUIConfig.gladiatorArena() {
+    return GameUIConfig._(
+      gameName: 'Gladiator Arena',
+      getGameCard: ElementFinders.getGladiatorArenaCard,
+      getAddPlayerButton: ElementFinders.getGladiatorArenaAddPlayerButton,
+      getPlayerTile: ElementFinders.getGladiatorArenaPlayerTile,
+      getStartButton: ElementFinders.getGladiatorArenaStartButton,
+      getSkipTurnButton: ElementFinders.getGladiatorArenaSkipTurnButton,
+      getEditScoreButton: ElementFinders.getGladiatorArenaEditScoreButton,
+      getDartButton: (multiplier, number) =>
+          find.text('Not used in Gladiator Arena directly'),
+      getBullseyeButton: () =>
+          find.text('Not used in Gladiator Arena directly'),
+      getOuterBullButton: () =>
+          find.text('Not used in Gladiator Arena directly'),
+      getMissButton: () => find.text('Not used in Gladiator Arena directly'),
+      getPlayAgainButton: ElementFinders.getGladiatorArenaPlayAgainButton,
+      getChangeSettingsButton:
+          ElementFinders.getGladiatorArenaChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getGladiatorArenaBackToMenuButton,
+      getGameBackButton: ElementFinders.getGladiatorArenaGameBackButton,
+    );
+  }
+
   /// Clockwork Quest game configuration
   factory GameUIConfig.clockworkQuest() {
     return GameUIConfig._(

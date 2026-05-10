@@ -10,6 +10,7 @@ import 'providers/reef_royale_provider.dart';
 import 'providers/clockwork_quest_provider.dart';
 import 'providers/lunar_lander_provider.dart';
 import 'providers/pirates_grid_provider.dart';
+import 'providers/gladiator_arena_provider.dart';
 import 'services/api/api_client.dart';
 import 'services/api/api_config.dart';
 import 'services/app_settings.dart';
@@ -113,6 +114,11 @@ Future<void> _preloadFonts() async {
   GoogleFonts.lora(fontWeight: FontWeight.w600);
   GoogleFonts.lora(fontWeight: FontWeight.w700);
 
+  // Preload Gladiator Arena fonts
+  GoogleFonts.cinzel(fontWeight: FontWeight.w400);
+  GoogleFonts.cinzel(fontWeight: FontWeight.w700);
+  // Lato already loaded for Clockwork Quest
+
   // Wait for all fonts to load
   await GoogleFonts.pendingFonts([
     GoogleFonts.nunito(),
@@ -129,6 +135,7 @@ Future<void> _preloadFonts() async {
     GoogleFonts.orbitron(),
     GoogleFonts.exo2(),
     GoogleFonts.lora(),
+    GoogleFonts.cinzel(),
   ]);
 }
 
@@ -156,6 +163,7 @@ class DartGamesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ClockworkQuestProvider(apiClient: apiClient)),
         ChangeNotifierProvider(create: (_) => LunarLanderProvider(apiClient: apiClient)),
         ChangeNotifierProvider(create: (_) => PiratesGridProvider(apiClient: apiClient)),
+        ChangeNotifierProvider(create: (_) => GladiatorArenaProvider(apiClient: apiClient)),
       ],
       child: MaterialApp(
         title: 'Dart Games',

@@ -2,7 +2,7 @@
 
 ## Overview
 
-1628 non-UI tests (1438 Flutter + 190 server) validate models, providers, services, widgets, game logic, API client, and server routes.
+1991 non-UI tests (1801 Flutter + 190 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
 **Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
@@ -36,7 +36,7 @@
 - ApiLogEntry: 17 tests (creation, formatting, duration tracking)
 - SavedGameMetadata: 20 tests (creation, JSON serialization, progress info)
 
-### Model Serialization Tests (86 tests)
+### Model Serialization Tests (103 tests)
 
 **HorseRaceGame (10 tests)** - `test/models/horse_race_game_serialization_test.dart`
 **TargetTagGame (13 tests)** - `test/models/target_tag_game_serialization_test.dart`
@@ -50,6 +50,15 @@
 - Hard landing mode, all game states, character assignments
 
 **PiratesGridGame (24 tests)** - `test/models/pirates_grid_serialization_test.dart`
+**GladiatorArenaGame (17 tests)** - `test/models/gladiator_arena_serialization_test.dart`
+- toJson/fromJson roundtrip for all GladiatorArenaGame fields
+- playerScores Map (playerId → int) serialized and deserialized correctly
+- playerCharacters Map (playerId → character name string) roundtrip
+- knockoffsDealt and knockoffsReceived Maps preserved
+- All game options (targetScore, doubleFinishEnabled, shieldRoundEnabled, speedPlayEnabled)
+- currentRound and currentPlayerIndex preserved
+- winnerId (nullable) roundtrip
+- Backward compatibility: missing optional fields default gracefully
 - toJson/fromJson roundtrip for all PiratesGridGame fields
 - Grid serialization: 3x3 List<List<GridCell>> preserved exactly
 - Cell owner IDs (null/P1/P2) serialize and deserialize correctly
@@ -76,7 +85,7 @@
 - Status checking, clear dartboard/error
 - Change notification verification
 
-### Provider Save/Restore Tests (42 tests)
+### Provider Save/Restore Tests (57 tests)
 
 **HorseRaceProvider (7 tests)** - `test/providers/horse_race_provider_save_restore_test.dart`
 **TargetTagProvider (7 tests)** - `test/providers/target_tag_provider_save_restore_test.dart`
@@ -85,12 +94,20 @@
 **ClockworkQuestProvider (7 tests)** - `test/providers/clockwork_quest_provider_save_restore_test.dart`
 **LunarLanderProvider (7 tests)** - `test/providers/lunar_lander_save_restore_test.dart`
 **PiratesGridProvider (12 tests)** - `test/providers/pirates_grid_save_restore_test.dart`
+**GladiatorArenaProvider (15 tests)** - `test/providers/gladiator_arena_save_restore_test.dart`
+- Save game metadata creation and restoration
+- Full game state restore (scores, round, player index, knockoff history)
+- Options preserved across save/restore (targetScore, doubleFinish, shieldRound, speedPlay)
+- Character assignments preserved
+- Gameplay continuation after restore
+- Auto-delete on game completion
+- Overwrite existing save (resume re-save)
 - Save game metadata creation
 - Full game state restore via SaveGameService
 - Gameplay continuation after restore
 - resumedSavedGameId lifecycle
 
-### Provider Game Mechanics Tests (233 tests)
+### Provider Game Mechanics Tests (314 tests)
 
 **HorseRaceProvider (50 tests)** - `test/providers/horse_race_provider_game_test.dart`
 - startGame validation (player count, target score range)
@@ -134,6 +151,20 @@
 - Getters (pearl values, claimed count, ranked players, active buff)
 
 **TargetTagProvider (45 tests)** - `test/providers/target_tag_provider_game_test.dart`
+
+**GladiatorArenaProvider (81 tests)** - `test/providers/gladiator_arena_provider_game_test.dart`
+- startGame (player count, character assignment, options initialization)
+- processDartThrow (scoring accumulation, turn total, shouldPromptTakeout)
+- Bust detection (overshoot, non-double at exact target, both are Double Finish ON only)
+- Double finish victory (exact target on a double)
+- Standard victory (Double Finish OFF: score at or above target)
+- Knockoff check (score-match reset, self-match ignored, multiple simultaneous knockoffs)
+- Shield round blocking (every 5th round, shieldRoundEnabled required)
+- Speed play timer expiry (only throws-already-made count)
+- Skip turn (0 darts, partial darts, still runs knockoff check)
+- Edit score (updateAllDartScores, re-evaluate bust/knockoff/victory)
+- Turn cycling and player rotation
+- Knockoff count tracking (knockoffsDealt, knockoffsReceived)
 - startSoloGame / startTeamGame (player count, shieldMax validation)
 - processDartThrow (miss, Bull parsing, takeout trigger)
 - Shield mechanics (single/double/triple, cap, taggedIn, attack)
@@ -296,6 +327,32 @@
 - Steal Mode + Round Win; Two in a Row after steal; miss announcement
 - Best Of 3 round transition announcement; Speed Play expiry turn end
 
+**Gladiator Arena Game Logic (26 tests)** - `test/screens/games/gladiator_arena/gladiator_arena_game_test.dart`
+- Basic scoring: single, double, triple, outer bull, inner bull accumulation
+- Turn total and score update after 3 darts
+- Hard bust path (overshoot) and non-double bust at exact target
+- Double finish success: exact target with a double as last dart
+- Standard victory (Double Finish OFF): score reaching or exceeding target
+- Knockoff trigger: score-match resets opponent; self-match ignored
+- Multiple simultaneous knockoffs in one turn
+- Shield round blocking knockoff (every 5th round)
+- Speed play timer expiry: only thrown darts counted
+- Skip turn: zero-dart and partial-dart scenarios
+
+**Gladiator Arena Announcements (33 tests)** - `test/screens/games/gladiator_arena/gladiator_arena_announcement_test.dart`
+- All 16 announcement events (game start, player turn, small/good/great/triple/bull/outer-bull, miss, knockoff, shield block, bust overshoot, bust no-double, victory both variants, near victory, double range, shield round start, speed timer warning, speed timer expired)
+- Sound effect assignments per event
+- Stacking precedence chain (12-level, Victory highest)
+- MAX 2 announcements per dart enforcement
+- announceRemoveDarts fires unconditionally
+
+**Gladiator Arena Game With Announcements (18 tests)** - `test/screens/games/gladiator_arena/gladiator_arena_game_with_announcements_test.dart`
+- Full dart processing triggering correct announcements per event type
+- Knockoff + scoring stacking (knockoff fires, scoring suppressed)
+- Bust variants + precedence; Victory precedence over all others
+- Shield block fires instead of knockoff during shield round
+- Remove Darts fires unconditionally alongside other announcements
+
 ### Utility Tests (34 tests)
 
 **DartboardLayout (34 tests)** - `test/utils/dartboard_layout_test.dart`
@@ -406,7 +463,7 @@
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests (1438 tests)
+# Flutter tests (1801 tests)
 flutter test
 
 # Server tests (190 tests)
@@ -432,6 +489,7 @@ flutter test test/screens/games/reef_royale/
 flutter test test/screens/games/clockwork_quest/
 flutter test test/screens/games/lunar_lander/
 flutter test test/screens/games/pirates_grid/
+flutter test test/screens/games/gladiator_arena/
 ```
 
 ## Test Patterns

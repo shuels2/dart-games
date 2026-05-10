@@ -118,15 +118,25 @@ dart_games/
         │   ├── assets.md             # 8 astronaut characters, 1 icon, 1 background, 8 sounds
         │   └── implementation-notes.md # Random character assignment, stacking modal, totalTurns pattern
         │
-        └── pirates-grid/
-            ├── README.md             # "Pirate's Grid is a dart-based tic-tac-toe game for 2 players..."
-            ├── game-rules.md         # 3x3 grid rules, difficulty layouts, Best Of rounds, Steal/Speed Play
-            ├── design-system.md      # Parchment/Ocean Navy/Treasure Gold theme, Pirata One + Lora fonts
-            ├── components.md         # DualPlayerListPanel (max 2), ThreeInARowChecker, GridTargetGenerator
-            ├── announcements.md      # PiratesGridAnnouncementHelper, 7 sound effects, steal stacking rules
-            ├── testing.md            # 63 UI tests, 132 non-UI tests, Pattern B edit score, grid cell finders
-            ├── assets.md             # 8 pirate characters, 1 icon, 1 background, 3 pieces, 7 sounds
-            └── implementation-notes.md # Bull cell (number=0), timer in screen state, Best Of serialization
+        ├── pirates-grid/
+        │   ├── README.md             # "Pirate's Grid is a dart-based tic-tac-toe game for 2 players..."
+        │   ├── game-rules.md         # 3x3 grid rules, difficulty layouts, Best Of rounds, Steal/Speed Play
+        │   ├── design-system.md      # Parchment/Ocean Navy/Treasure Gold theme, Pirata One + Lora fonts
+        │   ├── components.md         # DualPlayerListPanel (max 2), ThreeInARowChecker, GridTargetGenerator
+        │   ├── announcements.md      # PiratesGridAnnouncementHelper, 7 sound effects, steal stacking rules
+        │   ├── testing.md            # 63 UI tests, 132 non-UI tests, Pattern B edit score, grid cell finders
+        │   ├── assets.md             # 8 pirate characters, 1 icon, 1 background, 3 pieces, 7 sounds
+        │   └── implementation-notes.md # Bull cell (number=0), timer in screen state, Best Of serialization
+        │
+        └── gladiator-arena/
+            ├── README.md             # "Gladiator Arena is an Eliminator-style dart game..." (2-8 players)
+            ├── game-rules.md         # Race-to-target, Knockoff rule, Double Finish, Shield Round, Speed Play
+            ├── design-system.md      # Disney's Hercules / Roman colosseum theme, Cinzel + Lato fonts, 8 colors
+            ├── components.md         # DualPlayerListPanel configs, all shared widget factory methods, GladiatorArenaStrategy
+            ├── announcements.md      # GladiatorArenaAnnouncementHelper, 8 sound effects, 12-level stacking chain
+            ├── testing.md            # 99 UI tests, 190 non-UI tests, podium height assertions, shield round quirks
+            ├── assets.md             # 8 gladiator animal characters, 1 icon, 1 background, 8 sounds
+            └── implementation-notes.md # Knockoff algorithm, bust detection paths, Pattern A display, Save/Resume
 ```
 
 ## Documentation Purpose by Category

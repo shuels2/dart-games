@@ -84,10 +84,11 @@ void main() {
   });
 
   group('GameFilterRegistry', () {
-    test('all 7 currently-shipped games are registered', () {
+    test('all 8 currently-shipped games are registered', () {
       const expectedIds = {
         'carnival_derby',
         'clockwork_quest',
+        'gladiator_arena',
         'lunar_lander',
         'monster_mash',
         'pirates_grid',
@@ -164,21 +165,21 @@ void main() {
       expect(result.length, equals(GameFilterRegistry.all.length));
     });
 
-    test('Versus + Heavy returns Target Tag and Monster Mash', () {
+    test('Versus + Heavy returns Target Tag, Monster Mash, and Gladiator Arena', () {
       final result = GameFilterRegistry.filter({
         FilterCriterion.gameplayStyle: <Object>{GameplayStyle.versus},
         FilterCriterion.playerInteraction: <Object>{PlayerInteraction.heavy},
       });
       final ids = result.map((m) => m.gameId).toSet();
-      expect(ids, equals({'target_tag', 'monster_mash'}));
+      expect(ids, equals({'target_tag', 'monster_mash', 'gladiator_arena'}));
     });
 
-    test('Race style returns the three race games', () {
+    test('Race style returns four race games (including Gladiator Arena)', () {
       final result = GameFilterRegistry.filter({
         FilterCriterion.gameplayStyle: <Object>{GameplayStyle.race},
       });
       final ids = result.map((m) => m.gameId).toSet();
-      expect(ids, equals({'carnival_derby', 'clockwork_quest', 'lunar_lander'}));
+      expect(ids, equals({'carnival_derby', 'clockwork_quest', 'lunar_lander', 'gladiator_arena'}));
     });
 
     test('Solo or Team returns only Target Tag', () {
@@ -196,11 +197,11 @@ void main() {
       expect(result.map((m) => m.gameId).toList(), equals(['pirates_grid']));
     });
 
-    test('contradictory filters return empty', () {
-      // No game is both Heavy interaction AND Race style.
+    test('contradictory filters return empty (solo+team AND strategy)', () {
+      // No game has solo-or-team support AND strategy style simultaneously.
       final result = GameFilterRegistry.filter({
-        FilterCriterion.gameplayStyle: <Object>{GameplayStyle.race},
-        FilterCriterion.playerInteraction: <Object>{PlayerInteraction.heavy},
+        FilterCriterion.gameplayStyle: <Object>{GameplayStyle.strategy},
+        FilterCriterion.soloTeam: <Object>{SoloTeamSupport.soloOrTeam},
       });
       expect(result, isEmpty);
     });

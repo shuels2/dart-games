@@ -166,6 +166,12 @@ flutter:
     - assets/games/clockwork_quest/images/gears/
     - assets/games/clockwork_quest/sounds/
 
+    # Gladiator Arena game assets
+    - assets/games/gladiator_arena/characters/
+    - assets/games/gladiator_arena/icons/
+    - assets/games/gladiator_arena/images/
+    - assets/games/gladiator_arena/sounds/
+
     # Lunar Lander game assets
     - assets/games/lunar_lander/icons/
     - assets/games/lunar_lander/images/
