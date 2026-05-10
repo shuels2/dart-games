@@ -816,11 +816,14 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         // Character HEIGHT (target render height — all characters fill this
         // same height via BoxFit.fitHeight, so silhouettes line up).
         final charSize = _charSizeForCount(playerCount, constraints.maxWidth);
-        // Character BOX WIDTH = charSize (square box). Wide-aspect characters
-        // (eagle ~1.3:1 at fitHeight) overflow horizontally by ~15% each
-        // side, but slot whitespace absorbs the bleed without colliding with
-        // neighbors — same pattern Lunar Lander uses with `BoxFit.contain`.
-        final charBoxWidth = charSize;
+        // Character BOX WIDTH = charSize × 1.3 — sized for the widest source
+        // aspect (AquilaEagle ~1.3:1 with wings spread). Without this, the
+        // eagle's wings render beyond the SizedBox via fitHeight overflow and
+        // get painted over by the neighbor's character (z-order in the row),
+        // looking like the wings are clipped. The high-count charSize
+        // ceilings are tuned so charBoxWidth ≤ slot at 1440 px so the eagle
+        // never extends into its neighbor's slot.
+        final charBoxWidth = charSize * 1.3;
 
         // Reserve vertical space above the bar for the column's other
         // children — sized for the worst case (active player with Speed Play
@@ -869,16 +872,16 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     // Per-count clamp ceilings + per-column multipliers.
     //   • 2-player: head-to-head feel (ceiling 280)
     //   • 3- and 4-player: large characters (ceilings 267 / 254)
-    //   • 5–8 player: 0.85 × slot width (Lunar Lander pattern), with ceilings
-    //     calibrated so adjacent characters sit ~10–15% of slot width apart
-    //     once `Expanded` slots replaced the old fixed-width spaceEvenly row.
+    //   • 5–8 player: ceilings = floor(slot_width / 1.3) at 1440 px so the
+    //     eagle's 1.3:1 wings always fit inside their own Expanded slot
+    //     (otherwise the neighbor's character paints over the wing tips).
     if (count <= 2) return (availableWidth / count * 0.42).clamp(140.0, 280.0);
     if (count == 3) return (availableWidth / count * 0.70).clamp(135.0, 267.0);
     if (count == 4) return (availableWidth / count * 1.00).clamp(125.0, 254.0);
-    if (count == 5) return (availableWidth / count * 0.85).clamp(105.0, 230.0);
-    if (count == 6) return (availableWidth / count * 0.85).clamp(85.0, 195.0);
-    if (count == 7) return (availableWidth / count * 0.85).clamp(70.0, 175.0);
-    return (availableWidth / count * 0.85).clamp(60.0, 153.0); // 8 players
+    if (count == 5) return (availableWidth / count * 0.85).clamp(105.0, 220.0);
+    if (count == 6) return (availableWidth / count * 0.85).clamp(85.0, 184.0);
+    if (count == 7) return (availableWidth / count * 0.85).clamp(70.0, 158.0);
+    return (availableWidth / count * 0.85).clamp(60.0, 138.0); // 8 players
   }
 
   /// Computes the active player's displayed score, factoring in darts thrown
@@ -1135,11 +1138,11 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         // Podium bar — rendered as a marble Roman column with vertical
         // fluting and cylindrical shading. Active players get an Imperial
         // Purple wash over the marble; inactive players a subtle Colosseum
-        // Gray wash. Pillar width is anchored to charSize × 0.945 so the
+        // Gray wash. Pillar width is anchored to charSize × 0.992 so the
         // column reads as a slightly-narrower plinth under the character.
         AnimatedContainer(
           duration: const Duration(milliseconds: 400),
-          width: charSize * 0.945,
+          width: charSize * 0.992,
           height: barHeight,
           child: ClipRRect(
             borderRadius:
