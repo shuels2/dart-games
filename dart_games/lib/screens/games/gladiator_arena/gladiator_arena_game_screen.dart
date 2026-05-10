@@ -814,16 +814,13 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
       builder: (context, constraints) {
         final playerCount = game.playerIds.length;
         // Character HEIGHT (target render height — all characters fill this
-        // same height regardless of source aspect ratio, via BoxFit.fitHeight).
+        // same height via BoxFit.fitHeight, so silhouettes line up).
         final charSize = _charSizeForCount(playerCount, constraints.maxWidth);
-        // Character BOX WIDTH — sized for the widest expected source aspect
-        // (~1.3:1 for AquilaEagle with wings spread). With fitHeight inside
-        // this box, narrower characters center horizontally; the widest fills
-        // the box.
-        final charBoxWidth = charSize * 1.3;
-        // Podium / column width — just a little wider than the widest
-        // character box.
-        final barWidth = charBoxWidth + 16;
+        // Character BOX WIDTH = charSize (square box). Wide-aspect characters
+        // (eagle ~1.3:1 at fitHeight) overflow horizontally by ~15% each
+        // side, but slot whitespace absorbs the bleed without colliding with
+        // neighbors — same pattern Lunar Lander uses with `BoxFit.contain`.
+        final charBoxWidth = charSize;
 
         // Reserve vertical space above the bar for the column's other
         // children — sized for the worst case (active player with Speed Play
@@ -832,10 +829,10 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         //   Name pill           ~28  (font 18 + 4 pad + line gap)
         //   Speed-timer pill    ~34  (font 16 + 6 pad + 2 border + 6 outer)
         //   Double-range label  ~20  (font 12 + 4 bottom pad)
-        //   Score text          ~20  (font 14 + line gap)
+        //   Score text          ~26  (font 18 + line gap)
         //   Gap before bar       ~4
         //   Buffer               ~4
-        const reservedAbove = 28.0 + 34.0 + 20.0 + 20.0 + 4.0 + 4.0;
+        const reservedAbove = 28.0 + 34.0 + 20.0 + 26.0 + 4.0 + 4.0;
         final barMaxHeight =
             (constraints.maxHeight - charSize - reservedAbove)
                 .clamp(120.0, 500.0);
@@ -845,16 +842,21 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             crossAxisAlignment: CrossAxisAlignment.end,
+            // Each player gets an Expanded slot (= row_width / N), like
+            // Lunar Lander. Leftover space stays inside the slot rather than
+            // being distributed as gaps between podiums, so adjacent
+            // characters sit much closer at higher player counts.
             children: game.playerIds.map<Widget>((id) {
-              return _buildPodium(
-                game: game,
-                playerId: id as String,
-                currentPlayerId: currentPlayerId,
-                allPlayers: allPlayers,
-                charSize: charSize,
-                charBoxWidth: charBoxWidth,
-                barWidth: barWidth,
-                barMaxHeight: barMaxHeight,
+              return Expanded(
+                child: _buildPodium(
+                  game: game,
+                  playerId: id as String,
+                  currentPlayerId: currentPlayerId,
+                  allPlayers: allPlayers,
+                  charSize: charSize,
+                  charBoxWidth: charBoxWidth,
+                  barMaxHeight: barMaxHeight,
+                ),
               );
             }).toList(),
           ),
@@ -864,20 +866,19 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
   }
 
   double _charSizeForCount(int count, double availableWidth) {
-    // Per-count clamp ceilings + per-column multipliers, anchored on:
-    //   • 2-player head-to-head feel (ceiling 280)
-    //   • 4-player target (ceiling 254, +15% over the previous tweak)
-    // Counts 3 and 5–8 are calibrated so the total podium row at the clamp
-    // ceiling fills a consistent ~96% of a wide tablet/desktop screen
-    // (≈1385 px row at 1440 px width). Pillar width tracks automatically via
-    // charBoxWidth = charSize × 1.3 and barWidth = charBoxWidth + 16.
+    // Per-count clamp ceilings + per-column multipliers.
+    //   • 2-player: head-to-head feel (ceiling 280)
+    //   • 3- and 4-player: large characters (ceilings 267 / 254)
+    //   • 5–8 player: 0.85 × slot width (Lunar Lander pattern), with ceilings
+    //     calibrated so adjacent characters sit ~10–15% of slot width apart
+    //     once `Expanded` slots replaced the old fixed-width spaceEvenly row.
     if (count <= 2) return (availableWidth / count * 0.42).clamp(140.0, 280.0);
     if (count == 3) return (availableWidth / count * 0.70).clamp(135.0, 267.0);
     if (count == 4) return (availableWidth / count * 1.00).clamp(125.0, 254.0);
-    if (count == 5) return (availableWidth / count * 0.85).clamp(105.0, 200.0);
-    if (count == 6) return (availableWidth / count * 0.85).clamp(85.0, 165.0);
-    if (count == 7) return (availableWidth / count * 0.85).clamp(70.0, 140.0);
-    return (availableWidth / count * 0.85).clamp(60.0, 121.0); // 8 players
+    if (count == 5) return (availableWidth / count * 0.85).clamp(105.0, 230.0);
+    if (count == 6) return (availableWidth / count * 0.85).clamp(85.0, 195.0);
+    if (count == 7) return (availableWidth / count * 0.85).clamp(70.0, 175.0);
+    return (availableWidth / count * 0.85).clamp(60.0, 153.0); // 8 players
   }
 
   /// Computes the active player's displayed score, factoring in darts thrown
@@ -918,7 +919,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     required List<dynamic> allPlayers,
     required double charSize,
     required double charBoxWidth,
-    required double barWidth,
     required double barMaxHeight,
   }) {
     final isActive = playerId == currentPlayerId;
@@ -960,7 +960,10 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     // SizedBox is wider than tall to accommodate the widest expected
     // character (~1.3:1 aspect for AquilaEagle); narrower characters center
     // horizontally inside the box.
-    Widget buildCharacterImage() {
+    // Foreground character only (no inline glow). The active player's glow is
+    // now rendered as a separate background layer in the Stack below so it can
+    // bleed up behind the name and score.
+    Widget buildCharacterForeground() {
       final fallbackIcon = Icon(
         Icons.person,
         color: isActive ? _kGladiatorGold : _kMarbleWhite,
@@ -973,75 +976,137 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           child: Center(child: fallbackIcon),
         );
       }
-
-      final foreground = Image.asset(
-        characterPath,
-        fit: BoxFit.fitHeight,
-        errorBuilder: (_, __, ___) => fallbackIcon,
-      );
-
-      if (!isActive) {
-        return SizedBox(
-          width: charBoxWidth,
-          height: charSize,
-          child: foreground,
-        );
-      }
-
-      // Active: render a blurred Imperial Purple silhouette behind the
-      // foreground at slightly larger bounds so the glow extends outward.
-      final glowPad = charSize * 0.10;
       return SizedBox(
         width: charBoxWidth,
         height: charSize,
-        child: Stack(
-          clipBehavior: Clip.none,
-          fit: StackFit.expand,
-          children: [
-            Positioned(
-              left: -glowPad,
-              right: -glowPad,
-              top: -glowPad,
-              bottom: -glowPad,
-              child: ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(
-                    sigmaX: charSize * 0.07, sigmaY: charSize * 0.07),
-                child: ColorFiltered(
-                  colorFilter: ColorFilter.mode(
-                      _kImperialPurple.withOpacity(0.85), BlendMode.srcIn),
-                  child: Image.asset(
-                    characterPath,
-                    fit: BoxFit.fitHeight,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                ),
-              ),
-            ),
-            foreground,
-          ],
+        child: Image.asset(
+          characterPath,
+          fit: BoxFit.fitHeight,
+          errorBuilder: (_, __, ___) => fallbackIcon,
         ),
       );
     }
 
-    return SizedBox(
-      width: barWidth,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // Player name label — ABOVE the character for ALL players (active +
-          // inactive). Active player's name renders in Imperial Purple to
-          // mirror the active glow; inactive players use Marble White. Wrapped
-          // in a Container with horizontal padding + ellipsis truncation so
-          // names fit cleanly within the podium column (lunar-lander pattern).
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            child: Text(
-              playerName,
-              key: isActive
-                  ? GladiatorArenaGameKeys.activePlayerNameLabel
-                  : null,
+    // Top zone — name, timer/double-range, score, character — wrapped in a
+    // Stack so the active player's Imperial Purple glow can render BEHIND
+    // every element above the bar. The glow is the character silhouette
+    // bottom-anchored inside a tall blur layer; with sigma ~charSize*0.20 the
+    // haze bleeds upward behind the score and name without distorting the
+    // character's shape-conformal halo at the bottom.
+    final glowPad = charSize * 0.10;
+    final topZone = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        if (isActive && characterPath != null)
+          Positioned(
+            left: -glowPad,
+            right: -glowPad,
+            top: 0,
+            bottom: -glowPad,
+            child: IgnorePointer(
+              child: ImageFiltered(
+                imageFilter: ui.ImageFilter.blur(
+                    sigmaX: charSize * 0.20, sigmaY: charSize * 0.20),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(
+                    width: charBoxWidth + glowPad * 2,
+                    height: charSize + glowPad * 2,
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                          _kImperialPurple.withOpacity(0.85), BlendMode.srcIn),
+                      child: Image.asset(
+                        characterPath,
+                        fit: BoxFit.fitHeight,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Name label
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Text(
+                playerName,
+                key: isActive
+                    ? GladiatorArenaGameKeys.activePlayerNameLabel
+                    : null,
+                style: GoogleFonts.cinzel(
+                  fontSize: isActive ? 18 : 16,
+                  fontWeight: FontWeight.bold,
+                  color: _kMarbleWhite,
+                  shadows: const [
+                    Shadow(
+                        color: Color(0xCC000000),
+                        offset: Offset(1, 1),
+                        blurRadius: 2),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // Speed Play timer (active only)
+            if (isActive && game.speedPlayEnabled == true)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4, top: 2),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _speedPlaySecondsRemaining <= 5
+                        ? _kBloodRed.withOpacity(0.25)
+                        : _kImperialPurple.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _speedPlaySecondsRemaining <= 5
+                          ? _kBloodRed
+                          : _kImperialPurple,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    '$_speedPlaySecondsRemaining',
+                    key: GladiatorArenaGameKeys.timerDisplay,
+                    style: GoogleFonts.cinzel(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: _speedPlaySecondsRemaining <= 5
+                          ? _kBloodRed
+                          : _kMarbleWhite,
+                    ),
+                  ),
+                ),
+              ),
+            // Double range indicator (active only)
+            if (showDoubleRange)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  'Double Range!',
+                  key: GladiatorArenaGameKeys.doubleRangeIndicator,
+                  style: GoogleFonts.cinzel(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: _kGladiatorGold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            // Score — sits between name and character. Color matches the name
+            // (Marble White) for visual unity; active player shows the live
+            // in-turn total to match the bar.
+            Text(
+              '$liveScore',
               style: GoogleFonts.cinzel(
-                fontSize: isActive ? 18 : 16,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: _kMarbleWhite,
                 shadows: const [
@@ -1051,88 +1116,44 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                       blurRadius: 2),
                 ],
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          // Speed Play timer (active player only, when Speed Play is enabled).
-          if (isActive && game.speedPlayEnabled == true)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4, top: 2),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _speedPlaySecondsRemaining <= 5
-                      ? _kBloodRed.withOpacity(0.25)
-                      : _kImperialPurple.withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _speedPlaySecondsRemaining <= 5
-                        ? _kBloodRed
-                        : _kImperialPurple,
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  '$_speedPlaySecondsRemaining',
-                  key: GladiatorArenaGameKeys.timerDisplay,
-                  style: GoogleFonts.cinzel(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: _speedPlaySecondsRemaining <= 5
-                        ? _kBloodRed
-                        : _kMarbleWhite,
-                  ),
-                ),
+            // Character (foreground only — glow is the Stack's first child)
+            SizedBox(
+              key: GladiatorArenaGameKeys.podium(playerId),
+              child: buildCharacterForeground(),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        topZone,
+        const SizedBox(height: 2),
+        // Podium bar — rendered as a marble Roman column with vertical
+        // fluting and cylindrical shading. Active players get an Imperial
+        // Purple wash over the marble; inactive players a subtle Colosseum
+        // Gray wash. Pillar width is anchored to charSize × 0.9 so the
+        // column reads as a slightly-narrower plinth under the character.
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 400),
+          width: charSize * 0.9,
+          height: barHeight,
+          child: ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(4)),
+            child: CustomPaint(
+              size: Size.infinite,
+              painter: _RomanColumnPainter(
+                tint: isActive ? _kImperialPurple : _kColosseumGray,
+                isActive: isActive,
               ),
             ),
-          // Double range indicator (active only, between name and character)
-          if (showDoubleRange)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                'Double Range!',
-                key: GladiatorArenaGameKeys.doubleRangeIndicator,
-                style: GoogleFonts.cinzel(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: _kGladiatorGold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          // Character image — shape-conformal glow when active
-          SizedBox(
-            key: GladiatorArenaGameKeys.podium(playerId),
-            child: buildCharacterImage(),
           ),
-          // Score (active player shows the live in-turn total to match bar)
-          Text(
-            '$liveScore',
-            style: GoogleFonts.cinzel(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: _kGladiatorGold,
-            ),
-          ),
-          const SizedBox(height: 2),
-          // Podium bar — active uses Imperial Purple to match the active
-          // player's silhouette glow; inactive uses Colosseum Gray for a
-          // uniform colosseum-stone look.
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 400),
-            width: barWidth - 8,
-            height: barHeight,
-            decoration: BoxDecoration(
-              color: isActive ? _kImperialPurple : _kColosseumGray,
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(4)),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1173,4 +1194,145 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
       ),
     );
   }
+}
+
+// ─── Roman column painter ────────────────────────────────────────────────────
+// Renders a fluted marble Roman column. Layers, bottom-up:
+//   1. Warm-cream marble base gradient (top→bottom, slight darkening).
+//   2. Soft marble veining (a few subtle wavy strokes).
+//   3. Vertical flutes — concave grooves rendered as horizontal
+//      light→dark→light gradients across each flute strip, separated by thin
+//      bright fillets at the seams to read as raised ridges.
+//   4. Cylindrical shading — left/right edges darken to suggest the column's
+//      curvature.
+//   5. Player tint wash (Imperial Purple for active, Colosseum Gray for
+//      inactive) at low opacity so the marble character is preserved.
+class _RomanColumnPainter extends CustomPainter {
+  const _RomanColumnPainter({required this.tint, required this.isActive});
+
+  final Color tint;
+  final bool isActive;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+    final rect = Offset.zero & size;
+
+    // 1. Marble base — warm cream, slightly cooler at the bottom.
+    final basePaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFFF7F2E6), // top — bright cream
+          Color(0xFFE6DCC8), // bottom — warmer shadowed marble
+        ],
+      ).createShader(rect);
+    canvas.drawRect(rect, basePaint);
+
+    // 2. Marble veining — a few faint wavy strokes. Deterministic (seeded by
+    // size.width.toInt()) so the same-width column is stable across rebuilds.
+    final veinPaint = Paint()
+      ..color = const Color(0x33857058)
+      ..strokeWidth = 0.8
+      ..style = PaintingStyle.stroke;
+    final seed = size.width.toInt();
+    for (int i = 0; i < 3; i++) {
+      final t = ((seed + i * 37) % 100) / 100.0;
+      final yStart = size.height * (0.15 + 0.25 * t);
+      final yEnd = size.height * (0.55 + 0.35 * ((seed + i * 19) % 100) / 100);
+      final p = Path()
+        ..moveTo(-2, yStart)
+        ..cubicTo(
+          size.width * 0.30, yStart + size.height * 0.05,
+          size.width * 0.65, yStart + size.height * 0.18,
+          size.width + 2, yEnd,
+        );
+      canvas.drawPath(p, veinPaint);
+    }
+
+    // 3. Vertical fluting. Number of flutes scales with width so each flute
+    // stays at least ~10 px wide; clamped to a sensible range.
+    final fluteCount = (size.width / 18).round().clamp(5, 9);
+    final fluteWidth = size.width / fluteCount;
+    for (int i = 0; i < fluteCount; i++) {
+      final x = i * fluteWidth;
+      final fluteRect = Rect.fromLTWH(x, 0, fluteWidth, size.height);
+      // Concave groove: shadowed across the whole flute, deepest in the
+      // center, falling off toward the rim. Edges stay dark so the bright
+      // fillet line at the seam reads as a raised ridge against carved sides.
+      final groovePaint = Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Color(0x14000000), // rim-side shadow (just inside the fillet)
+            Color(0x33000000), // descending into groove
+            Color(0x4D000000), // deepest groove shadow (center)
+            Color(0x33000000), // rising back up
+            Color(0x14000000), // rim-side shadow
+          ],
+          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+        ).createShader(fluteRect);
+      canvas.drawRect(fluteRect, groovePaint);
+    }
+
+    // Fillet ridges between flutes — drawn AFTER all flute shadows so they
+    // sit cleanly on top. Each ridge is a bright highlight line flanked by
+    // thin dark "carved-edge" lines on either side, which is what makes the
+    // groove read as concave rather than just darkened.
+    final filletHighlight = Paint()
+      ..color = const Color(0xCCFFF8E8)
+      ..strokeWidth = 1.2;
+    final carvedEdge = Paint()
+      ..color = const Color(0x33000000)
+      ..strokeWidth = 1.0;
+    for (int i = 1; i < fluteCount; i++) {
+      final x = i * fluteWidth;
+      // Dark carved edge on the left side of the ridge…
+      canvas.drawLine(
+          Offset(x - 1, 0), Offset(x - 1, size.height), carvedEdge);
+      // …bright highlight at the ridge crest…
+      canvas.drawLine(
+          Offset(x, 0), Offset(x, size.height), filletHighlight);
+      // …dark carved edge on the right side of the ridge.
+      canvas.drawLine(
+          Offset(x + 1, 0), Offset(x + 1, size.height), carvedEdge);
+    }
+
+    // 4. Cylindrical body shading — strong vignette on the left edge, softer
+    // on the right (light from upper-right convention).
+    final cylPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          Color(0x66000000),
+          Color(0x00000000),
+          Color(0x00000000),
+          Color(0x33000000),
+        ],
+        stops: [0.0, 0.20, 0.78, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, cylPaint);
+
+    // 5. Player tint wash — preserves marble while signalling active state.
+    final tintPaint = Paint()
+      ..color = tint.withOpacity(isActive ? 0.32 : 0.18)
+      ..blendMode = BlendMode.multiply;
+    canvas.drawRect(rect, tintPaint);
+
+    // 6. Subtle top edge highlight — sells the rounded-top capital.
+    final capPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0x55FFFFFF), Color(0x00FFFFFF)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, 6));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, 6), capPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RomanColumnPainter old) =>
+      old.tint != tint || old.isActive != isActive;
 }
