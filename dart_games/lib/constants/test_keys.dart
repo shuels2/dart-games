@@ -844,7 +844,6 @@ class GladiatorArenaResultsKeys {
   static const Key winnerCharacterImage = Key('results_ga_winner_character_image');
   static const Key winnerPlayerPhoto = Key('results_ga_winner_player_photo');
   static const Key winnerName = Key('results_ga_winner_name');
-  static const Key winnerScore = Key('results_ga_winner_score');
   static const Key rankingsList = Key('results_ga_rankings_list');
   static Key rankRow(int index) => Key('results_ga_rank_row_$index');
   static const Key knockoffStats = Key('results_ga_knockoff_stats');

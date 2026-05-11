@@ -1012,10 +1012,6 @@ class ElementFinders {
     return find.byKey(GladiatorArenaResultsKeys.winnerName);
   }
 
-  static Finder getGladiatorArenaWinnerScore() {
-    return find.byKey(GladiatorArenaResultsKeys.winnerScore);
-  }
-
   static Finder getGladiatorArenaRankingsList() {
     return find.byKey(GladiatorArenaResultsKeys.rankingsList);
   }
