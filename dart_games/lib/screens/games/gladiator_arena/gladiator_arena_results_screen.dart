@@ -294,7 +294,8 @@ class _GladiatorArenaResultsScreenState
                                       size: 220 * _scale),
                             ),
                             SizedBox(width: 32 * _scale),
-                            // Player photo / initials avatar
+                            // Player photo / initials avatar — gold ring
+                            // border only, no glow halo.
                             Container(
                               key: GladiatorArenaResultsKeys
                                   .winnerPlayerPhoto,
@@ -304,13 +305,6 @@ class _GladiatorArenaResultsScreenState
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                     color: _kGladiatorGold, width: 4),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _kGladiatorGold.withOpacity(0.4),
-                                    blurRadius: 22,
-                                    spreadRadius: 6,
-                                  ),
-                                ],
                               ),
                               child: ClipOval(
                                 child: winner.photoPath != null
