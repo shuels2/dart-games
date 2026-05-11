@@ -1292,6 +1292,38 @@ void main() {
     });
 
     test(
+        '13.11b editPlayerScore round-trips a lowercase-single segment (s20) — regression',
+        () {
+      // Regression for `_parseSegment` lowercase bug. The mock dartboard
+      // (`mock_scolia_api_service.dart`) emits 's<N>' (lowercase) for
+      // inner-single sectors thrown near the board center. The screen's
+      // `_parseSector` regex `([SDTsdt])` accepts both cases, but
+      // `_parseSegment` (used by the edit-score replay path) previously
+      // only matched uppercase prefixes, so 's20' fell through to
+      // `int.tryParse('s20')` → null → 0 and was replayed as a Miss.
+      //
+      // This test forces a turn containing a lowercase 's20' segment and
+      // then edits the turn, expecting the lowercase dart to round-trip
+      // its real point value on replay.
+      final p = _makeProvider(targetScore: 500, doubleFinishEnabled: false);
+      _forcePlayer(p, 'p1');
+      p.processDartThrow(score: 20, multiplier: 'single', sector: 's20');
+      p.processDartThrow(score: 0, multiplier: 'miss', sector: 'Miss');
+      p.processDartThrow(score: 0, multiplier: 'miss', sector: 'Miss');
+
+      expect(p.currentGame!.scores['p1'], 20,
+          reason: 'first-pass commit treats inner-single as 20');
+      expect(p.currentGame!.currentTurnDartSegments['p1'],
+          ['s20', 'Miss', 'Miss']);
+
+      // Edit: keep dart 1 as 's20', set darts 2/3 to S10/S5 → total 35.
+      p.editPlayerScore('p1', ['s20', 'S10', 'S5']);
+
+      expect(p.currentGame!.scores['p1'], 35,
+          reason: 'lowercase s20 must replay as a 20-pt single, not 0');
+    });
+
+    test(
         '13.11 editPlayerScore undoes a multi-victim knockoff: both victims restored, dealt count drops by 2',
         () {
       // 3 players, target=200, DF OFF. p1 at 100, p2 and p3 BOTH at 160.

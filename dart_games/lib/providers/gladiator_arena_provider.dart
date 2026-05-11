@@ -513,15 +513,21 @@ class GladiatorArenaProvider extends ChangeNotifier {
     if (segment == '25') {
       return _SegmentParsed(score: 25, multiplier: 'single');
     }
-    if (segment.startsWith('T')) {
+    // Accept BOTH upper- and lowercase prefixes. The mock dartboard emits
+    // lowercase 's<N>' for inner-single sectors (`_convertToScoliaFormat`),
+    // and the screen's `_parseSector` preserves that casing when it passes
+    // the sector through to `processDartThrow`, so edit-score replays must
+    // round-trip lowercase segments. Without this, `'s20'` falls through to
+    // `int.tryParse` and becomes a 0-score dart on replay.
+    if (segment.startsWith('T') || segment.startsWith('t')) {
       final val = int.tryParse(segment.substring(1)) ?? 0;
       return _SegmentParsed(score: val, multiplier: 'triple');
     }
-    if (segment.startsWith('D')) {
+    if (segment.startsWith('D') || segment.startsWith('d')) {
       final val = int.tryParse(segment.substring(1)) ?? 0;
       return _SegmentParsed(score: val, multiplier: 'double');
     }
-    if (segment.startsWith('S')) {
+    if (segment.startsWith('S') || segment.startsWith('s')) {
       final val = int.tryParse(segment.substring(1)) ?? 0;
       return _SegmentParsed(score: val, multiplier: 'single');
     }

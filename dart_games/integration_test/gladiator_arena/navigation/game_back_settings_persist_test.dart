@@ -29,8 +29,13 @@ void main() {
     // Verify game screen
     expect(ElementFinders.getGladiatorArenaSkipTurnButton(), findsOneWidget);
 
-    // Tap back button (triggers SaveGameModal)
+    // Tap back button (triggers SaveGameModal). The default pump sequence
+    // is `simpleUpdate` (2 immediate pumps) which doesn't always let the
+    // modal animation finish before the next interaction — `dialogOpen`
+    // gives the 500 ms animation window the AlertDialog needs.
     await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await PumpSequences.dialogOpen(tester);
+    UITestHelpers.verifySaveGameModal();
 
     // Don't save — tap Don't Save
     await UITestHelpers.tapDontSaveButton(tester);
