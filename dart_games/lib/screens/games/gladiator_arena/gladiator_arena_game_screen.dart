@@ -64,6 +64,16 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
   Timer? _speedPlayTimer;
   int _speedPlaySecondsRemaining = 25;
 
+  // Milestone-announcement state-transition tracking (per playerId). Each
+  // milestone fires at most once per *crossing* from out-of-zone → in-zone.
+  // If the player gets knocked off (score drops out of zone) the flag flips
+  // back to false automatically and the milestone can re-fire on the next
+  // crossing.
+  //   • _wasInDoubleRange  — DF ON AND (target - score) in [2..40] AND even
+  //   • _wasInNearVictory  — (target - score) in [1..20]
+  final Map<String, bool> _wasInDoubleRange = {};
+  final Map<String, bool> _wasInNearVictory = {};
+
   @override
   void initState() {
     super.initState();
@@ -255,6 +265,47 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         wasBustOvershoot: wasBustOvershoot,
         wasBustNoDouble: wasBustNoDouble,
       );
+
+      // Milestone announcements — fire on the dart that *crosses* the active
+      // player into the double-range or near-victory zone. Matches the
+      // Reef Royale / Clockwork Quest precedent: gated by a state-transition
+      // flag so each crossing fires at most once. Near victory takes
+      // precedence when both apply (it's the more urgent milestone). Skip
+      // on victory (already handled by announceVictory).
+      //
+      // After firing, tracking flags are re-synced for ALL players (not just
+      // the active one) so a knockoff victim's drop to 0 is reflected — when
+      // they climb back into the zone later, the milestone re-fires.
+      if (!provider.hasWinner) {
+        final newScore = game.scores[playerId] ?? 0;
+        final remaining = targetScore - newScore;
+        final inDoubleRange = dfOn &&
+            remaining >= 2 &&
+            remaining <= 40 &&
+            remaining.isEven;
+        final inNearVictory = remaining >= 1 && remaining <= 20;
+        final wasInDR = _wasInDoubleRange[playerId] ?? false;
+        final wasInNV = _wasInNearVictory[playerId] ?? false;
+
+        if (newScore > 0) {
+          if (inNearVictory && !wasInNV) {
+            _audioQueue?.announceNearVictory(currentPlayerName);
+          } else if (inDoubleRange && !wasInDR) {
+            _audioQueue?.announceDoubleRange(currentPlayerName);
+          }
+        }
+        // Sync flags for EVERY player, not just the active one. A knockoff
+        // victim went from in-zone → 0, so their flags must clear to allow
+        // re-firing when they come back. A player at score 0 has both flags
+        // false regardless of the (target - 0) arithmetic.
+        for (final id in game.playerIds) {
+          final s = game.scores[id] ?? 0;
+          final r = targetScore - s;
+          _wasInDoubleRange[id] =
+              dfOn && s > 0 && r >= 2 && r <= 40 && r.isEven;
+          _wasInNearVictory[id] = s > 0 && r >= 1 && r <= 20;
+        }
+      }
     }
 
     // After throw: check if turn is complete → unconditionally announce remove darts

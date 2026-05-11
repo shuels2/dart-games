@@ -1062,4 +1062,276 @@ void main() {
       expect(p.getCurrentPlayerDartsThrown(), 2);
     });
   });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Group 13 — Gap-coverage tests (Phase 1 of cross-game audit)
+  //
+  // Targets specific behavioural seams the original suite did not exercise:
+  //   • DF bust short-circuits the knockoff check (no false-positive knockoffs)
+  //   • DF bust freezes dartsThrown to 3 on dart 1 / 2 / 3
+  //   • Shield-round modulo holds at rounds 5, 10, 15
+  //   • Win during shield round still wins (shield gate is knockoff-only)
+  //   • Speed-Play timer expiry no-ops after a bust already set takeout
+  //   • Speed-Play X-padding interacts correctly with DF prospective on commit
+  //   • editPlayerScore decrements stats for EVERY victim of a multi-victim
+  //     knockoff (not just one)
+  // ─────────────────────────────────────────────────────────────────────────────
+  group('GladiatorArenaProvider — gap coverage', () {
+    test(
+        '13.1 DF ON bust overshoot: knockoff check is NOT run (opponent at the would-be-commit score is unaffected)',
+        () {
+      // Setup: p1 at 180, p2 at 180 (deliberately matched). p1 throws T20,
+      // prospective 240 > target 200 → BUST. _runKnockoffCheck must NOT run
+      // (provider line 234-240: bust path returns before line 262 commit).
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 200,
+          doubleFinishEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 180;
+      p.currentGame!.scores['p2'] = 180;
+
+      _dart(p, 20, 'triple', 'T20'); // prospective=240 > 200 → BUST
+
+      expect(p.currentGame!.scores['p1'], 180,
+          reason: 'p1 score reverts on bust');
+      expect(p.currentGame!.scores['p2'], 180,
+          reason: 'p2 stays — bust did NOT commit, so no knockoff check ran');
+      expect(p.currentGame!.knockoffsDealt['p1'] ?? 0, 0);
+      expect(p.currentGame!.knockoffsReceived['p2'] ?? 0, 0);
+    });
+
+    test(
+        '13.2 DF ON bust no-double: knockoff check is NOT run (opponent unaffected)',
+        () {
+      // p1 at 180, p2 at 200 is impossible (target=200 means p2 won), so
+      // construct via target=100, p1 at 80, p2 at 100 → impossible too.
+      // Use target=100, p1 at 80, p2 at 80 — non-conflict baseline showing
+      // bust-no-double doesn't introduce a side-effect.
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 100,
+          doubleFinishEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 80;
+      p.currentGame!.scores['p2'] = 80;
+
+      _dart(p, 20, 'single', 'S20'); // prospective=100, S20 not double → BUST
+
+      expect(p.currentGame!.scores['p1'], 80, reason: 'bust reverts');
+      expect(p.currentGame!.scores['p2'], 80,
+          reason: 'knockoff check skipped on bust');
+      expect(p.currentGame!.knockoffsDealt['p1'] ?? 0, 0);
+    });
+
+    test(
+        '13.3 DF bust overshoot on dart 1 sets dartsThrown=3 (remaining darts forfeited)',
+        () {
+      // Bust on dart 1 must immediately set dartsThrown[playerId]=3 so the
+      // takeout prompt fires and the remaining slots are skipped.
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 200,
+          doubleFinishEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 180;
+
+      _dart(p, 20, 'triple', 'T20'); // prospective=240 → BUST on dart 1
+
+      expect(p.currentGame!.dartsThrown['p1'], 3,
+          reason: 'dartsThrown jumps to 3 on dart-1 bust');
+      expect(p.shouldPromptTakeout, isTrue);
+      expect(p.currentGame!.totalDartsThrown['p1'], 1,
+          reason: 'only the busting dart counts toward totalDartsThrown');
+    });
+
+    test('13.4 DF bust overshoot on dart 2 sets dartsThrown=3', () {
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 200,
+          doubleFinishEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 160;
+
+      _dart(p, 5, 'single', 'S5'); // prospective=165, no bust
+      _dart(p, 20, 'triple', 'T20'); // prospective=225 → BUST on dart 2
+
+      expect(p.currentGame!.dartsThrown['p1'], 3);
+      expect(p.shouldPromptTakeout, isTrue);
+      expect(p.currentGame!.totalDartsThrown['p1'], 2);
+    });
+
+    test('13.5 DF bust no-double on dart 1 sets dartsThrown=3', () {
+      // score=180, dart 1 = S20 → prospective=200 exact, S20 is not a double
+      // → BUST. Per provider line 254-257, dartsThrown must be set to 3 here
+      // (not on the next dart).
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 200,
+          doubleFinishEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 180;
+
+      _dart(p, 20, 'single', 'S20');
+
+      expect(p.currentGame!.dartsThrown['p1'], 3);
+      expect(p.shouldPromptTakeout, isTrue);
+    });
+
+    test('13.6 isShieldRound is true on rounds 5, 10, 15 (modulo holds)', () {
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'], shieldRoundEnabled: true);
+
+      p.currentGame!.round = 5;
+      expect(p.currentGame!.isShieldRound, isTrue,
+          reason: 'round 5 is a shield round');
+      p.currentGame!.round = 10;
+      expect(p.currentGame!.isShieldRound, isTrue);
+      p.currentGame!.round = 15;
+      expect(p.currentGame!.isShieldRound, isTrue);
+      p.currentGame!.round = 6;
+      expect(p.currentGame!.isShieldRound, isFalse);
+      p.currentGame!.round = 11;
+      expect(p.currentGame!.isShieldRound, isFalse);
+    });
+
+    test(
+        '13.7 Win during a shield round still wins (shield gates knockoffs only)',
+        () {
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 200,
+          doubleFinishEnabled: true,
+          shieldRoundEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 160;
+      p.currentGame!.round = 5; // shield round active
+      expect(p.currentGame!.isShieldRound, isTrue);
+
+      _miss(p);
+      _miss(p);
+      _dart(p, 20, 'double', 'D20'); // 160+40=200 on a double → WIN
+
+      expect(p.hasWinner, isTrue,
+          reason: 'shield round does not block a victory');
+      expect(p.currentGame!.winnerId, 'p1');
+    });
+
+    test(
+        '13.8 onSpeedPlayTimerExpired is a no-op after a DF bust already set _waitingForTakeout',
+        () {
+      // After a DF bust, _waitingForTakeout=true. The timer-expiry guard at
+      // provider line 546 returns early, so the X-padding code path doesn't
+      // re-run and pollute state.
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 100,
+          doubleFinishEnabled: true,
+          speedPlayEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 80;
+
+      _dart(p, 20, 'triple', 'T20'); // prospective=140 → BUST on dart 1
+      expect(p.shouldPromptTakeout, isTrue);
+      final dartsThrownBeforeExpiry = p.currentGame!.dartsThrown['p1'];
+      final segmentsBeforeExpiry =
+          List<String>.from(p.currentGame!.currentTurnDartSegments['p1']!);
+
+      p.onSpeedPlayTimerExpired();
+
+      expect(p.currentGame!.dartsThrown['p1'], dartsThrownBeforeExpiry,
+          reason: 'no-op when already waiting for takeout');
+      expect(p.currentGame!.currentTurnDartSegments['p1'], segmentsBeforeExpiry,
+          reason: 'X markers NOT appended on the no-op path');
+    });
+
+    test(
+        '13.9 onSpeedPlayTimerExpired with DF-ON partial turn that would overshoot still busts',
+        () {
+      // p1 at 80, target=100, DF ON. Throws T20 (prospective=140 → BUST on
+      // dart 1; takeout fires). Timer expires AFTER the bust → it's a no-op
+      // and the bust outcome is preserved. (Same flow as 13.8 but asserts on
+      // the *score* side: stays at preTurnScore, no X padding visible.)
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 100,
+          doubleFinishEnabled: true,
+          speedPlayEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 80;
+
+      _dart(p, 20, 'triple', 'T20'); // BUST
+      p.onSpeedPlayTimerExpired();
+
+      expect(p.currentGame!.scores['p1'], 80,
+          reason: 'bust outcome preserved across timer expiry no-op');
+      expect(p.shouldPromptTakeout, isTrue);
+    });
+
+    test(
+        '13.10 onSpeedPlayTimerExpired with partial DF-OFF turn commits prospective via X padding',
+        () {
+      // DF OFF, target=200, p1 at 100. Throws S20 (1 dart, prospective=120
+      // <200). Timer expires → pads X+X. Final score commit = 120.
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 200,
+          doubleFinishEnabled: false,
+          speedPlayEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 100;
+
+      _dart(p, 20, 'single', 'S20'); // 1 dart, prospective=120, not committed
+      p.onSpeedPlayTimerExpired();
+
+      expect(p.currentGame!.scores['p1'], 120,
+          reason: 'X padding commits prospective at current accumulated total');
+      expect(p.currentGame!.dartsThrown['p1'], 3,
+          reason: 'X padding fills remaining slots');
+      expect(p.shouldPromptTakeout, isTrue);
+    });
+
+    test(
+        '13.11 editPlayerScore undoes a multi-victim knockoff: both victims restored, dealt count drops by 2',
+        () {
+      // 3 players, target=200, DF OFF. p1 at 100, p2 and p3 BOTH at 160.
+      // p1 throws T20+Miss+Miss → commit 160, knocks off p2 AND p3.
+      // Then editPlayerScore('p1', [Miss,Miss,Miss]) must undo BOTH
+      // knockoffs: knockoffsDealt[p1]-=2, knockoffsReceived[p2]/[p3]-=1,
+      // and both victim scores restored to 160.
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2', 'p3'],
+          targetScore: 200,
+          doubleFinishEnabled: false);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 100;
+      p.currentGame!.scores['p2'] = 160;
+      p.currentGame!.scores['p3'] = 160;
+
+      _dart(p, 20, 'triple', 'T20'); // 60 → commits at dart 3 below
+      _miss(p);
+      _miss(p);
+
+      // Verify the multi-victim knockoff happened
+      expect(p.currentGame!.scores['p1'], 160);
+      expect(p.currentGame!.scores['p2'], 0);
+      expect(p.currentGame!.scores['p3'], 0);
+      expect(p.currentGame!.knockoffsDealt['p1'], 2);
+      expect(p.currentGame!.knockoffsReceived['p2'], 1);
+      expect(p.currentGame!.knockoffsReceived['p3'], 1);
+
+      // Edit p1's turn to all misses — must undo BOTH knockoffs
+      p.editPlayerScore('p1', ['Miss', 'Miss', 'Miss']);
+
+      expect(p.currentGame!.scores['p1'], 100, reason: 'p1 score reverts');
+      expect(p.currentGame!.scores['p2'], 160,
+          reason: 'p2 restored to pre-knockoff score');
+      expect(p.currentGame!.scores['p3'], 160,
+          reason: 'p3 restored to pre-knockoff score');
+      expect(p.currentGame!.knockoffsDealt['p1'], 0,
+          reason: 'knockoffsDealt decremented for EACH victim (2 total)');
+      expect(p.currentGame!.knockoffsReceived['p2'], 0);
+      expect(p.currentGame!.knockoffsReceived['p3'], 0);
+    });
+  });
 }

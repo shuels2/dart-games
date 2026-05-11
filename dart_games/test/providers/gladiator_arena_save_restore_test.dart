@@ -359,5 +359,74 @@ void main() {
       await newProvider.restoreGame(saved[0]);
       expect(newProvider.shouldPromptTakeout, isTrue);
     });
+
+    // ─── 16. speedPlayTimeRemaining survives save/restore ─────────────────────
+
+    test(
+        'speedPlayTimeRemaining survives save/restore at mid-turn value',
+        () async {
+      // Speed Play timer is in the model — saving mid-turn at e.g. 18 seconds
+      // remaining should round-trip via the gameState JSON.
+      provider.startGame(
+        playerIds: ['p1', 'p2'],
+        targetScore: 200,
+        doubleFinishEnabled: true,
+        shieldRoundEnabled: false,
+        speedPlayEnabled: true,
+        random: Random(0),
+      );
+      provider.setSpeedPlayTimeRemaining(18);
+      expect(provider.currentGame!.speedPlayTimeRemaining, 18);
+
+      await provider.saveGame(players);
+      final saved = await savedGames();
+
+      final newProvider = GladiatorArenaProvider(apiClient: mockServer.apiClient);
+      await newProvider.restoreGame(saved[0]);
+
+      expect(newProvider.currentGame!.speedPlayTimeRemaining, 18,
+          reason:
+              'mid-turn speedPlayTimeRemaining must round-trip via gameState');
+      expect(newProvider.currentGame!.speedPlayEnabled, isTrue);
+    });
+
+    // ─── 17. editPlayerScore after restoreGame keeps resumedSavedGameId ───────
+
+    test(
+        'editPlayerScore on a restored game keeps resumedSavedGameId stable (next save overwrites)',
+        () async {
+      // After resume, editPlayerScore must NOT clear resumedSavedGameId — the
+      // re-save still has to overwrite the original record, not create a
+      // duplicate.
+      startDefault();
+      // Throw a turn (so there's something to edit)
+      provider.processDartThrow(score: 20, multiplier: 'single', sector: 'S20');
+      provider.processDartThrow(score: 0, multiplier: 'miss', sector: 'Miss');
+      provider.processDartThrow(score: 0, multiplier: 'miss', sector: 'Miss');
+      await provider.saveGame(players);
+      var saved = await savedGames();
+      final originalId = saved[0].id as String;
+
+      // Restore into a fresh provider — resumedSavedGameId is now set
+      final newProvider = GladiatorArenaProvider(apiClient: mockServer.apiClient);
+      await newProvider.restoreGame(saved[0]);
+      expect(newProvider.resumedSavedGameId, originalId);
+
+      // Edit the player's score (assumes p1 is still the player who just threw)
+      final currentPlayerId = newProvider.currentPlayerId!;
+      newProvider.editPlayerScore(currentPlayerId, ['Miss', 'Miss', 'Miss']);
+
+      expect(newProvider.resumedSavedGameId, originalId,
+          reason:
+              'editPlayerScore must NOT clear resumedSavedGameId — '
+              'subsequent saves must still overwrite the same record');
+
+      // Re-save and confirm it overwrites (still 1 record, not 2)
+      await newProvider.saveGame(players);
+      saved = await savedGames();
+      expect(saved.length, 1,
+          reason: 'edit-then-save overwrites the resumed record');
+      expect(saved[0].id, originalId);
+    });
   });
 }

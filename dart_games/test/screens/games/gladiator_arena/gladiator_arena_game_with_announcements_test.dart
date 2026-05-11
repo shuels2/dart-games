@@ -511,4 +511,443 @@ void main() {
       expect(mock.removeDartsAnnounced, isTrue);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Group 6 — Milestone announcements (Double Range / Near Victory)
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // Mirrors the screen's wiring at `gladiator_arena_game_screen.dart:_handleDartThrow`
+  // (the block that follows pickAndAnnounceMoment). Maintains per-player
+  // state-transition flags so each milestone fires AT MOST ONCE per crossing.
+  // Near Victory takes precedence over Double Range when both apply.
+
+  group('Group 6 — Milestone announcements', () {
+    /// Mirrors the screen's milestone-firing logic. After a dart is thrown via
+    /// the provider, this re-evaluates the in-zone state for the active player
+    /// and fires the appropriate milestone if it just crossed in. Then syncs
+    /// flags for ALL players so knockoff victims clear correctly.
+    void fireMilestone({
+      required GladiatorArenaProvider provider,
+      required MockGladiatorArenaAudioQueueService mock,
+      required Map<String, bool> wasInDR,
+      required Map<String, bool> wasInNV,
+      required String playerName,
+    }) {
+      final game = provider.currentGame!;
+      final playerId = game.currentPlayerId;
+      final target = game.targetScore;
+      final dfOn = game.doubleFinishEnabled;
+      final newScore = game.scores[playerId] ?? 0;
+      final remaining = target - newScore;
+      final inDR = dfOn && remaining >= 2 && remaining <= 40 && remaining.isEven;
+      final inNV = remaining >= 1 && remaining <= 20;
+      final priorDR = wasInDR[playerId] ?? false;
+      final priorNV = wasInNV[playerId] ?? false;
+
+      if (!provider.hasWinner && newScore > 0) {
+        if (inNV && !priorNV) {
+          mock.announceNearVictory(playerName);
+        } else if (inDR && !priorDR) {
+          mock.announceDoubleRange(playerName);
+        }
+      }
+      for (final id in game.playerIds) {
+        final s = game.scores[id] ?? 0;
+        final r = target - s;
+        wasInDR[id] = dfOn && s > 0 && r >= 2 && r <= 40 && r.isEven;
+        wasInNV[id] = s > 0 && r >= 1 && r <= 20;
+      }
+    }
+
+    /// Throw a 3-dart turn (one commit) and run milestone evaluation after
+    /// each dart, exactly like the screen does.
+    void commitTurn(
+      GladiatorArenaProvider provider,
+      MockGladiatorArenaAudioQueueService mock,
+      Map<String, bool> wasInDR,
+      Map<String, bool> wasInNV,
+      String playerName,
+      List<({int score, String mult, String sector})> darts,
+    ) {
+      assert(darts.length == 3);
+      for (final d in darts) {
+        provider.processDartThrow(
+            score: d.score, multiplier: d.mult, sector: d.sector);
+        fireMilestone(
+          provider: provider,
+          mock: mock,
+          wasInDR: wasInDR,
+          wasInNV: wasInNV,
+          playerName: playerName,
+        );
+      }
+    }
+
+    test(
+        '19. Crossing into Double Range (DF ON, remaining=40, even) fires announceDoubleRange once',
+        () {
+      // target=100, DF ON. P1 throws T20+Miss+Miss → score 60, remaining 40
+      // (in DR zone, not in NV zone since 40 > 20).
+      final (provider, mock) = createProviderAndMock(
+        playerIds: ['p1', 'p2'],
+        targetScore: 100,
+        doubleFinishEnabled: true,
+      );
+      final wasInDR = <String, bool>{};
+      final wasInNV = <String, bool>{};
+
+      commitTurn(provider, mock, wasInDR, wasInNV, 'P1', [
+        (score: 20, mult: 'triple', sector: 'T20'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+      ]);
+
+      expect(
+        mock.queuedTexts,
+        contains('P1 enters double range!'),
+        reason: 'remaining=40 with DF ON should fire Double Range',
+      );
+      expect(
+        mock.queuedTexts.where((t) => t.contains('double range')).length,
+        1,
+        reason: 'Double Range fires exactly once per crossing',
+      );
+      expect(
+        mock.queuedTexts.where((t) => t.contains('close to glory')).length,
+        0,
+        reason: 'Near Victory does not fire when remaining > 20',
+      );
+    });
+
+    test(
+        '20. Already in Double Range across turns: announcement does NOT re-fire',
+        () {
+      // target=100, DF ON. After turn 1 P1 is at 60 (in DR). Turn 2 P1 misses
+      // all 3 darts → still at 60 → DR should NOT re-announce.
+      final (provider, mock) = createProviderAndMock(
+        playerIds: ['p1', 'p2'],
+        targetScore: 100,
+        doubleFinishEnabled: true,
+      );
+      final wasInDR = <String, bool>{};
+      final wasInNV = <String, bool>{};
+
+      // Turn 1: P1 reaches 60 (in DR), fires once
+      commitTurn(provider, mock, wasInDR, wasInNV, 'P1', [
+        (score: 20, mult: 'triple', sector: 'T20'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+      ]);
+      provider.handleTakeoutFinished();
+      // P2's turn — all misses
+      commitTurn(provider, mock, wasInDR, wasInNV, 'P2', [
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+      ]);
+      provider.handleTakeoutFinished();
+      // Turn 2: P1 misses everything — still at 60 (in DR)
+      commitTurn(provider, mock, wasInDR, wasInNV, 'P1', [
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+      ]);
+
+      expect(
+        mock.queuedTexts.where((t) => t.contains('double range')).length,
+        1,
+        reason: 'DR announcement must NOT re-fire while continuously in zone',
+      );
+    });
+
+    test(
+        '21. Crossing into Near Victory (remaining=20) fires announceNearVictory once',
+        () {
+      // target=80, DF OFF. P1 throws T20+Miss+Miss → score 60, remaining 20.
+      // DF OFF so Double Range can't fire — only Near Victory should.
+      final (provider, mock) = createProviderAndMock(
+        playerIds: ['p1', 'p2'],
+        targetScore: 80,
+        doubleFinishEnabled: false,
+      );
+      final wasInDR = <String, bool>{};
+      final wasInNV = <String, bool>{};
+
+      commitTurn(provider, mock, wasInDR, wasInNV, 'P1', [
+        (score: 20, mult: 'triple', sector: 'T20'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+      ]);
+
+      expect(
+        mock.queuedTexts,
+        contains('P1 is close to glory!'),
+        reason: 'remaining=20 should fire Near Victory',
+      );
+      expect(
+        mock.queuedTexts.where((t) => t.contains('double range')).length,
+        0,
+        reason: 'Double Range cannot fire with DF OFF',
+      );
+    });
+
+    test(
+        '22. Near Victory takes precedence over Double Range when both apply',
+        () {
+      // target=80, DF ON. P1 reaches score 60 → remaining=20. 20 is in [1..20]
+      // (NV zone) AND in [2..40] && even (DR zone). NV must fire, DR must NOT.
+      final (provider, mock) = createProviderAndMock(
+        playerIds: ['p1', 'p2'],
+        targetScore: 80,
+        doubleFinishEnabled: true,
+      );
+      final wasInDR = <String, bool>{};
+      final wasInNV = <String, bool>{};
+
+      commitTurn(provider, mock, wasInDR, wasInNV, 'P1', [
+        (score: 20, mult: 'triple', sector: 'T20'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+      ]);
+
+      expect(
+        mock.queuedTexts,
+        contains('P1 is close to glory!'),
+        reason: 'Near Victory wins when both zones apply',
+      );
+      expect(
+        mock.queuedTexts.where((t) => t.contains('double range')).length,
+        0,
+        reason: 'Double Range must not also fire on the same crossing',
+      );
+    });
+
+    test('23. Knockoff drops victim to 0 → milestone can re-fire on re-entry',
+        () {
+      // target=80, DF ON.
+      //   Turn 1: P1 throws T20+Miss+Miss → 60 (in NV zone), fires NV once.
+      //   Turn 2: P2 throws T20+Miss+Miss → 60 (in NV zone), P2 lands on
+      //           P1's score → P1 knocked off to 0, P2 enters NV zone too.
+      //   Turn 3: P1 (back at 0) throws T20+Miss+Miss → 60 again → must
+      //           re-fire NV (state-transition flag was cleared by the
+      //           knockoff sync block).
+      final (provider, mock) = createProviderAndMock(
+        playerIds: ['p1', 'p2'],
+        targetScore: 80,
+        doubleFinishEnabled: true,
+      );
+      // startGame picks a random start player — force P1 to go first so the
+      // scenario plays out deterministically.
+      provider.currentGame!.currentPlayerIndex = 0;
+      final wasInDR = <String, bool>{};
+      final wasInNV = <String, bool>{};
+
+      // Turn 1 — P1 reaches 60
+      commitTurn(provider, mock, wasInDR, wasInNV, 'P1', [
+        (score: 20, mult: 'triple', sector: 'T20'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+      ]);
+      provider.handleTakeoutFinished();
+      // Turn 2 — P2 reaches 60 and knocks off P1
+      commitTurn(provider, mock, wasInDR, wasInNV, 'P2', [
+        (score: 20, mult: 'triple', sector: 'T20'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+      ]);
+      // After P2's turn: P1 is back at 0, P2 at 60
+      expect(provider.currentGame!.scores['p1'], 0,
+          reason: 'P1 was knocked off');
+      expect(wasInNV['p1'], isFalse,
+          reason: 'P1 wasInNV flag must clear after knockoff to 0');
+      provider.handleTakeoutFinished();
+      // Turn 3 — P1 climbs back to 60
+      commitTurn(provider, mock, wasInDR, wasInNV, 'P1', [
+        (score: 20, mult: 'triple', sector: 'T20'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+        (score: 0, mult: 'miss', sector: 'Miss'),
+      ]);
+
+      final nvCount =
+          mock.queuedTexts.where((t) => t == 'P1 is close to glory!').length;
+      expect(nvCount, 2,
+          reason:
+              'P1\'s Near Victory must fire twice: once on initial entry, '
+              'once on re-entry after the knockoff cleared the flag');
+    });
+
+    test('24. Victory dart suppresses milestone announcement', () {
+      // target=40, DF ON. P1 throws D20 → 40 = target on a double → WIN.
+      // Even though remaining would be 0 (outside both zones anyway), the
+      // hasWinner guard explicitly prevents milestone firing.
+      final (provider, mock) = createProviderAndMock(
+        playerIds: ['p1', 'p2'],
+        targetScore: 40,
+        doubleFinishEnabled: true,
+      );
+      final wasInDR = <String, bool>{};
+      final wasInNV = <String, bool>{};
+
+      provider.processDartThrow(
+          score: 20, multiplier: 'double', sector: 'D20');
+      fireMilestone(
+        provider: provider,
+        mock: mock,
+        wasInDR: wasInDR,
+        wasInNV: wasInNV,
+        playerName: 'P1',
+      );
+
+      expect(provider.hasWinner, isTrue);
+      expect(
+        mock.queuedTexts.where((t) => t.contains('close to glory')).length,
+        0,
+        reason: 'Near Victory must not fire on the winning dart',
+      );
+      expect(
+        mock.queuedTexts.where((t) => t.contains('double range')).length,
+        0,
+        reason: 'Double Range must not fire on the winning dart',
+      );
+    });
+
+    test(
+        '24b. Outer Bull dart (sector="25") fires Bull-Outer announcement (NOT Good Hit) end-to-end',
+        () {
+      // Provider records the dart with score=25, multiplier='single', sector='25'.
+      // pickAndAnnounceMoment's precedence chain checks sector=='25' (step 7)
+      // BEFORE the single-20+ Good Hit (step 10). Verify the right tier fires
+      // via a real provider throw.
+      final (provider, mock) = createProviderAndMock(
+        targetScore: 200,
+        doubleFinishEnabled: false,
+      );
+      throwAndAnnounce(provider, mock,
+          playerName: 'Alice',
+          score: 25,
+          multiplier: 'single',
+          sector: '25',
+          dartValue: 25);
+
+      expect(mock.queuedTexts[0], 'Outer bull! 25 glory points!',
+          reason: 'sector="25" must fire Bull-Outer, not Good Hit');
+      expect(mock.queuedTexts.any((t) => t.contains('mighty strike')),
+          isFalse);
+    });
+
+    test(
+        '24c. Bull-finish bust (DF ON, prospective==target on Bull) fires Bust-No-Double, NOT Bullseye',
+        () {
+      // Bust-no-double sits at precedence step 5, Bull-Inner at step 6. When a
+      // Bull is the dart that hits target exactly but is not a Double, Bust
+      // must fire and Bull-Inner must be suppressed.
+      final (provider, mock) = createProviderAndMock(
+        playerIds: ['p1', 'p2'],
+        targetScore: 200,
+        doubleFinishEnabled: true,
+      );
+      provider.currentGame!.currentPlayerIndex = 0;
+      // Force p1 to 150 — then Bull (50 pts) lands prospective=200 on a
+      // non-double segment → bust-no-double.
+      provider.currentGame!.scores['p1'] = 150;
+
+      throwAndAnnounce(provider, mock,
+          playerName: 'P1',
+          score: 50,
+          multiplier: 'bull',
+          sector: 'Bull',
+          dartValue: 50);
+
+      expect(mock.queuedTexts[0],
+          'Not a double! The champion must earn their laurel!',
+          reason: 'Bust-no-double (step 5) beats Bull-Inner (step 6)');
+      expect(mock.queuedTexts.any((t) => t.contains('Bullseye')), isFalse);
+    });
+
+    test(
+        '25. Stacking on a milestone dart: moment + milestone + remove-darts = 3',
+        () {
+      // target=100, DF ON. P1 throws Miss+Miss+T20 → commit on dart 3, score
+      // 60, remaining=40 → in DR. Last dart is T20 → Triple Hit moment.
+      // Dart 3 is also takeout time → remove-darts fires. Worst case 3 per
+      // dart event in the milestone scenario, by design.
+      final (provider, mock) = createProviderAndMock(
+        playerIds: ['p1', 'p2'],
+        targetScore: 100,
+        doubleFinishEnabled: true,
+      );
+      final wasInDR = <String, bool>{};
+      final wasInNV = <String, bool>{};
+
+      // Dart 1: Miss
+      provider.processDartThrow(score: 0, multiplier: 'miss', sector: 'Miss');
+      mock.pickAndAnnounceMoment(
+        playerName: 'P1',
+        dartValue: 0,
+        multiplier: 'miss',
+        sector: 'Miss',
+        hasWinner: false,
+        wasBustOvershoot: false,
+        wasBustNoDouble: false,
+      );
+      fireMilestone(
+        provider: provider,
+        mock: mock,
+        wasInDR: wasInDR,
+        wasInNV: wasInNV,
+        playerName: 'P1',
+      );
+
+      // Dart 2: Miss
+      mock.clear();
+      provider.processDartThrow(score: 0, multiplier: 'miss', sector: 'Miss');
+      mock.pickAndAnnounceMoment(
+        playerName: 'P1',
+        dartValue: 0,
+        multiplier: 'miss',
+        sector: 'Miss',
+        hasWinner: false,
+        wasBustOvershoot: false,
+        wasBustNoDouble: false,
+      );
+      fireMilestone(
+        provider: provider,
+        mock: mock,
+        wasInDR: wasInDR,
+        wasInNV: wasInNV,
+        playerName: 'P1',
+      );
+
+      // Dart 3: T20 — commits 60 → remaining 40 → DR zone crossed
+      mock.clear();
+      provider.processDartThrow(
+          score: 20, multiplier: 'triple', sector: 'T20');
+      mock.pickAndAnnounceMoment(
+        playerName: 'P1',
+        dartValue: 60,
+        multiplier: 'triple',
+        sector: 'T20',
+        hasWinner: false,
+        wasBustOvershoot: false,
+        wasBustNoDouble: false,
+      );
+      fireMilestone(
+        provider: provider,
+        mock: mock,
+        wasInDR: wasInDR,
+        wasInNV: wasInNV,
+        playerName: 'P1',
+      );
+      mock.announceRemoveDarts();
+
+      expect(mock.announcementCount, 3,
+          reason:
+              'Worst case on a milestone dart: moment (triple) + milestone '
+              '(double range) + remove darts');
+      expect(mock.queuedTexts.where((t) => t.contains('triple')).length, 1);
+      expect(
+          mock.queuedTexts.where((t) => t.contains('double range')).length, 1);
+      expect(mock.queuedTexts.where((t) => t == 'Remove your darts').length, 1);
+    });
+  });
 }
