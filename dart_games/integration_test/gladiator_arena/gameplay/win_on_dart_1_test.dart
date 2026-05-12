@@ -40,7 +40,19 @@ void main() {
     await tester.pump();
     await tester.pump();
 
+    // Diagnostic: dump any pending exception(s) before asserting on the
+    // PlayAgainButton. The parallel runner's log truncates the per-exception
+    // detail inside a "Multiple exceptions (2)" wrapper; this prints the
+    // actual error(s) to the log so the next run reveals the root cause.
+    final pending1 = tester.takeException();
+    // ignore: avoid_print
+    if (pending1 != null) print('[DIAG win_on_dart_1] pending: $pending1');
+
     expect(ElementFinders.getGladiatorArenaPlayAgainButton(), findsOneWidget,
         reason: 'Should navigate to results after dart-1 victory');
+
+    final pending2 = tester.takeException();
+    // ignore: avoid_print
+    if (pending2 != null) print('[DIAG win_on_dart_1] post-assert pending: $pending2');
   });
 }

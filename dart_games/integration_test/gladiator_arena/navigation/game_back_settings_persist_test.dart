@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
+import '../../shared/dart_throw_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/pump_sequences.dart';
 import '../../shared/settings_helpers.dart';
@@ -28,6 +29,14 @@ void main() {
 
     // Verify game screen
     expect(ElementFinders.getGladiatorArenaSkipTurnButton(), findsOneWidget);
+
+    // Throw a dart so the SaveGameModal will actually appear on back-button
+    // tap. The screen's back-button handler gates the modal on
+    // `hasDartsThrown` (see commit 5458414 — "Save modal gated on
+    // hasDartsThrown — back button pops directly when no darts have been
+    // thrown"). Without this throw, the back button would skip the modal
+    // entirely and just call Navigator.pop().
+    await DartThrowHelpers.throwDartViaMock(tester, 5);
 
     // Tap back button (triggers SaveGameModal). The default pump sequence
     // is `simpleUpdate` (2 immediate pumps) which doesn't always let the
