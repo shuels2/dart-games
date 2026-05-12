@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -38,26 +39,45 @@ void main() {
     expect(ProviderHelpers.gladiatorArenaHasWinner(tester), isTrue,
         reason: 'D20 on dart 2 should finish on a double and win');
 
-    await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
+    // Intercept FlutterError.onError during the post-win pump so we can
+    // capture errors before they aggregate into the "Multiple exceptions (N)"
+    // wrapper (which the parallel runner's log shows without per-error
+    // detail). Replacing the handler suppresses the original errors; our
+    // own `fail()` at the end is the SOLE error reported, so its message
+    // makes it through unmangled.
+    final captured = <FlutterErrorDetails>[];
+    final originalOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      captured.add(details);
+    };
 
-    // Diagnostic: drain ALL pending exceptions and surface each through a
-    // failing `expect`. `print()` in web integration tests goes to Chrome's
-    // console (not the flutter-drive log captured by the parallel runner),
-    // so we embed the exception text in the assertion `reason` instead —
-    // those failure messages DO make it into the log.
-    final pendings = <Object>[];
+    try {
+      await clickDartsRemoved(tester);
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump();
+      await tester.pump();
+    } finally {
+      FlutterError.onError = originalOnError;
+    }
+
+    // Also drain any TestFailures (e.g. from expect() calls inside callbacks)
+    final taken = <Object>[];
     for (int i = 0; i < 5; i++) {
       final e = tester.takeException();
       if (e == null) break;
-      pendings.add(e);
+      taken.add(e);
     }
-    expect(pendings, isEmpty,
-        reason:
-            '[DIAG win_on_dart_2] pending exception(s) captured before '
-            'PlayAgainButton assertion: $pendings');
+
+    if (captured.isNotEmpty || taken.isNotEmpty) {
+      final flutterErrs = captured
+          .map((d) => 'EXC: ${d.exception} | LIB: ${d.library}')
+          .join(' || ');
+      fail(
+        '[DIAG win_on_dart_2] post-win pump caught '
+        '${captured.length} FlutterError(s) + ${taken.length} other(s). '
+        'FlutterErrors: $flutterErrs. Others: $taken',
+      );
+    }
 
     expect(ElementFinders.getGladiatorArenaPlayAgainButton(), findsOneWidget,
         reason: 'Should navigate to results after dart-2 victory');
