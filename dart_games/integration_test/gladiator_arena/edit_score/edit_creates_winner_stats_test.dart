@@ -89,33 +89,27 @@ void main() {
     expect(ElementFinders.getGladiatorArenaPlayAgainButton(), findsOneWidget,
         reason: 'Should be on results screen after winning via edit');
 
-    // Winner stats should be updated. Use a unified diagnostic assertion so
-    // the failure message reveals which dimension of the flow broke. The
-    // early hasWinner assertion above proved edit-replay set the winner;
-    // this remaining failure mode is in the Results-screen stats path
-    // (HTTP round-trip in `batchUpdatePlayerStats`).
-    final winner = ProviderHelpers.findPlayerByName(tester, 'Player A');
-    final loser = ProviderHelpers.findPlayerByName(tester, 'Player B');
-    final provider = ProviderHelpers.getGladiatorArenaProvider(tester);
-    final game = provider.currentGame;
+    // Winner stats should be updated. Look up players by ID — NOT by name —
+    // because `GladiatorArenaProvider.startGame` picks a random starting
+    // player (`rng.nextInt(playerIds.length)`), so "Player A" by name may
+    // not be the one who threw darts in this run. `p1Id` was captured at
+    // the start of the test as the active player who then threw every dart,
+    // so by construction it's the winner; the other player in
+    // `game.playerIds` is the loser.
+    final game = ProviderHelpers.getGladiatorArenaProvider(tester).currentGame!;
+    final loserId = game.playerIds.firstWhere((id) => id != p1Id);
+
+    final winner = ProviderHelpers.findPlayerById(tester, p1Id);
+    final loser = ProviderHelpers.findPlayerById(tester, loserId);
 
     expect(winner, isNotNull);
     expect(winner!.gamesWon, 1,
-        reason:
-            '[DIAG] winner.gamesWon expected 1, got ${winner.gamesWon}. '
-            'Full state: '
-            'winner={played:${winner.gamesPlayed}, '
-            'won:${winner.gamesWon}, '
-            'history:${winner.gameHistory.length}}, '
-            'loser={played:${loser?.gamesPlayed}, '
-            'won:${loser?.gamesWon}, '
-            'history:${loser?.gameHistory.length}}, '
-            'game={winnerId:${game?.winnerId}, '
-            'state:${game?.state}, '
-            'endedAt:${game?.endedAt != null ? "set" : "null"}, '
-            'totalDartsThrown[A]:${game?.totalDartsThrown[winner.id]}, '
-            'totalTurns[A]:${game?.totalTurns[winner.id]}}');
+        reason: 'Winner (id=$p1Id) should have gamesWon=1');
     expect(winner.gamesPlayed, 1,
-        reason: 'Winner gamesPlayed should be 1');
+        reason: 'Winner should have gamesPlayed=1');
+    expect(loser?.gamesWon ?? 0, 0,
+        reason: 'Loser (id=$loserId) should have gamesWon=0');
+    expect(loser?.gamesPlayed ?? 0, 1,
+        reason: 'Loser should have gamesPlayed=1');
   });
 }
