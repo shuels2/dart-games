@@ -51,8 +51,20 @@ void main() {
     await setDart3(tester, 'D10');
     await updateScore(tester);
 
-    // Click darts removed
     await tester.pump(const Duration(seconds: 1));
+
+    // Diagnostic / early assertion (Monster Mash pattern):
+    // Verify the edit-replay actually created a winner BEFORE we ask the
+    // Results screen to mount and update stats. If this fails, the bug is in
+    // editPlayerScore's win-trigger path for "lowercase-single → D10" replay.
+    // If this passes but the gamesWon assertion below still fails, the bug
+    // is in the post-win stats HTTP round-trip on the Results screen.
+    expect(ProviderHelpers.gladiatorArenaHasWinner(tester), isTrue,
+        reason:
+            'Edit-replay (s1+s1+D10 with preTurnScore=80, target=100, DF OFF) '
+            'should have triggered _triggerWin and set hasWinner=true');
+
+    // Click darts removed
     await clickDartsRemoved(tester);
 
     // Wait for results navigation (3s delayed) and stats update.
