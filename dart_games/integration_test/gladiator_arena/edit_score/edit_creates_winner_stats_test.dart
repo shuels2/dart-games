@@ -89,11 +89,32 @@ void main() {
     expect(ElementFinders.getGladiatorArenaPlayAgainButton(), findsOneWidget,
         reason: 'Should be on results screen after winning via edit');
 
-    // Winner stats should be updated
+    // Winner stats should be updated. Use a unified diagnostic assertion so
+    // the failure message reveals which dimension of the flow broke. The
+    // early hasWinner assertion above proved edit-replay set the winner;
+    // this remaining failure mode is in the Results-screen stats path
+    // (HTTP round-trip in `batchUpdatePlayerStats`).
     final winner = ProviderHelpers.findPlayerByName(tester, 'Player A');
+    final loser = ProviderHelpers.findPlayerByName(tester, 'Player B');
+    final provider = ProviderHelpers.getGladiatorArenaProvider(tester);
+    final game = provider.currentGame;
+
     expect(winner, isNotNull);
     expect(winner!.gamesWon, 1,
-        reason: 'Winner gamesWon should be 1');
+        reason:
+            '[DIAG] winner.gamesWon expected 1, got ${winner.gamesWon}. '
+            'Full state: '
+            'winner={played:${winner.gamesPlayed}, '
+            'won:${winner.gamesWon}, '
+            'history:${winner.gameHistory.length}}, '
+            'loser={played:${loser?.gamesPlayed}, '
+            'won:${loser?.gamesWon}, '
+            'history:${loser?.gameHistory.length}}, '
+            'game={winnerId:${game?.winnerId}, '
+            'state:${game?.state}, '
+            'endedAt:${game?.endedAt != null ? "set" : "null"}, '
+            'totalDartsThrown[A]:${game?.totalDartsThrown[winner.id]}, '
+            'totalTurns[A]:${game?.totalTurns[winner.id]}}');
     expect(winner.gamesPlayed, 1,
         reason: 'Winner gamesPlayed should be 1');
   });
