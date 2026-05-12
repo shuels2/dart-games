@@ -1292,6 +1292,67 @@ void main() {
     });
 
     test(
+        '13.11c DF ON win on dart 1 of a turn: D20 with pre-turn score 60 wins immediately',
+        () {
+      // The screen schedules `_speedPlayTimer?.cancel()` when shouldPrompt
+      // becomes true (shouldPrompt = dartsThrown >= 3 || provider.hasWinner).
+      // Provider-side, a dart-1 win must set dartsThrown=3 and
+      // _waitingForTakeout=true so the screen's cancel branch fires.
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 100,
+          doubleFinishEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.currentGame!.scores['p1'] = 60;
+
+      _dart(p, 20, 'double', 'D20'); // 60+40=100 exact on D20 → DF ON WIN
+
+      expect(p.hasWinner, isTrue);
+      expect(p.currentGame!.winnerId, 'p1');
+      expect(p.currentGame!.scores['p1'], 100);
+      expect(p.currentGame!.dartsThrown['p1'], 3,
+          reason: 'dart-1 win must forfeit remaining darts so takeout fires');
+      expect(p.shouldPromptTakeout, isTrue,
+          reason: 'screen reads this to trigger timer cancel + nav delay');
+    });
+
+    test(
+        '13.11d DF ON + Speed Play ON win on dart 2 — provider behavior identical to non-speed-play',
+        () {
+      // Verifies the win path does NOT differ when speedPlayEnabled is true.
+      // (Provider's _triggerWin does NOT clear speedPlayTimeRemaining — the
+      // screen handles timer-cancellation; the provider only updates the
+      // game state. This test pins that contract so a future change to the
+      // provider doesn't accidentally start touching the timer field.)
+      final p = _makeProvider(
+          playerIds: ['p1', 'p2'],
+          targetScore: 100,
+          doubleFinishEnabled: true,
+          speedPlayEnabled: true);
+      _forcePlayer(p, 'p1');
+      p.setSpeedPlayTimeRemaining(18); // simulate mid-turn timer state
+
+      _dart(p, 20, 'triple', 'T20'); // 60, no win yet
+      expect(p.hasWinner, isFalse);
+      expect(p.currentGame!.speedPlayTimeRemaining, 18,
+          reason: 'non-winning dart must not touch the timer field');
+
+      _dart(p, 20, 'double', 'D20'); // 60+40=100 exact on D20 → DF ON WIN
+
+      expect(p.hasWinner, isTrue);
+      expect(p.currentGame!.dartsThrown['p1'], 3,
+          reason: 'dart-2 win must forfeit dart 3');
+      expect(p.shouldPromptTakeout, isTrue);
+      expect(p.currentGame!.speedPlayEnabled, isTrue,
+          reason: 'option must persist on the won game');
+      expect(p.currentGame!.speedPlayTimeRemaining, 18,
+          reason:
+              'provider._triggerWin must NOT touch speedPlayTimeRemaining — '
+              'timer-cancel is a screen-side concern. If this changes, the '
+              'screen wiring + save/restore expectations both need review.');
+    });
+
+    test(
         '13.11b editPlayerScore round-trips a lowercase-single segment (s20) — regression',
         () {
       // Regression for `_parseSegment` lowercase bug. The mock dartboard
