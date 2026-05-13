@@ -76,6 +76,12 @@ class UITestHelpers {
         // instead. Past failure: home_screen filter_no_match_test failed an
         // assertion (registry change broke its filter premise); the rethrown
         // exception was hidden for 600s because takeScreenshot never returned.
+        // onTimeout must return a value matching takeScreenshot's
+        // Future<List<int>> result type — Dart's type checker rejects a
+        // void-returning callback here (which was the previous compile
+        // error: "A non-null value must be returned since the return type
+        // 'FutureOr<List<int>>' doesn't allow null"). Return an empty byte
+        // list as the sentinel for "no screenshot captured."
         await binding.takeScreenshot(fullName).timeout(
           const Duration(seconds: 5),
           onTimeout: () {
@@ -84,6 +90,7 @@ class UITestHelpers {
                 'likely running under test_driver/integration_test.dart '
                 '(no onScreenshot callback). The real test failure is the '
                 'rethrown exception that follows.');
+            return <int>[];
           },
         );
         // ignore: avoid_print
