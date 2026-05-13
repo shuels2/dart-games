@@ -265,8 +265,10 @@ REM Run a single test file (with one automatic retry on infrastructure failures)
 REM Uses the category-level backend server (shared across all
 REM tests in the category). Per-session DB isolation via
 REM X-DB-Session header ensures no cross-test pollution.
-REM On AppConnectionException or SocketException, ChromeDriver and
-REM the backend server are restarted and the test is retried once.
+REM On WebDriver/connection drops (AppConnectionException, SocketException,
+REM Target crashed, InvalidSessionIdException, DriverError) or SDK-cache /
+REM Google-Fonts flake (see retry block below), ChromeDriver and the
+REM backend server are restarted and the test is retried once.
 REM %1 = test file path (e.g. integration_test/target_tag/gameplay/hero_bonus_test.dart)
 REM %2 = test driver (integration_test.dart or screenshot_test.dart)
 REM ============================================================
@@ -338,13 +340,18 @@ powershell -NoProfile -Command "$log='!_RST_LOG!';$done=$false;$elapsed=0;while(
 if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
 
 REM On first failure, check for infrastructure errors and retry once.
-REM Patterns include WebDriver/connection drops, parallel SDK-cache file
-REM lock races (PathAccessException on engine.realm), AND transient network
-REM failures fetching Google Fonts assets ("Failed to load font" /
-REM "Failed to fetch" / "ClientException"), which are flake-prone.
+REM Patterns include WebDriver/connection drops (AppConnectionException,
+REM SocketException, Target crashed, InvalidSessionIdException, DriverError
+REM — the last two cover Chrome sessions that die before the test can
+REM produce an assertion), parallel SDK-cache file lock races (Dart-side
+REM PathAccessException AND PowerShell-side Set-Content errors on
+REM engine.realm — the engine.realm filename is the most specific marker
+REM of this race), AND transient network failures fetching Google Fonts
+REM assets ("Failed to load font" / "Failed to fetch" / "ClientException"),
+REM which are flake-prone. Kept in sync with run_ui_tests_parallel_worker.bat.
 set "_RST_RETRY=0"
 if "!_RST_PASS!"=="0" if !_RST_ATTEMPT! lss 2 (
-    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"FormatException" /C:"PathAccessException" /C:"Failed to load font" /C:"Failed to fetch" /C:"ClientException" "!_RST_LOG!" >nul 2>&1
+    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"InvalidSessionIdException" /C:"DriverError" /C:"FormatException" /C:"PathAccessException" /C:"engine.realm" /C:"GetContentWriterIOError" /C:"Failed to load font" /C:"Failed to fetch" /C:"ClientException" "!_RST_LOG!" >nul 2>&1
     if !errorlevel! equ 0 set "_RST_RETRY=1"
 )
 if "!_RST_RETRY!"=="1" goto :run_single_test_attempt
