@@ -66,7 +66,26 @@ class UITestHelpers {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final safeName = testName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
         final fullName = 'failures/${safeName}_$timestamp';
-        await binding.takeScreenshot(fullName);
+        // Bound takeScreenshot with a hard timeout. Under
+        // test_driver/screenshot_test.dart the call resolves in well under a
+        // second; under test_driver/integration_test.dart (which has no
+        // onScreenshot callback) the call hangs forever — which previously
+        // masked legitimate test failures as 10-minute "Chrome session died"
+        // infrastructure errors at the worker-poll-timeout boundary. The
+        // 5-second cap surfaces the underlying assertion failure within seconds
+        // instead. Past failure: home_screen filter_no_match_test failed an
+        // assertion (registry change broke its filter premise); the rethrown
+        // exception was hidden for 600s because takeScreenshot never returned.
+        await binding.takeScreenshot(fullName).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            // ignore: avoid_print
+            print('[FAILURE_SCREENSHOT] takeScreenshot timed out after 5s — '
+                'likely running under test_driver/integration_test.dart '
+                '(no onScreenshot callback). The real test failure is the '
+                'rethrown exception that follows.');
+          },
+        );
         // ignore: avoid_print
         print('[FAILURE_SCREENSHOT] saved as temp_screenshots/$fullName.png');
       } catch (sse) {
