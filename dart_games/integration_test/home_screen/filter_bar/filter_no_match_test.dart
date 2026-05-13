@@ -10,6 +10,16 @@
 /// intersection = ∅. If a future game registration breaks this premise too,
 /// pick another empty cell from the matrix (Versus × Parallel, Versus × Light,
 /// Strategy × Heavy, Strategy × Parallel all work today).
+///
+/// **Timing note:** earlier versions of this test used `PumpSequences.simpleUpdate`
+/// (2 pumps) between filter taps. That was too tight under parallel-runner
+/// load — the second filter's `onChanged` -> `setState` -> rebuild cycle wasn't
+/// reliably flushed before the dismissal tap, so the Light filter occasionally
+/// failed to apply and Carnival Derby (a Race + Parallel game) stayed visible.
+/// This version uses `tester.pump(Duration(milliseconds: 200))` between every
+/// filter interaction PLUS an intermediate assertion after applying Race —
+/// the intermediate assertion both verifies Race actually applied and forces
+/// a full rebuild flush before the Light filter is applied.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -17,7 +27,6 @@ import 'package:dart_games/constants/test_keys.dart';
 import 'package:dart_games/models/game_metadata.dart';
 
 import '../../shared/ui_test_helpers.dart';
-import '../../shared/pump_sequences.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -31,29 +40,48 @@ void main() {
         await UITestHelpers.resetServerState();
         await UITestHelpers.navigateToHomeScreen(tester);
 
-        // Style: Race (CD, CC, LL, GA)
+        // Apply Style: Race (CD, CC, LL, GA).
         await tester.tap(find.byKey(HomeKeys.filterGameplayStyleButton));
-        await PumpSequences.simpleUpdate(tester);
+        await tester.pump(const Duration(milliseconds: 200));
         await tester.tap(find
             .byKey(HomeKeys.filterGameplayStyleOption(GameplayStyle.race)));
-        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
         await tester.tapAt(const Offset(10, 10));
-        await PumpSequences.simpleUpdate(tester);
+        await tester.pump(const Duration(milliseconds: 200));
 
-        // Interaction: Light (PG, RR — no overlap with Race)
+        // Intermediate check: Race actually applied. If this fails, the
+        // Race tap didn't register and we'd otherwise see a confusing
+        // failure at the final assertion. Race games are visible
+        // (CD/CC/LL/GA); non-Race games are hidden (PG/RR/MM/TT).
+        expect(find.byKey(HomeKeys.carnivalDerbyCard), findsOneWidget,
+            reason: 'Race filter should keep Carnival Derby visible');
+        expect(find.byKey(HomeKeys.piratesGridCard), findsNothing,
+            reason: 'Race filter should hide Pirate\'s Grid (Strategy)');
+        expect(find.byKey(HomeKeys.reefRoyaleCard), findsNothing,
+            reason: 'Race filter should hide Reef Royale (Strategy)');
+        expect(find.byKey(HomeKeys.monsterMashCard), findsNothing,
+            reason: 'Race filter should hide Monster Mash (Versus)');
+        expect(find.byKey(HomeKeys.targetTagCard), findsNothing,
+            reason: 'Race filter should hide Target Tag (Versus only)');
+
+        // Apply Interaction: Light (PG, RR — no overlap with Race).
         await tester.tap(find.byKey(HomeKeys.filterPlayerInteractionButton));
-        await PumpSequences.simpleUpdate(tester);
+        await tester.pump(const Duration(milliseconds: 200));
         await tester.tap(find.byKey(HomeKeys
             .filterPlayerInteractionOption(PlayerInteraction.light)));
-        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
         await tester.tapAt(const Offset(10, 10));
-        await PumpSequences.simpleUpdate(tester);
+        await tester.pump(const Duration(milliseconds: 200));
 
         // No game is both Race AND Light → all cards hidden + empty state.
-        expect(find.byKey(HomeKeys.carnivalDerbyCard), findsNothing);
-        expect(find.byKey(HomeKeys.clockworkQuestCard), findsNothing);
-        expect(find.byKey(HomeKeys.lunarLanderCard), findsNothing);
-        expect(find.byKey(HomeKeys.gladiatorArenaCard), findsNothing);
+        expect(find.byKey(HomeKeys.carnivalDerbyCard), findsNothing,
+            reason: 'Race + Light filter should hide CD (Race+Parallel)');
+        expect(find.byKey(HomeKeys.clockworkQuestCard), findsNothing,
+            reason: 'Race + Light filter should hide CC (Race+Parallel)');
+        expect(find.byKey(HomeKeys.lunarLanderCard), findsNothing,
+            reason: 'Race + Light filter should hide LL (Race+Parallel)');
+        expect(find.byKey(HomeKeys.gladiatorArenaCard), findsNothing,
+            reason: 'Race + Light filter should hide GA (Race+Heavy)');
         expect(find.byKey(HomeKeys.targetTagCard), findsNothing);
         expect(find.byKey(HomeKeys.monsterMashCard), findsNothing);
         expect(find.byKey(HomeKeys.reefRoyaleCard), findsNothing);
