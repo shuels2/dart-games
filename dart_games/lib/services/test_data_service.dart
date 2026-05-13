@@ -21,6 +21,7 @@ class TestDataService {
         gamesPlayed: 47,
         gamesWon: 23,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 47,
           gamesWon: 23,
           lastPlayedDaysAgo: 0,
         ),
@@ -35,6 +36,7 @@ class TestDataService {
         gamesPlayed: 38,
         gamesWon: 15,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 38,
           gamesWon: 15,
           lastPlayedDaysAgo: 1,
         ),
@@ -49,6 +51,7 @@ class TestDataService {
         gamesPlayed: 12,
         gamesWon: 6,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 12,
           gamesWon: 6,
           lastPlayedDaysAgo: 0,
         ),
@@ -63,6 +66,7 @@ class TestDataService {
         gamesPlayed: 25,
         gamesWon: 8,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 25,
           gamesWon: 8,
           lastPlayedDaysAgo: 2,
         ),
@@ -77,6 +81,7 @@ class TestDataService {
         gamesPlayed: 62,
         gamesWon: 31,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 62,
           gamesWon: 31,
           lastPlayedDaysAgo: 1,
         ),
@@ -91,6 +96,7 @@ class TestDataService {
         gamesPlayed: 8,
         gamesWon: 2,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 8,
           gamesWon: 2,
           lastPlayedDaysAgo: 3,
         ),
@@ -105,6 +111,7 @@ class TestDataService {
         gamesPlayed: 41,
         gamesWon: 20,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 41,
           gamesWon: 20,
           lastPlayedDaysAgo: 0,
         ),
@@ -119,6 +126,7 @@ class TestDataService {
         gamesPlayed: 19,
         gamesWon: 7,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 19,
           gamesWon: 7,
           lastPlayedDaysAgo: 4,
         ),
@@ -133,6 +141,7 @@ class TestDataService {
         gamesPlayed: 33,
         gamesWon: 18,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 33,
           gamesWon: 18,
           lastPlayedDaysAgo: 1,
         ),
@@ -147,6 +156,7 @@ class TestDataService {
         gamesPlayed: 6,
         gamesWon: 1,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 6,
           gamesWon: 1,
           lastPlayedDaysAgo: 5,
         ),
@@ -161,6 +171,7 @@ class TestDataService {
         gamesPlayed: 58,
         gamesWon: 29,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 58,
           gamesWon: 29,
           lastPlayedDaysAgo: 0,
         ),
@@ -175,6 +186,7 @@ class TestDataService {
         gamesPlayed: 28,
         gamesWon: 11,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 28,
           gamesWon: 11,
           lastPlayedDaysAgo: 2,
         ),
@@ -189,6 +201,7 @@ class TestDataService {
         gamesPlayed: 36,
         gamesWon: 19,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 36,
           gamesWon: 19,
           lastPlayedDaysAgo: 1,
         ),
@@ -203,6 +216,7 @@ class TestDataService {
         gamesPlayed: 16,
         gamesWon: 5,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 16,
           gamesWon: 5,
           lastPlayedDaysAgo: 6,
         ),
@@ -217,6 +231,7 @@ class TestDataService {
         gamesPlayed: 14,
         gamesWon: 8,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 14,
           gamesWon: 8,
           lastPlayedDaysAgo: 3,
         ),
@@ -231,6 +246,7 @@ class TestDataService {
         gamesPlayed: 45,
         gamesWon: 22,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 45,
           gamesWon: 22,
           lastPlayedDaysAgo: 2,
         ),
@@ -245,6 +261,7 @@ class TestDataService {
         gamesPlayed: 22,
         gamesWon: 9,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 22,
           gamesWon: 9,
           lastPlayedDaysAgo: 4,
         ),
@@ -259,6 +276,7 @@ class TestDataService {
         gamesPlayed: 31,
         gamesWon: 16,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 31,
           gamesWon: 16,
           lastPlayedDaysAgo: 1,
         ),
@@ -273,6 +291,7 @@ class TestDataService {
         gamesPlayed: 18,
         gamesWon: 7,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 18,
           gamesWon: 7,
           lastPlayedDaysAgo: 3,
         ),
@@ -287,6 +306,7 @@ class TestDataService {
         gamesPlayed: 43,
         gamesWon: 21,
         gameHistory: _generateGameHistory(
+          gamesPlayed: 43,
           gamesWon: 21,
           lastPlayedDaysAgo: 1,
         ),
@@ -294,8 +314,13 @@ class TestDataService {
     ];
   }
 
-  /// Generate game history for a player (only wins are tracked)
+  /// Generate game history for a player. Produces `gamesPlayed` total entries
+  /// — the FIRST `gamesWon` are marked as wins (`metadata.won == true`), the
+  /// rest as losses. Each entry has `metadata.won` set explicitly so the
+  /// server's `POST /api/v1/players/history/batch` endpoint can correctly
+  /// increment `games_won` for the wins.
   static List<GameHistoryEntry> _generateGameHistory({
+    required int gamesPlayed,
     required int gamesWon,
     required int lastPlayedDaysAgo,
   }) {
@@ -303,12 +328,13 @@ class TestDataService {
     final now = DateTime.now();
     final games = ['Carnival Derby', 'Target Tag'];
 
-    for (int i = 0; i < gamesWon; i++) {
+    for (int i = 0; i < gamesPlayed; i++) {
       final daysAgo = lastPlayedDaysAgo + (i * 0.5).round();
       final timestamp = now.subtract(Duration(days: daysAgo));
+      final isCD = games[i % games.length] == 'Carnival Derby';
 
       // Vary game durations
-      final baseDuration = games[i % games.length] == 'Carnival Derby'
+      final baseDuration = isCD
           ? const Duration(minutes: 8, seconds: 30)
           : const Duration(minutes: 12, seconds: 15);
 
@@ -317,11 +343,22 @@ class TestDataService {
         seconds: (i % 60) - 30,
       );
 
+      // Realistic varied per-game stats. Carnival Derby tends to have more
+      // turns + dart throws than Target Tag (race-to-target vs elimination
+      // mechanic). Player count varies 2-6 to mirror actual session sizes.
+      final dartThrows = isCD ? 30 + (i % 25) : 21 + (i % 18);
+      final turns = isCD ? 10 + (i % 8) : 7 + (i % 6);
+      final playerCount = 2 + (i % 5); // 2..6
+
       history.add(GameHistoryEntry(
         id: _uuid.v4(),
         gameName: games[i % games.length],
         timestamp: timestamp,
         duration: baseDuration + variance,
+        metadata: {'won': i < gamesWon},
+        dartThrows: dartThrows,
+        turns: turns,
+        playerCount: playerCount,
       ));
     }
 

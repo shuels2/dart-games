@@ -39,10 +39,10 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (2108 tests total)
-- [Test Overview](docs/testing/test-overview.md) - **1438 Flutter + 190 server + 507 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1628 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 507 UI tests (~622 minutes sequential / ~153 minutes parallel, optional)
+### 🧪 Testing (2603 tests total — non-UI: 1991, UI: 612 optional)
+- [Test Overview](docs/testing/test-overview.md) - **1801 Flutter + 190 server + 612 UI tests**
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - 1991 non-UI tests (MANDATORY before builds)
+- [UI Automation](docs/testing/ui-automation.md) - 612 UI tests (~843 minutes sequential / ~211 minutes parallel, optional)
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Shared Helpers Reference](docs/testing/shared-helpers-reference.md) - Shared test helper files, delegate pattern, new game templates
@@ -67,29 +67,31 @@ Each game has its own unique visual identity while integrating with global syste
 - [Clockwork Quest](docs/games/clockwork-quest/) - Steampunk gear progression game (2-8 players)
 - [Lunar Lander](docs/games/lunar-lander/) - Retro NASA countdown game (2-8 players)
 - [Pirate's Grid](docs/games/pirates-grid/) - Treasure-map tic-tac-toe (2 players)
+- [Gladiator Arena](docs/games/gladiator-arena/) - Eliminator (race-to-target) game (2-8 players)
 
 ## Quick Reference
 
 ### Run All Non-UI Tests (MANDATORY before builds)
 ```bash
-# Flutter tests (1438 tests)
+# Flutter tests (1801 tests)
 flutter test
 
 # Server tests (190 tests)
 cd server && dart test
 ```
-**Required:** 100% pass rate (1628 tests total)
+**Required:** 100% pass rate (1991 tests total)
 
 ### Run UI Automation Tests (Optional)
 ```bash
 # Sequential runner (all infrastructure managed automatically)
-./run_ui_tests.bat                          # All tests (~507 min, interactive Chrome)
+./run_ui_tests.bat                          # All tests (~637 min, interactive Chrome)
 ./run_ui_tests.bat target_tag               # Specific game
 ./run_ui_tests.bat carnival
 ./run_ui_tests.bat monster_mash
 ./run_ui_tests.bat reef_royale
 ./run_ui_tests.bat clockwork_quest
 ./run_ui_tests.bat lunar_lander
+./run_ui_tests.bat gladiator_arena
 
 # Parallel runner (~3.5x faster, 6 games simultaneously, ~143 min, fully headless)
 ./run_ui_tests_parallel.bat                          # All games
@@ -107,18 +109,19 @@ flutter test test/screens/games/reef_royale/
 flutter test test/screens/games/clockwork_quest/
 flutter test test/screens/games/lunar_lander/
 flutter test test/screens/games/pirates_grid/
+flutter test test/screens/games/gladiator_arena/
 ```
 
 ## Current Test Counts
 
-**Total: 2114 tests**
-- **Flutter Non-UI Tests:** 1438 tests (100% pass rate MANDATORY)
+**Total: 2603 tests**
+- **Flutter Non-UI Tests:** 1801 tests (100% pass rate MANDATORY)
   - API client tests: 49 (5 config + 38 client + 6 voice settings)
   - Model tests: 98 (40 core + 58 additional)
-  - Model serialization tests: 110 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19 + LunarLander 12 + PiratesGrid 24)
+  - Model serialization tests: 127 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19 + LunarLander 12 + PiratesGrid 24 + GladiatorArena 17)
   - Provider tests: 74 (PlayerProvider 44 + DartboardProvider 30)
-  - Provider save/restore tests: 49 (6 prior games x 7 + PiratesGrid 12)
-  - Provider game mechanics tests: 233 (HorseRace 50 + ClockworkQuest 49 + MonsterMash 44 + ReefRoyale 45 + TargetTag 45)
+  - Provider save/restore tests: 57 (6 prior games x 7 + PiratesGrid 12 + GladiatorArena 15)
+  - Provider game mechanics tests: 314 (HorseRace 50 + ClockworkQuest 49 + MonsterMash 44 + ReefRoyale 45 + TargetTag 45 + GladiatorArena 81)
   - Service tests: 91 (AppSettings 20 + VictoryMusicService 22 + StorageService 24 + ApiLoggerService 25)
   - Save game service tests: 13
   - Announcement queue model tests: 30
@@ -133,6 +136,7 @@ flutter test test/screens/games/pirates_grid/
   - Carnival Derby game logic: 8 (included in integration above)
   - Lunar Lander game logic + announcements: 66 (33 game logic + 33 announcements)
   - Pirate's Grid game logic + announcements: 132 (31 game logic + 14 checker + 27 announcements + 24 with-announcements + 24 serialization + 12 save-restore)
+  - Gladiator Arena game logic + announcements: 77 (26 game logic + 33 announcements + 18 with-announcements)
 
 - **Server Tests:** 190 tests (100% pass rate MANDATORY)
   - Database & helpers: 25
@@ -148,7 +152,7 @@ flutter test test/screens/games/pirates_grid/
   - Test routes: 6
   - Additional routes (added for Pirate's Grid): 12
 
-- **UI Automation Tests:** 513 tests (optional, ask before running)
+- **UI Automation Tests:** 612 tests (optional, ask before running)
   - Target Tag: 80 tests (~113 minutes) [71 functional + 4 navigation + 5 play-to-complete]
   - Carnival Derby: 51 tests (~68 minutes) [42 functional + 4 navigation + 5 play-to-complete]
   - Monster Mash: 76 tests (~103 minutes) [68 functional + 4 navigation + 4 play-to-complete]
@@ -156,13 +160,14 @@ flutter test test/screens/games/pirates_grid/
   - Clockwork Quest: 116 tests (~153 minutes) [92 functional + 3 navigation + 16 save/resume + 5 play-to-complete]
   - Lunar Lander: 46 tests (~61 minutes) [37 functional + 4 navigation + 5 play-to-complete]
   - Pirate's Grid: 69 tests (~90 minutes) [55 functional + 4 navigation + 6 play-to-complete]
-  - **Sequential (`run_ui_tests.bat`): ~712 minutes (~11h 52m) — interactive Chrome sessions**
-  - **Parallel (`run_ui_tests_parallel.bat`): ~178 minutes (~2h 58m) — fully headless, no visible Chrome**
+  - Gladiator Arena: 99 tests (~131 minutes) [85 functional + 4 navigation + 5 play-to-complete + 5 pause modal + 7 visual validation]
+  - **Sequential (`run_ui_tests.bat`): ~843 minutes (~14h 3m) — interactive Chrome sessions**
+  - **Parallel (`run_ui_tests_parallel.bat`): ~211 minutes (~3h 31m) — fully headless, no visible Chrome**
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 1438 Flutter non-UI tests MUST pass
+✅ Run `flutter test` - ALL 1801 Flutter non-UI tests MUST pass
 ✅ Run `cd server && dart test` - ALL 190 server tests MUST pass
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
@@ -273,7 +278,8 @@ dart_games/
 │       ├── reef-royale/             # Reef Royale docs (8 files)
 │       ├── clockwork-quest/         # Clockwork Quest docs (8 files)
 │       ├── lunar-lander/            # Lunar Lander docs (8 files)
-│       └── pirates-grid/            # Pirate's Grid docs (8 files)
+│       ├── pirates-grid/            # Pirate's Grid docs (8 files)
+│       └── gladiator-arena/         # Gladiator Arena docs (8 files)
 ├── server/                          # Dart Shelf backend server
 │   ├── bin/server.dart             # Entry point
 │   ├── lib/
@@ -298,12 +304,13 @@ dart_games/
 │           ├── reef_royale/
 │           ├── clockwork_quest/
 │           ├── lunar_lander/
-│           └── pirates_grid/
-├── test/                            # Flutter non-UI tests (1438 tests)
+│           ├── pirates_grid/
+│           └── gladiator_arena/
+├── test/                            # Flutter non-UI tests (1801 tests)
 │   ├── shared/                     # Shared test helpers (MockApiServer, etc.)
 │   ├── services/api/               # API client tests
 │   └── ...
-├── integration_test/                # UI automation tests (507 tests)
+├── integration_test/                # UI automation tests (612 tests)
 │   ├── shared/                     # Shared test helpers
 │   ├── target_tag/                 # Target Tag UI tests
 │   ├── carnival_derby/             # Carnival Derby UI tests
@@ -311,7 +318,8 @@ dart_games/
 │   ├── reef_royale/                # Reef Royale UI tests
 │   ├── clockwork_quest/            # Clockwork Quest UI tests
 │   ├── lunar_lander/               # Lunar Lander UI tests
-│   └── pirates_grid/               # Pirate's Grid UI tests
+│   ├── pirates_grid/               # Pirate's Grid UI tests
+│   └── gladiator_arena/            # Gladiator Arena UI tests
 └── assets/                          # Game assets
     ├── common/
     └── games/
@@ -321,7 +329,8 @@ dart_games/
         ├── reef_royale/
         ├── clockwork_quest/
         ├── lunar_lander/
-        └── pirates_grid/
+        ├── pirates_grid/
+        └── gladiator_arena/
 ```
 
 ## Platform Support
@@ -375,6 +384,6 @@ git push origin <branch>        # Push (with permission)
 
 ---
 
-**Last Updated:** 2026-05-06
-**Documentation Version:** 4.4 (Pirate's Grid)
-**Total Documentation Files:** 93
+**Last Updated:** 2026-05-10
+**Documentation Version:** 4.5 (Gladiator Arena)
+**Total Documentation Files:** 101

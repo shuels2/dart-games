@@ -19,6 +19,7 @@ import 'games/reef_royale/reef_royale_menu_screen.dart';
 import 'games/clockwork_quest/clockwork_quest_menu_screen.dart';
 import 'games/lunar_lander/lunar_lander_menu_screen.dart';
 import 'games/pirates_grid/pirates_grid_menu_screen.dart';
+import 'games/gladiator_arena/gladiator_arena_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -64,6 +65,9 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'pirates_grid':
         menuScreen = const PiratesGridMenuScreen();
+        break;
+      case 'gladiator_arena':
+        menuScreen = const GladiatorArenaMenuScreen();
         break;
       default:
         return;
@@ -155,6 +159,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           : title == "Pirate's Grid"
                               ? GoogleFonts.pirataOne(
                                   fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 8,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                                  letterSpacing: 1.0,
+                                )
+                          : title == 'Gladiator Arena'
+                              ? GoogleFonts.cinzel(
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 3,
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.0,
@@ -323,6 +334,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ? () => _navigateToMenu('pirates_grid')
             : null,
       },
+      {
+        'gameId': 'gladiator_arena',
+        'title': 'Gladiator Arena',
+        'key': HomeKeys.gladiatorArenaCard,
+        'imageAssetPath': 'assets/games/gladiator_arena/icons/GladiatorArena-Icon.png',
+        'color': const Color(0xFF7B2D8E), // Imperial Purple
+        'onTap': dartboardProvider.canPlayGames
+            ? () => _navigateToMenu('gladiator_arena')
+            : null,
+      },
       // Add new games here - they will automatically be sorted alphabetically
     ];
 
@@ -463,12 +484,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       }
 
+                      // Natural fit per the screen width (NOT clamped to
+                      // games.length). With 2 games on a wide screen this
+                      // stays at e.g. 5 — so the single row of 2 is treated
+                      // as a partial row (left-justified with minSpacing)
+                      // rather than being stretched to fill the row width.
                       int itemsPerRow = ((availableWidth + minSpacing) / (tileWidth + minSpacing)).floor();
-                      itemsPerRow = itemsPerRow.clamp(1, games.length);
-
-                      final justifiedSpacing = itemsPerRow > 1
-                          ? (availableWidth - (itemsPerRow * tileWidth)) / (itemsPerRow - 1)
-                          : 0.0;
+                      if (itemsPerRow < 1) itemsPerRow = 1;
 
                       final rows = <List<Map<String, dynamic>>>[];
                       for (var i = 0; i < games.length; i += itemsPerRow) {
@@ -481,13 +503,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
                               if (rowIndex > 0) const SizedBox(height: 12),
                               Row(
+                                // Full row → fully justify via spaceBetween.
+                                // Partial row (last row with < itemsPerRow
+                                // tiles) → left-justify with minSpacing
+                                // between tiles instead of the wider
+                                // justifiedSpacing, so 2 tiles on a wide
+                                // screen look compact, not stretched.
                                 mainAxisAlignment: rows[rowIndex].length == itemsPerRow
                                     ? MainAxisAlignment.spaceBetween
                                     : MainAxisAlignment.start,
                                 children: [
                                   for (var i = 0; i < rows[rowIndex].length; i++) ...[
                                     if (i > 0 && rows[rowIndex].length < itemsPerRow)
-                                      SizedBox(width: justifiedSpacing),
+                                      const SizedBox(width: minSpacing),
                                     SizedBox(
                                       width: tileWidth,
                                       height: 400,

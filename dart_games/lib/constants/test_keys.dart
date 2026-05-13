@@ -37,6 +37,7 @@ class HomeKeys {
   static const clockworkQuestCard = Key('home_clockwork_quest_card');
   static const lunarLanderCard = Key('home_lunar_lander_card');
   static const piratesGridCard = Key('home_pirates_grid_card');
+  static const gladiatorArenaCard = Key('home_card_gladiator_arena');
 
   // ──── Filter bar (home screen) ────
   static const filterBar = Key('home_filter_bar');
@@ -800,4 +801,53 @@ class PiratesGridResultsKeys {
   static const winnerAvatar = Key('pirates_grid_results_winner_avatar');
   static const rankingsList = Key('pirates_grid_results_rankings_list');
   static const headlineText = Key('pirates_grid_results_headline');
+}
+
+// ============================================================================
+// GLADIATOR ARENA KEYS
+// ============================================================================
+
+class GladiatorArenaMenuKeys {
+  static const Key backButton = Key('menu_ga_back_button');
+  static const Key targetScoreSlider = Key('menu_ga_target_score_slider');
+  static const Key targetScoreValue = Key('menu_ga_target_score_value');
+  static const Key doubleFinishSwitch = Key('menu_ga_double_finish_switch');
+  static const Key shieldRoundSwitch = Key('menu_ga_shield_round_switch');
+  static const Key speedPlaySwitch = Key('menu_ga_speed_play_switch');
+  static const Key startGameButton = Key('menu_ga_start_game_button');
+  static const Key addPlayerButton = Key('menu_ga_add_player_button');
+  static const Key addPlayerButtonEmptyState =
+      Key('menu_ga_add_player_button_empty_state');
+  static const Key playerListView = Key('menu_ga_player_list_view');
+  static Key playerTile(String playerId) =>
+      Key('menu_ga_player_tile_$playerId');
+  static Key removePlayerButton(String playerId) =>
+      Key('menu_ga_remove_player_button_$playerId');
+}
+
+class GladiatorArenaGameKeys {
+  static const Key backButton = Key('game_ga_back_button');
+  static const Key skipTurnButton = Key('game_ga_skip_turn_button');
+  static const Key editScoreButton = Key('game_ga_edit_score_button');
+  static const Key goalDisplay = Key('game_ga_goal_display');
+  static const Key doubleRangeIndicator = Key('game_ga_double_range_indicator');
+  static const Key timerDisplay = Key('game_ga_timer_display');
+  static const Key shieldBanner = Key('game_ga_shield_banner');
+  static const Key eliminationZone = Key('game_ga_elimination_zone');
+  static const Key doubleBadge = Key('game_ga_double_badge');
+  static const Key activePlayerNameLabel = Key('game_ga_active_player_name_label');
+  static Key dartIndicator(int index) => Key('game_ga_dart_indicator_$index');
+  static Key podium(String playerId) => Key('game_ga_podium_$playerId');
+}
+
+class GladiatorArenaResultsKeys {
+  static const Key winnerCharacterImage = Key('results_ga_winner_character_image');
+  static const Key winnerPlayerPhoto = Key('results_ga_winner_player_photo');
+  static const Key winnerName = Key('results_ga_winner_name');
+  static const Key rankingsList = Key('results_ga_rankings_list');
+  static Key rankRow(int index) => Key('results_ga_rank_row_$index');
+  static const Key knockoffStats = Key('results_ga_knockoff_stats');
+  static const Key playAgainButton = Key('results_ga_play_again_button');
+  static const Key changeSettingsButton = Key('results_ga_change_settings_button');
+  static const Key backToMenuButton = Key('results_ga_back_to_menu_button');
 }

@@ -289,4 +289,43 @@ class RemoveDartsModalConfig {
       maxWidth: 400,
     );
   }
+
+  /// Gladiator Arena — Dark Arena bg, Gladiator Gold border, Cinzel/Lato fonts
+  factory RemoveDartsModalConfig.gladiatorArena() {
+    return RemoveDartsModalConfig(
+      backgroundColor: const Color(0xFF3A2010), // Dark Arena
+      backgroundOpacity: 0.97,
+      borderColor: const Color(0xFFDAA520), // Gladiator Gold
+      borderWidth: 4,
+      boxShadowColor: const Color(0xFFDAA520),
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFDAA520), // Gladiator Gold
+      iconSize: 48,
+      playerNameTextStyle: GoogleFonts.cinzel(
+        color: const Color(0xFFDAA520), // Gladiator Gold
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+      instructionTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8), // Marble White
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+      buttonBackgroundColor: const Color(0xFFCD7F32), // Bronze
+      buttonForegroundColor: const Color(0xFFF5F0E8), // Marble White
+      buttonBorderSide: const BorderSide(
+        color: Color(0xFFDAA520), // Gladiator Gold
+        width: 2,
+      ),
+      buttonTextStyle: GoogleFonts.cinzel(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+        color: const Color(0xFFF5F0E8),
+      ),
+      editButtonText: 'Edit player score',
+      maxWidth: double.infinity,
+    );
+  }
 }

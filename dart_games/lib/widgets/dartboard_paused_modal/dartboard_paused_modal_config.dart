@@ -211,4 +211,27 @@ class DartboardPausedModalConfig {
       ),
     );
   }
+
+  /// Gladiator Arena — Dark Arena bg, Blood Red border (signals danger/disconnection)
+  factory DartboardPausedModalConfig.gladiatorArena() {
+    return DartboardPausedModalConfig(
+      backgroundColor: const Color(0xFF3A2010), // Dark Arena
+      borderColor: const Color(0xFFC0392B), // Blood Red — signals danger/disconnected
+      boxShadowColor: const Color(0xFFC0392B),
+      boxShadowOpacity: 0.4,
+      iconColor: const Color(0xFFC0392B), // Blood Red
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.cinzel(
+        color: const Color(0xFFC0392B), // Blood Red
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
+      messageTextStyle: GoogleFonts.lato(
+        color: const Color(0xFFF5F0E8), // Marble White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 }

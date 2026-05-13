@@ -2,11 +2,11 @@
 
 ## Overview
 
-507 UI automation tests validate end-to-end user flows in Chrome browser.
+612 UI automation tests validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Sequential time:** ~704 minutes (~11h 44m) — `run_ui_tests.bat`, interactive Chrome sessions visible
-**Parallel time:** ~175 minutes (~2h 55m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
+**Sequential time:** ~843 minutes (~14h 3m) — `run_ui_tests.bat`, interactive Chrome sessions visible
+**Parallel time:** ~211 minutes (~3h 31m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
@@ -74,6 +74,18 @@
 8. Results Screen: 7 tests
 9. Save & Resume: 6 tests
 10. Visual Validation: 5 tests (1 screenshot test + 4 programmatic)
+
+### Gladiator Arena (99 tests, ~131 minutes)
+1. Add Player: 6 tests
+2. Edit Score: 7 tests
+3. Gameplay: 19 tests
+4. Menu and Settings: 8 tests
+5. Navigation: 4 tests
+6. Pause Modal: 20 tests
+7. Play to Complete: 5 tests
+8. Results Screen: 7 tests
+9. Save & Resume: 16 tests
+10. Visual Validation: 7 tests (1 screenshot test + 6 programmatic)
 
 **Known infrastructure flake:** `save_resume/resumed_state_correct_test.dart` — test assertions all pass ("All tests passed!" in log) but `flutter drive` crashes during chromedriver teardown with `SocketException: errno = 1225`. Both retry attempts hit the same deterministic teardown crash. Effective pass rate: 45/46. This is a `flutter drive` infrastructure bug, not a Lunar Lander code defect.
 
@@ -248,8 +260,9 @@ Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_paralle
 | clockwork_quest | 9005 | 4448 |
 | lunar_lander | 9006 | 4449 |
 | pirates_grid | 9007 | 4450 |
-| home_screen | 9008 | 4451 |
-| pause_modal | 9009 | 4452 |
+| gladiator_arena | 9008 | 4451 |
+| home_screen | 9009 | 4452 |
+| pause_modal | 9010 | 4453 |
 
 Directories the runners intentionally skip: `_smoke/` (manual self-tests for the failure-screenshot helper, run via direct `flutter drive` invocation) and `shared/` (helper files, no tests).
 

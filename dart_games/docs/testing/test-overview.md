@@ -2,14 +2,14 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 2108 total tests:
-- **1438 Flutter non-UI tests** (models, providers, services, widgets, game logic)
+The Dart Games app has a comprehensive test suite with 2603 total tests:
+- **1801 Flutter non-UI tests** (models, providers, services, widgets, game logic)
 - **190 server tests** (database, models, routes, migrations)
-- **507 UI automation tests** (end-to-end testing with Chrome)
+- **612 UI automation tests** (end-to-end testing with Chrome) — optional
 
-## Non-UI Tests (1438 Flutter + 190 Server = 1628 tests)
+## Non-UI Tests (1801 Flutter + 190 Server = 1991 tests)
 
-### Flutter Tests (1438 tests)
+### Flutter Tests (1801 tests)
 **Run with:** `flutter test`
 **Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
@@ -22,7 +22,7 @@ The Dart Games app has a comprehensive test suite with 2108 total tests:
 - VictoryMusicFile: 12 tests
 - Additional models (Dartboard, DartboardConnectionProfile, ApiLogEntry, SavedGameMetadata): 58 tests
 
-**Model Serialization Tests (110 tests)**
+**Model Serialization Tests (127 tests)**
 - HorseRaceGame serialization: 10 tests
 - TargetTagGame serialization: 13 tests
 - MonsterMashGame serialization: 13 tests
@@ -30,12 +30,13 @@ The Dart Games app has a comprehensive test suite with 2108 total tests:
 - ClockworkQuestGame serialization: 19 tests
 - LunarLanderGame serialization: 12 tests
 - PiratesGridGame serialization: 24 tests
+- GladiatorArenaGame serialization: 17 tests
 
 **Provider Tests (74 tests)**
 - PlayerProvider: 44 tests (CRUD, selection, stats, history, sorting)
 - DartboardProvider: 30 tests (emulator mode, profiles, loadConfiguration, status checking)
 
-**Provider Save/Restore Tests (54 tests)**
+**Provider Save/Restore Tests (57 tests)**
 - HorseRaceProvider save/restore: 7 tests
 - TargetTagProvider save/restore: 7 tests
 - MonsterMashProvider save/restore: 7 tests
@@ -43,13 +44,15 @@ The Dart Games app has a comprehensive test suite with 2108 total tests:
 - ClockworkQuestProvider save/restore: 7 tests
 - LunarLanderProvider save/restore: 7 tests
 - PiratesGridProvider save/restore: 12 tests
+- GladiatorArenaProvider save/restore: 15 tests
 
-**Provider Game Mechanics Tests (233 tests)**
+**Provider Game Mechanics Tests (314 tests)**
 - HorseRaceProvider: 50 tests (startGame, processDartThrow, exact score/bust, skipTurn, editScore, getHorsePosition)
 - ClockworkQuestProvider: 49 tests (normal + speed mode, target advancement, laps, bullseye, editScore, win conditions)
 - MonsterMashProvider: 44 tests (health/damage/healing, elimination, processDartThrow, editScore, speed play)
 - ReefRoyaleProvider: 45 tests (marks/claiming/locking, processDartThrow, editScore, pearl scoring)
 - TargetTagProvider: 45 tests (solo/team modes, shield mechanics, tag-in/out, elimination, hero bonus)
+- GladiatorArenaProvider: 81 tests (scoring, knockoff, bust detection, double finish, shield round, speed play, edit score, win conditions)
 
 **API Client Tests (49 tests)**
 - ApiConfig: 5 tests
@@ -82,6 +85,7 @@ The Dart Games app has a comprehensive test suite with 2108 total tests:
 - Clockwork Quest Game Logic + Announcements: 84 tests (66 game logic + 18 announcements)
 - Lunar Lander Game Logic + Announcements: 66 tests (33 game logic + 33 announcements)
 - Pirate's Grid Game Logic + Announcements: 132 tests (31 game logic + 14 three-in-a-row checker + 27 announcements + 24 game-with-announcements + 24 serialization + 12 save-restore)
+- Gladiator Arena Game Logic + Announcements: 77 tests (26 game logic + 33 announcements + 18 game-with-announcements)
 
 **Save/Resume Integration Tests (20 tests)**
 - Save trigger conditions: 8 tests
@@ -120,11 +124,11 @@ _Note: Some tests span multiple categories. The total (1438) is the authoritativ
 - Failed stats routes: 6 tests
 - Test routes: 6 tests
 
-## UI Automation Tests (507 tests)
+## UI Automation Tests (612 tests)
 
 **Run with:** `./run_ui_tests.bat` (sequential) or `./run_ui_tests_parallel.bat` (parallel)
-**Sequential time:** ~704 minutes (~11h 44m) — interactive Chrome sessions visible
-**Parallel time:** ~175 minutes (~2h 55m) — fully headless, no visible Chrome sessions
+**Sequential time:** ~843 minutes (~14h 3m) — interactive Chrome sessions visible
+**Parallel time:** ~211 minutes (~3h 31m) — fully headless, no visible Chrome sessions
 **OPTIONAL:** Ask user before running
 
 ### Target Tag (73 tests, ~107 minutes)
@@ -196,10 +200,22 @@ _Note: Some tests span multiple categories. The total (1438) is the authoritativ
 - Save & Resume: 6 tests
 - Visual Validation: 5 tests (1 screenshot + 4 programmatic)
 
+### Gladiator Arena (99 tests, ~131 minutes)
+- Add Player: 6 tests
+- Edit Score: 7 tests
+- Gameplay: 19 tests
+- Menu and Settings: 8 tests
+- Navigation: 4 tests
+- Pause Modal: 20 tests
+- Play to Complete: 5 tests
+- Results Screen: 7 tests
+- Save & Resume: 16 tests
+- Visual Validation: 7 tests (1 screenshot + 4 programmatic + 2 additional)
+
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (1438 tests)
+✅ Run `flutter test` (1801 tests)
 ✅ Run `cd server && dart test` (190 tests)
 ✅ 100% pass rate MANDATORY for both
 ✅ If ANY test fails, DO NOT proceed
@@ -207,14 +223,14 @@ _Note: Some tests span multiple categories. The total (1438) is the authoritativ
 
 ### UI Automation Tests
 ❓ Ask user: "Would you like me to run UI automation tests?"
-✅ If yes: Run `./run_ui_tests_parallel.bat` (~175 min) or `./run_ui_tests.bat` (~704 min)
+✅ If yes: Run `./run_ui_tests_parallel.bat` (~211 min) or `./run_ui_tests.bat` (~843 min)
 ✅ If no: Proceed with build after non-UI tests pass
 
 ## Running Tests
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests (1438 tests)
+# Flutter tests (1801 tests)
 flutter test
 
 # Server tests (190 tests)
@@ -233,6 +249,7 @@ flutter test test/screens/games/reef_royale/
 flutter test test/screens/games/clockwork_quest/
 flutter test test/screens/games/lunar_lander/
 flutter test test/screens/games/pirates_grid/
+flutter test test/screens/games/gladiator_arena/
 flutter test test/shared/
 flutter test test/widgets/
 ```
@@ -240,12 +257,13 @@ flutter test test/widgets/
 ### UI Automation Tests
 ```bash
 # Sequential runner — interactive Chrome, one game at a time
-./run_ui_tests.bat                    # All tests (~704 min)
+./run_ui_tests.bat                    # All tests (~843 min)
 ./run_ui_tests.bat target_tag         # Specific game
 ./run_ui_tests.bat lunar_lander       # Specific game
+./run_ui_tests.bat gladiator_arena    # Specific game
 
-# Parallel runner — fully headless, 6 games simultaneously (~3.5x faster)
-./run_ui_tests_parallel.bat           # All tests (~153 min)
+# Parallel runner — fully headless, all games simultaneously (~3.5x faster)
+./run_ui_tests_parallel.bat           # All tests (~211 min)
 ./run_ui_tests_parallel.bat target_tag monster_mash  # Specific games
 ```
 

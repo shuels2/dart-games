@@ -8,6 +8,7 @@ import 'package:dart_games/providers/reef_royale_provider.dart';
 import 'package:dart_games/providers/clockwork_quest_provider.dart';
 import 'package:dart_games/providers/lunar_lander_provider.dart';
 import 'package:dart_games/providers/pirates_grid_provider.dart';
+import 'package:dart_games/providers/gladiator_arena_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/models/player.dart';
@@ -647,5 +648,78 @@ class ProviderHelpers {
   /// Simulate dartboard reconnection (dismisses DartboardPausedModal)
   static void simulateDartboardReconnection(WidgetTester tester) {
     getDartboardProvider(tester).simulateReconnection();
+  }
+
+  // ==========================================================================
+  // GLADIATOR ARENA HELPERS
+  // ==========================================================================
+
+  /// Get Gladiator Arena provider
+  static GladiatorArenaProvider getGladiatorArenaProvider(
+      WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<GladiatorArenaProvider>(context, listen: false);
+  }
+
+  /// Gladiator Arena: Get player score
+  static int getGladiatorArenaPlayerScore(
+      WidgetTester tester, String playerId) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.currentGame?.scores[playerId] ?? 0;
+  }
+
+  /// Gladiator Arena: Check for winner
+  static bool gladiatorArenaHasWinner(WidgetTester tester) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Gladiator Arena: Get current player ID
+  static String? getGladiatorArenaCurrentPlayerId(WidgetTester tester) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.currentPlayerId;
+  }
+
+  /// Gladiator Arena: Check if game is active
+  static bool isGladiatorArenaGameActive(WidgetTester tester) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Gladiator Arena: Get darts thrown for current player
+  static int getGladiatorArenaCurrentPlayerDartsThrown(WidgetTester tester) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.getCurrentPlayerDartsThrown();
+  }
+
+  /// Gladiator Arena: Get target score from current game
+  static int getGladiatorArenaTargetScore(WidgetTester tester) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.currentGame?.targetScore ?? 200;
+  }
+
+  /// Gladiator Arena: Check if double finish is enabled
+  static bool isGladiatorArenaDoubleFinishEnabled(WidgetTester tester) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.currentGame?.doubleFinishEnabled ?? true;
+  }
+
+  /// Gladiator Arena: Check if should prompt takeout
+  static bool gladiatorArenaShouldPromptTakeout(WidgetTester tester) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.shouldPromptTakeout;
+  }
+
+  /// Gladiator Arena: Get winner ID
+  static String? getGladiatorArenaWinnerId(WidgetTester tester) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.currentGame?.winnerId;
+  }
+
+  /// Gladiator Arena: Get current turn dart segments for a player
+  static List<String> getGladiatorArenaCurrentTurnDartSegments(
+      WidgetTester tester, String playerId) {
+    final provider = getGladiatorArenaProvider(tester);
+    return provider.getCurrentTurnDartSegments(playerId);
   }
 }

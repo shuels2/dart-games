@@ -39,12 +39,13 @@ This skill runs as an **orchestrator** on the parent model (intended to be Opus)
 **Orchestrator (this thread — Opus) handles directly:**
 - All phase orchestration, gate decisions, and "fix code or update tests?" questions
 - Phase 0 spec analysis, section-map construction, and build plan
-- All 9 adversarial reviews (AR-1 through AR-9)
+- All 9 adversarial reviews (AR-1 through AR-9) plus AR-Coverage (Phase 10 self-check)
 - Phase 5 announcement stacking analysis (the *design* of precedence, before implementation)
 - Phase 6 data migration decision
 - Phase 7 spec coverage audit
 - Phase 8 Step 2 screenshot evaluation against the visual checklist
 - Phase 9 simultaneous-pass verification
+- Phase 10 cross-game test-coverage audit, gap synthesis, and remediation planning (the audit itself stays on the orchestrator; only test-writing in Step 8 is delegated)
 - Test failure root-cause analysis
 
 **Sonnet sub-agents (spawned via Agent tool) handle:**
@@ -56,7 +57,8 @@ This skill runs as an **orchestrator** on the parent model (intended to be Opus)
 - Phase 6 serialization + save/restore tests
 - Phase 7 UI test files (in subdirectories) + screenshot test + shared helper sync + batch file updates
 - Phase 8 Step 1 (chromedriver sync + server startup + screenshot test execution), Step 4 fixes, Steps 5/7 (running UI + non-UI tests)
-- Phase 10 documentation files + CLAUDE.md and testing docs updates
+- Phase 10 Step 8 — writing the new tests that close approved coverage gaps (audit + planning stays on orchestrator)
+- Phase 11 documentation files + CLAUDE.md and testing docs updates
 
 ### Placeholder Convention
 
@@ -253,20 +255,24 @@ If any check fails, STOP and surface to the user. Do not proceed.
 > You are completing Phase 1 (Asset Setup) for the **[GAME_NAME_DISPLAY]** game build in the Dart Games Flutter project.
 >
 > **Read first:**
-> - Spec file: `[SPEC_PATH]` — focus on the "Asset Checklist" section (Section [N]) and "Development Workflow" (Section [M]) per the section map below.
+> - Spec file: `[SPEC_PATH]` — focus on the "Asset Checklist" section (Section [N]) and "Development Workflow" (Section [M]) per the section map below. The Asset Checklist MUST have BOTH a "Source File" column (where the user dropped the raw asset, typically under `C:\Users\steve\Downloads\<GameName>\...`) AND a "File Path" column (canonical target path under `assets/games/[GAME_NAME_SNAKE]/...` with the project's `[GameName]-[Element].ext` PascalCase convention). The skill auto-copies + renames from Source → File Path; the user does NOT pre-stage assets in the project tree.
 > - Section map (from Phase 0): [PASTE SECTION MAP TABLE]
-> - `docs/development/asset-organization.md` — pay attention to the filename convention `[GameName]-[Element]-[Variant].ext` (lowercase, hyphens, prefixed with game name).
+> - `docs/development/asset-organization.md` — pay attention to the filename convention `[GameName]-[Element]-[Variant].ext` (PascalCase, hyphens between game name and element, prefixed with game name).
 >
 > **Tasks (in order):**
 > 1. Run `git branch --show-current`. If not on `[BRANCH_NAME]`:
 >    - If the branch exists: `git checkout [BRANCH_NAME]`
 >    - Otherwise: `git checkout -b [BRANCH_NAME]`
-> 2. Verify the asset folder structure exists under `assets/games/[GAME_NAME_SNAKE]/` with subdirectories required by the spec (typically `icons/`, `images/`, `characters/`, `sounds/`).
-> 3. **Verify the home-screen card icon exists** at the path the spec specifies (typically `assets/games/[GAME_NAME_SNAKE]/icons/icon.png` per `docs/development/adding-games.md`). This will be referenced by the home_screen.dart card in Phase 4.
-> 4. For every asset listed in the spec's Asset Checklist, build a table:
->    | Asset (spec) | Expected path | Filename convention OK? | PRESENT / MISSING |
->    Filename convention: `[GameName]-[Element]-[Variant].ext`, lowercase with hyphens, no spaces, prefixed with the game name (per `docs/development/asset-organization.md`).
-> 5. If ANY asset is MISSING or has a non-conforming filename, do NOT continue. Report the issue and STOP — assets are user-provided and renaming requires user approval.
+> 2. Create the asset folder structure under `assets/games/[GAME_NAME_SNAKE]/` (use `mkdir -p`). Include every subdirectory the spec's Asset Checklist references (typically `icons/`, `images/`, `characters/`, `sounds/`) — create them ALL up front, even if some asset types are absent.
+> 3. **Auto-copy + rename every asset** from the spec's Asset Checklist Source File column → File Path column. For each row:
+>    - If the **target File Path already exists**, skip (idempotent re-run safety) — log "SKIP (already in place): <target>".
+>    - Else if the **Source File exists**, copy with renaming via `cp "<source>" "<target>"`. Create any missing intermediate directories. Log "COPY: <source> → <target>".
+>    - Else (both missing) — STOP immediately, do NOT proceed. Report the missing asset(s) to the orchestrator: list every row where neither source nor target exists. The user must place the source files at the spec's listed Source paths before re-running.
+>    - The renaming is mechanical and unconditional — the spec's File Path column IS the canonical target. Do NOT prompt the user before renaming; the spec's File Path column is the authority.
+> 4. **Verify the home-screen card icon is now at the expected target path** (typically `assets/games/[GAME_NAME_SNAKE]/icons/[GameName]-Icon.png` per the spec's Asset Checklist + `docs/development/adding-games.md`). This will be referenced by the home_screen.dart card in Phase 4.
+> 5. For every asset listed in the spec's Asset Checklist, build a verification table AFTER the copy pass:
+>    | Asset (spec) | Source path | Target path | Filename convention OK? | PRESENT (post-copy)? |
+>    Filename convention: `[GameName]-[Element]-[Variant].ext`, PascalCase, hyphens between game name and element, no spaces, prefixed with the game name. Every row's "PRESENT (post-copy)?" column MUST be YES; if any is NO, dispatch the copy logic again or stop and surface to the orchestrator.
 > 6. Read `pubspec.yaml`. If the game's asset directories are not listed under `flutter.assets`, add them in alphabetical order with the existing games.
 > 7. Run `flutter pub get` and confirm exit code 0.
 > 8. **Write the asset path manifest** at `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md`. This is consumed by Phase 2 (wireframes) and Phase 3 (model `assetPath` getter). Format:
@@ -289,8 +295,9 @@ If any check fails, STOP and surface to the user. Do not proceed.
 >    Phase 3 sub-agent reads this file to populate the model's `assetPath` getter using the renamed paths, NOT the spec's original (potentially pre-rename) names.
 >
 > **Report back:**
-> - The asset table from step 4 (paths, naming, present/missing)
-> - Confirmation the home-screen icon is at the expected path
+> - The copy-pass log from step 3 (each row: COPY / SKIP / FAIL)
+> - The verification table from step 5 (paths, naming, present-post-copy)
+> - Confirmation the home-screen icon is at the expected target path
 > - The diff applied to `pubspec.yaml` (or "no changes needed")
 > - The output of `flutter pub get`
 > - Confirmation that `temp_wireframes/[GAME_NAME_SNAKE]/asset_paths.md` was written
@@ -298,10 +305,11 @@ If any check fails, STOP and surface to the user. Do not proceed.
 >
 > **Hard rules — Do NOT:**
 > - Commit to master/main. Do NOT push to remote. All work stays on `[BRANCH_NAME]`.
-> - Modify any files outside `pubspec.yaml`
-> - Create any placeholder asset files
-> - Rename mis-named assets without first reporting and waiting for orchestrator instruction
+> - Modify any files outside `pubspec.yaml` and the new `assets/games/[GAME_NAME_SNAKE]/` tree (the asset copies and the directories required for them are the ONLY allowed creations).
+> - Create any placeholder asset files (only copy real source files from the spec's Source paths)
+> - Overwrite an asset that already exists at the target path (skip — see step 3 idempotency rule)
 > - Skip `flutter pub get`
+> - Proceed if any source AND target are both missing — STOP and surface to the orchestrator instead
 
 After the sub-agent returns, run `git status` and read the modified `pubspec.yaml` yourself to confirm.
 
@@ -719,6 +727,49 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   - In wide layout (constraints.maxWidth > 800): `Expanded(child: DualPlayerListPanel(...))` so the panel takes remaining vertical space in the right-panel Column.
 >   - In narrow scrollable layout (constraints.maxWidth <= 800): `SizedBox(height: 400, child: DualPlayerListPanel(...))` because `Expanded` cannot live inside a `SingleChildScrollView`.
 >   - Reference: `monster_mash_menu_screen.dart` line 715 — `Expanded(child: DualPlayerListPanel(...))`.
+> - **DualPlayerListPanel alignment + spacing — MUST match the options-row exactly** (recurring miss across builds — Carnival Derby, Reef Royale, Clockwork Quest, Lunar Lander, Pirate's Grid, AND Gladiator Arena all shipped with this wrong on first cycle and required a polish pass). The two list panes must visually align with the option boxes above them: the AVAILABLE pane's left edge = the left option box's left edge, the SELECTED pane's right edge = the right option box's right edge, and the gap between the two panes = the gap between the two option boxes in a row.
+>
+>   The `DualPlayerListPanelConfig` has THREE knobs that control this:
+>   - `availableContainerMargin` (defaults to `EdgeInsets.only(left: 16.0)`)
+>   - `selectedContainerMargin` (defaults to `EdgeInsets.only(right: 16.0)`)
+>   - `listGap` (defaults to `16`)
+>
+>   **The defaults are wrong for the canonical menu layout.** Every game's factory MUST explicitly override:
+>   ```dart
+>   availableContainerMargin: EdgeInsets.zero,
+>   selectedContainerMargin: EdgeInsets.zero,
+>   listGap: 4,  // ← NOT the same as the SizedBox(width: N) in the options row — see below
+>   ```
+>
+>   **CRITICAL — `listGap` value is COUNTERINTUITIVE.** The instinct is to make `listGap` equal to the `SizedBox(width: N)` between the option boxes (e.g. `8` if options use `SizedBox(width: 8)`). **THAT IS WRONG.** Using `listGap: 8` produces a VISIBLY WIDER gap between the panes than between the options because the SHARED `dual_player_list_panel.dart` widget hardcodes `padding: EdgeInsets.all(16.0)` inside each section (lines 89 + 212). That 16px inner padding pushes the list content (player tiles) 16px in from each pane's visible border, while options-row content typically only has 12-16px horizontal padding inside its boxes. The net visual gap between PANES (including the 16+16 inner padding) is much wider than the visual gap between OPTIONS at the same `listGap == option-row-SizedBox` value. Empirically, `listGap: 4` (HALF of the options-row SizedBox value) compensates for this and makes the visible BOX-to-BOX gap appear to match.
+>
+>   **Recommended option-box internal padding:** `EdgeInsets.symmetric(horizontal: 16, vertical: 8)` to match the panes' inner 16px horizontal padding. With both at 16px horizontal, the option-content x-positions and player-tile x-positions visually align (the option labels/controls sit at the same indent inside the option box as the player tiles do inside the pane). Combined with `listGap: 4`, this produces a visually balanced layout.
+>
+>   **Recipe (apply EXACTLY in the new game's factory + menu screen):**
+>   - In `DualPlayerListPanelConfig.[gameName]()`:
+>     ```dart
+>     availableContainerMargin: EdgeInsets.zero,
+>     selectedContainerMargin: EdgeInsets.zero,
+>     listGap: 4,
+>     ```
+>   - In the menu's `_buildTargetScoreBox()` and `_buildToggleBox()`:
+>     ```dart
+>     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+>     ```
+>   - In the settings row's `Row` between option boxes:
+>     ```dart
+>     const SizedBox(width: 8),  // visible options-row gap
+>     ```
+>
+>   Why these specific values: the SHARED widget's hardcoded `EdgeInsets.all(16)` is the constant that drives everything else. Until the shared widget is updated to expose a `sectionPadding` config knob, every game must work around it via the smaller `listGap`. If you need a different visual gap, scale `listGap` proportionally — but document it in your factory with a comment explaining the perceived-vs-actual distinction.
+>
+>   **AR-4 audit (mandatory grep):**
+>   ```
+>   grep -nA1 '[GAME_NAME_PASCAL]\b\|gladiatorArena\b' \
+>     lib/widgets/player_list_panel/dual_player_list_panel_config.dart \
+>     | grep -E 'availableContainerMargin|selectedContainerMargin|listGap'
+>   ```
+>   Must show: `availableContainerMargin: EdgeInsets.zero`, `selectedContainerMargin: EdgeInsets.zero`, `listGap: 4` (NOT 8 — see counterintuitive note above). Then visually compare the screenshot at the menu_4_players_ready or menu_default state — the gap between AVAILABLE/SELECTED panes should look EQUAL to the gap between TARGET SCORE/DOUBLE FINISH boxes, and the player tiles' left edge should align with the option labels' left edge.
 > - **Generic avatars only on player TILE — do NOT assign game character images to player tile avatars**
 > - All settings from the Options section with correct controls bound to provider state. **Option boxes MUST have IDENTICAL heights** regardless of control type (slider/toggle/dropdown). Use a fixed `min-height` so visual rhythm stays consistent across the settings row.
 > - Add Player Dialog integration
@@ -1640,6 +1691,49 @@ If FAIL:
 >
 > **Past failure:** Pirate's Grid shipped without difficulty-badges visual test, cell-flag-colors visual test, winning-row-glow visual test, round-tracker-text visual test, speed-play-timer-colors visual test, or round-complete-overlay visual test — six visible spec elements with zero visual assertion. `conditional_ui_test.dart` checked widget *visibility* but not *appearance*.
 >
+> **5e. Mandatory per-dart win-evaluation regression test** (in `integration_test/[GAME_NAME_SNAKE]/gameplay/`):
+>
+> - `win_on_early_dart_test.dart` — set up a game state where the winning condition is met on dart 1 OR dart 2 of a turn (NOT dart 3), throw exactly that dart, and assert `hasWinner == true` IMMEDIATELY afterward without throwing additional darts. Then click DARTS REMOVED, pump for ~4 s, and assert the results screen renders.
+>
+> **Setup may span multiple turns.** What the test is guarding is that the *winning dart* is dart 1 or dart 2 of *its own turn* — not that the entire game is one turn long. If a game's rules require multiple turns to reach the win state (e.g., Target Tag's "must be at 0 shields BEFORE the killing dart" rule, or Clockwork Quest's 7-turn ladder), drive the prior turns naturally (3 darts + DARTS REMOVED each) until you reach the winning turn, then throw exactly the winning dart and assert `hasWinner` is true before throwing any more. Do NOT contort game rules to force a single-turn scenario, and do NOT skip the assertion just because setup took several turns.
+>
+> **Rationale:** every dart-game title evaluates win conditions per-dart inside `processDartThrow`, not at turn end. A regression that gates win detection on `dartsThrown >= maxDartsPerTurn` (e.g. by calling `_processTurnEnd` only when `dartsThrown >= 3`) is silent against tests that always throw 3 darts and check at the end — but breaks the game the moment a player legitimately wins on dart 1 or 2 (e.g. Gladiator Arena Double Finish on the opening D20). Past failure: Gladiator Arena shipped with `_processTurnEnd(... isLastDart: dartsThrown >= 3)` gating evaluation to dart 3 only — caught only when a user reported the game not ending on a dart-1 double finish, weeks after launch. The fix had to update the provider AND two existing provider tests that had baked in the wrong assumption. Second past failure: the initial Target Tag `win_on_early_dart_test` tried to eliminate an opponent with one attack dart, contradicting Target Tag's two-hit elimination rule — the test was rewritten to span two turns (P2 misses all 3 in turn 1, P1 wins on dart 1 of turn 2), per the multi-turn-setup allowance above.
+>
+> **Test pattern:**
+> ```dart
+> testWidgets('Gameplay: dart 1 win ends the game immediately', (tester) async {
+>   await UITestHelpers.resetServerState();
+>   await setupAndStartGame(tester, config, /* quick-win settings */);
+>
+>   // Throw the winning dart — dart 1 or dart 2 of the turn.
+>   await throwDartViaMock(tester, X, multiplier: 'Y');
+>
+>   // Game must end without further darts.
+>   expect(ProviderHelpers.[gameName]HasWinner(tester), isTrue,
+>       reason: 'Winning dart must end the game on dart 1');
+>
+>   await clickDartsRemoved(tester);
+>   await tester.pump(const Duration(seconds: 4));
+>   await tester.pump();
+>   await tester.pump();
+>   expect(config.getPlayAgainButton(), findsOneWidget);
+> });
+> ```
+>
+> Reference implementations across shipped games:
+>   - `integration_test/gladiator_arena/gameplay/win_on_early_dart_test.dart` — Double Finish on/off, dart 1 + dart 2 (T20 with target=60; S20 + D20 with DF ON)
+>   - `integration_test/lunar_lander/gameplay/win_on_early_dart_test.dart` — Hard Landing OFF overshoot touchdown on dart 2 (altitude=100, T20 + T20)
+>   - `integration_test/target_tag/gameplay/win_on_early_dart_test.dart` — ShieldMax=1; turn 1 sets up the at-0-shields state, dart 1 of turn 2 eliminates the last opponent (multi-turn setup, single winning dart)
+>   - `integration_test/pirates_grid/gameplay/win_on_early_dart_test.dart` — `setPiratesGridGameState` pre-claims two row cells; dart 1 plants the winning third flag
+>   - `integration_test/carnival_derby/ui/game_single_player_quick_win_test.dart` — target=60, T20 wins on dart 1
+>
+> Games whose existing tests already qualify (dart 1 / dart 2 of the final turn explicitly asserts `hasWinner == true`):
+>   - `integration_test/monster_mash/gameplay/game_won_last_monster_standing_test.dart` (single dart finishes opponent at 1 HP)
+>   - `integration_test/reef_royale/gameplay/game_ends_all_7_targets_test.dart` (outer bull on dart 2 of turn 3 claims the 7th target)
+>   - `integration_test/clockwork_quest/gameplay/full_game_p1_wins_test.dart` (target=20 dart wins as dart 2 of turn 7)
+>
+> Either pattern satisfies the requirement; new games SHOULD prefer the dedicated `win_on_early_dart_test.dart` filename so the audit grep is uniform.
+>
 > **6. Every UI test must call `await UITestHelpers.resetServerState()` at the start.** This is required for per-session DB isolation (Flutter Bug #67090 spawns a phantom 2nd browser; without per-session DBs the phantom contaminates results — see `docs/testing/ui-automation.md`).
 >
 > **6a. Edit Score test design rule (mandatory):** the Edit Score button lives INSIDE the RemoveDartsModal which only renders after 3 darts thrown OR after Skip Turn. Tests trying to open the Edit Score modal MUST throw 3 darts (or 2 misses + 1 scoring dart) BEFORE calling `openEditScore`. A test that throws only 1 dart and immediately calls `openEditScore` will fail to find the button — Edit Score is part of the turn-end takeout flow.
@@ -1858,6 +1952,8 @@ If the audit produces a gap list mixing "test gaps" and "spec/code divergences",
 >
 > (p) **Provider game-mechanics test file exists.** `flutter test test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must run and pass. `grep -c '^  test(\|^    test(' test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` — must report ≥ 40 tests. Past failure: Pirate's Grid and Lunar Lander shipped without this file.
 >
+> (q) **Per-dart win regression coverage exists** (rule 5e). Run `ls integration_test/[GAME_NAME_SNAKE]/gameplay/win_on_early_dart_test.dart` — if present, accept. Otherwise, identify any other gameplay or UI test that throws fewer than 3 darts in the winning turn and asserts `hasWinner == true` IMMEDIATELY (grep for `expect(.*HasWinner.*isTrue` and inspect the surrounding lines for the dart count in the final turn). If no such test exists, this is a gap — write `win_on_early_dart_test.dart` per the 5e pattern. Past failure: Gladiator Arena gated win evaluation to dart 3 only and shipped without this regression test; the bug surfaced in production weeks later when a user hit a winning Double Finish on dart 1.
+>
 > Spec coverage: X% (N/M requirements covered)
 > Missing coverage: [list]"
 
@@ -2055,19 +2151,89 @@ Present the full report to the user.
 
 ### STEP 5: Run UI automation tests (Sonnet sub-agent)
 
+**CRITICAL — driver choice during build vs production:**
+
+During build (Phase 7 + Phase 8, while failure-screenshot wraps from Rule §38 are still in place), tests MUST be invoked via `flutter drive --driver=test_driver/screenshot_test.dart` per test file in foreground. This is the SAME invocation pattern the visual-validation screenshot test uses in Phase 8 STEP 1. Reasons:
+
+- The wraps' `runWithFailureScreenshot` calls write PNG bytes to `temp_screenshots/failures/` ONLY when the `screenshot_test.dart` driver's `onScreenshot` callback is registered. The standard `test_driver/integration_test.dart` driver has no `onScreenshot`, so the wraps silently no-op (no failure pixels written) under the production runner.
+- The parallel runner (`run_ui_tests_parallel.bat`) uses the production driver and additionally relies on Windows `start "Worker"` + `git worktree add` to spawn parallel workers. Those Windows-specific commands silently no-op in the orchestrator's MSYS2/Bash sandbox, so the runner returns exit 0 without actually running anything. The orchestrator therefore CANNOT use the parallel runner during the build cycle — it must invoke `flutter drive` directly per test file.
+
+The parallel runner is intended for the post-build pack (Phase 9 onward, after the wraps are removed). Until then: foreground `flutter drive` per file is the only way to actually exercise the tests AND get failure pixels.
+
+**Foreground invocation pattern (canonical):**
+
+```bash
+# Reset state ONCE per category before invoking
+taskkill /F /IM chromedriver.exe 2>&1 || true
+taskkill /F /FI "WINDOWTITLE eq Dart Games*" 2>&1 || true
+for /d %D in ("%LOCALAPPDATA%\Temp\flutter_tools.*") do rmdir /S /Q "%D" 2>&1
+rm -rf temp_screenshots/failures/*
+
+# Start backend server in background (port 9008 for gladiator_arena per
+# docs/testing/ui-automation.md port table)
+cd server && dart run bin/server.dart --port 9008 --data-dir ../ui_test_data &
+
+# Start chromedriver in background (port 4444 — flutter drive default)
+chromedriver/chromedriver-win64/chromedriver.exe --port=4444 &
+
+# Run each test file individually (sub-agent loops through every *.dart in
+# integration_test/[GAME_NAME_SNAKE]/<subdir>/ except _helpers.dart)
+flutter drive \
+  --driver=test_driver/screenshot_test.dart \
+  --target=integration_test/[GAME_NAME_SNAKE]/<subdir>/<test_file>.dart \
+  -d chrome \
+  --dart-define=SERVER_PORT=9008 \
+  --web-browser-flag=--start-maximized \
+  --browser-dimension=1920x1080 \
+  --web-browser-flag=--no-restore-last-session
+```
+
 **Sub-agent prompt template:**
 
-> Run the UI automation tests for the **[GAME_NAME_DISPLAY]** game and report results.
+> Run the UI automation tests for the **[GAME_NAME_DISPLAY]** game and report results. Use the FOREGROUND `flutter drive` per-file invocation pattern (NOT the parallel runner — see skill Phase 8 STEP 5 driver-choice note for why).
 >
-> Run: `./run_ui_tests.bat [GAME_NAME_SNAKE]`
+> **Pre-flight:**
+> 1. `taskkill /F /IM chromedriver.exe 2>&1 || true`
+> 2. `taskkill /F /FI "WINDOWTITLE eq Dart Games*" 2>&1 || true`
+> 3. Wipe `%LOCALAPPDATA%\Temp\flutter_tools.*`
+> 4. Clear `temp_screenshots/failures/`
+> 5. Start backend server background: `cd server && dart run bin/server.dart --port 9008 --data-dir ../ui_test_data`
+> 6. Start chromedriver background on port 4444
 >
-> Report back:
-> - Total tests run, broken down by subdirectory (add_player, edit_score, gameplay, menu_and_settings, navigation, play_to_complete, results, save_resume)
-> - Pass/fail count
-> - Full failure output for any failing tests (test name + error message + relevant stack trace)
+> **Test loop:**
+> For each subdirectory in `integration_test/[GAME_NAME_SNAKE]/` (in skill-mandated order: visual_validation, menu_and_settings, add_player, navigation, gameplay, pause_modal, results_screen, save_resume, edit_score, play_to_complete), for each `*_test.dart` file (skip `_helpers.dart`):
+>
+> ```
+> flutter drive \
+>   --driver=test_driver/screenshot_test.dart \
+>   --target=integration_test/[GAME_NAME_SNAKE]/<subdir>/<test>.dart \
+>   -d chrome --dart-define=SERVER_PORT=9008 \
+>   --web-browser-flag=--start-maximized --browser-dimension=1920x1080 \
+>   --web-browser-flag=--no-restore-last-session
+> ```
+>
+> Capture exit code + look for "All tests passed!" / "Some tests failed:" / "Failure Details:" in output.
+>
+> **For each failing test:**
+> - Note the test file path
+> - Read the failure stack trace from flutter drive output
+> - List any failure screenshots in `temp_screenshots/failures/` (path + size)
+>
+> **Hung-process safety:** if a single `flutter drive` invocation runs longer than 5 minutes, KILL it (taskkill chromedriver + close test windows) and mark the test FAILED with a "TIMEOUT" reason.
+>
+> **Tear down:** kill chromedriver, kill backend server.
+>
+> **Report back:**
+> - Total tests attempted
+> - Pass/fail count broken down by subdirectory
+> - For each failure: test path + error message excerpt + failure screenshot path (if captured)
 > - Total runtime
 >
-> Do NOT attempt to fix failing tests — only report them.
+> **Hard rules:**
+> - Do NOT attempt to fix failing tests — only report them. Orchestrator triages root causes.
+> - Do NOT use the parallel runner.
+> - Do NOT skip individual tests. Every test must be attempted.
+> - Do NOT kill chrome.exe globally — only chromedriver.exe and test windows by title.
 
 If chromedriver is not available or tests cannot run:
 - Orchestrator STOPs immediately.
@@ -2254,7 +2420,202 @@ The helper itself (`UITestHelpers.runWithFailureScreenshot`) STAYS in `integrati
 
 ---
 
-## Phase 10: Documentation and Definition of Done
+## Phase 10: Cross-Game Test-Coverage Audit
+
+**Goal:** After all initial tests pass (Gate 4), audit the new game's test coverage against a strong-coverage peer game. Identify scenario gaps — particularly option × player-count combinations, miss paths, knockoff / bust / win edge cases, save/restore round-trips, edit-score replay scenarios, menu-level guards, and announcement precedence — that the peer covers but the new game doesn't. Get user approval, then close the gaps with new tests (and, if the audit surfaces dead code or unwired helpers in the announcement layer or elsewhere, wire or delete them per user decision).
+
+**Model:** Orchestrator (Opus) for the audit, gap synthesis, and remediation plan; Sonnet sub-agent for implementing the new tests once the user approves.
+
+**Why this phase exists:** Spec coverage (Phase 7) verifies every option in the spec has at least one test. AR-9 (Phase 11) verifies the new game LOOKS like the others in code shape and visuals. Neither catches *combinatorial* test gaps — "the peer game has 5 tests around DF bust edges; this game has 2" — and neither catches scenarios that the spec doesn't enumerate but emerge from the implementation (e.g., bust on dart 2 vs dart 3 freeze, multi-victim knockoff undo through edit-score, milestone announcement re-fire after knockoff). Real bugs hide there.
+
+### Step 1: Pick the peer game
+
+Pick the most-recently-built game that's *also* in the strong-coverage tier (Pirate's Grid, Clockwork Quest, or Gladiator Arena are reliable choices as of this writing). If the new game IS one of those, pick the previous strong-coverage game. Cite the peer in the orchestrator report.
+
+Avoid picking a game whose mechanics diverge wildly from the new game — e.g., don't compare Pirate's Grid (2-player grid game) against an N-player race-to-target game. The audit will produce false positives in the gap list.
+
+### Step 2: Build a feature inventory from CODE (not docs)
+
+**This step runs entirely on the orchestrator. Do not delegate.** The spec and project docs are NOT the source of truth here — they describe intent, not the as-built behavior. Read:
+
+- `lib/providers/[GAME_NAME_SNAKE]_provider.dart` — every public method, every branch, every guard
+- `lib/models/[GAME_NAME_SNAKE]_game.dart` — every field, computed property (e.g., `isShieldRound`), serialization
+- `lib/screens/games/[GAME_NAME_SNAKE]/*.dart` — every dart-event branch, every announcement call, every state-tracking field (e.g., milestone-transition flags)
+- `lib/services/[GAME_NAME_SNAKE]_announcement_helper.dart` — every method (including methods that are DEFINED but never CALLED — those are dead code candidates), the precedence chain in `pickAndAnnounceMoment`
+- `lib/services/play_to_complete/[GAME_NAME_SNAKE]_strategy.dart` — winner selection logic, per-dart payload
+
+Produce a written feature inventory. Group by: options, edge cases per option, per-dart outcomes, turn-end transitions (commit / bust / knockoff / win / skip / timer-expiry), announcement triggers (lifecycle + per-dart + milestone), save/restore fields, and per-player-count behavior (clamp ceilings, layout breakpoints).
+
+### Step 3: Inventory existing test coverage
+
+For each test file under:
+- `test/models/[GAME_NAME_SNAKE]_*` and `test/providers/[GAME_NAME_SNAKE]_*`
+- `test/screens/games/[GAME_NAME_SNAKE]/*`
+- `integration_test/[GAME_NAME_SNAKE]/*` (every subdirectory)
+
+…list every test (group + name is enough). For each item in the Step 2 feature inventory, mark whether at least one test exercises it. Mark not just by code-path-touch but by *meaningful assertion* — a test that throws a dart through the code but doesn't assert anything specific to the option/branch under audit doesn't count.
+
+### Step 4: Inventory the peer's coverage
+
+Same exercise on the peer game's test tree. Specifically capture:
+- Provider/model game-logic test groups (number of tests per group)
+- Save/restore tests (count, what fields/scenarios)
+- Announcement tests (lifecycle, precedence, stacking limits, milestone tests)
+- UI test subfolders (`gameplay/`, `menu_and_settings/`, `edit_score/`, `save_resume/`, `play_to_complete/`, `results_screen/`, `visual_validation/`, `pause_modal/`, `navigation/`)
+- Per-player-count UI coverage (which counts have dedicated tests)
+- Menu-level guard tests (`start_disabled_*`)
+- Any game-specific test kinds (mark as N/A for the new game if the mechanic doesn't apply)
+
+### Step 5: Diff and produce the gap list
+
+Cross-reference the two inventories. For each kind of test the peer has, ask:
+1. Does the new game have an equivalent test? (file-level)
+2. Is the coverage *breadth* comparable? (e.g., does the new game's "knockoff edges" cover the same edge cases as the peer's?)
+
+Pay particular attention to:
+
+- **Option × player-count matrix:** for each option combination (e.g., DF on/off × ShieldRound on/off × SpeedPlay on/off) × {2, 3, …, 8} players, are there meaningful combinations the new game doesn't exercise that the peer does? Don't fabricate combinations the spec doesn't justify — flag only the ones where the peer has explicit coverage.
+- **Miss / "no score" paths:** every miss outcome (single miss, all-3 miss, partial-turn miss after a near-bust setup) under each option combo. Check that the relevant audio announcement triggers and the stat side-effects (totalDartsThrown / totalTurns) are asserted.
+- **Knockoff edge cases:** at exact target, during shield round, with partial-turn darts, with DF bust short-circuit, simultaneous-tie (multi-victim), self-knockoff (if possible by the rules).
+- **Speed-Play timer boundaries** (if the game has a timer): expiry mid-turn vs between darts vs after dart 3, interaction with pause/takeout, interaction with knockoff/bust/edit-score.
+- **Double-Finish (or equivalent finish-rule) boundaries:** prospective bust on dart 1 vs 2 vs 3, exact-target without finisher, exact-target with finisher, overshoot revert, interaction with knockoff and shield rules.
+- **Save/restore round-trips:** every option + mid-state combination. Mid-turn save/resume with each option active. Specifically check fields the peer tests but the new game doesn't (e.g., a `*TimeRemaining` field that round-trips).
+- **Edit-score replay:** every win/bust/knockoff side-effect undo. Multi-victim knockoff undo specifically (single-victim alone is insufficient).
+- **Announcement precedence:** is the full precedence ladder exercised? Are stacking limits asserted? Does any milestone announcement (e.g., entering near-victory zone) fire on state transition and NOT re-fire while in zone?
+- **Menu-level guards:** `start_disabled_*` tests for 0 / 1 player. Per-option toggle on AND off tests (not just "on" or "off" separately).
+
+For each gap, record:
+- Gap ID (numbered)
+- What's missing (one sentence)
+- Why it matters (one sentence — what bug class it would catch)
+- Suggested test file path(s) + test name(s)
+- Phase 1 (non-UI) or Phase 3 (UI)?
+
+### Step 6: Identify dead code surfaced by the audit
+
+While building the Step 2 inventory, if any method in the announcement helper (or other game-specific service) is DEFINED but NEVER CALLED from any screen or service, flag it. Examples to watch for: `announceDoubleRange`, `announceNearVictory`, `announceComboBreaker`, etc. — methods that look like complete wiring but were left orphaned during the original build.
+
+For each piece of dead code:
+- Cite the file:line where it's defined
+- Grep the repo for callers — confirm zero callers outside tests/mocks
+- Propose: wire it up (with state-transition gating to avoid re-firing) **OR** delete it
+
+This is a user decision per item — surface it in the Step 7 report, do not unilaterally delete or wire.
+
+### Step 7: Produce the audit report (orchestrator → user)
+
+Structure:
+
+```
+## 1. Feature inventory (from code, not spec)
+[bullet list grouped by option / system / state-transition]
+
+## 2. Existing [GAME_NAME_DISPLAY] coverage
+[citing test files + group counts]
+
+## 3. Peer comparison: [PEER_GAME_NAME]
+[short summary of peer coverage + what peer covers that new game doesn't]
+
+## 4. Concrete gap list
+[numbered: ID, what's missing, why it matters, suggested file + test name, phase]
+
+## 5. Dead code surfaced
+[if any: file:line, current state, proposed action]
+
+## 6. Recommended remediation plan
+[two phases: Phase 1 (non-UI) + Phase 3 (UI), estimated counts]
+```
+
+Cap report at ~1500 words. Cite `file_path:line_number` everywhere it helps.
+
+### USER APPROVAL GATE
+
+> "I've finished the cross-game coverage audit. [N1] Phase 1 (non-UI) gaps and [N2] Phase 3 (UI) gaps identified. [N3] dead-code items flagged.
+>
+> Full report above. Should I proceed to remediate? You can:
+> - Approve Phase 1 + Phase 3 wholesale
+> - Approve Phase 1 only (defer UI tests to later)
+> - Reject any specific gap as 'won't fix' (cite gap ID + reason)
+> - Decide each dead-code item: wire / delete / leave"
+
+**Do NOT proceed past this gate without explicit user approval.** The user may say "approve all gaps but defer dead-code decision" — in that case, run remediation for the gaps only.
+
+### Step 8: Remediation (after approval)
+
+For each approved gap, delegate test authoring to a Sonnet sub-agent. Group gaps by file when possible so the sub-agent edits each file once:
+
+**Sub-agent prompt template (non-UI gaps):**
+
+> You are closing test-coverage gaps surfaced by the cross-game audit for **[GAME_NAME_DISPLAY]**.
+>
+> **Read first:**
+> - The audit report (above)
+> - `test/providers/[GAME_NAME_SNAKE]_provider_game_test.dart` (or the relevant existing test file) — to learn the exact helper functions (`_makeProvider`, `_forcePlayer`, `_dart`, `_miss`, etc.) and the existing test-naming convention
+> - The provider/model code paths cited in the gap descriptions
+>
+> **Tasks:**
+> 1. For each gap in the list below, add ONE test that exercises the specific behavior:
+>    [LIST OF GAPS WITH IDs, NAMES, EXPECTED ASSERTIONS]
+> 2. Tests must follow the existing file's helper conventions — don't introduce new helpers unless absolutely necessary.
+> 3. Tests must assert SPECIFIC behavior (not just "no crash") — every assertion has a `reason:` argument citing the gap.
+> 4. Run `flutter test [FILE_PATH]` after writing each batch — all tests must pass before moving on.
+> 5. Report `git diff --stat` summary and the new total test count for the file.
+>
+> **Hard rules:**
+> - DO NOT touch test files for other games.
+> - DO NOT modify shared helpers unless every existing usage still works.
+> - DO NOT commit. DO NOT push.
+
+**Sub-agent prompt template (UI gaps):** see Phase 7 patterns. Same principles: one testWidgets per file (parallel runner constraint), `_helpers.dart` delegates, shared helpers in `integration_test/shared/`, every key in `lib/constants/test_keys.dart`.
+
+### Step 9: Re-run Gate 4 after remediation
+
+Once all approved gaps are closed:
+- Run `flutter test` — all non-UI tests must still pass (including the newly added)
+- Run `cd server && dart test` — server tests still pass
+- Run the parallel UI runner for ONLY the new game: `./run_ui_tests_parallel.bat [GAME_NAME_SNAKE]` — all UI tests pass (including newly added)
+
+If anything regressed:
+- The orchestrator analyzes (do not delegate root-cause analysis)
+- Dispatch a corrective Sonnet sub-agent with the specific failure
+- Re-run Gate 4 until clean
+
+### GATE 4-bis: Coverage-Closed Simultaneous Pass
+
+Same shape as the original Gate 4 (Phase 9), now including the new tests:
+
+```
+Gate 4-bis: Simultaneous Pass after Coverage Audit
+  Spec coverage audit:    [PASS/FAIL]
+  Visual validation:      [PASS/FAIL]
+  UI automation tests:    [PASS/FAIL] — X/Y passing  (was X'/Y')
+  Flutter non-UI tests:   [PASS/FAIL] — X/Y passing  (was X'/Y')
+  Server tests:           [PASS/FAIL]
+  New tests added:        Phase 1 [N1], Phase 3 [N2]
+  Dead-code resolved:     [N3 wired / N4 deleted / N5 left as-is per user]
+  OVERALL:                [PASS/FAIL]
+```
+
+After Gate 4-bis passes, proceed to Phase 11 (Documentation and Definition of Done). The Phase 11 doc updates MUST reflect the new test counts (don't paste in the pre-audit numbers — pull from the actual test run output).
+
+### Adversarial Review AR-Coverage: Audit Self-Check
+
+Before declaring the audit complete, the orchestrator performs one more pass:
+
+> "I now re-read the audit report I produced in Step 7 against the file changes I made in Step 8.
+>
+> For each gap I claimed to close: did I actually write a test that asserts the specific behavior cited? Or did I write a vague smoke test that 'touches the code path' without asserting the gap?
+>
+> For each dead-code item: did the user's decision get applied byte-for-byte, in both `.claude/skills/...` and `skills/...` if applicable?
+>
+> For each new test: does it follow the existing file's naming convention and helper usage, or did the sub-agent invent something inconsistent?
+>
+> AR-Coverage result: [PASS / FAIL]
+> If FAIL: dispatch corrective sub-agent and re-run."
+
+---
+
+## Phase 11: Documentation and Definition of Done
 
 **Goal:** Create all game documentation, update project files, verify Definition of Done.
 
@@ -2264,7 +2625,7 @@ The helper itself (`UITestHelpers.runWithFailureScreenshot`) STAYS in `integrati
 
 **Sub-agent prompt template:**
 
-> You are completing Phase 10 (Documentation) for the **[GAME_NAME_DISPLAY]** game build.
+> You are completing Phase 11 (Documentation) for the **[GAME_NAME_DISPLAY]** game build.
 >
 > **Read first:**
 > - Spec file: `[SPEC_PATH]` — every section (you'll cite specifics in the docs)
@@ -2381,7 +2742,7 @@ After the sub-agent returns:
 >
 > (n) Verify no existing game code or tests were broken — only additive changes (other than adding entries to the shared config files, the home_screen, main.dart routes, and the 4 batch files). Check `git diff master...HEAD` for unexpected modifications.
 >
-> (o) Verify CLAUDE.md test counts were updated using REAL numbers (Phase 10 step 1) — not estimates. The flutter test count, server test count, and UI test count for this game must match the latest test run output.
+> (o) Verify CLAUDE.md test counts were updated using REAL numbers (Phase 11 step 1) — not estimates. The flutter test count, server test count, and UI test count for this game must match the latest test run output.
 >
 > (p) Verify all 4 batch files include the new game and `docs/testing/ui-automation.md` port table was updated.
 >

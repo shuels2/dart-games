@@ -316,6 +316,71 @@ class EditScoreDialogConfig {
     return '$number';
   }
 
+  /// Gladiator Arena — Dark Arena bg, Gladiator Gold border, Cinzel/Lato fonts
+  /// Pattern A (Calculated Values): scoreDisplayTransform converts segment strings to point values
+  factory EditScoreDialogConfig.gladiatorArena() {
+    return EditScoreDialogConfig(
+      backgroundColor: const Color(0xFF3A2010).withOpacity(0.97), // Dark Arena
+      borderColor: const Color(0xFFDAA520), // Gladiator Gold
+      borderWidth: 4,
+      titleStyle: GoogleFonts.cinzel(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFDAA520), // Gladiator Gold
+        letterSpacing: 1.2,
+      ),
+      dartLabelStyle: GoogleFonts.lato(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8).withOpacity(0.7), // Marble White
+      ),
+      scoreBoxBackgroundColor: const Color(0xFF3A2010),
+      scoreBoxDefaultBorderColor: const Color(0xFFDAA520).withOpacity(0.5),
+      scoreTextStyle: GoogleFonts.cinzel(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFF5F0E8), // Marble White
+      ),
+      buttonUnselectedColor: const Color(0xFF2A1500), // Dark Arena
+      buttonUnselectedForeground: const Color(0xFFF5F0E8), // Marble White
+      buttonSelectedColor: const Color(0xFFDAA520), // Gladiator Gold
+      buttonSelectedForeground: const Color(0xFF1A0A00), // Near Black
+      buttonTextStyle: GoogleFonts.lato(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      cancelButtonColor: const Color(0xFF8B8682).withOpacity(0.85), // Colosseum Gray
+      cancelButtonForeground: const Color(0xFFF5F0E8),
+      cancelButtonTextStyle: GoogleFonts.lato(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      submitButtonColor: const Color(0xFFCD7F32).withOpacity(0.9), // Bronze
+      submitButtonForeground: const Color(0xFFF5F0E8),
+      submitButtonTextStyle: GoogleFonts.cinzel(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
+      ),
+      scoreDisplayTransform: _gladiatorArenaScoreDisplay,
+    );
+  }
+
+  static String _gladiatorArenaScoreDisplay(String segment) {
+    if (segment.isEmpty || segment == '-') return '-';
+    if (segment == 'Miss') return '0';
+    if (segment == 'Skip') return '0';
+    if (segment == 'Bull') return '50';
+    if (segment == '25') return '25';
+    final match = RegExp(r'([SDTsdt])(\d+)').firstMatch(segment);
+    if (match == null) return segment;
+    final prefix = match.group(1)!.toUpperCase();
+    final number = int.parse(match.group(2)!);
+    if (prefix == 'D') return '${number * 2}';
+    if (prefix == 'T') return '${number * 3}';
+    return '$number';
+  }
+
   /// Pirate's Grid — Ocean Navy bg, Compass Bronze border, PirataOne/Lora fonts
   /// Pattern B (Dart Throw Display): no scoreDisplayTransform — raw segment strings shown
   factory EditScoreDialogConfig.piratesGrid() {

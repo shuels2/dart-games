@@ -15,6 +15,15 @@ import '../models/game_metadata.dart';
 class GameFilterRegistry {
   static const List<GameMetadata> _all = [
     GameMetadata(
+      gameId: 'gladiator_arena',
+      displayName: 'Gladiator Arena',
+      maxPlayers: MaxPlayersBucket.upToEight,
+      gameplayStyles: {GameplayStyle.race, GameplayStyle.versus},
+      playerInteraction: PlayerInteraction.heavy,
+      gameLength: GameLength.medium,
+      soloTeam: SoloTeamSupport.soloOnly,
+    ),
+    GameMetadata(
       gameId: 'carnival_derby',
       displayName: 'Carnival Derby',
       maxPlayers: MaxPlayersBucket.upToEight,
