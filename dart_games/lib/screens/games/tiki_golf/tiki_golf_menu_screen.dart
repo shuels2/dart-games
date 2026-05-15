@@ -564,7 +564,11 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
   }
 
   Widget _buildSettingsBox({required Widget child, bool highlighted = false}) {
+    // All 4 option boxes share a fixed height so the row reads as a uniform
+    // grid. 64px matches the natural height of the Max Strokes box (8+8 px
+    // vertical padding + DropdownButton's ~48px Material tap target).
     return Container(
+      height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _palmGreen.withOpacity(0.85),
@@ -869,7 +873,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
         child: Text(
           'TEE OFF!',
           style: GoogleFonts.boogaloo(
-            fontSize: 28,
+            fontSize: 34,
             color: _sandWhite,
             shadows: _labelShadow(_tikiBrown),
           ),
