@@ -175,6 +175,25 @@ class GameSaveConfig {
         leadingPlayerScore: '80 pts',
         gameState: {'_marker': 'test2'},
       );
+
+  factory GameSaveConfig.tikiGolf() => const GameSaveConfig(
+        gameType: 'tiki_golf',
+        playerNames: ['Alice', 'Bob'],
+        progressInfo: 'Hole 1 of 9',
+        gameModeName: 'Solo, Max Darts: 3',
+        leadingPlayerName: 'Alice',
+        leadingPlayerScore: '0 holes completed',
+      );
+
+  factory GameSaveConfig.tikiGolfSecond() => const GameSaveConfig(
+        gameType: 'tiki_golf',
+        playerNames: ['Charlie', 'Diana'],
+        progressInfo: 'Hole 3 of 9',
+        gameModeName: 'Solo, Max Darts: 4',
+        leadingPlayerName: 'Charlie',
+        leadingPlayerScore: '2 holes completed',
+        gameState: {'_marker': 'test2'},
+      );
 }
 
 class SaveResumeHelpers {

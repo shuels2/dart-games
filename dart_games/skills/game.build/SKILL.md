@@ -3628,6 +3628,190 @@ grep '_WORKTREE_BASE=' run_ui_tests_parallel.bat | grep -c '_SCRIPT_DIR'  # must
 
 ---
 
+### 44. PlayerListPanel widget choice — extract in Phase 0, brief every Phase 2 sub-agent
+Tiki Golf was the first team-game build under this skill. Its initial Stage A wireframe was authored against `DualPlayerListPanel` conventions (two side-by-side AVAILABLE / SELECTED panes) because the Phase 4 prompt template heavily documents DualPlayerListPanel layout rules. The spec actually called for `TeamPlayerListPanel` (a single scrolling list — Target Tag pattern). Reviewer caught it; corrective sub-agent had to redo the panel.
+
+**Two widgets, two layouts. Cite which one the spec uses BEFORE wireframing:**
+- **`TeamPlayerListPanel`** (Target Tag, Tiki Golf, any future team-mode game) — SINGLE scrolling player list with header row (count chip + ADD PLAYER button), per-row selected/unselected accent borders. Selected players sort to the top. In Manual team mode, each selected row gets a trailing team-crest icon and the team-assignment boxes appear BELOW the list.
+- **`DualPlayerListPanel`** (Carnival Derby, Reef Royale, Clockwork Quest, Lunar Lander, Monster Mash, Pirate's Grid) — two side-by-side AVAILABLE / SELECTED panes with players moved between them. Specific recipe: `availableContainerMargin: EdgeInsets.zero`, `selectedContainerMargin: EdgeInsets.zero`, `listGap: 4`. The recipe is documented in detail in the Phase 4 prompt template's DualPlayerListPanel section.
+
+**Phase 0 Step 8 must extract the widget choice from spec Section 1 ("Player List Pattern" row in the Overview table)** and propagate it as a sub-agent prompt placeholder `[PLAYER_LIST_WIDGET]` so the Phase 2 Stage A prompt knows which layout to author.
+
+**The DualPlayerListPanel-specific recipe (`availableContainerMargin: zero, selectedContainerMargin: zero, listGap: 4`) DOES NOT apply to TeamPlayerListPanel.** Do not cite or apply it when the spec uses TeamPlayerListPanel.
+
+**How to apply:** when extracting the player-panel widget choice in Phase 0, save it to memory (or `temp_wireframes/<game>/asset_paths.md` carry-forward decisions) so every later Phase 2 / Phase 4 sub-agent gets a literal reference to the correct widget name in its prompt's "Read first" section. AR-4 audit (pp) gains an extra grep: `grep -c 'TeamPlayerListPanel\|DualPlayerListPanel' lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart` — exactly one of those must appear, matching the spec.
+
+---
+
+### 45. TeamPlayerListPanel is single-column regardless of player count
+At 16 selected players (Team mode max), Tiki Golf's initial wireframe sub-agent assumed the list was "too long" for one column and switched to a 2-column CSS grid. Target Tag uses a single scrolling column even at its own max player count; the underlying widget renders one column.
+
+**Rule:** the TeamPlayerListPanel's scrollable list is ALWAYS a single vertical column with `overflow-y: auto` for long lists. Do NOT switch to a 2-column grid at high player counts. Match the underlying widget's `ListView.builder` shape exactly (`team_player_list_panel.dart:243-292`).
+
+**How to apply:** Phase 2 Stage D Team variants. When authoring `menu_team_random_<N>p.html` for N ≥ 12, the player list is still `display: block` (or `display: flex; flex-direction: column`) inside a scrollable container. AR-2 review adds a check: `grep -c 'grid-template-columns' temp_wireframes/<game>/menu_team_*.html` — only the settings-grid (`1fr 1fr`) should match; any grid on the player list is a violation.
+
+---
+
+### 46. Team-mode menu: team-assignment boxes stack BELOW the player list
+Initial Tiki Golf wireframe placed the team-assignment boxes alongside the player list in a horizontal `flex-direction: row` panel body. Target Tag stacks them vertically — player list on top, then an "Assign Teams" caption, then the team boxes below. Reference: `lib/widgets/player_list_panel/team_player_list_panel.dart:109-136` (`_buildFixedHeightLayout`) which uses a `Column` with the team boxes as the LAST children after the player list.
+
+**Rule:** in Team + Manual mode wireframes, the player-panel body is `flex-direction: column`. Inside (top → bottom): (a) header row with count + ADD PLAYER button; (b) scrollable player list with `max-height: ~160-180px` so it doesn't push team boxes off-screen; (c) "Assign Teams" caption (Boogaloo 14pt with 4-corner text-shadow); (d) the row of 4 team-assignment boxes as `display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex-shrink: 0`. The panel body uses `overflow: visible` so children aren't clipped.
+
+**How to apply:** Phase 2 Stage D Team+Manual prompt template includes this layout explicitly. AR-2 grep: in any `menu_team_manual_*p.html`, `grep -c '"player-panel-body"' file | column-flex` must match. AR-4 grep on the Phase 4 menu screen: `grep -c 'crossAxisAlignment.*start\|Column(' lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart` near the player-panel block must show a single-column structure.
+
+---
+
+### 47. Team-assignment box content: ONLY crest + player count (no team name, no player-name chips)
+Initial Tiki Golf team boxes contained crest + team name + a list of player-name chips. Reviewer wanted: just the crest (focal point) + a count caption ("N players"). Player NAMES live on the player tiles as trailing team-crest icons — that's the Target Tag-style visual mapping between players and teams.
+
+**Rule:** each team-assignment box in Team+Manual mode contains ONLY:
+- Team crest (~56–64 px circular)
+- Player count caption: "N players" (Boogaloo 14pt Sand White with 4-corner text-shadow)
+
+DO NOT render the team name text inside the box. DO NOT render player-name chips inside the box. When a player is selected AND assigned to a team in Manual mode, the team's crest renders as a SMALL trailing icon on the player tile in the main player list — that's the only place where the player-to-team mapping is visible.
+
+Box CSS pattern:
+```css
+.team-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 6px;
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 8px;
+}
+.team-crest-large { width: 56px; height: 56px; border-radius: 50%; overflow: hidden; }
+.team-player-count { font-family: var(--font-display); font-size: 14pt; color: var(--sand-white); text-shadow: <4-corner outline>; }
+```
+
+**How to apply:** Phase 2 Stage D Team+Manual prompt template specifies this layout. Phase 4 menu-screen sub-agent renders the actual widget the same way; the TeamPlayerListPanel widget's `_buildTeamAssignmentBoxes` (`team_player_list_panel.dart:613`) already follows this convention internally. AR-2 review: in any `menu_team_manual_*p.html`, `grep -c '"team-name\|"team-player-chip' file` must be 0 in the HTML (CSS definitions kept as `display: none` for backward compatibility are fine).
+
+---
+
+### 48. Mode-dependent maxPlayers cap — solve in Phase 0, surface to Phase 4
+Tiki Golf specs `maxPlayers: 16` for the `TeamPlayerListPanelConfig.tikiGolf()` but Solo mode caps at 4 and Team mode caps at 16. The default widget reads a single `config.maxPlayers` for the count chip ("N/16 selected") which is wrong in Solo. This is a recurring spec/widget mismatch for any game whose Solo and Team modes have different caps.
+
+**Rule:** when the spec has different player-count caps per mode (Solo vs Team), surface it in the Phase 0 build plan as a Phase 4 implementation decision. Two valid implementation paths:
+- **Preferred:** add `maxPlayersSoloMode: <N>` to `TeamPlayerListPanelConfig`; the widget reads the mode-appropriate value for the header count chip + `selectPlayer(maxPlayers:)` call.
+- **Alternative:** menu screen overrides the cap via a screen-level intermediary that gates `selectPlayer` based on the current mode flag.
+
+Wireframes must show the mode-appropriate cap in the count chip: `N/4 selected` in Solo wireframes, `N/16 selected` in Team wireframes. The asset_paths.md manifest captures the implementation decision so Phase 4 picks it up.
+
+**How to apply:** Phase 0 Step 8 spec-extraction adds: "Player-count caps per mode — extract from Overview / spec Section 1 / Section 7. If Solo and Team caps differ, record both AND record the implementation-path decision (config-knob preferred) in the asset_paths.md manifest." AR-3 gains: verify the count-chip rendering path reads the mode-appropriate cap in the menu screen unit tests.
+
+---
+
+### 49. Team gameplay screen: transparent Teams panel; logo + score only; no team names
+Tiki Golf spec Section 10B described per-team boxes with team-color bg + 2px Lagoon Blue border for the active team. Reviewer wanted simpler: no boxes at all (transparent), no team names; each team shows just the crest + the running team score below it. Active team distinguished only by a left-edge accent + a faint bg tint.
+
+**Rule:** the left-side Teams panel on the game screen (Team mode only):
+- 160px wide, transparent background, no border on the panel container
+- "TEAMS" header at top (optional — many specs omit this)
+- One row per configured team, each row shows:
+  - Team crest at 56×56 (slightly larger because it's the only visual identifier)
+  - Team's running ± par score below the crest (Boogaloo 18pt Bold; Lagoon Blue under par / Sand White even / `#FF8C42` over par)
+- Active team: `border-left: 3px solid var(--lagoon-blue)` + `background: rgba(0,180,216,0.10)` (slight tint). Inactive teams: `opacity: 0.60`, no other decoration.
+- NO team names anywhere. NO per-team boxes/borders/bg fills.
+
+Reference: `temp_wireframes/tiki_golf/game_team_early_8p.html` is the canonical example.
+
+**How to apply:** Phase 2 Stage D Team gameplay prompt template includes this spec. Phase 4 menu-screen sub-agent implements the panel the same way. AR-4 audit: read the game screen and verify the Teams panel renders zero team-name text widgets (only crest + score), zero per-team Container backgrounds, only the active-team's left-edge accent.
+
+---
+
+### 50. Team gameplay scorecard: ONLY the current team's players (Solo-style)
+Tiki Golf spec Section 10B described a multi-team scorecard with team primary rows + collapsed teammate sub-rows. Reviewer simplified: the scorecard shows ONLY the 1–4 players on the CURRENT team using the SAME layout as Solo mode. Team-level totals live in the Teams panel; the scorecard is per-player for the active team.
+
+**Rule:** in Team mode, the game-screen scorecard renders one row per player on the currently-throwing team (max 4 rows). Headers and per-cell styling are IDENTICAL to Solo mode (H1–H9 + Total, current player's row highlighted with Lagoon Blue tint + left-edge accent + Lagoon Blue name). DO NOT render team primary rows. DO NOT render teammate sub-rows for other teams. DO NOT render best-ball-contributing dot indicators.
+
+Above the scorecard, add a small caption naming the active team (e.g., "Sharks scorecard" Boogaloo 14pt Sand White with 4-corner text-shadow) so the user knows which team's data is shown.
+
+**How to apply:** Phase 2 Stage D Team gameplay prompt template specifies this exact pattern. Phase 4 game-screen sub-agent builds the scorecard with a `currentTeamPlayerIds` selector and renders one row per id. AR-4 audit: `grep -c 'team-primary-row\|team-sub-row' lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart` must be 0 (no nested team/sub-row rendering); the scorecard structure matches Solo.
+
+---
+
+### 51. Team results screen: 2-column team-blocks + internal-scroll scorecards
+Tiki Golf spec Section 10C described a single wide scorecard. Reviewer wanted: each team gets its own mini-scorecard block, blocks arranged in 2 columns (4 teams → 2+2, 3 teams → 2+1, 2 teams → 1+1, 1 team → centered). Plus the scorecards area must scroll internally so the action buttons stay visible at the bottom of the 1366×768 viewport.
+
+**Rule:** team-mode results screen replaces the single wide scorecard with a 2-column team-blocks layout. Each team-block contains:
+- Team crest 64×64 at the top
+- Team name caption below (Boogaloo 16pt Sand White; Lagoon Blue for the winning team)
+- Mini-scorecard table (headers + per-player rows + a best-ball total footer row)
+- Winning team's block has a `border: 2px solid var(--lagoon-blue)` and Lagoon Blue team total
+
+**Distribution rule:** left-to-right, 2 teams per column when possible.
+- 4 teams → col1: Teams 1+2; col2: Teams 3+4
+- 3 teams → col1: Teams 1+2; col2: Team 3
+- 2 teams → 1 per column
+- 1 team → single-column centered
+
+**Scroll rule:** wrap the team-blocks columns in a `.scorecards-scroll` container with `flex: 1; min-height: 0; overflow-y: auto`. The action buttons sit OUTSIDE this container (last child of `.main-area`) with `flex-shrink: 0` so they stay pinned at the bottom of the canvas. Winner card stays at the top with `flex-shrink: 0`.
+
+**Heading text:** "GOLDEN TIKI CHAMPIONS!" (plural — team mode) vs "GOLDEN TIKI CHAMPION!" (singular — solo). The Dart screen branches on `gameMode` to pick the right text. Pluralize equivalents for non-golf games (CHAMPS / WINNERS / etc.).
+
+**How to apply:** Phase 2 Stage D Team results prompt template includes the 2-column distribution rule + the scrollable container. Phase 4 results-screen sub-agent renders the same structure. AR-4 audit: `grep -c '"scorecards-scroll\|overflow-y' lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_results_screen.dart` ≥ 1 in team-mode branch; action buttons live in a Row that is a sibling of (not nested inside) the scroll container.
+
+---
+
+### 52. Random N-of-M team-crest selection — wireframe varies, Phase 4 implements
+When a spec calls for "N team crests picked at random from a pool of M" (M > N), this is a runtime randomization akin to Reef Royale's creature shuffle.
+
+**Rule for wireframes (Phase 2 Stage D):** pick N specific crests for the wireframe to demonstrate one valid distribution. Don't always use the first N from the spec — vary across mode-variant files so a reviewer sees that any random subset is valid. Include a code comment near the team-crest rendering: `<!-- In production, N of the M available crests are randomly picked per game; this wireframe shows one such pick. -->`. Capture the random-pick rule for Phase 4 in `temp_wireframes/<game>/asset_paths.md`.
+
+**Rule for Phase 4 implementation:** the provider's game-construction (model factory) calls `crests..shuffle(Random())..take(N)` and stores the picked list on the game model (e.g., `List<String> teamCrestPaths` length N, frozen after construction). Resume restores the same list from saved-game JSON. Mirror Reef Royale's `lib/models/reef_royale_game.dart:206-236` creature-assignment pattern.
+
+**How to apply:** Phase 2 Stage D prompt template includes the random-pick wireframe convention. Phase 3 model+provider prompt cites the shuffle pattern. Non-UI test for the model: "two consecutive constructions produce different `teamCrestPaths` ordering across N≥20 fresh games (statistical sanity)" — same approach as Reef Royale Random Reefs test #38.
+
+---
+
+### 53. Random team-distribution table — full-table coverage tests are mandatory
+Tiki Golf's spec Section 5 defines a deterministic `randomDistribution(N)` table mapping selected-player count → team count + sizes, with special-case rules (N=8 → [4,4] instead of [2,2,2,2]; N≥12 → T=4). Naive heuristics ("minimize team count" or "minimize team size") do NOT reproduce the table.
+
+**Rule:** any game whose Team-mode spec defines a deterministic team-count + sizes table from player count MUST:
+1. Implement the function as `randomDistribution(int N)` (or equivalent) in the provider returning `{int teamCount, List<int> sizes}`
+2. Author a full-table non-UI test that iterates every N in the spec's table and asserts the returned (team count, sorted-sizes multiset) matches the spec row exactly
+3. Author a UI test (in `integration_test/<game>/team_setup_test.dart` or equivalent) that for every N in the table: selects N players, taps TEE OFF in Random mode, then asserts the resulting team count + sorted sizes match the spec
+4. Hard-code every special-case row explicitly in the algorithm (don't rely on a single heuristic to produce the table)
+
+**How to apply:** Phase 3 prompt template adds a mandatory "Random Distribution Coverage" test group. AR-3 audit reads the spec table, counts rows, verifies the non-UI test file iterates all rows. AR-6 audit verifies the UI test file iterates all rows.
+
+---
+
+### 54. Shared TeamAssignmentDialog already exists — wire keys, don't reinvent
+The Target Tag implementation of `TeamAssignmentDialog` at `lib/widgets/player_list_panel/team_assignment_dialog.dart` is already shared infrastructure for Team+Manual mode. The TeamPlayerListPanel widget calls into it directly via `_showTeamSelectionDialog`. Any new Team-mode game reuses this dialog wholesale — there's no game-specific TeamAssignmentDialog config factory required.
+
+**Rule:** in Phase 4 menu screen, wire the dialog's keys through `TeamPlayerListPanel` parameters:
+- `teamDialogContainerKey: [GAME_NAME_PASCAL]MenuKeys.teamDialogContainer`
+- `teamDialogDropdownKey: (id) => [GAME_NAME_PASCAL]MenuKeys.teamDialogDropdown(id)`
+- `teamDialogCancelKey: [GAME_NAME_PASCAL]MenuKeys.teamDialogCancel`
+
+Add these three keys to `[GAME_NAME_PASCAL]MenuKeys` in `lib/constants/test_keys.dart`. Do NOT author a new dialog. Do NOT create a `TeamAssignmentDialogConfig.[gameName]()` factory method.
+
+**How to apply:** Phase 4 prompt template under "Create config factory methods" already lists every shared widget config method — explicitly exclude `TeamAssignmentDialogConfig` from the list for Team-mode games (only the keys need to be added). AR-4 audit: verify the keys are wired correctly when `_isManualTeamMode == true`.
+
+---
+
+### 55. Invisible-placeholder pattern for "neighbor previews" of the current item
+When a UI shows "neighbors of the current item" (e.g., Tiki Golf's previous/next hole previews on the gameplay screen, or any future game that previews adjacent pieces/positions/players), use invisible-but-width-preserving placeholders for slots without valid neighbors. This keeps the central item stationary as the user progresses through the list, instead of shifting horizontally when previews appear/disappear at the edges.
+
+**Rule:** for any "current item ± N neighbors" UI:
+```css
+.item-preview { display: flex; align-items: center; flex-shrink: 0; }
+.item-preview.outer { width: 140px; }
+.item-preview.inner { width: 182px; }   /* +30% from outer per Tiki Golf precedent */
+.item-preview.empty {
+  visibility: hidden;                    /* preserves layout width but renders nothing */
+}
+```
+
+Empty placeholders match the natural slot width (outer vs inner) so the row's flex distribution doesn't shift. Use `align-items: center` for vertical-center alignment of neighbors against the (larger) central item. Use `justify-content: space-between` for screen-spanning distribution.
+
+**How to apply:** Phase 2 Stage B / Phase 4 game-screen prompt templates cite this pattern when the spec includes neighbor previews. AR-4 audit: read the game screen and verify empty-slot Container widths match valid-slot Container widths so the central item stays centered.
+
+---
+
 ## Error Handling Rules
 
 These rules apply throughout ALL phases:

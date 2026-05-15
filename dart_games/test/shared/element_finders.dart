@@ -1023,4 +1023,176 @@ class ElementFinders {
   static Finder getGladiatorArenaKnockoffStats() {
     return find.byKey(GladiatorArenaResultsKeys.knockoffStats);
   }
+
+  // ==========================================================================
+  // TIKI GOLF HOME FINDERS
+  // ==========================================================================
+
+  static Finder getTikiGolfCard() {
+    return find.byKey(HomeKeys.tikiGolfCard);
+  }
+
+  // ==========================================================================
+  // TIKI GOLF MENU FINDERS
+  // ==========================================================================
+
+  static Finder getTikiGolfBackButton() {
+    return find.byKey(TikiGolfMenuKeys.backButton);
+  }
+
+  static Finder getTikiGolfAddPlayerButton() {
+    return find.byKey(TikiGolfMenuKeys.addPlayerButton);
+  }
+
+  static Finder getTikiGolfAddPlayerButtonEmptyState() {
+    return find.byKey(TikiGolfMenuKeys.addPlayerButtonEmptyState);
+  }
+
+  static Finder getTikiGolfPlayerTile(String playerId) {
+    return find.byKey(TikiGolfMenuKeys.playerTile(playerId));
+  }
+
+  static Finder getTikiGolfGameModeToggle() {
+    return find.byKey(TikiGolfMenuKeys.gameModeToggle);
+  }
+
+  static Finder getTikiGolfGameModeSolo() {
+    return find.byKey(TikiGolfMenuKeys.gameModeSolo);
+  }
+
+  static Finder getTikiGolfGameModeTeam() {
+    return find.byKey(TikiGolfMenuKeys.gameModeTeam);
+  }
+
+  static Finder getTikiGolfTeamCountDropdown() {
+    return find.byKey(TikiGolfMenuKeys.teamCountDropdown);
+  }
+
+  static Finder getTikiGolfAssignmentModeToggle() {
+    return find.byKey(TikiGolfMenuKeys.assignmentModeToggle);
+  }
+
+  static Finder getTikiGolfAssignmentModeManual() {
+    return find.byKey(TikiGolfMenuKeys.assignmentModeManual);
+  }
+
+  static Finder getTikiGolfAssignmentModeRandom() {
+    return find.byKey(TikiGolfMenuKeys.assignmentModeRandom);
+  }
+
+  static Finder getTikiGolfMaxStrokesDropdown() {
+    return find.byKey(TikiGolfMenuKeys.maxStrokesDropdown);
+  }
+
+  static Finder getTikiGolfMulliganSwitch() {
+    return find.byKey(TikiGolfMenuKeys.mulliganSwitch);
+  }
+
+  static Finder getTikiGolfStartButton() {
+    return find.byKey(TikiGolfMenuKeys.startGameButton);
+  }
+
+  // ==========================================================================
+  // TIKI GOLF GAME FINDERS
+  // ==========================================================================
+
+  static Finder getTikiGolfGameBackButton() {
+    return find.byKey(TikiGolfGameKeys.backButton);
+  }
+
+  static Finder getTikiGolfSkipTurnButton() {
+    return find.byKey(TikiGolfGameKeys.skipTurnButton);
+  }
+
+  static Finder getTikiGolfEditScoreButton() {
+    return find.byKey(TikiGolfGameKeys.editScoreButton);
+  }
+
+  static Finder getTikiGolfHoleCounter() {
+    return find.byKey(TikiGolfGameKeys.holeCounter);
+  }
+
+  static Finder getTikiGolfHoleName() {
+    return find.byKey(TikiGolfGameKeys.holeName);
+  }
+
+  static Finder getTikiGolfHoleImage() {
+    return find.byKey(TikiGolfGameKeys.holeImage);
+  }
+
+  static Finder getTikiGolfTargetNumber() {
+    return find.byKey(TikiGolfGameKeys.targetNumber);
+  }
+
+  static Finder getTikiGolfDartIndicator(int index) {
+    return find.byKey(TikiGolfGameKeys.dartIndicator(index));
+  }
+
+  static Finder getTikiGolfScorecard() {
+    return find.byKey(TikiGolfGameKeys.scorecard);
+  }
+
+  static Finder getTikiGolfScorecardCell(String playerId, int hole) {
+    return find.byKey(TikiGolfGameKeys.scorecardCell(playerId, hole));
+  }
+
+  static Finder getTikiGolfScorecardPlayerRow(String playerId) {
+    return find.byKey(TikiGolfGameKeys.scorecardPlayerRow(playerId));
+  }
+
+  static Finder getTikiGolfTeamsPanel() {
+    return find.byKey(TikiGolfGameKeys.teamsPanel);
+  }
+
+  static Finder getTikiGolfTeamBox(String teamId) {
+    return find.byKey(TikiGolfGameKeys.teamBox(teamId));
+  }
+
+  static Finder getTikiGolfRemoveDartsModal() {
+    return find.byKey(TikiGolfGameKeys.removeDartsModal);
+  }
+
+  static Finder getTikiGolfUseMulliganButton() {
+    return find.byKey(TikiGolfGameKeys.useMulliganButton);
+  }
+
+  static Finder getTikiGolfNextPlayerButton() {
+    return find.byKey(TikiGolfGameKeys.nextPlayerButton);
+  }
+
+  static Finder getTikiGolfMulliganButton() {
+    return find.byKey(TikiGolfGameKeys.mulliganButton);
+  }
+
+  // ==========================================================================
+  // TIKI GOLF RESULTS FINDERS
+  // ==========================================================================
+
+  static Finder getTikiGolfPlayAgainButton() {
+    return find.byKey(TikiGolfResultsKeys.playAgainButton);
+  }
+
+  static Finder getTikiGolfChangeSettingsButton() {
+    return find.byKey(TikiGolfResultsKeys.changeSettingsButton);
+  }
+
+  static Finder getTikiGolfBackToMenuButton() {
+    return find.byKey(TikiGolfResultsKeys.backToMenuButton);
+  }
+
+  static Finder getTikiGolfWinnerName() {
+    return find.byKey(TikiGolfResultsKeys.winnerName);
+  }
+
+  static Finder getTikiGolfWinnerTeamCrest() {
+    return find.byKey(TikiGolfResultsKeys.winnerTeamCrest);
+  }
+
+  static Finder getTikiGolfWinnerTeamPlayer(String playerId) {
+    return find.byKey(TikiGolfResultsKeys.winnerTeamPlayer(playerId));
+  }
+
+  static Finder getTikiGolfFinalScorecard() {
+    return find.byKey(TikiGolfResultsKeys.finalScorecard);
+  }
 }

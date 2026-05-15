@@ -171,6 +171,22 @@ class DartboardSectionConfig {
       ),
     );
   }
+
+  // Factory for Tiki Golf — Palm Green, Lagoon Blue border, Boogaloo font
+  factory DartboardSectionConfig.tikiGolf() {
+    return DartboardSectionConfig(
+      backgroundColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      disabledOverlayBackgroundColor: const Color(0xFF2D6A4F).withOpacity(0.95), // Palm Green
+      disabledOverlayBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      removeButtonBackgroundColor: const Color(0xFF00B4D8), // Lagoon Blue
+      removeButtonBorderColor: const Color(0xFFFF8C42), // Tropical Orange
+      removeButtonTextStyle: GoogleFonts.boogaloo(
+        fontSize: 18,
+        color: const Color(0xFFFFF5E1), // Sand White
+      ),
+    );
+  }
 }
 
 class DartboardFABConfig {
@@ -276,6 +292,18 @@ class DartboardFABConfig {
       textStyle: GoogleFonts.cinzel(
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
+      ),
+    );
+  }
+
+  // Factory for Tiki Golf — Lagoon Blue bg, Sand White text, Boogaloo font
+  factory DartboardFABConfig.tikiGolf() {
+    return DartboardFABConfig(
+      backgroundColor: const Color(0xFF00B4D8), // Lagoon Blue
+      iconColor: const Color(0xFFFFF5E1), // Sand White
+      textColor: const Color(0xFFFFF5E1), // Sand White
+      textStyle: GoogleFonts.boogaloo(
+        fontSize: 16,
       ),
     );
   }
@@ -408,6 +436,19 @@ class PlayToCompleteButtonConfig {
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
         color: const Color(0xFFF5F0E8),
+      ),
+    );
+  }
+
+  // Factory for Tiki Golf — Palm Green bg, Sand White text, Lagoon Blue border, Boogaloo font
+  factory PlayToCompleteButtonConfig.tikiGolf() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      foregroundColor: const Color(0xFFFFF5E1), // Sand White
+      borderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      textStyle: GoogleFonts.boogaloo(
+        fontSize: 16,
+        color: const Color(0xFFFFF5E1),
       ),
     );
   }

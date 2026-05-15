@@ -82,6 +82,9 @@ class TeamPlayerListPanelConfig {
   final double soloListHeight;
   final double teamListHeight;
   final int maxPlayers;
+  /// Optional cap for solo mode (no team assignment). When null, [maxPlayers]
+  /// is used for both modes. Used by Tiki Golf where Solo = 4, Team = 16.
+  final int? maxPlayersSoloMode;
   final int minPlayers;
   final int minPlayersTeamMode;
   final int maxTeams;
@@ -151,6 +154,7 @@ class TeamPlayerListPanelConfig {
     this.soloListHeight = 485.0,
     this.teamListHeight = 300.0,
     this.maxPlayers = 10,
+    this.maxPlayersSoloMode,
     this.minPlayers = 2,
     this.minPlayersTeamMode = 3,
     this.maxTeams = 5,
@@ -257,6 +261,104 @@ class TeamPlayerListPanelConfig {
       maxTeams: 5,
       maxPlayersPerTeam: 2,
       addPlayerDialogConfig: AddPlayerDialogConfig.targetTag(),
+    );
+  }
+
+  /// Tiki Golf theme — Palm Green primary, Lagoon Blue accent, Boogaloo/Nunito fonts.
+  ///
+  /// Solo mode caps at 4 players (maxPlayersSoloMode: 4).
+  /// Team mode supports up to 16 players across 2-4 teams of up to 4 players each.
+  factory TeamPlayerListPanelConfig.tikiGolf() {
+    return TeamPlayerListPanelConfig(
+      containerColor: const Color(0xFF2D6A4F), // Palm Green
+      containerOpacity: 0.85,
+      containerBorderColor: const Color(0xFF8B5E3C), // Tiki Brown
+      containerBorderColorWhenReady: const Color(0xFF00B4D8), // Lagoon Blue
+      containerBorderWidth: 2,
+      headerTextStyle: GoogleFonts.boogaloo(
+        fontSize: 18,
+        color: const Color(0xFFFFF5E1), // Sand White
+      ),
+      headerCountStyle: GoogleFonts.nunito(
+        fontSize: 14,
+        color: const Color(0xFFFFF5E1).withOpacity(0.7),
+      ),
+      headerCountColorWhenReady: const Color(0xFFFF8C42), // Tropical Orange
+      emptyStateTextStyle: GoogleFonts.nunito(
+        color: const Color(0xFFFFF5E1).withOpacity(0.7),
+        fontSize: 14,
+      ),
+      addButtonColor: const Color(0xFF00B4D8), // Lagoon Blue
+      addButtonForegroundColor: const Color(0xFFFFF5E1), // Sand White
+      addButtonTextStyle: GoogleFonts.boogaloo(
+        fontSize: 14,
+        letterSpacing: 0.5,
+      ),
+      emptyStateAddButtonTextStyle: GoogleFonts.boogaloo(
+        fontSize: 16,
+      ),
+      selectedColor: const Color(0xFF00B4D8), // Lagoon Blue
+      selectedBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      checkIconColor: const Color(0xFFFF8C42), // Tropical Orange
+      teamAccentColor: const Color(0xFFFF8C42), // Tropical Orange
+      assignTeamButtonColor: const Color(0xFF00B4D8), // Lagoon Blue
+      assignTeamButtonForegroundColor: const Color(0xFFFFF5E1),
+      assignTeamButtonTextStyle: GoogleFonts.nunito(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      teamIconBorderColor: const Color(0xFFFF8C42), // Tropical Orange
+      teamIconBackgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      teamIconSize: 40.0,
+      teamBoxSize: 56.0, // compact crest-only team box per Rule §47
+      teamBoxBackgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      teamBoxBorderColor: const Color(0xFF8B5E3C), // Tiki Brown
+      teamBoxActiveBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      teamBoxCountStyle: GoogleFonts.nunito(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF5E1).withOpacity(0.5),
+      ),
+      teamBoxActiveCountStyle: GoogleFonts.nunito(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFF8C42), // Tropical Orange
+      ),
+      dialogBackgroundColor: const Color(0xFF2D6A4F).withOpacity(0.97), // Palm Green
+      dialogTitleTextStyle: GoogleFonts.boogaloo(
+        fontSize: 20,
+        color: const Color(0xFFFFF5E1), // Sand White
+      ),
+      dialogTeamButtonSize: 100.0,
+      dialogTeamButtonColor: const Color(0xFF3A7B5E), // slightly lighter Palm Green
+      dialogTeamButtonBorderColor: const Color(0xFF8B5E3C), // Tiki Brown
+      dialogTeamButtonSelectedColor: const Color(0xFF00B4D8), // Lagoon Blue
+      dialogTeamButtonSelectedBorderColor: const Color(0xFF00B4D8),
+      dialogHighlightGlowColor: const Color(0xFF00B4D8),
+      dialogFullTeamColor: const Color(0xFFFF69B4), // Hibiscus Pink
+      dialogFullTeamTextStyle: GoogleFonts.nunito(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF5E1),
+      ),
+      dialogRemoveButtonColor: const Color(0xFFFF69B4), // Hibiscus Pink
+      dialogCancelButtonColor: const Color(0xFF8B5E3C), // Tiki Brown
+      dialogCancelBorderColor: const Color(0xFF8B5E3C).withOpacity(0.5),
+      dialogButtonTextStyle: GoogleFonts.nunito(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+      ),
+      teamAssignmentLabelStyle: GoogleFonts.boogaloo(
+        fontSize: 18,
+        color: const Color(0xFFFFF5E1), // Sand White
+      ),
+      maxPlayers: 16,
+      maxPlayersSoloMode: 4, // Rule §48: Solo mode caps at 4 players
+      minPlayers: 2,
+      minPlayersTeamMode: 3,
+      maxTeams: 4,
+      maxPlayersPerTeam: 4,
+      addPlayerDialogConfig: AddPlayerDialogConfig.tikiGolf(),
     );
   }
 }

@@ -570,6 +570,61 @@ class SettingsHelpers {
         tester, ElementFinders.getGladiatorArenaSpeedPlaySwitch());
   }
 
+  // ==========================================================================
+  // TIKI GOLF SETTINGS HELPERS
+  // ==========================================================================
+
+  /// Tiki Golf: Tap the TEAM segment of the Game Mode toggle
+  static Future<void> setTikiGolfGameModeTeam(WidgetTester tester) async {
+    final teamSegment = ElementFinders.getTikiGolfGameModeTeam();
+    await tester.tap(teamSegment);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  }
+
+  /// Tiki Golf: Tap the SOLO segment of the Game Mode toggle
+  static Future<void> setTikiGolfGameModeSolo(WidgetTester tester) async {
+    final soloSegment = ElementFinders.getTikiGolfGameModeSolo();
+    await tester.tap(soloSegment);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  }
+
+  /// Tiki Golf: Tap the MANUAL segment of the Team Assignment toggle
+  static Future<void> setTikiGolfAssignmentManual(WidgetTester tester) async {
+    final manualSegment = ElementFinders.getTikiGolfAssignmentModeManual();
+    await tester.tap(manualSegment);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  }
+
+  /// Tiki Golf: Tap the RANDOM segment of the Team Assignment toggle
+  static Future<void> setTikiGolfAssignmentRandom(WidgetTester tester) async {
+    final randomSegment = ElementFinders.getTikiGolfAssignmentModeRandom();
+    await tester.tap(randomSegment);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  }
+
+  /// Tiki Golf: Select Max Strokes from the dropdown (3, 4, 5, or 6)
+  static Future<void> setTikiGolfMaxStrokes(
+      WidgetTester tester, int maxStrokes) async {
+    await setDropdownValue(
+      tester,
+      ElementFinders.getTikiGolfMaxStrokesDropdown(),
+      '$maxStrokes',
+    );
+  }
+
+  /// Tiki Golf: Toggle the Mulligan switch
+  static Future<void> toggleTikiGolfMulligan(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getTikiGolfMulliganSwitch());
+  }
+
   /// Clockwork Quest: Full flow to add a player
   static Future<void> addClockworkQuestPlayer(
     WidgetTester tester,

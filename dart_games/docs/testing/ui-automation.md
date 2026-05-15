@@ -261,8 +261,9 @@ Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_paralle
 | lunar_lander | 9006 | 4449 |
 | pirates_grid | 9007 | 4450 |
 | gladiator_arena | 9008 | 4451 |
-| home_screen | 9009 | 4452 |
-| pause_modal | 9010 | 4453 |
+| tiki_golf | 9009 | 4452 |
+| home_screen | 9010 | 4453 |
+| pause_modal | 9011 | 4454 |
 
 Directories the runners intentionally skip: `_smoke/` (manual self-tests for the failure-screenshot helper, run via direct `flutter drive` invocation) and `shared/` (helper files, no tests).
 

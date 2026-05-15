@@ -304,6 +304,16 @@ class UITestHelpers {
       } else {
         addButton = normalStateButton;
       }
+    } else if (config.gameName == 'Tiki Golf') {
+      // For Tiki Golf, check which button exists (empty state or normal state)
+      final emptyStateButton = ElementFinders.getTikiGolfAddPlayerButtonEmptyState();
+      final normalStateButton = ElementFinders.getTikiGolfAddPlayerButton();
+
+      if (emptyStateButton.evaluate().isNotEmpty) {
+        addButton = emptyStateButton;
+      } else {
+        addButton = normalStateButton;
+      }
     } else {
       // For other games, use the config method
       addButton = config.getAddPlayerButton();

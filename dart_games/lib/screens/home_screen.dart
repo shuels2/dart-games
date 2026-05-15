@@ -20,6 +20,7 @@ import 'games/clockwork_quest/clockwork_quest_menu_screen.dart';
 import 'games/lunar_lander/lunar_lander_menu_screen.dart';
 import 'games/pirates_grid/pirates_grid_menu_screen.dart';
 import 'games/gladiator_arena/gladiator_arena_menu_screen.dart';
+import 'games/tiki_golf/tiki_golf_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,6 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'gladiator_arena':
         menuScreen = const GladiatorArenaMenuScreen();
+        break;
+      case 'tiki_golf':
+        menuScreen = const TikiGolfMenuScreen();
         break;
       default:
         return;
@@ -169,6 +173,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.0,
+                                )
+                          : title == 'Tiki Golf'
+                              ? GoogleFonts.boogaloo(
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 5,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                 )
                           : theme.textTheme.titleMedium?.copyWith(
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
@@ -342,6 +352,16 @@ class _HomeScreenState extends State<HomeScreen> {
         'color': const Color(0xFF7B2D8E), // Imperial Purple
         'onTap': dartboardProvider.canPlayGames
             ? () => _navigateToMenu('gladiator_arena')
+            : null,
+      },
+      {
+        'gameId': 'tiki_golf',
+        'title': 'Tiki Golf',
+        'key': HomeKeys.tikiGolfCard,
+        'imageAssetPath': 'assets/games/tiki_golf/icons/TikiGolf-Icon.png',
+        'color': const Color(0xFF2D6A4F), // Palm Green
+        'onTap': dartboardProvider.canPlayGames
+            ? () => _navigateToMenu('tiki_golf')
             : null,
       },
       // Add new games here - they will automatically be sorted alphabetically

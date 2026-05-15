@@ -389,7 +389,7 @@ REM home_screen and pause_modal hold non-game-specific tests (filter bar,
 REM home-screen pause modal). They get the same per-category treatment
 REM (own port, own data dir, own server boot) so they never share state
 REM with each other or with a game's tests.
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena home_screen pause_modal"
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena tiki_golf home_screen pause_modal"
 
 for %%G in (%GAMES%) do (
     set "_GAME=%%G"

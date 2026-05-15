@@ -185,7 +185,7 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
         Text(config.headerText, style: config.headerTextStyle),
         const SizedBox(width: 8),
         Text(
-          '(${selectedPlayers.length}/${config.maxPlayers} selected)',
+          '(${selectedPlayers.length}/${widget.isTeamMode ? config.maxPlayers : (config.maxPlayersSoloMode ?? config.maxPlayers)} selected)',
           style: config.headerCountStyle.copyWith(
             color: isReady ? config.headerCountColorWhenReady : null,
           ),
@@ -283,7 +283,10 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
             if (isSelected) {
               playerProvider.deselectPlayer(player.id);
             } else {
-              playerProvider.selectPlayer(player, maxPlayers: config.maxPlayers);
+              final effectiveMax = widget.isTeamMode
+                  ? config.maxPlayers
+                  : (config.maxPlayersSoloMode ?? config.maxPlayers);
+              playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
             }
           },
         );
@@ -381,7 +384,10 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
               });
               _notifyTeamAssignmentsChanged();
             } else {
-              playerProvider.selectPlayer(player, maxPlayers: config.maxPlayers);
+              final effectiveMax = widget.isTeamMode
+                  ? config.maxPlayers
+                  : (config.maxPlayersSoloMode ?? config.maxPlayers);
+              playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
             }
           },
           borderRadius: BorderRadius.circular(8),
@@ -669,8 +675,11 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
       final playerProvider = context.read<PlayerProvider>();
       await playerProvider.savePlayer(player);
 
-      if (playerProvider.selectedPlayers.length < config.maxPlayers) {
-        playerProvider.selectPlayer(player, maxPlayers: config.maxPlayers);
+      final effectiveMax = widget.isTeamMode
+          ? config.maxPlayers
+          : (config.maxPlayersSoloMode ?? config.maxPlayers);
+      if (playerProvider.selectedPlayers.length < effectiveMax) {
+        playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
       }
 
       widget.onPlayerAdded?.call(player);

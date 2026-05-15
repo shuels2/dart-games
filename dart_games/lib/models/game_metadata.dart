@@ -24,7 +24,10 @@ enum MaxPlayersBucket {
   upToEight('Up to 8'),
 
   /// Up to 10 players.
-  upToTen('Up to 10');
+  upToTen('Up to 10'),
+
+  /// Up to 16 players (team games like Tiki Golf).
+  upToSixteen('Up to 16');
 
   const MaxPlayersBucket(this.label);
   final String label;
