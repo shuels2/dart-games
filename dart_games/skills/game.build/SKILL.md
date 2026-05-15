@@ -3812,6 +3812,226 @@ Empty placeholders match the natural slot width (outer vs inner) so the row's fl
 
 ---
 
+### 56. Menu option boxes: label-left + control-right on one row, vertically centered
+Past games and the Tiki Golf v1 build laid out each settings-grid option box as a vertical `Column[Label, SizedBox(8), ControlRow]` with `minHeight: 110`. The user consistently asked for this to be redone as a one-row layout: label on the left, control on the right, vertically centered inside the box. The minHeight constraint also reads as too tall.
+
+**Rule:** every option box in the menu screen settings grid renders as `Row(MainAxisAlignment.spaceBetween, crossAxisAlignment.center, [Label, Control])`. The outer box is a `Container(padding: 12h/8v)` with the box's background/border. Wrap the Row in `Center(child: ...)` so the content is vertically centered inside the box. DO NOT set a fixed `minHeight` — let the box size to its content. All boxes in a row will naturally share the same height via `IntrinsicHeight(Row(Expanded(box)...))` on the parent.
+
+**Canonical pattern:**
+```dart
+Widget _buildSettingsBox({required Widget child}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(/*bg + border + radius*/),
+    child: Center(child: child),  // vertically center label + control
+  );
+}
+// Each box content:
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  crossAxisAlignment: CrossAxisAlignment.center,
+  children: [Text('Label', style: labelStyle), controlWidget],
+)
+```
+
+For boxes with a conditional secondary control (e.g., team-count dropdown that only appears in a sub-mode), prefer to omit the secondary entirely (Rule §67) rather than nest it in the box.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template — add this as the canonical option-box layout. AR-4 audit greps: each `_buildXxxBox` method must contain `MainAxisAlignment.spaceBetween` AND `crossAxisAlignment: CrossAxisAlignment.center` somewhere in the Row, AND must NOT contain `minHeight:` in the SettingsBox wrapper.
+
+---
+
+### 57. Menu option label and control text should be within 2pt of each other
+Tiki Golf v1 had labels at 14pt and toggle text at 14pt; after the polish iteration the user wanted labels at 22pt and toggle/dropdown text at 20pt — a 2pt hierarchy difference. Old versions with 6-8pt size differences between label and control read as inconsistent.
+
+**Rule:** in the settings grid, option labels (e.g., "Game Mode", "Max Strokes", "Mulligan") and their controls' visible text (toggle segment text "SOLO"/"TEAM", dropdown selected value, toggle on/off labels) should be within 2pt of each other. Labels can be the slightly larger of the two for hierarchy.
+
+**Recommended sizes for menu screens using display fonts (Boogaloo/Bangers/Rye):**
+- Option label: 22pt
+- Toggle segment text + dropdown text: 20pt
+- Toggle on/off labels (OFF / ON): 20pt
+- Inline subtitle (e.g., "1 do-over per player" in parens): 14pt Nunito (Rule §66)
+
+For games using more neutral display fonts, use the same 22/20 split and tune visually.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template defaults to label 22 / control 20. AR-4 audit: every menu-screen option-box file should have label fontSize and control fontSize within 2pt of each other.
+
+---
+
+### 58. How-To-Play / left panel: top-align with the first option row (don't stretch full-height)
+By default a `Row` with `crossAxisAlignment: stretch` (the default for many layouts) makes both columns fill the parent's height. The how-to-play panel on the left then stretches to canvas height, while the right panel's first option row starts at `y = padding-top`. The visible top of the green container ends up ABOVE the visible top of the first option box — visually jarring.
+
+**Rule:** the menu's main-content Row uses `crossAxisAlignment: CrossAxisAlignment.start`, so the left panel doesn't auto-stretch. Wrap the left panel in `Padding(EdgeInsets.only(top: <right-panel-padding-top>, left: <small-left-inset>))` so the green container's top edge aligns with the first option box's top edge.
+
+**Canonical pattern (Tiki Golf reference):**
+```dart
+Row(
+  crossAxisAlignment: CrossAxisAlignment.start, // top-align both columns
+  children: [
+    SizedBox(
+      width: constraints.maxWidth * 0.437,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 16, left: 16),
+        child: _buildLeftPanel(),
+      ),
+    ),
+    Expanded(child: _buildRightPanel(...)),
+  ],
+);
+// _buildLeftPanel is a Container with EdgeInsets.all(16) padding so its
+// content has the same equal top + bottom inset.
+```
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template specifies this. AR-4 audit: confirm `crossAxisAlignment: start` on the menu's main-content Row AND a Padding wrapper on the left panel sized to match the right panel's padding-top.
+
+---
+
+### 59. Horizontal gap between left and right panels — 8px sweet spot (16px is too generous)
+Tiki Golf v1 used `EdgeInsets.all(16)` on the right panel, which combined with the left panel's right edge gave a visible 16px gap between the two panels. The user asked for that gap to be halved.
+
+**Rule:** the right panel uses asymmetric padding `EdgeInsets.fromLTRB(8, 16, 16, 16)` (8px on the left side facing the left panel; 16px on the other three sides). This halves the inter-panel gap while preserving the visible right and bottom margins.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template specifies this for the right panel container. AR-4 audit: read the right panel's outer Container `padding` and confirm `fromLTRB(8, 16, 16, 16)` (or equivalent asymmetric with `left < right`).
+
+---
+
+### 60. Right-panel section gaps — 8px between sections (16px reads too airy)
+Tiki Golf v1 had `SizedBox(height: 16)` between settings-grid ↔ player-panel and between player-panel ↔ TEE-OFF button. The user wanted these halved.
+
+**Rule:** the vertical gaps between major sections inside the right panel (settings grid, player panel, primary button) default to **8px**. Use 16px only when there's a deliberate visual-break reason (e.g., separating ungrouped content categories).
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template specifies `SizedBox(height: 8)` between sections. AR-4 audit: grep `SizedBox(height: 16)` in the menu screen — should appear only inside the left panel (between How-To-Play headers and body) if at all.
+
+---
+
+### 61. TeamPlayerListPanel header indent: use the `headerPadding` config, NEVER wrap the panel in Padding
+The `TeamPlayerListPanel` widget returns `Expanded(child: Column(...))` when `useFixedHeight: false`. `Expanded` requires a **direct** Flex (Row/Column) parent — any intermediate widget (Padding, Container, Transform, Align) between Expanded and its Flex parent triggers `Incorrect use of ParentDataWidget` at runtime. This bit the Tiki Golf build twice during the polish iteration.
+
+**Rule:** to indent the player panel's HEADER (the "Available Players" label + count chip + ADD PLAYER button) relative to the panel's list rows, use the shared widget's `headerPadding: EdgeInsetsGeometry?` config field. The widget wraps `_buildHeader`'s Row in a Padding only when the field is set. **DO NOT wrap `TeamPlayerListPanel` itself in any non-Flex widget** (Padding, Container with margin, Align, Transform, etc.) — it will break at runtime when `useFixedHeight: false`.
+
+If you need to indent the entire panel (rows AND header), you have two options:
+- Set `useFixedHeight: true` (returns Column, not Expanded — Padding wrapping then works) AND override the panel's `soloListHeight` / `teamListHeight` so the content fits in the available vertical space.
+- OR change the menu screen's outer right-panel padding so the entire right-panel content shifts inward.
+
+**Canonical pattern (Tiki Golf reference):**
+```dart
+// In <Game>PlayerListPanelConfig factory:
+headerPadding: const EdgeInsets.symmetric(horizontal: 12),
+
+// In the menu screen — DO NOT do this:
+//   Padding(child: TeamPlayerListPanel(useFixedHeight: false, ...))  ← runtime crash
+// Just pass the panel directly:
+TeamPlayerListPanel(config: <Game>PlayerListPanelConfig.<game>(), useFixedHeight: scrollable, ...)
+```
+
+**How to apply:** AR-4 audit greps `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart` for `Padding` wrapping `TeamPlayerListPanel(`. Any such match is a runtime-crash risk — replace with `headerPadding` (header-only indent) or `useFixedHeight: true` (whole-panel indent via outer wrapper).
+
+---
+
+### 62. Suppress the "Team Assignment" label above team boxes when it's redundant
+By default the shared `TeamPlayerListPanel` renders the `config.teamAssignmentLabel` text ("Assign Teams" or similar) above the team-assignment boxes in Manual mode. When the team-badge images themselves clearly communicate "these are the teams", the label is redundant and just adds vertical space.
+
+**Rule:** the shared config has `showTeamAssignmentLabel: bool` (default true). Games where the team badges are self-explanatory should set it to `false`. When false, both the label AND its surrounding 16px/8px SizedBox spacers are skipped.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template includes the option. AR-4 audit: for any new game with team mode, surface to the user during build review: "should the 'Team Assignment' label above the team boxes be hidden?" — set `showTeamAssignmentLabel: false` if the user says yes.
+
+---
+
+### 63. Allow team-box chrome to be transparent for a clean badges-only look
+The shared `TeamPlayerListPanel` wraps each team crest in a `Container` with `teamBoxBackgroundColor` + `teamBoxBorderColor` + `teamBoxActiveBorderColor`. These add visual chrome around each badge. For games where the crest images are detailed enough to stand on their own (e.g., circular crests with rope borders, full-bleed images), the Container chrome competes with the artwork.
+
+**Rule:** set all three team-box color config fields to `Colors.transparent` to render the badges with no container chrome. The active-team visual cue can come from other places (a left-edge accent on the active team's parent row, a glow on the badge image via `BoxShadow` or `ImageFiltered`, or a 2px translucent border via a different config) — see Rule §49 for the canonical Teams-panel transparent treatment.
+
+**Canonical pattern (Tiki Golf reference):**
+```dart
+teamBoxBackgroundColor: Colors.transparent,
+teamBoxBorderColor: Colors.transparent,
+teamBoxActiveBorderColor: Colors.transparent,
+teamBoxSize: 84.0,   // can size larger when no chrome competes
+```
+
+**How to apply:** Phase 4 prompt template suggests this for games where the crests are visually self-sufficient. AR-4 audit: when reviewing the team-mode setup screen, the user should be asked "do the team-box backgrounds and borders feel necessary?" — if no, set all three to transparent.
+
+---
+
+### 64. Heavy-descender display fonts (Boogaloo, Bangers, etc.) need line-height tightening on home-card labels
+Boogaloo, Bangers, and similar handwritten/casual display fonts have heavier descenders than the more uniform fonts used by other games (Fredoka, Luckiest Guy, Cinzel, etc.). On the home-screen game card, the label's baseline sits visually lower than peer-game labels — the descender pushes the rendered text down within its line box, even when the SizedBox spacer above is shrunk.
+
+**Rule:** for games using Boogaloo, Bangers, Pirata One, or other heavy-descender display fonts on the home-screen card, apply BOTH of these tweaks to align the label baseline with peer games:
+1. Reduce the SizedBox between the icon and the label (default 8px → 3px for Boogaloo, 6px for Pirata One)
+2. Tighten the TextStyle line-height with `height: 0.6` (or similar < 1.0) to compress the line box and shift the rendered glyphs up
+
+**Canonical pattern (Tiki Golf reference):**
+```dart
+// In the SizedBox conditional in home_screen.dart:
+height: title == 'Tiki Golf' ? 3 : <peer-game-default>,
+// In the TextStyle conditional:
+GoogleFonts.boogaloo(
+  fontSize: <size>,
+  fontWeight: FontWeight.bold,
+  color: ...,
+  height: 0.6,   // tightens the line-box so text sits higher
+),
+```
+
+**How to apply:** Phase 4 home-card sub-agent prompt template includes this tweak for any game whose Style section uses a heavy-descender font. AR-4 audit: open the home screen at full resolution and verify the game's label baseline visually aligns with at least 2 peer-game labels (or the user reports it does).
+
+---
+
+### 65. AppBar title size for branded display fonts — 28-34pt (default 20pt is too small)
+Default Material AppBar `titleStyle` is ~20pt. For games that use a branded display font (Boogaloo, Bangers, Cinzel, Rye, Pirata One) for the AppBar title, 20pt reads as cramped and undersells the game's visual identity. The user consistently asked Tiki Golf's titles bumped from 20pt → 28pt → 34pt over multiple iterations.
+
+**Rule:** for the AppBar title on EVERY new game's three screens (menu / game / results), use **28-34pt** when the spec uses a branded display font. Pick a size by font weight:
+- Heavier display fonts (Bangers, Pirata One, Rye): 28pt
+- Medium-weight display fonts (Boogaloo, Cinzel, Cinzel Decorative): 32-34pt
+- Light/condensed display fonts (Fredoka, Orbitron): 24-28pt
+
+**How to apply:** Phase 4 prompt template for menu/game/results screen authors specifies the AppBar title at 28-34pt by default. AR-4 audit: read the three AppBar titles and verify fontSize ≥ 24 when the font is a Google Fonts display font.
+
+---
+
+### 66. Inline parenthetical subtitle (RichText) instead of below-row subtitle
+When an option box needs a one-line clarifying subtitle (e.g., "Mulligan" with "1 do-over per player"), the user prefers the subtitle inline next to the label as a smaller parenthetical, rather than on a separate row below the option's primary row. The inline pattern keeps the box height matching the other options' boxes.
+
+**Rule:** for option boxes that need a clarifying subtitle, use `RichText` with two TextSpans:
+- Primary label at the full option-label size (e.g., 22pt Boogaloo)
+- Parenthetical subtitle at a smaller body-font size (e.g., 14pt Nunito with 0.75 opacity)
+
+**Canonical pattern (Tiki Golf Mulligan box reference):**
+```dart
+Flexible(
+  child: RichText(
+    overflow: TextOverflow.visible,
+    text: TextSpan(children: [
+      TextSpan(
+        text: 'Mulligan ',
+        style: GoogleFonts.boogaloo(fontSize: 22, color: ..., shadows: ...),
+      ),
+      TextSpan(
+        text: '(1 do-over per player)',
+        style: GoogleFonts.nunito(fontSize: 14, color: ...withOpacity(0.75)),
+      ),
+    ]),
+  ),
+),
+```
+
+DO NOT use a separate Column[PrimaryRow, SizedBox, SubtitleText] — that makes the box taller than its peers in the same settings row.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template suggests this pattern when a spec includes per-option clarifying text. AR-4 audit: any option box with both a primary label and a clarifying subtitle should use RichText inline, not Column + Text below.
+
+---
+
+### 67. Inline secondary controls — consider removing them entirely if a sensible default exists
+Tiki Golf v1 had a "Teams: [4 ▾]" inline dropdown inside the Game Mode option box, shown only in Team + Manual mode. The user removed it entirely, accepting a default of 4 teams. The control was visually noisy and added little value when the user can always manage team membership by which slots they fill.
+
+**Rule:** for inline secondary controls that appear conditionally (only in a sub-mode) AND have a sensible default value AND can be worked around via other UI (e.g., the user picks team assignments which implicitly determines team count), surface to the user during build review: "is this secondary control needed, or should we default it and remove the UI?" Often the answer is "remove" — fewer controls = cleaner menu.
+
+When removing: KEEP the underlying state variable in the screen (it's still used downstream by the provider/game) and DEFAULT it to a sensible value. Just remove the UI that exposed it.
+
+**How to apply:** Phase 4 prompt template, when authoring an option box that has a conditional secondary control inside it, instructs the sub-agent to flag the secondary control as a removal candidate. AR-4 audit: when the user is reviewing the menu screen visually, ask if any conditional secondary controls feel necessary; remove them if the answer is no.
+
+---
+
 ## Error Handling Rules
 
 These rules apply throughout ALL phases:

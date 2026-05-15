@@ -290,7 +290,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
       title: Text(
         'TIKI GOLF SETUP',
         style: GoogleFonts.boogaloo(
-          fontSize: 20,
+          fontSize: 34,
           color: _sandWhite,
           shadows: _labelShadow(_tikiBrown),
         ),
@@ -316,13 +316,20 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
   Widget _buildMainContent(PlayerProvider playerProvider) {
     return LayoutBuilder(builder: (context, constraints) {
       if (constraints.maxWidth > 800) {
-        // Tablet/desktop: left "How To Play" (38%) + right panel (62%)
+        // Tablet/desktop: left "How To Play" (43.7% — was 38%, +15% per user)
+        // + right panel (remaining ~56.3%)
         return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start, // top-align so left panel doesn't stretch full-height
           children: [
             SizedBox(
-              width: constraints.maxWidth * 0.38,
-              child: _buildLeftPanel(),
+              width: constraints.maxWidth * 0.437,
+              // 16px top inset matches the right panel's `EdgeInsets.all(16)`
+              // top padding, so the how-to container's top edge aligns with
+              // the top edge of the first option row.
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16, left: 16),
+                child: _buildLeftPanel(),
+              ),
             ),
             Expanded(child: _buildRightPanel(playerProvider, scrollable: false)),
           ],
@@ -345,7 +352,12 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
 
   Widget _buildLeftPanel() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _palmGreen.withOpacity(0.82),
+        border: Border.all(color: _tikiBrown.withOpacity(0.55), width: 1.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,7 +365,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
             Text(
               'TIKI GOLF',
               style: GoogleFonts.boogaloo(
-                fontSize: 40,
+                fontSize: 46,
                 color: _sandWhite,
                 shadows: _labelShadow(_tikiBrown),
               ),
@@ -361,7 +373,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
             Text(
               'Tropical Dart Golf!',
               style: GoogleFonts.boogaloo(
-                fontSize: 22,
+                fontSize: 28,
                 color: _tropicalOrange,
                 shadows: _labelShadow(_tikiBrown),
               ),
@@ -370,16 +382,16 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
             Text(
               'HOW TO PLAY',
               style: GoogleFonts.boogaloo(
-                fontSize: 20,
+                fontSize: 30,
                 color: _sandWhite,
                 shadows: _labelShadow(_tikiBrown),
               ),
             ),
             const SizedBox(height: 8),
-            _buildHowToStep('1', 'Pick your hole target:',
+            _buildHowToStep('1', 'Hit each hole target:',
                 'Each game shuffles 9 holes — every hole gets a random dartboard number as its target.'),
             _buildHowToStep('2', 'Tee off!',
-                'On your turn, throw darts at the hole\'s target number. Each dart is one stroke.'),
+                'On your turn, throw darts at the hole\'s target number. Each dart is one stroke. You can change the Max Strokes per hole in the options.'),
             _buildHowToStep('3', 'Score like golf:',
                 'Hit the target on dart 1 = Birdie! Dart 2 = Par. Dart 3+ = Bogey. Miss all darts = Splash (worst score)!'),
             _buildHowToStep('4', 'Lowest score wins:',
@@ -388,7 +400,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
             Text(
               'TEAM MODE',
               style: GoogleFonts.boogaloo(
-                fontSize: 18,
+                fontSize: 28,
                 color: _lagoonBlue,
                 shadows: _labelShadow(_tikiBrown),
               ),
@@ -397,7 +409,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
             Text(
               'In Team mode, everyone still plays every hole. Your team\'s score for each hole is the BEST (lowest) score among your teammates. Lowest team total wins — and everyone on the winning team gets credit!',
               style: GoogleFonts.nunito(
-                fontSize: 14,
+                fontSize: 20,
                 color: _sandWhite,
                 height: 1.5,
               ),
@@ -417,7 +429,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
           Text(
             '$number. ',
             style: GoogleFonts.boogaloo(
-              fontSize: 16,
+              fontSize: 22,
               color: _tropicalOrange,
               shadows: _labelShadow(_tikiBrown),
             ),
@@ -429,7 +441,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
                   TextSpan(
                     text: title,
                     style: GoogleFonts.nunito(
-                      fontSize: 15,
+                      fontSize: 21,
                       fontWeight: FontWeight.bold,
                       color: _sandWhite,
                     ),
@@ -437,7 +449,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
                   TextSpan(
                     text: ' $description',
                     style: GoogleFonts.nunito(
-                      fontSize: 14,
+                      fontSize: 20,
                       color: _sandWhite.withOpacity(0.85),
                       height: 1.4,
                     ),
@@ -463,9 +475,13 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
       children: [
         // Settings grid (2×2)
         _buildSettingsGrid(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
 
         // Player list panel (single list, team-assignment via shared widget).
+        // Header (label + ADD PLAYER) gets 12px horizontal indent via the
+        // config's headerPadding so the visible header content aligns with
+        // the option labels / values above. The list rows themselves stay
+        // at full panel width (per user — list layout was correct as-is).
         // No outer Expanded wrapper — when useFixedHeight is false the panel
         // wraps its content in its own Expanded internally; an additional
         // outer Expanded triggers a ParentDataWidget conflict.
@@ -493,7 +509,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
           },
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
 
         // TEE OFF button
         _buildTeeOffButton(canStart, selectedPlayers),
@@ -501,7 +517,9 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
     );
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      // Left padding 8 (was 16) per user — halves the gap between the
+      // how-to-play container and the options/player list.
+      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
       child: scrollable
           ? SingleChildScrollView(
               child: SizedBox(
@@ -547,8 +565,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
 
   Widget _buildSettingsBox({required Widget child, bool highlighted = false}) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 110),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _palmGreen.withOpacity(0.85),
         borderRadius: BorderRadius.circular(8),
@@ -557,7 +574,8 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
           width: 2,
         ),
       ),
-      child: child,
+      // Vertically center the label + control inside the box.
+      child: Center(child: child),
     );
   }
 
@@ -567,21 +585,24 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
       highlighted: isTeam,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Game Mode',
-            style: GoogleFonts.boogaloo(
-              fontSize: 14,
-              color: _sandWhite,
-              shadows: _labelShadow(_tikiBrown),
-            ),
-          ),
-          const SizedBox(height: 8),
           Row(
-            key: TikiGolfMenuKeys.gameModeToggle,
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Text(
+                'Game Mode',
+                style: GoogleFonts.boogaloo(
+                  fontSize: 22,
+                  color: _sandWhite,
+                  shadows: _labelShadow(_tikiBrown),
+                ),
+              ),
+              Row(
+                key: TikiGolfMenuKeys.gameModeToggle,
+                mainAxisSize: MainAxisSize.min,
+                children: [
               GestureDetector(
                 key: TikiGolfMenuKeys.gameModeSolo,
                 onTap: () =>
@@ -589,7 +610,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
                 child: Text(
                   'SOLO',
                   style: GoogleFonts.boogaloo(
-                    fontSize: 14,
+                    fontSize: 20,
                     color: !isTeam ? _lagoonBlue : _sandWhite.withOpacity(0.5),
                     fontWeight: !isTeam ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -614,51 +635,19 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
                 child: Text(
                   'TEAM',
                   style: GoogleFonts.boogaloo(
-                    fontSize: 14,
+                    fontSize: 20,
                     color: isTeam ? _lagoonBlue : _sandWhite.withOpacity(0.5),
                     fontWeight: isTeam ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ),
+                ],
+              ),
             ],
           ),
-          // Team Count dropdown — shown only in Team + Manual mode
-          if (isTeam &&
-              _teamAssignment == TikiGolfTeamAssignment.manual) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Text(
-                  'Teams:',
-                  style: GoogleFonts.nunito(
-                    fontSize: 12,
-                    color: _sandWhite,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                DropdownButton<int>(
-                  key: TikiGolfMenuKeys.teamCountDropdown,
-                  value: _teamCount,
-                  dropdownColor: _palmGreen,
-                  underline: const SizedBox(),
-                  style: GoogleFonts.boogaloo(
-                    fontSize: 14,
-                    color: _sandWhite,
-                  ),
-                  items: [2, 3, 4]
-                      .map((v) => DropdownMenuItem(
-                            value: v,
-                            child: Text('$v'),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setState(() => _teamCount = v);
-                  },
-                ),
-              ],
-            ),
-          ],
+          // Team Count dropdown removed per user — defaults to 4 teams.
+          // _teamCount state still exists and is used downstream when
+          // building the game; just not user-configurable from the menu.
         ],
       ),
     );
@@ -673,22 +662,21 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
         ignoring: !isTeam,
         child: _buildSettingsBox(
           highlighted: isTeam && isManual,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 'Team Assignment',
                 style: GoogleFonts.boogaloo(
-                  fontSize: 14,
+                  fontSize: 22,
                   color: _sandWhite,
                   shadows: _labelShadow(_tikiBrown),
                 ),
               ),
-              const SizedBox(height: 8),
               Row(
                 key: TikiGolfMenuKeys.assignmentModeToggle,
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   GestureDetector(
                     key: TikiGolfMenuKeys.assignmentModeManual,
@@ -699,7 +687,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
                     child: Text(
                       'MANUAL',
                       style: GoogleFonts.boogaloo(
-                        fontSize: 13,
+                        fontSize: 20,
                         color: isManual
                             ? _lagoonBlue
                             : _sandWhite.withOpacity(0.5),
@@ -731,7 +719,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
                     child: Text(
                       'RANDOM',
                       style: GoogleFonts.boogaloo(
-                        fontSize: 13,
+                        fontSize: 20,
                         color: !isManual
                             ? _lagoonBlue
                             : _sandWhite.withOpacity(0.5),
@@ -751,45 +739,42 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
 
   Widget _buildMaxStrokesBox() {
     return _buildSettingsBox(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             'Max Strokes',
             style: GoogleFonts.boogaloo(
-              fontSize: 14,
+              fontSize: 22,
               color: _sandWhite,
               shadows: _labelShadow(_tikiBrown),
             ),
           ),
-          const SizedBox(height: 8),
-          Center(
-            child: DropdownButton<int>(
-              key: TikiGolfMenuKeys.maxStrokesDropdown,
-              value: _maxStrokes,
-              dropdownColor: _palmGreen,
-              underline: const SizedBox(),
-              style: GoogleFonts.boogaloo(
-                fontSize: 18,
-                color: _sandWhite,
-              ),
-              items: [3, 4, 5, 6]
-                  .map((v) => DropdownMenuItem(
-                        value: v,
-                        child: Text(
-                          '$v',
-                          style: GoogleFonts.boogaloo(
-                            fontSize: 18,
-                            color: _sandWhite,
-                          ),
-                        ),
-                      ))
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _maxStrokes = v);
-              },
+          DropdownButton<int>(
+            key: TikiGolfMenuKeys.maxStrokesDropdown,
+            value: _maxStrokes,
+            dropdownColor: _palmGreen,
+            underline: const SizedBox(),
+            style: GoogleFonts.boogaloo(
+              fontSize: 20,
+              color: _sandWhite,
             ),
+            items: [3, 4, 5, 6]
+                .map((v) => DropdownMenuItem(
+                      value: v,
+                      child: Text(
+                        '$v',
+                        style: GoogleFonts.boogaloo(
+                          fontSize: 20,
+                          color: _sandWhite,
+                        ),
+                      ),
+                    ))
+                .toList(),
+            onChanged: (v) {
+              if (v != null) setState(() => _maxStrokes = v);
+            },
           ),
         ],
       ),
@@ -799,59 +784,66 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
   Widget _buildMulliganBox() {
     return _buildSettingsBox(
       highlighted: _mulliganEnabled,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            'Mulligan',
-            style: GoogleFonts.boogaloo(
-              fontSize: 14,
-              color: _sandWhite,
-              shadows: _labelShadow(_tikiBrown),
+          // Label + parenthetical subtitle on a single line so this box
+          // matches the height of the top-row option boxes.
+          Flexible(
+            child: RichText(
+              overflow: TextOverflow.visible,
+              text: TextSpan(children: [
+                TextSpan(
+                  text: 'Mulligan ',
+                  style: GoogleFonts.boogaloo(
+                    fontSize: 22,
+                    color: _sandWhite,
+                    shadows: _labelShadow(_tikiBrown),
+                  ),
+                ),
+                TextSpan(
+                  text: '(1 do-over per player)',
+                  style: GoogleFonts.nunito(
+                    fontSize: 14,
+                    color: _sandWhite.withOpacity(0.75),
+                  ),
+                ),
+              ]),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            '1 do-over per player',
-            style: GoogleFonts.nunito(
-              fontSize: 11,
-              color: _sandWhite.withOpacity(0.7),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'OFF',
-                style: GoogleFonts.boogaloo(
-                  fontSize: 14,
-                  color: !_mulliganEnabled
-                      ? _lagoonBlue
-                      : _sandWhite.withOpacity(0.5),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'OFF',
+                    style: GoogleFonts.boogaloo(
+                      fontSize: 20,
+                      color: !_mulliganEnabled
+                          ? _lagoonBlue
+                          : _sandWhite.withOpacity(0.5),
+                    ),
+                  ),
+                  Transform.scale(
+                    scale: 0.85,
+                    child: Switch(
+                      key: TikiGolfMenuKeys.mulliganSwitch,
+                      value: _mulliganEnabled,
+                      activeColor: _lagoonBlue,
+                      onChanged: (v) => setState(() => _mulliganEnabled = v),
+                    ),
+                  ),
+                  Text(
+                    'ON',
+                    style: GoogleFonts.boogaloo(
+                      fontSize: 20,
+                      color: _mulliganEnabled
+                          ? _lagoonBlue
+                          : _sandWhite.withOpacity(0.5),
+                    ),
+                  ),
+                ],
               ),
-              Transform.scale(
-                scale: 0.85,
-                child: Switch(
-                  key: TikiGolfMenuKeys.mulliganSwitch,
-                  value: _mulliganEnabled,
-                  activeColor: _lagoonBlue,
-                  onChanged: (v) => setState(() => _mulliganEnabled = v),
-                ),
-              ),
-              Text(
-                'ON',
-                style: GoogleFonts.boogaloo(
-                  fontSize: 14,
-                  color: _mulliganEnabled
-                      ? _lagoonBlue
-                      : _sandWhite.withOpacity(0.5),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -877,7 +869,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
         child: Text(
           'TEE OFF!',
           style: GoogleFonts.boogaloo(
-            fontSize: 22,
+            fontSize: 28,
             color: _sandWhite,
             shadows: _labelShadow(_tikiBrown),
           ),

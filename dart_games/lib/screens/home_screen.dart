@@ -117,7 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? 10
                       : title == "Pirate's Grid"
                           ? 6
-                          : 8,
+                          : title == 'Tiki Golf'
+                              ? 3   // tighter — Boogaloo descenders push baseline lower
+                              : 8,
                 ),
                 Text(
                   title,
@@ -175,10 +177,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   letterSpacing: 1.0,
                                 )
                           : title == 'Tiki Golf'
+                              // Boogaloo's descender pushes the baseline visually low.
+                              // Translate up 5px to align with peer-game baselines.
                               ? GoogleFonts.boogaloo(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 5,
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 7,
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                                  height: 0.6, // tightens line-box so the text sits 5px higher
                                 )
                           : theme.textTheme.titleMedium?.copyWith(
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,

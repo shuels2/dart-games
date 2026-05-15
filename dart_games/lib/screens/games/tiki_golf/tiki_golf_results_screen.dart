@@ -285,7 +285,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             title: Text(
               'TIKI GOLF RESULTS',
               style: GoogleFonts.boogaloo(
-                fontSize: 20,
+                fontSize: 34,
                 color: _sandWhite,
                 letterSpacing: 0.5,
               ),

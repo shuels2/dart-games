@@ -90,6 +90,34 @@ class TeamPlayerListPanelConfig {
   final int maxTeams;
   final int maxPlayersPerTeam;
 
+  /// Optional horizontal/vertical inset applied to the header row only
+  /// (the row containing the section label, count chip, and ADD PLAYER
+  /// button). Defaults to no padding. Used by Tiki Golf so the header
+  /// content aligns with option labels/values that sit inside option-box
+  /// padding. Does NOT affect the player list row layout.
+  final EdgeInsetsGeometry? headerPadding;
+
+  /// When true (default), shows the [teamAssignmentLabel] text above the
+  /// team-assignment boxes in Manual team mode. Tiki Golf sets this false
+  /// because the boxes themselves are self-explanatory.
+  final bool showTeamAssignmentLabel;
+
+  /// Optional fixed width for the TeamAssignmentDialog content area.
+  /// Defaults to 400 when null. Games with larger [dialogTeamButtonSize]
+  /// or more teams may need to override this so all team badges fit in a
+  /// single row inside the dialog's Wrap.
+  final double? dialogContentWidth;
+
+  /// Layout direction for each team-assignment box (badge + player count).
+  /// [Axis.vertical] (default) stacks the count below the badge.
+  /// [Axis.horizontal] places the count to the right of the badge.
+  final Axis teamBoxLayout;
+
+  /// Vertical spacing (px) above the team-assignment boxes row in Manual
+  /// team mode. Defaults to 16. Games where the team boxes feel too far
+  /// from the player list above can tighten this.
+  final double teamBoxesTopSpacing;
+
   // Team assignment label
   final String teamAssignmentLabel;
   final TextStyle teamAssignmentLabelStyle;
@@ -159,6 +187,11 @@ class TeamPlayerListPanelConfig {
     this.minPlayersTeamMode = 3,
     this.maxTeams = 5,
     this.maxPlayersPerTeam = 2,
+    this.headerPadding,
+    this.showTeamAssignmentLabel = true,
+    this.dialogContentWidth,
+    this.teamBoxLayout = Axis.vertical,
+    this.teamBoxesTopSpacing = 16.0,
     this.teamAssignmentLabel = 'Team Assignment',
     required this.teamAssignmentLabelStyle,
     required this.addPlayerDialogConfig,
@@ -276,7 +309,7 @@ class TeamPlayerListPanelConfig {
       containerBorderColorWhenReady: const Color(0xFF00B4D8), // Lagoon Blue
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.boogaloo(
-        fontSize: 18,
+        fontSize: 20, // +2 from 18 per user feedback
         color: const Color(0xFFFFF5E1), // Sand White
       ),
       headerCountStyle: GoogleFonts.nunito(
@@ -307,20 +340,22 @@ class TeamPlayerListPanelConfig {
         fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
-      teamIconBorderColor: const Color(0xFFFF8C42), // Tropical Orange
-      teamIconBackgroundColor: const Color(0xFF2D6A4F), // Palm Green
-      teamIconSize: 40.0,
-      teamBoxSize: 56.0, // compact crest-only team box per Rule §47
-      teamBoxBackgroundColor: const Color(0xFF2D6A4F), // Palm Green
-      teamBoxBorderColor: const Color(0xFF8B5E3C), // Tiki Brown
-      teamBoxActiveBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      // Player-tile trailing crest icon — no container chrome per user;
+      // the badge image renders directly inside the tile.
+      teamIconBorderColor: Colors.transparent,
+      teamIconBackgroundColor: Colors.transparent,
+      teamIconSize: 44.0, // +10% from 40px per user
+      teamBoxSize: 163.0, // +15% from 142px per user; badges only
+      teamBoxBackgroundColor: Colors.transparent, // no box around the badge
+      teamBoxBorderColor: Colors.transparent,
+      teamBoxActiveBorderColor: Colors.transparent,
       teamBoxCountStyle: GoogleFonts.nunito(
-        fontSize: 14,
+        fontSize: 18, // +2pt from 16 per user
         fontWeight: FontWeight.bold,
         color: const Color(0xFFFFF5E1).withOpacity(0.5),
       ),
       teamBoxActiveCountStyle: GoogleFonts.nunito(
-        fontSize: 14,
+        fontSize: 18, // +2pt from 16 per user
         fontWeight: FontWeight.bold,
         color: const Color(0xFFFF8C42), // Tropical Orange
       ),
@@ -329,9 +364,15 @@ class TeamPlayerListPanelConfig {
         fontSize: 20,
         color: const Color(0xFFFFF5E1), // Sand White
       ),
-      dialogTeamButtonSize: 100.0,
-      dialogTeamButtonColor: const Color(0xFF3A7B5E), // slightly lighter Palm Green
-      dialogTeamButtonBorderColor: const Color(0xFF8B5E3C), // Tiki Brown
+      dialogTeamButtonSize: 163.0, // +25% from 130px per user
+      // Dialog team-pick buttons — no container chrome in default state per user;
+      // the badge image renders directly. Selected + highlighted states still
+      // show via their own border colors below.
+      dialogTeamButtonColor: Colors.transparent,
+      dialogTeamButtonBorderColor: Colors.transparent,
+      // Wider dialog so all 4 team badges fit on a single row at the larger
+      // button size: 4 × 163 + 5 × 16 spacing = 732px.
+      dialogContentWidth: 760.0,
       dialogTeamButtonSelectedColor: const Color(0xFF00B4D8), // Lagoon Blue
       dialogTeamButtonSelectedBorderColor: const Color(0xFF00B4D8),
       dialogHighlightGlowColor: const Color(0xFF00B4D8),
@@ -357,6 +398,19 @@ class TeamPlayerListPanelConfig {
       minPlayers: 2,
       minPlayersTeamMode: 3,
       maxTeams: 4,
+      // 12px horizontal inset on the header row only — aligns "Available
+      // Players" label and the ADD PLAYER button with the option labels /
+      // values above (which sit inside the option-box 12px padding).
+      headerPadding: const EdgeInsets.symmetric(horizontal: 12),
+      // Hide the "Team Assignment" label above the team boxes per user —
+      // the team badges themselves are self-explanatory.
+      showTeamAssignmentLabel: false,
+      // Player count appears to the RIGHT of each team badge (not below),
+      // which also tightens each team box's vertical footprint.
+      teamBoxLayout: Axis.horizontal,
+      // Tighter gap above the team boxes — matches the small visual gap
+      // below them at the bottom of the player panel.
+      teamBoxesTopSpacing: 8.0,
       maxPlayersPerTeam: 4,
       addPlayerDialogConfig: AddPlayerDialogConfig.tikiGolf(),
     );
