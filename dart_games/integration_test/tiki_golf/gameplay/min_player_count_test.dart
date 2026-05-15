@@ -14,46 +14,40 @@ void main() {
   testWidgets(
       'Gameplay: 2-player Solo game starts and scorecard renders both players',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_gameplay_min_player_count',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester, maxStrokes: 3,
-            playerNames: ['Player A', 'Player B']);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, maxStrokes: 3,
+        playerNames: ['Player A', 'Player B']);
 
-        final players = ProviderHelpers.getSelectedPlayers(tester);
-        expect(players.length, 2,
-            reason: 'Should have exactly 2 players selected');
+    final players = ProviderHelpers.getSelectedPlayers(tester);
+    expect(players.length, 2,
+        reason: 'Should have exactly 2 players selected');
 
-        // Scorecard should show both player names
-        for (final player in players) {
-          expect(find.textContaining(player.name), findsWidgets,
-              reason: '${player.name} should be visible in scorecard');
-        }
+    // Scorecard should show both player names
+    for (final player in players) {
+      expect(find.textContaining(player.name), findsWidgets,
+          reason: '${player.name} should be visible in scorecard');
+    }
 
-        // Complete hole 1 for both players (birdie)
-        await throwTargetDart(tester);
-        await clickDartsRemoved(tester);
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
+    // Complete hole 1 for both players (birdie)
+    await throwTargetDart(tester);
+    await clickDartsRemoved(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
-        await throwTargetDart(tester);
-        await clickDartsRemoved(tester);
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
+    await throwTargetDart(tester);
+    await clickDartsRemoved(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
-        // Both players have scored hole 1
-        for (final player in players) {
-          final score =
-              ProviderHelpers.getTikiGolfPlayerHoleScore(tester, player.id, 1);
-          expect(score, isNotNull,
-              reason: '${player.name} should have a score for hole 1');
-        }
+    // Both players have scored hole 1
+    for (final player in players) {
+      final score =
+          ProviderHelpers.getTikiGolfPlayerHoleScore(tester, player.id, 1);
+      expect(score, isNotNull,
+          reason: '${player.name} should have a score for hole 1');
+    }
 
-        // Game is still active after first full hole
-        expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
-      },
-    );
+    // Game is still active after first full hole
+    expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
   });
 }

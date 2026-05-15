@@ -15,26 +15,20 @@ void main() {
 
   testWidgets('Home to Tiki Golf menu navigation loads menu screen',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_add_player_home_to_menu_navigation',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // Verify Tiki Golf menu is loaded by checking for known menu elements
-        final startButton = ElementFinders.getTikiGolfStartButton();
-        expect(startButton, findsOneWidget,
-            reason: '[DIAG home_to_menu] TEE OFF button not found on Tiki Golf menu');
+    // Verify Tiki Golf menu is loaded by checking for known menu elements
+    final startButton = ElementFinders.getTikiGolfStartButton();
+    expect(startButton, findsOneWidget,
+        reason: '[DIAG home_to_menu] TEE OFF button not found on Tiki Golf menu');
 
-        final maxStrokesDropdown = ElementFinders.getTikiGolfMaxStrokesDropdown();
-        expect(maxStrokesDropdown, findsOneWidget,
-            reason: '[DIAG home_to_menu] Max Strokes dropdown not found — menu did not load');
+    final maxStrokesDropdown = ElementFinders.getTikiGolfMaxStrokesDropdown();
+    expect(maxStrokesDropdown, findsOneWidget,
+        reason: '[DIAG home_to_menu] Max Strokes dropdown not found — menu did not load');
 
-        final mulliganSwitch = ElementFinders.getTikiGolfMulliganSwitch();
-        expect(mulliganSwitch, findsOneWidget,
-            reason: '[DIAG home_to_menu] Mulligan switch not found on Tiki Golf menu');
-      },
-    );
+    final mulliganSwitch = ElementFinders.getTikiGolfMulliganSwitch();
+    expect(mulliganSwitch, findsOneWidget,
+        reason: '[DIAG home_to_menu] Mulligan switch not found on Tiki Golf menu');
   });
 }

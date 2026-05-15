@@ -9,23 +9,17 @@ void main() {
 
   testWidgets('back button after darts thrown shows save modal',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_save_modal_back_after_darts',
-      () async {
-        await UITestHelpers.resetServerState();
-        await navigateToGameScreen(tester);
-        await throwOneDart(tester);
-        await clickDartsRemoved(tester);
+    await UITestHelpers.resetServerState();
+    await navigateToGameScreen(tester);
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
 
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
 
-        UITestHelpers.verifySaveGameModal();
+    UITestHelpers.verifySaveGameModal();
 
-        // Dismiss the modal so this test leaves no widget tree state that
-        // could bleed into the next test.
-        await UITestHelpers.tapDontSaveButton(tester);
-      },
-    );
+    // Dismiss the modal so this test leaves no widget tree state that
+    // could bleed into the next test.
+    await UITestHelpers.tapDontSaveButton(tester);
   });
 }

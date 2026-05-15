@@ -87,6 +87,21 @@
 9. Save & Resume: 16 tests
 10. Visual Validation: 7 tests (1 screenshot test + 6 programmatic)
 
+### Tiki Golf (110 files)
+1. Visual Validation: 1 file (27 screenshot captures covering menu, game, results across Solo/Team variants + mulligan state + Max Darts variants)
+2. Menu and Settings: 11 files
+3. Add Player: 6 files
+4. Navigation: 4 files (mandatory pack — menu back, game back settings persist, change settings back to home, change settings preserves settings)
+5. Gameplay: 13 files
+6. Pause Modal: 3 files (20 testWidgets total)
+7. Results Screen: 5 files
+8. Save & Resume: 16 files (1 testWidget each — includes holeTargets + holeImagePaths preservation)
+9. Edit Score: 5 files
+10. Play to Complete: 5 files
+11. Randomization: 4 files (Tiki Golf-specific — hole targets unique, targets vary between games, images shuffled, hole name follows image)
+12. Team Setup: 10 files (Tiki Golf-specific — Solo/Team caps, random distribution table including N=8 and N=12 special cases, manual assignment, team crests)
+13. Team Mode Gameplay: 10 files (Tiki Golf-specific — grouped turn order, best-ball scoring, team panel display, per-player mulligan in team mode)
+
 **Known infrastructure flake:** `save_resume/resumed_state_correct_test.dart` — test assertions all pass ("All tests passed!" in log) but `flutter drive` crashes during chromedriver teardown with `SocketException: errno = 1225`. Both retry attempts hit the same deterministic teardown crash. Effective pass rate: 45/46. This is a `flutter drive` infrastructure bug, not a Lunar Lander code defect.
 
 ## Mandatory Results Screen Coverage

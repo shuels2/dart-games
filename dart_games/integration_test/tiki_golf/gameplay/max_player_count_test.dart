@@ -14,32 +14,26 @@ void main() {
   testWidgets(
       'Gameplay: 4-player Solo game has all 4 players in scorecard, no overflow',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_gameplay_max_player_count',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester,
-            maxStrokes: 3,
-            playerNames: ['P1', 'P2', 'P3', 'P4']);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester,
+        maxStrokes: 3,
+        playerNames: ['P1', 'P2', 'P3', 'P4']);
 
-        final players = ProviderHelpers.getSelectedPlayers(tester);
-        expect(players.length, 4,
-            reason: 'Should have exactly 4 players selected');
+    final players = ProviderHelpers.getSelectedPlayers(tester);
+    expect(players.length, 4,
+        reason: 'Should have exactly 4 players selected');
 
-        // Scorecard should show all 4 player names
-        for (final player in players) {
-          expect(find.textContaining(player.name), findsWidgets,
-              reason: '${player.name} should be visible in scorecard');
-        }
+    // Scorecard should show all 4 player names
+    for (final player in players) {
+      expect(find.textContaining(player.name), findsWidgets,
+          reason: '${player.name} should be visible in scorecard');
+    }
 
-        // Scorecard container is visible (no overflow)
-        expect(ElementFinders.getTikiGolfScorecard(), findsOneWidget,
-            reason: 'Scorecard should render without overflow with 4 players');
+    // Scorecard container is visible (no overflow)
+    expect(ElementFinders.getTikiGolfScorecard(), findsOneWidget,
+        reason: 'Scorecard should render without overflow with 4 players');
 
-        // Game is active
-        expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
-      },
-    );
+    // Game is active
+    expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
   });
 }

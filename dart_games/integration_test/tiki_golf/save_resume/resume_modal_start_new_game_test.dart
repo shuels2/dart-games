@@ -9,20 +9,14 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('Start New Game dismisses modal and shows menu', (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_modal_start_new_game',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToHomeScreen(tester);
-        await preSaveGame();
-        await UITestHelpers.tapGameCard(tester, config);
-        await PumpSequences.asyncDataLoad(tester);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToHomeScreen(tester);
+    await preSaveGame();
+    await UITestHelpers.tapGameCard(tester, config);
+    await PumpSequences.asyncDataLoad(tester);
 
-        await UITestHelpers.tapStartNewGameButton(tester);
+    await UITestHelpers.tapStartNewGameButton(tester);
 
-        expect(config.getStartButton(), findsOneWidget);
-      },
-    );
+    expect(config.getStartButton(), findsOneWidget);
   });
 }

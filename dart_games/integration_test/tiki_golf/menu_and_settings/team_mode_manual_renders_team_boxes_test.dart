@@ -26,55 +26,49 @@ void main() {
   testWidgets(
       'Team+Manual mode: Team Count dropdown and assignment UI rendered',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_menu_and_settings_team_mode_manual_boxes',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // ── Switch to Team + Manual mode ──────────────────────────────────────
-        await setGameModeTeam(tester);
-        await setAssignmentManual(tester);
+    // ── Switch to Team + Manual mode ──────────────────────────────────────
+    await setGameModeTeam(tester);
+    await setAssignmentManual(tester);
 
-        // ── Team Count dropdown present ────────────────────────────────────────
-        final teamCountDropdown =
-            ElementFinders.getTikiGolfTeamCountDropdown();
-        expect(teamCountDropdown, findsOneWidget,
-            reason:
-                '[DIAG team_manual_boxes] Team Count dropdown not found in Team+Manual mode');
+    // ── Team Count dropdown present ────────────────────────────────────────
+    final teamCountDropdown =
+        ElementFinders.getTikiGolfTeamCountDropdown();
+    expect(teamCountDropdown, findsOneWidget,
+        reason:
+            '[DIAG team_manual_boxes] Team Count dropdown not found in Team+Manual mode');
 
-        // ── Team Assignment section label appears ──────────────────────────────
-        // The TeamPlayerListPanel adds a "Team Assignment" label when
-        // _isManualTeamMode is true. Check for this label text.
-        final teamAssignLabel = find.textContaining('Team');
-        expect(teamAssignLabel, findsWidgets,
-            reason:
-                '[DIAG team_manual_boxes] Team-related text should appear in Team+Manual mode');
+    // ── Team Assignment section label appears ──────────────────────────────
+    // The TeamPlayerListPanel adds a "Team Assignment" label when
+    // _isManualTeamMode is true. Check for this label text.
+    final teamAssignLabel = find.textContaining('Team');
+    expect(teamAssignLabel, findsWidgets,
+        reason:
+            '[DIAG team_manual_boxes] Team-related text should appear in Team+Manual mode');
 
-        // ── Assignment toggle segments both present ────────────────────────────
-        final manualSegment = ElementFinders.getTikiGolfAssignmentModeManual();
-        expect(manualSegment, findsOneWidget,
-            reason: '[DIAG team_manual_boxes] MANUAL segment not found');
+    // ── Assignment toggle segments both present ────────────────────────────
+    final manualSegment = ElementFinders.getTikiGolfAssignmentModeManual();
+    expect(manualSegment, findsOneWidget,
+        reason: '[DIAG team_manual_boxes] MANUAL segment not found');
 
-        final randomSegment = ElementFinders.getTikiGolfAssignmentModeRandom();
-        expect(randomSegment, findsOneWidget,
-            reason: '[DIAG team_manual_boxes] RANDOM segment not found');
+    final randomSegment = ElementFinders.getTikiGolfAssignmentModeRandom();
+    expect(randomSegment, findsOneWidget,
+        reason: '[DIAG team_manual_boxes] RANDOM segment not found');
 
-        // ── Switch to RANDOM — team Count dropdown disappears ─────────────────
-        await setAssignmentRandom(tester);
+    // ── Switch to RANDOM — team Count dropdown disappears ─────────────────
+    await setAssignmentRandom(tester);
 
-        expect(teamCountDropdown, findsNothing,
-            reason:
-                '[DIAG team_manual_boxes] Team Count dropdown should NOT appear in Team+Random mode');
+    expect(teamCountDropdown, findsNothing,
+        reason:
+            '[DIAG team_manual_boxes] Team Count dropdown should NOT appear in Team+Random mode');
 
-        // ── Switch back to MANUAL — team Count dropdown reappears ─────────────
-        await setAssignmentManual(tester);
+    // ── Switch back to MANUAL — team Count dropdown reappears ─────────────
+    await setAssignmentManual(tester);
 
-        expect(teamCountDropdown, findsOneWidget,
-            reason:
-                '[DIAG team_manual_boxes] Team Count dropdown should reappear when switching back to Manual');
-      },
-    );
+    expect(teamCountDropdown, findsOneWidget,
+        reason:
+            '[DIAG team_manual_boxes] Team Count dropdown should reappear when switching back to Manual');
   });
 }

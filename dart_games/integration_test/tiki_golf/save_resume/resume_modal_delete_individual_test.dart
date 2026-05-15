@@ -10,28 +10,22 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('delete individual saved game removes it', (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_modal_delete_individual',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToHomeScreen(tester);
-        final ids = await preSaveTwoGames();
-        await UITestHelpers.tapGameCard(tester, config);
-        await PumpSequences.asyncDataLoad(tester);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToHomeScreen(tester);
+    final ids = await preSaveTwoGames();
+    await UITestHelpers.tapGameCard(tester, config);
+    await PumpSequences.asyncDataLoad(tester);
 
-        expect(ElementFinders.getResumeGameModalSavedGameTile(ids[0]),
-            findsOneWidget);
-        expect(ElementFinders.getResumeGameModalSavedGameTile(ids[1]),
-            findsOneWidget);
+    expect(ElementFinders.getResumeGameModalSavedGameTile(ids[0]),
+        findsOneWidget);
+    expect(ElementFinders.getResumeGameModalSavedGameTile(ids[1]),
+        findsOneWidget);
 
-        await UITestHelpers.deleteSavedGameTile(tester, ids[0]);
+    await UITestHelpers.deleteSavedGameTile(tester, ids[0]);
 
-        expect(ElementFinders.getResumeGameModalSavedGameTile(ids[0]),
-            findsNothing);
-        expect(ElementFinders.getResumeGameModalSavedGameTile(ids[1]),
-            findsOneWidget);
-      },
-    );
+    expect(ElementFinders.getResumeGameModalSavedGameTile(ids[0]),
+        findsNothing);
+    expect(ElementFinders.getResumeGameModalSavedGameTile(ids[1]),
+        findsOneWidget);
   });
 }

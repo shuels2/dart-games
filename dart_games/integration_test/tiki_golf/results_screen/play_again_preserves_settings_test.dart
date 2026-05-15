@@ -14,47 +14,41 @@ void main() {
   testWidgets(
       'Results: PLAY AGAIN restarts game preserving Max Strokes and Mulligan settings',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_results_play_again_preserves_settings',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester,
-            maxStrokes: 6,
-            mulliganEnabled: true,
-            playerNames: ['Alice', 'Bob']);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester,
+        maxStrokes: 6,
+        mulliganEnabled: true,
+        playerNames: ['Alice', 'Bob']);
 
-        // Record original settings
-        final originalMaxStrokes =
-            ProviderHelpers.getTikiGolfMaxStrokes(tester);
-        final originalMulligan =
-            ProviderHelpers.isTikiGolfMulliganEnabled(tester);
+    // Record original settings
+    final originalMaxStrokes =
+        ProviderHelpers.getTikiGolfMaxStrokes(tester);
+    final originalMulligan =
+        ProviderHelpers.isTikiGolfMulliganEnabled(tester);
 
-        expect(originalMaxStrokes, 6);
-        expect(originalMulligan, isTrue);
+    expect(originalMaxStrokes, 6);
+    expect(originalMulligan, isTrue);
 
-        await driveToCompletion(tester, playerNames: ['Alice', 'Bob']);
+    await driveToCompletion(tester, playerNames: ['Alice', 'Bob']);
 
-        // Tap PLAY AGAIN
-        await ResultsHelpers.clickPlayAgain(tester, config);
+    // Tap PLAY AGAIN
+    await ResultsHelpers.clickPlayAgain(tester, config);
 
-        // Wait for new game to start
-        await tester.pump(const Duration(seconds: 2));
-        await tester.pump();
+    // Wait for new game to start
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
 
-        // New game settings preserved
-        final newMaxStrokes = ProviderHelpers.getTikiGolfMaxStrokes(tester);
-        final newMulligan = ProviderHelpers.isTikiGolfMulliganEnabled(tester);
+    // New game settings preserved
+    final newMaxStrokes = ProviderHelpers.getTikiGolfMaxStrokes(tester);
+    final newMulligan = ProviderHelpers.isTikiGolfMulliganEnabled(tester);
 
-        expect(newMaxStrokes, originalMaxStrokes,
-            reason: 'Max Strokes should be preserved after PLAY AGAIN');
-        expect(newMulligan, originalMulligan,
-            reason: 'Mulligan setting should be preserved after PLAY AGAIN');
+    expect(newMaxStrokes, originalMaxStrokes,
+        reason: 'Max Strokes should be preserved after PLAY AGAIN');
+    expect(newMulligan, originalMulligan,
+        reason: 'Mulligan setting should be preserved after PLAY AGAIN');
 
-        // New game is active
-        expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue,
-            reason: 'A new game should be active after PLAY AGAIN');
-      },
-    );
+    // New game is active
+    expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue,
+        reason: 'A new game should be active after PLAY AGAIN');
   });
 }

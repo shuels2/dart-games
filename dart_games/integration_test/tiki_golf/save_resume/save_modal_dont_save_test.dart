@@ -9,22 +9,16 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets("Don't Save navigates back without saving", (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_save_modal_dont_save',
-      () async {
-        await UITestHelpers.resetServerState();
-        await navigateToGameScreen(tester);
-        await throwOneDart(tester);
-        await clickDartsRemoved(tester);
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.resetServerState();
+    await navigateToGameScreen(tester);
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
 
-        await UITestHelpers.tapDontSaveButton(tester);
+    await UITestHelpers.tapDontSaveButton(tester);
 
-        expect(config.getStartButton(), findsOneWidget);
-        final hasSaved = await SaveGameService().hasSavedGames(gameType);
-        expect(hasSaved, false);
-      },
-    );
+    expect(config.getStartButton(), findsOneWidget);
+    final hasSaved = await SaveGameService().hasSavedGames(gameType);
+    expect(hasSaved, false);
   });
 }

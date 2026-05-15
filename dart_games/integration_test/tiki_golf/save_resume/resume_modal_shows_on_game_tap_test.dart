@@ -10,18 +10,12 @@ void main() {
 
   testWidgets('tapping game with saved games shows resume modal',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_modal_shows_on_game_tap',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToHomeScreen(tester);
-        await preSaveGame();
-        await UITestHelpers.tapGameCard(tester, config);
-        await PumpSequences.asyncDataLoad(tester);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToHomeScreen(tester);
+    await preSaveGame();
+    await UITestHelpers.tapGameCard(tester, config);
+    await PumpSequences.asyncDataLoad(tester);
 
-        UITestHelpers.verifyResumeGameModal();
-      },
-    );
+    UITestHelpers.verifyResumeGameModal();
   });
 }

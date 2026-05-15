@@ -128,15 +128,25 @@ dart_games/
         │   ├── assets.md             # 8 pirate characters, 1 icon, 1 background, 3 pieces, 7 sounds
         │   └── implementation-notes.md # Bull cell (number=0), timer in screen state, Best Of serialization
         │
-        └── gladiator-arena/
-            ├── README.md             # "Gladiator Arena is an Eliminator-style dart game..." (2-8 players)
-            ├── game-rules.md         # Race-to-target, Knockoff rule, Double Finish, Shield Round, Speed Play
-            ├── design-system.md      # Disney's Hercules / Roman colosseum theme, Cinzel + Lato fonts, 8 colors
-            ├── components.md         # DualPlayerListPanel configs, all shared widget factory methods, GladiatorArenaStrategy
-            ├── announcements.md      # GladiatorArenaAnnouncementHelper, 8 sound effects, 12-level stacking chain
-            ├── testing.md            # 99 UI tests, 190 non-UI tests, podium height assertions, shield round quirks
-            ├── assets.md             # 8 gladiator animal characters, 1 icon, 1 background, 8 sounds
-            └── implementation-notes.md # Knockoff algorithm, bust detection paths, Pattern A display, Save/Resume
+        ├── gladiator-arena/
+        │   ├── README.md             # "Gladiator Arena is an Eliminator-style dart game..." (2-8 players)
+        │   ├── game-rules.md         # Race-to-target, Knockoff rule, Double Finish, Shield Round, Speed Play
+        │   ├── design-system.md      # Disney's Hercules / Roman colosseum theme, Cinzel + Lato fonts, 8 colors
+        │   ├── components.md         # DualPlayerListPanel configs, all shared widget factory methods, GladiatorArenaStrategy
+        │   ├── announcements.md      # GladiatorArenaAnnouncementHelper, 8 sound effects, 12-level stacking chain
+        │   ├── testing.md            # 99 UI tests, 190 non-UI tests, podium height assertions, shield round quirks
+        │   ├── assets.md             # 8 gladiator animal characters, 1 icon, 1 background, 8 sounds
+        │   └── implementation-notes.md # Knockoff algorithm, bust detection paths, Pattern A display, Save/Resume
+        │
+        └── tiki-golf/
+            ├── README.md             # "Lilo & Stitch-styled mini-golf dart game..." (2-16 players)
+            ├── game-rules.md         # 9 holes, stroke counting, per-game randomization, Mulligan, Team best-ball
+            ├── design-system.md      # Tropical palette (#FF8C42 substitution, Nunito AR-4 exemption), Palm Green overlay
+            ├── components.md         # TeamPlayerListPanel configs, mulligan modal variant, variable-dart DartboardSection
+            ├── announcements.md      # TikiGolfAnnouncementHelper, 14 events, 11-rank precedence chain, 8 sounds
+            ├── testing.md            # 234 non-UI + 110 UI files; randomization/, team_setup/, team_mode_gameplay/ subdirs
+            ├── assets.md             # 1 icon + 10 images + 6 team crests + 8 sounds = 26 files
+            └── implementation-notes.md # Variable-dart turn-end, mulligan flow, random distribution N=8/N=12 special cases
 ```
 
 ## Documentation Purpose by Category

@@ -26,59 +26,53 @@ void main() {
   testWidgets(
       'Randomization: consecutive games have different holeTargets or holeImagePaths',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
+    await UITestHelpers.resetServerState();
+
+    // ── Game 1 ────────────────────────────────────────────────────────────
+    await GameSetupHelpers.setupAndStartTikiGolf(tester, config);
+
+    final targets1 = getHoleTargets(tester);
+    final images1 = getHoleImagePaths(tester);
+
+    expect(targets1.length, 9,
+        reason: 'Game 1 should have 9 hole targets');
+    expect(images1.length, 9,
+        reason: 'Game 1 should have 9 hole image paths');
+
+    // Drive game 1 to completion via PTC
+    final provider1 = ProviderHelpers.getTikiGolfProvider(tester);
+    await PlayToCompleteHelpers.tapPlayToComplete(tester);
+    await PlayToCompleteHelpers.waitForGameCompletion(
       tester,
-      'tiki_golf_randomization_consecutive_games_differ',
-      () async {
-        await UITestHelpers.resetServerState();
-
-        // ── Game 1 ────────────────────────────────────────────────────────────
-        await GameSetupHelpers.setupAndStartTikiGolf(tester, config);
-
-        final targets1 = getHoleTargets(tester);
-        final images1 = getHoleImagePaths(tester);
-
-        expect(targets1.length, 9,
-            reason: 'Game 1 should have 9 hole targets');
-        expect(images1.length, 9,
-            reason: 'Game 1 should have 9 hole image paths');
-
-        // Drive game 1 to completion via PTC
-        final provider1 = ProviderHelpers.getTikiGolfProvider(tester);
-        await PlayToCompleteHelpers.tapPlayToComplete(tester);
-        await PlayToCompleteHelpers.waitForGameCompletion(
-          tester,
-          isComplete: () => provider1.hasWinner,
-        );
-
-        // Tap Play Again to start game 2 with same settings
-        await tester.tap(config.getPlayAgainButton());
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pump();
-
-        // ── Game 2 ────────────────────────────────────────────────────────────
-        final targets2 = getHoleTargets(tester);
-        final images2 = getHoleImagePaths(tester);
-
-        expect(targets2.length, 9,
-            reason: 'Game 2 should have 9 hole targets');
-        expect(images2.length, 9,
-            reason: 'Game 2 should have 9 hole image paths');
-
-        // At least one of the lists must differ between game 1 and game 2
-        final targetsMatch = _listsEqual(targets1, targets2);
-        final imagesMatch = _listsEqual(images1, images2);
-
-        expect(targetsMatch && imagesMatch, isFalse,
-            reason:
-                'Two consecutive games should have different randomization. '
-                'Game 1 targets: $targets1, Game 2 targets: $targets2. '
-                'Game 1 images: $images1, Game 2 images: $images2. '
-                'Both being identical is astronomically unlikely — confirms randomization is working.');
-      },
+      isComplete: () => provider1.hasWinner,
     );
+
+    // Tap Play Again to start game 2 with same settings
+    await tester.tap(config.getPlayAgainButton());
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+
+    // ── Game 2 ────────────────────────────────────────────────────────────
+    final targets2 = getHoleTargets(tester);
+    final images2 = getHoleImagePaths(tester);
+
+    expect(targets2.length, 9,
+        reason: 'Game 2 should have 9 hole targets');
+    expect(images2.length, 9,
+        reason: 'Game 2 should have 9 hole image paths');
+
+    // At least one of the lists must differ between game 1 and game 2
+    final targetsMatch = _listsEqual(targets1, targets2);
+    final imagesMatch = _listsEqual(images1, images2);
+
+    expect(targetsMatch && imagesMatch, isFalse,
+        reason:
+            'Two consecutive games should have different randomization. '
+            'Game 1 targets: $targets1, Game 2 targets: $targets2. '
+            'Game 1 images: $images1, Game 2 images: $images2. '
+            'Both being identical is astronomically unlikely — confirms randomization is working.');
   });
 }
 

@@ -10,28 +10,22 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('button becomes enabled after saving a game', (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_button_enabled_after_save',
-      () async {
-        await UITestHelpers.resetServerState();
-        await navigateToGameScreen(tester);
-        await throwOneDart(tester);
-        await clickDartsRemoved(tester);
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
-        await UITestHelpers.tapSaveGameButton(tester);
+    await UITestHelpers.resetServerState();
+    await navigateToGameScreen(tester);
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapSaveGameButton(tester);
 
-        final resumeButton = find.byKey(TikiGolfMenuKeys.resumeGameButton);
-        expect(resumeButton, findsOneWidget);
+    final resumeButton = find.byKey(TikiGolfMenuKeys.resumeGameButton);
+    expect(resumeButton, findsOneWidget);
 
-        final iconButtonFinder = find.descendant(
-          of: resumeButton,
-          matching: find.byType(IconButton),
-        );
-        final iconButton = tester.widget<IconButton>(iconButtonFinder);
-        expect(iconButton.onPressed, isNotNull);
-        expect(iconButton.tooltip, 'Resume saved game');
-      },
+    final iconButtonFinder = find.descendant(
+      of: resumeButton,
+      matching: find.byType(IconButton),
     );
+    final iconButton = tester.widget<IconButton>(iconButtonFinder);
+    expect(iconButton.onPressed, isNotNull);
+    expect(iconButton.tooltip, 'Resume saved game');
   });
 }

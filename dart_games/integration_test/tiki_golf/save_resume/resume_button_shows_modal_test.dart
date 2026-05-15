@@ -10,23 +10,17 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('clicking button shows resume modal', (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_button_shows_modal',
-      () async {
-        await UITestHelpers.resetServerState();
-        await navigateToGameScreen(tester);
-        await throwOneDart(tester);
-        await clickDartsRemoved(tester);
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
-        await UITestHelpers.tapSaveGameButton(tester);
+    await UITestHelpers.resetServerState();
+    await navigateToGameScreen(tester);
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapSaveGameButton(tester);
 
-        final resumeButton = find.byKey(TikiGolfMenuKeys.resumeGameButton);
-        await tester.tap(resumeButton);
-        await PumpSequences.asyncDataLoad(tester);
+    final resumeButton = find.byKey(TikiGolfMenuKeys.resumeGameButton);
+    await tester.tap(resumeButton);
+    await PumpSequences.asyncDataLoad(tester);
 
-        UITestHelpers.verifyResumeGameModal();
-      },
-    );
+    UITestHelpers.verifyResumeGameModal();
   });
 }

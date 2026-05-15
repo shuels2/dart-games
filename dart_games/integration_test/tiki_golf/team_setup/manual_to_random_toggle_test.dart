@@ -16,48 +16,42 @@ void main() {
   testWidgets(
       'Team Setup: Switching Manual→Random hides Team Count dropdown and Assign team buttons',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_team_setup_manual_to_random_toggle',
-      () async {
-        await UITestHelpers.resetServerState();
-        await navigateToMenu(tester);
+    await UITestHelpers.resetServerState();
+    await navigateToMenu(tester);
 
-        // Start in Team+Manual mode
-        await setGameModeTeam(tester);
-        await setAssignmentManual(tester);
+    // Start in Team+Manual mode
+    await setGameModeTeam(tester);
+    await setAssignmentManual(tester);
 
-        // Add 2 players
-        await addPlayer(tester, 'Alice');
-        await addPlayer(tester, 'Bob');
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
+    // Add 2 players
+    await addPlayer(tester, 'Alice');
+    await addPlayer(tester, 'Bob');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
-        // Verify Manual UI is present
-        expectTeamCountDropdownPresent(tester);
-        // "Assign team" buttons present in Manual mode (exact text to avoid "Team Assignment" label)
-        expect(find.text('Assign team'), findsWidgets,
-            reason: '"Assign team" buttons should be present in Manual mode');
+    // Verify Manual UI is present
+    expectTeamCountDropdownPresent(tester);
+    // "Assign team" buttons present in Manual mode (exact text to avoid "Team Assignment" label)
+    expect(find.text('Assign team'), findsWidgets,
+        reason: '"Assign team" buttons should be present in Manual mode');
 
-        // ── Switch to Random ──────────────────────────────────────────────────
-        await setAssignmentRandom(tester);
+    // ── Switch to Random ──────────────────────────────────────────────────
+    await setAssignmentRandom(tester);
 
-        // Team Count dropdown should disappear
-        expectTeamCountDropdownAbsent(tester);
+    // Team Count dropdown should disappear
+    expectTeamCountDropdownAbsent(tester);
 
-        // "Assign team" buttons should disappear (exact text match to avoid "Team Assignment" label)
-        expect(find.text('Assign team'), findsNothing,
-            reason: '"Assign team" buttons should be hidden after switching to Random');
+    // "Assign team" buttons should disappear (exact text match to avoid "Team Assignment" label)
+    expect(find.text('Assign team'), findsNothing,
+        reason: '"Assign team" buttons should be hidden after switching to Random');
 
-        // Player panel still mounted (add button accessible)
-        final addBtnPresent =
-            ElementFinders.getTikiGolfAddPlayerButton().evaluate().isNotEmpty ||
-            ElementFinders.getTikiGolfAddPlayerButtonEmptyState()
-                .evaluate()
-                .isNotEmpty;
-        expect(addBtnPresent, isTrue,
-            reason: 'Player list panel should remain mounted after toggle');
-      },
-    );
+    // Player panel still mounted (add button accessible)
+    final addBtnPresent =
+        ElementFinders.getTikiGolfAddPlayerButton().evaluate().isNotEmpty ||
+        ElementFinders.getTikiGolfAddPlayerButtonEmptyState()
+            .evaluate()
+            .isNotEmpty;
+    expect(addBtnPresent, isTrue,
+        reason: 'Player list panel should remain mounted after toggle');
   });
 }

@@ -21,76 +21,70 @@ void main() {
 
   testWidgets('Game Mode toggle: SOLO-TEAM flips Team Assignment enable state',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_menu_and_settings_game_mode_toggle',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // Helper: is there a 0.5 Opacity widget in the tree?
-        bool foundHalfOpacity() {
-          for (final element in find.byType(Opacity).evaluate()) {
-            final w = element.widget as Opacity;
-            if (w.opacity == 0.5) return true;
-          }
-          return false;
-        }
+    // Helper: is there a 0.5 Opacity widget in the tree?
+    bool foundHalfOpacity() {
+      for (final element in find.byType(Opacity).evaluate()) {
+        final w = element.widget as Opacity;
+        if (w.opacity == 0.5) return true;
+      }
+      return false;
+    }
 
-        // Helper: is the player panel add-button mounted (either empty state or normal)?
-        bool isAddButtonMounted() {
-          return ElementFinders.getTikiGolfAddPlayerButton().evaluate().isNotEmpty ||
-              ElementFinders.getTikiGolfAddPlayerButtonEmptyState().evaluate().isNotEmpty;
-        }
+    // Helper: is the player panel add-button mounted (either empty state or normal)?
+    bool isAddButtonMounted() {
+      return ElementFinders.getTikiGolfAddPlayerButton().evaluate().isNotEmpty ||
+          ElementFinders.getTikiGolfAddPlayerButtonEmptyState().evaluate().isNotEmpty;
+    }
 
-        // ── Initial state: SOLO mode ──────────────────────────────────────────
-        // Team Assignment should be at 50% opacity and IgnorePointer-wrapped.
-        expect(foundHalfOpacity(), isTrue,
-            reason:
-                '[DIAG game_mode_toggle] Team Assignment should be at 50% opacity in Solo mode');
+    // ── Initial state: SOLO mode ──────────────────────────────────────────
+    // Team Assignment should be at 50% opacity and IgnorePointer-wrapped.
+    expect(foundHalfOpacity(), isTrue,
+        reason:
+            '[DIAG game_mode_toggle] Team Assignment should be at 50% opacity in Solo mode');
 
-        // Panel mounted in Solo mode
-        expect(isAddButtonMounted(), isTrue,
-            reason:
-                '[DIAG game_mode_toggle] Add player button should be mounted in Solo mode');
+    // Panel mounted in Solo mode
+    expect(isAddButtonMounted(), isTrue,
+        reason:
+            '[DIAG game_mode_toggle] Add player button should be mounted in Solo mode');
 
-        // ── Switch to TEAM mode ────────────────────────────────────────────────
-        await setGameModeTeam(tester);
+    // ── Switch to TEAM mode ────────────────────────────────────────────────
+    await setGameModeTeam(tester);
 
-        // Team Assignment box should now be at full opacity (no 0.5 Opacity wrap)
-        expect(foundHalfOpacity(), isFalse,
-            reason:
-                '[DIAG game_mode_toggle] Team Assignment should be at full opacity in Team mode');
+    // Team Assignment box should now be at full opacity (no 0.5 Opacity wrap)
+    expect(foundHalfOpacity(), isFalse,
+        reason:
+            '[DIAG game_mode_toggle] Team Assignment should be at full opacity in Team mode');
 
-        // Add player button still present (panel stays mounted)
-        expect(isAddButtonMounted(), isTrue,
-            reason:
-                '[DIAG game_mode_toggle] Add player button should stay mounted after mode switch to Team');
+    // Add player button still present (panel stays mounted)
+    expect(isAddButtonMounted(), isTrue,
+        reason:
+            '[DIAG game_mode_toggle] Add player button should stay mounted after mode switch to Team');
 
-        // Team Assignment toggle segments should be interactable
-        final manualSegment = ElementFinders.getTikiGolfAssignmentModeManual();
-        expect(manualSegment, findsOneWidget,
-            reason:
-                '[DIAG game_mode_toggle] MANUAL segment should be visible in Team mode');
+    // Team Assignment toggle segments should be interactable
+    final manualSegment = ElementFinders.getTikiGolfAssignmentModeManual();
+    expect(manualSegment, findsOneWidget,
+        reason:
+            '[DIAG game_mode_toggle] MANUAL segment should be visible in Team mode');
 
-        final randomSegment = ElementFinders.getTikiGolfAssignmentModeRandom();
-        expect(randomSegment, findsOneWidget,
-            reason:
-                '[DIAG game_mode_toggle] RANDOM segment should be visible in Team mode');
+    final randomSegment = ElementFinders.getTikiGolfAssignmentModeRandom();
+    expect(randomSegment, findsOneWidget,
+        reason:
+            '[DIAG game_mode_toggle] RANDOM segment should be visible in Team mode');
 
-        // ── Switch back to SOLO mode ──────────────────────────────────────────
-        await setGameModeSolo(tester);
+    // ── Switch back to SOLO mode ──────────────────────────────────────────
+    await setGameModeSolo(tester);
 
-        // Team Assignment should be disabled again
-        expect(foundHalfOpacity(), isTrue,
-            reason:
-                '[DIAG game_mode_toggle] Team Assignment should be at 50% opacity after switching back to Solo');
+    // Team Assignment should be disabled again
+    expect(foundHalfOpacity(), isTrue,
+        reason:
+            '[DIAG game_mode_toggle] Team Assignment should be at 50% opacity after switching back to Solo');
 
-        // Player list panel should still be mounted
-        expect(isAddButtonMounted(), isTrue,
-            reason:
-                '[DIAG game_mode_toggle] Add player button should still be mounted in Solo mode');
-      },
-    );
+    // Player list panel should still be mounted
+    expect(isAddButtonMounted(), isTrue,
+        reason:
+            '[DIAG game_mode_toggle] Add player button should still be mounted in Solo mode');
   });
 }

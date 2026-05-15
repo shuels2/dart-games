@@ -28,35 +28,29 @@ void main() {
   testWidgets(
       'Play to Complete: Tiki Golf with Mulligan ON handles Splash+Mulligan modal correctly',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
+    await UITestHelpers.resetServerState();
+    await GameSetupHelpers.setupAndStartTikiGolf(
       tester,
-      'tiki_golf_ptc_mulligan_on',
-      () async {
-        await UITestHelpers.resetServerState();
-        await GameSetupHelpers.setupAndStartTikiGolf(
-          tester,
-          config,
-          mulliganEnabled: true,
-        );
-
-        await PlayToCompleteHelpers.tapPlayToComplete(tester);
-
-        final provider = ProviderHelpers.getTikiGolfProvider(tester);
-        await PlayToCompleteHelpers.waitForGameCompletion(
-          tester,
-          isComplete: () => provider.hasWinner,
-          maxIterations: 600, // extra headroom for mulligan modal pump cycles
-        );
-
-        expect(provider.hasWinner, isTrue,
-            reason:
-                'Game should complete with Mulligan ON — PTC must handle the mulligan modal');
-        expect(config.getPlayAgainButton(), findsOneWidget,
-            reason: 'Results screen should be visible');
-        // Verify mulligan was enabled for this game
-        expect(ProviderHelpers.isTikiGolfMulliganEnabled(tester), isTrue,
-            reason: 'Mulligan should be enabled as configured');
-      },
+      config,
+      mulliganEnabled: true,
     );
+
+    await PlayToCompleteHelpers.tapPlayToComplete(tester);
+
+    final provider = ProviderHelpers.getTikiGolfProvider(tester);
+    await PlayToCompleteHelpers.waitForGameCompletion(
+      tester,
+      isComplete: () => provider.hasWinner,
+      maxIterations: 600, // extra headroom for mulligan modal pump cycles
+    );
+
+    expect(provider.hasWinner, isTrue,
+        reason:
+            'Game should complete with Mulligan ON — PTC must handle the mulligan modal');
+    expect(config.getPlayAgainButton(), findsOneWidget,
+        reason: 'Results screen should be visible');
+    // Verify mulligan was enabled for this game
+    expect(ProviderHelpers.isTikiGolfMulliganEnabled(tester), isTrue,
+        reason: 'Mulligan should be enabled as configured');
   });
 }

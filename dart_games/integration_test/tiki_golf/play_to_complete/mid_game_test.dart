@@ -23,32 +23,26 @@ void main() {
   testWidgets(
       'Play to Complete: Tiki Golf from mid-game state (after 1 dart thrown manually)',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
+    await UITestHelpers.resetServerState();
+    await GameSetupHelpers.setupAndStartTikiGolf(tester, config);
+
+    // Throw one dart manually (a miss) — this puts us mid-turn
+    await DartThrowHelpers.throwMissViaMock(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    // Now tap Play To Complete from mid-turn state
+    await PlayToCompleteHelpers.tapPlayToComplete(tester);
+
+    final provider = ProviderHelpers.getTikiGolfProvider(tester);
+    await PlayToCompleteHelpers.waitForGameCompletion(
       tester,
-      'tiki_golf_ptc_mid_game',
-      () async {
-        await UITestHelpers.resetServerState();
-        await GameSetupHelpers.setupAndStartTikiGolf(tester, config);
-
-        // Throw one dart manually (a miss) — this puts us mid-turn
-        await DartThrowHelpers.throwMissViaMock(tester);
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
-
-        // Now tap Play To Complete from mid-turn state
-        await PlayToCompleteHelpers.tapPlayToComplete(tester);
-
-        final provider = ProviderHelpers.getTikiGolfProvider(tester);
-        await PlayToCompleteHelpers.waitForGameCompletion(
-          tester,
-          isComplete: () => provider.hasWinner,
-        );
-
-        expect(provider.hasWinner, isTrue,
-            reason: 'Game should have a winner after Play To Complete from mid-game');
-        expect(config.getPlayAgainButton(), findsOneWidget,
-            reason: 'Results screen should be visible (Play Again button found)');
-      },
+      isComplete: () => provider.hasWinner,
     );
+
+    expect(provider.hasWinner, isTrue,
+        reason: 'Game should have a winner after Play To Complete from mid-game');
+    expect(config.getPlayAgainButton(), findsOneWidget,
+        reason: 'Results screen should be visible (Play Again button found)');
   });
 }

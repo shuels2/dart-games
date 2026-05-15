@@ -12,53 +12,47 @@ void main() {
 
   testWidgets('resumed game re-save overwrites instead of duplicating',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_resave_overwrites',
-      () async {
-        await UITestHelpers.resetServerState();
-        // Real-flow: navigate → throw → save → resume → throw → save again
-        await navigateToGameScreen(tester);
-        await throwOneDart(tester);
-        await clickDartsRemoved(tester);
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
-        await UITestHelpers.tapSaveGameButton(tester);
+    await UITestHelpers.resetServerState();
+    // Real-flow: navigate → throw → save → resume → throw → save again
+    await navigateToGameScreen(tester);
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapSaveGameButton(tester);
 
-        // Verify 1 saved game
-        var saved = await SaveGameService().loadSavedGames(gameType);
-        expect(saved, hasLength(1));
-        final originalId = saved[0].id;
+    // Verify 1 saved game
+    var saved = await SaveGameService().loadSavedGames(gameType);
+    expect(saved, hasLength(1));
+    final originalId = saved[0].id;
 
-        // After saving, the menu screen auto-shows the resume modal (full-screen
-        // overlay covering AppBar). Dismiss it so the back button is reachable.
-        await UITestHelpers.tapStartNewGameButton(tester);
+    // After saving, the menu screen auto-shows the resume modal (full-screen
+    // overlay covering AppBar). Dismiss it so the back button is reachable.
+    await UITestHelpers.tapStartNewGameButton(tester);
 
-        // Back to home from menu
-        await tester.tap(find.byKey(TikiGolfMenuKeys.backButton));
-        await PumpSequences.navigation(tester);
+    // Back to home from menu
+    await tester.tap(find.byKey(TikiGolfMenuKeys.backButton));
+    await PumpSequences.navigation(tester);
 
-        // Tap game card on home — navigates to menu screen with resume modal
-        await UITestHelpers.tapGameCard(tester, config);
-        await PumpSequences.asyncDataLoad(tester);
+    // Tap game card on home — navigates to menu screen with resume modal
+    await UITestHelpers.tapGameCard(tester, config);
+    await PumpSequences.asyncDataLoad(tester);
 
-        // Select saved game and resume (Rule §18)
-        saved = await SaveGameService().loadSavedGames(gameType);
-        await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
-        await UITestHelpers.tapResumeGameButton(tester);
+    // Select saved game and resume (Rule §18)
+    saved = await SaveGameService().loadSavedGames(gameType);
+    await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
+    await UITestHelpers.tapResumeGameButton(tester);
 
-        // Throw another dart in resumed game (Bob's turn)
-        await throwOneDart(tester);
-        await clickDartsRemoved(tester);
+    // Throw another dart in resumed game (Bob's turn)
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
 
-        // Save again via back button
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
-        await UITestHelpers.tapSaveGameButton(tester);
+    // Save again via back button
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapSaveGameButton(tester);
 
-        // Should still be 1 saved game (overwritten, not duplicated)
-        saved = await SaveGameService().loadSavedGames(gameType);
-        expect(saved, hasLength(1));
-        expect(saved[0].id, originalId);
-      },
-    );
+    // Should still be 1 saved game (overwritten, not duplicated)
+    saved = await SaveGameService().loadSavedGames(gameType);
+    expect(saved, hasLength(1));
+    expect(saved[0].id, originalId);
   });
 }

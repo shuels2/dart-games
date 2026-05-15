@@ -19,56 +19,50 @@ void main() {
   testWidgets(
       'Team mode: Manual↔Random toggle controls Team Count dropdown visibility',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_menu_and_settings_team_manual_random_toggle',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // ── Switch to Team mode ───────────────────────────────────────────────
-        await setGameModeTeam(tester);
+    // ── Switch to Team mode ───────────────────────────────────────────────
+    await setGameModeTeam(tester);
 
-        // Default is RANDOM — Team Count dropdown should NOT be shown
-        final teamCountDropdown =
-            ElementFinders.getTikiGolfTeamCountDropdown();
-        expect(teamCountDropdown, findsNothing,
-            reason:
-                '[DIAG manual_random_toggle] Team Count dropdown should NOT be visible in Team+Random mode');
+    // Default is RANDOM — Team Count dropdown should NOT be shown
+    final teamCountDropdown =
+        ElementFinders.getTikiGolfTeamCountDropdown();
+    expect(teamCountDropdown, findsNothing,
+        reason:
+            '[DIAG manual_random_toggle] Team Count dropdown should NOT be visible in Team+Random mode');
 
-        // ── Switch to MANUAL assignment ───────────────────────────────────────
-        await setAssignmentManual(tester);
+    // ── Switch to MANUAL assignment ───────────────────────────────────────
+    await setAssignmentManual(tester);
 
-        // Team Count dropdown should now appear
-        final teamCountDropdownManual =
-            ElementFinders.getTikiGolfTeamCountDropdown();
-        expect(teamCountDropdownManual, findsOneWidget,
-            reason:
-                '[DIAG manual_random_toggle] Team Count dropdown should appear in Team+Manual mode');
+    // Team Count dropdown should now appear
+    final teamCountDropdownManual =
+        ElementFinders.getTikiGolfTeamCountDropdown();
+    expect(teamCountDropdownManual, findsOneWidget,
+        reason:
+            '[DIAG manual_random_toggle] Team Count dropdown should appear in Team+Manual mode');
 
-        // Add player button still present (panel stays mounted)
-        // Note: when no players are added, the empty-state button key is shown.
-        bool isAddButtonMounted() {
-          return ElementFinders.getTikiGolfAddPlayerButton().evaluate().isNotEmpty ||
-              ElementFinders.getTikiGolfAddPlayerButtonEmptyState().evaluate().isNotEmpty;
-        }
-        expect(isAddButtonMounted(), isTrue,
-            reason:
-                '[DIAG manual_random_toggle] Add player button should be present in Team+Manual mode');
+    // Add player button still present (panel stays mounted)
+    // Note: when no players are added, the empty-state button key is shown.
+    bool isAddButtonMounted() {
+      return ElementFinders.getTikiGolfAddPlayerButton().evaluate().isNotEmpty ||
+          ElementFinders.getTikiGolfAddPlayerButtonEmptyState().evaluate().isNotEmpty;
+    }
+    expect(isAddButtonMounted(), isTrue,
+        reason:
+            '[DIAG manual_random_toggle] Add player button should be present in Team+Manual mode');
 
-        // ── Switch back to RANDOM ─────────────────────────────────────────────
-        await setAssignmentRandom(tester);
+    // ── Switch back to RANDOM ─────────────────────────────────────────────
+    await setAssignmentRandom(tester);
 
-        // Team Count dropdown should disappear again
-        expect(teamCountDropdown, findsNothing,
-            reason:
-                '[DIAG manual_random_toggle] Team Count dropdown should disappear when switching back to Random');
+    // Team Count dropdown should disappear again
+    expect(teamCountDropdown, findsNothing,
+        reason:
+            '[DIAG manual_random_toggle] Team Count dropdown should disappear when switching back to Random');
 
-        // Panel still mounted
-        expect(isAddButtonMounted(), isTrue,
-            reason:
-                '[DIAG manual_random_toggle] Add player button should remain in Team+Random mode');
-      },
-    );
+    // Panel still mounted
+    expect(isAddButtonMounted(), isTrue,
+        reason:
+            '[DIAG manual_random_toggle] Add player button should remain in Team+Random mode');
   });
 }

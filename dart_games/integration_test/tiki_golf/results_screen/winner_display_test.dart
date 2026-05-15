@@ -12,32 +12,26 @@ void main() {
 
   testWidgets('Results: winner display shows name and Golden Tiki Champion heading',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_results_winner_display',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester,
-            maxStrokes: 3, playerNames: ['Alice', 'Bob']);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester,
+        maxStrokes: 3, playerNames: ['Alice', 'Bob']);
 
-        await driveToCompletion(tester, playerNames: ['Alice', 'Bob']);
+    await driveToCompletion(tester, playerNames: ['Alice', 'Bob']);
 
-        // Results screen should be visible
-        expect(ElementFinders.getTikiGolfPlayAgainButton(), findsOneWidget,
-            reason: 'Results screen should be visible after game completion');
+    // Results screen should be visible
+    expect(ElementFinders.getTikiGolfPlayAgainButton(), findsOneWidget,
+        reason: 'Results screen should be visible after game completion');
 
-        // Winner name widget should be present
-        expect(ElementFinders.getTikiGolfWinnerName(), findsOneWidget,
-            reason: 'Winner name widget should be shown on results screen');
+    // Winner name widget should be present
+    expect(ElementFinders.getTikiGolfWinnerName(), findsOneWidget,
+        reason: 'Winner name widget should be shown on results screen');
 
-        // "GOLDEN TIKI CHAMPION" heading text
-        expect(find.textContaining('GOLDEN TIKI CHAMPION'), findsWidgets,
-            reason: 'Results screen should show GOLDEN TIKI CHAMPION heading');
+    // "GOLDEN TIKI CHAMPION" heading text
+    expect(find.textContaining('GOLDEN TIKI CHAMPION'), findsWidgets,
+        reason: 'Results screen should show GOLDEN TIKI CHAMPION heading');
 
-        // Provider confirms winner
-        expect(ProviderHelpers.tikiGolfHasWinner(tester), isTrue,
-            reason: 'Provider should confirm game has a winner');
-      },
-    );
+    // Provider confirms winner
+    expect(ProviderHelpers.tikiGolfHasWinner(tester), isTrue,
+        reason: 'Provider should confirm game has a winner');
   });
 }

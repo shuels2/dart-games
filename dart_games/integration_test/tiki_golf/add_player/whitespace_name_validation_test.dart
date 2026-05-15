@@ -16,40 +16,34 @@ void main() {
 
   testWidgets('Whitespace-only name shows validation error and dialog stays open',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_add_player_whitespace_name_validation',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // Open Add Player dialog
-        final addButton = ElementFinders.getTikiGolfAddPlayerButtonEmptyState();
-        expect(addButton, findsAtLeastNWidgets(1),
-            reason: '[DIAG whitespace_name] Empty-state add button not found');
-        await tester.ensureVisible(addButton.first);
-        await tester.pump();
-        await tester.tap(addButton.first);
-        await PumpSequences.dialogOpen(tester);
+    // Open Add Player dialog
+    final addButton = ElementFinders.getTikiGolfAddPlayerButtonEmptyState();
+    expect(addButton, findsAtLeastNWidgets(1),
+        reason: '[DIAG whitespace_name] Empty-state add button not found');
+    await tester.ensureVisible(addButton.first);
+    await tester.pump();
+    await tester.tap(addButton.first);
+    await PumpSequences.dialogOpen(tester);
 
-        // Enter whitespace-only name
-        final nameField = ElementFinders.getAddPlayerNameField();
-        await tester.enterText(nameField, '   ');
-        await PumpSequences.textEntry(tester);
+    // Enter whitespace-only name
+    final nameField = ElementFinders.getAddPlayerNameField();
+    await tester.enterText(nameField, '   ');
+    await PumpSequences.textEntry(tester);
 
-        // Try to add player
-        final addPlayerButton = ElementFinders.getAddPlayerAddButton();
-        await tester.tap(addPlayerButton.first);
-        await PumpSequences.simpleUpdate(tester);
+    // Try to add player
+    final addPlayerButton = ElementFinders.getAddPlayerAddButton();
+    await tester.tap(addPlayerButton.first);
+    await PumpSequences.simpleUpdate(tester);
 
-        // Verify error message
-        expect(find.text('Please enter a player name'), findsOneWidget,
-            reason: '[DIAG whitespace_name] Validation error not shown for whitespace-only name');
+    // Verify error message
+    expect(find.text('Please enter a player name'), findsOneWidget,
+        reason: '[DIAG whitespace_name] Validation error not shown for whitespace-only name');
 
-        // Verify dialog remains open
-        expect(find.text('Player Name'), findsOneWidget,
-            reason: '[DIAG whitespace_name] Dialog closed unexpectedly for whitespace-only name');
-      },
-    );
+    // Verify dialog remains open
+    expect(find.text('Player Name'), findsOneWidget,
+        reason: '[DIAG whitespace_name] Dialog closed unexpectedly for whitespace-only name');
   });
 }

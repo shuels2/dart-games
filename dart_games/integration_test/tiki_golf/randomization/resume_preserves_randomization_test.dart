@@ -27,62 +27,56 @@ void main() {
   testWidgets(
       'Randomization: save/resume cycle preserves holeTargets and holeImagePaths',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_randomization_resume_preserves',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester);
 
-        // Capture randomization from game 1
-        final targets1 = getHoleTargets(tester);
-        final images1 = getHoleImagePaths(tester);
-        expect(targets1.length, 9);
-        expect(images1.length, 9);
+    // Capture randomization from game 1
+    final targets1 = getHoleTargets(tester);
+    final images1 = getHoleImagePaths(tester);
+    expect(targets1.length, 9);
+    expect(images1.length, 9);
 
-        // Throw one dart to advance state (miss on hole 1)
-        await throwMissViaMock(tester);
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
+    // Throw one dart to advance state (miss on hole 1)
+    await throwMissViaMock(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
-        // Save via back button → save modal → Save button
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
-        await UITestHelpers.tapSaveGameButton(tester);
+    // Save via back button → save modal → Save button
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapSaveGameButton(tester);
 
-        // After saving, dismiss any resume modal
-        await UITestHelpers.tapStartNewGameButton(tester);
+    // After saving, dismiss any resume modal
+    await UITestHelpers.tapStartNewGameButton(tester);
 
-        // Back to home
-        await tester.tap(find.byKey(TikiGolfMenuKeys.backButton));
-        await PumpSequences.navigation(tester);
+    // Back to home
+    await tester.tap(find.byKey(TikiGolfMenuKeys.backButton));
+    await PumpSequences.navigation(tester);
 
-        // Navigate back to menu to trigger resume modal
-        await UITestHelpers.tapGameCard(tester, config);
-        await PumpSequences.asyncDataLoad(tester);
+    // Navigate back to menu to trigger resume modal
+    await UITestHelpers.tapGameCard(tester, config);
+    await PumpSequences.asyncDataLoad(tester);
 
-        // Select and resume the saved game
-        final saved = await SaveGameService().loadSavedGames('tiki_golf');
-        expect(saved, hasLength(1),
-            reason: 'Should have exactly one saved game');
-        await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
-        await UITestHelpers.tapResumeGameButton(tester);
+    // Select and resume the saved game
+    final saved = await SaveGameService().loadSavedGames('tiki_golf');
+    expect(saved, hasLength(1),
+        reason: 'Should have exactly one saved game');
+    await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
+    await UITestHelpers.tapResumeGameButton(tester);
 
-        // Verify game screen loaded
-        expect(config.getSkipTurnButton(), findsOneWidget);
+    // Verify game screen loaded
+    expect(config.getSkipTurnButton(), findsOneWidget);
 
-        // Verify randomization is identical
-        final targets2 = getHoleTargets(tester);
-        final images2 = getHoleImagePaths(tester);
+    // Verify randomization is identical
+    final targets2 = getHoleTargets(tester);
+    final images2 = getHoleImagePaths(tester);
 
-        expect(targets2, equals(targets1),
-            reason:
-                'holeTargets must be identical after resume. '
-                'Before save: $targets1, After resume: $targets2');
-        expect(images2, equals(images1),
-            reason:
-                'holeImagePaths must be identical after resume. '
-                'Before save: $images1, After resume: $images2');
-      },
-    );
+    expect(targets2, equals(targets1),
+        reason:
+            'holeTargets must be identical after resume. '
+            'Before save: $targets1, After resume: $targets2');
+    expect(images2, equals(images1),
+        reason:
+            'holeImagePaths must be identical after resume. '
+            'Before save: $images1, After resume: $images2');
   });
 }

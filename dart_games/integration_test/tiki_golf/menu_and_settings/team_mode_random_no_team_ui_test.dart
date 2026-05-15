@@ -22,53 +22,47 @@ void main() {
   testWidgets(
       'Team+Random mode: no Team Count dropdown visible, panel mounted',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_menu_and_settings_team_mode_random_no_team_ui',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // ── Switch to Team mode (Random is default assignment) ───────────────
-        await setGameModeTeam(tester);
-        // Team Assignment defaults to Random — no extra action needed.
+    // ── Switch to Team mode (Random is default assignment) ───────────────
+    await setGameModeTeam(tester);
+    // Team Assignment defaults to Random — no extra action needed.
 
-        // ── Verify no Team Count dropdown ─────────────────────────────────────
-        final teamCountDropdown =
-            ElementFinders.getTikiGolfTeamCountDropdown();
-        expect(teamCountDropdown, findsNothing,
-            reason:
-                '[DIAG random_no_team_ui] Team Count dropdown should NOT appear in Team+Random mode');
+    // ── Verify no Team Count dropdown ─────────────────────────────────────
+    final teamCountDropdown =
+        ElementFinders.getTikiGolfTeamCountDropdown();
+    expect(teamCountDropdown, findsNothing,
+        reason:
+            '[DIAG random_no_team_ui] Team Count dropdown should NOT appear in Team+Random mode');
 
-        // ── Verify no "Assign team" trailing icons ─────────────────────────────
-        // These only appear when players are selected in Manual mode.
-        expect(find.text('Assign team'), findsNothing,
-            reason:
-                '[DIAG random_no_team_ui] "Assign team" trailing buttons should NOT appear in Team+Random mode');
+    // ── Verify no "Assign team" trailing icons ─────────────────────────────
+    // These only appear when players are selected in Manual mode.
+    expect(find.text('Assign team'), findsNothing,
+        reason:
+            '[DIAG random_no_team_ui] "Assign team" trailing buttons should NOT appear in Team+Random mode');
 
-        // ── Add player button is still present (panel is mounted) ─────────────
-        bool isAddButtonMounted() {
-          return ElementFinders.getTikiGolfAddPlayerButton().evaluate().isNotEmpty ||
-              ElementFinders.getTikiGolfAddPlayerButtonEmptyState().evaluate().isNotEmpty;
-        }
-        expect(isAddButtonMounted(), isTrue,
-            reason:
-                '[DIAG random_no_team_ui] Add player button should still be present in Team+Random mode');
+    // ── Add player button is still present (panel is mounted) ─────────────
+    bool isAddButtonMounted() {
+      return ElementFinders.getTikiGolfAddPlayerButton().evaluate().isNotEmpty ||
+          ElementFinders.getTikiGolfAddPlayerButtonEmptyState().evaluate().isNotEmpty;
+    }
+    expect(isAddButtonMounted(), isTrue,
+        reason:
+            '[DIAG random_no_team_ui] Add player button should still be present in Team+Random mode');
 
-        // ── Switch to Manual — Team Count dropdown appears ────────────────────
-        await setAssignmentManual(tester);
+    // ── Switch to Manual — Team Count dropdown appears ────────────────────
+    await setAssignmentManual(tester);
 
-        expect(teamCountDropdown, findsOneWidget,
-            reason:
-                '[DIAG random_no_team_ui] Team Count dropdown should appear after switching to Manual');
+    expect(teamCountDropdown, findsOneWidget,
+        reason:
+            '[DIAG random_no_team_ui] Team Count dropdown should appear after switching to Manual');
 
-        // ── Switch back to Random — Team Count dropdown disappears ────────────
-        await setAssignmentRandom(tester);
+    // ── Switch back to Random — Team Count dropdown disappears ────────────
+    await setAssignmentRandom(tester);
 
-        expect(teamCountDropdown, findsNothing,
-            reason:
-                '[DIAG random_no_team_ui] Team Count dropdown should disappear again when switching back to Random');
-      },
-    );
+    expect(teamCountDropdown, findsNothing,
+        reason:
+            '[DIAG random_no_team_ui] Team Count dropdown should disappear again when switching back to Random');
   });
 }

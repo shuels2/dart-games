@@ -14,43 +14,37 @@ void main() {
 
   testWidgets('button stays hidden when modal is not shown after resume',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_button_hidden_after_resume',
-      () async {
-        await UITestHelpers.resetServerState();
-        await navigateToGameScreen(tester);
-        await throwOneDart(tester);
-        await clickDartsRemoved(tester);
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
-        await UITestHelpers.tapSaveGameButton(tester);
+    await UITestHelpers.resetServerState();
+    await navigateToGameScreen(tester);
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapSaveGameButton(tester);
 
-        final resumeButton = find.byKey(TikiGolfMenuKeys.resumeGameButton);
-        await tester.tap(resumeButton);
-        await PumpSequences.asyncDataLoad(tester);
+    final resumeButton = find.byKey(TikiGolfMenuKeys.resumeGameButton);
+    await tester.tap(resumeButton);
+    await PumpSequences.asyncDataLoad(tester);
 
-        final saved = await SaveGameService().loadSavedGames(gameType);
-        await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
-        await UITestHelpers.tapResumeGameButton(tester);
+    final saved = await SaveGameService().loadSavedGames(gameType);
+    await UITestHelpers.selectSavedGameTile(tester, saved[0].id);
+    await UITestHelpers.tapResumeGameButton(tester);
 
-        expect(config.getSkipTurnButton(), findsOneWidget);
+    expect(config.getSkipTurnButton(), findsOneWidget);
 
-        await throwOneDart(tester);
-        await clickDartsRemoved(tester);
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
-        await UITestHelpers.tapSaveGameButton(tester);
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapSaveGameButton(tester);
 
-        expect(config.getStartButton(), findsOneWidget);
-        expect(ElementFinders.getResumeGameModalOverlay(), findsNothing);
+    expect(config.getStartButton(), findsOneWidget);
+    expect(ElementFinders.getResumeGameModalOverlay(), findsNothing);
 
-        final resumeButtonAfter = find.byKey(TikiGolfMenuKeys.resumeGameButton);
-        final iconButtonFinderAfter = find.descendant(
-          of: resumeButtonAfter,
-          matching: find.byType(IconButton),
-        );
-        final iconButton = tester.widget<IconButton>(iconButtonFinderAfter);
-        expect(iconButton.onPressed, isNotNull);
-      },
+    final resumeButtonAfter = find.byKey(TikiGolfMenuKeys.resumeGameButton);
+    final iconButtonFinderAfter = find.descendant(
+      of: resumeButtonAfter,
+      matching: find.byType(IconButton),
     );
+    final iconButton = tester.widget<IconButton>(iconButtonFinderAfter);
+    expect(iconButton.onPressed, isNotNull);
   });
 }

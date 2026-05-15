@@ -10,20 +10,14 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('delete all saved games shows empty state', (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_modal_delete_all',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToHomeScreen(tester);
-        await preSaveTwoGames();
-        await UITestHelpers.tapGameCard(tester, config);
-        await PumpSequences.asyncDataLoad(tester);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToHomeScreen(tester);
+    await preSaveTwoGames();
+    await UITestHelpers.tapGameCard(tester, config);
+    await PumpSequences.asyncDataLoad(tester);
 
-        await UITestHelpers.deleteAllSavedGames(tester);
+    await UITestHelpers.deleteAllSavedGames(tester);
 
-        expect(ElementFinders.getResumeGameModalEmptyState(), findsOneWidget);
-      },
-    );
+    expect(ElementFinders.getResumeGameModalEmptyState(), findsOneWidget);
   });
 }

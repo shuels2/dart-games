@@ -17,28 +17,22 @@ void main() {
 
   testWidgets('Menu back button returns to home screen with game cards',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_navigation_menu_back_to_home',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // Tap the Tiki Golf menu back button
-        final backButton = ElementFinders.getTikiGolfBackButton();
-        expect(backButton, findsOneWidget,
-            reason: '[DIAG menu_back_home] Tiki Golf back button not found on menu screen');
-        await tester.tap(backButton);
-        await PumpSequences.navigation(tester);
+    // Tap the Tiki Golf menu back button
+    final backButton = ElementFinders.getTikiGolfBackButton();
+    expect(backButton, findsOneWidget,
+        reason: '[DIAG menu_back_home] Tiki Golf back button not found on menu screen');
+    await tester.tap(backButton);
+    await PumpSequences.navigation(tester);
 
-        // Verify we're on the home screen by checking for ≥3 game cards
-        expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget,
-            reason: '[DIAG menu_back_home] Carnival Derby card not found after back navigation — not on home screen');
-        expect(ElementFinders.getTargetTagCard(), findsOneWidget,
-            reason: '[DIAG menu_back_home] Target Tag card not found after back navigation — not on home screen');
-        expect(ElementFinders.getMonsterMashCard(), findsOneWidget,
-            reason: '[DIAG menu_back_home] Monster Mash card not found after back navigation — not on home screen');
-      },
-    );
+    // Verify we're on the home screen by checking for ≥3 game cards
+    expect(ElementFinders.getCarnivalDerbyCard(), findsOneWidget,
+        reason: '[DIAG menu_back_home] Carnival Derby card not found after back navigation — not on home screen');
+    expect(ElementFinders.getTargetTagCard(), findsOneWidget,
+        reason: '[DIAG menu_back_home] Target Tag card not found after back navigation — not on home screen');
+    expect(ElementFinders.getMonsterMashCard(), findsOneWidget,
+        reason: '[DIAG menu_back_home] Monster Mash card not found after back navigation — not on home screen');
   });
 }

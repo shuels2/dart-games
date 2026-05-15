@@ -18,44 +18,38 @@ void main() {
 
   testWidgets('Solo mode: 2 players enables TEE OFF and navigates to game',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_menu_and_settings_start_solo_2_players',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // ── TEE OFF disabled with 0 players ─────────────────────────────────
-        // (No players selected yet — button should be disabled or absent)
-        // We don't tap it; just verify game screen is NOT shown yet.
+    // ── TEE OFF disabled with 0 players ─────────────────────────────────
+    // (No players selected yet — button should be disabled or absent)
+    // We don't tap it; just verify game screen is NOT shown yet.
 
-        // ── Add 2 players ────────────────────────────────────────────────────
-        await UITestHelpers.addPlayer(tester, 'TikiAlice', config);
-        await UITestHelpers.addPlayer(tester, 'TikiBob', config);
+    // ── Add 2 players ────────────────────────────────────────────────────
+    await UITestHelpers.addPlayer(tester, 'TikiAlice', config);
+    await UITestHelpers.addPlayer(tester, 'TikiBob', config);
 
-        // ── TEE OFF button should now be enabled ─────────────────────────────
-        final startButton = ElementFinders.getTikiGolfStartButton();
-        expect(startButton, findsOneWidget,
-            reason: '[DIAG start_solo_2p] TEE OFF button not found');
+    // ── TEE OFF button should now be enabled ─────────────────────────────
+    final startButton = ElementFinders.getTikiGolfStartButton();
+    expect(startButton, findsOneWidget,
+        reason: '[DIAG start_solo_2p] TEE OFF button not found');
 
-        // ── Tap TEE OFF ───────────────────────────────────────────────────────
-        await tester.ensureVisible(startButton);
-        await tester.pump();
-        await tester.tap(startButton);
-        await PumpSequences.navigation(tester);
+    // ── Tap TEE OFF ───────────────────────────────────────────────────────
+    await tester.ensureVisible(startButton);
+    await tester.pump();
+    await tester.tap(startButton);
+    await PumpSequences.navigation(tester);
 
-        // ── Verify we navigated to the game screen ────────────────────────────
-        // The game screen has the hole counter widget
-        final holeCounter = ElementFinders.getTikiGolfHoleCounter();
-        expect(holeCounter, findsOneWidget,
-            reason:
-                '[DIAG start_solo_2p] Hole counter not found — game screen did not load');
+    // ── Verify we navigated to the game screen ────────────────────────────
+    // The game screen has the hole counter widget
+    final holeCounter = ElementFinders.getTikiGolfHoleCounter();
+    expect(holeCounter, findsOneWidget,
+        reason:
+            '[DIAG start_solo_2p] Hole counter not found — game screen did not load');
 
-        // ── Verify the back button is the game screen back (not menu back) ────
-        final gameBackButton = ElementFinders.getTikiGolfGameBackButton();
-        expect(gameBackButton, findsOneWidget,
-            reason: '[DIAG start_solo_2p] Game back button not found on game screen');
-      },
-    );
+    // ── Verify the back button is the game screen back (not menu back) ────
+    final gameBackButton = ElementFinders.getTikiGolfGameBackButton();
+    expect(gameBackButton, findsOneWidget,
+        reason: '[DIAG start_solo_2p] Game back button not found on game screen');
   });
 }

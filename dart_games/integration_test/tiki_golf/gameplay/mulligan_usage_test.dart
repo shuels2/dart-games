@@ -15,49 +15,43 @@ void main() {
   testWidgets(
       'Gameplay: Mulligan ON + Splash shows USE MULLIGAN modal; tapping it re-throws darts',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_gameplay_mulligan_usage',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester,
-            maxStrokes: 3,
-            mulliganEnabled: true,
-            playerNames: ['Alice', 'Bob']);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester,
+        maxStrokes: 3,
+        mulliganEnabled: true,
+        playerNames: ['Alice', 'Bob']);
 
-        final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
+    final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
 
-        // Verify mulligan is available at game start
-        expect(ProviderHelpers.isTikiGolfMulliganAvailable(tester, playerId),
-            isTrue,
-            reason: 'Mulligan should be available at game start');
+    // Verify mulligan is available at game start
+    expect(ProviderHelpers.isTikiGolfMulliganAvailable(tester, playerId),
+        isTrue,
+        reason: 'Mulligan should be available at game start');
 
-        // Miss all 3 darts → Splash → turn ends
-        await throwAllMissesToSplash(tester, maxStrokes: 3);
+    // Miss all 3 darts → Splash → turn ends
+    await throwAllMissesToSplash(tester, maxStrokes: 3);
 
-        // Modal should appear with USE MULLIGAN button
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
+    // Modal should appear with USE MULLIGAN button
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
-        expect(ElementFinders.getTikiGolfUseMulliganButton(), findsOneWidget,
-            reason: 'USE MULLIGAN button should appear after Splash with Mulligan ON');
+    expect(ElementFinders.getTikiGolfUseMulliganButton(), findsOneWidget,
+        reason: 'USE MULLIGAN button should appear after Splash with Mulligan ON');
 
-        // USE MULLIGAN button is visible — tap it
-        final mulliganBtn = ElementFinders.getTikiGolfUseMulliganButton();
-        await tester.tap(mulliganBtn);
-        await tester.pump(const Duration(milliseconds: 1000));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 1000));
-        await tester.pump();
+    // USE MULLIGAN button is visible — tap it
+    final mulliganBtn = ElementFinders.getTikiGolfUseMulliganButton();
+    await tester.tap(mulliganBtn);
+    await tester.pump(const Duration(milliseconds: 1000));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1000));
+    await tester.pump();
 
-        // After tapping USE MULLIGAN, the modal should dismiss (button gone)
-        // because the provider's currentTurnEnded was reset to false.
-        // Give extra time for rebuilds.
-        expect(ElementFinders.getTikiGolfUseMulliganButton(), findsNothing,
-            reason:
-                'USE MULLIGAN button should disappear after mulligan is used — '
-                'proves the screen rebuilt with showMulliganModal=false');
-      },
-    );
+    // After tapping USE MULLIGAN, the modal should dismiss (button gone)
+    // because the provider's currentTurnEnded was reset to false.
+    // Give extra time for rebuilds.
+    expect(ElementFinders.getTikiGolfUseMulliganButton(), findsNothing,
+        reason:
+            'USE MULLIGAN button should disappear after mulligan is used — '
+            'proves the screen rebuilt with showMulliganModal=false');
   });
 }

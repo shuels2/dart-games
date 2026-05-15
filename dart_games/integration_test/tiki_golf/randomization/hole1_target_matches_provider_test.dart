@@ -21,34 +21,28 @@ void main() {
   testWidgets(
       'Randomization: hole 1 target number on game screen matches provider holeTargets[0]',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_randomization_hole1_target_matches_provider',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester);
 
-        // Read the target from the provider
-        final providerTarget = ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
-        expect(providerTarget, inInclusiveRange(1, 20),
-            reason: 'Hole 1 target should be a valid dart number (1..20)');
+    // Read the target from the provider
+    final providerTarget = ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+    expect(providerTarget, inInclusiveRange(1, 20),
+        reason: 'Hole 1 target should be a valid dart number (1..20)');
 
-        // The game screen should display the target number in the top bar
-        final targetFinder = ElementFinders.getTikiGolfTargetNumber();
-        expect(targetFinder, findsOneWidget,
-            reason: 'Target number widget should be present on game screen');
+    // The game screen should display the target number in the top bar
+    final targetFinder = ElementFinders.getTikiGolfTargetNumber();
+    expect(targetFinder, findsOneWidget,
+        reason: 'Target number widget should be present on game screen');
 
-        // Verify the displayed text matches the provider value
-        final targetText = (tester.widget(targetFinder) as dynamic);
-        // Use textContaining as the widget may add labels like "Target: 7"
-        expect(
-          find.textContaining('$providerTarget'),
-          findsWidgets,
-          reason:
-              'Game screen should display the provider\'s hole 1 target ($providerTarget) '
-              'in the top bar — confirms randomization is reflected in the UI',
-        );
-      },
+    // Verify the displayed text matches the provider value
+    final targetText = (tester.widget(targetFinder) as dynamic);
+    // Use textContaining as the widget may add labels like "Target: 7"
+    expect(
+      find.textContaining('$providerTarget'),
+      findsWidgets,
+      reason:
+          'Game screen should display the provider\'s hole 1 target ($providerTarget) '
+          'in the top bar — confirms randomization is reflected in the UI',
     );
   });
 }

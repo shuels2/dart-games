@@ -11,26 +11,20 @@ void main() {
 
   testWidgets('Gameplay: hitting target on dart 1 records strokes=1 (Birdie)',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_gameplay_birdie_1st_dart',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester, maxStrokes: 3,
-            playerNames: ['Alice', 'Bob']);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, maxStrokes: 3,
+        playerNames: ['Alice', 'Bob']);
 
-        final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
-        final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
+    final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
+    final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
 
-        // Dart 1 hits the target → turn ends immediately (Birdie)
-        await throwTargetDart(tester);
+    // Dart 1 hits the target → turn ends immediately (Birdie)
+    await throwTargetDart(tester);
 
-        // Strokes = 1
-        final score =
-            ProviderHelpers.getTikiGolfPlayerHoleScore(tester, playerId, hole);
-        expect(score, 1,
-            reason: 'Hitting target on dart 1 should record strokes=1 (Birdie)');
-      },
-    );
+    // Strokes = 1
+    final score =
+        ProviderHelpers.getTikiGolfPlayerHoleScore(tester, playerId, hole);
+    expect(score, 1,
+        reason: 'Hitting target on dart 1 should record strokes=1 (Birdie)');
   });
 }

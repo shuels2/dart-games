@@ -16,53 +16,47 @@ void main() {
 
   testWidgets('Change Settings preserves Max Strokes and Mulligan and players after victory',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
+    await UITestHelpers.resetServerState();
+
+    // Set up game with specific settings: Max Strokes=5, Mulligan=ON
+    await setupAndStartGame(
       tester,
-      'tiki_golf_navigation_change_settings_preserves_settings',
-      () async {
-        await UITestHelpers.resetServerState();
-
-        // Set up game with specific settings: Max Strokes=5, Mulligan=ON
-        await setupAndStartGame(
-          tester,
-          maxStrokes: 5,
-          mulliganEnabled: true,
-          playerNames: ['SettingsP1', 'SettingsP2'],
-        );
-
-        // Complete the game to reach results screen
-        await playGameToCompletion(tester);
-
-        // Verify results screen is showing
-        expect(config.getPlayAgainButton(), findsOneWidget,
-            reason: '[DIAG cs_preserves] Play Again button not found — results screen not loaded');
-
-        // Tap Change Settings
-        await UITestHelpers.clickChangeSettings(tester, config);
-
-        // Verify menu is loaded
-        final startButton = ElementFinders.getTikiGolfStartButton();
-        expect(startButton, findsOneWidget,
-            reason: '[DIAG cs_preserves] TEE OFF button not found — menu did not load after Change Settings');
-
-        // Verify Max Strokes = 5 is preserved
-        expect(find.text('5'), findsWidgets,
-            reason: '[DIAG cs_preserves] Max Strokes "5" not showing — settings not preserved after Change Settings');
-
-        // Verify Mulligan switch is still ON
-        final mulliganSwitch = ElementFinders.getTikiGolfMulliganSwitch();
-        expect(mulliganSwitch, findsOneWidget,
-            reason: '[DIAG cs_preserves] Mulligan switch not found after Change Settings');
-        final switchWidget = tester.widget<Switch>(mulliganSwitch);
-        expect(switchWidget.value, isTrue,
-            reason: '[DIAG cs_preserves] Mulligan should be ON — settings not preserved');
-
-        // Verify both players are still in the list
-        expect(find.text('SettingsP1'), findsWidgets,
-            reason: '[DIAG cs_preserves] SettingsP1 not found after Change Settings');
-        expect(find.text('SettingsP2'), findsWidgets,
-            reason: '[DIAG cs_preserves] SettingsP2 not found after Change Settings');
-      },
+      maxStrokes: 5,
+      mulliganEnabled: true,
+      playerNames: ['SettingsP1', 'SettingsP2'],
     );
+
+    // Complete the game to reach results screen
+    await playGameToCompletion(tester);
+
+    // Verify results screen is showing
+    expect(config.getPlayAgainButton(), findsOneWidget,
+        reason: '[DIAG cs_preserves] Play Again button not found — results screen not loaded');
+
+    // Tap Change Settings
+    await UITestHelpers.clickChangeSettings(tester, config);
+
+    // Verify menu is loaded
+    final startButton = ElementFinders.getTikiGolfStartButton();
+    expect(startButton, findsOneWidget,
+        reason: '[DIAG cs_preserves] TEE OFF button not found — menu did not load after Change Settings');
+
+    // Verify Max Strokes = 5 is preserved
+    expect(find.text('5'), findsWidgets,
+        reason: '[DIAG cs_preserves] Max Strokes "5" not showing — settings not preserved after Change Settings');
+
+    // Verify Mulligan switch is still ON
+    final mulliganSwitch = ElementFinders.getTikiGolfMulliganSwitch();
+    expect(mulliganSwitch, findsOneWidget,
+        reason: '[DIAG cs_preserves] Mulligan switch not found after Change Settings');
+    final switchWidget = tester.widget<Switch>(mulliganSwitch);
+    expect(switchWidget.value, isTrue,
+        reason: '[DIAG cs_preserves] Mulligan should be ON — settings not preserved');
+
+    // Verify both players are still in the list
+    expect(find.text('SettingsP1'), findsWidgets,
+        reason: '[DIAG cs_preserves] SettingsP1 not found after Change Settings');
+    expect(find.text('SettingsP2'), findsWidgets,
+        reason: '[DIAG cs_preserves] SettingsP2 not found after Change Settings');
   });
 }

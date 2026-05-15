@@ -24,49 +24,43 @@ void main() {
   testWidgets(
       'Team Mode Gameplay: scorecard is present and active player is identified in team mode',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_team_mode_gameplay_scorecard_active_highlight',
-      () async {
-        await UITestHelpers.resetServerState();
-        // N=4 → 2 teams of 2
-        await setupAndStartTeamGame(tester,
-            playerNames: ['P1', 'P2', 'P3', 'P4']);
+    await UITestHelpers.resetServerState();
+    // N=4 → 2 teams of 2
+    await setupAndStartTeamGame(tester,
+        playerNames: ['P1', 'P2', 'P3', 'P4']);
 
-        // Scorecard should be present
-        final scorecard = ElementFinders.getTikiGolfScorecard();
-        expect(scorecard, findsOneWidget,
-            reason: 'Scorecard should be visible in team mode');
+    // Scorecard should be present
+    final scorecard = ElementFinders.getTikiGolfScorecard();
+    expect(scorecard, findsOneWidget,
+        reason: 'Scorecard should be visible in team mode');
 
-        // Active player should be set
-        final activePlayerId =
-            ProviderHelpers.getTikiGolfCurrentPlayerId(tester);
-        expect(activePlayerId, isNotNull,
-            reason: 'Should have an active player at game start');
+    // Active player should be set
+    final activePlayerId =
+        ProviderHelpers.getTikiGolfCurrentPlayerId(tester);
+    expect(activePlayerId, isNotNull,
+        reason: 'Should have an active player at game start');
 
-        // Active player name should be visible in the game screen
-        final provider = ProviderHelpers.getTikiGolfProvider(tester);
-        final game = provider.currentGame!;
-        final teamIds = game.teamPlayers.keys.toList();
-        final activeTeamId = game.activeTeamId;
-        expect(activeTeamId, isNotNull,
-            reason: 'Should have an active team in team mode');
+    // Active player name should be visible in the game screen
+    final provider = ProviderHelpers.getTikiGolfProvider(tester);
+    final game = provider.currentGame!;
+    final teamIds = game.teamPlayers.keys.toList();
+    final activeTeamId = game.activeTeamId;
+    expect(activeTeamId, isNotNull,
+        reason: 'Should have an active team in team mode');
 
-        // Verify the active player is in the active team
-        final activeTeamPlayers = game.teamPlayers[activeTeamId!]!;
-        expect(activeTeamPlayers.contains(activePlayerId), isTrue,
-            reason:
-                'Active player ($activePlayerId) should belong to the active team ($activeTeamId). '
-                'Active team players: $activeTeamPlayers');
+    // Verify the active player is in the active team
+    final activeTeamPlayers = game.teamPlayers[activeTeamId!]!;
+    expect(activeTeamPlayers.contains(activePlayerId), isTrue,
+        reason:
+            'Active player ($activePlayerId) should belong to the active team ($activeTeamId). '
+            'Active team players: $activeTeamPlayers');
 
-        // The scorecard caption should show the active team name
-        final scorecardCaption =
-            find.byKey(const Key('tiki_golf_game_scorecard_caption'));
-        // Caption is present in team mode (shows "<TeamName> scorecard")
-        // Use textContaining('scorecard') to verify the caption text
-        expect(find.textContaining('scorecard'), findsWidgets,
-            reason: 'Scorecard caption should show team scorecard label');
-      },
-    );
+    // The scorecard caption should show the active team name
+    final scorecardCaption =
+        find.byKey(const Key('tiki_golf_game_scorecard_caption'));
+    // Caption is present in team mode (shows "<TeamName> scorecard")
+    // Use textContaining('scorecard') to verify the caption text
+    expect(find.textContaining('scorecard'), findsWidgets,
+        reason: 'Scorecard caption should show team scorecard label');
   });
 }

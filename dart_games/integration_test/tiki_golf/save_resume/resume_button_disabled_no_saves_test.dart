@@ -10,24 +10,18 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('button is disabled when no saved games exist', (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_button_disabled_no_saves',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        final resumeButton = find.byKey(TikiGolfMenuKeys.resumeGameButton);
-        expect(resumeButton, findsOneWidget);
+    final resumeButton = find.byKey(TikiGolfMenuKeys.resumeGameButton);
+    expect(resumeButton, findsOneWidget);
 
-        final iconButtonFinder = find.descendant(
-          of: resumeButton,
-          matching: find.byType(IconButton),
-        );
-        final iconButton = tester.widget<IconButton>(iconButtonFinder);
-        expect(iconButton.onPressed, isNull);
-        expect(iconButton.tooltip, 'No saved games');
-      },
+    final iconButtonFinder = find.descendant(
+      of: resumeButton,
+      matching: find.byType(IconButton),
     );
+    final iconButton = tester.widget<IconButton>(iconButtonFinder);
+    expect(iconButton.onPressed, isNull);
+    expect(iconButton.tooltip, 'No saved games');
   });
 }

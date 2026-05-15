@@ -11,19 +11,13 @@ void main() {
 
   testWidgets('back button with 0 darts navigates without save modal',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_save_modal_back_0_darts',
-      () async {
-        await UITestHelpers.resetServerState();
-        await navigateToGameScreen(tester);
+    await UITestHelpers.resetServerState();
+    await navigateToGameScreen(tester);
 
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
-        await PumpSequences.navigation(tester);
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await PumpSequences.navigation(tester);
 
-        expect(ElementFinders.getSaveGameModalOverlay(), findsNothing);
-        expect(config.getStartButton(), findsOneWidget);
-      },
-    );
+    expect(ElementFinders.getSaveGameModalOverlay(), findsNothing);
+    expect(config.getStartButton(), findsOneWidget);
   });
 }

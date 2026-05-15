@@ -21,49 +21,43 @@ void main() {
   testWidgets(
       'Team Setup: Manual assignment — per-player Assign buttons present in Team+Manual mode',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_team_setup_manual_assignment_dropdown',
-      () async {
-        await UITestHelpers.resetServerState();
-        await navigateToMenu(tester);
+    await UITestHelpers.resetServerState();
+    await navigateToMenu(tester);
 
-        // Switch to Team + Manual mode
-        await setGameModeTeam(tester);
-        await setAssignmentManual(tester);
+    // Switch to Team + Manual mode
+    await setGameModeTeam(tester);
+    await setAssignmentManual(tester);
 
-        // Add 3 players
-        await addPlayer(tester, 'Alice');
-        await addPlayer(tester, 'Bob');
-        await addPlayer(tester, 'Carol');
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
+    // Add 3 players
+    await addPlayer(tester, 'Alice');
+    await addPlayer(tester, 'Bob');
+    await addPlayer(tester, 'Carol');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
-        // In Team+Manual mode, each selected player with no team assigned
-        // shows an "Assign team" ElevatedButton trailing icon.
-        // Use exact text 'Assign team' to avoid matching "Team Assignment" label.
-        final assignTeamBtns = find.text('Assign team');
-        expect(assignTeamBtns, findsWidgets,
-            reason:
-                '"Assign team" trailing buttons should be present for players in Team+Manual mode. '
-                'This confirms the manual assignment UI is rendered per-player.');
+    // In Team+Manual mode, each selected player with no team assigned
+    // shows an "Assign team" ElevatedButton trailing icon.
+    // Use exact text 'Assign team' to avoid matching "Team Assignment" label.
+    final assignTeamBtns = find.text('Assign team');
+    expect(assignTeamBtns, findsWidgets,
+        reason:
+            '"Assign team" trailing buttons should be present for players in Team+Manual mode. '
+            'This confirms the manual assignment UI is rendered per-player.');
 
-        // The number of "Assign team" buttons should match the number of added players
-        // (each unassigned selected player gets one button)
-        final btnCount = assignTeamBtns.evaluate().length;
-        expect(btnCount, greaterThanOrEqualTo(2),
-            reason:
-                'Should have at least 2 "Assign team" buttons for 3 players in Team+Manual mode '
-                '(count: $btnCount)');
+    // The number of "Assign team" buttons should match the number of added players
+    // (each unassigned selected player gets one button)
+    final btnCount = assignTeamBtns.evaluate().length;
+    expect(btnCount, greaterThanOrEqualTo(2),
+        reason:
+            'Should have at least 2 "Assign team" buttons for 3 players in Team+Manual mode '
+            '(count: $btnCount)');
 
-        // Team Count dropdown must also be present in Manual mode
-        expectTeamCountDropdownPresent(tester);
+    // Team Count dropdown must also be present in Manual mode
+    expectTeamCountDropdownPresent(tester);
 
-        // Assignment toggle must show MANUAL as selected
-        expect(ElementFinders.getTikiGolfAssignmentModeManual(), findsOneWidget,
-            reason: 'MANUAL segment should be visible in assignment toggle');
-      },
-    );
+    // Assignment toggle must show MANUAL as selected
+    expect(ElementFinders.getTikiGolfAssignmentModeManual(), findsOneWidget,
+        reason: 'MANUAL segment should be visible in assignment toggle');
   });
 }
 

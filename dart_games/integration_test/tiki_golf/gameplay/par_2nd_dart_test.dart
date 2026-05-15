@@ -11,29 +11,23 @@ void main() {
 
   testWidgets('Gameplay: miss dart 1, hit target dart 2 records strokes=2 (Par)',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_gameplay_par_2nd_dart',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester, maxStrokes: 3,
-            playerNames: ['Alice', 'Bob']);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, maxStrokes: 3,
+        playerNames: ['Alice', 'Bob']);
 
-        final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
-        final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
+    final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
+    final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
 
-        // Dart 1: miss
-        await throwMissViaMock(tester);
+    // Dart 1: miss
+    await throwMissViaMock(tester);
 
-        // Dart 2: hit target → turn ends
-        await throwTargetDart(tester);
+    // Dart 2: hit target → turn ends
+    await throwTargetDart(tester);
 
-        // Strokes = 2 (Par)
-        final score =
-            ProviderHelpers.getTikiGolfPlayerHoleScore(tester, playerId, hole);
-        expect(score, 2,
-            reason: 'Hit on dart 2 should record strokes=2 (Par)');
-      },
-    );
+    // Strokes = 2 (Par)
+    final score =
+        ProviderHelpers.getTikiGolfPlayerHoleScore(tester, playerId, hole);
+    expect(score, 2,
+        reason: 'Hit on dart 2 should record strokes=2 (Par)');
   });
 }

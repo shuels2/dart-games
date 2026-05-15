@@ -21,41 +21,35 @@ void main() {
 
   testWidgets('Max Strokes dropdown: cycles through all valid values (3, 4, 5, 6)',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_menu_and_settings_max_strokes_persists',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // ── Verify default is 3 ──────────────────────────────────────────────
-        final dropdownFinder = ElementFinders.getTikiGolfMaxStrokesDropdown();
-        expect(dropdownFinder, findsOneWidget,
-            reason: '[DIAG max_strokes_cycle] Max Strokes dropdown not found');
+    // ── Verify default is 3 ──────────────────────────────────────────────
+    final dropdownFinder = ElementFinders.getTikiGolfMaxStrokesDropdown();
+    expect(dropdownFinder, findsOneWidget,
+        reason: '[DIAG max_strokes_cycle] Max Strokes dropdown not found');
 
-        expect(find.text('3'), findsWidgets,
-            reason: '[DIAG max_strokes_cycle] Default value 3 not shown');
+    expect(find.text('3'), findsWidgets,
+        reason: '[DIAG max_strokes_cycle] Default value 3 not shown');
 
-        // ── Change to 4 ──────────────────────────────────────────────────────
-        await setMaxStrokes(tester, 4);
-        expect(find.text('4'), findsWidgets,
-            reason: '[DIAG max_strokes_cycle] Value 4 not showing after change');
+    // ── Change to 4 ──────────────────────────────────────────────────────
+    await setMaxStrokes(tester, 4);
+    expect(find.text('4'), findsWidgets,
+        reason: '[DIAG max_strokes_cycle] Value 4 not showing after change');
 
-        // ── Change to 5 ──────────────────────────────────────────────────────
-        await setMaxStrokes(tester, 5);
-        expect(find.text('5'), findsWidgets,
-            reason: '[DIAG max_strokes_cycle] Value 5 not showing after change');
+    // ── Change to 5 ──────────────────────────────────────────────────────
+    await setMaxStrokes(tester, 5);
+    expect(find.text('5'), findsWidgets,
+        reason: '[DIAG max_strokes_cycle] Value 5 not showing after change');
 
-        // ── Change to 6 ──────────────────────────────────────────────────────
-        await setMaxStrokes(tester, 6);
-        expect(find.text('6'), findsWidgets,
-            reason: '[DIAG max_strokes_cycle] Value 6 not showing after change');
+    // ── Change to 6 ──────────────────────────────────────────────────────
+    await setMaxStrokes(tester, 6);
+    expect(find.text('6'), findsWidgets,
+        reason: '[DIAG max_strokes_cycle] Value 6 not showing after change');
 
-        // ── Return to 3 ──────────────────────────────────────────────────────
-        await setMaxStrokes(tester, 3);
-        expect(find.text('3'), findsWidgets,
-            reason: '[DIAG max_strokes_cycle] Value 3 not restored after cycling back');
-      },
-    );
+    // ── Return to 3 ──────────────────────────────────────────────────────
+    await setMaxStrokes(tester, 3);
+    expect(find.text('3'), findsWidgets,
+        reason: '[DIAG max_strokes_cycle] Value 3 not restored after cycling back');
   });
 }

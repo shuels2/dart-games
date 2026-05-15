@@ -25,50 +25,44 @@ void main() {
   testWidgets(
       'Team Setup: Team Count dropdown change (4→2) accepted and reflected in UI',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
+    await UITestHelpers.resetServerState();
+    await navigateToMenu(tester);
+
+    // Switch to Team+Manual mode
+    await setGameModeTeam(tester);
+    await setAssignmentManual(tester);
+
+    // Verify Team Count dropdown is present (default = 4)
+    expectTeamCountDropdownPresent(tester);
+
+    // Add players
+    await addPlayer(tester, 'Alice');
+    await addPlayer(tester, 'Bob');
+    await addPlayer(tester, 'Carol');
+    await addPlayer(tester, 'Dave');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    // Team Count dropdown should still be present after adding players
+    expectTeamCountDropdownPresent(tester);
+
+    // Change Team Count from default (4) to 2 via dropdown
+    await SettingsHelpers.setDropdownValue(
       tester,
-      'tiki_golf_team_setup_team_count_change_collapses',
-      () async {
-        await UITestHelpers.resetServerState();
-        await navigateToMenu(tester);
-
-        // Switch to Team+Manual mode
-        await setGameModeTeam(tester);
-        await setAssignmentManual(tester);
-
-        // Verify Team Count dropdown is present (default = 4)
-        expectTeamCountDropdownPresent(tester);
-
-        // Add players
-        await addPlayer(tester, 'Alice');
-        await addPlayer(tester, 'Bob');
-        await addPlayer(tester, 'Carol');
-        await addPlayer(tester, 'Dave');
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
-
-        // Team Count dropdown should still be present after adding players
-        expectTeamCountDropdownPresent(tester);
-
-        // Change Team Count from default (4) to 2 via dropdown
-        await SettingsHelpers.setDropdownValue(
-          tester,
-          ElementFinders.getTikiGolfTeamCountDropdown(),
-          '2',
-        );
-        await PumpSequences.fullRebuild(tester);
-
-        // Team Count dropdown should still be present and accept the new value
-        expectTeamCountDropdownPresent(tester);
-
-        // The dropdown's displayed value should now show '2'
-        // (dropdown text changes are verified by the fact that the value selection completed)
-        // Players still listed
-        expect(find.textContaining('Alice'), findsWidgets,
-            reason: 'Players should still be visible after Team Count change');
-        expect(find.textContaining('Bob'), findsWidgets,
-            reason: 'Players should still be visible after Team Count change');
-      },
+      ElementFinders.getTikiGolfTeamCountDropdown(),
+      '2',
     );
+    await PumpSequences.fullRebuild(tester);
+
+    // Team Count dropdown should still be present and accept the new value
+    expectTeamCountDropdownPresent(tester);
+
+    // The dropdown's displayed value should now show '2'
+    // (dropdown text changes are verified by the fact that the value selection completed)
+    // Players still listed
+    expect(find.textContaining('Alice'), findsWidgets,
+        reason: 'Players should still be visible after Team Count change');
+    expect(find.textContaining('Bob'), findsWidgets,
+        reason: 'Players should still be visible after Team Count change');
   });
 }

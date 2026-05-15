@@ -27,35 +27,29 @@ void main() {
   testWidgets(
       'Play to Complete: Tiki Golf with Max Strokes = 6 handles variable dart count',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
+    await UITestHelpers.resetServerState();
+    await GameSetupHelpers.setupAndStartTikiGolf(
       tester,
-      'tiki_golf_ptc_max_strokes_6',
-      () async {
-        await UITestHelpers.resetServerState();
-        await GameSetupHelpers.setupAndStartTikiGolf(
-          tester,
-          config,
-          maxStrokes: 6,
-        );
-
-        await PlayToCompleteHelpers.tapPlayToComplete(tester);
-
-        final provider = ProviderHelpers.getTikiGolfProvider(tester);
-        await PlayToCompleteHelpers.waitForGameCompletion(
-          tester,
-          isComplete: () => provider.hasWinner,
-          maxIterations: 800, // more iterations for 6-dart turns x 9 holes x 2 players
-        );
-
-        expect(provider.hasWinner, isTrue,
-            reason:
-                'Game should have a winner when Max Strokes = 6 — proves PTC handles variable dart counts');
-        expect(config.getPlayAgainButton(), findsOneWidget,
-            reason: 'Results screen should be visible');
-        // Verify the max strokes setting was actually 6
-        expect(ProviderHelpers.getTikiGolfMaxStrokes(tester), 6,
-            reason: 'Max strokes should be 6 as configured');
-      },
+      config,
+      maxStrokes: 6,
     );
+
+    await PlayToCompleteHelpers.tapPlayToComplete(tester);
+
+    final provider = ProviderHelpers.getTikiGolfProvider(tester);
+    await PlayToCompleteHelpers.waitForGameCompletion(
+      tester,
+      isComplete: () => provider.hasWinner,
+      maxIterations: 800, // more iterations for 6-dart turns x 9 holes x 2 players
+    );
+
+    expect(provider.hasWinner, isTrue,
+        reason:
+            'Game should have a winner when Max Strokes = 6 — proves PTC handles variable dart counts');
+    expect(config.getPlayAgainButton(), findsOneWidget,
+        reason: 'Results screen should be visible');
+    // Verify the max strokes setting was actually 6
+    expect(ProviderHelpers.getTikiGolfMaxStrokes(tester), 6,
+        reason: 'Max strokes should be 6 as configured');
   });
 }

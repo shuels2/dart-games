@@ -20,52 +20,46 @@ void main() {
 
   testWidgets('TEE OFF button enable/disable rules across modes and player counts',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_menu_and_settings_tee_off_disabled_rules',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // Helper: check if start button is enabled
-        bool isStartEnabled() {
-          final startButton = ElementFinders.getTikiGolfStartButton();
-          if (startButton.evaluate().isEmpty) return false;
-          // The ElevatedButton itself carries the key, so cast directly
-          final widget = tester.widget<ElevatedButton>(startButton);
-          return widget.onPressed != null;
-        }
+    // Helper: check if start button is enabled
+    bool isStartEnabled() {
+      final startButton = ElementFinders.getTikiGolfStartButton();
+      if (startButton.evaluate().isEmpty) return false;
+      // The ElevatedButton itself carries the key, so cast directly
+      final widget = tester.widget<ElevatedButton>(startButton);
+      return widget.onPressed != null;
+    }
 
-        // ── Solo, 0 players → disabled ────────────────────────────────────────
-        expect(isStartEnabled(), isFalse,
-            reason:
-                '[DIAG tee_off_rules] TEE OFF should be DISABLED with 0 players in Solo');
+    // ── Solo, 0 players → disabled ────────────────────────────────────────
+    expect(isStartEnabled(), isFalse,
+        reason:
+            '[DIAG tee_off_rules] TEE OFF should be DISABLED with 0 players in Solo');
 
-        // ── Solo, 1 player → disabled ─────────────────────────────────────────
-        await UITestHelpers.addPlayer(tester, 'P1', config);
-        expect(isStartEnabled(), isFalse,
-            reason:
-                '[DIAG tee_off_rules] TEE OFF should be DISABLED with 1 player in Solo');
+    // ── Solo, 1 player → disabled ─────────────────────────────────────────
+    await UITestHelpers.addPlayer(tester, 'P1', config);
+    expect(isStartEnabled(), isFalse,
+        reason:
+            '[DIAG tee_off_rules] TEE OFF should be DISABLED with 1 player in Solo');
 
-        // ── Solo, 2 players → enabled ─────────────────────────────────────────
-        await UITestHelpers.addPlayer(tester, 'P2', config);
-        expect(isStartEnabled(), isTrue,
-            reason:
-                '[DIAG tee_off_rules] TEE OFF should be ENABLED with 2 players in Solo');
+    // ── Solo, 2 players → enabled ─────────────────────────────────────────
+    await UITestHelpers.addPlayer(tester, 'P2', config);
+    expect(isStartEnabled(), isTrue,
+        reason:
+            '[DIAG tee_off_rules] TEE OFF should be ENABLED with 2 players in Solo');
 
-        // ── Switch to Team+Random; 2 players selected → still disabled ─────────
-        await setGameModeTeam(tester);
-        // Random is default assignment; need ≥3 players for Team mode
-        expect(isStartEnabled(), isFalse,
-            reason:
-                '[DIAG tee_off_rules] TEE OFF should be DISABLED in Team+Random with only 2 players');
+    // ── Switch to Team+Random; 2 players selected → still disabled ─────────
+    await setGameModeTeam(tester);
+    // Random is default assignment; need ≥3 players for Team mode
+    expect(isStartEnabled(), isFalse,
+        reason:
+            '[DIAG tee_off_rules] TEE OFF should be DISABLED in Team+Random with only 2 players');
 
-        // ── Team+Random, 3 players → enabled ──────────────────────────────────
-        await UITestHelpers.addPlayer(tester, 'P3', config);
-        expect(isStartEnabled(), isTrue,
-            reason:
-                '[DIAG tee_off_rules] TEE OFF should be ENABLED in Team+Random with 3 players');
-      },
-    );
+    // ── Team+Random, 3 players → enabled ──────────────────────────────────
+    await UITestHelpers.addPlayer(tester, 'P3', config);
+    expect(isStartEnabled(), isTrue,
+        reason:
+            '[DIAG tee_off_rules] TEE OFF should be ENABLED in Team+Random with 3 players');
   });
 }

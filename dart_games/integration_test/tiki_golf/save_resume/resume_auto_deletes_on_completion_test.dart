@@ -13,62 +13,56 @@ void main() {
 
   testWidgets('resumed game auto-deletes saved game on completion',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_resume_auto_deletes_on_completion',
-      () async {
-        await UITestHelpers.resetServerState();
-        // Real-flow: navigate → throw → save → home → resume → play to completion
-        await navigateToGameScreen(tester);
-        await throwOneDart(tester);
-        await clickDartsRemoved(tester);
-        await UITestHelpers.tapGameScreenBackButton(tester, config);
-        await UITestHelpers.tapSaveGameButton(tester);
+    await UITestHelpers.resetServerState();
+    // Real-flow: navigate → throw → save → home → resume → play to completion
+    await navigateToGameScreen(tester);
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
+    await UITestHelpers.tapGameScreenBackButton(tester, config);
+    await UITestHelpers.tapSaveGameButton(tester);
 
-        // After saving, the menu screen auto-shows the resume modal (full-screen
-        // overlay covering AppBar). Dismiss it so the back button is reachable.
-        await UITestHelpers.tapStartNewGameButton(tester);
+    // After saving, the menu screen auto-shows the resume modal (full-screen
+    // overlay covering AppBar). Dismiss it so the back button is reachable.
+    await UITestHelpers.tapStartNewGameButton(tester);
 
-        // Back to home from menu
-        await tester.tap(find.byKey(TikiGolfMenuKeys.backButton));
-        await PumpSequences.navigation(tester);
+    // Back to home from menu
+    await tester.tap(find.byKey(TikiGolfMenuKeys.backButton));
+    await PumpSequences.navigation(tester);
 
-        // Tap game card on home — navigates to menu screen with resume modal
-        await UITestHelpers.tapGameCard(tester, config);
-        await PumpSequences.asyncDataLoad(tester);
+    // Tap game card on home — navigates to menu screen with resume modal
+    await UITestHelpers.tapGameCard(tester, config);
+    await PumpSequences.asyncDataLoad(tester);
 
-        // Get saved game and resume (Rule §18)
-        final saved = await SaveGameService().loadSavedGames(gameType);
-        expect(saved, hasLength(1));
-        final savedGameId = saved[0].id;
-        await UITestHelpers.selectSavedGameTile(tester, savedGameId);
-        await UITestHelpers.tapResumeGameButton(tester);
+    // Get saved game and resume (Rule §18)
+    final saved = await SaveGameService().loadSavedGames(gameType);
+    expect(saved, hasLength(1));
+    final savedGameId = saved[0].id;
+    await UITestHelpers.selectSavedGameTile(tester, savedGameId);
+    await UITestHelpers.tapResumeGameButton(tester);
 
-        // Play resumed game to completion — drive every remaining turn to
-        // a birdie (target hit on dart 1) then simulate takeout until winner.
-        final provider = ProviderHelpers.getTikiGolfProvider(tester);
-        while (!provider.hasWinner) {
-          final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
-          final target = ProviderHelpers.getTikiGolfHoleTarget(tester, hole);
-          await throwDartViaMock(tester, target);
-          await clickDartsRemoved(tester);
-          await tester.pump(const Duration(milliseconds: 500));
-          await tester.pump();
-        }
+    // Play resumed game to completion — drive every remaining turn to
+    // a birdie (target hit on dart 1) then simulate takeout until winner.
+    final provider = ProviderHelpers.getTikiGolfProvider(tester);
+    while (!provider.hasWinner) {
+      final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
+      final target = ProviderHelpers.getTikiGolfHoleTarget(tester, hole);
+      await throwDartViaMock(tester, target);
+      await clickDartsRemoved(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+    }
 
-        // Wait for results screen navigation (victory delay + animation)
-        await tester.pump(const Duration(seconds: 3));
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 2));
-        await tester.pump();
+    // Wait for results screen navigation (victory delay + animation)
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
 
-        // Verify results screen
-        expect(config.getPlayAgainButton(), findsOneWidget);
+    // Verify results screen
+    expect(config.getPlayAgainButton(), findsOneWidget);
 
-        // Verify saved game was auto-deleted on completion
-        final remaining = await SaveGameService().loadSavedGames(gameType);
-        expect(remaining, isEmpty);
-      },
-    );
+    // Verify saved game was auto-deleted on completion
+    final remaining = await SaveGameService().loadSavedGames(gameType);
+    expect(remaining, isEmpty);
   });
 }

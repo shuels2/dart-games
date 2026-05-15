@@ -23,40 +23,34 @@ void main() {
   testWidgets(
       'Team Mode Gameplay: teams panel is present with active team box rendered',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_team_mode_gameplay_teams_panel_highlight',
-      () async {
-        await UITestHelpers.resetServerState();
-        // N=4 → 2 teams of 2
-        await setupAndStartTeamGame(tester,
-            playerNames: ['P1', 'P2', 'P3', 'P4']);
+    await UITestHelpers.resetServerState();
+    // N=4 → 2 teams of 2
+    await setupAndStartTeamGame(tester,
+        playerNames: ['P1', 'P2', 'P3', 'P4']);
 
-        // Teams panel should be visible
-        final teamsPanel = ElementFinders.getTikiGolfTeamsPanel();
-        expect(teamsPanel, findsOneWidget,
-            reason: 'Teams panel should be visible in team mode gameplay');
+    // Teams panel should be visible
+    final teamsPanel = ElementFinders.getTikiGolfTeamsPanel();
+    expect(teamsPanel, findsOneWidget,
+        reason: 'Teams panel should be visible in team mode gameplay');
 
-        // The active team's box should be rendered
-        final provider = ProviderHelpers.getTikiGolfProvider(tester);
-        final game = provider.currentGame!;
-        final activeTeamId = game.activeTeamId;
-        expect(activeTeamId, isNotNull,
-            reason: 'Should have an active team at game start');
+    // The active team's box should be rendered
+    final provider = ProviderHelpers.getTikiGolfProvider(tester);
+    final game = provider.currentGame!;
+    final activeTeamId = game.activeTeamId;
+    expect(activeTeamId, isNotNull,
+        reason: 'Should have an active team at game start');
 
-        final activeTeamBox = ElementFinders.getTikiGolfTeamBox(activeTeamId!);
-        expect(activeTeamBox, findsOneWidget,
-            reason:
-                'Active team box should be rendered in teams panel. '
-                'Active team: $activeTeamId');
+    final activeTeamBox = ElementFinders.getTikiGolfTeamBox(activeTeamId!);
+    expect(activeTeamBox, findsOneWidget,
+        reason:
+            'Active team box should be rendered in teams panel. '
+            'Active team: $activeTeamId');
 
-        // All teams should have team boxes rendered
-        for (final teamId in game.teamPlayers.keys) {
-          final teamBox = ElementFinders.getTikiGolfTeamBox(teamId);
-          expect(teamBox, findsOneWidget,
-              reason: 'Team box for $teamId should be rendered');
-        }
-      },
-    );
+    // All teams should have team boxes rendered
+    for (final teamId in game.teamPlayers.keys) {
+      final teamBox = ElementFinders.getTikiGolfTeamBox(teamId);
+      expect(teamBox, findsOneWidget,
+          reason: 'Team box for $teamId should be rendered');
+    }
   });
 }

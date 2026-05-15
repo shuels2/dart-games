@@ -12,30 +12,24 @@ void main() {
   testWidgets(
       'Gameplay: miss darts 1-2, hit target dart 3 records strokes=3 (Bogey)',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_gameplay_bogey_3rd_dart',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester, maxStrokes: 3,
-            playerNames: ['Alice', 'Bob']);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, maxStrokes: 3,
+        playerNames: ['Alice', 'Bob']);
 
-        final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
-        final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
+    final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
+    final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
 
-        // Darts 1 & 2: miss
-        await throwMissViaMock(tester);
-        await throwMissViaMock(tester);
+    // Darts 1 & 2: miss
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
 
-        // Dart 3: hit target → turn ends
-        await throwTargetDart(tester);
+    // Dart 3: hit target → turn ends
+    await throwTargetDart(tester);
 
-        // Strokes = 3 (Bogey)
-        final score =
-            ProviderHelpers.getTikiGolfPlayerHoleScore(tester, playerId, hole);
-        expect(score, 3,
-            reason: 'Hit on dart 3 should record strokes=3 (Bogey)');
-      },
-    );
+    // Strokes = 3 (Bogey)
+    final score =
+        ProviderHelpers.getTikiGolfPlayerHoleScore(tester, playerId, hole);
+    expect(score, 3,
+        reason: 'Hit on dart 3 should record strokes=3 (Bogey)');
   });
 }

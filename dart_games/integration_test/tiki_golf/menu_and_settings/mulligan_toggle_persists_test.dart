@@ -26,47 +26,41 @@ void main() {
 
   testWidgets('Mulligan toggle: flips OFF→ON→OFF correctly',
       (tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_menu_and_settings_mulligan_toggle_persists',
-      () async {
-        await UITestHelpers.resetServerState();
-        await UITestHelpers.navigateToGameMenu(tester, config);
+    await UITestHelpers.resetServerState();
+    await UITestHelpers.navigateToGameMenu(tester, config);
 
-        // ── Verify initial state: OFF ────────────────────────────────────────
-        final mulliganSwitch = ElementFinders.getTikiGolfMulliganSwitch();
-        expect(mulliganSwitch, findsOneWidget,
-            reason: '[DIAG mulligan_toggle] Mulligan switch not found');
+    // ── Verify initial state: OFF ────────────────────────────────────────
+    final mulliganSwitch = ElementFinders.getTikiGolfMulliganSwitch();
+    expect(mulliganSwitch, findsOneWidget,
+        reason: '[DIAG mulligan_toggle] Mulligan switch not found');
 
-        Switch switchWidget = tester.widget<Switch>(mulliganSwitch);
-        expect(switchWidget.value, isFalse,
-            reason: '[DIAG mulligan_toggle] Mulligan should start OFF');
+    Switch switchWidget = tester.widget<Switch>(mulliganSwitch);
+    expect(switchWidget.value, isFalse,
+        reason: '[DIAG mulligan_toggle] Mulligan should start OFF');
 
-        // ── Toggle ON ────────────────────────────────────────────────────────
-        await toggleMulligan(tester);
+    // ── Toggle ON ────────────────────────────────────────────────────────
+    await toggleMulligan(tester);
 
-        // Verify it flipped to ON
-        switchWidget = tester.widget<Switch>(mulliganSwitch);
-        expect(switchWidget.value, isTrue,
-            reason:
-                '[DIAG mulligan_toggle] Mulligan should be ON after first toggle');
+    // Verify it flipped to ON
+    switchWidget = tester.widget<Switch>(mulliganSwitch);
+    expect(switchWidget.value, isTrue,
+        reason:
+            '[DIAG mulligan_toggle] Mulligan should be ON after first toggle');
 
-        // ── Toggle OFF again ──────────────────────────────────────────────────
-        await toggleMulligan(tester);
+    // ── Toggle OFF again ──────────────────────────────────────────────────
+    await toggleMulligan(tester);
 
-        switchWidget = tester.widget<Switch>(mulliganSwitch);
-        expect(switchWidget.value, isFalse,
-            reason:
-                '[DIAG mulligan_toggle] Mulligan should be OFF after second toggle');
+    switchWidget = tester.widget<Switch>(mulliganSwitch);
+    expect(switchWidget.value, isFalse,
+        reason:
+            '[DIAG mulligan_toggle] Mulligan should be OFF after second toggle');
 
-        // ── Toggle ON one more time ────────────────────────────────────────────
-        await toggleMulligan(tester);
+    // ── Toggle ON one more time ────────────────────────────────────────────
+    await toggleMulligan(tester);
 
-        switchWidget = tester.widget<Switch>(mulliganSwitch);
-        expect(switchWidget.value, isTrue,
-            reason:
-                '[DIAG mulligan_toggle] Mulligan should be ON after third toggle');
-      },
-    );
+    switchWidget = tester.widget<Switch>(mulliganSwitch);
+    expect(switchWidget.value, isTrue,
+        reason:
+            '[DIAG mulligan_toggle] Mulligan should be ON after third toggle');
   });
 }

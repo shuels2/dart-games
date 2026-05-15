@@ -21,26 +21,20 @@ void main() {
   testWidgets(
       'Play to Complete: Tiki Golf with default settings (Solo, Max Strokes 3, Mulligan OFF)',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
+    await UITestHelpers.resetServerState();
+    await GameSetupHelpers.setupAndStartTikiGolf(tester, config);
+
+    await PlayToCompleteHelpers.tapPlayToComplete(tester);
+
+    final provider = ProviderHelpers.getTikiGolfProvider(tester);
+    await PlayToCompleteHelpers.waitForGameCompletion(
       tester,
-      'tiki_golf_ptc_default_settings',
-      () async {
-        await UITestHelpers.resetServerState();
-        await GameSetupHelpers.setupAndStartTikiGolf(tester, config);
-
-        await PlayToCompleteHelpers.tapPlayToComplete(tester);
-
-        final provider = ProviderHelpers.getTikiGolfProvider(tester);
-        await PlayToCompleteHelpers.waitForGameCompletion(
-          tester,
-          isComplete: () => provider.hasWinner,
-        );
-
-        expect(provider.hasWinner, isTrue,
-            reason: 'Game should have a winner after Play To Complete');
-        expect(config.getPlayAgainButton(), findsOneWidget,
-            reason: 'Results screen should be visible (Play Again button found)');
-      },
+      isComplete: () => provider.hasWinner,
     );
+
+    expect(provider.hasWinner, isTrue,
+        reason: 'Game should have a winner after Play To Complete');
+    expect(config.getPlayAgainButton(), findsOneWidget,
+        reason: 'Results screen should be visible (Play Again button found)');
   });
 }

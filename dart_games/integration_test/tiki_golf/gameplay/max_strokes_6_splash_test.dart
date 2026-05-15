@@ -12,30 +12,24 @@ void main() {
   testWidgets(
       'Gameplay: maxStrokes=6, miss all 6 darts records strokes=7 (Splash)',
       (WidgetTester tester) async {
-    await UITestHelpers.runWithFailureScreenshot(
-      tester,
-      'tiki_golf_gameplay_max_strokes_6_splash',
-      () async {
-        await UITestHelpers.resetServerState();
-        await setupAndStartGame(tester, maxStrokes: 6,
-            playerNames: ['Alice', 'Bob']);
+    await UITestHelpers.resetServerState();
+    await setupAndStartGame(tester, maxStrokes: 6,
+        playerNames: ['Alice', 'Bob']);
 
-        final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
-        final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
+    final playerId = ProviderHelpers.getTikiGolfCurrentPlayerId(tester)!;
+    final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
 
-        // Miss all 6 darts → Splash
-        await throwAllMissesToSplash(tester, maxStrokes: 6);
+    // Miss all 6 darts → Splash
+    await throwAllMissesToSplash(tester, maxStrokes: 6);
 
-        // Strokes = 7 (Splash = maxStrokes + 1)
-        final score =
-            ProviderHelpers.getTikiGolfPlayerHoleScore(tester, playerId, hole);
-        expect(score, 7,
-            reason:
-                'Missing all maxStrokes=6 darts should record strokes=7 (Splash)');
+    // Strokes = 7 (Splash = maxStrokes + 1)
+    final score =
+        ProviderHelpers.getTikiGolfPlayerHoleScore(tester, playerId, hole);
+    expect(score, 7,
+        reason:
+            'Missing all maxStrokes=6 darts should record strokes=7 (Splash)');
 
-        expect(ProviderHelpers.tikiGolfShouldPromptTakeout(tester), isTrue,
-            reason: 'shouldPromptTakeout should be true after Splash');
-      },
-    );
+    expect(ProviderHelpers.tikiGolfShouldPromptTakeout(tester), isTrue,
+        reason: 'shouldPromptTakeout should be true after Splash');
   });
 }
