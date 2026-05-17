@@ -39,6 +39,23 @@ List<Shadow> _outlineShadow() => const [
       Shadow(color: _tikiBrown, offset: Offset(-1, 1), blurRadius: 0),
     ];
 
+// Heavy 8-direction stroke outline for dart-slot labels (HIT / MISS) so the
+// text reads clearly against the same-hue tinted slot backgrounds.
+List<Shadow> _heavyOutline(Color stroke) => [
+      // Cardinal 2px offsets
+      Shadow(color: stroke, offset: const Offset(2, 0), blurRadius: 0),
+      Shadow(color: stroke, offset: const Offset(-2, 0), blurRadius: 0),
+      Shadow(color: stroke, offset: const Offset(0, 2), blurRadius: 0),
+      Shadow(color: stroke, offset: const Offset(0, -2), blurRadius: 0),
+      // Diagonal 2px offsets
+      Shadow(color: stroke, offset: const Offset(2, 2), blurRadius: 0),
+      Shadow(color: stroke, offset: const Offset(-2, -2), blurRadius: 0),
+      Shadow(color: stroke, offset: const Offset(2, -2), blurRadius: 0),
+      Shadow(color: stroke, offset: const Offset(-2, 2), blurRadius: 0),
+      // Soft drop shadow for a bit of depth
+      Shadow(color: Colors.black.withOpacity(0.45), offset: const Offset(0, 2), blurRadius: 3),
+    ];
+
 // Hole names matching holeImagePaths canonical order
 const List<String> _kHoleNames = [
   'Volcano',
@@ -91,6 +108,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
   PlayToCompleteRunner? _playToCompleteRunner;
   bool _gameCompleted = false;
   bool _showSaveModal = false;
+
+  // Raw dart-segment strings (e.g. 'S20', 'T14', 'Bull', 'Miss') for the
+  // CURRENT player's CURRENT turn. Feeds Edit Score so the dialog opens with
+  // the player's actual throws instead of placeholder 'Miss' entries.
+  // Cleared on turn transitions (takeout finished, mulligan used, skip turn).
+  final List<String> _currentTurnSegments = [];
 
   // ─── Announcement helper ──────────────────────────────────────────────────────
   TikiGolfAnnouncementHelper? _audioQueue;
@@ -193,6 +216,10 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     final throwData = event['data']['payload'];
     final sector = throwData['sector'] as String;
     final score = throwData['score'] as int? ?? 0;
+
+    // Track the raw segment string for Edit Score (real throws, not 'Miss'
+    // placeholders). Provider doesn't persist per-dart segments today.
+    _currentTurnSegments.add(sector);
 
     provider.processDartThrow(sector: sector, score: score);
 
@@ -320,6 +347,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     final prevHole = provider.currentGame?.currentHole ?? 1;
 
     provider.confirmTurnEnd();
+    // Previous player's turn has ended — clear tracked segments so the next
+    // turn starts fresh.
+    _currentTurnSegments.clear();
 
     // After confirmTurnEnd, check hasWinner AGAIN — unlike most games where
     // the winning dart sets hasWinner directly, in Tiki Golf the win is only
@@ -550,9 +580,42 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
             ),
           ),
 
-          // ── 2. (placeholder — takeout modals moved below emulator in 3b) ────
+          // ── 2. RemoveDartsModal — BEHIND the emulator (canonical layer
+          //      order per skill §907-§966). DARTS REMOVED inside the emulator
+          //      section must paint on top of this overlay so the user can
+          //      finish the takeout. Edit Score lives in the modal's centered
+          //      card, which the emulator's bottom strip doesn't cover.
+          if (shouldPromptTakeout && !showMulliganModal)
+            RemoveDartsModal(
+              key: TikiGolfGameKeys.removeDartsModal,
+              config: RemoveDartsModalConfig.tikiGolf(),
+              playerName: currentPlayerName,
+              editScoreButtonKey: TikiGolfGameKeys.editScoreButton,
+              onEditScore: activePlayerId != null
+                  ? () {
+                      final initialSegments =
+                          _buildInitialSegments(game, activePlayerId);
+                      showEditScoreDialog(
+                        context: context,
+                        playerName: currentPlayerName,
+                        initialSegments: initialSegments,
+                        onSubmit: (newSegments) {
+                          if (activePlayerId != null) {
+                            provider.editPlayerScore(
+                              playerId: activePlayerId,
+                              holeIndex: game.currentHole - 1,
+                              newDartSegments: newSegments,
+                            );
+                          }
+                        },
+                        config: EditScoreDialogConfig.tikiGolf(),
+                      );
+                    }
+                  : null,
+            ),
 
-          // ── 3. Dartboard Emulator Section ───────────────────────────────────
+          // ── 3. Dartboard Emulator Section — ABOVE RemoveDartsModal so the
+          //      DARTS REMOVED button stays visible and tappable.
           Positioned(
             left: 0,
             right: 0,
@@ -590,49 +653,6 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
             ),
           ),
 
-          // ── 3b. Takeout modals — ABOVE DartboardEmulatorSection ─────────────
-          // Both modals are rendered AFTER the emulator in the Stack so they
-          // appear on top. The emulator's DARTS REMOVED button is accessed via
-          // its widget key (DartboardEmulatorKeys.removeDartsButton) in tests,
-          // not by tapping the visible button (which the modal covers).
-          if (shouldPromptTakeout && !showMulliganModal)
-            RemoveDartsModal(
-              key: TikiGolfGameKeys.removeDartsModal,
-              config: RemoveDartsModalConfig.tikiGolf(),
-              playerName: currentPlayerName,
-              editScoreButtonKey: TikiGolfGameKeys.editScoreButton,
-              onEditScore: activePlayerId != null
-                  ? () {
-                      final initialSegments =
-                          _buildInitialSegments(game, activePlayerId);
-                      showEditScoreDialog(
-                        context: context,
-                        playerName: currentPlayerName,
-                        initialSegments: initialSegments,
-                        onSubmit: (newSegments) {
-                          if (activePlayerId != null) {
-                            provider.editPlayerScore(
-                              playerId: activePlayerId,
-                              holeIndex: game.currentHole - 1,
-                              newDartSegments: newSegments,
-                            );
-                          }
-                        },
-                        config: EditScoreDialogConfig.tikiGolf(),
-                      );
-                    }
-                  : null,
-            ),
-
-          if (shouldPromptTakeout && showMulliganModal)
-            _buildSplashMulliganModal(
-              game: game,
-              provider: provider,
-              playerProvider: playerProvider,
-              activePlayerId: activePlayerId!,
-              currentPlayerName: currentPlayerName,
-            ),
-
           // ── 4. Dartboard Emulator FAB ────────────────────────────────────────
           Positioned(
             right: 16,
@@ -644,6 +664,21 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
               onCancelAutoPlay: _onCancelAutoPlay,
             ),
           ),
+
+          // ── 4b. Splash + Mulligan modal (Tiki Golf takeout variant) —
+          //       ABOVE the emulator section. This modal does NOT rely on
+          //       DARTS REMOVED: its own USE MULLIGAN / NEXT PLAYER / Edit
+          //       Score buttons drive the flow. It must therefore block the
+          //       emulator's DARTS REMOVED so the user can't bypass the
+          //       splash decision by tapping the emulator button underneath.
+          if (shouldPromptTakeout && showMulliganModal)
+            _buildSplashMulliganModal(
+              game: game,
+              provider: provider,
+              playerProvider: playerProvider,
+              activePlayerId: activePlayerId!,
+              currentPlayerName: currentPlayerName,
+            ),
 
           // ── 5. Save Game Modal ───────────────────────────────────────────────
           if (_showSaveModal)
@@ -693,20 +728,34 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         children: [
           // Hole info row
           _buildHoleInfoRow(game),
-          const SizedBox(height: 10),
+          const SizedBox(height: 32),
           // Hole image row (main + neighbor previews)
           _buildHoleImageRow(game),
-          const SizedBox(height: 30),
-          // Dart row + skip turn button
-          _buildDartRow(
-            game: game,
-            provider: provider,
-            activePlayerId: activePlayerId,
-            shouldPromptTakeout: shouldPromptTakeout,
-            dartsThrown: dartsThrown,
+          const SizedBox(height: 32),
+          // Above the scorecard: Par + dart slots on the left, Skip Turn
+          // button on the right edge (lined up with the scorecard's right
+          // edge — the scorecard below fills the same horizontal extent).
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildDartRow(
+                game: game,
+                provider: provider,
+                activePlayerId: activePlayerId,
+                shouldPromptTakeout: shouldPromptTakeout,
+                dartsThrown: dartsThrown,
+              ),
+              const Spacer(),
+              _buildSkipTurnButton(
+                game: game,
+                provider: provider,
+                shouldPromptTakeout: shouldPromptTakeout,
+                dartsThrown: dartsThrown,
+              ),
+            ],
           ),
-          const SizedBox(height: 3),
-          // Scorecard (all players)
+          const SizedBox(height: 6),
+          // Scorecard (all players) — full width below the dart/skip row
           Expanded(
             child: SingleChildScrollView(
               child: _buildScorecard(
@@ -741,14 +790,13 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     final currentTeamPlayers = activeTeamId != null
         ? (game.teamPlayers[activeTeamId] ?? [])
         : game.playerIds;
-    final activeTeamName = _teamDisplayName(activeTeamId);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Teams panel (160px, transparent — per skill Rule §49) ──────────
+        // ── Teams panel (224px, transparent — per skill Rule §49) ──────────
         SizedBox(
-          width: 160,
+          width: 224,
           child: _buildTeamsPanel(
             game: game,
             playerProvider: playerProvider,
@@ -765,31 +813,32 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildHoleInfoRow(game),
-                const SizedBox(height: 10),
+                const SizedBox(height: 32),
                 _buildHoleImageRow(game),
-                const SizedBox(height: 28),
-                _buildDartRow(
-                  game: game,
-                  provider: provider,
-                  activePlayerId: activePlayerId,
-                  shouldPromptTakeout: shouldPromptTakeout,
-                  dartsThrown: dartsThrown,
-                ),
-                const SizedBox(height: 3),
-                // Scorecard caption ("<TeamName> scorecard")
-                if (activeTeamId != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      key: TikiGolfGameKeys.scorecardCaption,
-                      '$activeTeamName scorecard',
-                      style: GoogleFonts.boogaloo(
-                        fontSize: 14,
-                        color: _sandWhite,
-                        shadows: _outlineShadow(),
-                      ),
+                const SizedBox(height: 32),
+                // Above the scorecard: Par + dart slots on the left, Skip
+                // Turn on the right. Per-team caption removed — Teams panel
+                // on the left already shows the active team.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _buildDartRow(
+                      game: game,
+                      provider: provider,
+                      activePlayerId: activePlayerId,
+                      shouldPromptTakeout: shouldPromptTakeout,
+                      dartsThrown: dartsThrown,
                     ),
-                  ),
+                    const Spacer(),
+                    _buildSkipTurnButton(
+                      game: game,
+                      provider: provider,
+                      shouldPromptTakeout: shouldPromptTakeout,
+                      dartsThrown: dartsThrown,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
                 Expanded(
                   child: SingleChildScrollView(
                     child: _buildScorecard(
@@ -798,7 +847,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       // Team layout — only active team's players (Rule §50)
                       displayPlayerIds: currentTeamPlayers,
                       activePlayerId: activePlayerId,
-                      caption: null, // caption rendered above
+                      caption: null,
                     ),
                   ),
                 ),
@@ -823,7 +872,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
   }) {
     return Container(
       key: TikiGolfGameKeys.teamsPanel,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      // Tight left margin so the larger 98px badges sit close to the screen
+      // edge; right padding stays at 8 to keep separation from center content.
+      padding: const EdgeInsets.fromLTRB(4, 12, 8, 12),
       // Transparent — no background color, no border
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -831,7 +882,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           Text(
             'TEAMS',
             style: GoogleFonts.boogaloo(
-              fontSize: 14,
+              fontSize: 26,
               fontWeight: FontWeight.bold,
               color: _sandWhite,
               shadows: _outlineShadow(),
@@ -843,10 +894,20 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
             final teamId = entry.value;
             final isActive = teamId == activeTeamId;
 
-            // Team ± par score
+            // Team ± par score (real-time)
+            // Count holes the TEAM has actually completed (≥1 teammate has
+            // played that hole — `bestBallForTeam` returns non-null). This
+            // updates immediately when the first team member finishes a hole,
+            // instead of waiting until `currentHole` advances after ALL teams
+            // are done.
             final teamTotal = game.totalForTeam(teamId);
-            final teamPar = game.currentHole - 1; // completed holes × par 2
-            final parScore = teamTotal - (teamPar * 2);
+            int teamCompletedHoles = 0;
+            for (int h = 0; h < 9; h++) {
+              if (game.bestBallForTeam(teamId, h) != null) {
+                teamCompletedHoles += 1;
+              }
+            }
+            final parScore = teamTotal - (teamCompletedHoles * 2);
             final parLabel = parScore == 0
                 ? 'E'
                 : parScore > 0
@@ -871,26 +932,26 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                 decoration: isActive
                     ? BoxDecoration(
                         border: const Border(
-                          left: BorderSide(color: _lagoonBlue, width: 3),
+                          left: BorderSide(color: _lagoonBlue, width: 6),
                         ),
                         color: _lagoonBlue.withOpacity(0.10),
                         borderRadius: BorderRadius.circular(4),
                       )
                     : null,
                 padding:
-                    EdgeInsets.only(left: isActive ? 6 : 0, top: 4, bottom: 4),
+                    EdgeInsets.only(left: isActive ? 12 : 0, top: 4, bottom: 4),
                 child: Column(
                   children: [
-                    // Team crest
+                    // Team crest — 184px (+25% from 147)
                     if (crestPath != null)
                       Image.asset(
                         crestPath,
-                        width: 56,
-                        height: 56,
+                        width: 184,
+                        height: 184,
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => Container(
-                          width: 56,
-                          height: 56,
+                          width: 184,
+                          height: 184,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: _lagoonBlue.withOpacity(0.3),
@@ -899,8 +960,8 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       )
                     else
                       Container(
-                        width: 56,
-                        height: 56,
+                        width: 184,
+                        height: 184,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: _lagoonBlue.withOpacity(0.3),
@@ -911,7 +972,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                     Text(
                       parLabel,
                       style: GoogleFonts.boogaloo(
-                        fontSize: 18,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: parColor,
                         shadows: _outlineShadow(),
@@ -950,7 +1011,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           key: TikiGolfGameKeys.holeCounter,
           'Hole ${game.currentHole}/9',
           style: GoogleFonts.boogaloo(
-            fontSize: 26,
+            fontSize: 40,
             color: _sandWhite,
             shadows: _outlineShadow(),
           ),
@@ -961,28 +1022,18 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           key: TikiGolfGameKeys.holeName,
           holeName,
           style: GoogleFonts.boogaloo(
-            fontSize: 26,
+            fontSize: 40,
             color: _lagoonBlue,
             shadows: _outlineShadow(),
           ),
         ),
         const SizedBox(width: 48),
-        // Par label
-        Text(
-          key: TikiGolfGameKeys.parLabel,
-          'Par: 2',
-          style: GoogleFonts.boogaloo(
-            fontSize: 26,
-            color: _sandWhite,
-            shadows: _outlineShadow(),
-          ),
-        ),
-        const SizedBox(width: 12),
+        // Par label moved to the dart row above the scorecard.
         // Target label
         Text(
           'Target: ',
           style: GoogleFonts.boogaloo(
-            fontSize: 26,
+            fontSize: 40,
             color: _sandWhite,
             shadows: _outlineShadow(),
           ),
@@ -991,7 +1042,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           key: TikiGolfGameKeys.targetNumber,
           '$target',
           style: GoogleFonts.boogaloo(
-            fontSize: 26,
+            fontSize: 40,
             color: _lagoonBlue,
             shadows: _outlineShadow(),
           ),
@@ -1005,6 +1056,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
   /// Invisible-placeholder pattern for neighbor previews (per skill Rule §55).
   /// Current hole 1 → 0 played holes → 2 invisible left placeholders.
   /// Current hole 5 → 2 played holes → 2 visible left previews.
+  ///
+  /// All 5 images are HEIGHT-constrained (width follows aspect ratio) so that
+  /// images with different intrinsic aspect ratios all render at the same
+  /// height — preventing tall portrait-ish hole images from pushing the rest
+  /// of the screen layout down. The Row uses `spaceBetween` so the widths
+  /// distribute naturally regardless of how wide each image ends up.
   Widget _buildHoleImageRow(TikiGolfGame game) {
     final holeIndex = game.currentHole - 1; // 0-based
 
@@ -1034,51 +1091,75 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         ? game.holeImagePaths[outerRightIndex]
         : null;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Outer left preview (140px)
-        _buildNeighborPreview(outerLeftPath, 140),
-        // Inner left preview (182px)
-        _buildNeighborPreview(innerLeftPath, 182),
-        // Main hole image (483px wide, natural aspect)
-        SizedBox(
-          width: 483,
-          child: currentPath != null
-              ? Image.asset(
-                  key: TikiGolfGameKeys.holeImage,
-                  currentPath,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const SizedBox(height: 200),
-                )
-              : const SizedBox(height: 200, key: TikiGolfGameKeys.holeImage),
-        ),
-        // Inner right preview (182px)
-        _buildNeighborPreview(innerRightPath, 182),
-        // Outer right preview (140px)
-        _buildNeighborPreview(outerRightPath, 140),
-      ],
+    // Target HEIGHTS at full scale. Width is intrinsic per image (driven by
+    // each image's own aspect ratio) — only the height is the layout invariant.
+    const double targetOuterH = 158;
+    const double targetInnerH = 205;
+    const double targetMainH = 450;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Allow the row to scale heights DOWN on tall-but-short viewports
+        // (e.g. landscape tablets where vertical space is tight) so the image
+        // row doesn't dominate the screen. Cap at 1.0 — never grow above the
+        // target heights. We use available HEIGHT as the budget here since the
+        // images are now height-driven.
+        // Budget = the full image row gets at most ~55% of the screen height.
+        final double mediaHeight = MediaQuery.of(context).size.height;
+        final double heightBudget = mediaHeight * 0.55;
+        final double scale =
+            (heightBudget / targetMainH).clamp(0.0, 1.0);
+
+        final double outerH = targetOuterH * scale;
+        final double innerH = targetInnerH * scale;
+        final double mainH = targetMainH * scale;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _buildNeighborPreview(outerLeftPath, outerH),
+            _buildNeighborPreview(innerLeftPath, innerH),
+            // Main hole image — height-constrained, width intrinsic
+            currentPath != null
+                ? Image.asset(
+                    key: TikiGolfGameKeys.holeImage,
+                    currentPath,
+                    height: mainH,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) =>
+                        SizedBox(height: mainH, width: mainH),
+                  )
+                : SizedBox(
+                    height: mainH,
+                    width: mainH,
+                    key: TikiGolfGameKeys.holeImage,
+                  ),
+            _buildNeighborPreview(innerRightPath, innerH),
+            _buildNeighborPreview(outerRightPath, outerH),
+          ],
+        );
+      },
     );
   }
 
-  /// Returns an invisible-placeholder SizedBox when [path] is null, or a
-  /// faded preview image (opacity 0.70) when [path] is available.
-  Widget _buildNeighborPreview(String? path, double size) {
+  /// Returns an invisible-placeholder SizedBox when [path] is null (square
+  /// shape, sized to the target height for stable row geometry); otherwise
+  /// returns a faded preview image (opacity 0.70) constrained to the target
+  /// height with intrinsic width.
+  Widget _buildNeighborPreview(String? path, double height) {
     if (path == null) {
-      // Invisible placeholder — preserves layout geometry
-      return SizedBox(width: size, height: size);
+      // Invisible placeholder — square so the column reserves a sensible
+      // amount of horizontal space whether or not the slot is populated.
+      return SizedBox(width: height, height: height);
     }
     return Opacity(
       opacity: 0.70,
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: Image.asset(
-          path,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-        ),
+      child: Image.asset(
+        path,
+        height: height,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => SizedBox(height: height, width: height),
       ),
     );
   }
@@ -1102,16 +1183,36 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
     return Row(
       key: TikiGolfGameKeys.dartRow,
-      mainAxisAlignment: MainAxisAlignment.center,
+      // Compact, left-aligned — the parent Row positions us next to the
+      // Skip Turn button above the scorecard.
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Par label beside dart indicators
-        Text(
-          'Par: 2  ',
-          style: GoogleFonts.boogaloo(
-            fontSize: 18,
-            color: _sandWhite,
-            shadows: _outlineShadow(),
-          ),
+        // "Par: 2" — "2" rendered in lagoon blue to match the target number
+        // styling above. parLabel key lives here (moved from the title row).
+        RichText(
+          key: TikiGolfGameKeys.parLabel,
+          text: TextSpan(children: [
+            TextSpan(
+              text: 'Par: ',
+              style: GoogleFonts.boogaloo(
+                fontSize: 28,
+                color: _sandWhite,
+                shadows: _outlineShadow(),
+              ),
+            ),
+            TextSpan(
+              text: '2',
+              style: GoogleFonts.boogaloo(
+                fontSize: 28,
+                color: _lagoonBlue,
+                shadows: _outlineShadow(),
+              ),
+            ),
+            TextSpan(
+              text: '  ',
+              style: GoogleFonts.boogaloo(fontSize: 28),
+            ),
+          ]),
         ),
         // Dart indicator slots (maxStrokes, dynamic)
         ...List.generate(game.maxStrokes, (i) {
@@ -1122,54 +1223,61 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           Color slotBorder;
           String label;
 
+          // Deeper-tint slot backgrounds + high-contrast Sand White text with
+          // a heavy stroke outline. Same-hue text on background (the prior
+          // brown-on-brown / blue-on-blue) was washing the labels out.
+          Color textColor;
+          Color outlineColor;
           if (!isFilled) {
             slotBg = _sandWhite.withOpacity(0.10);
             slotBorder = _sandWhite.withOpacity(0.50);
             label = '—';
+            textColor = _sandWhite;
+            outlineColor = _tikiBrown;
           } else if (isHit) {
-            slotBg = _lagoonBlue.withOpacity(0.25);
+            slotBg = _lagoonBlue.withOpacity(0.55); // deeper tint
             slotBorder = _lagoonBlue;
-            label = 'HIT';
+            label = 'HIT!';
+            textColor = _sandWhite;
+            outlineColor = const Color(0xFF0A4D5C); // deep teal — Lagoon shadow
           } else {
-            slotBg = _tikiBrown.withOpacity(0.20);
+            slotBg = _tikiBrown.withOpacity(0.55); // deeper tint
             slotBorder = _tikiBrown;
-            label = 'Miss';
+            label = 'MISS';
+            textColor = _sandWhite;
+            outlineColor = const Color(0xFF3D2818); // near-black brown
           }
 
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 3),
             child: Container(
               key: TikiGolfGameKeys.dartIndicator(i),
-              width: 52,
-              height: 36,
+              // Slightly larger slot to host the punchier text.
+              width: 64,
+              height: 44,
               decoration: BoxDecoration(
                 color: slotBg,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: slotBorder, width: 1.5),
+                border: Border.all(color: slotBorder, width: 2),
               ),
               child: Center(
                 child: Text(
                   label,
                   style: GoogleFonts.boogaloo(
-                    fontSize: 12,
-                    color: isFilled
-                        ? (isHit ? _lagoonBlue : _tikiBrown)
-                        : _sandWhite.withOpacity(0.50),
-                    shadows: _outlineShadow(),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                    letterSpacing: 1.0,
+                    shadows: isFilled
+                        ? _heavyOutline(outlineColor)
+                        : _outlineShadow(),
                   ),
                 ),
               ),
             ),
           );
         }),
-        const SizedBox(width: 24),
-        // Skip Turn button
-        _buildSkipTurnButton(
-          game: game,
-          provider: provider,
-          shouldPromptTakeout: shouldPromptTakeout,
-          dartsThrown: dartsThrown,
-        ),
+        // Skip Turn button moved to the right of the scorecard.
       ],
     );
   }
@@ -1198,6 +1306,8 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           ? null
           : () {
               provider.skipTurn();
+              // Skip ends the turn — clear tracked segments.
+              _currentTurnSegments.clear();
               if (dartsThrown > 0) {
                 // Darts are on the board — fire takeoutStarted after delay
                 Future.delayed(const Duration(milliseconds: 3500), () {
@@ -1221,12 +1331,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         foregroundColor: _sandWhite,
         disabledBackgroundColor: _tikiBrown.withOpacity(0.40),
         disabledForegroundColor: _sandWhite.withOpacity(0.60),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 10),
         elevation: 2,
       ),
       child: Text(
         'SKIP TURN',
-        style: GoogleFonts.boogaloo(fontSize: 15),
+        style: GoogleFonts.boogaloo(fontSize: 17),
       ),
     );
   }
@@ -1243,7 +1353,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     required String? caption,
   }) {
     final maxHolesShown = 9; // always render all 9 columns
-    const totalColWidth = 60.0;
+    const totalColWidth = 90.0;
 
     return Container(
       key: TikiGolfGameKeys.scorecard,
@@ -1257,10 +1367,15 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         columnWidths: {
           0: const FixedColumnWidth(130), // Player name column
           for (int h = 1; h <= maxHolesShown; h++)
-            h: const FixedColumnWidth(44),
+            h: const FixedColumnWidth(50),
           maxHolesShown + 1: const FixedColumnWidth(totalColWidth),
         },
         border: TableBorder.all(color: _tikiBrown.withOpacity(0.40), width: 0.5),
+        // Row height is driven by the player name cell (default `top`
+        // alignment). Score cells individually wrap their Container in a
+        // TableCell with `fill` so the current-hole borders span the
+        // entire row height (fixes the "blue line through the middle of
+        // the current player row"). See _scoreCell below.
         children: [
           // Header row
           TableRow(
@@ -1274,8 +1389,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
             ],
           ),
           // Player rows
-          ...displayPlayerIds.map((playerId) {
+          ...displayPlayerIds.asMap().entries.map((entry) {
+            final rowIndex = entry.key;
+            final playerId = entry.value;
             final isActive = playerId == activePlayerId;
+            final isFirstRow = rowIndex == 0;
+            final isLastRow = rowIndex == displayPlayerIds.length - 1;
             final player = playerProvider.byId(playerId);
             final playerName = player?.name ?? playerId;
             final scores = game.playerHoleScores[playerId] ?? [];
@@ -1302,25 +1421,28 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                     maxStrokes: game.maxStrokes,
                     isCurrent: h == game.currentHole - 1,
                     isActive: isActive,
+                    isFirstRow: isFirstRow,
+                    isLastRow: isLastRow,
                   ),
                 // Total
                 _totalCell(total: total, holesCompleted: holesCompleted),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );
   }
 
   Widget _headerCell(String label) {
-    return Padding(
+    return Container(
+      alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
       child: Text(
         label,
         textAlign: TextAlign.center,
         style: GoogleFonts.boogaloo(
-          fontSize: 13,
+          fontSize: 23,
           color: _sandWhite,
           shadows: _outlineShadow(),
         ),
@@ -1330,6 +1452,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
   Widget _playerNameCell(String name, bool isActive) {
     return Container(
+      alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       decoration: isActive
           ? const BoxDecoration(
@@ -1342,11 +1465,31 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         name,
         overflow: TextOverflow.ellipsis,
         style: GoogleFonts.boogaloo(
-          fontSize: 14,
+          fontSize: 24,
           color: isActive ? _lagoonBlue : _sandWhite,
           shadows: _outlineShadow(),
         ),
       ),
+    );
+  }
+
+  /// Builds the current-hole highlight border for a single cell.
+  /// Top edge only on the first player row, bottom edge only on the last —
+  /// so the entire column reads as one outlined box rather than a stack of
+  /// inner horizontal lines between every row.
+  Border? _currentHoleBorder({
+    required bool isCurrent,
+    required bool isFirstRow,
+    required bool isLastRow,
+  }) {
+    if (!isCurrent) return null;
+    return Border(
+      top: isFirstRow
+          ? const BorderSide(color: _lagoonBlue, width: 2)
+          : BorderSide.none,
+      bottom: isLastRow
+          ? const BorderSide(color: _lagoonBlue, width: 2)
+          : BorderSide.none,
     );
   }
 
@@ -1357,21 +1500,27 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     required int maxStrokes,
     required bool isCurrent,
     required bool isActive,
+    required bool isFirstRow,
+    required bool isLastRow,
   }) {
+    final border = _currentHoleBorder(
+      isCurrent: isCurrent,
+      isFirstRow: isFirstRow,
+      isLastRow: isLastRow,
+    );
+
     if (score == null) {
-      // Not yet played
-      return Container(
-        key: key,
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        decoration: BoxDecoration(
-          border: isCurrent
-              ? const Border(
-                  top: BorderSide(color: _lagoonBlue, width: 2),
-                  bottom: BorderSide(color: _lagoonBlue, width: 2),
-                )
-              : null,
+      // Not yet played — TableCell.fill so the current-hole borders span
+      // the row's full height (player name cell drives the row height).
+      return TableCell(
+        verticalAlignment: TableCellVerticalAlignment.fill,
+        child: Container(
+          key: key,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(border: border),
+          child: const SizedBox.shrink(),
         ),
-        child: const SizedBox.shrink(),
       );
     }
 
@@ -1395,37 +1544,35 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       label = '$score';
     }
 
-    return Container(
-      key: key,
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        border: isCurrent
-            ? const Border(
-                top: BorderSide(color: _lagoonBlue, width: 2),
-                bottom: BorderSide(color: _lagoonBlue, width: 2),
-              )
-            : null,
-      ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.boogaloo(
-          fontSize: 14,
-          color: cellColor,
-          shadows: _outlineShadow(),
+    return TableCell(
+      verticalAlignment: TableCellVerticalAlignment.fill,
+      child: Container(
+        key: key,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(border: border),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.boogaloo(
+            fontSize: 24,
+            color: cellColor,
+            shadows: _outlineShadow(),
+          ),
         ),
       ),
     );
   }
 
   Widget _totalCell({required int total, required int holesCompleted}) {
-    return Padding(
+    return Container(
+      alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
       child: Text(
         holesCompleted > 0 ? '$total' : '—',
         textAlign: TextAlign.center,
         style: GoogleFonts.boogaloo(
-          fontSize: 14,
+          fontSize: 24,
           fontWeight: FontWeight.bold,
           color: _sandWhite,
           shadows: _outlineShadow(),
@@ -1537,6 +1684,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       // Announce Mulligan Used before resetting state
                       _audioQueue?.announceMulliganUsed(currentPlayerName);
                       provider.useMulligan();
+                      // Reset segment tracking — the prior turn's darts are
+                      // wiped, the player re-throws from scratch.
+                      _currentTurnSegments.clear();
                       // currentTurnEnded becomes false → modal disappears
                       setState(() {});
                     },
@@ -1583,12 +1733,19 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  /// Builds the initial segment list for the Edit Score dialog.
-  /// For Tiki Golf Pass 2, darts are tracked by count only (segments wired
-  /// in Phase 5). We produce a list of 'Miss' entries for darts thrown.
+  /// Builds the initial segment list for the Edit Score dialog using the
+  /// actual segment strings tracked across the current turn (sector strings
+  /// from `processDartThrow`, e.g. 'S20', 'T14', 'Bull', 'Miss'). The list
+  /// is trimmed to `dartsThrown` so a stale segment doesn't leak in if the
+  /// provider trimmed darts (e.g. on mulligan).
   List<String> _buildInitialSegments(TikiGolfGame game, String playerId) {
     final count = (game.dartsThrown[playerId] ?? 0).clamp(0, game.maxStrokes);
-    return List.generate(count, (_) => 'Miss');
+    if (_currentTurnSegments.isEmpty) {
+      // No tracked segments (e.g. resumed game, edge case) — fall back to
+      // 'Miss' placeholders so Edit Score still opens with the right count.
+      return List.generate(count, (_) => 'Miss');
+    }
+    return List<String>.from(_currentTurnSegments.take(count));
   }
 
   /// Formats a team display name from its teamId (e.g. 'team_1' → 'Team 1').

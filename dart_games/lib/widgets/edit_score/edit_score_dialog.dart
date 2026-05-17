@@ -276,14 +276,6 @@ Widget _buildDartScoreSection(
     key: dartKey,
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      // Dart label (D1, D2, D3)
-      Text(
-        'D${dartIndex + 1}',
-        style: config.dartLabelStyle,
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: 6),
-
       // Score display box
       Container(
         height: 50,

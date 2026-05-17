@@ -32,20 +32,8 @@ Future<void> throwDartViaMock(WidgetTester tester, int number,
 Future<void> throwMissViaMock(WidgetTester tester) =>
     DartThrowHelpers.throwMissViaMock(tester);
 
-/// Tiki Golf: simulate takeout via the MockScoliaApiService.
-///
-/// In Tiki Golf, the RemoveDartsModal is rendered ABOVE the DartboardEmulator,
-/// so the emulator's DARTS REMOVED button is not directly hit-testable.
-/// We trigger takeout by calling simulateTakeoutFinished() on the mock API.
-Future<void> clickDartsRemoved(WidgetTester tester) async {
-  final mockApi = DartThrowHelpers.getMockApi(tester);
-  if (mockApi != null) {
-    mockApi.simulateTakeoutFinished();
-    await PumpSequences.simpleUpdate(tester);
-  } else {
-    await DartThrowHelpers.clickDartsRemoved(tester);
-  }
-}
+Future<void> clickDartsRemoved(WidgetTester tester) =>
+    DartThrowHelpers.clickDartsRemoved(tester);
 
 Future<void> setupAndStartGame(
   WidgetTester tester, {

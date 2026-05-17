@@ -346,20 +346,7 @@ class ActivePlayerPanelWidget extends StatelessWidget {
       dartBox = _PulsingGoldBorder(child: dartBox);
     }
 
-    return Column(
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.fredoka(
-            fontSize: 16, // Increased from 12
-            fontWeight: FontWeight.bold,
-            color: Colors.white70,
-          ),
-        ),
-        const SizedBox(height: 6),
-        dartBox,
-      ],
-    );
+    return dartBox;
   }
 }
 

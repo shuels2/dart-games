@@ -27,16 +27,8 @@ Future<void> throwDartViaMock(WidgetTester tester, int number,
 Future<void> throwMissViaMock(WidgetTester tester) =>
     DartThrowHelpers.throwMissViaMock(tester);
 
-/// Tiki Golf: simulate takeout via MockScoliaApiService.
-Future<void> clickDartsRemoved(WidgetTester tester) async {
-  final mockApi = DartThrowHelpers.getMockApi(tester);
-  if (mockApi != null) {
-    mockApi.simulateTakeoutFinished();
-    await PumpSequences.simpleUpdate(tester);
-  } else {
-    await DartThrowHelpers.clickDartsRemoved(tester);
-  }
-}
+Future<void> clickDartsRemoved(WidgetTester tester) =>
+    DartThrowHelpers.clickDartsRemoved(tester);
 
 /// Set up and start a team mode game (Random assignment by default).
 Future<void> setupAndStartTeamGame(

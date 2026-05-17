@@ -806,29 +806,17 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     for (int i = 0; i < 3; i++) ...[
                       SizedBox(
                         width: 52, // 30% wider to fit "Miss" without wrapping
-                        child: Column(
-                          children: [
-                            Text(
-                              'D${i + 1}',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: const Color(0xFFF1FAEE), // Cloud Dancer
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              i < dartScores.length
-                                  ? _getScoreDisplayFromSegment(dartScores[i])
-                                  : '-',
-                              style: GoogleFonts.luckiestGuy(
-                                fontSize: 20,
-                                color: i < dartScores.length
-                                    ? const Color(0xFFFFD700) // Canary Yellow
-                                    : Colors.grey,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          i < dartScores.length
+                              ? _getScoreDisplayFromSegment(dartScores[i])
+                              : '-',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.luckiestGuy(
+                            fontSize: 20,
+                            color: i < dartScores.length
+                                ? const Color(0xFFFFD700) // Canary Yellow
+                                : Colors.grey,
+                          ),
                         ),
                       ),
                       if (i < 2) const SizedBox(width: 8),
