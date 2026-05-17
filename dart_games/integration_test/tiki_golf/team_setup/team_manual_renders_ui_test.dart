@@ -28,8 +28,7 @@ void main() {
     await setGameModeTeam(tester);
     await setAssignmentManual(tester);
 
-    // ── Team Count dropdown present ────────────────────────────────────────
-    expectTeamCountDropdownPresent(tester);
+    // (Team Count dropdown removed from the menu — default is 4 teams.)
 
     // ── Assignment Mode toggle present ────────────────────────────────────
     expectAssignmentTogglePresent(tester);

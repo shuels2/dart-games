@@ -30,7 +30,7 @@ void main() {
     await tester.pump();
 
     // Verify Manual UI is present
-    expectTeamCountDropdownPresent(tester);
+    // (Team Count dropdown removed from the menu — default is 4 teams.)
     // "Assign team" buttons present in Manual mode (exact text to avoid "Team Assignment" label)
     expect(find.text('Assign team'), findsWidgets,
         reason: '"Assign team" buttons should be present in Manual mode');
@@ -38,8 +38,7 @@ void main() {
     // ── Switch to Random ──────────────────────────────────────────────────
     await setAssignmentRandom(tester);
 
-    // Team Count dropdown should disappear
-    expectTeamCountDropdownAbsent(tester);
+    // (Team Count dropdown was removed from the menu entirely.)
 
     // "Assign team" buttons should disappear (exact text match to avoid "Team Assignment" label)
     expect(find.text('Assign team'), findsNothing,

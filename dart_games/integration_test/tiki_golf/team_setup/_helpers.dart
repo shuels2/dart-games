@@ -42,21 +42,18 @@ Future<void> startGame(WidgetTester tester) =>
 
 // ===== TEAM SETUP ASSERTIONS =====
 
-/// Verify the Team Count dropdown IS present (Team+Manual mode expected)
-void expectTeamCountDropdownPresent(WidgetTester tester) {
-  expect(
-    ElementFinders.getTikiGolfTeamCountDropdown(),
-    findsOneWidget,
-    reason: 'Team Count dropdown should be visible in Team+Manual mode',
-  );
-}
-
-/// Verify the Team Count dropdown is NOT present (Team+Random or Solo)
+/// Verify the Team Count dropdown is NOT present.
+///
+/// The Team Count dropdown was removed from the menu entirely (default is
+/// 4 teams). The "absent" assertion is preserved as a passing sanity check
+/// for any test that was originally asserting it doesn't show in Solo /
+/// Random mode; the corresponding "present" assertion was removed because
+/// no widget ever satisfies it anymore.
 void expectTeamCountDropdownAbsent(WidgetTester tester) {
   expect(
     ElementFinders.getTikiGolfTeamCountDropdown(),
     findsNothing,
-    reason: 'Team Count dropdown should NOT be visible in Random/Solo mode',
+    reason: 'Team Count dropdown should never appear (it was removed)',
   );
 }
 

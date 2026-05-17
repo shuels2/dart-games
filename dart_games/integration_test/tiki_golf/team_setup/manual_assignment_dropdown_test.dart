@@ -52,8 +52,8 @@ void main() {
             'Should have at least 2 "Assign team" buttons for 3 players in Team+Manual mode '
             '(count: $btnCount)');
 
-    // Team Count dropdown must also be present in Manual mode
-    expectTeamCountDropdownPresent(tester);
+    // (Team Count dropdown removed from the menu — see source comment in
+    // tiki_golf_menu_screen.dart; default is 4 teams. No dropdown to assert.)
 
     // Assignment toggle must show MANUAL as selected
     expect(ElementFinders.getTikiGolfAssignmentModeManual(), findsOneWidget,

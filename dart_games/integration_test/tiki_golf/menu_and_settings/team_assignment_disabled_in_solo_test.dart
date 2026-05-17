@@ -48,12 +48,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    // Team Count dropdown must NOT appear (it only appears in Team+Manual)
-    final teamCountDropdown =
-        ElementFinders.getTikiGolfTeamCountDropdown();
-    expect(teamCountDropdown, findsNothing,
-        reason:
-            '[DIAG team_assign_disabled] Team Count dropdown should NOT appear when tap is ignored in Solo mode');
+    // (Team Count dropdown removed from the menu entirely — no longer
+    // available as a proxy for "is the IgnorePointer swallowing taps?".
+    // The opacity-wrapper check above is the source of truth here.)
 
     // ── Switch to TEAM mode — verify toggle activates ─────────────────────
     await setGameModeTeam(tester);
@@ -65,23 +62,11 @@ void main() {
     // Now tapping MANUAL should work
     await setAssignmentManual(tester);
 
-    // Team Count dropdown should appear (Team + Manual mode)
-    final teamCountDropdownAfter =
-        ElementFinders.getTikiGolfTeamCountDropdown();
-    expect(teamCountDropdownAfter, findsOneWidget,
-        reason:
-            '[DIAG team_assign_disabled] Team Count dropdown should appear in Team+Manual mode');
-
     // ── Switch back to SOLO — verify disabled again ───────────────────────
     await setGameModeSolo(tester);
 
     expect(foundHalfOpacity(), isTrue,
         reason:
             '[DIAG team_assign_disabled] Opacity(0.5) should return when back in Solo mode');
-
-    // Team Count dropdown should disappear
-    expect(teamCountDropdown, findsNothing,
-        reason:
-            '[DIAG team_assign_disabled] Team Count dropdown should be gone in Solo mode');
   });
 }

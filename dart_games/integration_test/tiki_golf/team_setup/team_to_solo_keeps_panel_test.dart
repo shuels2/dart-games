@@ -30,15 +30,12 @@ void main() {
     await tester.pump();
 
     // Verify Team+Manual UI present
-    expectTeamCountDropdownPresent(tester);
+    // (Team Count dropdown removed from the menu — default is 4 teams.)
     expect(find.textContaining('Alice'), findsWidgets,
         reason: 'Alice should be visible in Team+Manual mode');
 
     // ── Switch back to Solo ───────────────────────────────────────────────
     await setGameModeSolo(tester);
-
-    // Team Count dropdown should disappear
-    expectTeamCountDropdownAbsent(tester);
 
     // Players still listed (panel stays mounted, player selection preserved)
     expect(find.textContaining('Alice'), findsWidgets,

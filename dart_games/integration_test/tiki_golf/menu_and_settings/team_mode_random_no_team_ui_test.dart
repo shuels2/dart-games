@@ -29,12 +29,7 @@ void main() {
     await setGameModeTeam(tester);
     // Team Assignment defaults to Random — no extra action needed.
 
-    // ── Verify no Team Count dropdown ─────────────────────────────────────
-    final teamCountDropdown =
-        ElementFinders.getTikiGolfTeamCountDropdown();
-    expect(teamCountDropdown, findsNothing,
-        reason:
-            '[DIAG random_no_team_ui] Team Count dropdown should NOT appear in Team+Random mode');
+    // (Team Count dropdown was removed from the menu entirely.)
 
     // ── Verify no "Assign team" trailing icons ─────────────────────────────
     // These only appear when players are selected in Manual mode.
@@ -51,18 +46,15 @@ void main() {
         reason:
             '[DIAG random_no_team_ui] Add player button should still be present in Team+Random mode');
 
-    // ── Switch to Manual — Team Count dropdown appears ────────────────────
+    // ── Manual↔Random round trip — add-button stays mounted ──────────────
     await setAssignmentManual(tester);
-
-    expect(teamCountDropdown, findsOneWidget,
+    expect(isAddButtonMounted(), isTrue,
         reason:
-            '[DIAG random_no_team_ui] Team Count dropdown should appear after switching to Manual');
+            '[DIAG random_no_team_ui] Add player button should be present after switching to Manual');
 
-    // ── Switch back to Random — Team Count dropdown disappears ────────────
     await setAssignmentRandom(tester);
-
-    expect(teamCountDropdown, findsNothing,
+    expect(isAddButtonMounted(), isTrue,
         reason:
-            '[DIAG random_no_team_ui] Team Count dropdown should disappear again when switching back to Random');
+            '[DIAG random_no_team_ui] Add player button should be present after switching back to Random');
   });
 }

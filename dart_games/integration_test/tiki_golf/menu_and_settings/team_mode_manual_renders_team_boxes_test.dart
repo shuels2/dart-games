@@ -33,12 +33,8 @@ void main() {
     await setGameModeTeam(tester);
     await setAssignmentManual(tester);
 
-    // ── Team Count dropdown present ────────────────────────────────────────
-    final teamCountDropdown =
-        ElementFinders.getTikiGolfTeamCountDropdown();
-    expect(teamCountDropdown, findsOneWidget,
-        reason:
-            '[DIAG team_manual_boxes] Team Count dropdown not found in Team+Manual mode');
+    // (Team Count dropdown was removed from the menu entirely — default is
+    // 4 teams. The Manual-mode assertions below cover the surviving UI.)
 
     // ── Team Assignment section label appears ──────────────────────────────
     // The TeamPlayerListPanel adds a "Team Assignment" label when
@@ -57,18 +53,13 @@ void main() {
     expect(randomSegment, findsOneWidget,
         reason: '[DIAG team_manual_boxes] RANDOM segment not found');
 
-    // ── Switch to RANDOM — team Count dropdown disappears ─────────────────
+    // ── Switch to RANDOM, then back to MANUAL — toggle still works ───────
     await setAssignmentRandom(tester);
-
-    expect(teamCountDropdown, findsNothing,
-        reason:
-            '[DIAG team_manual_boxes] Team Count dropdown should NOT appear in Team+Random mode');
-
-    // ── Switch back to MANUAL — team Count dropdown reappears ─────────────
     await setAssignmentManual(tester);
 
-    expect(teamCountDropdown, findsOneWidget,
+    // MANUAL segment still findable after the round-trip
+    expect(ElementFinders.getTikiGolfAssignmentModeManual(), findsOneWidget,
         reason:
-            '[DIAG team_manual_boxes] Team Count dropdown should reappear when switching back to Manual');
+            '[DIAG team_manual_boxes] MANUAL segment should still render after toggling back from Random');
   });
 }

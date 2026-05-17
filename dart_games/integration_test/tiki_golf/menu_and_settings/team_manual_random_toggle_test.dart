@@ -25,22 +25,12 @@ void main() {
     // ── Switch to Team mode ───────────────────────────────────────────────
     await setGameModeTeam(tester);
 
-    // Default is RANDOM — Team Count dropdown should NOT be shown
-    final teamCountDropdown =
-        ElementFinders.getTikiGolfTeamCountDropdown();
-    expect(teamCountDropdown, findsNothing,
-        reason:
-            '[DIAG manual_random_toggle] Team Count dropdown should NOT be visible in Team+Random mode');
+    // (Team Count dropdown removed from the menu entirely. The
+    // Manual↔Random toggle still works — assertions below cover its effect
+    // on the player-panel UI via the add-player button presence.)
 
     // ── Switch to MANUAL assignment ───────────────────────────────────────
     await setAssignmentManual(tester);
-
-    // Team Count dropdown should now appear
-    final teamCountDropdownManual =
-        ElementFinders.getTikiGolfTeamCountDropdown();
-    expect(teamCountDropdownManual, findsOneWidget,
-        reason:
-            '[DIAG manual_random_toggle] Team Count dropdown should appear in Team+Manual mode');
 
     // Add player button still present (panel stays mounted)
     // Note: when no players are added, the empty-state button key is shown.
@@ -54,11 +44,6 @@ void main() {
 
     // ── Switch back to RANDOM ─────────────────────────────────────────────
     await setAssignmentRandom(tester);
-
-    // Team Count dropdown should disappear again
-    expect(teamCountDropdown, findsNothing,
-        reason:
-            '[DIAG manual_random_toggle] Team Count dropdown should disappear when switching back to Random');
 
     // Panel still mounted
     expect(isAddButtonMounted(), isTrue,

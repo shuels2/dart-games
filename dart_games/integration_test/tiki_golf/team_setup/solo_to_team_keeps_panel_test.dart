@@ -34,8 +34,8 @@ void main() {
     expect(find.textContaining('Bob'), findsWidgets,
         reason: 'Bob should be visible in Solo mode');
 
-    // Team Count dropdown should NOT be present in Solo mode
-    expectTeamCountDropdownAbsent(tester);
+    // (Team Count dropdown removed from the menu entirely — no longer
+    // a per-mode UI element to assert on.)
 
     // ── Switch to Team mode ───────────────────────────────────────────────
     await setGameModeTeam(tester);
@@ -46,14 +46,8 @@ void main() {
     expect(find.textContaining('Bob'), findsWidgets,
         reason: 'Bob should still be visible after switching to Team mode');
 
-    // Default is Random → Team Count dropdown still absent
-    expectTeamCountDropdownAbsent(tester);
-
     // ── Switch to Manual assignment ───────────────────────────────────────
     await setAssignmentManual(tester);
-
-    // Now Team Count dropdown should appear
-    expectTeamCountDropdownPresent(tester);
 
     // Players still visible
     expect(find.textContaining('Alice'), findsWidgets,
