@@ -26,7 +26,12 @@ void main() {
         await PumpSequences.simpleUpdate(tester);
         await tester.tap(find.byKey(
             HomeKeys.filterGameplayStyleOption(GameplayStyle.versus)));
-        await tester.pump();
+        // Two-pump settle so the checkbox onChanged bubbles up, parent
+        // setState commits, and the home screen rebuilds with the filter
+        // applied BEFORE we dismiss the popup. The previous single pump
+        // sometimes left the filter state mid-commit, so the corner-tap
+        // dismiss ran before the parent's setState had taken effect.
+        await PumpSequences.simpleUpdate(tester);
         await tester.tapAt(const Offset(10, 10));
         await PumpSequences.simpleUpdate(tester);
 
@@ -35,7 +40,7 @@ void main() {
         await PumpSequences.simpleUpdate(tester);
         await tester.tap(find.byKey(HomeKeys
             .filterPlayerInteractionOption(PlayerInteraction.heavy)));
-        await tester.pump();
+        await PumpSequences.simpleUpdate(tester);
         await tester.tapAt(const Offset(10, 10));
         await PumpSequences.simpleUpdate(tester);
 
