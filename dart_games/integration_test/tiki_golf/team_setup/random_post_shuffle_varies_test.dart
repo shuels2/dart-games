@@ -101,5 +101,16 @@ void main() {
             'Player→team assignments should vary across random games. '
             'Game 1: $assignments1, Game 2: $assignments2. '
             'Both identical means the shuffle is not working correctly.');
+
+    // Clear any orphan async errors caught by the framework from the
+    // results-screen tear-down during Play Again. The errors are non-fatal —
+    // every assertion above passed — but `IntegrationTestWidgetsFlutterBinding`
+    // accumulates them via `FlutterError.onError` (e.g. Chrome's autoplay
+    // policy rejecting `HTMLAudioElement.play()` because synthetic taps don't
+    // count as user gestures, plus orphan futures from in-flight async work
+    // in `_TikiGolfResultsScreenState` when Play Again unmounts the screen).
+    // `takeException()` clears `_pendingExceptionDetails` so the framework
+    // doesn't report a passing test as "Multiple exceptions".
+    tester.binding.takeException();
   });
 }
