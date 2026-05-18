@@ -3,7 +3,14 @@
 // Screenshot test for Tiki Golf — captures all spec Section 12C visual states.
 // Driver: test_driver/screenshot_test.dart (NEVER integration_test.dart)
 // DO NOT use pumpAndSettle() — splash CircularProgressIndicator prevents settling.
-// Phase 9: failure-screenshot wraps removed per Rule §38.
+//
+// Structure: ONE `testWidgets` block containing all screenshot capture phases.
+// Multiple `testWidgets` in a screenshot test break the
+// `integration_test_driver_extended` request/response protocol under
+// `-d web-server` (parallel runner) — the driver protocol expects one test
+// per file, and 10+ separate testWidgets cause DWDS/webdriver session
+// disconnects that surface as `SocketException` at `WebDriver.quit`.
+// Match the structure of every other game's screenshot test.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -46,12 +53,13 @@ void main() {
       await UITestHelpers.resetServerState();
     });
 
-    // ========================================================================
-    // PART 1: MENU SCREEN STATES
-    // ========================================================================
-
-    testWidgets('Menu screen states', (WidgetTester tester) async {
-      print('SCREENSHOT: === MENU SCREEN STATES ===');
+    // Single continuous flow capturing all spec §12C visual states.
+    // See file header for why this is one testWidgets instead of many.
+    testWidgets('Full screenshot flow', (WidgetTester tester) async {
+      // ======================================================================
+      // PART 1: MENU SCREEN STATES
+      // ======================================================================
+      print('SCREENSHOT: === PART 1: MENU SCREEN STATES ===');
 
       // --- Solo default (2 players, default settings) ---
       await UITestHelpers.navigateToGameMenu(tester, config);
@@ -127,15 +135,16 @@ void main() {
       }
       await _screenshot(binding, tester, '09_menu_team_manual_3players_team_count_2');
 
-      print('SCREENSHOT: === MENU SCREEN STATES COMPLETE ===');
-    });
+      print('SCREENSHOT: === PART 1 COMPLETE ===');
 
-    // ========================================================================
-    // PART 2: GAME SCREEN STATES (SOLO)
-    // ========================================================================
+      // ======================================================================
+      // PART 2: GAME SCREEN STATES (SOLO)
+      // ======================================================================
+      print('SCREENSHOT: === PART 2: GAME SCREEN SOLO STATES ===');
 
-    testWidgets('Game screen solo states', (WidgetTester tester) async {
-      print('SCREENSHOT: === GAME SCREEN SOLO STATES ===');
+      // Fresh server state for the new game scenario (different player set,
+      // different settings — avoid "player already exists" from PART 1).
+      await UITestHelpers.resetServerState();
 
       // --- Solo, start of game, hole 1 (default Max Strokes 3) ---
       await h.setupAndStartGame(
@@ -152,7 +161,6 @@ void main() {
       await _screenshot(binding, tester, '10_game_solo_hole1_start');
 
       // --- Solo, turn advanced to second player (Moana hits; then Maui's turn) ---
-      // Throw target on dart 1 (birdie), takeout, now it's player 2's turn
       await h.throwDartViaMock(tester, hole1Target);
       await h.simulateTakeout(tester);
       await _screenshot(binding, tester, '11_game_solo_hole1_second_player');
@@ -165,10 +173,8 @@ void main() {
       // Holes 2 & 3: both players hit target on dart 1
       for (int hole = 2; hole <= 3; hole++) {
         final target = ProviderHelpers.getTikiGolfHoleTarget(tester, hole);
-        // P1 (Moana)
         await h.throwDartViaMock(tester, target);
         await h.simulateTakeout(tester);
-        // P2 (Maui)
         await h.throwDartViaMock(tester, target);
         await h.simulateTakeout(tester);
       }
@@ -179,9 +185,7 @@ void main() {
       await _screenshot(binding, tester, '12_game_solo_hole4_scorecard_filled');
 
       // --- Solo, birdie scored (target hit on dart 1 — hole 4 P1) ---
-      // P1 hits target immediately
       await h.throwDartViaMock(tester, hole4Target);
-      // Before takeout: dart indicator shows 1 filled slot — birdie state
       await _screenshot(binding, tester, '13_game_solo_birdie_state');
       await h.simulateTakeout(tester);
 
@@ -190,27 +194,24 @@ void main() {
       await h.simulateTakeout(tester);
 
       // --- Hole 5: Max Strokes 3 → Splash + takeout modal visible ---
-      // P1: throw all misses → Splash, modal shows
       final hole5Target = ProviderHelpers.getTikiGolfHoleTarget(tester, 5);
       print('SCREENSHOT: Hole 5 target = $hole5Target');
       await h.throwMissViaMock(tester);
       await h.throwMissViaMock(tester);
       await h.throwMissViaMock(tester);
-      // After all 3 misses, takeout modal should appear
       await tester.pump(const Duration(seconds: 2));
       await tester.pump();
       await _screenshot(binding, tester, '14_game_solo_splash_takeout_modal');
       await h.simulateTakeout(tester);
 
-      print('SCREENSHOT: === GAME SCREEN SOLO STATES COMPLETE ===');
-    });
+      print('SCREENSHOT: === PART 2 COMPLETE ===');
 
-    // ========================================================================
-    // PART 3: MULLIGAN STATES (separate game — Mulligan ON)
-    // ========================================================================
+      // ======================================================================
+      // PART 3: MULLIGAN STATES (separate game — Mulligan ON)
+      // ======================================================================
+      print('SCREENSHOT: === PART 3: MULLIGAN STATES ===');
 
-    testWidgets('Mulligan states', (WidgetTester tester) async {
-      print('SCREENSHOT: === MULLIGAN STATES ===');
+      await UITestHelpers.resetServerState();
 
       await h.setupAndStartGame(
         tester,
@@ -239,21 +240,19 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pump();
-        // After mulligan: player gets to throw again — mulligan button gone
         await _screenshot(binding, tester, '16_game_after_mulligan_rethrow');
       } else {
         print('SCREENSHOT: WARNING - USE MULLIGAN button not found');
       }
 
-      print('SCREENSHOT: === MULLIGAN STATES COMPLETE ===');
-    });
+      print('SCREENSHOT: === PART 3 COMPLETE ===');
 
-    // ========================================================================
-    // PART 4: MAX STROKES = 6 STATES
-    // ========================================================================
+      // ======================================================================
+      // PART 4: MAX STROKES = 6 STATES
+      // ======================================================================
+      print('SCREENSHOT: === PART 4: MAX STROKES 6 STATES ===');
 
-    testWidgets('Max Strokes 6 states', (WidgetTester tester) async {
-      print('SCREENSHOT: === MAX STROKES 6 STATES ===');
+      await UITestHelpers.resetServerState();
 
       await h.setupAndStartGame(
         tester,
@@ -272,19 +271,17 @@ void main() {
       }
       await tester.pump(const Duration(seconds: 2));
       await tester.pump();
-      // After 6 misses: takeout modal showing stroke count 7
       await _screenshot(binding, tester, '18_game_maxstrokes6_all_miss_splash7');
       await h.simulateTakeout(tester);
 
-      print('SCREENSHOT: === MAX STROKES 6 STATES COMPLETE ===');
-    });
+      print('SCREENSHOT: === PART 4 COMPLETE ===');
 
-    // ========================================================================
-    // PART 5: TWO BACK-TO-BACK GAMES (verify per-game randomization differs)
-    // ========================================================================
+      // ======================================================================
+      // PART 5: TWO BACK-TO-BACK GAMES (verify per-game randomization differs)
+      // ======================================================================
+      print('SCREENSHOT: === PART 5: TWO BACK-TO-BACK GAMES ===');
 
-    testWidgets('Two back-to-back games', (WidgetTester tester) async {
-      print('SCREENSHOT: === TWO BACK-TO-BACK GAMES ===');
+      await UITestHelpers.resetServerState();
 
       // Game 1: navigate and start
       await h.setupAndStartGame(
@@ -299,8 +296,8 @@ void main() {
       await _screenshot(binding, tester, '19_game1_hole1');
 
       // Rapid-complete game 1: every player hits target on every hole
-      final provider = ProviderHelpers.getTikiGolfProvider(tester);
-      while (!provider.hasWinner) {
+      var p5Provider = ProviderHelpers.getTikiGolfProvider(tester);
+      while (!p5Provider.hasWinner) {
         final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
         final target = ProviderHelpers.getTikiGolfHoleTarget(tester, hole);
         await h.throwDartViaMock(tester, target);
@@ -330,17 +327,15 @@ void main() {
           ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
       print('SCREENSHOT: Game2 hole1 target = $game2Hole1Target');
       await _screenshot(binding, tester, '20_game2_hole1');
-      // Note: targets may or may not differ (random), but images are shuffled separately
 
-      print('SCREENSHOT: === TWO BACK-TO-BACK GAMES COMPLETE ===');
-    });
+      print('SCREENSHOT: === PART 5 COMPLETE ===');
 
-    // ========================================================================
-    // PART 6: TEAM MODE GAME SCREEN STATES
-    // ========================================================================
+      // ======================================================================
+      // PART 6: TEAM MODE GAME SCREEN STATES
+      // ======================================================================
+      print('SCREENSHOT: === PART 6: TEAM MODE GAME STATES ===');
 
-    testWidgets('Team mode game screen states', (WidgetTester tester) async {
-      print('SCREENSHOT: === TEAM MODE GAME STATES ===');
+      await UITestHelpers.resetServerState();
 
       // Team mode with 4 players, Random assignment
       await h.setupAndStartGame(
@@ -352,16 +347,12 @@ void main() {
       expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
 
       // --- Team mode 4 players, hole 1 (Teams panel visible with team 1 highlighted) ---
-      final hole1Target =
+      final p6Hole1Target =
           ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
-      print('SCREENSHOT: Team game hole1 target = $hole1Target');
+      print('SCREENSHOT: Team game hole1 target = $p6Hole1Target');
       await _screenshot(binding, tester, '21_team_game_hole1_team1_highlighted');
 
       // --- Advance through team 1's players on hole 1 ---
-      // Each player hits target on dart 1
-      // Team 1 has (at least) 2 players in a 4-player Random game [2,2]
-      // We don't know how many players are on each team — use shouldPromptTakeout
-      // to detect turn-end after each dart hit.
       bool movedToTeam2 = false;
       final team1Id = ProviderHelpers.getTikiGolfCurrentTeamId(tester);
       print('SCREENSHOT: Team 1 id = $team1Id');
@@ -374,7 +365,7 @@ void main() {
           movedToTeam2 = true;
           break;
         }
-        await h.throwDartViaMock(tester, hole1Target);
+        await h.throwDartViaMock(tester, p6Hole1Target);
         await h.simulateTakeout(tester);
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump();
@@ -413,18 +404,14 @@ void main() {
         await _screenshot(binding, tester, '23_team_game_mid_team_scorecard');
       }
 
-      // --- Team mode mulligan visible: restart with mulligan on ---
-      // (Captured in a separate test below)
+      print('SCREENSHOT: === PART 6 COMPLETE ===');
 
-      print('SCREENSHOT: === TEAM MODE GAME STATES COMPLETE ===');
-    });
+      // ======================================================================
+      // PART 7: TEAM MODE + MULLIGAN MODAL
+      // ======================================================================
+      print('SCREENSHOT: === PART 7: TEAM MULLIGAN MODAL ===');
 
-    // ========================================================================
-    // PART 7: TEAM MODE + MULLIGAN MODAL
-    // ========================================================================
-
-    testWidgets('Team mode mulligan modal', (WidgetTester tester) async {
-      print('SCREENSHOT: === TEAM MULLIGAN MODAL ===');
+      await UITestHelpers.resetServerState();
 
       await h.setupAndStartGame(
         tester,
@@ -452,19 +439,17 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pump();
       } else {
-        // Fallback: standard takeout
         await h.simulateTakeout(tester);
       }
 
-      print('SCREENSHOT: === TEAM MULLIGAN MODAL COMPLETE ===');
-    });
+      print('SCREENSHOT: === PART 7 COMPLETE ===');
 
-    // ========================================================================
-    // PART 8: DURING TAKEOUT (RemoveDartsModal visible)
-    // ========================================================================
+      // ======================================================================
+      // PART 8: DURING TAKEOUT (RemoveDartsModal visible)
+      // ======================================================================
+      print('SCREENSHOT: === PART 8: TAKEOUT MODAL ===');
 
-    testWidgets('During takeout modal', (WidgetTester tester) async {
-      print('SCREENSHOT: === TAKEOUT MODAL ===');
+      await UITestHelpers.resetServerState();
 
       await h.setupAndStartGame(
         tester,
@@ -474,9 +459,9 @@ void main() {
       expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
 
       // Hit the target on dart 1 — turn ends immediately, modal appears
-      final hole1Target =
+      final p8Hole1Target =
           ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
-      await h.throwDartViaMock(tester, hole1Target);
+      await h.throwDartViaMock(tester, p8Hole1Target);
 
       await tester.pump(const Duration(seconds: 2));
       await tester.pump();
@@ -486,15 +471,14 @@ void main() {
       await _screenshot(binding, tester, '25_game_remove_darts_modal');
       await h.simulateTakeout(tester);
 
-      print('SCREENSHOT: === TAKEOUT MODAL COMPLETE ===');
-    });
+      print('SCREENSHOT: === PART 8 COMPLETE ===');
 
-    // ========================================================================
-    // PART 9: RESULTS SCREEN STATES
-    // ========================================================================
+      // ======================================================================
+      // PART 9: SOLO RESULTS SCREEN
+      // ======================================================================
+      print('SCREENSHOT: === PART 9: SOLO RESULTS SCREEN ===');
 
-    testWidgets('Solo results screen', (WidgetTester tester) async {
-      print('SCREENSHOT: === SOLO RESULTS SCREEN ===');
+      await UITestHelpers.resetServerState();
 
       await h.setupAndStartGame(
         tester,
@@ -504,8 +488,8 @@ void main() {
       expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
 
       // Rapid-complete all 9 holes: both players hit target on dart 1
-      final provider = ProviderHelpers.getTikiGolfProvider(tester);
-      while (!provider.hasWinner) {
+      var p9Provider = ProviderHelpers.getTikiGolfProvider(tester);
+      while (!p9Provider.hasWinner) {
         final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
         final target = ProviderHelpers.getTikiGolfHoleTarget(tester, hole);
         await h.throwDartViaMock(tester, target);
@@ -523,11 +507,14 @@ void main() {
       // --- Solo winner display ---
       await _screenshot(binding, tester, '26_results_solo_winner');
 
-      print('SCREENSHOT: === SOLO RESULTS SCREEN COMPLETE ===');
-    });
+      print('SCREENSHOT: === PART 9 COMPLETE ===');
 
-    testWidgets('Team results screen', (WidgetTester tester) async {
-      print('SCREENSHOT: === TEAM RESULTS SCREEN ===');
+      // ======================================================================
+      // PART 10: TEAM RESULTS SCREEN
+      // ======================================================================
+      print('SCREENSHOT: === PART 10: TEAM RESULTS SCREEN ===');
+
+      await UITestHelpers.resetServerState();
 
       // 4 players team mode
       await h.setupAndStartGame(
@@ -539,8 +526,8 @@ void main() {
       expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
 
       // Rapid-complete all 9 holes
-      final provider = ProviderHelpers.getTikiGolfProvider(tester);
-      while (!provider.hasWinner) {
+      var p10Provider = ProviderHelpers.getTikiGolfProvider(tester);
+      while (!p10Provider.hasWinner) {
         final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
         final target = ProviderHelpers.getTikiGolfHoleTarget(tester, hole);
         await h.throwDartViaMock(tester, target);
@@ -558,9 +545,8 @@ void main() {
       // --- Team winner display: team crest + all winning-team players visible ---
       await _screenshot(binding, tester, '27_results_team_winner_crest_roster');
 
-      print('SCREENSHOT: === TEAM RESULTS SCREEN COMPLETE ===');
+      print('SCREENSHOT: === PART 10 COMPLETE ===');
+      print('SCREENSHOT: === ALL SCREENSHOTS CAPTURED ===');
     });
-
-    print('SCREENSHOT: === ALL SCREENSHOT TESTS REGISTERED ===');
   });
 }

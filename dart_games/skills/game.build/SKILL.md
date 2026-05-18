@@ -1797,6 +1797,46 @@ If FAIL:
 > **7a. Screenshot test** — `[GAME_NAME_SNAKE]_screenshot_test.dart`:
 > - Capture every state listed in the spec's Testing Plan visual checklist
 > - **CRITICAL:** must be runnable via `test_driver/screenshot_test.dart` as the driver
+> - **CRITICAL — ONE `testWidgets` block per file.** All screenshot captures go inside a single continuous `testWidgets`. Splitting into multiple `testWidgets` works under sequential `-d chrome` (in-process Chrome) but **silently fails under parallel `-d web-server`** with `AppConnectionException` / `SocketException` at `WebDriver.quit` because the `integration_test_driver_extended` request/response protocol expects one test per file — multiple `testWidgets` cause DWDS to disconnect between test transitions. Symptom: log stops after "Debug service listening" with no "Starting application from main method"; `flutter drive` crashes ~14s in; runner waits 600s for done patterns that never appear. Past failure: Tiki Golf shipped with 10 separate `testWidgets` blocks — passed sequentially, failed every parallel run with no useful diagnostic. The fix was structural consolidation (commit history).
+>
+>   **Template:**
+>   ```dart
+>   void main() {
+>     final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+>     final config = GameUIConfig.[GAME_NAME_CAMEL]();
+>
+>     group('[GAME_NAME] - Screenshot Capture', () {
+>       setUp(() async {
+>         await UITestHelpers.resetServerState();
+>       });
+>
+>       // Single continuous flow capturing all spec §12C visual states.
+>       testWidgets('Full screenshot flow', (WidgetTester tester) async {
+>         // === PART 1: MENU SCREEN STATES ===
+>         await UITestHelpers.navigateToGameMenu(tester, config);
+>         await screenshot(binding, tester, '01_menu_...');
+>         // ... more menu captures, settings toggles, etc.
+>
+>         // === PART 2: GAME SCREEN STATES ===
+>         // For scenarios needing fresh state (different players / option
+>         // values that conflict with PART 1), call `resetServerState()`
+>         // first so addPlayer doesn't hit "player already exists".
+>         await UITestHelpers.resetServerState();
+>         await setupAndStartGame(tester, playerNames: [...]);
+>         await screenshot(binding, tester, '05_game_...');
+>         // ... more captures
+>
+>         // ... etc — every part inside this one testWidgets
+>       });
+>     });
+>   }
+>   ```
+>
+>   **Reference implementations** (all confirmed to pass in parallel mode):
+>   `integration_test/gladiator_arena/visual_validation/gladiator_arena_screenshot_test.dart`,
+>   `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`,
+>   `integration_test/tiki_golf/visual_validation/tiki_golf_screenshot_test.dart`.
+>
 > - **CRITICAL:** do NOT use `pumpAndSettle()` — splash screen `CircularProgressIndicator` prevents settling. Use manual `pump()` sequences from `pump_sequences.dart`.
 > - **CRITICAL state-reset pattern between scenes:** when transitioning between screen scenarios within a single test (e.g., from "default game" to "Hard Landing ON game"), use the PROGRAMMATIC reset pattern instead of fragile back-from-game user-flow navigation:
 >   ```dart

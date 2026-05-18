@@ -249,13 +249,39 @@ Capturing screenshots is NOT the same as validating them. A passing test only me
 ### Screenshot Test Technical Rules
 These rules prevent common debugging traps. Follow them EXACTLY:
 - ✅ Use `test_driver/screenshot_test.dart` as the driver (has `onScreenshot` callback)
+- ✅ **Use ONE `testWidgets` block per screenshot test file** — capture every screenshot inside a single continuous flow. Match the structure of every other game's screenshot test (`gladiator_arena_screenshot_test.dart`, `pirates_grid_screenshot_test.dart`, etc.).
 - ❌ NEVER use `test_driver/integration_test.dart` for screenshot tests (will hang silently on `takeScreenshot()`)
+- ❌ NEVER split a screenshot test into multiple `testWidgets` blocks — the `integration_test_driver_extended` request/response protocol expects ONE test per file. Multiple `testWidgets` work under sequential `-d chrome` (in-process) but fail under parallel `-d web-server` with `AppConnectionException` / `SocketException` at `WebDriver.quit` because DWDS disconnects between test transitions. Symptom: log stops after "Debug service listening" with no "Starting application from main method", `flutter drive` crashes after ~14s. See commit history for the Tiki Golf consolidation that fixed this.
 - ❌ NEVER use `--no-headless` flag — follow `run_ui_tests.bat` pattern
 - ❌ NEVER use `pumpAndSettle()` in integration tests — splash screen `CircularProgressIndicator` prevents settling
 - ❌ NEVER kill all `chrome.exe` processes — only kill `chromedriver.exe` (killing Chrome causes crash recovery state)
 - ✅ Restart chromedriver before each test run
 - ✅ Reference `run_ui_tests.bat` for the established launch pattern
 - ✅ See [UI Automation](docs/testing/ui-automation.md) for full details
+
+**Pattern for a screenshot test file** (use this template for every new game):
+```dart
+void main() {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final config = GameUIConfig.<game>();
+
+  group('<Game> - Screenshot Capture', () {
+    setUp(() async {
+      await UITestHelpers.resetServerState();
+    });
+
+    testWidgets('Full screenshot flow', (WidgetTester tester) async {
+      // === PART 1: ... ===
+      // capture screenshots
+      // === PART 2: ... ===
+      // For scenarios needing different players/settings, call
+      // `await UITestHelpers.resetServerState();` between parts.
+      // capture more screenshots
+      // ... etc
+    });
+  });
+}
+```
 
 ## New Game Development
 
