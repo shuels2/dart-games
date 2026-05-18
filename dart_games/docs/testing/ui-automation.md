@@ -241,15 +241,33 @@ Use with: `flutter drive --driver=test_driver/screenshot_test.dart`
 | No | `test_driver/integration_test.dart` |
 | Yes | `test_driver/screenshot_test.dart` |
 
-### Screenshot Test File Structure — ONE `testWidgets` Per File
+### Screenshot Test File Structure — ONE `testWidgets`, Helpers Inlined
 
-**CRITICAL:** A screenshot test file must contain exactly **one** `testWidgets` block, with all screenshot captures inside it. Splitting captures across multiple `testWidgets` blocks works under sequential `-d chrome` but fails under parallel `-d web-server` runs.
+**CRITICAL — two rules that work together:**
 
-**Why:** `integration_test_driver_extended` uses a request/response loop with the test app, expecting one test per file. Multiple `testWidgets` cause the driver protocol to span multiple app lifecycles — DWDS / webdriver session disconnects between test transitions, and `flutter drive` crashes with `SocketException` at `WebDriver.quit` when the underlying Chrome DevTools port is no longer reachable. Symptom in the log: stops at "Debug service listening" with no "Starting application from main method", `flutter drive` exits ~14s after start, the parallel runner waits the full 600s for done patterns that never come.
+1. A screenshot test file must contain exactly **one** `testWidgets` block, with all screenshot captures inside it.
+2. All helpers must be **defined inline** in the screenshot test file (or imported from `integration_test/shared/`). Do NOT import a per-test-directory `_helpers.dart` (or any other sibling file).
+
+Both rules guard the same parallel-mode failure mode. Splitting captures across multiple `testWidgets` OR importing a sibling helper file both work under sequential `-d chrome` but fail under parallel `-d web-server` with the same symptom signature.
+
+**Why:** `integration_test_driver_extended` uses a request/response loop with the test app, expecting one test per file — multiple `testWidgets` blocks cause DWDS / webdriver session disconnects between test transitions. Separately, the parallel runner's `-d web-server` web-compile path has a cache hazard with per-test-directory imports (cf. commit `cea7027` / `4d1377e` about new `integration_test/shared/` files being silently ignored — same hazard, different scope). When either rule is violated, `flutter drive` crashes with `SocketException` at `WebDriver.quit` when the underlying Chrome DevTools port is no longer reachable. Symptom in the log: stops at "Debug service listening" with no "Starting application from main method", `flutter drive` exits ~14s after start, the parallel runner waits the full 600s for done patterns that never come.
 
 **Pattern (use this template):**
 
 ```dart
+// Imports: package + shared/ ONLY. NO `import '_helpers.dart' as h;`
+import '../../shared/ui_test_helpers.dart';
+import '../../shared/game_setup_helpers.dart';
+import '../../shared/dart_throw_helpers.dart';
+// ... other shared/ imports as needed ...
+
+// Inline test-local helpers here (not in a sibling file):
+Future<void> _screenshot(IntegrationTestWidgetsFlutterBinding binding,
+    WidgetTester tester, String name) async { /* ... */ }
+Future<void> _throwDartViaMock(WidgetTester tester, int n, {String multiplier = 'single'}) =>
+    DartThrowHelpers.throwDartViaMock(tester, n, multiplier: multiplier);
+// ... etc
+
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   final config = GameUIConfig.<game>();
@@ -263,7 +281,7 @@ void main() {
     testWidgets('Full screenshot flow', (WidgetTester tester) async {
       // === PART 1: MENU SCREEN STATES ===
       await UITestHelpers.navigateToGameMenu(tester, config);
-      await screenshot(binding, tester, '01_menu_...');
+      await _screenshot(binding, tester, '01_menu_...');
       // ... more captures ...
 
       // === PART 2: GAME SCREEN STATES ===
@@ -271,8 +289,8 @@ void main() {
       // `await UITestHelpers.resetServerState();` between parts to
       // avoid "player already exists" errors.
       await UITestHelpers.resetServerState();
-      await setupAndStartGame(tester, playerNames: [...]);
-      await screenshot(binding, tester, '05_game_...');
+      await GameSetupHelpers.setupAndStart<Game>(tester, config, playerNames: [...]);
+      await _screenshot(binding, tester, '05_game_...');
       // ... more captures ...
 
       // ... etc — concatenate every part inside this one testWidgets
@@ -281,7 +299,7 @@ void main() {
 }
 ```
 
-**Reference implementations:** `integration_test/gladiator_arena/visual_validation/gladiator_arena_screenshot_test.dart`, `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`, `integration_test/tiki_golf/visual_validation/tiki_golf_screenshot_test.dart`.
+**Reference implementations:** `integration_test/gladiator_arena/visual_validation/gladiator_arena_screenshot_test.dart`, `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`, `integration_test/tiki_golf/visual_validation/tiki_golf_screenshot_test.dart` — all use ONE `testWidgets`, inline helpers, no sibling-file imports.
 
 ## Running UI Tests in Parallel
 

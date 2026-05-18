@@ -1797,10 +1797,43 @@ If FAIL:
 > **7a. Screenshot test** — `[GAME_NAME_SNAKE]_screenshot_test.dart`:
 > - Capture every state listed in the spec's Testing Plan visual checklist
 > - **CRITICAL:** must be runnable via `test_driver/screenshot_test.dart` as the driver
-> - **CRITICAL — ONE `testWidgets` block per file.** All screenshot captures go inside a single continuous `testWidgets`. Splitting into multiple `testWidgets` works under sequential `-d chrome` (in-process Chrome) but **silently fails under parallel `-d web-server`** with `AppConnectionException` / `SocketException` at `WebDriver.quit` because the `integration_test_driver_extended` request/response protocol expects one test per file — multiple `testWidgets` cause DWDS to disconnect between test transitions. Symptom: log stops after "Debug service listening" with no "Starting application from main method"; `flutter drive` crashes ~14s in; runner waits 600s for done patterns that never appear. Past failure: Tiki Golf shipped with 10 separate `testWidgets` blocks — passed sequentially, failed every parallel run with no useful diagnostic. The fix was structural consolidation (commit history).
+> - **CRITICAL — ONE `testWidgets` block per file.** All screenshot captures go inside a single continuous `testWidgets`. Splitting into multiple `testWidgets` works under sequential `-d chrome` (in-process Chrome) but **silently fails under parallel `-d web-server`** with `AppConnectionException` / `SocketException` at `WebDriver.quit` because the `integration_test_driver_extended` request/response protocol expects one test per file — multiple `testWidgets` cause DWDS to disconnect between test transitions. Past failure: Tiki Golf shipped with 10 separate `testWidgets` blocks — passed sequentially, failed every parallel run with no useful diagnostic. The fix was structural consolidation (commit history).
+>
+> - **CRITICAL — Define ALL helpers inline in the screenshot test file.** Do NOT import a sibling `_helpers.dart`. Shared helpers from `integration_test/shared/` are fine — only **per-test-directory sibling-file imports** are the hazard. Same parallel-mode failure mode as multiple `testWidgets`: works under sequential `-d chrome` but the parallel `-d web-server` web-compile path has a cache hazard with per-test-directory imports (cf. commit `cea7027` / `4d1377e` about new `integration_test/shared/` files being silently ignored — same hazard, different scope). **Same symptom signature** for both failure modes — log stops after "Debug service listening" with no "Starting application from main method", `flutter drive` crashes ~14s in, runner waits 600s for done patterns that never appear. Past failure: even after consolidating to one `testWidgets`, Tiki Golf's screenshot test kept failing in parallel until the `import '_helpers.dart' as h;` was removed and the helpers were inlined. The fix matches the structure of every other game's screenshot test.
 >
 >   **Template:**
 >   ```dart
+>   import 'package:flutter_test/flutter_test.dart';
+>   import 'package:integration_test/integration_test.dart';
+>   import 'package:dart_games/services/mock_scolia_api_service.dart';
+>   import 'package:dart_games/constants/test_keys.dart';
+>
+>   import '../../shared/ui_test_helpers.dart';
+>   import '../../shared/pump_sequences.dart';
+>   import '../../shared/settings_helpers.dart';
+>   import '../../shared/game_ui_config.dart';
+>   import '../../shared/provider_helpers.dart';
+>   import '../../shared/element_finders.dart';
+>   import '../../shared/game_setup_helpers.dart';
+>   import '../../shared/dart_throw_helpers.dart';
+>   // NO `import '_helpers.dart' as h;`
+>
+>   // Test-local helpers defined inline:
+>   Future<void> _screenshot(IntegrationTestWidgetsFlutterBinding binding,
+>       WidgetTester tester, String name) async {
+>     await tester.pump(const Duration(seconds: 2));
+>     await tester.pump(); await tester.pump(); await tester.pump();
+>     // ignore: avoid_print
+>     print('SCREENSHOT: Taking screenshot: $name');
+>     await binding.takeScreenshot(name);
+>   }
+>
+>   Future<void> _throwDartViaMock(WidgetTester tester, int n,
+>           {String multiplier = 'single'}) =>
+>       DartThrowHelpers.throwDartViaMock(tester, n, multiplier: multiplier);
+>
+>   // ... any other one-off helpers (simulateTakeout, etc.)
+>
 >   void main() {
 >     final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 >     final config = GameUIConfig.[GAME_NAME_CAMEL]();
@@ -1814,7 +1847,7 @@ If FAIL:
 >       testWidgets('Full screenshot flow', (WidgetTester tester) async {
 >         // === PART 1: MENU SCREEN STATES ===
 >         await UITestHelpers.navigateToGameMenu(tester, config);
->         await screenshot(binding, tester, '01_menu_...');
+>         await _screenshot(binding, tester, '01_menu_...');
 >         // ... more menu captures, settings toggles, etc.
 >
 >         // === PART 2: GAME SCREEN STATES ===
@@ -1822,8 +1855,9 @@ If FAIL:
 >         // values that conflict with PART 1), call `resetServerState()`
 >         // first so addPlayer doesn't hit "player already exists".
 >         await UITestHelpers.resetServerState();
->         await setupAndStartGame(tester, playerNames: [...]);
->         await screenshot(binding, tester, '05_game_...');
+>         await GameSetupHelpers.setupAndStart[GAME_NAME_PASCAL](
+>             tester, config, playerNames: [...]);
+>         await _screenshot(binding, tester, '05_game_...');
 >         // ... more captures
 >
 >         // ... etc — every part inside this one testWidgets
