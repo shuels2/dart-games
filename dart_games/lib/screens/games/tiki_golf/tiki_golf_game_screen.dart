@@ -218,8 +218,10 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     final score = throwData['score'] as int? ?? 0;
 
     // Track the raw segment string for Edit Score (real throws, not 'Miss'
-    // placeholders). Provider doesn't persist per-dart segments today.
-    _currentTurnSegments.add(sector);
+    // placeholders). Provider doesn't persist per-dart segments today. Scolia
+    // reports misses as 'None'; the shared Edit Score dialog only understands
+    // 'Miss', so normalize at the write site.
+    _currentTurnSegments.add(sector == 'None' ? 'Miss' : sector);
 
     provider.processDartThrow(sector: sector, score: score);
 
@@ -1114,30 +1116,47 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         final double innerH = targetInnerH * scale;
         final double mainH = targetMainH * scale;
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildNeighborPreview(outerLeftPath, outerH),
-            _buildNeighborPreview(innerLeftPath, innerH),
-            // Main hole image — height-constrained, width intrinsic
-            currentPath != null
-                ? Image.asset(
-                    key: TikiGolfGameKeys.holeImage,
-                    currentPath,
-                    height: mainH,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) =>
-                        SizedBox(height: mainH, width: mainH),
-                  )
-                : SizedBox(
-                    height: mainH,
-                    width: mainH,
-                    key: TikiGolfGameKeys.holeImage,
-                  ),
-            _buildNeighborPreview(innerRightPath, innerH),
-            _buildNeighborPreview(outerRightPath, outerH),
-          ],
+        // FittedBox(scaleDown) handles the case where the 5 intrinsic-width
+        // images sum to more than the row's available width (happens on team-
+        // mode layouts where the side panel takes ~224px). The Row uses
+        // mainAxisSize.min so it reports its natural width to FittedBox, with
+        // explicit 24px spacers replacing the spaceBetween distribution.
+        // scaleDown is a no-op when content fits; otherwise it shrinks the
+        // whole row proportionally to avoid the RenderFlex layout assertion.
+        return Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildNeighborPreview(outerLeftPath, outerH),
+                const SizedBox(width: 24),
+                _buildNeighborPreview(innerLeftPath, innerH),
+                const SizedBox(width: 24),
+                // Main hole image — height-constrained, width intrinsic
+                currentPath != null
+                    ? Image.asset(
+                        key: TikiGolfGameKeys.holeImage,
+                        currentPath,
+                        height: mainH,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) =>
+                            SizedBox(height: mainH, width: mainH),
+                      )
+                    : SizedBox(
+                        height: mainH,
+                        width: mainH,
+                        key: TikiGolfGameKeys.holeImage,
+                      ),
+                const SizedBox(width: 24),
+                _buildNeighborPreview(innerRightPath, innerH),
+                const SizedBox(width: 24),
+                _buildNeighborPreview(outerRightPath, outerH),
+              ],
+            ),
+          ),
         );
       },
     );
