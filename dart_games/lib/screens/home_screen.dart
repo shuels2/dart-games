@@ -106,24 +106,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: Opacity(
                     opacity: isDisabled ? 0.5 : 1.0,
-                    // Tiki Golf's PNG is 870x900 (ratio 0.967), so BoxFit.contain
-                    // would render it ~3.4% taller than the square peer icons.
-                    // Force a square frame so it renders at the same height,
-                    // aspect ratio preserved (width becomes 96.7% of frame).
-                    child: title == 'Tiki Golf'
-                        ? Center(
-                            child: AspectRatio(
-                              aspectRatio: 1.0,
-                              child: Image.asset(
-                                imageAssetPath,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          )
-                        : Image.asset(
-                            imageAssetPath,
-                            fit: BoxFit.contain,
-                          ),
+                    // Force every icon into an identical square frame so that
+                    // source-PNG aspect ratios don't affect rendered height.
+                    // Peer icons are nominally 1:1 but several are slightly
+                    // off (Tiki Golf 870×900 = 0.967, Lunar Lander 753×782 =
+                    // 0.963, Target Tag 755×746 = 1.012, etc.); with the prior
+                    // BoxFit.contain inside an Expanded that's taller than
+                    // wide, the rendered height was image-width × source-aspect
+                    // — so non-square sources rendered at slightly different
+                    // heights from each other. Wrapping every icon in
+                    // Center+AspectRatio(1.0) makes the frame a square sized
+                    // by the Expanded's narrower dimension (width). The image
+                    // inside renders with BoxFit.contain within that square,
+                    // so every icon now occupies exactly the same height
+                    // (frame side), with width varying only when the source
+                    // aspect deviates from 1:1.
+                    child: Center(
+                      child: AspectRatio(
+                        aspectRatio: 1.0,
+                        child: Image.asset(
+                          imageAssetPath,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 SizedBox(
