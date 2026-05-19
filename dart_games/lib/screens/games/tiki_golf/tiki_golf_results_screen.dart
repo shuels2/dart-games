@@ -868,12 +868,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Heading — PLURAL for tied team winners. 6pt larger per user request (30→36).
+        // Heading — PLURAL for tied team winners. Sized 44 per user request.
         Text(
           'GOLDEN TIKI CHAMPIONS!',
           key: TikiGolfResultsKeys.championHeading,
           style: GoogleFonts.boogaloo(
-            fontSize: 36,
+            fontSize: 44,
             fontWeight: FontWeight.bold,
             color: _lagoonBlue,
             shadows: _outlineShadow4(offset: 2, blur: 10),
@@ -905,11 +905,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ],
         ),
         const SizedBox(height: 6),
+        // "Tied at N strokes (±X)" — unified 26pt per user request.
         RichText(
           key: TikiGolfResultsKeys.winnerTotal,
           text: TextSpan(
             style: GoogleFonts.boogaloo(
-              fontSize: 16,
+              fontSize: 26,
               color: _sandWhite,
               shadows: _lightShadow4(),
             ),
@@ -918,7 +919,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               TextSpan(
                 text: _formatDiff(diff),
                 style: GoogleFonts.boogaloo(
-                  fontSize: 16,
+                  fontSize: 26,
                   color: _diffColor(diff),
                   shadows: _lightShadow4(),
                 ),
@@ -1022,12 +1023,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Heading — PLURAL for team mode. 6pt larger per user request (30→36).
+        // Heading — PLURAL for team mode. Sized 44 per user request.
         Text(
           'GOLDEN TIKI CHAMPIONS!',
           key: TikiGolfResultsKeys.championHeading,
           style: GoogleFonts.boogaloo(
-            fontSize: 36,
+            fontSize: 44,
             fontWeight: FontWeight.bold,
             color: _lagoonBlue,
             shadows: _outlineShadow4(offset: 2, blur: 10),
@@ -1098,7 +1099,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ],
         ),
         const SizedBox(height: 6),
-        // Team stats row — strokes label 4pt larger per user request (16→20).
+        // Team stats row — all entries unified at 26pt per user request
+        // (Team Total baseline 20 + 6).
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1106,7 +1108,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               key: TikiGolfResultsKeys.winnerTotal,
               text: TextSpan(
                 style: GoogleFonts.boogaloo(
-                  fontSize: 20,
+                  fontSize: 26,
                   color: _sandWhite,
                   shadows: _lightShadow4(),
                 ),
@@ -1115,7 +1117,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                   TextSpan(
                     text: _formatDiff(diff),
                     style: GoogleFonts.boogaloo(
-                      fontSize: 20,
+                      fontSize: 26,
                       color: _diffColor(diff),
                       shadows: _lightShadow4(),
                     ),
@@ -1129,7 +1131,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               'Team Birdies: $birdies',
               key: TikiGolfResultsKeys.winnerStats,
               style: GoogleFonts.boogaloo(
-                fontSize: 14,
+                fontSize: 26,
                 color: _sandWhite,
                 shadows: _lightShadow4(),
               ),
@@ -1156,10 +1158,10 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Winning team avatar — 30% larger per user request (80→104).
+          // Winning team avatar — +25% per user request (104→130).
           Container(
-            width: 104,
-            height: 104,
+            width: 130,
+            height: 130,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: bg,
@@ -1170,7 +1172,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               child: Text(
                 initial,
                 style: GoogleFonts.boogaloo(
-                  fontSize: 47,
+                  // Initial scaled with the +25% avatar bump (47→59).
+                  fontSize: 59,
                   fontWeight: FontWeight.bold,
                   color: _sandWhite,
                 ),
@@ -1178,11 +1181,11 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          // Player name — 4pt larger per user request (16→20).
+          // Player name — +6pt per user request (20→26).
           Text(
             name,
             style: GoogleFonts.boogaloo(
-              fontSize: 20,
+              fontSize: 26,
               fontWeight: FontWeight.bold,
               color: _sandWhite,
               shadows: _lightShadow4(),
@@ -1299,11 +1302,13 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.all(8),
-      child: Column(
+      // Row layout per user request: badge on the LEFT of the scorecard
+      // (was stacked vertically with badge on top).
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Team crest 80×80 (was 64×64 — bumped 25% per user request).
+          // Team crest 80×80.
           ClipOval(
             child: SizedBox(
               width: 80,
@@ -1319,16 +1324,18 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          // Mini scorecard
-          _buildTeamMiniScorecard(
-            game: game,
-            teamId: teamId,
-            teamMembers: teamMembers,
-            playerProvider: playerProvider,
-            isWinner: isWinner,
-            bestBallTotal: bestBallTotal,
-            rankIndex: rankIndex,
+          const SizedBox(width: 12),
+          // Mini scorecard fills remaining row width.
+          Expanded(
+            child: _buildTeamMiniScorecard(
+              game: game,
+              teamId: teamId,
+              teamMembers: teamMembers,
+              playerProvider: playerProvider,
+              isWinner: isWinner,
+              bestBallTotal: bestBallTotal,
+              rankIndex: rankIndex,
+            ),
           ),
         ],
       ),
@@ -1518,7 +1525,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
       child: Text(
         label,
         style: GoogleFonts.boogaloo(
-          fontSize: 18,
+          // +8pt per user request (18 → 26).
+          fontSize: 26,
           fontWeight: FontWeight.bold,
           color: _sandWhite,
           shadows: [
