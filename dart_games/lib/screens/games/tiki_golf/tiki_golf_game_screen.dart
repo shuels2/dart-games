@@ -1563,6 +1563,13 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       label = '$score';
     }
 
+    // Golf-relative-to-par for this hole (par is 2 in Tiki Golf).
+    // For splash, the stored score is maxStrokes + 1 — diff still uses
+    // this raw value, so e.g. maxStrokes=3 splash shows "X (+2)".
+    final diff = score - par;
+    final diffLabel = _formatDiff(diff);
+    final diffColor = _diffColor(diff);
+
     return TableCell(
       verticalAlignment: TableCellVerticalAlignment.fill,
       child: Container(
@@ -1570,32 +1577,79 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(border: border),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.boogaloo(
-            fontSize: 24,
-            color: cellColor,
-            shadows: _outlineShadow(),
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.boogaloo(
+                fontSize: 22,
+                color: cellColor,
+                shadows: _outlineShadow(),
+              ),
+            ),
+            Text(
+              '($diffLabel)',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.boogaloo(
+                fontSize: 12,
+                color: diffColor,
+                shadows: _outlineShadow(),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  /// Golf-relative-to-par formatting helper (matches results screen).
+  String _formatDiff(int diff) {
+    if (diff < 0) return '−${diff.abs()}';
+    if (diff > 0) return '+$diff';
+    return 'E';
+  }
+
+  /// Diff color: blue under par, white at par, orange over par
+  /// (matches results screen).
+  Color _diffColor(int diff) {
+    if (diff < 0) return _lagoonBlue;
+    if (diff > 0) return _tropicalOrange;
+    return _sandWhite;
+  }
+
   Widget _totalCell({required int total, required int holesCompleted}) {
+    final totalDiff = total - (holesCompleted * 2); // par=2 per hole
     return Container(
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      child: Text(
-        holesCompleted > 0 ? '$total' : '—',
-        textAlign: TextAlign.center,
-        style: GoogleFonts.boogaloo(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: _sandWhite,
-          shadows: _outlineShadow(),
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            holesCompleted > 0 ? '$total' : '—',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.boogaloo(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: _sandWhite,
+              shadows: _outlineShadow(),
+            ),
+          ),
+          if (holesCompleted > 0)
+            Text(
+              '(${_formatDiff(totalDiff)})',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.boogaloo(
+                fontSize: 12,
+                color: _diffColor(totalDiff),
+                shadows: _outlineShadow(),
+              ),
+            ),
+        ],
       ),
     );
   }

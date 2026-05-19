@@ -749,7 +749,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         ),
         // Hole score cells
         for (int h = 0; h < 9; h++)
-          _scoreCell(scores[h]),
+          _scoreCell(scores[h], game.maxStrokes),
         // Total
         TableCell(
           child: Container(
@@ -1382,7 +1382,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               ),
             ),
             for (int h = 0; h < 9; h++)
-              _miniScoreCell(game.bestBallForTeam(teamId, h)),
+              _miniScoreCell(game.bestBallForTeam(teamId, h), game.maxStrokes),
             // Best-ball total + (relative-to-par) in parens, per user request.
             TableCell(
               key: TikiGolfResultsKeys.teamBlockTotal(teamId),
@@ -1449,7 +1449,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             ),
           ),
         ),
-        for (int h = 0; h < 9; h++) _miniScoreCell(scores[h]),
+        for (int h = 0; h < 9; h++) _miniScoreCell(scores[h], game.maxStrokes),
         // Player total (2× scaled per user request).
         TableCell(
           child: Container(
@@ -1586,8 +1586,9 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     );
   }
 
-  /// Score pill cell (full scorecard).
-  Widget _scoreCell(int? score) {
+  /// Full score cell (solo scorecard). Matches the gameplay-screen cell
+  /// format: 'X' for splash, with the to-par diff in parens beneath.
+  Widget _scoreCell(int? score, int maxStrokes) {
     return TableCell(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
@@ -1596,7 +1597,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               ? Text('—',
                   style: GoogleFonts.boogaloo(
                       fontSize: 14, color: _sandWhite.withOpacity(0.40)))
-              : _scorePill(score, small: false),
+              : _scoreCellContent(score, maxStrokes,
+                  scoreFontSize: 22, diffFontSize: 12),
         ),
       ),
     );
@@ -1631,9 +1633,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     );
   }
 
-  /// Score pill cell (mini team scorecard). Dimensions/fonts are 2× the
-  /// original (player scorecards bumped per user request).
-  Widget _miniScoreCell(int? score) {
+  /// Mini score cell (team scorecard). Matches the gameplay-screen cell
+  /// format: shows the splash label ('X') instead of the raw stroke count
+  /// for splashes, and adds the to-par diff in parens underneath each
+  /// played cell. `maxStrokes` is required so splash detection here
+  /// matches gameplay (splash = `maxStrokes + 1`).
+  Widget _miniScoreCell(int? score, int maxStrokes) {
     return TableCell(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
@@ -1642,76 +1647,60 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               ? Text('—',
                   style: GoogleFonts.boogaloo(
                       fontSize: 18, color: _sandWhite.withOpacity(0.40)))
-              : _scorePill(score, small: true),
+              : _scoreCellContent(score, maxStrokes,
+                  scoreFontSize: 18, diffFontSize: 12),
         ),
       ),
     );
   }
 
-  /// Colored score pill. `small` is used by mini team scorecards (2×
-  /// scaled per user request); the full solo scorecard uses non-small.
-  Widget _scorePill(int score, {required bool small}) {
-    final fontSize = small ? 18.0 : 14.0;
-    final padding = small
-        ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
-        : const EdgeInsets.symmetric(horizontal: 7, vertical: 2);
-    final radius = small ? 6.0 : 4.0;
-
-    switch (score) {
-      case 1: // Birdie — Lagoon Blue pill
-        return Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: _lagoonBlue,
-            borderRadius: BorderRadius.circular(radius),
-          ),
-          child: small
-              ? Text('1',
-                  style: GoogleFonts.boogaloo(
-                      fontSize: fontSize, color: _sandWhite))
-              : FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('🐦',
-                          style: TextStyle(fontSize: 12, height: 1)),
-                      Text('1',
-                          style: GoogleFonts.boogaloo(
-                              fontSize: fontSize, color: _sandWhite)),
-                    ],
-                  ),
-                ),
-        );
-      case 2: // Par — no pill
-        return Text(
-          '2',
-          style: GoogleFonts.boogaloo(fontSize: fontSize, color: _sandWhite),
-          textAlign: TextAlign.center,
-        );
-      case 3: // Bogey — Hibiscus Pink pill
-        return Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: _hibiscusPink,
-            borderRadius: BorderRadius.circular(radius),
-          ),
-          child: Text('3',
-              style:
-                  GoogleFonts.boogaloo(fontSize: fontSize, color: _sandWhite)),
-        );
-      default: // Splash (4+) — Tropical Orange pill
-        return Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: _tropicalOrange,
-            borderRadius: BorderRadius.circular(radius),
-          ),
-          child: Text('$score',
-              style:
-                  GoogleFonts.boogaloo(fontSize: fontSize, color: _sandWhite)),
-        );
+  /// Stacked "<label>\n(<diff>)" used by both _scoreCell and _miniScoreCell.
+  /// Mirrors the gameplay-screen score cell labelling so the two screens
+  /// display the same content per cell.
+  Widget _scoreCellContent(int score, int maxStrokes,
+      {required double scoreFontSize, required double diffFontSize}) {
+    const par = 2;
+    final isSplash = score == maxStrokes + 1;
+    Color cellColor;
+    String label;
+    if (isSplash) {
+      cellColor = _tropicalOrange;
+      label = 'X';
+    } else if (score < par) {
+      cellColor = _lagoonBlue;
+      label = '$score';
+    } else if (score == par) {
+      cellColor = _sandWhite;
+      label = '$score';
+    } else {
+      cellColor = _hibiscusPink;
+      label = '$score';
     }
+    final diff = score - par;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.boogaloo(
+            fontSize: scoreFontSize,
+            fontWeight: FontWeight.bold,
+            color: cellColor,
+            shadows: _lightShadow4(),
+          ),
+        ),
+        Text(
+          '(${_formatDiff(diff)})',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.boogaloo(
+            fontSize: diffFontSize,
+            color: _diffColor(diff),
+            shadows: _lightShadow4(),
+          ),
+        ),
+      ],
+    );
   }
 
   /// Build a circular avatar with player initials (no character art).
