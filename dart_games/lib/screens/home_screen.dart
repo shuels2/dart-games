@@ -548,25 +548,38 @@ class _HomeScreenState extends State<HomeScreen> {
                         rows.add(games.sublist(i, (i + itemsPerRow).clamp(0, games.length)));
                       }
 
+                      // Spacing used to fully justify a full row across the
+                      // available width — i.e. what MainAxisAlignment
+                      // .spaceBetween produces for itemsPerRow tiles.
+                      final justifiedSpacing = itemsPerRow > 1
+                          ? (availableWidth - itemsPerRow * tileWidth) /
+                              (itemsPerRow - 1)
+                          : 0.0;
+
+                      // Spacing rule:
+                      //   - Single row that is NOT full → use minSpacing
+                      //     (compact, left-justified — avoids 2 tiles
+                      //     stretching across a wide screen).
+                      //   - Otherwise (multi-row layout, OR a single full
+                      //     row) → use justifiedSpacing so every row's tiles
+                      //     land at the same x-positions as row 0's first N
+                      //     tiles. Partial last rows in a multi-row layout
+                      //     therefore align vertically with the rows above.
+                      final isOnlySinglePartialRow = rows.length == 1 &&
+                          rows[0].length < itemsPerRow;
+                      final interTileSpacing = isOnlySinglePartialRow
+                          ? minSpacing
+                          : justifiedSpacing;
+
                       return SingleChildScrollView(
                         child: Column(
                           children: [
                             for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
                               if (rowIndex > 0) const SizedBox(height: 12),
                               Row(
-                                // Full row → fully justify via spaceBetween.
-                                // Partial row (last row with < itemsPerRow
-                                // tiles) → left-justify with minSpacing
-                                // between tiles instead of the wider
-                                // justifiedSpacing, so 2 tiles on a wide
-                                // screen look compact, not stretched.
-                                mainAxisAlignment: rows[rowIndex].length == itemsPerRow
-                                    ? MainAxisAlignment.spaceBetween
-                                    : MainAxisAlignment.start,
                                 children: [
                                   for (var i = 0; i < rows[rowIndex].length; i++) ...[
-                                    if (i > 0 && rows[rowIndex].length < itemsPerRow)
-                                      const SizedBox(width: minSpacing),
+                                    if (i > 0) SizedBox(width: interTileSpacing),
                                     SizedBox(
                                       width: tileWidth,
                                       height: 400,
