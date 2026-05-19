@@ -116,6 +116,55 @@ Future<void> simulateTakeout(WidgetTester tester) async {
   }
 }
 
+/// Throw all [maxStrokes] darts as misses, ending the current player's turn
+/// with a Splash. Leaves `shouldPromptTakeout = true`.
+// ignore: unused_element
+Future<void> throwAllMissesToSplash(WidgetTester tester,
+    {int maxStrokes = 3}) async {
+  for (int i = 0; i < maxStrokes; i++) {
+    await throwMissViaMock(tester);
+  }
+}
+
+/// Navigate to the Tiki Golf menu, apply settings, add the given players,
+/// and start the game. Inlined from `GameSetupHelpers.setupAndStartTikiGolf`
+/// (importing shared/game_setup_helpers.dart from a screenshot test triggers
+/// the parallel-mode webdriver crash — see header note).
+// ignore: unused_element
+Future<void> setupAndStartGame(
+  WidgetTester tester,
+  GameUIConfig config, {
+  int maxStrokes = 3,
+  bool mulliganEnabled = false,
+  bool teamMode = false,
+  bool manualAssignment = false,
+  List<String>? playerNames,
+}) async {
+  await UITestHelpers.navigateToGameMenu(tester, config);
+
+  if (teamMode) {
+    await SettingsHelpers.setTikiGolfGameModeTeam(tester);
+    await PumpSequences.fullRebuild(tester);
+    if (manualAssignment) {
+      await SettingsHelpers.setTikiGolfAssignmentManual(tester);
+      await PumpSequences.fullRebuild(tester);
+    }
+  }
+  if (maxStrokes != 3) {
+    await SettingsHelpers.setTikiGolfMaxStrokes(tester, maxStrokes);
+  }
+  if (mulliganEnabled) {
+    await SettingsHelpers.toggleTikiGolfMulligan(tester);
+  }
+
+  final names = playerNames ?? ['Player A', 'Player B'];
+  for (final name in names) {
+    await UITestHelpers.addPlayer(tester, name, config);
+  }
+
+  await UITestHelpers.startGame(tester, config);
+}
+
 /// Take screenshot with extra pumps to ensure rendering is current.
 /// CRITICAL: Uses binding.takeScreenshot() — must use screenshot_test.dart driver.
 /// Do NOT use pumpAndSettle() — continuous animations prevent settling.
