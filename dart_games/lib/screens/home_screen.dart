@@ -106,10 +106,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: Opacity(
                     opacity: isDisabled ? 0.5 : 1.0,
-                    child: Image.asset(
-                      imageAssetPath,
-                      fit: BoxFit.contain,
-                    ),
+                    // Tiki Golf's PNG is 870x900 (ratio 0.967), so BoxFit.contain
+                    // would render it ~3.4% taller than the square peer icons.
+                    // Force a square frame so it renders at the same height,
+                    // aspect ratio preserved (width becomes 96.7% of frame).
+                    child: title == 'Tiki Golf'
+                        ? Center(
+                            child: AspectRatio(
+                              aspectRatio: 1.0,
+                              child: Image.asset(
+                                imageAssetPath,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          )
+                        : Image.asset(
+                            imageAssetPath,
+                            fit: BoxFit.contain,
+                          ),
                   ),
                 ),
                 SizedBox(
