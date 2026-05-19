@@ -101,17 +101,21 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
     final allCrests = List<String>.from(_kAllCrestPaths)..shuffle();
     _teamIconPaths = allCrests.take(4).toList();
 
-    // Restore settings from prior game (Change-Settings nav) or widget params
-    final lastGame = context.read<TikiGolfProvider>().currentGame;
-    _gameMode =
-        widget.initialGameMode ?? lastGame?.gameMode ?? TikiGolfGameMode.solo;
-    _teamAssignment = widget.initialTeamAssignment ??
-        lastGame?.teamAssignment ??
-        TikiGolfTeamAssignment.random;
-    _teamCount = widget.initialTeamCount ?? lastGame?.teamCount ?? 4;
-    _maxStrokes = widget.initialMaxStrokes ?? lastGame?.maxStrokes ?? 3;
-    _mulliganEnabled =
-        widget.initialMulliganEnabled ?? lastGame?.mulliganEnabled ?? false;
+    // Settings hydration:
+    //   - widget.initialX is supplied ONLY when entering via Change-Settings
+    //     from the results screen (preserves the just-played settings).
+    //   - When entering from the home screen the constructor params are
+    //     null and we fall back to defaults — explicitly NOT to the prior
+    //     game's settings. Previously this fell back through
+    //     `lastGame?.xxx` (the TikiGolfProvider's currentGame), which made
+    //     coming back from a finished game still show the prior settings
+    //     instead of the defaults the user expects on a fresh entry.
+    _gameMode = widget.initialGameMode ?? TikiGolfGameMode.solo;
+    _teamAssignment =
+        widget.initialTeamAssignment ?? TikiGolfTeamAssignment.random;
+    _teamCount = widget.initialTeamCount ?? 4;
+    _maxStrokes = widget.initialMaxStrokes ?? 3;
+    _mulliganEnabled = widget.initialMulliganEnabled ?? false;
 
     if (widget.initialManualTeamAssignments != null) {
       _playerTeamAssignments.addAll(widget.initialManualTeamAssignments!);
