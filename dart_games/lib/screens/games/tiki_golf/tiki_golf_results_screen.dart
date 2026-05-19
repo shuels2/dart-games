@@ -1364,7 +1364,9 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             playerName:
                 playerProvider.getPlayerById(playerId)?.name ?? playerId,
           ),
-        // Best-ball team total row (2× scaled per user request).
+        // Best-ball team total row — all cells at fontSize 24 to match the
+        // row's Total cell (user request: "Team Best-Ball row fonts the
+        // same size as the total cell fonts for best-ball").
         TableRow(
           decoration: const BoxDecoration(color: Color(0x261616160)),
           children: [
@@ -1374,7 +1376,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                 child: Text(
                   'Team Best-Ball',
                   style: GoogleFonts.boogaloo(
-                    fontSize: 20,
+                    fontSize: 24,
                     color: _sandWhite.withOpacity(0.80),
                     shadows: _lightShadow4(),
                   ),
@@ -1383,7 +1385,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               ),
             ),
             for (int h = 0; h < 9; h++)
-              _miniScoreCell(game.bestBallForTeam(teamId, h), game.maxStrokes),
+              _miniScoreCell(game.bestBallForTeam(teamId, h), game.maxStrokes,
+                  scoreFontSize: 24),
             // Best-ball total — inline "strokes (diff)" at the same font
             // size, per user request.
             TableCell(
@@ -1649,12 +1652,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     );
   }
 
-  /// Mini score cell (team scorecard). Matches the gameplay-screen cell
-  /// format: shows the splash label ('X') instead of the raw stroke count
-  /// for splashes, and adds the to-par diff in parens underneath each
-  /// played cell. `maxStrokes` is required so splash detection here
-  /// matches gameplay (splash = `maxStrokes + 1`).
-  Widget _miniScoreCell(int? score, int maxStrokes) {
+  /// Mini score cell (team scorecard). Shows 'X' for splash (splash
+  /// detection uses `maxStrokes` so it matches gameplay). `scoreFontSize`
+  /// defaults to 22 for per-player rows; the Team Best-Ball row passes
+  /// 24 so its row font sizes match the row's Total cell.
+  Widget _miniScoreCell(int? score, int maxStrokes,
+      {double scoreFontSize = 22}) {
     return TableCell(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
@@ -1662,8 +1665,10 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           child: score == null
               ? Text('—',
                   style: GoogleFonts.boogaloo(
-                      fontSize: 18, color: _sandWhite.withOpacity(0.40)))
-              : _scoreCellContent(score, maxStrokes, scoreFontSize: 22),
+                      fontSize: scoreFontSize,
+                      color: _sandWhite.withOpacity(0.40)))
+              : _scoreCellContent(score, maxStrokes,
+                  scoreFontSize: scoreFontSize),
         ),
       ),
     );
