@@ -275,6 +275,204 @@ void main() {
       await screenshot(binding, tester, '09_menu_team_manual_3players_team_count_2');
 
       print('SCREENSHOT: === PART 1 COMPLETE ===');
+
+
+      // ======================================================================
+      // PART 2: GAME SCREEN STATES (SOLO)
+      // ======================================================================
+      print('SCREENSHOT: === PART 2: GAME SCREEN SOLO STATES ===');
+
+      // Fresh server state for the new game scenario (different player set,
+      // different settings — avoid "player already exists" from PART 1).
+      await UITestHelpers.resetServerState();
+
+      // --- Solo, start of game, hole 1 (default Max Strokes 3) ---
+      await setupAndStartGame(
+        tester,
+        config,
+        playerNames: ['Moana', 'Maui'],
+      );
+
+      final gameActive = ProviderHelpers.isTikiGolfGameActive(tester);
+      expect(gameActive, isTrue, reason: 'Game should be active after starting');
+
+      final hole1Target = ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+      print('SCREENSHOT: Hole 1 target = $hole1Target');
+
+      await screenshot(binding, tester, '10_game_solo_hole1_start');
+
+      // --- Solo, turn advanced to second player (Moana hits; then Maui's turn) ---
+      await throwDartViaMock(tester, hole1Target);
+      await simulateTakeout(tester);
+      await screenshot(binding, tester, '11_game_solo_hole1_second_player');
+
+      // --- Continue to mid-game: advance through holes 1-3 for both players ---
+      // P2 (Maui): splash hole 1
+      await throwAllMissesToSplash(tester, maxStrokes: 3);
+      await simulateTakeout(tester);
+
+      // Holes 2 & 3: both players hit target on dart 1
+      for (int hole = 2; hole <= 3; hole++) {
+        final target = ProviderHelpers.getTikiGolfHoleTarget(tester, hole);
+        await throwDartViaMock(tester, target);
+        await simulateTakeout(tester);
+        await throwDartViaMock(tester, target);
+        await simulateTakeout(tester);
+      }
+
+      // Now at hole 4 — capture mid-game scorecard filled
+      final hole4Target = ProviderHelpers.getTikiGolfHoleTarget(tester, 4);
+      print('SCREENSHOT: Hole 4 target = $hole4Target');
+      await screenshot(binding, tester, '12_game_solo_hole4_scorecard_filled');
+
+      // --- Solo, birdie scored (target hit on dart 1 — hole 4 P1) ---
+      await throwDartViaMock(tester, hole4Target);
+      await screenshot(binding, tester, '13_game_solo_birdie_state');
+      await simulateTakeout(tester);
+
+      // P2 also hits for this test
+      await throwDartViaMock(tester, hole4Target);
+      await simulateTakeout(tester);
+
+      // --- Hole 5: Max Strokes 3 → Splash + takeout modal visible ---
+      final hole5Target = ProviderHelpers.getTikiGolfHoleTarget(tester, 5);
+      print('SCREENSHOT: Hole 5 target = $hole5Target');
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      await screenshot(binding, tester, '14_game_solo_splash_takeout_modal');
+      await simulateTakeout(tester);
+
+      print('SCREENSHOT: === PART 2 COMPLETE ===');
+
+      // ======================================================================
+      // PART 3: MULLIGAN STATES (separate game — Mulligan ON)
+      // ======================================================================
+      print('SCREENSHOT: === PART 3: MULLIGAN STATES ===');
+
+      await UITestHelpers.resetServerState();
+
+      await setupAndStartGame(
+        tester,
+        config,
+        mulliganEnabled: true,
+        playerNames: ['Lilo', 'Stitch'],
+      );
+
+      expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
+
+      // Hole 1: Lilo splashes (all 3 misses) → Mulligan button should appear in modal
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      await tester.pump();
+
+      // Splash + Mulligan modal: shows USE MULLIGAN + NEXT PLAYER buttons
+      await screenshot(binding, tester, '15_game_splash_mulligan_modal_visible');
+
+      // Tap USE MULLIGAN to re-throw
+      final useMulliganBtn = ElementFinders.getTikiGolfUseMulliganButton();
+      if (useMulliganBtn.evaluate().isNotEmpty) {
+        await tester.tap(useMulliganBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+        await screenshot(binding, tester, '16_game_after_mulligan_rethrow');
+      } else {
+        print('SCREENSHOT: WARNING - USE MULLIGAN button not found');
+      }
+
+      print('SCREENSHOT: === PART 3 COMPLETE ===');
+
+      // ======================================================================
+      // PART 4: MAX STROKES = 6 STATES
+      // ======================================================================
+      print('SCREENSHOT: === PART 4: MAX STROKES 6 STATES ===');
+
+      await UITestHelpers.resetServerState();
+
+      await setupAndStartGame(
+        tester,
+        config,
+        maxStrokes: 6,
+        playerNames: ['Moana', 'Maui'],
+      );
+
+      expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
+
+      // --- 6 dart indicator slots visible ---
+      await screenshot(binding, tester, '17_game_maxstrokes6_6slots_visible');
+
+      // --- All 6 darts missed → Splash (score = 7) ---
+      for (int i = 0; i < 6; i++) {
+        await throwMissViaMock(tester);
+      }
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      await screenshot(binding, tester, '18_game_maxstrokes6_all_miss_splash7');
+      await simulateTakeout(tester);
+
+      print('SCREENSHOT: === PART 4 COMPLETE ===');
+
+      // ======================================================================
+      // PART 5: TWO BACK-TO-BACK GAMES (verify per-game randomization differs)
+      // ======================================================================
+      print('SCREENSHOT: === PART 5: TWO BACK-TO-BACK GAMES ===');
+
+      await UITestHelpers.resetServerState();
+
+      // Game 1: navigate and start
+      await setupAndStartGame(
+        tester,
+        config,
+        playerNames: ['Moana', 'Maui'],
+      );
+      expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
+
+      final game1Hole1Target =
+          ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+      print('SCREENSHOT: Game1 hole1 target = $game1Hole1Target');
+      await screenshot(binding, tester, '19_game1_hole1');
+
+      // Rapid-complete game 1: every player hits target on every hole
+      var p5Provider = ProviderHelpers.getTikiGolfProvider(tester);
+      while (!p5Provider.hasWinner) {
+        final hole = ProviderHelpers.getTikiGolfCurrentHole(tester);
+        final target = ProviderHelpers.getTikiGolfHoleTarget(tester, hole);
+        await throwDartViaMock(tester, target);
+        await simulateTakeout(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+      }
+
+      // Wait for results screen
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+
+      // Game 2: tap PLAY AGAIN
+      final playAgainBtn = ElementFinders.getTikiGolfPlayAgainButton();
+      expect(playAgainBtn, findsOneWidget,
+          reason: 'Play Again button should be on results screen');
+      await tester.tap(playAgainBtn);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+
+      final game2Hole1Target =
+          ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+      print('SCREENSHOT: Game2 hole1 target = $game2Hole1Target');
+      await screenshot(binding, tester, '20_game2_hole1');
+
+      print('SCREENSHOT: === PART 5 COMPLETE ===');
     });
   });
 }
