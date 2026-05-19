@@ -243,17 +243,23 @@ Use with: `flutter drive --driver=test_driver/screenshot_test.dart`
 
 ### Screenshot Test File Structure — ONE `testWidgets`, Helper Bodies Fully Inlined
 
-**CRITICAL — three rules that work together:**
+**Three patterns every working game's screenshot test follows:**
 
-1. A screenshot test file must contain exactly **one** `testWidgets` block, with all screenshot captures inside it.
-2. Helpers must be **defined inline** in the screenshot test file. Do NOT import a per-test-directory `_helpers.dart` (or any sibling file).
-3. Helper *bodies* must also be inlined — do NOT import `shared/dart_throw_helpers.dart` or `shared/game_setup_helpers.dart` from a screenshot test. Talk directly to `package:dart_games/services/mock_scolia_api_service.dart` and to the per-test `SettingsHelpers` / `UITestHelpers` / `PumpSequences` / `ProviderHelpers` shared files.
+1. A screenshot test file contains exactly **one** `testWidgets` block, with all screenshot captures inside it.
+2. Helpers are **defined inline** in the screenshot test file. No `import '_helpers.dart' as h;` (or any sibling file).
+3. Helper *bodies* are also inlined — no imports of `shared/dart_throw_helpers.dart` or `shared/game_setup_helpers.dart`. Talk directly to `package:dart_games/services/mock_scolia_api_service.dart` and to the per-test `SettingsHelpers` / `UITestHelpers` / `PumpSequences` / `ProviderHelpers` shared files.
 
-All three guard the same parallel-mode failure mode. Each violation works under sequential `-d chrome` but fails under parallel `-d web-server` with an identical symptom signature.
+**Why are these "patterns" and not "rules"?** They were originally documented as preventing a `SocketException` at `WebDriver.quit` (a "cache hazard" / "DWDS disconnect" claim). That attribution was based on the Tiki Golf screenshot test failure — but we later applied all three structural fixes to Tiki Golf and the failure persisted unchanged. The actual cause turned out to be the 600s runtime-budget rule (next section), not any of these three patterns. So we don't have an isolated test case proving any pattern, on its own, causes that SocketException.
 
-**Why:** `integration_test_driver_extended` uses a request/response loop with the test app, expecting one test per file — multiple `testWidgets` blocks cause DWDS / webdriver session disconnects between test transitions. Separately, the parallel runner's `-d web-server` web-compile path has a cache hazard with helper imports specific to the screenshot driver (cf. commit `cea7027` / `4d1377e` about new `integration_test/shared/` files being silently ignored — same hazard, different scope). When *any* rule is violated, `flutter drive` crashes with `SocketException` at `WebDriver.quit` when the underlying Chrome DevTools port is no longer reachable. Symptom in the log: stops at "Debug service listening" with no "Starting application from main method", `flutter drive` exits ~14s after start, the parallel runner waits the full 600s for done patterns that never come.
+That said, the patterns are still worth following:
 
-The Tiki Golf screenshot test was the case study: it kept failing in parallel through three rounds of fixes — consolidating `testWidgets` (didn't help), removing the local `_helpers.dart` import (didn't help), and finally **inlining helper bodies** and removing the `shared/dart_throw_helpers.dart` + `shared/game_setup_helpers.dart` imports (this was the fix).
+- `integration_test_driver_extended` genuinely uses a request/response loop and is documented as expecting one test per file. Multiple `testWidgets` in a screenshot test under `-d web-server` is at minimum protocol-fragile.
+- Every working game's screenshot test follows all three. Diverging from a known-working shape with no upside isn't worth it.
+
+**Diagnostic ordering when a screenshot test fails with `SocketException` at `WebDriver.quit` and no test prints in the log:**
+
+1. **Check `DURATION=` in `integration_test_output/parallel/<game>_results.txt` first.** If it's near 600s, the cause is total runtime — see next section. (This is the Tiki Golf case.)
+2. Only if duration is well under 600s: look at the three patterns above, and check whether `test_driver/integration_test.dart` (basic driver, no `onScreenshot`) is accidentally being used instead of `test_driver/screenshot_test.dart`.
 
 **Pattern (use this template):**
 
