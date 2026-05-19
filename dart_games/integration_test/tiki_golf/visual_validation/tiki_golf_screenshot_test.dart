@@ -473,6 +473,122 @@ void main() {
       await screenshot(binding, tester, '20_game2_hole1');
 
       print('SCREENSHOT: === PART 5 COMPLETE ===');
+
+      // ======================================================================
+      // PART 6: TEAM MODE GAME SCREEN STATES
+      // ======================================================================
+      print('SCREENSHOT: === PART 6: TEAM MODE GAME STATES ===');
+
+      await UITestHelpers.resetServerState();
+
+      // Team mode with 4 players, Random assignment
+      await setupAndStartGame(
+        tester,
+        config,
+        teamMode: true,
+        playerNames: ['Moana', 'Maui', 'Lilo', 'Stitch'],
+      );
+
+      expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
+
+      // --- Team mode 4 players, hole 1 (Teams panel visible with team 1 highlighted) ---
+      final p6Hole1Target =
+          ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+      print('SCREENSHOT: Team game hole1 target = $p6Hole1Target');
+      await screenshot(binding, tester, '21_team_game_hole1_team1_highlighted');
+
+      // --- Advance through team 1's players on hole 1 ---
+      bool movedToTeam2 = false;
+      final team1Id = ProviderHelpers.getTikiGolfCurrentTeamId(tester);
+      print('SCREENSHOT: Team 1 id = $team1Id');
+
+      // Throw for all players on team 1
+      while (!movedToTeam2 && !ProviderHelpers.tikiGolfHasWinner(tester)) {
+        final currentTeam =
+            ProviderHelpers.getTikiGolfCurrentTeamId(tester);
+        if (currentTeam != team1Id) {
+          movedToTeam2 = true;
+          break;
+        }
+        await throwDartViaMock(tester, p6Hole1Target);
+        await simulateTakeout(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+      }
+
+      // --- Turn advanced to second team (highlight moves) ---
+      await screenshot(binding, tester, '22_team_game_hole1_team2_highlighted');
+
+      // Complete hole 1 for all remaining teams
+      while (ProviderHelpers.getTikiGolfCurrentHole(tester) == 1 &&
+          !ProviderHelpers.tikiGolfHasWinner(tester)) {
+        final target =
+            ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+        await throwDartViaMock(tester, target);
+        await simulateTakeout(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+      }
+
+      // Advance through hole 2
+      if (!ProviderHelpers.tikiGolfHasWinner(tester) &&
+          ProviderHelpers.getTikiGolfCurrentHole(tester) == 2) {
+        final hole2Target =
+            ProviderHelpers.getTikiGolfHoleTarget(tester, 2);
+        while (ProviderHelpers.getTikiGolfCurrentHole(tester) == 2 &&
+            !ProviderHelpers.tikiGolfHasWinner(tester)) {
+          await throwDartViaMock(tester, hole2Target);
+          await simulateTakeout(tester);
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump();
+        }
+      }
+
+      // --- Team mode mid-game with team scorecard (hole 3) ---
+      if (!ProviderHelpers.tikiGolfHasWinner(tester)) {
+        await screenshot(binding, tester, '23_team_game_mid_team_scorecard');
+      }
+
+      print('SCREENSHOT: === PART 6 COMPLETE ===');
+
+      // ======================================================================
+      // PART 7: TEAM MODE + MULLIGAN MODAL
+      // ======================================================================
+      print('SCREENSHOT: === PART 7: TEAM MULLIGAN MODAL ===');
+
+      await UITestHelpers.resetServerState();
+
+      await setupAndStartGame(
+        tester,
+        config,
+        teamMode: true,
+        mulliganEnabled: true,
+        playerNames: ['Moana', 'Maui', 'Lilo', 'Stitch'],
+      );
+
+      expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
+
+      // Splash the first player (all 3 misses) to trigger mulligan modal
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+
+      // --- Team mode: mulligan button visible in the Splash+Mulligan modal ---
+      await screenshot(binding, tester, '24_team_game_mulligan_modal');
+      // Dismiss via NEXT PLAYER
+      final nextPlayerBtn = ElementFinders.getTikiGolfNextPlayerButton();
+      if (nextPlayerBtn.evaluate().isNotEmpty) {
+        await tester.tap(nextPlayerBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+      } else {
+        await simulateTakeout(tester);
+      }
+
+      print('SCREENSHOT: === PART 7 COMPLETE ===');
     });
   });
 }
