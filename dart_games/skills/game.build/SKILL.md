@@ -791,24 +791,33 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   - **Each screen's back arrow MUST use its own keys class** (`MenuKeys.backButton`, `GameKeys.backButton`) — never reuse another game's key class. Define `backButton` on each Keys class even if not currently referenced by tests.
 >   - **Menu and game screens MUST be identical in size, color, and hover-suppression** — a consistent, predictable back-arrow experience.
 >   - **Results screen MUST NOT have a back arrow** — set `automaticallyImplyLeading: false` on the AppBar and do NOT supply a `leading:` widget. Navigation off the results screen is exclusively via the 3 action buttons (Play Again, Change Settings, Back to Menu). Reference: Clockwork Quest, Reef Royale, Monster Mash, Target Tag, Carnival Derby — all 5 reference games omit the back arrow on results.
-> - **initState pattern (mandatory — Clockwork Quest reference):**
+> - **initState pattern (mandatory — Tiki Golf reference):**
 >   ```dart
 >   @override
 >   void initState() {
 >     super.initState();
 >
->     // 1. Restore settings from the most recent game (when reentering via
->     //    Results → CHANGE MISSION). The provider retains `currentGame` after
->     //    the game ends; CHANGE MISSION pushes a fresh menu without clearing
->     //    it. Reading those values here makes the menu remember the user's
->     //    last settings instead of resetting to defaults.
->     final lastGame = context.read<[GAME_NAME_PASCAL]Provider>().currentGame;
->     if (lastGame != null) {
->       // Read each spec-defined setting from lastGame and assign to local state
->       _settingA = lastGame.settingA;
->       _settingB = lastGame.settingB;
->       // ...
->     }
+>     // 1. Settings hydration. RULE: every option must hydrate as
+>     //        widget.initialX ?? <default>
+>     //    and NOTHING else. NO fallback to provider.currentGame.
+>     //    NO fallback to a provider.pendingMenuSettings layer.
+>     //
+>     //    - widget.initialX is supplied ONLY by the results screen's
+>     //      "Change Settings" navigation (the constructor wires the
+>     //      just-played values forward so the user doesn't have to re-pick).
+>     //    - Every OTHER entry (home-screen tap, back-from-game,
+>     //      back-from-results-without-Change-Settings) leaves
+>     //      widget.initialX null → defaults apply.
+>     //
+>     //    Past failure (audit-fixed in tiki-golf-dev): every game except
+>     //    Tiki Golf, Monster Mash, Reef Royale, Target Tag, Clockwork
+>     //    Quest, and Carnival Derby had a `lastGame = provider.currentGame`
+>     //    fallback here, which made the prior game's settings re-appear
+>     //    when the user tapped the game card on the home screen.
+>     _settingA = widget.initialSettingA ?? <default_A>;
+>     _settingB = widget.initialSettingB ?? <default_B>;
+>     // ... etc for every spec-defined setting
+>
 >
 >     // 2. Initial saved-games check — if any saves exist on first menu entry,
 >     //    AUTO-OPEN the resume modal. Subsequent re-checks (after games
@@ -1245,7 +1254,7 @@ After the sub-agent returns:
 > (v2) **Provider data hoisted to top of `build()`** — read the first ~20 lines of the build method and verify `context.watch<DartboardProvider>()`, `context.watch<[GAME]Provider>()`, and (when needed for outer-Stack modals) `context.watch<PlayerProvider>()` are called there. Variables computed inside a `Consumer<X>` builder are NOT visible to outer-Stack siblings; this fails compilation or silently strips data from the modals.
 > (v3) **Results screen uses `context.watch` (NOT `context.read`) for the game and player providers in `build()`** — read the first ~10 lines of the results screen's build method and verify the game-specific provider AND `PlayerProvider` are accessed via `context.watch` (or `Provider.of<X>(context)` which defaults to listen=true, or wrapped in a `Consumer`). If they use `context.read` AND the screen has any early-return path for `currentGame == null` / `winners.isEmpty` / `winnerId == null`, the screen will get stuck on the placeholder when the test/user reaches it before provider data finishes loading — Play Again / Change Settings / Back to Menu buttons never appear. Recurring miss: caught in Lunar Lander, Monster Mash, Reef Royale, Target Tag in past sessions. The `DartboardProvider` itself can stay on `context.watch` (it's already correct in all games).
 > (w) **DualPlayerListPanel has bounded height** on the menu screen — wrapped in `Expanded(...)` for wide layout AND `SizedBox(height: ...)` for narrow scrollable layout. Read the menu screen and verify both branches.
-> (x) **Menu screen initState restores settings from `provider.currentGame`** when it's not null (so CHANGE MISSION preserves them). Read `initState()` and verify the read.
+> (x) **Menu screen initState hydrates settings via `widget.initialX ?? <default>` ONLY — no fallback to `provider.currentGame` or any `provider.pendingMenuSettings`-style layer.** Read `initState()` and verify EVERY spec-defined setting matches this pattern. The `widget.initialX` constructor params are wired by the results screen's CHANGE SETTINGS navigation, which is the only path that should preserve the just-played values; every other entry (home-screen tap, back-from-game, etc.) must show defaults. Past failure: Tiki Golf + Gladiator Arena + Lunar Lander + Pirate's Grid all originally fell back to `provider.currentGame`, which meant tapping the game card on the home screen kept the prior session's settings instead of resetting them. Confirm there is no `final lastGame = ...currentGame` line in initState, no `??` chain reading from a provider, and no `provider.pendingX` fallback either.
 > (y) **Menu screen initState auto-shows resume modal when saved games exist on initial entry** — `setState(() { _hasSavedGames = hasSaved; _showResumeModal = hasSaved; })` inside the initial `addPostFrameCallback`.
 > (z) **Victory flow waits for DARTS REMOVED** — the game screen MUST NOT auto-navigate to results when `hasWinner` becomes true. Grep the game screen for `addPostFrameCallback(_handleGameWon)` and `simulateTakeoutFinished` inside `hasWinner` blocks — neither should exist. `_handleGameWon()` must ONLY be called from `_handleTakeoutFinished()`. The `shouldPromptTakeout` condition should be `dartsThrown >= 3 || provider.hasWinner` so RemoveDartsModal (and the Edit Score button inside it) is always accessible after a winning turn.
 > (aa) **Edit Score `initialSegments` maps thrown miss (score 0) to `'Miss'`, NOT `'-'`.** Read the menu/game screen's onEditScore handler and verify the segment building. The `'-'` value invalidates the dialog Save button; thrown misses must be `'Miss'`.
@@ -3140,9 +3149,9 @@ class [Game]MenuScreen extends StatefulWidget {
 }
 ```
 
-**Menu `initState`** — prefer widget params, then `provider.currentGame`, then defaults:
+**Menu `initState`** — hydrate ONLY from widget params, then defaults. NO `provider.currentGame` fallback (entry from the home screen must show defaults; only `widget.initialX` from the results-screen CHANGE SETTINGS path should preserve the prior values):
 ```dart
-_difficulty = widget.initialDifficulty ?? lastGame?.targetDifficulty ?? TargetDifficulty.easy;
+_difficulty = widget.initialDifficulty ?? TargetDifficulty.easy;
 ```
 After `clearSelection()` in `addPostFrameCallback`, re-select previous players:
 ```dart
