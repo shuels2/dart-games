@@ -428,7 +428,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         Text(
           'TIED!',
           style: GoogleFonts.boogaloo(
-            fontSize: 22,
+            fontSize: 34,
             fontWeight: FontWeight.bold,
             color: _goldenTrophy,
             shadows: _outlineShadow4(),
@@ -534,7 +534,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 24),
         Text(
           name,
           key: TikiGolfResultsKeys.tiedWinnerName(playerId),
