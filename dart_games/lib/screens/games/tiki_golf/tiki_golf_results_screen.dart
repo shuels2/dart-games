@@ -534,7 +534,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 48),
         Text(
           name,
           key: TikiGolfResultsKeys.tiedWinnerName(playerId),
