@@ -464,27 +464,21 @@ class TikiGolfProvider extends ChangeNotifier {
     final playerIds = game.playerIds;
     if (playerIds.isEmpty) return;
 
-    // Sort by: 1) lowest total, 2) more birdies, 3) fewer bogeys, 4) turn order
-    final sorted = List<String>.from(playerIds);
-    sorted.sort((a, b) {
-      final totalA = game.totalForPlayer(a);
-      final totalB = game.totalForPlayer(b);
-      if (totalA != totalB) return totalA.compareTo(totalB); // lower is better
+    // Find the lowest total. Every player tied at that total is a winner.
+    int lowestTotal = game.totalForPlayer(playerIds.first);
+    for (final id in playerIds) {
+      final t = game.totalForPlayer(id);
+      if (t < lowestTotal) lowestTotal = t;
+    }
 
-      final birdiesA = game.birdiesForPlayer(a);
-      final birdiesB = game.birdiesForPlayer(b);
-      if (birdiesA != birdiesB)
-        return birdiesB.compareTo(birdiesA); // more birdies is better
+    // Preserve turn order in the winners list (matches existing display ranking).
+    final tied = [
+      for (final id in playerIds)
+        if (game.totalForPlayer(id) == lowestTotal) id,
+    ];
 
-      final bogeysA = game.bogeysForPlayer(a);
-      final bogeysB = game.bogeysForPlayer(b);
-      if (bogeysA != bogeysB) return bogeysA.compareTo(bogeysB); // fewer bogeys is better
-
-      // Turn order: first in playerIds wins
-      return playerIds.indexOf(a).compareTo(playerIds.indexOf(b));
-    });
-
-    game.winnerId = sorted.first;
+    game.winnerIds = tied;
+    game.winnerId = tied.first; // legacy single-winner reference
   }
 
   void _determineTeamWinner() {
@@ -492,27 +486,19 @@ class TikiGolfProvider extends ChangeNotifier {
     final teamIds = game.teamPlayers.keys.toList();
     if (teamIds.isEmpty) return;
 
-    // Sort by: 1) lowest team total, 2) more team-birdies, 3) fewer team-bogeys,
-    // 4) team that finished last hole first (i.e. lower team index)
-    final sorted = List<String>.from(teamIds);
-    sorted.sort((a, b) {
-      final totalA = game.totalForTeam(a);
-      final totalB = game.totalForTeam(b);
-      if (totalA != totalB) return totalA.compareTo(totalB);
+    int lowestTotal = game.totalForTeam(teamIds.first);
+    for (final id in teamIds) {
+      final t = game.totalForTeam(id);
+      if (t < lowestTotal) lowestTotal = t;
+    }
 
-      final birdiesA = game.teamBirdies(a);
-      final birdiesB = game.teamBirdies(b);
-      if (birdiesA != birdiesB) return birdiesB.compareTo(birdiesA);
+    final tied = [
+      for (final id in teamIds)
+        if (game.totalForTeam(id) == lowestTotal) id,
+    ];
 
-      final bogeysA = game.teamBogeys(a);
-      final bogeysB = game.teamBogeys(b);
-      if (bogeysA != bogeysB) return bogeysA.compareTo(bogeysB);
-
-      // Team that finished first (lower team index) wins
-      return teamIds.indexOf(a).compareTo(teamIds.indexOf(b));
-    });
-
-    game.winnerTeamId = sorted.first;
+    game.winnerTeamIds = tied;
+    game.winnerTeamId = tied.first; // legacy single-winner reference
   }
 
   // ─── editPlayerScore ────────────────────────────────────────────────────────

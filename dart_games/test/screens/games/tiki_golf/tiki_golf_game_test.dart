@@ -469,95 +469,53 @@ void main() {
       expect(p.currentGame!.winnerId, 'p1');
     });
 
-    test('28. Tiebreaker: more birdies wins', () {
-      // Both players same total, but p1 gets it with more birdies
-      // p1: 8 birdies + 1 par = 9 + 2 = 11
-      // p2: 3 birdies + 6 pars = 3 + 12 = 15 — not equal
-      // Hard to make equal totals with random targets, so let's force scores
-      // by using the model directly
+    test('28. Equal totals (different birdie counts) → both are tied winners', () {
+      // Per spec change: a tie on TOTAL means ALL players tied are winners.
+      // Birdie/bogey counts no longer break the tie — they are display-only.
       final p = _makeSoloProvider(playerIds: ['p1', 'p2']);
       final game = p.currentGame!;
 
-      // Manually set scores: both total 9, but p1 has more birdies
-      // p1: 7 birdies (7×1) + 1 par (2) + 0 + 0 + ... doesn't add to 9 easily
-      // p1: 9 holes each scored 1 = 9 total, 9 birdies
-      // p2: 8 birdies + 1 (score 1) = ... Let's do p1: 4 holes of 1 + 5 holes of 1 = 9 birdies total=9
-      //     p2: 0 birdies, 9 holes of 1... can't have same total with 0 birdies and total 9
-      // Let's be concrete: both total 9 by p1: 9×1 (birdies=9), p2: 1×9 (bogey)... 9 != 9
-      // p1: holes [1,1,1,1,1,1,1,1,2] = 10 total ≠ 9
-      // Simplest: p1 all 1s = 9, p2 all 1s = 9 → same birdies → tie → turn order
-      // Better test: p1 has 5 birdies, p2 has 3 birdies, both total 13
-      // p1: 5×1 + 4×2 = 5+8=13, birdies=5
-      // p2: 3×1 + 6×2 = 3+12=15 ≠ 13
-      // p2: 3×1 + 0×2 + 6×? ... 10/6 ≈ 1.67 (not integer)
-      // p1: 4×1 + 5×2 = 4+10=14, p2: 2×1 + 7×2 = 2+14=16 ≠ 14
-      // Let's use: p1: [1,1,1,2,2,2,2,2,2] = 3+12=15, birdies=3
-      //            p2: [1,1,2,2,2,2,2,2,3] = 2+12+3=17 ≠ 15
-      // Manually set to achieve equal totals:
-      // p1: [1,1,1,1,3,3,3,3,3] = 4+15=19, birdies=4
-      // p2: [2,2,2,2,2,2,2,2,3] = 16+3=19, birdies=0 → p1 wins (more birdies)
-
-      for (final pid in ['p1', 'p2']) {
-        game.playerHoleScores[pid] = List.filled(9, null);
-      }
-      game.playerHoleScores['p1'] = [1, 1, 1, 1, 3, 3, 3, 3, 3];
-      game.playerHoleScores['p2'] = [2, 2, 2, 2, 2, 2, 2, 2, 3];
-
-      // totals: p1 = 4+15=19, p2 = 14+3=17 — oops not equal
-      // Let me fix: p1=[1,1,1,1,3,3,3,3,3]=19, p2=[2,2,2,2,2,2,2,3,2]=17 ≠ 19
-      // p2=[2,2,2,3,2,2,3,2,1]=19, birdies=1 → p1 should win (more birdies)
-      game.playerHoleScores['p2'] = [2, 2, 2, 3, 2, 2, 3, 2, 1];
+      // p1 has more birdies but same total as p2 — both are winners.
+      game.playerHoleScores['p1'] = [1, 1, 1, 1, 3, 3, 3, 3, 3]; // total 19
+      game.playerHoleScores['p2'] = [2, 2, 2, 3, 2, 2, 3, 2, 1]; // total 19
 
       expect(game.totalForPlayer('p1'), 19);
       expect(game.totalForPlayer('p2'), 19);
-      expect(game.birdiesForPlayer('p1'), 4);
-      expect(game.birdiesForPlayer('p2'), 1);
 
       p.endGame();
+      // Both players tied → winnerIds contains both, in turn order.
+      expect(game.winnerIds, ['p1', 'p2']);
+      // Legacy single-winner reference points to the first tied player.
       expect(game.winnerId, 'p1');
     });
 
-    test('29. Tiebreaker: fewer bogeys wins', () {
+    test('29. Equal totals (different bogey counts) → both are tied winners', () {
       final p = _makeSoloProvider(playerIds: ['p1', 'p2']);
       final game = p.currentGame!;
 
-      // p1 and p2 same total, same birdies (none), but p2 has more bogeys
-      // p1: all pars (9×2=18), birdies=0, bogeys=0
-      // p2: 6 pars (12) + 3 bogeys (9) = 21 ≠ 18
-      // Both need same total and birdies:
-      // p1: [1,3,2,2,2,2,2,2,2]=18, birdies=1, bogeys=1
-      // p2: [2,2,2,2,2,2,2,2,2]=18, birdies=0 → p1 wins birdies not bogeys tie
-      // For bogey tiebreaker: same total, same birdies, different bogeys
-      // p1: [2,2,2,2,2,2,2,2,2]=18, birdies=0, bogeys=0
-      // p2: [1,3,2,2,2,2,2,2,2]=18, birdies=1 → p2 wins birdies
-      // To test bogey TB: both 0 birdies, p1 fewer bogeys:
-      // p1: [2,2,2,2,2,2,2,2,2]=18, bogeys=0
-      // p2: [3,3,2,2,2,2,2,2,0]=18 - 0 not valid score
-      // p1: [2,2,2,2,2,2,2,2,4]=20, birdies=0, bogeys=1
-      // p2: [3,3,2,2,2,2,2,2,2]=20, birdies=0, bogeys=2 → p1 wins (fewer bogeys)
-      game.playerHoleScores['p1'] = [2, 2, 2, 2, 2, 2, 2, 2, 4];
-      game.playerHoleScores['p2'] = [3, 3, 2, 2, 2, 2, 2, 2, 2];
+      // Same total (20) and birdies (0), but p2 has more bogeys. Still a tie.
+      game.playerHoleScores['p1'] = [2, 2, 2, 2, 2, 2, 2, 2, 4]; // total 20
+      game.playerHoleScores['p2'] = [3, 3, 2, 2, 2, 2, 2, 2, 2]; // total 20
 
       expect(game.totalForPlayer('p1'), 20);
       expect(game.totalForPlayer('p2'), 20);
-      expect(game.birdiesForPlayer('p1'), 0);
-      expect(game.birdiesForPlayer('p2'), 0);
-      expect(game.bogeysForPlayer('p1'), 1); // the 4 (splash at maxStrokes=3 → maxStrokes+1=4)
+      expect(game.bogeysForPlayer('p1'), 1);
       expect(game.bogeysForPlayer('p2'), 2);
 
       p.endGame();
+      expect(game.winnerIds, ['p1', 'p2']);
       expect(game.winnerId, 'p1');
     });
 
-    test('30. Tiebreaker: first in turn order wins', () {
+    test('30. Identical totals (no other differences) → all players tied', () {
       final p = _makeSoloProvider(playerIds: ['p1', 'p2']);
       final game = p.currentGame!;
 
-      // Both identical scores — p1 is first in playerIds so p1 wins
       game.playerHoleScores['p1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
       game.playerHoleScores['p2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
 
       p.endGame();
+      expect(game.winnerIds, ['p1', 'p2']);
       expect(game.winnerId, 'p1');
     });
   });
@@ -1124,7 +1082,7 @@ void main() {
       expect(game.winnerTeamId, 'team_1');
     });
 
-    test('60. Tiebreaker: team with more team-birdies wins', () {
+    test('60. Equal team totals (different birdie counts) → both teams tied', () {
       final p = _makeTeamProvider(teamPlayers: {
         'team_1': ['a1', 'a2'],
         'team_2': ['b1'],
@@ -1134,43 +1092,47 @@ void main() {
       // team_1 best-ball: [1,1,2,2,2,2,2,2,4] = 18, 2 birdies
       // team_2 best-ball: [2,2,2,2,2,2,2,2,2] = 18, 0 birdies
       game.playerHoleScores['a1'] = [1, 1, 2, 2, 2, 2, 2, 2, 4];
-      game.playerHoleScores['a2'] = [2, 2, 2, 2, 2, 2, 2, 2, 4]; // same as a1 worst case
+      game.playerHoleScores['a2'] = [2, 2, 2, 2, 2, 2, 2, 2, 4];
       game.playerHoleScores['b1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
 
       p.endGame();
+      expect(game.totalForTeam('team_1'), 18);
+      expect(game.totalForTeam('team_2'), 18);
+      expect(game.winnerTeamIds, ['team_1', 'team_2']);
       expect(game.winnerTeamId, 'team_1');
     });
 
-    test('61. Tiebreaker: team with fewer team-bogeys wins', () {
+    test('61. Equal team totals (different bogey counts) → both teams tied', () {
       final p = _makeTeamProvider(teamPlayers: {
         'team_1': ['a1', 'a2'],
         'team_2': ['b1'],
       });
       final game = p.currentGame!;
 
-      // team_1 best-ball: [2,2,2,2,2,2,2,2,4] = 20, 0 birdies, 1 bogey (the 4)
-      // team_2 best-ball: [2,2,2,2,2,2,2,3,3] = 20, 0 birdies, 2 bogeys
+      // Both teams total 20 best-ball; team_2 has more bogeys.
       game.playerHoleScores['a1'] = [2, 2, 2, 2, 2, 2, 2, 2, 4];
       game.playerHoleScores['a2'] = [2, 2, 2, 2, 2, 2, 2, 2, 4];
       game.playerHoleScores['b1'] = [2, 2, 2, 2, 2, 2, 2, 3, 3];
 
       p.endGame();
+      expect(game.winnerTeamIds, ['team_1', 'team_2']);
       expect(game.winnerTeamId, 'team_1');
     });
 
-    test('62. Tiebreaker: team that finished last hole first wins', () {
+    test('62. Identical team totals → all teams tied', () {
       final p = _makeTeamProvider(teamPlayers: {
         'team_1': ['a1', 'a2'],
         'team_2': ['b1'],
       });
       final game = p.currentGame!;
 
-      // Identical best-ball scores — team_1 (index 0) plays first = wins
+      // Identical best-ball totals
       game.playerHoleScores['a1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
       game.playerHoleScores['a2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
       game.playerHoleScores['b1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
 
       p.endGame();
+      expect(game.winnerTeamIds, ['team_1', 'team_2']);
       expect(game.winnerTeamId, 'team_1');
     });
 
@@ -1384,6 +1346,152 @@ void main() {
       }
       // All 4 crests are distinct
       expect(game.teamCrestPaths.toSet().length, 4);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Ties — explicit coverage for solo + team modes
+  // ═══════════════════════════════════════════════════════════════════
+  group('Ties', () {
+    test('Solo outright winner populates winnerIds with one entry', () {
+      final p = _makeSoloProvider(playerIds: ['p1', 'p2']);
+      final game = p.currentGame!;
+
+      game.playerHoleScores['p1'] = [1, 1, 1, 1, 1, 1, 1, 1, 1]; // 9
+      game.playerHoleScores['p2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+
+      p.endGame();
+      expect(game.winnerIds, ['p1']);
+      expect(game.winnerId, 'p1');
+    });
+
+    test('Solo 2-way tie: winnerIds contains both, in turn order', () {
+      final p = _makeSoloProvider(playerIds: ['p1', 'p2']);
+      final game = p.currentGame!;
+
+      game.playerHoleScores['p1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+      game.playerHoleScores['p2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+
+      p.endGame();
+      expect(game.winnerIds, ['p1', 'p2']);
+      expect(game.winnerId, 'p1'); // legacy first-winner reference
+    });
+
+    test('Solo 3-way tie: all three players in winnerIds', () {
+      final p = _makeSoloProvider(playerIds: ['p1', 'p2', 'p3']);
+      final game = p.currentGame!;
+
+      game.playerHoleScores['p1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+      game.playerHoleScores['p2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+      game.playerHoleScores['p3'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+
+      p.endGame();
+      expect(game.winnerIds, ['p1', 'p2', 'p3']);
+    });
+
+    test('Solo partial tie: only players at the lowest total are winners', () {
+      final p = _makeSoloProvider(playerIds: ['p1', 'p2', 'p3']);
+      final game = p.currentGame!;
+
+      // p1 & p3 tied at 18; p2 has 20 (loser).
+      game.playerHoleScores['p1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+      game.playerHoleScores['p2'] = [2, 2, 2, 2, 2, 2, 2, 2, 4]; // 20
+      game.playerHoleScores['p3'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+
+      p.endGame();
+      expect(game.winnerIds, ['p1', 'p3']);
+      expect(game.winnerIds, isNot(contains('p2')));
+    });
+
+    test('Team outright winner populates winnerTeamIds with one entry', () {
+      final p = _makeTeamProvider(teamPlayers: {
+        'team_1': ['a1', 'a2'],
+        'team_2': ['b1'],
+      });
+      final game = p.currentGame!;
+
+      game.playerHoleScores['a1'] = [1, 1, 1, 1, 1, 1, 1, 1, 1]; // best-ball 9
+      game.playerHoleScores['a2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      game.playerHoleScores['b1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+
+      p.endGame();
+      expect(game.winnerTeamIds, ['team_1']);
+    });
+
+    test('Team 2-way tie: winnerTeamIds contains both teams', () {
+      final p = _makeTeamProvider(teamPlayers: {
+        'team_1': ['a1', 'a2'],
+        'team_2': ['b1', 'b2'],
+      });
+      final game = p.currentGame!;
+
+      game.playerHoleScores['a1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18 best-ball
+      game.playerHoleScores['a2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      game.playerHoleScores['b1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      game.playerHoleScores['b2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+
+      p.endGame();
+      expect(game.winnerTeamIds, ['team_1', 'team_2']);
+      expect(game.winnerTeamId, 'team_1'); // legacy reference
+    });
+
+    test('Team 3-way tie: all three teams in winnerTeamIds', () {
+      final p = _makeTeamProvider(teamPlayers: {
+        'team_1': ['a1'],
+        'team_2': ['b1'],
+        'team_3': ['c1'],
+      });
+      final game = p.currentGame!;
+
+      game.playerHoleScores['a1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      game.playerHoleScores['b1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      game.playerHoleScores['c1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+
+      p.endGame();
+      expect(game.winnerTeamIds, ['team_1', 'team_2', 'team_3']);
+    });
+
+    test('Team partial tie: only teams at the lowest total are winners', () {
+      final p = _makeTeamProvider(teamPlayers: {
+        'team_1': ['a1'],
+        'team_2': ['b1'],
+        'team_3': ['c1'],
+      });
+      final game = p.currentGame!;
+
+      // team_1 & team_3 tied at 18; team_2 totals 20 (loser).
+      game.playerHoleScores['a1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+      game.playerHoleScores['b1'] = [2, 2, 2, 2, 2, 2, 2, 2, 4]; // 20
+      game.playerHoleScores['c1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2]; // 18
+
+      p.endGame();
+      expect(game.winnerTeamIds, ['team_1', 'team_3']);
+      expect(game.winnerTeamIds, isNot(contains('team_2')));
+    });
+
+    test('winnerIds / winnerTeamIds survive JSON round-trip', () {
+      final p = _makeSoloProvider(playerIds: ['p1', 'p2']);
+      final game = p.currentGame!;
+      game.playerHoleScores['p1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      game.playerHoleScores['p2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      p.endGame();
+
+      final restored = TikiGolfGame.fromJson(game.toJson());
+      expect(restored.winnerIds, ['p1', 'p2']);
+      expect(restored.winnerId, 'p1');
+
+      final teamP = _makeTeamProvider(teamPlayers: {
+        'team_1': ['a1', 'a2'],
+        'team_2': ['b1'],
+      });
+      final tg = teamP.currentGame!;
+      tg.playerHoleScores['a1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      tg.playerHoleScores['a2'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      tg.playerHoleScores['b1'] = [2, 2, 2, 2, 2, 2, 2, 2, 2];
+      teamP.endGame();
+      final restoredTeam = TikiGolfGame.fromJson(tg.toJson());
+      expect(restoredTeam.winnerTeamIds, ['team_1', 'team_2']);
+      expect(restoredTeam.winnerTeamId, 'team_1');
     });
   });
 }

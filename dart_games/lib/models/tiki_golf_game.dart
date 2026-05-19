@@ -118,6 +118,14 @@ class TikiGolfGame {
   String? winnerId;
   String? winnerTeamId;
 
+  /// All players tied at the lowest total (solo mode). Length 1 = solo
+  /// outright win; length 2+ = solo tie. Null until [endGame] runs.
+  List<String>? winnerIds;
+
+  /// All teams tied at the lowest team total (team mode). Length 1 = team
+  /// outright win; length 2+ = team tie. Null until [endGame] runs.
+  List<String>? winnerTeamIds;
+
   DateTime? gameStartTime;
   DateTime? gameEndTime;
 
@@ -149,6 +157,8 @@ class TikiGolfGame {
     this.currentTurnEnded = false,
     this.winnerId,
     this.winnerTeamId,
+    this.winnerIds,
+    this.winnerTeamIds,
     this.gameStartTime,
     this.gameEndTime,
   })  : playerHoleScores = playerHoleScores ??
@@ -333,6 +343,8 @@ class TikiGolfGame {
       'currentTurnEnded': currentTurnEnded,
       'winnerId': winnerId,
       'winnerTeamId': winnerTeamId,
+      'winnerIds': winnerIds,
+      'winnerTeamIds': winnerTeamIds,
       'gameStartTime': gameStartTime?.toIso8601String(),
       'gameEndTime': gameEndTime?.toIso8601String(),
     };
@@ -415,6 +427,12 @@ class TikiGolfGame {
       currentTurnEnded: json['currentTurnEnded'] as bool? ?? false,
       winnerId: json['winnerId'] as String?,
       winnerTeamId: json['winnerTeamId'] as String?,
+      winnerIds: json['winnerIds'] != null
+          ? List<String>.from(json['winnerIds'] as List)
+          : null,
+      winnerTeamIds: json['winnerTeamIds'] != null
+          ? List<String>.from(json['winnerTeamIds'] as List)
+          : null,
       gameStartTime: json['gameStartTime'] != null
           ? DateTime.parse(json['gameStartTime'] as String)
           : null,

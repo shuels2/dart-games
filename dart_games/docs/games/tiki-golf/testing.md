@@ -15,12 +15,12 @@
 #### Game Logic Tests
 **Location:** `test/screens/games/tiki_golf/`
 
-1. **`tiki_golf_game_test.dart`** (72 tests)
+1. **`tiki_golf_game_test.dart`** (81 tests)
    - Core game model mechanics: hole progression, stroke counting, turn-end detection
    - Per-game randomization: holeTargets and holeImagePaths shuffle correctness
    - Variable darts per turn: Max Darts 3/4/5/6 interactions with stroke counting
    - Splash threshold scaling (maxDarts + 1 for each setting)
-   - Win condition evaluation: lowest total wins; birdie tiebreaker; bogey tiebreaker; turn-order tiebreaker
+   - Win condition evaluation: lowest total wins. **Ties stand** — every player/team at the lowest total is recorded in `winnerIds` / `winnerTeamIds` and every tied player receives a Win.
    - Team mode mechanics: best-ball aggregation (MIN of team player scores per hole)
    - Team mode hole progression: team-grouped rotation within holes
    - Mulligan mechanics: per-player flag, single-use-per-game, replace Splash score, re-throw

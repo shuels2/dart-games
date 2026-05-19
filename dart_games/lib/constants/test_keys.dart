@@ -976,6 +976,14 @@ class TikiGolfResultsKeys {
   static const winnerStats = Key('tiki_golf_results_winner_stats');
   static const championHeading = Key('tiki_golf_results_champion_heading');
 
+  // Tied-winner section (shown when multiple players/teams tie on total).
+  static Key tiedWinnerPhoto(String playerId) =>
+      Key('tiki_golf_results_tied_winner_photo_$playerId');
+  static Key tiedWinnerName(String playerId) =>
+      Key('tiki_golf_results_tied_winner_name_$playerId');
+  static Key tiedWinnerTeamCrest(String teamId) =>
+      Key('tiki_golf_results_tied_winner_team_crest_$teamId');
+
   // Scorecard
   static const finalScorecard = Key('tiki_golf_results_final_scorecard');
   static LocalKey playerRanking(int index) =>

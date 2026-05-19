@@ -143,14 +143,24 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ? game.gameEndTime!.difference(game.gameStartTime!)
           : Duration.zero;
 
+      // Resolve winner sets (tied players in solo, tied teams in team).
+      // Fall back to the singular winnerId/winnerTeamId for backward compat
+      // with games saved before tie support.
+      final soloWinners = game.winnerIds ??
+          (game.winnerId != null ? [game.winnerId!] : const <String>[]);
+      final teamWinners = game.winnerTeamIds ??
+          (game.winnerTeamId != null
+              ? [game.winnerTeamId!]
+              : const <String>[]);
+
       // ONE batch call — never loop playerProvider.updatePlayerStats per player
-      await playerProvider.batchUpdatePlayerStats([ // line ~130
+      await playerProvider.batchUpdatePlayerStats([
         for (final id in game.playerIds)
           PlayerStatsUpdate(
             playerId: id,
             won: game.gameMode == TikiGolfGameMode.team
-                ? (game.playerTeamAssignments[id] == game.winnerTeamId)
-                : (game.winnerId == id),
+                ? teamWinners.contains(game.playerTeamAssignments[id])
+                : soloWinners.contains(id),
             gameName: 'Tiki Golf',
             gameDuration: duration,
             dartThrows: (game.totalTurns[id] ?? 0) * game.maxStrokes,
@@ -342,25 +352,35 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     sortedIds.sort((a, b) =>
         game.totalForPlayer(a).compareTo(game.totalForPlayer(b)));
 
-    final winnerId = game.winnerId ?? sortedIds.first;
-    final winner = playerProvider.getPlayerById(winnerId);
-    final winnerTotal = game.totalForPlayer(winnerId);
-    final winnerDiff = winnerTotal - _kTotalPar;
-    final winnerBirdies = game.birdiesForPlayer(winnerId);
+    // Resolve tied-winner list (fall back to singular winnerId for legacy saves).
+    final winnerIds = game.winnerIds ??
+        (game.winnerId != null ? [game.winnerId!] : <String>[sortedIds.first]);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
       child: Column(
         children: [
-          // ── Winner card ──
-          _buildSoloWinnerCard(winner, winnerId, winnerTotal, winnerDiff,
-              winnerBirdies),
+          // ── Winner card (single or tied) ──
+          if (winnerIds.length <= 1)
+            () {
+              final winnerId = winnerIds.isNotEmpty
+                  ? winnerIds.first
+                  : sortedIds.first;
+              final winner = playerProvider.getPlayerById(winnerId);
+              final winnerTotal = game.totalForPlayer(winnerId);
+              final winnerDiff = winnerTotal - _kTotalPar;
+              final winnerBirdies = game.birdiesForPlayer(winnerId);
+              return _buildSoloWinnerCard(winner, winnerId, winnerTotal,
+                  winnerDiff, winnerBirdies);
+            }()
+          else
+            _buildSoloTiedWinnersCard(game, winnerIds, playerProvider),
           const SizedBox(height: 16),
           // ── Final scorecard ──
           Expanded(
             child: SingleChildScrollView(
               child: _buildSoloScorecard(
-                  game, sortedIds, winnerId, playerProvider),
+                  game, sortedIds, winnerIds, playerProvider),
             ),
           ),
           const SizedBox(height: 12),
@@ -368,6 +388,151 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           _buildActionButtons(),
         ],
       ),
+    );
+  }
+
+  // Tied solo winners — N avatars side-by-side under a plural heading.
+  Widget _buildSoloTiedWinnersCard(
+    TikiGolfGame game,
+    List<String> winnerIds,
+    PlayerProvider playerProvider,
+  ) {
+    final tiedTotal = game.totalForPlayer(winnerIds.first);
+    final diff = tiedTotal - _kTotalPar;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'GOLDEN TIKI CHAMPIONS!',
+          key: TikiGolfResultsKeys.championHeading,
+          style: GoogleFonts.boogaloo(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: _lagoonBlue,
+            shadows: _outlineShadow4(),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'TIED!',
+          style: GoogleFonts.boogaloo(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: _goldenTrophy,
+            shadows: _outlineShadow4(),
+          ),
+        ),
+        const SizedBox(height: 6),
+        // Row of tied-winner avatars
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 16,
+          runSpacing: 8,
+          children: [
+            for (int i = 0; i < winnerIds.length; i++)
+              _buildSoloTiedWinnerItem(
+                player: playerProvider.getPlayerById(winnerIds[i]),
+                playerId: winnerIds[i],
+                colorIndex: i,
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Shared total line — all tied players have the same total
+        RichText(
+          key: TikiGolfResultsKeys.winnerTotal,
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: GoogleFonts.boogaloo(
+              fontSize: 18,
+              color: _sandWhite,
+              shadows: _lightShadow4(),
+            ),
+            children: [
+              TextSpan(text: 'Tied at $tiedTotal strokes ('),
+              TextSpan(
+                text: _formatDiff(diff),
+                style: GoogleFonts.boogaloo(
+                  fontSize: 18,
+                  color: _diffColor(diff),
+                  shadows: _lightShadow4(),
+                ),
+              ),
+              const TextSpan(text: ')'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSoloTiedWinnerItem({
+    required Player? player,
+    required String playerId,
+    required int colorIndex,
+  }) {
+    final name = player?.name ?? '—';
+    final bg = _avatarColorForIndex(colorIndex);
+
+    return Column(
+      key: TikiGolfResultsKeys.tiedWinnerPhoto(playerId),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 120,
+          height: 128, // extra space for the golden-tiki overlap
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _sandWhite,
+                  border: Border.all(color: _goldenTrophy, width: 3),
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: _buildPlayerAvatarInitials(
+                  player,
+                  size: 120,
+                  fontSize: 56,
+                  bgColor: bg,
+                ),
+              ),
+              Positioned(
+                bottom: -6,
+                right: -6,
+                child: Image.asset(
+                  'assets/games/tiki_golf/pieces/GoldenTiki.png',
+                  width: 48,
+                  height: 48,
+                  errorBuilder: (_, __, ___) => const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(Icons.emoji_events,
+                        size: 32, color: _goldenTrophy),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          name,
+          key: TikiGolfResultsKeys.tiedWinnerName(playerId),
+          style: GoogleFonts.boogaloo(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: _sandWhite,
+            shadows: _outlineShadow4(),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -498,9 +663,10 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
   Widget _buildSoloScorecard(
     TikiGolfGame game,
     List<String> sortedIds,
-    String winnerId,
+    List<String> winnerIds,
     PlayerProvider playerProvider,
   ) {
+    final winnerSet = winnerIds.toSet();
     return Container(
       key: TikiGolfResultsKeys.finalScorecard,
       decoration: BoxDecoration(
@@ -523,7 +689,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               _hdrCell('+/−', isPlusMinus: true),
             ],
           ),
-          // Player rows
+          // Player rows — every tied winner gets the winner row styling
           for (int i = 0; i < sortedIds.length; i++)
             _buildSoloPlayerRow(
               key: TikiGolfResultsKeys.playerRanking(i),
@@ -532,7 +698,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               playerName:
                   playerProvider.getPlayerById(sortedIds[i])?.name ??
                       sortedIds[i],
-              isWinner: sortedIds[i] == winnerId,
+              isWinner: winnerSet.contains(sortedIds[i]),
             ),
         ],
       ),
@@ -639,43 +805,47 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     TikiGolfGame game,
     PlayerProvider playerProvider,
   ) {
-    final winnerTeamId = game.winnerTeamId ??
-        _resolveWinnerTeam(game); // fallback if not set
-
     // Sort teams by best-ball total ascending
     final sortedTeams = List<String>.from(game.teamPlayers.keys);
     sortedTeams.sort((a, b) =>
         game.totalForTeam(a).compareTo(game.totalForTeam(b)));
 
-    final winningTeamIndex = sortedTeams.indexOf(winnerTeamId);
-    final winnerCrestPath = _crestPathForTeam(game, winnerTeamId);
-    final winnerTeamPlayers = game.teamPlayers[winnerTeamId] ?? [];
-    final winnerTeamTotal = game.totalForTeam(winnerTeamId);
-    final winnerTeamDiff = winnerTeamTotal - _kTotalPar;
-    final winnerTeamBirds = game.teamBirdies(winnerTeamId);
+    // Resolve tied winning teams (fall back to singular winnerTeamId).
+    final winnerTeamIds = game.winnerTeamIds ??
+        (game.winnerTeamId != null
+            ? [game.winnerTeamId!]
+            : <String>[_resolveWinnerTeam(game)]);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
       child: Column(
         children: [
-          // ── Winner card ──
-          _buildTeamWinnerCard(
-            game,
-            playerProvider,
-            winnerTeamId,
-            winnerCrestPath,
-            winnerTeamPlayers,
-            winnerTeamTotal,
-            winnerTeamDiff,
-            winnerTeamBirds,
-          ),
+          // ── Winner card (single or tied) ──
+          if (winnerTeamIds.length <= 1)
+            () {
+              final winnerTeamId = winnerTeamIds.isNotEmpty
+                  ? winnerTeamIds.first
+                  : sortedTeams.first;
+              return _buildTeamWinnerCard(
+                game,
+                playerProvider,
+                winnerTeamId,
+                _crestPathForTeam(game, winnerTeamId),
+                game.teamPlayers[winnerTeamId] ?? [],
+                game.totalForTeam(winnerTeamId),
+                game.totalForTeam(winnerTeamId) - _kTotalPar,
+                game.teamBirdies(winnerTeamId),
+              );
+            }()
+          else
+            _buildTeamTiedWinnersCard(game, winnerTeamIds, playerProvider),
           const SizedBox(height: 12),
           // ── Scrollable scorecards (Expanded so buttons stay pinned below) ──
           Expanded(
             child: SingleChildScrollView(
               key: TikiGolfResultsKeys.scorecardsScroll,
               child: _buildTeamScorecards(
-                  game, sortedTeams, winnerTeamId, playerProvider),
+                  game, sortedTeams, winnerTeamIds, playerProvider),
             ),
           ),
           const SizedBox(height: 10),
@@ -683,6 +853,158 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           _buildActionButtons(),
         ],
       ),
+    );
+  }
+
+  // Tied team winners — N crests side-by-side, with team rosters under each.
+  Widget _buildTeamTiedWinnersCard(
+    TikiGolfGame game,
+    List<String> winnerTeamIds,
+    PlayerProvider playerProvider,
+  ) {
+    final tiedTotal = game.totalForTeam(winnerTeamIds.first);
+    final diff = tiedTotal - _kTotalPar;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'GOLDEN TIKI CHAMPIONS!',
+          key: TikiGolfResultsKeys.championHeading,
+          style: GoogleFonts.boogaloo(
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+            color: _lagoonBlue,
+            shadows: _outlineShadow4(offset: 2, blur: 10),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'TIED!',
+          style: GoogleFonts.boogaloo(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: _goldenTrophy,
+            shadows: _outlineShadow4(),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 24,
+          runSpacing: 12,
+          children: [
+            for (final tid in winnerTeamIds)
+              _buildTeamTiedWinnerItem(
+                game: game,
+                playerProvider: playerProvider,
+                teamId: tid,
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        RichText(
+          key: TikiGolfResultsKeys.winnerTotal,
+          text: TextSpan(
+            style: GoogleFonts.boogaloo(
+              fontSize: 16,
+              color: _sandWhite,
+              shadows: _lightShadow4(),
+            ),
+            children: [
+              TextSpan(text: 'Tied at $tiedTotal strokes ('),
+              TextSpan(
+                text: _formatDiff(diff),
+                style: GoogleFonts.boogaloo(
+                  fontSize: 16,
+                  color: _diffColor(diff),
+                  shadows: _lightShadow4(),
+                ),
+              ),
+              const TextSpan(text: ')'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTeamTiedWinnerItem({
+    required TikiGolfGame game,
+    required PlayerProvider playerProvider,
+    required String teamId,
+  }) {
+    final crestPath = _crestPathForTeam(game, teamId);
+    final members = game.teamPlayers[teamId] ?? [];
+
+    return Column(
+      key: TikiGolfResultsKeys.tiedWinnerTeamCrest(teamId),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 130,
+          height: 130,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _lagoonBlue, width: 4),
+                  color: _lagoonBlue.withOpacity(0.20),
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: Image.asset(
+                  crestPath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.shield,
+                    color: _lagoonBlue,
+                    size: 60,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -4,
+                right: -4,
+                child: Image.asset(
+                  'assets/games/tiki_golf/pieces/GoldenTiki.png',
+                  width: 48,
+                  height: 48,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.emoji_events,
+                    size: 36,
+                    color: _goldenTrophy,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Member names — first names, comma separated
+        SizedBox(
+          width: 160,
+          child: Text(
+            members
+                .map((pid) =>
+                    playerProvider.getPlayerById(pid)?.name.split(' ').first ??
+                    pid)
+                .join(', '),
+            style: GoogleFonts.boogaloo(
+              fontSize: 14,
+              color: _sandWhite,
+              shadows: _lightShadow4(),
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -872,9 +1194,10 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
   Widget _buildTeamScorecards(
     TikiGolfGame game,
     List<String> sortedTeams,
-    String winnerTeamId,
+    List<String> winnerTeamIds,
     PlayerProvider playerProvider,
   ) {
+    final winnerSet = winnerTeamIds.toSet();
     // Distribution: 4 teams → [2,2]; 3 teams → [2,1]; 2 teams → [1,1]; 1 team → centered
     final col1 = <String>[];
     final col2 = <String>[];
@@ -899,7 +1222,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           child: _buildTeamBlock(
             game: game,
             teamId: sortedTeams[0],
-            winnerTeamId: winnerTeamId,
+            isWinner: winnerSet.contains(sortedTeams[0]),
             playerProvider: playerProvider,
             rankIndex: 0,
           ),
@@ -920,7 +1243,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                 _buildTeamBlock(
                   game: game,
                   teamId: col1[i],
-                  winnerTeamId: winnerTeamId,
+                  isWinner: winnerSet.contains(col1[i]),
                   playerProvider: playerProvider,
                   rankIndex: sortedTeams.indexOf(col1[i]),
                 ),
@@ -939,7 +1262,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                 _buildTeamBlock(
                   game: game,
                   teamId: col2[i],
-                  winnerTeamId: winnerTeamId,
+                  isWinner: winnerSet.contains(col2[i]),
                   playerProvider: playerProvider,
                   rankIndex: sortedTeams.indexOf(col2[i]),
                 ),
@@ -954,11 +1277,10 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
   Widget _buildTeamBlock({
     required TikiGolfGame game,
     required String teamId,
-    required String winnerTeamId,
+    required bool isWinner,
     required PlayerProvider playerProvider,
     required int rankIndex,
   }) {
-    final isWinner = teamId == winnerTeamId;
     final crestPath = _crestPathForTeam(game, teamId);
     final teamMembers = game.teamPlayers[teamId] ?? [];
     final bestBallTotal = game.totalForTeam(teamId);

@@ -117,17 +117,16 @@ Note: N=8 is a special case — a naive pair-fill would give [2,2,2,2] (4 teams)
 ## Win Conditions
 
 ### Solo Mode
-1. Player with the **lowest total stroke count** after 9 holes wins
-2. Tie: player with more birdies (1-stroke holes) wins
-3. Still tied: player with fewer bogeys (3+ strokes) wins
-4. Still tied: first player in selection order wins
+1. Players with the **lowest total stroke count** after 9 holes win
+2. **Ties stand:** if multiple players finish on the same lowest total, all of them are tied champions. The results screen shows every tied player and every tied player receives a Win in their stats.
+3. `winnerIds` lists every tied player in turn order; `winnerId` is the first tied player (legacy single-winner reference).
+4. Birdie / bogey counts are shown on the scorecard for context but do **not** break ties.
 
 ### Team Mode
-1. Team with the **lowest combined team total** (sum of best-ball hole scores) after 9 holes wins
-2. Tie: team with more team-birdies (hole where team best-ball = 1) wins
-3. Still tied: team with fewer team-bogeys (hole where team best-ball ≥ 3) wins
-4. Still tied: team that finished its last hole first wins
-5. **All players on the winning team** receive a Win in their stats (Target Tag pattern)
+1. Teams with the **lowest combined team total** (sum of best-ball hole scores) after 9 holes win
+2. **Ties stand:** if multiple teams finish on the same lowest team total, all of them are tied champions. The results screen shows every tied team's crest, and every player on every tied team receives a Win.
+3. `winnerTeamIds` lists every tied team in turn order; `winnerTeamId` is the first tied team (legacy single-winner reference).
+4. Team-birdie / team-bogey counts are shown for context but do **not** break ties.
 
 ## Special Mechanics
 
