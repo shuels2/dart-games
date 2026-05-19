@@ -17,6 +17,16 @@ class DartboardEmulatorSection extends StatelessWidget {
   final DartboardSectionConfig config;
   final VoidCallback? onPlayToComplete;
   final PlayToCompleteButtonConfig? playToCompleteConfig;
+  // Play to Tie button — only set for tie-capable games (Tiki Golf,
+  // Pirate's Grid, Monster Mash, Reef Royale). `playToTieEnabled`
+  // lets the game screen disable the button when the current settings
+  // make a tie unreachable (e.g. MM/RR without Speed Play). When the
+  // controller is auto-playing (either runner is active), BOTH
+  // auto-play buttons disable themselves — no toggling between
+  // Complete and Tie mid-run.
+  final VoidCallback? onPlayToTie;
+  final PlayToTieButtonConfig? playToTieConfig;
+  final bool playToTieEnabled;
 
   const DartboardEmulatorSection({
     super.key,
@@ -29,6 +39,9 @@ class DartboardEmulatorSection extends StatelessWidget {
     required this.config,
     this.onPlayToComplete,
     this.playToCompleteConfig,
+    this.onPlayToTie,
+    this.playToTieConfig,
+    this.playToTieEnabled = true,
   });
 
   @override
@@ -44,8 +57,14 @@ class DartboardEmulatorSection extends StatelessWidget {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Auto-play buttons row — Play to Complete and Play to Tie
+            // sit side-by-side when both are wired. When only Play to
+            // Complete is wired (most games), it renders alone with
+            // the same padding as before. Both buttons disable
+            // themselves while `controller.isAutoPlaying` so once one
+            // runner has started the user can't kick off the other.
             if (onPlayToComplete != null && playToCompleteConfig != null)
-              _buildPlayToCompleteButton(),
+              _buildAutoPlayButtonsRow(),
             Container(
               padding: config.padding,
               decoration: BoxDecoration(
@@ -79,21 +98,69 @@ class DartboardEmulatorSection extends StatelessWidget {
     );
   }
 
-  Widget _buildPlayToCompleteButton() {
-    final btnConfig = playToCompleteConfig!;
+  /// Render Play to Complete and (if wired) Play to Tie side-by-side.
+  /// Both buttons disable when `controller.isAutoPlaying` so the user
+  /// can't switch modes mid-run.
+  Widget _buildAutoPlayButtonsRow() {
+    final hasTie = onPlayToTie != null && playToTieConfig != null;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: ElevatedButton.icon(
-        key: DartboardEmulatorKeys.playToCompleteButton,
-        onPressed: shouldPromptTakeout ? null : onPlayToComplete,
-        icon: Icon(btnConfig.icon, color: btnConfig.foregroundColor),
-        label: Text(btnConfig.buttonText, style: btnConfig.textStyle),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: btnConfig.backgroundColor,
-          disabledBackgroundColor: btnConfig.backgroundColor.withOpacity(0.5),
-          side: BorderSide(color: btnConfig.borderColor, width: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildPlayToCompleteButton(),
+          if (hasTie) ...[
+            const SizedBox(width: 12),
+            _buildPlayToTieButton(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayToCompleteButton() {
+    final btnConfig = playToCompleteConfig!;
+    // Disabled while a takeout is pending OR a runner (either kind)
+    // is already auto-playing — once Play to Tie has started the user
+    // can't kick off Play to Complete and vice versa.
+    final disabled = shouldPromptTakeout || controller.isAutoPlaying;
+    return ElevatedButton.icon(
+      key: DartboardEmulatorKeys.playToCompleteButton,
+      onPressed: disabled ? null : onPlayToComplete,
+      icon: Icon(btnConfig.icon, color: btnConfig.foregroundColor),
+      label: Text(btnConfig.buttonText, style: btnConfig.textStyle),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: btnConfig.backgroundColor,
+        disabledBackgroundColor: btnConfig.backgroundColor.withOpacity(0.5),
+        side: BorderSide(color: btnConfig.borderColor, width: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildPlayToTieButton() {
+    final btnConfig = playToTieConfig!;
+    // Disable when:
+    //   - takeout pending,
+    //   - any auto-play runner is already active (mutual exclusion),
+    //   - or the game's current settings can't produce a tie (e.g.
+    //     Monster Mash / Reef Royale with Speed Play off). The game
+    //     screen owns that last signal and passes it as
+    //     `playToTieEnabled`.
+    final disabled = shouldPromptTakeout ||
+        controller.isAutoPlaying ||
+        !playToTieEnabled;
+    return ElevatedButton.icon(
+      key: DartboardEmulatorKeys.playToTieButton,
+      onPressed: disabled ? null : onPlayToTie,
+      icon: Icon(btnConfig.icon, color: btnConfig.foregroundColor),
+      label: Text(btnConfig.buttonText, style: btnConfig.textStyle),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: btnConfig.backgroundColor,
+        disabledBackgroundColor: btnConfig.backgroundColor.withOpacity(0.5),
+        side: BorderSide(color: btnConfig.borderColor, width: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       ),
     );
   }

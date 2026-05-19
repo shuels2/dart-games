@@ -13,6 +13,8 @@ import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/monster_mash_announcement_helper.dart';
 import '../../../services/play_to_complete/monster_mash_strategy.dart';
+import '../../../services/play_to_tie/monster_mash_strategy.dart';
+import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -39,6 +41,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   final DartboardEmulatorController _dartboardEmulatorController =
       DartboardEmulatorController();
   PlayToCompleteRunner? _playToCompleteRunner;
+  PlayToTieRunner? _playToTieRunner;
   bool _gameCompleted = false;
   bool _showSaveModal = false;
 
@@ -194,6 +197,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   @override
   void dispose() {
     _playToCompleteRunner?.dispose();
+    _playToTieRunner?.dispose();
     _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
     _dartboardEmulatorController.dispose();
@@ -218,8 +222,27 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     _playToCompleteRunner!.run();
   }
 
+  void _onPlayToTie() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+
+    _playToTieRunner = PlayToTieRunner(
+      strategy: MonsterMashTieStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToTieRunner!.run();
+  }
+
   void _onCancelAutoPlay() {
     _playToCompleteRunner?.cancel();
+    _playToTieRunner?.cancel();
     _dartboardEmulatorController.setAutoPlaying(false);
     _dartboardEmulatorController.show();
   }
@@ -717,6 +740,15 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.monsterMash()
                   : null,
+              // Play to Tie — only meaningful in Speed Play mode; without
+              // it the game is last-player-standing and can't tie.
+              // The button still renders for visibility but disables
+              // itself via playToTieEnabled.
+              onPlayToTie: _mockApi != null ? _onPlayToTie : null,
+              playToTieConfig: _mockApi != null
+                  ? PlayToTieButtonConfig.monsterMash()
+                  : null,
+              playToTieEnabled: currentGame.speedPlayEnabled,
             ),
           ),
           // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal

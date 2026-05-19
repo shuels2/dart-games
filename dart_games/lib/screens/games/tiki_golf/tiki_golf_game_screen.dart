@@ -11,6 +11,8 @@ import '../../../providers/tiki_golf_provider.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/play_to_complete/tiki_golf_strategy.dart';
+import '../../../services/play_to_tie/tiki_golf_strategy.dart';
+import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import '../../../services/save_game_service.dart';
 import '../../../services/tiki_golf_announcement_helper.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
@@ -107,6 +109,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       DartboardEmulatorController();
 
   PlayToCompleteRunner? _playToCompleteRunner;
+  PlayToTieRunner? _playToTieRunner;
   bool _gameCompleted = false;
   bool _showSaveModal = false;
 
@@ -166,6 +169,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
   @override
   void dispose() {
     _playToCompleteRunner?.dispose();
+    _playToTieRunner?.dispose();
     _dartboardSubscription?.cancel();
     _dartboardEmulatorController.dispose();
     _audioQueue?.dispose(); // line ~152 — dispose announcement helper
@@ -194,8 +198,27 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
   void _onCancelAutoPlay() {
     _playToCompleteRunner?.cancel();
+    _playToTieRunner?.cancel();
     _dartboardEmulatorController.setAutoPlaying(false);
     _dartboardEmulatorController.show();
+  }
+
+  void _onPlayToTie() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+
+    _playToTieRunner = PlayToTieRunner(
+      strategy: TikiGolfTieStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToTieRunner!.run();
   }
 
   // ─── Dartboard event routing ─────────────────────────────────────────────────
@@ -652,6 +675,15 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                   : null,
               playToCompleteConfig: (_mockApi != null && !shouldPromptTakeout)
                   ? PlayToCompleteButtonConfig.tikiGolf()
+                  : null,
+              // Play to Draw — Tiki Golf can always produce a tie
+              // (every player hits the hole target on dart 1 → all
+              // 9 strokes → tied).
+              onPlayToTie: (_mockApi != null && !shouldPromptTakeout)
+                  ? _onPlayToTie
+                  : null,
+              playToTieConfig: (_mockApi != null && !shouldPromptTakeout)
+                  ? PlayToTieButtonConfig.tikiGolf()
                   : null,
             ),
           ),

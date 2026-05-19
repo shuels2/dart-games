@@ -13,6 +13,8 @@ import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/reef_royale_announcement_helper.dart';
 import '../../../services/play_to_complete/reef_royale_strategy.dart';
+import '../../../services/play_to_tie/reef_royale_strategy.dart';
+import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -41,6 +43,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
   final DartboardEmulatorController _dartboardEmulatorController =
       DartboardEmulatorController();
   PlayToCompleteRunner? _playToCompleteRunner;
+  PlayToTieRunner? _playToTieRunner;
   bool _gameCompleted = false;
   bool _showSaveModal = false;
   late final AnimationController _pulseController;
@@ -101,6 +104,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
   @override
   void dispose() {
     _playToCompleteRunner?.dispose();
+    _playToTieRunner?.dispose();
     _pulseController.dispose();
     _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
@@ -126,8 +130,27 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     _playToCompleteRunner!.run();
   }
 
+  void _onPlayToTie() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+
+    _playToTieRunner = PlayToTieRunner(
+      strategy: ReefRoyaleTieStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToTieRunner!.run();
+  }
+
   void _onCancelAutoPlay() {
     _playToCompleteRunner?.cancel();
+    _playToTieRunner?.cancel();
     _dartboardEmulatorController.setAutoPlaying(false);
     _dartboardEmulatorController.show();
   }
@@ -641,6 +664,15 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.reefRoyale()
                   : null,
+              // Play to Tie — needs Speed Play to be reachable. Without
+              // it, the game ends via "pearl + most corals" or "all
+              // targets locked", neither of which can be driven to a
+              // deterministic tie via all-miss play.
+              onPlayToTie: _mockApi != null ? _onPlayToTie : null,
+              playToTieConfig: _mockApi != null
+                  ? PlayToTieButtonConfig.reefRoyale()
+                  : null,
+              playToTieEnabled: currentGame.speedPlayEnabled,
             ),
           ),
 

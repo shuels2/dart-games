@@ -640,6 +640,7 @@ class DartboardEmulatorKeys {
   static const removeDartsButton = Key('dartboard_emulator_remove_darts_button');
   static const toggleFAB = Key('dartboard_emulator_toggle_fab');
   static const playToCompleteButton = Key('dartboard_emulator_play_to_complete_button');
+  static const playToTieButton = Key('dartboard_emulator_play_to_tie_button');
 }
 
 // ============================================================================
