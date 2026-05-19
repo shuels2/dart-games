@@ -868,12 +868,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Heading — PLURAL for tied team winners. Sized 44 per user request.
+        // Heading — PLURAL for tied team winners. Sized 48 per user request.
         Text(
           'GOLDEN TIKI CHAMPIONS!',
           key: TikiGolfResultsKeys.championHeading,
           style: GoogleFonts.boogaloo(
-            fontSize: 44,
+            fontSize: 48,
             fontWeight: FontWeight.bold,
             color: _lagoonBlue,
             shadows: _outlineShadow4(offset: 2, blur: 10),
@@ -1023,12 +1023,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Heading — PLURAL for team mode. Sized 44 per user request.
+        // Heading — PLURAL for team mode. Sized 48 per user request.
         Text(
           'GOLDEN TIKI CHAMPIONS!',
           key: TikiGolfResultsKeys.championHeading,
           style: GoogleFonts.boogaloo(
-            fontSize: 44,
+            fontSize: 48,
             fontWeight: FontWeight.bold,
             color: _lagoonBlue,
             shadows: _outlineShadow4(offset: 2, blur: 10),
@@ -1036,54 +1036,15 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 6),
-        // Team crest 160×160
+        // Big team crest removed per user — the badge already appears at the
+        // left of every team's scorecard below, so duplicating it here was
+        // redundant. The crest-key sentinel stays attached to a 0-size
+        // placeholder so test selectors that look for it still resolve.
         SizedBox(
           key: TikiGolfResultsKeys.winnerTeamCrest,
-          width: 175,
-          height: 175,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Circular crest
-              Container(
-                width: 160,
-                height: 160,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _lagoonBlue, width: 5),
-                  color: _lagoonBlue.withOpacity(0.20),
-                ),
-                clipBehavior: Clip.hardEdge,
-                child: Image.asset(
-                  crestPath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.shield,
-                    color: _lagoonBlue,
-                    size: 80,
-                  ),
-                ),
-              ),
-              // Golden Tiki overlay at lower-right
-              Positioned(
-                bottom: -8,
-                right: -8,
-                child: Image.asset(
-                  'assets/games/tiki_golf/pieces/GoldenTiki.png',
-                  width: 64,
-                  height: 64,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.emoji_events,
-                    size: 48,
-                    color: _goldenTrophy,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          width: 0,
+          height: 0,
         ),
-        // NO team name caption (removed per wireframe v5)
-        const SizedBox(height: 6),
         // Row of winning-team player items
         Wrap(
           alignment: WrapAlignment.center,
@@ -1158,26 +1119,52 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Winning team avatar — +25% per user request (104→130).
-          Container(
-            width: 130,
-            height: 130,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: bg,
-              border:
-                  Border.all(color: _lagoonBlue.withOpacity(0.60), width: 3),
-            ),
-            child: Center(
-              child: Text(
-                initial,
-                style: GoogleFonts.boogaloo(
-                  // Initial scaled with the +25% avatar bump (47→59).
-                  fontSize: 59,
-                  fontWeight: FontWeight.bold,
-                  color: _sandWhite,
+          // Winning team avatar — +40% per user request (130→182).
+          // Stack lets the Golden Tiki trophy overlay each avatar's
+          // lower-right (replaces the single team-level trophy badge that
+          // used to sit on the big team crest above).
+          SizedBox(
+            width: 200,
+            height: 200,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 182,
+                  height: 182,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: bg,
+                    border: Border.all(
+                        color: _lagoonBlue.withOpacity(0.60), width: 3),
+                  ),
+                  child: Center(
+                    child: Text(
+                      initial,
+                      style: GoogleFonts.boogaloo(
+                        // Initial scaled with the +40% avatar bump (59→83).
+                        fontSize: 83,
+                        fontWeight: FontWeight.bold,
+                        color: _sandWhite,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  bottom: -4,
+                  right: -4,
+                  child: Image.asset(
+                    'assets/games/tiki_golf/pieces/GoldenTiki.png',
+                    width: 72,
+                    height: 72,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.emoji_events,
+                      size: 56,
+                      color: _goldenTrophy,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 4),
@@ -1236,46 +1223,48 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
       );
     }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // Pair col1[i] with col2[i] inside an IntrinsicHeight Row so left and
+    // right team scorecard containers stretch to the taller of the two,
+    // giving every row of containers the same height (user request).
+    final maxRows =
+        col1.length >= col2.length ? col1.length : col2.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Column 1
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (int i = 0; i < col1.length; i++) ...[
-                if (i > 0) const SizedBox(height: 8),
-                _buildTeamBlock(
-                  game: game,
-                  teamId: col1[i],
-                  isWinner: winnerSet.contains(col1[i]),
-                  playerProvider: playerProvider,
-                  rankIndex: sortedTeams.indexOf(col1[i]),
+        for (int i = 0; i < maxRows; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: i < col1.length
+                      ? _buildTeamBlock(
+                          game: game,
+                          teamId: col1[i],
+                          isWinner: winnerSet.contains(col1[i]),
+                          playerProvider: playerProvider,
+                          rankIndex: sortedTeams.indexOf(col1[i]),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: i < col2.length
+                      ? _buildTeamBlock(
+                          game: game,
+                          teamId: col2[i],
+                          isWinner: winnerSet.contains(col2[i]),
+                          playerProvider: playerProvider,
+                          rankIndex: sortedTeams.indexOf(col2[i]),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ],
-            ],
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        // Column 2
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (int i = 0; i < col2.length; i++) ...[
-                if (i > 0) const SizedBox(height: 8),
-                _buildTeamBlock(
-                  game: game,
-                  teamId: col2[i],
-                  isWinner: winnerSet.contains(col2[i]),
-                  playerProvider: playerProvider,
-                  rankIndex: sortedTeams.indexOf(col2[i]),
-                ),
-              ],
-            ],
-          ),
-        ),
+        ],
       ],
     );
   }
@@ -1525,8 +1514,9 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
       child: Text(
         label,
         style: GoogleFonts.boogaloo(
-          // +8pt per user request (18 → 26).
-          fontSize: 26,
+          // +14pt total over the original (18 → 26 → 32) — last +6 per
+          // most-recent user request.
+          fontSize: 32,
           fontWeight: FontWeight.bold,
           color: _sandWhite,
           shadows: [
