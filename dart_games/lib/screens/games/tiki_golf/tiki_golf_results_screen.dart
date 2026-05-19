@@ -657,12 +657,13 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ),
         ),
         const SizedBox(height: 2),
-        // Birdies sub-stat — +6pt (16 → 22).
+        // Birdies sub-stat — 26pt to match the Total strokes line above
+        // and the team single winner's "Team Birdies: N" font size.
         Text(
           'Birdies: $birdies',
           key: TikiGolfResultsKeys.winnerStats,
           style: GoogleFonts.boogaloo(
-            fontSize: 22,
+            fontSize: 26,
             color: _sandWhite,
             shadows: _lightShadow4(),
           ),
