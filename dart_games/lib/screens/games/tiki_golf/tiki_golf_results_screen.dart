@@ -557,12 +557,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Heading
+        // Heading — +6pt per user request (36 → 42).
         Text(
           'GOLDEN TIKI CHAMPION!',
           key: TikiGolfResultsKeys.championHeading,
           style: GoogleFonts.boogaloo(
-            fontSize: 36,
+            fontSize: 42,
             fontWeight: FontWeight.bold,
             color: _lagoonBlue,
             shadows: _outlineShadow4(),
@@ -570,28 +570,28 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        // Avatar with Golden Tiki overlay
+        // Avatar (50% larger per user, 180→270) WITHOUT the gold border
+        // (also per user). The Golden Tiki overlay stays at 72×72.
         SizedBox(
           key: TikiGolfResultsKeys.winnerPhoto,
-          width: 180,
-          height: 188, // extra height for the overflow of the golden tiki badge
+          width: 270,
+          height: 278, // 270 + 8 for the trophy overflow
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // Circular avatar
+              // Circular avatar — no border.
               Container(
-                width: 180,
-                height: 180,
-                decoration: BoxDecoration(
+                width: 270,
+                height: 270,
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: _sandWhite,
-                  border: Border.all(color: _goldenTrophy, width: 4),
                 ),
                 clipBehavior: Clip.hardEdge,
                 child: _buildPlayerAvatarInitials(
                   winner,
-                  size: 180,
-                  fontSize: 88,
+                  size: 270,
+                  fontSize: 132, // 88 × 1.5 to track the +50% avatar
                   bgColor: _palmGreen,
                 ),
               ),
@@ -615,12 +615,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        // Winner name
+        // Winner name — +6pt (28 → 34).
         Text(
           winner?.name ?? '—',
           key: TikiGolfResultsKeys.winnerName,
           style: GoogleFonts.boogaloo(
-            fontSize: 28,
+            fontSize: 34,
             fontWeight: FontWeight.bold,
             color: _sandWhite,
             shadows: _outlineShadow4(),
@@ -628,13 +628,13 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
-        // Total strokes + vs-par diff
+        // Total strokes + vs-par diff — +6pt (20 → 26).
         RichText(
           key: TikiGolfResultsKeys.winnerTotal,
           textAlign: TextAlign.center,
           text: TextSpan(
             style: GoogleFonts.boogaloo(
-              fontSize: 20,
+              fontSize: 26,
               color: _sandWhite,
               shadows: _lightShadow4(),
             ),
@@ -643,7 +643,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               TextSpan(
                 text: _formatDiff(diff),
                 style: GoogleFonts.boogaloo(
-                  fontSize: 20,
+                  fontSize: 26,
                   color: _diffColor(diff),
                   shadows: _lightShadow4(),
                 ),
@@ -653,12 +653,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ),
         ),
         const SizedBox(height: 2),
-        // Birdies sub-stat
+        // Birdies sub-stat — +6pt (16 → 22).
         Text(
           'Birdies: $birdies',
           key: TikiGolfResultsKeys.winnerStats,
           style: GoogleFonts.boogaloo(
-            fontSize: 16,
+            fontSize: 22,
             color: _sandWhite,
             shadows: _lightShadow4(),
           ),
@@ -748,7 +748,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             child: Text(
               playerName,
               style: GoogleFonts.boogaloo(
-                fontSize: 18,
+                // Solo scorecard player name — +6pt per user (18 → 24).
+                fontSize: 24,
                 color: isWinner ? _lagoonBlue : _sandWhite,
                 shadows: _lightShadow4(),
               ),
@@ -759,7 +760,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         // Hole score cells
         for (int h = 0; h < 9; h++)
           _scoreCell(scores[h], game.maxStrokes),
-        // Total — inline "strokes (diff)" at the same font size, per user.
+        // Total — inline "strokes (diff)" at the same font size.
+        // +6pt per user (16 → 22).
         TableCell(
           child: Container(
             padding:
@@ -773,7 +775,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               textAlign: TextAlign.center,
               text: TextSpan(
                 style: GoogleFonts.boogaloo(
-                  fontSize: 16,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: _sandWhite,
                   shadows: _lightShadow4(),
@@ -784,7 +786,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                   TextSpan(
                     text: '(${_formatDiff(diff)})',
                     style: GoogleFonts.boogaloo(
-                      fontSize: 16,
+                      // Matches the strokes part — +6pt per user (16 → 22).
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: _diffColor(diff),
                       shadows: _lightShadow4(),
@@ -1596,7 +1599,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         child: Text(
           text,
           style: GoogleFonts.boogaloo(
-            fontSize: 15,
+            // Solo full-scorecard header font — +6pt per user (15 → 21).
+            fontSize: 21,
             color: _sandWhite,
             shadows: _outlineShadow4(),
           ),
@@ -1606,8 +1610,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     );
   }
 
-  /// Full score cell (solo scorecard). Matches the gameplay-screen cell
-  /// format: 'X' for splash, with the to-par diff in parens beneath.
+  /// Full score cell (solo scorecard). Shows 'X' for splash, the
+  /// stroke count otherwise. +6pt per user (22 → 28 via _scoreCellContent).
   Widget _scoreCell(int? score, int maxStrokes) {
     return TableCell(
       child: Padding(
@@ -1616,8 +1620,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           child: score == null
               ? Text('—',
                   style: GoogleFonts.boogaloo(
-                      fontSize: 14, color: _sandWhite.withOpacity(0.40)))
-              : _scoreCellContent(score, maxStrokes, scoreFontSize: 22),
+                      fontSize: 20, color: _sandWhite.withOpacity(0.40)))
+              : _scoreCellContent(score, maxStrokes, scoreFontSize: 28),
         ),
       ),
     );
