@@ -1291,10 +1291,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.all(8),
-      // Row layout per user request: badge on the LEFT of the scorecard
-      // (was stacked vertically with badge on top).
+      // Row layout per user request: badge on the LEFT of the scorecard.
+      // Scorecard aligned to the top of the container so its header row
+      // sits at the same Y across all team blocks regardless of the team's
+      // player count.
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           // Team crest 80×80.
@@ -1340,6 +1342,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     required int bestBallTotal,
     required int rankIndex,
   }) {
+    final teamDiff = bestBallTotal - _kTotalPar;
     return Table(
       defaultColumnWidth: const IntrinsicColumnWidth(),
       children: [
@@ -1349,7 +1352,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           children: [
             _miniHdrCell('', isName: true),
             for (int h = 1; h <= 9; h++) _miniHdrCell('H$h'),
-            _miniHdrCell('Tot', isTotal: true),
+            _miniHdrCell('Total', isTotal: true),
           ],
         ),
         // Per-player rows
@@ -1380,7 +1383,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             ),
             for (int h = 0; h < 9; h++)
               _miniScoreCell(game.bestBallForTeam(teamId, h)),
-            // Best-ball total
+            // Best-ball total + (relative-to-par) in parens, per user request.
             TableCell(
               key: TikiGolfResultsKeys.teamBlockTotal(teamId),
               child: Container(
@@ -1390,15 +1393,29 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                       left: BorderSide(
                           color: Color(0x662D6A4F), width: 1)),
                 ),
-                child: Text(
-                  '$bestBallTotal',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.boogaloo(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: isWinner ? _lagoonBlue : _sandWhite,
-                    shadows: _lightShadow4(),
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$bestBallTotal',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.boogaloo(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: isWinner ? _lagoonBlue : _sandWhite,
+                        shadows: _lightShadow4(),
+                      ),
+                    ),
+                    Text(
+                      '(${_formatDiff(teamDiff)})',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.boogaloo(
+                        fontSize: 16,
+                        color: _diffColor(teamDiff),
+                        shadows: _lightShadow4(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
