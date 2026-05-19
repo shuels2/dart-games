@@ -686,7 +686,9 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
       child: Table(
         defaultColumnWidth: const IntrinsicColumnWidth(),
         children: [
-          // Header row
+          // Header row — single Total column now carries the strokes plus
+          // the ±diff inline (the separate "+/−" column was dropped per
+          // user request).
           TableRow(
             decoration:
                 const BoxDecoration(color: Color(0xE62D6A4F)), // 90% opacity
@@ -694,7 +696,6 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               _hdrCell('', isName: true),
               for (int h = 1; h <= 9; h++) _hdrCell('H$h'),
               _hdrCell('Total', isTotal: true),
-              _hdrCell('+/−', isPlusMinus: true),
             ],
           ),
           // Player rows — every tied winner gets the winner row styling
@@ -758,7 +759,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         // Hole score cells
         for (int h = 0; h < 9; h++)
           _scoreCell(scores[h], game.maxStrokes),
-        // Total
+        // Total — inline "strokes (diff)" at the same font size, per user.
         TableCell(
           child: Container(
             padding:
@@ -768,36 +769,27 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                 left: BorderSide(color: Color(0x662D6A4F), width: 1),
               ),
             ),
-            child: Text(
-              '$total',
+            child: RichText(
               textAlign: TextAlign.center,
-              style: GoogleFonts.boogaloo(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: _sandWhite,
-                shadows: _lightShadow4(),
-              ),
-            ),
-          ),
-        ),
-        // +/− diff
-        TableCell(
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-            decoration: const BoxDecoration(
-              border: Border(
-                left: BorderSide(color: Color(0x662D6A4F), width: 1),
-              ),
-            ),
-            child: Text(
-              _formatDiff(diff),
-              textAlign: TextAlign.center,
-              style: GoogleFonts.boogaloo(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: _diffColor(diff),
-                shadows: _lightShadow4(),
+              text: TextSpan(
+                style: GoogleFonts.boogaloo(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _sandWhite,
+                  shadows: _lightShadow4(),
+                ),
+                children: [
+                  TextSpan(text: '$total '),
+                  TextSpan(
+                    text: '(${_formatDiff(diff)})',
+                    style: GoogleFonts.boogaloo(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _diffColor(diff),
+                      shadows: _lightShadow4(),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1391,7 +1383,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             ),
             for (int h = 0; h < 9; h++)
               _miniScoreCell(game.bestBallForTeam(teamId, h), game.maxStrokes),
-            // Best-ball total + (relative-to-par) in parens, per user request.
+            // Best-ball total — inline "strokes (diff)" at the same font
+            // size, per user request.
             TableCell(
               key: TikiGolfResultsKeys.teamBlockTotal(teamId),
               child: Container(
@@ -1401,29 +1394,28 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                       left: BorderSide(
                           color: Color(0x662D6A4F), width: 1)),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$bestBallTotal',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.boogaloo(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: isWinner ? _lagoonBlue : _sandWhite,
-                        shadows: _lightShadow4(),
-                      ),
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: GoogleFonts.boogaloo(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: isWinner ? _lagoonBlue : _sandWhite,
+                      shadows: _lightShadow4(),
                     ),
-                    Text(
-                      '(${_formatDiff(teamDiff)})',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.boogaloo(
-                        fontSize: 16,
-                        color: _diffColor(teamDiff),
-                        shadows: _lightShadow4(),
+                    children: [
+                      TextSpan(text: '$bestBallTotal '),
+                      TextSpan(
+                        text: '(${_formatDiff(teamDiff)})',
+                        style: GoogleFonts.boogaloo(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: _diffColor(teamDiff),
+                          shadows: _lightShadow4(),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1440,6 +1432,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
   }) {
     final scores = game.playerHoleScores[playerId] ?? List.filled(9, null);
     final total = game.totalForPlayer(playerId);
+    final diff = total - _kTotalPar;
 
     return TableRow(
       children: [
@@ -1458,7 +1451,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ),
         ),
         for (int h = 0; h < 9; h++) _miniScoreCell(scores[h], game.maxStrokes),
-        // Player total (2× scaled per user request).
+        // Player total — inline "strokes (diff)" per user request.
         TableCell(
           child: Container(
             padding: const EdgeInsets.all(6),
@@ -1466,14 +1459,27 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               border:
                   Border(left: BorderSide(color: Color(0x662D6A4F), width: 1)),
             ),
-            child: Text(
-              '$total',
+            child: RichText(
               textAlign: TextAlign.center,
-              style: GoogleFonts.boogaloo(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: _sandWhite,
-                shadows: _lightShadow4(),
+              text: TextSpan(
+                style: GoogleFonts.boogaloo(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: _sandWhite,
+                  shadows: _lightShadow4(),
+                ),
+                children: [
+                  TextSpan(text: '$total '),
+                  TextSpan(
+                    text: '(${_formatDiff(diff)})',
+                    style: GoogleFonts.boogaloo(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _diffColor(diff),
+                      shadows: _lightShadow4(),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1605,8 +1611,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               ? Text('—',
                   style: GoogleFonts.boogaloo(
                       fontSize: 14, color: _sandWhite.withOpacity(0.40)))
-              : _scoreCellContent(score, maxStrokes,
-                  scoreFontSize: 22, diffFontSize: 12),
+              : _scoreCellContent(score, maxStrokes, scoreFontSize: 22),
         ),
       ),
     );
@@ -1655,18 +1660,17 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               ? Text('—',
                   style: GoogleFonts.boogaloo(
                       fontSize: 18, color: _sandWhite.withOpacity(0.40)))
-              : _scoreCellContent(score, maxStrokes,
-                  scoreFontSize: 18, diffFontSize: 12),
+              : _scoreCellContent(score, maxStrokes, scoreFontSize: 22),
         ),
       ),
     );
   }
 
-  /// Stacked "<label>\n(<diff>)" used by both _scoreCell and _miniScoreCell.
-  /// Mirrors the gameplay-screen score cell labelling so the two screens
-  /// display the same content per cell.
+  /// Stroke-label content for a hole cell. Per user direction, hole cells
+  /// show ONLY the stroke count (or 'X' for splash); the diff is shown
+  /// solely on the Total cell.
   Widget _scoreCellContent(int score, int maxStrokes,
-      {required double scoreFontSize, required double diffFontSize}) {
+      {required double scoreFontSize}) {
     const par = 2;
     final isSplash = score == maxStrokes + 1;
     Color cellColor;
@@ -1684,30 +1688,15 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
       cellColor = _hibiscusPink;
       label = '$score';
     }
-    final diff = score - par;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.boogaloo(
-            fontSize: scoreFontSize,
-            fontWeight: FontWeight.bold,
-            color: cellColor,
-            shadows: _lightShadow4(),
-          ),
-        ),
-        Text(
-          '(${_formatDiff(diff)})',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.boogaloo(
-            fontSize: diffFontSize,
-            color: _diffColor(diff),
-            shadows: _lightShadow4(),
-          ),
-        ),
-      ],
+    return Text(
+      label,
+      textAlign: TextAlign.center,
+      style: GoogleFonts.boogaloo(
+        fontSize: scoreFontSize,
+        fontWeight: FontWeight.bold,
+        color: cellColor,
+        shadows: _lightShadow4(),
+      ),
     );
   }
 
