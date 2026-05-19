@@ -589,6 +589,36 @@ void main() {
       }
 
       print('SCREENSHOT: === PART 7 COMPLETE ===');
+
+      // ======================================================================
+      // PART 8: DURING TAKEOUT (RemoveDartsModal visible)
+      // ======================================================================
+      print('SCREENSHOT: === PART 8: TAKEOUT MODAL ===');
+
+      await UITestHelpers.resetServerState();
+
+      await setupAndStartGame(
+        tester,
+        config,
+        playerNames: ['Moana', 'Maui'],
+      );
+
+      expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
+
+      // Hit the target on dart 1 — turn ends immediately, modal appears
+      final p8Hole1Target =
+          ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+      await throwDartViaMock(tester, p8Hole1Target);
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      await tester.pump();
+
+      // --- RemoveDartsModal visible (standard flow, no mulligan) ---
+      await screenshot(binding, tester, '25_game_remove_darts_modal');
+      await simulateTakeout(tester);
+
+      print('SCREENSHOT: === PART 8 COMPLETE ===');
     });
   });
 }
