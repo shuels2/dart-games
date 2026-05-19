@@ -55,16 +55,15 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
   void initState() {
     super.initState();
 
-    // Restore settings — prefer explicitly passed values from CHANGE MISSION,
-    // fall back to provider's currentGame for re-entry via back button, then
-    // keep defaults. Same precedence chain as pirates_grid (Rule 8).
-    final lastGame = context.read<LunarLanderProvider>().currentGame;
-    _startingAltitude = widget.initialAltitude
-        ?? lastGame?.startingAltitude.toDouble()
-        ?? _startingAltitude;
-    _hardLandingEnabled = widget.initialHardLandingEnabled
-        ?? lastGame?.hardLandingEnabled
-        ?? _hardLandingEnabled;
+    // Settings hydration:
+    //   - widget.initialX is supplied ONLY via "Change Mission" from the
+    //     results screen (preserves the just-played settings).
+    //   - On any other entry (home-screen tap, back-button re-entry, etc.)
+    //     params are null and we keep the field defaults — NOT the prior
+    //     game's settings. Per user: entering a game from the home menu
+    //     should always show defaults.
+    _startingAltitude = widget.initialAltitude ?? _startingAltitude;
+    _hardLandingEnabled = widget.initialHardLandingEnabled ?? _hardLandingEnabled;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Refresh the player roster from the server (picks up players added
