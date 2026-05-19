@@ -971,14 +971,30 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                         ),
                       ),
                     const SizedBox(height: 4),
-                    // ± par score
-                    Text(
-                      parLabel,
-                      style: GoogleFonts.boogaloo(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: parColor,
-                        shadows: _outlineShadow(),
+                    // Team strokes (± par) — same "strokes (diff)" format
+                    // used in the scorecard Total cell. Strokes in Sand
+                    // White, the (diff) suffix colored by the diff sign.
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: GoogleFonts.boogaloo(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: _sandWhite,
+                          shadows: _outlineShadow(),
+                        ),
+                        children: [
+                          TextSpan(text: '$teamTotal '),
+                          TextSpan(
+                            text: '($parLabel)',
+                            style: GoogleFonts.boogaloo(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: parColor,
+                              shadows: _outlineShadow(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1373,7 +1389,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     required String? caption,
   }) {
     final maxHolesShown = 9; // always render all 9 columns
-    const totalColWidth = 90.0;
+    // 130 (was 90) so the inline "strokes (diff)" Total cell content
+    // (e.g. "27 (+9)") fits without wrapping or ellipsizing.
+    const totalColWidth = 130.0;
 
     return Container(
       key: TikiGolfGameKeys.scorecard,
@@ -1564,13 +1582,8 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       label = '$score';
     }
 
-    // Golf-relative-to-par for this hole (par is 2 in Tiki Golf).
-    // For splash, the stored score is maxStrokes + 1 — diff still uses
-    // this raw value, so e.g. maxStrokes=3 splash shows "X (+2)".
-    final diff = score - par;
-    final diffLabel = _formatDiff(diff);
-    final diffColor = _diffColor(diff);
-
+    // Per-hole cells show only the stroke label (or 'X' for splash). The
+    // to-par diff is shown ONLY on the Total cell, per user request.
     return TableCell(
       verticalAlignment: TableCellVerticalAlignment.fill,
       child: Container(
@@ -1578,29 +1591,14 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(border: border),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.boogaloo(
-                fontSize: 22,
-                color: cellColor,
-                shadows: _outlineShadow(),
-              ),
-            ),
-            Text(
-              '($diffLabel)',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.boogaloo(
-                fontSize: 12,
-                color: diffColor,
-                shadows: _outlineShadow(),
-              ),
-            ),
-          ],
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.boogaloo(
+            fontSize: 24,
+            color: cellColor,
+            shadows: _outlineShadow(),
+          ),
         ),
       ),
     );
@@ -1623,34 +1621,50 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
   Widget _totalCell({required int total, required int holesCompleted}) {
     final totalDiff = total - (holesCompleted * 2); // par=2 per hole
+    const double fontSize = 22; // strokes and diff render at the same size
+    if (holesCompleted == 0) {
+      return Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Text(
+          '—',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.boogaloo(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: _sandWhite,
+            shadows: _outlineShadow(),
+          ),
+        ),
+      );
+    }
+    // Inline "strokes (diff)" per user request — diff to the right of the
+    // strokes at the same font size, colored by the diff sign.
     return Container(
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            holesCompleted > 0 ? '$total' : '—',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.boogaloo(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: _sandWhite,
-              shadows: _outlineShadow(),
-            ),
+      child: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: GoogleFonts.boogaloo(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: _sandWhite,
+            shadows: _outlineShadow(),
           ),
-          if (holesCompleted > 0)
-            Text(
-              '(${_formatDiff(totalDiff)})',
-              textAlign: TextAlign.center,
+          children: [
+            TextSpan(text: '$total '),
+            TextSpan(
+              text: '(${_formatDiff(totalDiff)})',
               style: GoogleFonts.boogaloo(
-                fontSize: 12,
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
                 color: _diffColor(totalDiff),
                 shadows: _outlineShadow(),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
