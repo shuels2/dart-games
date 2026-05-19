@@ -1805,6 +1805,12 @@ If FAIL:
 >
 >   **Past failure (Tiki Golf, three iterations to find):** consolidating to one `testWidgets` didn't fix it; removing the `import '_helpers.dart' as h;` didn't fix it; the third fix — inlining helper *bodies* and removing the `shared/dart_throw_helpers.dart` + `shared/game_setup_helpers.dart` imports — finally worked. The pattern that always passes: copy `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart` structure line-for-line.
 >
+> - **CRITICAL — keep each screenshot test file UNDER 600s (10 min) total runtime.** The parallel UI worker (`run_ui_tests_parallel_worker.bat:253`) polls the per-test log for done patterns for up to 600 seconds, then kills Chrome. A still-running test at 600s → framework never emits "All tests passed" → log shows only "Debug service listening" → `SocketException` at `WebDriver.quit`. **Same log signature as the multi-testWidgets / helper-import failures above**, so before going down a structural-bug rabbit hole, **check `DURATION=` in `integration_test_output/parallel/<game>_results.txt` first** — if it's near 600s the cause is total runtime, not test structure.
+>
+>   **Fix when over budget:** split the screenshot test across multiple files. Both filenames must contain `"screenshot"` so the worker auto-routes both through `test_driver/screenshot_test.dart` (each `flutter drive` invocation gets its own 600s budget). Suggested cut: `<game>_screenshot_test.dart` for menu + early gameplay scenarios, `<game>_screenshot_results_test.dart` for endgame + results-screen scenarios (the slowest captures, typically including full game completions). Apply the same inline-helper rules to every file.
+>
+>   **Past failure (Tiki Golf timeout):** the full screenshot test ran 698 lines / 28 captures including 2 full 9-hole rapid-completion loops. Total runtime ~12 minutes — failed silently every parallel run. **Three earlier "fix" rounds (consolidate testWidgets, remove `_helpers.dart`, inline helper bodies) all looked plausible because the symptom is identical — only the duration tells you it's the timeout.** Final fix: split into `tiki_golf_screenshot_test.dart` (PARTS 1-5) + `tiki_golf_screenshot_results_test.dart` (PARTS 6-10), each well under 600s.
+>
 >   **Template** (mirror `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`):
 >   ```dart
 >   import 'package:flutter/material.dart';

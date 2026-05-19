@@ -304,6 +304,24 @@ void main() {
 
 **Reference implementations:** `integration_test/gladiator_arena/visual_validation/gladiator_arena_screenshot_test.dart`, `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`, `integration_test/tiki_golf/visual_validation/tiki_golf_screenshot_test.dart` — all use ONE `testWidgets`, inline helpers, no sibling-file imports.
 
+### Screenshot Test File Runtime Budget — keep each file under 600s (10 min)
+
+The parallel UI worker (`run_ui_tests_parallel_worker.bat`, line 253) polls each test's log every 3 seconds for one of `'All tests passed' | 'Some tests failed' | 'Application finished' | 'Failed to compile application'`, for **up to 600 seconds**. If the test is still executing at 600s, the worker kills Chrome — the framework never gets to emit "All tests passed", so the log shows only "Debug service listening" followed by a `SocketException` at `WebDriver.quit` (which is just teardown failing against a dead Chrome session). The on-disk signature is **identical** to the multi-`testWidgets` / helper-import failure modes documented above.
+
+**Diagnostic check.** If a screenshot test fails with that SocketException signature, look at the worker's `DURATION=` field in `integration_test_output/parallel/<game>_results.txt`. If it's near 600s, total runtime is the root cause — not a structural bug in the test. Don't go down the deep-research path of bisecting `testWidgets` blocks and helper imports until you've ruled out the timeout.
+
+**Fix.** Split the screenshot test across multiple files. Both files must contain `"screenshot"` in their filename (the worker auto-routes `findstr /i "screenshot"` matches to `test_driver/screenshot_test.dart`). Each file then runs as its own `flutter drive` invocation with its own fresh 600s budget. Same inline-helper rules apply to every file.
+
+**Suggested split for a 9-hole / round-based game with 10+ scenarios:**
+```
+<game>_screenshot_test.dart         — menu states + early/mid gameplay
+<game>_screenshot_results_test.dart — endgame + results screens (the heaviest scenarios)
+```
+
+The full-game-completion scenarios (rapid 9-hole loops, full match plays) are usually the slowest captures and the natural cut point.
+
+**Past failure (Tiki Golf):** the full screenshot test was 698 lines / 28 captures including 2 full 9-hole rapid-completion loops. Total runtime ~12 minutes — well over the 600s budget. The test was failing identically to a structural bug for three rounds of fixes (consolidating `testWidgets`, removing `_helpers.dart`, inlining helper bodies) before we realized the timeout was the actual cause. Fix: split into `tiki_golf_screenshot_test.dart` (PARTS 1-5, ~7 min) + `tiki_golf_screenshot_results_test.dart` (PARTS 6-10, ~5 min). Both passed under their own 600s budgets.
+
 ## Running UI Tests in Parallel
 
 The parallel runner executes all 5 game categories simultaneously, reducing wall-clock time from ~507 minutes to ~143 minutes (~3.5x speedup). Each game gets its own ChromeDriver and backend server instance. All Chrome sessions run **fully headless** — no interactive browser windows are launched.
