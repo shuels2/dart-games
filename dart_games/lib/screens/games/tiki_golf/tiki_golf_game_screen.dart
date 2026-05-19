@@ -984,7 +984,8 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                           shadows: _outlineShadow(),
                         ),
                         children: [
-                          TextSpan(text: '$teamTotal '),
+                          TextSpan(text: '$teamTotal'),
+                          const WidgetSpan(child: SizedBox(width: 8)),
                           TextSpan(
                             text: '($parLabel)',
                             style: GoogleFonts.boogaloo(
@@ -1653,7 +1654,8 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
             shadows: _outlineShadow(),
           ),
           children: [
-            TextSpan(text: '$total '),
+            TextSpan(text: '$total'),
+            const WidgetSpan(child: SizedBox(width: 8)),
             TextSpan(
               text: '(${_formatDiff(totalDiff)})',
               style: GoogleFonts.boogaloo(

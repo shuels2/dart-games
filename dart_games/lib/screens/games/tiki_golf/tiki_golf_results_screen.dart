@@ -779,7 +779,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                   shadows: _lightShadow4(),
                 ),
                 children: [
-                  TextSpan(text: '$total '),
+                  TextSpan(text: '$total'),
+                  const WidgetSpan(child: SizedBox(width: 8)),
                   TextSpan(
                     text: '(${_formatDiff(diff)})',
                     style: GoogleFonts.boogaloo(
@@ -1404,7 +1405,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                       shadows: _lightShadow4(),
                     ),
                     children: [
-                      TextSpan(text: '$bestBallTotal '),
+                      TextSpan(text: '$bestBallTotal'),
+                      const WidgetSpan(child: SizedBox(width: 8)),
                       TextSpan(
                         text: '(${_formatDiff(teamDiff)})',
                         style: GoogleFonts.boogaloo(
@@ -1469,7 +1471,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                   shadows: _lightShadow4(),
                 ),
                 children: [
-                  TextSpan(text: '$total '),
+                  TextSpan(text: '$total'),
+                  const WidgetSpan(child: SizedBox(width: 8)),
                   TextSpan(
                     text: '(${_formatDiff(diff)})',
                     style: GoogleFonts.boogaloo(
