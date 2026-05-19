@@ -25,6 +25,7 @@ const Color _tikiBrown = Color(0xFF8B5E3C);
 const Color _hibiscusPink = Color(0xFFFF69B4); // used in Pass 2/3 — kept for palette completeness
 const Color _sandWhite = Color(0xFFFFF5E1);
 const Color _tropicalOrange = Color(0xFFFF8C42); // substitution — NOT 0xFFFF6B35
+const Color _goldenTrophy = Color(0xFFFFC857); // used by AppBar title outline
 // ignore: unused_element
 const Color _skyBlue = Color(0xFF87CEEB);
 // ignore: unused_element
@@ -277,7 +278,9 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: _tikiBrown,
+      // Unified across all three Tiki Golf screens: Palm Green background,
+      // Sand White title with a Golden Trophy 4-corner outline.
+      backgroundColor: _palmGreen,
       foregroundColor: _sandWhite,
       leading: IconButton(
         key: TikiGolfMenuKeys.backButton,
@@ -292,7 +295,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
         style: GoogleFonts.boogaloo(
           fontSize: 34,
           color: _sandWhite,
-          shadows: _labelShadow(_tikiBrown),
+          shadows: _labelShadow(_goldenTrophy),
         ),
       ),
       actions: [

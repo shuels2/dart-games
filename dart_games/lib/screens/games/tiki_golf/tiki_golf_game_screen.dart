@@ -30,6 +30,7 @@ const Color _tikiBrown = Color(0xFF8B5E3C);
 const Color _hibiscusPink = Color(0xFFFF69B4);
 const Color _sandWhite = Color(0xFFFFF5E1);
 const Color _tropicalOrange = Color(0xFFFF8C42); // substitution — NOT 0xFFFF6B35
+const Color _goldenTrophy = Color(0xFFFFC857); // used by AppBar title outline
 
 // 4-corner outline text shadow in Tiki Brown (matches menu screen)
 List<Shadow> _outlineShadow() => const [
@@ -37,6 +38,15 @@ List<Shadow> _outlineShadow() => const [
       Shadow(color: _tikiBrown, offset: Offset(-1, -1), blurRadius: 0),
       Shadow(color: _tikiBrown, offset: Offset(1, -1), blurRadius: 0),
       Shadow(color: _tikiBrown, offset: Offset(-1, 1), blurRadius: 0),
+    ];
+
+// 4-corner gold outline used by the AppBar title (unified across all three
+// Tiki Golf screens: menu, game, results).
+List<Shadow> _appBarTitleOutline() => const [
+      Shadow(color: _goldenTrophy, offset: Offset(1, 1), blurRadius: 0),
+      Shadow(color: _goldenTrophy, offset: Offset(-1, -1), blurRadius: 0),
+      Shadow(color: _goldenTrophy, offset: Offset(1, -1), blurRadius: 0),
+      Shadow(color: _goldenTrophy, offset: Offset(-1, 1), blurRadius: 0),
     ];
 
 // Heavy 8-direction stroke outline for dart-slot labels (HIT / MISS) so the
@@ -529,7 +539,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                 style: GoogleFonts.boogaloo(
                   fontSize: 34,
                   color: _sandWhite,
-                  shadows: _outlineShadow(),
+                  shadows: _appBarTitleOutline(),
                 ),
               ),
               actions: [
