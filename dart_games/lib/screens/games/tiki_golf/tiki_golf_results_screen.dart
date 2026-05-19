@@ -487,56 +487,59 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     final name = player?.name ?? '—';
     final bg = _avatarColorForIndex(colorIndex);
 
+    // Per-item sizes match the solo SINGLE-winner card so the tied
+    // display reads at the same scale: 270×270 avatar (no golden
+    // border), 132pt initial, 72×72 trophy at -8/-8 overflow, 34pt
+    // name below.
     return Column(
       key: TikiGolfResultsKeys.tiedWinnerPhoto(playerId),
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 120,
-          height: 128, // extra space for the golden-tiki overlap
+          width: 270,
+          height: 278, // 270 + 8 for trophy overflow
           child: Stack(
             clipBehavior: Clip.none,
             children: [
               Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
+                width: 270,
+                height: 270,
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: _sandWhite,
-                  border: Border.all(color: _goldenTrophy, width: 3),
                 ),
                 clipBehavior: Clip.hardEdge,
                 child: _buildPlayerAvatarInitials(
                   player,
-                  size: 120,
-                  fontSize: 56,
+                  size: 270,
+                  fontSize: 132,
                   bgColor: bg,
                 ),
               ),
               Positioned(
-                bottom: -6,
-                right: -6,
+                bottom: -8,
+                right: -8,
                 child: Image.asset(
                   'assets/games/tiki_golf/pieces/GoldenTiki.png',
-                  width: 48,
-                  height: 48,
+                  width: 72,
+                  height: 72,
                   errorBuilder: (_, __, ___) => const SizedBox(
-                    width: 48,
-                    height: 48,
+                    width: 72,
+                    height: 72,
                     child: Icon(Icons.emoji_events,
-                        size: 32, color: _goldenTrophy),
+                        size: 48, color: _goldenTrophy),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         Text(
           name,
           key: TikiGolfResultsKeys.tiedWinnerName(playerId),
           style: GoogleFonts.boogaloo(
-            fontSize: 18,
+            fontSize: 34,
             fontWeight: FontWeight.bold,
             color: _sandWhite,
             shadows: _outlineShadow4(),
