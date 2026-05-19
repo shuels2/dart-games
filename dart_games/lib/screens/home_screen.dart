@@ -133,10 +133,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 // Label container — fixed 44 tall; text centered within.
+                // Boogaloo (Tiki Golf) has descenders that push the visual
+                // baseline lower than peer fonts, so the Tiki Golf label sits
+                // visibly below the others. Shift it up 10px via
+                // Transform.translate (visual-only, doesn't affect layout).
                 SizedBox(
                   height: 44,
                   child: Center(
-                    child: Text(
+                    child: Transform.translate(
+                      offset: title == 'Tiki Golf'
+                          ? const Offset(0, -10)
+                          : Offset.zero,
+                      child: Text(
                   title,
                   style: title == 'Carnival Derby'
                       ? GoogleFonts.rye(
@@ -205,6 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                       textAlign: TextAlign.center,
+                    ),
                     ),
                   ),
                 ),
