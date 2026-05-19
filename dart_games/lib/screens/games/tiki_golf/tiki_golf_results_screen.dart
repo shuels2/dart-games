@@ -1645,7 +1645,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         child: Text(
           text,
           style: GoogleFonts.boogaloo(
-            fontSize: 18,
+            // Team scorecard header — 20pt per user.
+            fontSize: 20,
             color: _sandWhite,
             shadows: _lightShadow4(),
           ),
@@ -1657,10 +1658,11 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
 
   /// Mini score cell (team scorecard). Shows 'X' for splash (splash
   /// detection uses `maxStrokes` so it matches gameplay). `scoreFontSize`
-  /// defaults to 22 for per-player rows; the Team Best-Ball row passes
-  /// 24 so its row font sizes match the row's Total cell.
+  /// defaults to 20 for per-player rows (unified with header + player
+  /// name + total at 20pt per user); the Team Best-Ball row passes 24
+  /// so its row font sizes match the row's Total cell.
   Widget _miniScoreCell(int? score, int maxStrokes,
-      {double scoreFontSize = 22}) {
+      {double scoreFontSize = 20}) {
     return TableCell(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
