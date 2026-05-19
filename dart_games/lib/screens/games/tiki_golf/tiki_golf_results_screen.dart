@@ -760,8 +760,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         // Hole score cells
         for (int h = 0; h < 9; h++)
           _scoreCell(scores[h], game.maxStrokes),
-        // Total — inline "strokes (diff)" at the same font size.
-        // +6pt per user (16 → 22).
+        // Total — inline "strokes (diff)" unified at 24pt with the rest
+        // of the solo scorecard per user request.
         TableCell(
           child: Container(
             padding:
@@ -775,7 +775,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               textAlign: TextAlign.center,
               text: TextSpan(
                 style: GoogleFonts.boogaloo(
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: _sandWhite,
                   shadows: _lightShadow4(),
@@ -786,8 +786,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                   TextSpan(
                     text: '(${_formatDiff(diff)})',
                     style: GoogleFonts.boogaloo(
-                      // Matches the strokes part — +6pt per user (16 → 22).
-                      fontSize: 22,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: _diffColor(diff),
                       shadows: _lightShadow4(),
@@ -1599,8 +1598,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         child: Text(
           text,
           style: GoogleFonts.boogaloo(
-            // Solo full-scorecard header font — +6pt per user (15 → 21).
-            fontSize: 21,
+            // Solo full-scorecard — all fonts unified at 24pt per user.
+            fontSize: 24,
             color: _sandWhite,
             shadows: _outlineShadow4(),
           ),
@@ -1610,8 +1609,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     );
   }
 
-  /// Full score cell (solo scorecard). Shows 'X' for splash, the
-  /// stroke count otherwise. +6pt per user (22 → 28 via _scoreCellContent).
+  /// Full score cell (solo scorecard). Unified at 24pt with the rest of
+  /// the solo scorecard per user request.
   Widget _scoreCell(int? score, int maxStrokes) {
     return TableCell(
       child: Padding(
@@ -1620,8 +1619,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           child: score == null
               ? Text('—',
                   style: GoogleFonts.boogaloo(
-                      fontSize: 20, color: _sandWhite.withOpacity(0.40)))
-              : _scoreCellContent(score, maxStrokes, scoreFontSize: 28),
+                      fontSize: 24, color: _sandWhite.withOpacity(0.40)))
+              : _scoreCellContent(score, maxStrokes, scoreFontSize: 24),
         ),
       ),
     );
