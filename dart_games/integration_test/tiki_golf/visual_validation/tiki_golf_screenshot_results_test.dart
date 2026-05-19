@@ -1,15 +1,17 @@
 // integration_test/tiki_golf/visual_validation/tiki_golf_screenshot_results_test.dart
 //
-// Screenshot test for Tiki Golf RESULTS SCREENS (PARTS 9-10 of spec §12C).
-// Split out from tiki_golf_screenshot_test.dart so each file stays under the
-// parallel-runner 600s poll timeout. Each full 9-hole rapid-completion in
-// PARTS 9 and 10 takes ~1-2 minutes; combined with the other PARTS, a single
-// file exceeded the worker's 600s budget.
+// Screenshot test for Tiki Golf — team mode, takeout modal, and results
+// screens (spec §12C PARTS 6-10). PARTS 1-5 (menu + solo gameplay) live in
+// the sibling `tiki_golf_screenshot_test.dart`. The split is necessary
+// because the parallel UI runner has a 600s per-file poll timeout
+// (run_ui_tests_parallel_worker.bat) and the combined PARTS 1-10 with two
+// full 9-hole rapid-completion loops (in PARTS 9 and 10) exceeded that
+// budget.
 //
 // Driver: test_driver/screenshot_test.dart (NEVER integration_test.dart)
 // DO NOT use pumpAndSettle() — splash CircularProgressIndicator prevents settling.
 //
-// Structure: ONE `testWidgets` block per screenshot test file.
+// Structure: ONE `testWidgets` block per file.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -117,7 +119,6 @@ Future<void> simulateTakeout(WidgetTester tester) async {
 
 /// Throw all [maxStrokes] darts as misses, ending the current player's turn
 /// with a Splash. Leaves `shouldPromptTakeout = true`.
-// ignore: unused_element
 Future<void> throwAllMissesToSplash(WidgetTester tester,
     {int maxStrokes = 3}) async {
   for (int i = 0; i < maxStrokes; i++) {
@@ -129,7 +130,6 @@ Future<void> throwAllMissesToSplash(WidgetTester tester,
 /// and start the game. Inlined from `GameSetupHelpers.setupAndStartTikiGolf`
 /// (importing shared/game_setup_helpers.dart from a screenshot test triggers
 /// the parallel-mode webdriver crash — see header note).
-// ignore: unused_element
 Future<void> setupAndStartGame(
   WidgetTester tester,
   GameUIConfig config, {
@@ -192,6 +192,152 @@ void main() {
     });
 
     testWidgets('Results screenshot flow', (WidgetTester tester) async {
+      // ======================================================================
+      // PART 6: TEAM MODE GAME SCREEN STATES
+      // ======================================================================
+      print('SCREENSHOT: === PART 6: TEAM MODE GAME STATES ===');
+
+      await UITestHelpers.resetServerState();
+
+      // Team mode with 4 players, Random assignment
+      await setupAndStartGame(
+        tester,
+        config,
+        teamMode: true,
+        playerNames: ['Moana', 'Maui', 'Lilo', 'Stitch'],
+      );
+
+      expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
+
+      // --- Team mode 4 players, hole 1 (Teams panel visible with team 1 highlighted) ---
+      final p6Hole1Target =
+          ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+      print('SCREENSHOT: Team game hole1 target = $p6Hole1Target');
+      await screenshot(binding, tester, '21_team_game_hole1_team1_highlighted');
+
+      // --- Advance through team 1's players on hole 1 ---
+      bool movedToTeam2 = false;
+      final team1Id = ProviderHelpers.getTikiGolfCurrentTeamId(tester);
+      print('SCREENSHOT: Team 1 id = $team1Id');
+
+      // Throw for all players on team 1
+      while (!movedToTeam2 && !ProviderHelpers.tikiGolfHasWinner(tester)) {
+        final currentTeam =
+            ProviderHelpers.getTikiGolfCurrentTeamId(tester);
+        if (currentTeam != team1Id) {
+          movedToTeam2 = true;
+          break;
+        }
+        await throwDartViaMock(tester, p6Hole1Target);
+        await simulateTakeout(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+      }
+
+      // --- Turn advanced to second team (highlight moves) ---
+      await screenshot(binding, tester, '22_team_game_hole1_team2_highlighted');
+
+      // Complete hole 1 for all remaining teams
+      while (ProviderHelpers.getTikiGolfCurrentHole(tester) == 1 &&
+          !ProviderHelpers.tikiGolfHasWinner(tester)) {
+        final target =
+            ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+        await throwDartViaMock(tester, target);
+        await simulateTakeout(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+      }
+
+      // Advance through hole 2
+      if (!ProviderHelpers.tikiGolfHasWinner(tester) &&
+          ProviderHelpers.getTikiGolfCurrentHole(tester) == 2) {
+        final hole2Target =
+            ProviderHelpers.getTikiGolfHoleTarget(tester, 2);
+        while (ProviderHelpers.getTikiGolfCurrentHole(tester) == 2 &&
+            !ProviderHelpers.tikiGolfHasWinner(tester)) {
+          await throwDartViaMock(tester, hole2Target);
+          await simulateTakeout(tester);
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump();
+        }
+      }
+
+      // --- Team mode mid-game with team scorecard (hole 3) ---
+      if (!ProviderHelpers.tikiGolfHasWinner(tester)) {
+        await screenshot(binding, tester, '23_team_game_mid_team_scorecard');
+      }
+
+      print('SCREENSHOT: === PART 6 COMPLETE ===');
+
+      // ======================================================================
+      // PART 7: TEAM MODE + MULLIGAN MODAL
+      // ======================================================================
+      print('SCREENSHOT: === PART 7: TEAM MULLIGAN MODAL ===');
+
+      await UITestHelpers.resetServerState();
+
+      await setupAndStartGame(
+        tester,
+        config,
+        teamMode: true,
+        mulliganEnabled: true,
+        playerNames: ['Moana', 'Maui', 'Lilo', 'Stitch'],
+      );
+
+      expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
+
+      // Splash the first player (all 3 misses) to trigger mulligan modal
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await throwMissViaMock(tester);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+
+      // --- Team mode: mulligan button visible in the Splash+Mulligan modal ---
+      await screenshot(binding, tester, '24_team_game_mulligan_modal');
+      // Dismiss via NEXT PLAYER
+      final nextPlayerBtn = ElementFinders.getTikiGolfNextPlayerButton();
+      if (nextPlayerBtn.evaluate().isNotEmpty) {
+        await tester.tap(nextPlayerBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+      } else {
+        await simulateTakeout(tester);
+      }
+
+      print('SCREENSHOT: === PART 7 COMPLETE ===');
+
+      // ======================================================================
+      // PART 8: DURING TAKEOUT (RemoveDartsModal visible)
+      // ======================================================================
+      print('SCREENSHOT: === PART 8: TAKEOUT MODAL ===');
+
+      await UITestHelpers.resetServerState();
+
+      await setupAndStartGame(
+        tester,
+        config,
+        playerNames: ['Moana', 'Maui'],
+      );
+
+      expect(ProviderHelpers.isTikiGolfGameActive(tester), isTrue);
+
+      // Hit the target on dart 1 — turn ends immediately, modal appears
+      final p8Hole1Target =
+          ProviderHelpers.getTikiGolfHoleTarget(tester, 1);
+      await throwDartViaMock(tester, p8Hole1Target);
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      await tester.pump();
+
+      // --- RemoveDartsModal visible (standard flow, no mulligan) ---
+      await screenshot(binding, tester, '25_game_remove_darts_modal');
+      await simulateTakeout(tester);
+
+      print('SCREENSHOT: === PART 8 COMPLETE ===');
+
       // ======================================================================
       // PART 9: SOLO RESULTS SCREEN
       // ======================================================================
