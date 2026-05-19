@@ -108,26 +108,39 @@ class _HomeScreenState extends State<HomeScreen> {
                     opacity: isDisabled ? 0.5 : 1.0,
                     // Force every icon into an identical square frame so that
                     // source-PNG aspect ratios don't affect rendered height.
-                    // Peer icons are nominally 1:1 but several are slightly
-                    // off (Tiki Golf 870×900 = 0.967, Lunar Lander 753×782 =
-                    // 0.963, Target Tag 755×746 = 1.012, etc.); with the prior
-                    // BoxFit.contain inside an Expanded that's taller than
-                    // wide, the rendered height was image-width × source-aspect
-                    // — so non-square sources rendered at slightly different
-                    // heights from each other. Wrapping every icon in
                     // Center+AspectRatio(1.0) makes the frame a square sized
-                    // by the Expanded's narrower dimension (width). The image
-                    // inside renders with BoxFit.contain within that square,
-                    // so every icon now occupies exactly the same height
-                    // (frame side), with width varying only when the source
-                    // aspect deviates from 1:1.
+                    // by the Expanded's narrower dimension (width); the image
+                    // inside renders with BoxFit.contain within that square.
+                    //
+                    // Tiki Golf gets an additional `FractionallySizedBox(0.9)`
+                    // inside the frame. Reason: the Tiki Golf source PNG is
+                    // full-bleed (artwork extends edge-to-edge of the 870×900
+                    // PNG with no transparent margin), while peer PNGs have
+                    // ~10% transparent breathing room around their visible
+                    // artwork (circles with transparent corners, framed
+                    // designs with vertical transparent bands, etc.). Without
+                    // the shrink, all icons render in the same 180×180 frame
+                    // but Tiki Golf's visible artwork fills it while peers
+                    // sit ~10% smaller inside their frames — Tiki Golf looks
+                    // visibly taller. The 0.9 factor adds the missing
+                    // breathing room programmatically so the visible artwork
+                    // heights match.
                     child: Center(
                       child: AspectRatio(
                         aspectRatio: 1.0,
-                        child: Image.asset(
-                          imageAssetPath,
-                          fit: BoxFit.contain,
-                        ),
+                        child: title == 'Tiki Golf'
+                            ? FractionallySizedBox(
+                                widthFactor: 0.9,
+                                heightFactor: 0.9,
+                                child: Image.asset(
+                                  imageAssetPath,
+                                  fit: BoxFit.contain,
+                                ),
+                              )
+                            : Image.asset(
+                                imageAssetPath,
+                                fit: BoxFit.contain,
+                              ),
                       ),
                     ),
                   ),
