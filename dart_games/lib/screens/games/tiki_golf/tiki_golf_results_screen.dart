@@ -848,8 +848,8 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                   game, sortedTeams, winnerTeamIds, playerProvider),
             ),
           ),
-          const SizedBox(height: 10),
-          // ── Action buttons OUTSIDE scroll container ──
+          const SizedBox(height: 25),
+          // ── Action buttons OUTSIDE scroll container — 25px gap above ──
           _buildActionButtons(),
         ],
       ),
@@ -868,11 +868,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Heading — PLURAL for tied team winners. 6pt larger per user request (30→36).
         Text(
           'GOLDEN TIKI CHAMPIONS!',
           key: TikiGolfResultsKeys.championHeading,
           style: GoogleFonts.boogaloo(
-            fontSize: 30,
+            fontSize: 36,
             fontWeight: FontWeight.bold,
             color: _lagoonBlue,
             shadows: _outlineShadow4(offset: 2, blur: 10),
@@ -1021,12 +1022,12 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Heading — PLURAL for team mode
+        // Heading — PLURAL for team mode. 6pt larger per user request (30→36).
         Text(
           'GOLDEN TIKI CHAMPIONS!',
           key: TikiGolfResultsKeys.championHeading,
           style: GoogleFonts.boogaloo(
-            fontSize: 30,
+            fontSize: 36,
             fontWeight: FontWeight.bold,
             color: _lagoonBlue,
             shadows: _outlineShadow4(offset: 2, blur: 10),
@@ -1097,7 +1098,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ],
         ),
         const SizedBox(height: 6),
-        // Team stats row
+        // Team stats row — strokes label 4pt larger per user request (16→20).
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1105,7 +1106,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               key: TikiGolfResultsKeys.winnerTotal,
               text: TextSpan(
                 style: GoogleFonts.boogaloo(
-                  fontSize: 16,
+                  fontSize: 20,
                   color: _sandWhite,
                   shadows: _lightShadow4(),
                 ),
@@ -1114,7 +1115,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                   TextSpan(
                     text: _formatDiff(diff),
                     style: GoogleFonts.boogaloo(
-                      fontSize: 16,
+                      fontSize: 20,
                       color: _diffColor(diff),
                       shadows: _lightShadow4(),
                     ),
@@ -1155,9 +1156,10 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Winning team avatar — 30% larger per user request (80→104).
           Container(
-            width: 80,
-            height: 80,
+            width: 104,
+            height: 104,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: bg,
@@ -1168,7 +1170,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               child: Text(
                 initial,
                 style: GoogleFonts.boogaloo(
-                  fontSize: 36,
+                  fontSize: 47,
                   fontWeight: FontWeight.bold,
                   color: _sandWhite,
                 ),
@@ -1176,10 +1178,11 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             ),
           ),
           const SizedBox(height: 4),
+          // Player name — 4pt larger per user request (16→20).
           Text(
             name,
             style: GoogleFonts.boogaloo(
-              fontSize: 16,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: _sandWhite,
               shadows: _lightShadow4(),
@@ -1300,18 +1303,18 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Team crest 64×64 — NO name caption (wireframe v5)
+          // Team crest 80×80 (was 64×64 — bumped 25% per user request).
           ClipOval(
             child: SizedBox(
-              width: 64,
-              height: 64,
+              width: 80,
+              height: 80,
               child: Image.asset(
                 crestPath,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   color: _lagoonBlue.withOpacity(0.40),
                   child: const Icon(Icons.shield,
-                      color: _lagoonBlue, size: 40),
+                      color: _lagoonBlue, size: 50),
                 ),
               ),
             ),
@@ -1361,17 +1364,17 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             playerName:
                 playerProvider.getPlayerById(playerId)?.name ?? playerId,
           ),
-        // Best-ball team total row
+        // Best-ball team total row (2× scaled per user request).
         TableRow(
           decoration: const BoxDecoration(color: Color(0x261616160)),
           children: [
             TableCell(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(6, 4, 4, 4),
+                padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
                 child: Text(
                   'Team Best-Ball',
                   style: GoogleFonts.boogaloo(
-                    fontSize: 10,
+                    fontSize: 20,
                     color: _sandWhite.withOpacity(0.80),
                     shadows: _lightShadow4(),
                   ),
@@ -1385,7 +1388,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             TableCell(
               key: TikiGolfResultsKeys.teamBlockTotal(teamId),
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(8),
                 decoration: const BoxDecoration(
                   border: Border(
                       left: BorderSide(
@@ -1395,7 +1398,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                   '$bestBallTotal',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.boogaloo(
-                    fontSize: 14,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: isWinner ? _lagoonBlue : _sandWhite,
                     shadows: _lightShadow4(),
@@ -1421,11 +1424,11 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
       children: [
         TableCell(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(6, 3, 4, 3),
+            padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
             child: Text(
               playerName,
               style: GoogleFonts.boogaloo(
-                fontSize: 10,
+                fontSize: 20,
                 color: _sandWhite,
                 shadows: _lightShadow4(),
               ),
@@ -1434,10 +1437,10 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ),
         ),
         for (int h = 0; h < 9; h++) _miniScoreCell(scores[h]),
-        // Player total
+        // Player total (2× scaled per user request).
         TableCell(
           child: Container(
-            padding: const EdgeInsets.all(3),
+            padding: const EdgeInsets.all(6),
             decoration: const BoxDecoration(
               border:
                   Border(left: BorderSide(color: Color(0x662D6A4F), width: 1)),
@@ -1446,7 +1449,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               '$total',
               textAlign: TextAlign.center,
               style: GoogleFonts.boogaloo(
-                fontSize: 10,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: _sandWhite,
                 shadows: _lightShadow4(),
@@ -1584,13 +1587,14 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     );
   }
 
-  /// Mini scorecard header cell.
+  /// Mini scorecard header cell. Dimensions/fonts are 2× the original
+  /// (player scorecards bumped per user request).
   Widget _miniHdrCell(String text,
       {bool isName = false, bool isTotal = false}) {
     return TableCell(
       child: Container(
         padding:
-            EdgeInsets.fromLTRB(isName ? 6 : 3, 4, 3, 4),
+            EdgeInsets.fromLTRB(isName ? 12 : 6, 8, 6, 8),
         alignment: isName ? Alignment.centerLeft : Alignment.center,
         decoration: BoxDecoration(
           color: const Color(0xE62D6A4F),
@@ -1602,7 +1606,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         child: Text(
           text,
           style: GoogleFonts.boogaloo(
-            fontSize: 9,
+            fontSize: 18,
             color: _sandWhite,
             shadows: _lightShadow4(),
           ),
@@ -1612,29 +1616,31 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     );
   }
 
-  /// Score pill cell (mini team scorecard).
+  /// Score pill cell (mini team scorecard). Dimensions/fonts are 2× the
+  /// original (player scorecards bumped per user request).
   Widget _miniScoreCell(int? score) {
     return TableCell(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         child: Center(
           child: score == null
               ? Text('—',
                   style: GoogleFonts.boogaloo(
-                      fontSize: 9, color: _sandWhite.withOpacity(0.40)))
+                      fontSize: 18, color: _sandWhite.withOpacity(0.40)))
               : _scorePill(score, small: true),
         ),
       ),
     );
   }
 
-  /// Colored score pill.
+  /// Colored score pill. `small` is used by mini team scorecards (2×
+  /// scaled per user request); the full solo scorecard uses non-small.
   Widget _scorePill(int score, {required bool small}) {
-    final fontSize = small ? 9.0 : 14.0;
+    final fontSize = small ? 18.0 : 14.0;
     final padding = small
-        ? const EdgeInsets.symmetric(horizontal: 4, vertical: 1)
+        ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
         : const EdgeInsets.symmetric(horizontal: 7, vertical: 2);
-    final radius = small ? 3.0 : 4.0;
+    final radius = small ? 6.0 : 4.0;
 
     switch (score) {
       case 1: // Birdie — Lagoon Blue pill
