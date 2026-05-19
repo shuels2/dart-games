@@ -93,6 +93,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // If image asset is provided, use simple icon layout
     if (imageAssetPath != null) {
+      // Three-container layout per user instruction:
+      //   - Outer container (the parent SizedBox at line 558-560 sets it to
+      //     tileWidth × 400) is the overall tile.
+      //   - Inner image container: SizedBox(height: 300) — same fixed height
+      //     for every card so all icons sit in an identical-sized box. Source
+      //     PNG dimensions are the visible content size (no transparent
+      //     padding); BoxFit.contain renders each icon at its natural aspect
+      //     inside this fixed box. Some icons render slightly taller/shorter
+      //     within the 300-tall area depending on aspect — that's expected.
+      //   - Inner label container: SizedBox(height: 84) — fixed height so the
+      //     label sits at the same Y position across every card regardless of
+      //     icon aspect or font.
+      // 300 + 84 = 384 = 400 (outer card height) - 16 (vertical padding).
+      // No Expanded anywhere, so the icon never expands to fill the column
+      // and push the label to the bottom; no AspectRatio, so the icon area
+      // never depends on tile width (which caused the 13px overflow on wide
+      // tiles previously).
       return Container(
         key: key,
         child: InkWell(
@@ -101,60 +118,25 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
+                // Image container — fixed 300 tall.
+                SizedBox(
+                  height: 300,
                   child: Opacity(
                     opacity: isDisabled ? 0.5 : 1.0,
-                    // Force every icon into an identical square frame so that
-                    // source-PNG aspect ratios don't affect rendered height.
-                    // Center+AspectRatio(1.0) makes the frame a square sized
-                    // by the Expanded's narrower dimension (width); the image
-                    // inside renders with BoxFit.contain within that square.
-                    //
-                    // Tiki Golf gets an additional `FractionallySizedBox(0.9)`
-                    // inside the frame. Reason: the Tiki Golf source PNG is
-                    // full-bleed (artwork extends edge-to-edge of the 870×900
-                    // PNG with no transparent margin), while peer PNGs have
-                    // ~10% transparent breathing room around their visible
-                    // artwork (circles with transparent corners, framed
-                    // designs with vertical transparent bands, etc.). Without
-                    // the shrink, all icons render in the same 180×180 frame
-                    // but Tiki Golf's visible artwork fills it while peers
-                    // sit ~10% smaller inside their frames — Tiki Golf looks
-                    // visibly taller. The 0.9 factor adds the missing
-                    // breathing room programmatically so the visible artwork
-                    // heights match.
                     child: Center(
-                      child: AspectRatio(
-                        aspectRatio: 1.0,
-                        child: title == 'Tiki Golf'
-                            ? FractionallySizedBox(
-                                widthFactor: 0.9,
-                                heightFactor: 0.9,
-                                child: Image.asset(
-                                  imageAssetPath,
-                                  fit: BoxFit.contain,
-                                ),
-                              )
-                            : Image.asset(
-                                imageAssetPath,
-                                fit: BoxFit.contain,
-                              ),
+                      child: Image.asset(
+                        imageAssetPath,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
                 ),
+                // Label container — fixed 84 tall; text centered within.
                 SizedBox(
-                  height: title == 'Target Tag' || title == 'Monster Mash'
-                      ? 10
-                      : title == "Pirate's Grid"
-                          ? 6
-                          : title == 'Tiki Golf'
-                              ? 3   // tighter — Boogaloo descenders push baseline lower
-                              : 8,
-                ),
-                Text(
+                  height: 84,
+                  child: Center(
+                    child: Text(
                   title,
                   style: title == 'Carnival Derby'
                       ? GoogleFonts.rye(
@@ -222,7 +204,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                               fontWeight: FontWeight.bold,
                             ),
-                  textAlign: TextAlign.center,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
               ],
             ),
