@@ -12,6 +12,7 @@
 // disconnects that surface as `SocketException` at `WebDriver.quit`.
 // Match the structure of every other game's screenshot test.
 
+import 'dart:io'; // DIAGNOSTIC PROBE — remove after experiment
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -182,6 +183,10 @@ Future<void> screenshot(IntegrationTestWidgetsFlutterBinding binding,
 // ==========================================================================
 
 void main() {
+  // DIAGNOSTIC PROBE — remove after experiment
+  print('TIKI_PROBE_MAIN_PRINT');
+  stderr.writeln('TIKI_PROBE_MAIN_STDERR');
+
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   final config = GameUIConfig.tikiGolf();
 
@@ -193,6 +198,10 @@ void main() {
     // Single continuous flow capturing all spec §12C visual states.
     // See file header for why this is one testWidgets instead of many.
     testWidgets('Full screenshot flow', (WidgetTester tester) async {
+      // DIAGNOSTIC PROBE — remove after experiment
+      print('TIKI_PROBE_TESTWIDGETS_PRINT');
+      stderr.writeln('TIKI_PROBE_TESTWIDGETS_STDERR');
+
       // ======================================================================
       // PART 1: MENU SCREEN STATES
       // ======================================================================
@@ -273,6 +282,11 @@ void main() {
       await screenshot(binding, tester, '09_menu_team_manual_3players_team_count_2');
 
       print('SCREENSHOT: === PART 1 COMPLETE ===');
+
+      // DIAGNOSTIC PROBE — remove after experiment (bisects test to PART 1 only)
+      print('TIKI_PROBE_PART1_END_REACHED');
+      stderr.writeln('TIKI_PROBE_PART1_END_REACHED_STDERR');
+      return;
 
       // ======================================================================
       // PART 2: GAME SCREEN STATES (SOLO)
