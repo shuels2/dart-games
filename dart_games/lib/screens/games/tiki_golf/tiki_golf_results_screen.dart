@@ -411,11 +411,13 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Heading — unified at 48pt with all other GOLDEN TIKI CHAMPION(S)
+        // headings (solo single, team single, team tied) per user.
         Text(
           'GOLDEN TIKI CHAMPIONS!',
           key: TikiGolfResultsKeys.championHeading,
           style: GoogleFonts.boogaloo(
-            fontSize: 32,
+            fontSize: 48,
             fontWeight: FontWeight.bold,
             color: _lagoonBlue,
             shadows: _outlineShadow4(),
@@ -448,13 +450,14 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        // Shared total line — all tied players have the same total
+        // Shared total line — all tied players have the same total.
+        // 26pt per user to match the team-tied/team-single Total spans.
         RichText(
           key: TikiGolfResultsKeys.winnerTotal,
           textAlign: TextAlign.center,
           text: TextSpan(
             style: GoogleFonts.boogaloo(
-              fontSize: 18,
+              fontSize: 26,
               color: _sandWhite,
               shadows: _lightShadow4(),
             ),
@@ -463,7 +466,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
               TextSpan(
                 text: _formatDiff(diff),
                 style: GoogleFonts.boogaloo(
-                  fontSize: 18,
+                  fontSize: 26,
                   color: _diffColor(diff),
                   shadows: _lightShadow4(),
                 ),
@@ -557,12 +560,13 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Heading — +6pt per user request (36 → 42).
+        // Heading — unified at 48pt with all other GOLDEN TIKI CHAMPION(S)
+        // headings (solo tied, team single, team tied) per user.
         Text(
           'GOLDEN TIKI CHAMPION!',
           key: TikiGolfResultsKeys.championHeading,
           style: GoogleFonts.boogaloo(
-            fontSize: 42,
+            fontSize: 48,
             fontWeight: FontWeight.bold,
             color: _lagoonBlue,
             shadows: _outlineShadow4(),
