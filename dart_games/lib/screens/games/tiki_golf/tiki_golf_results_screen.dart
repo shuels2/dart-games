@@ -438,7 +438,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         // Row of tied-winner avatars
         Wrap(
           alignment: WrapAlignment.center,
-          spacing: 32,
+          spacing: 64,
           runSpacing: 8,
           children: [
             for (int i = 0; i < winnerIds.length; i++)
@@ -534,7 +534,7 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 8),
         Text(
           name,
           key: TikiGolfResultsKeys.tiedWinnerName(playerId),
