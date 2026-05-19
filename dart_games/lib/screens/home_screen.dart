@@ -142,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Center(
                     child: Transform.translate(
                       offset: title == 'Tiki Golf'
-                          ? const Offset(0, -10)
+                          ? const Offset(0, -7)
                           : Offset.zero,
                       child: Text(
                   title,
