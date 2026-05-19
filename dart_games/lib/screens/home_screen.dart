@@ -96,16 +96,16 @@ class _HomeScreenState extends State<HomeScreen> {
       // Three-container layout per user instruction:
       //   - Outer container (the parent SizedBox at line 558-560 sets it to
       //     tileWidth × 400) is the overall tile.
-      //   - Inner image container: SizedBox(height: 300) — same fixed height
+      //   - Inner image container: SizedBox(height: 340) — same fixed height
       //     for every card so all icons sit in an identical-sized box. Source
       //     PNG dimensions are the visible content size (no transparent
       //     padding); BoxFit.contain renders each icon at its natural aspect
       //     inside this fixed box. Some icons render slightly taller/shorter
-      //     within the 300-tall area depending on aspect — that's expected.
-      //   - Inner label container: SizedBox(height: 84) — fixed height so the
+      //     within the 340-tall area depending on aspect — that's expected.
+      //   - Inner label container: SizedBox(height: 44) — fixed height so the
       //     label sits at the same Y position across every card regardless of
       //     icon aspect or font.
-      // 300 + 84 = 384 = 400 (outer card height) - 16 (vertical padding).
+      // 340 + 44 = 384 = 400 (outer card height) - 16 (vertical padding).
       // No Expanded anywhere, so the icon never expands to fill the column
       // and push the label to the bottom; no AspectRatio, so the icon area
       // never depends on tile width (which caused the 13px overflow on wide
@@ -119,9 +119,9 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
             child: Column(
               children: [
-                // Image container — fixed 300 tall.
+                // Image container — fixed 340 tall.
                 SizedBox(
-                  height: 300,
+                  height: 340,
                   child: Opacity(
                     opacity: isDisabled ? 0.5 : 1.0,
                     child: Center(
@@ -132,9 +132,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                // Label container — fixed 84 tall; text centered within.
+                // Label container — fixed 44 tall; text centered within.
                 SizedBox(
-                  height: 84,
+                  height: 44,
                   child: Center(
                     child: Text(
                   title,
