@@ -1404,9 +1404,13 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       clipBehavior: Clip.antiAlias,
       child: Table(
         columnWidths: {
-          0: const FixedColumnWidth(130), // Player name column
+          // Player column wider so longer player names fit without
+          // ellipsis. Per-hole columns reduced to absorb the extra
+          // space; Total column unchanged. Net table width changes by
+          // only ~1px so the surrounding layout stays the same.
+          0: const FixedColumnWidth(200), // Player name column (was 130)
           for (int h = 1; h <= maxHolesShown; h++)
-            h: const FixedColumnWidth(50),
+            h: const FixedColumnWidth(42), // (was 50)
           maxHolesShown + 1: const FixedColumnWidth(totalColWidth),
         },
         border: TableBorder.all(color: _tikiBrown.withOpacity(0.40), width: 0.5),
