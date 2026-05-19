@@ -25,7 +25,6 @@ const Color _tikiBrown = Color(0xFF8B5E3C);
 const Color _hibiscusPink = Color(0xFFFF69B4); // used in Pass 2/3 — kept for palette completeness
 const Color _sandWhite = Color(0xFFFFF5E1);
 const Color _tropicalOrange = Color(0xFFFF8C42); // substitution — NOT 0xFFFF6B35
-const Color _goldenTrophy = Color(0xFFFFC857); // used by AppBar title outline
 // ignore: unused_element
 const Color _skyBlue = Color(0xFF87CEEB);
 // ignore: unused_element
@@ -295,7 +294,9 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
         style: GoogleFonts.boogaloo(
           fontSize: 34,
           color: _sandWhite,
-          shadows: _labelShadow(_goldenTrophy),
+          // 4-corner Tiki Brown outline — matches the gameplay-screen
+          // AppBar title (and the results AppBar, after this update).
+          shadows: _labelShadow(_tikiBrown),
         ),
       ),
       actions: [

@@ -298,13 +298,13 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                 fontSize: 34,
                 color: _sandWhite,
                 letterSpacing: 0.5,
-                // 4-corner gold outline — unified across all three Tiki
-                // Golf AppBar titles (menu / game / results).
+                // 4-corner Tiki Brown outline — matches the menu + game
+                // AppBar titles (original gameplay-screen treatment).
                 shadows: const [
-                  Shadow(color: _goldenTrophy, offset: Offset(1, 1)),
-                  Shadow(color: _goldenTrophy, offset: Offset(-1, -1)),
-                  Shadow(color: _goldenTrophy, offset: Offset(1, -1)),
-                  Shadow(color: _goldenTrophy, offset: Offset(-1, 1)),
+                  Shadow(color: _tikiBrown, offset: Offset(1, 1)),
+                  Shadow(color: _tikiBrown, offset: Offset(-1, -1)),
+                  Shadow(color: _tikiBrown, offset: Offset(1, -1)),
+                  Shadow(color: _tikiBrown, offset: Offset(-1, 1)),
                 ],
               ),
             ),
