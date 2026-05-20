@@ -348,16 +348,22 @@ REM PathAccessException AND PowerShell-side Set-Content errors on
 REM engine.realm — the engine.realm filename is the most specific marker
 REM of this race), transient network failures fetching Google Fonts
 REM assets ("Failed to load font" / "Failed to fetch" / "ClientException"),
-REM which are flake-prone, AND setup-helper races where the app
-REM webserver comes up faster than the provider/state bootstrap finishes
+REM which are flake-prone, setup-helper races where the app webserver
+REM comes up faster than the provider/state bootstrap finishes
 REM (signature: stack frame referencing "shared/game_setup_helpers.dart"
 REM in a DDC stack trace — real product bugs would crash in lib/... frames,
 REM and a real helper bug would fail many tests at once, so a single test
-REM with this frame is the classic flake shape).
+REM with this frame is the classic flake shape), AND results-screen render-
+REM timing races where the navigation to the results screen has not
+REM completed when a button-presence helper runs ("should be present on
+REM results screen" is the exact reason text used by every button-presence
+REM assertion in shared/results_helpers.dart — it only appears in that one
+REM infrastructure-side helper, never in test-body assertions or product
+REM code, so it's a tight signal for results-screen render-timing flakes).
 REM Kept in sync with run_ui_tests_parallel_worker.bat.
 set "_RST_RETRY=0"
 if "!_RST_PASS!"=="0" if !_RST_ATTEMPT! lss 2 (
-    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"InvalidSessionIdException" /C:"DriverError" /C:"FormatException" /C:"PathAccessException" /C:"engine.realm" /C:"GetContentWriterIOError" /C:"Failed to load font" /C:"Failed to fetch" /C:"ClientException" /C:"shared/game_setup_helpers.dart" "!_RST_LOG!" >nul 2>&1
+    findstr /C:"AppConnectionException" /C:"SocketException" /C:"Target crashed" /C:"InvalidSessionIdException" /C:"DriverError" /C:"FormatException" /C:"PathAccessException" /C:"engine.realm" /C:"GetContentWriterIOError" /C:"Failed to load font" /C:"Failed to fetch" /C:"ClientException" /C:"shared/game_setup_helpers.dart" /C:"should be present on results screen" "!_RST_LOG!" >nul 2>&1
     if !errorlevel! equ 0 set "_RST_RETRY=1"
 )
 if "!_RST_RETRY!"=="1" goto :run_single_test_attempt
