@@ -435,19 +435,35 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        // Row of tied-winner avatars
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 64,
-          runSpacing: 8,
-          children: [
-            for (int i = 0; i < winnerIds.length; i++)
-              _buildSoloTiedWinnerItem(
-                player: playerProvider.getPlayerById(winnerIds[i]),
-                playerId: winnerIds[i],
-                colorIndex: i,
+        // Tied-winner avatars stay on a single row and scroll
+        // horizontally if the viewport is too narrow. This avoids the
+        // vertical overflow that would otherwise occur when the
+        // 270×270 avatars wrap to a 2nd row inside a height-bounded
+        // parent. Content is centered when it fits; otherwise it
+        // becomes left-anchored and scrollable.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (int i = 0; i < winnerIds.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 64),
+                      _buildSoloTiedWinnerItem(
+                        player: playerProvider.getPlayerById(winnerIds[i]),
+                        playerId: winnerIds[i],
+                        colorIndex: i,
+                      ),
+                    ],
+                  ],
+                ),
               ),
-          ],
+            );
+          },
         ),
         const SizedBox(height: 8),
         // Shared total line — all tied players have the same total.
@@ -902,21 +918,33 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        // Outer Wrap holds N team-groups horizontally. The 96px spacing
-        // visually separates each team from its neighbour so the inner
-        // 2×2 player grid reads as its own group.
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 96,
-          runSpacing: 24,
-          children: [
-            for (final tid in winnerTeamIds)
-              _buildTeamTiedWinnerItem(
-                game: game,
-                playerProvider: playerProvider,
-                teamId: tid,
+        // Tied team-groups stay on a single row and scroll horizontally
+        // when the viewport is too narrow. 96px between groups makes
+        // each team's inner 2×2 player grid read as its own cluster.
+        // Centers content when it fits; scrolls when it doesn't.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (int i = 0; i < winnerTeamIds.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 96),
+                      _buildTeamTiedWinnerItem(
+                        game: game,
+                        playerProvider: playerProvider,
+                        teamId: winnerTeamIds[i],
+                      ),
+                    ],
+                  ],
+                ),
               ),
-          ],
+            );
+          },
         ),
         const SizedBox(height: 6),
         // "Tied at N strokes (±X)" — unified 26pt per user request.
