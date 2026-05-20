@@ -8,10 +8,20 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:dart_games/constants/test_keys.dart';
 import '../../shared/dart_throw_helpers.dart';
+import '../../shared/game_setup_helpers.dart';
+import '../../shared/game_ui_config.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
-import '../team_mode_gameplay/_helpers.dart';
+
+// NOTE: this test deliberately calls GameSetupHelpers.setupAndStartTikiGolf
+// directly instead of importing the sibling `../team_mode_gameplay/_helpers.dart`.
+// Flutter web's kernel compiler resolves the entry test file's directory as
+// the root of the org-dartlang-app:/ URI scheme, so cross-directory sibling
+// imports (`../team_mode_gameplay/...`) fail to resolve — only `../../shared/`
+// works because of the way Flutter handles relative test imports.
+
+final _config = GameUIConfig.tikiGolf();
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +32,12 @@ void main() {
     await UITestHelpers.resetServerState();
 
     // 4 players, random assignment → 2 teams of 2 (per spec randomDistribution).
-    await setupAndStartTeamGame(tester,
-        playerNames: ['Alice', 'Bob', 'Carl', 'Dana']);
+    await GameSetupHelpers.setupAndStartTikiGolf(
+      tester,
+      _config,
+      teamMode: true,
+      playerNames: ['Alice', 'Bob', 'Carl', 'Dana'],
+    );
 
     final provider = ProviderHelpers.getTikiGolfProvider(tester);
     expect(provider.currentGame!.teamPlayers.length, 2,
