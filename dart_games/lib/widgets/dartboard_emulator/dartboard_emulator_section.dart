@@ -166,51 +166,60 @@ class DartboardEmulatorSection extends StatelessWidget {
   }
 
   Widget _buildDisabledOverlay() {
-    return Container(
-      width: 250,
-      height: 250,
-      decoration: BoxDecoration(
-        color: config.disabledOverlayBackgroundColor,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: config.disabledOverlayBorderColor,
-          width: config.disabledOverlayBorderWidth,
+    // The outer Material(transparency) prevents Flutter's debug
+    // double-underline from leaking onto the prompt and button text
+    // when this overlay renders without a Material ancestor in scope.
+    // Matches the fix applied to other shared modals (see
+    // remove_darts_modal.dart, save_game_modal.dart, etc.).
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+        width: 250,
+        height: 250,
+        decoration: BoxDecoration(
+          color: config.disabledOverlayBackgroundColor,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: config.disabledOverlayBorderColor,
+            width: config.disabledOverlayBorderWidth,
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            config.promptIcon,
-            size: 48,
-            color: Colors.white,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            config.promptText,
-            style: const TextStyle(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              config.promptIcon,
+              size: 48,
               color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
             ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            key: DartboardEmulatorKeys.removeDartsButton,
-            onPressed: () => dartboardKey?.currentState?.removeDarts(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: config.removeButtonBackgroundColor,
-              side: BorderSide(
-                color: config.removeButtonBorderColor,
-                width: 2,
+            const SizedBox(height: 16),
+            Text(
+              config.promptText,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.none,
               ),
             ),
-            child: Text(
-              config.removeButtonText,
-              style: config.removeButtonTextStyle,
+            const SizedBox(height: 16),
+            ElevatedButton(
+              key: DartboardEmulatorKeys.removeDartsButton,
+              onPressed: () => dartboardKey?.currentState?.removeDarts(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: config.removeButtonBackgroundColor,
+                side: BorderSide(
+                  color: config.removeButtonBorderColor,
+                  width: 2,
+                ),
+              ),
+              child: Text(
+                config.removeButtonText,
+                style: config.removeButtonTextStyle,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
