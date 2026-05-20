@@ -1820,6 +1820,18 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       // Reset segment tracking — the prior turn's darts are
                       // wiped, the player re-throws from scratch.
                       _currentTurnSegments.clear();
+                      // Clear the emulator's yellow dart indicators so
+                      // the re-throw starts on a clean board. Emulator-
+                      // mode only — real games show no indicators here.
+                      // We loop removeSingleDart() instead of calling
+                      // removeDarts() because the latter also fires the
+                      // onRemoveDarts callback (= simulateTakeoutFinished),
+                      // which would advance to the next player. Mulligan
+                      // must NOT advance — the player re-throws.
+                      if (_mockApi != null) {
+                        final dartboardState = _dartboardKey.currentState;
+                        while (dartboardState?.removeSingleDart() == true) {}
+                      }
                       // currentTurnEnded becomes false → modal disappears
                       setState(() {});
                     },
