@@ -895,17 +895,20 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         Text(
           'TIED!',
           style: GoogleFonts.boogaloo(
-            fontSize: 20,
+            fontSize: 34,
             fontWeight: FontWeight.bold,
             color: _goldenTrophy,
             shadows: _outlineShadow4(),
           ),
         ),
         const SizedBox(height: 6),
+        // Outer Wrap holds N team-groups horizontally. The 48px spacing
+        // visually separates each team from its neighbour so the inner
+        // 2×2 player grid reads as its own group.
         Wrap(
           alignment: WrapAlignment.center,
-          spacing: 24,
-          runSpacing: 12,
+          spacing: 48,
+          runSpacing: 16,
           children: [
             for (final tid in winnerTeamIds)
               _buildTeamTiedWinnerItem(
@@ -943,41 +946,78 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
     );
   }
 
+  // Tied team-group: shows each team's player avatars (with golden tiki
+  // trophy overlays and names) in a 2×2 grid, mirroring the single-team
+  // winners layout. Team identity comes from grouping (the outer Wrap
+  // adds 48px between groups) — there is no team crest/badge here per
+  // user request.
   Widget _buildTeamTiedWinnerItem({
     required TikiGolfGame game,
     required PlayerProvider playerProvider,
     required String teamId,
   }) {
-    final crestPath = _crestPathForTeam(game, teamId);
     final members = game.teamPlayers[teamId] ?? [];
 
+    return SizedBox(
+      // Fixed width so the inner Wrap always lays out 2 items per row
+      // (avatar 110 × 2 + 16 spacing = 236; +4 slack).
+      width: 240,
+      child: Column(
+        key: TikiGolfResultsKeys.tiedWinnerTeamCrest(teamId),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 16,
+            runSpacing: 8,
+            children: [
+              for (int i = 0; i < members.length; i++)
+                _buildTiedTeamPlayerItem(
+                  player: playerProvider.getPlayerById(members[i]),
+                  playerId: members[i],
+                  colorIndex: i,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Per-player avatar tile used inside a tied team-group. Smaller than
+  // the single-winner team avatars (182→110) so up to four teams can sit
+  // side-by-side, but keeps the trophy-overlay + name pattern.
+  Widget _buildTiedTeamPlayerItem({
+    required Player? player,
+    required String playerId,
+    required int colorIndex,
+  }) {
+    final name = player?.name.split(' ').first ?? '—';
+    final bg = _avatarColorForIndex(colorIndex);
+
     return Column(
-      key: TikiGolfResultsKeys.tiedWinnerTeamCrest(teamId),
+      key: TikiGolfResultsKeys.tiedWinnerTeamPlayer(playerId),
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 130,
-          height: 130,
+          width: 110,
+          height: 118, // +8 for trophy overflow
           child: Stack(
             clipBehavior: Clip.none,
             children: [
               Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
+                width: 110,
+                height: 110,
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: _lagoonBlue, width: 4),
-                  color: _lagoonBlue.withOpacity(0.20),
+                  color: _sandWhite,
                 ),
                 clipBehavior: Clip.hardEdge,
-                child: Image.asset(
-                  crestPath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.shield,
-                    color: _lagoonBlue,
-                    size: 60,
-                  ),
+                child: _buildPlayerAvatarInitials(
+                  player,
+                  size: 110,
+                  fontSize: 52,
+                  bgColor: bg,
                 ),
               ),
               Positioned(
@@ -985,35 +1025,32 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
                 right: -4,
                 child: Image.asset(
                   'assets/games/tiki_golf/pieces/GoldenTiki.png',
-                  width: 48,
-                  height: 48,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.emoji_events,
-                    size: 36,
-                    color: _goldenTrophy,
+                  width: 44,
+                  height: 44,
+                  errorBuilder: (_, __, ___) => const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Icon(Icons.emoji_events,
+                        size: 32, color: _goldenTrophy),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 4),
-        // Member names — first names, comma separated
+        const SizedBox(height: 6),
         SizedBox(
-          width: 160,
+          width: 110,
           child: Text(
-            members
-                .map((pid) =>
-                    playerProvider.getPlayerById(pid)?.name.split(' ').first ??
-                    pid)
-                .join(', '),
+            name,
             style: GoogleFonts.boogaloo(
-              fontSize: 14,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
               color: _sandWhite,
-              shadows: _lightShadow4(),
+              shadows: _outlineShadow4(),
             ),
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),

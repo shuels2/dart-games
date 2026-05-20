@@ -984,6 +984,8 @@ class TikiGolfResultsKeys {
       Key('tiki_golf_results_tied_winner_name_$playerId');
   static Key tiedWinnerTeamCrest(String teamId) =>
       Key('tiki_golf_results_tied_winner_team_crest_$teamId');
+  static Key tiedWinnerTeamPlayer(String playerId) =>
+      Key('tiki_golf_results_tied_winner_team_player_$playerId');
 
   // Scorecard
   static const finalScorecard = Key('tiki_golf_results_final_scorecard');
