@@ -829,7 +829,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
                 TextSpan(
                   text: '(1 do-over per player)',
                   style: GoogleFonts.nunito(
-                    fontSize: 14,
+                    fontSize: 16,
                     color: _sandWhite.withOpacity(0.75),
                   ),
                 ),
