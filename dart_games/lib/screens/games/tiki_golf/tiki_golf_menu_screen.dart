@@ -282,9 +282,9 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       // Unified across all three Tiki Golf screens: left-to-right
-      // gradient from Palm Green to Tiki Brown using the screen's
-      // theme colors. Title is Sand White with a Tiki Brown 4-corner
-      // outline.
+      // gradient from Lagoon Blue (water) to Palm Green (jungle) —
+      // both existing theme accents. Title is Sand White with a Tiki
+      // Brown 4-corner outline.
       backgroundColor: Colors.transparent,
       foregroundColor: _sandWhite,
       flexibleSpace: Container(
@@ -292,7 +292,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [_palmGreen, _tikiBrown],
+            colors: [_lagoonBlue, _palmGreen],
           ),
         ),
       ),
