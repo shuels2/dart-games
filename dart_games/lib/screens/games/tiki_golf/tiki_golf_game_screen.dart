@@ -532,9 +532,10 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           // ── 1. Main Scaffold ────────────────────────────────────────────────
           Scaffold(
             appBar: AppBar(
-              // Left-to-right gradient from Tropical Orange (papaya
-              // sunset) to Palm Green (jungle) — unified across all
-              // three Tiki Golf screens.
+              // 3-stop left-to-right gradient through Hibiscus Pink
+              // -> Tropical Orange -> Palm Green (hibiscus -> sunset
+              // -> jungle) — unified across all three Tiki Golf
+              // screens.
               backgroundColor: Colors.transparent,
               foregroundColor: _sandWhite,
               flexibleSpace: Container(
@@ -542,7 +543,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
-                    colors: [_tropicalOrange, _palmGreen],
+                    colors: [_hibiscusPink, _tropicalOrange, _palmGreen],
                   ),
                 ),
               ),
