@@ -702,38 +702,9 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
                 key: TikiGolfMenuKeys.assignmentModeToggle,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  GestureDetector(
-                    key: TikiGolfMenuKeys.assignmentModeManual,
-                    onTap: isTeam
-                        ? () => setState(() =>
-                            _teamAssignment = TikiGolfTeamAssignment.manual)
-                        : null,
-                    child: Text(
-                      'MANUAL',
-                      style: GoogleFonts.boogaloo(
-                        fontSize: 20,
-                        color: isManual
-                            ? _lagoonBlue
-                            : _sandWhite.withOpacity(0.5),
-                        fontWeight:
-                            isManual ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                  Transform.scale(
-                    scale: 0.85,
-                    child: Switch(
-                      value: !isManual, // ON = Random
-                      activeColor: _lagoonBlue,
-                      onChanged: isTeam
-                          ? (value) => setState(() {
-                                _teamAssignment = value
-                                    ? TikiGolfTeamAssignment.random
-                                    : TikiGolfTeamAssignment.manual;
-                              })
-                          : null,
-                    ),
-                  ),
+                  // RANDOM on the LEFT, MANUAL on the RIGHT — matches
+                  // Target Tag's team-assignment toggle. Default
+                  // _teamAssignment stays Random (handled in initState).
                   GestureDetector(
                     key: TikiGolfMenuKeys.assignmentModeRandom,
                     onTap: isTeam
@@ -749,6 +720,38 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
                             : _sandWhite.withOpacity(0.5),
                         fontWeight:
                             !isManual ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  Transform.scale(
+                    scale: 0.85,
+                    child: Switch(
+                      value: isManual, // ON = Manual (right side)
+                      activeColor: _lagoonBlue,
+                      onChanged: isTeam
+                          ? (value) => setState(() {
+                                _teamAssignment = value
+                                    ? TikiGolfTeamAssignment.manual
+                                    : TikiGolfTeamAssignment.random;
+                              })
+                          : null,
+                    ),
+                  ),
+                  GestureDetector(
+                    key: TikiGolfMenuKeys.assignmentModeManual,
+                    onTap: isTeam
+                        ? () => setState(() =>
+                            _teamAssignment = TikiGolfTeamAssignment.manual)
+                        : null,
+                    child: Text(
+                      'MANUAL',
+                      style: GoogleFonts.boogaloo(
+                        fontSize: 20,
+                        color: isManual
+                            ? _lagoonBlue
+                            : _sandWhite.withOpacity(0.5),
+                        fontWeight:
+                            isManual ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                   ),
