@@ -282,9 +282,10 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       // Unified across all three Tiki Golf screens: left-to-right
-      // gradient from Lagoon Blue (water) to Palm Green (jungle) —
-      // both existing theme accents. Title is Sand White with a Tiki
-      // Brown 4-corner outline.
+      // gradient from Tropical Orange (papaya sunset) to Palm Green
+      // (jungle) — both existing theme accents, transitioning through
+      // a warm chartreuse. Title is Sand White with a Tiki Brown
+      // 4-corner outline.
       backgroundColor: Colors.transparent,
       foregroundColor: _sandWhite,
       flexibleSpace: Container(
@@ -292,7 +293,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [_lagoonBlue, _palmGreen],
+            colors: [_tropicalOrange, _palmGreen],
           ),
         ),
       ),
@@ -307,7 +308,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
       title: Text(
         'TIKI GOLF SETUP',
         style: GoogleFonts.boogaloo(
-          fontSize: 34,
+          fontSize: 36,
           color: _sandWhite,
           // 4-corner Tiki Brown outline — matches the gameplay-screen
           // AppBar title (and the results AppBar, after this update).

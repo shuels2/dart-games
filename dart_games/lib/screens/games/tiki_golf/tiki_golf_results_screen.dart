@@ -291,23 +291,23 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         Scaffold(
           appBar: AppBar(
             automaticallyImplyLeading: false, // no back arrow on results screen
-            // Left-to-right gradient from Lagoon Blue (water) to
-            // Palm Green (jungle) — unified across all three Tiki
-            // Golf screens.
+            // Left-to-right gradient from Tropical Orange (papaya
+            // sunset) to Palm Green (jungle) — unified across all
+            // three Tiki Golf screens.
             backgroundColor: Colors.transparent,
             flexibleSpace: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  colors: [_lagoonBlue, _palmGreen],
+                  colors: [_tropicalOrange, _palmGreen],
                 ),
               ),
             ),
             title: Text(
               'TIKI GOLF RESULTS',
               style: GoogleFonts.boogaloo(
-                fontSize: 34,
+                fontSize: 36,
                 color: _sandWhite,
                 letterSpacing: 0.5,
                 // 4-corner Tiki Brown outline — matches the menu + game
