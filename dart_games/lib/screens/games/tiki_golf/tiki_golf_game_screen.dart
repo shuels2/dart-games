@@ -1766,7 +1766,11 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                // Edit Score button
+                // Edit Player Score button — title case + 18pt bold +
+                // 14px vertical padding to match the Use Mulligan / Next
+                // Player buttons below. The shared remove-darts modal's
+                // Edit Player Score button is title case too, so this
+                // keeps the modal label and the regular button aligned.
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -1774,7 +1778,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _tikiBrown,
                       foregroundColor: _sandWhite,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
                       final initialSegments =
@@ -1790,13 +1794,16 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       );
                     },
                     child: Text(
-                      'Edit player score',
-                      style: GoogleFonts.boogaloo(fontSize: 14),
+                      'Edit Player Score',
+                      style: GoogleFonts.boogaloo(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                // USE MULLIGAN button
+                // Use Mulligan button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -1817,7 +1824,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       setState(() {});
                     },
                     child: Text(
-                      'USE MULLIGAN',
+                      'Use Mulligan',
                       style: GoogleFonts.boogaloo(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1826,7 +1833,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // NEXT PLAYER button
+                // Next Player button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -1841,7 +1848,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       _handleTakeoutFinished();
                     },
                     child: Text(
-                      'NEXT PLAYER',
+                      'Next Player',
                       style: GoogleFonts.boogaloo(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
