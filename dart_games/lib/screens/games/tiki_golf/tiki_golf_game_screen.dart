@@ -532,8 +532,19 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           // ── 1. Main Scaffold ────────────────────────────────────────────────
           Scaffold(
             appBar: AppBar(
-              backgroundColor: _palmGreen,
+              // Left-to-right gradient from Palm Green to Tiki Brown
+              // — unified across all three Tiki Golf screens.
+              backgroundColor: Colors.transparent,
               foregroundColor: _sandWhite,
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [_palmGreen, _tikiBrown],
+                  ),
+                ),
+              ),
               leading: IconButton(
                 key: TikiGolfGameKeys.backButton,
                 icon: const Icon(Icons.arrow_back, color: _sandWhite, size: 32),

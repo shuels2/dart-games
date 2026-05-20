@@ -281,10 +281,21 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      // Unified across all three Tiki Golf screens: Palm Green background,
-      // Sand White title with a Golden Trophy 4-corner outline.
-      backgroundColor: _palmGreen,
+      // Unified across all three Tiki Golf screens: left-to-right
+      // gradient from Palm Green to Tiki Brown using the screen's
+      // theme colors. Title is Sand White with a Tiki Brown 4-corner
+      // outline.
+      backgroundColor: Colors.transparent,
       foregroundColor: _sandWhite,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [_palmGreen, _tikiBrown],
+          ),
+        ),
+      ),
       leading: IconButton(
         key: TikiGolfMenuKeys.backButton,
         icon: const Icon(Icons.arrow_back, color: _sandWhite, size: 32),

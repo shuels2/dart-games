@@ -291,7 +291,18 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
         Scaffold(
           appBar: AppBar(
             automaticallyImplyLeading: false, // no back arrow on results screen
-            backgroundColor: _palmGreen,
+            // Left-to-right gradient from Palm Green to Tiki Brown
+            // — unified across all three Tiki Golf screens.
+            backgroundColor: Colors.transparent,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [_palmGreen, _tikiBrown],
+                ),
+              ),
+            ),
             title: Text(
               'TIKI GOLF RESULTS',
               style: GoogleFonts.boogaloo(
