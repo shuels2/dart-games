@@ -902,13 +902,13 @@ class _TikiGolfResultsScreenState extends State<TikiGolfResultsScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        // Outer Wrap holds N team-groups horizontally. The 48px spacing
+        // Outer Wrap holds N team-groups horizontally. The 96px spacing
         // visually separates each team from its neighbour so the inner
         // 2×2 player grid reads as its own group.
         Wrap(
           alignment: WrapAlignment.center,
-          spacing: 48,
-          runSpacing: 16,
+          spacing: 96,
+          runSpacing: 24,
           children: [
             for (final tid in winnerTeamIds)
               _buildTeamTiedWinnerItem(
