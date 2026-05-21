@@ -178,6 +178,13 @@ flutter:
     - assets/games/lunar_lander/characters/
     - assets/games/lunar_lander/sounds/
 
+    # Tiki Golf game assets
+    - assets/games/tiki_golf/icons/
+    - assets/games/tiki_golf/images/
+    - assets/games/tiki_golf/pieces/
+    - assets/games/tiki_golf/sounds/
+    - assets/games/tiki_golf/teams/
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

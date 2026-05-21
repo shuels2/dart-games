@@ -38,6 +38,7 @@ class HomeKeys {
   static const lunarLanderCard = Key('home_lunar_lander_card');
   static const piratesGridCard = Key('home_pirates_grid_card');
   static const gladiatorArenaCard = Key('home_card_gladiator_arena');
+  static const tikiGolfCard = Key('home_card_tiki_golf');
 
   // ──── Filter bar (home screen) ────
   static const filterBar = Key('home_filter_bar');
@@ -639,6 +640,7 @@ class DartboardEmulatorKeys {
   static const removeDartsButton = Key('dartboard_emulator_remove_darts_button');
   static const toggleFAB = Key('dartboard_emulator_toggle_fab');
   static const playToCompleteButton = Key('dartboard_emulator_play_to_complete_button');
+  static const playToTieButton = Key('dartboard_emulator_play_to_tie_button');
 }
 
 // ============================================================================
@@ -850,4 +852,152 @@ class GladiatorArenaResultsKeys {
   static const Key playAgainButton = Key('results_ga_play_again_button');
   static const Key changeSettingsButton = Key('results_ga_change_settings_button');
   static const Key backToMenuButton = Key('results_ga_back_to_menu_button');
+}
+
+// ============================================================================
+// TIKI GOLF KEYS
+// ============================================================================
+
+class TikiGolfMenuKeys {
+  // Navigation
+  static const backButton = Key('tiki_golf_menu_back_button');
+
+  // Player selection
+  static const addPlayerButton = Key('tiki_golf_menu_add_player_button');
+  static const addPlayerButtonEmptyState =
+      Key('tiki_golf_menu_add_player_button_empty_state');
+  static const playerListView = Key('tiki_golf_menu_player_list_view');
+  static Key playerTile(String id) => Key('tiki_golf_menu_player_tile_$id');
+  static Key removePlayerButton(String id) =>
+      Key('tiki_golf_menu_remove_player_button_$id');
+
+  // Navigation buttons
+  static const startGameButton = Key('tiki_golf_menu_start_game_button');
+  static const resumeGameButton = Key('tiki_golf_menu_resume_game_button');
+
+  // Game Mode toggle
+  static const gameModeToggle = Key('tiki_golf_menu_game_mode_toggle');
+  static const gameModeSolo = Key('tiki_golf_menu_game_mode_solo');
+  static const gameModeTeam = Key('tiki_golf_menu_game_mode_team');
+
+  // Team Assignment toggle
+  static const assignmentModeToggle =
+      Key('tiki_golf_menu_assignment_mode_toggle');
+  static const assignmentModeManual =
+      Key('tiki_golf_menu_assignment_mode_manual');
+  static const assignmentModeRandom =
+      Key('tiki_golf_menu_assignment_mode_random');
+
+  // Team Count dropdown (shown in Team + Manual mode)
+  static const teamCountDropdown = Key('tiki_golf_menu_team_count_dropdown');
+
+  // Max Strokes dropdown
+  static const maxStrokesDropdown = Key('tiki_golf_menu_max_strokes_dropdown');
+
+  // Mulligan switch
+  static const mulliganSwitch = Key('tiki_golf_menu_mulligan_switch');
+
+  // Team boxes (shown in Team + Manual mode)
+  static Key teamBox(int teamIndex) =>
+      Key('tiki_golf_menu_team_box_$teamIndex');
+  static Key teamPlayerChip(int teamIndex, String playerId) =>
+      Key('tiki_golf_menu_team_player_chip_${teamIndex}_$playerId');
+  static Key teamAssignDropdown(String playerId) =>
+      Key('tiki_golf_menu_team_assign_dropdown_$playerId');
+
+  // Team Assignment dialog (shared TeamAssignmentDialog widget — uses shared keys)
+  static const teamDialogContainer =
+      Key('tiki_golf_menu_team_dialog_container');
+  static Key teamDialogDropdown(String id) =>
+      Key('tiki_golf_menu_team_dialog_dropdown_$id');
+  static const teamDialogCancel = Key('tiki_golf_menu_team_dialog_cancel');
+
+  // Dartboard connection info
+  static const dartboardConnectionInfo =
+      Key('tiki_golf_menu_dartboard_connection_info');
+}
+
+class TikiGolfGameKeys {
+  // Navigation
+  static const backButton = Key('tiki_golf_game_back_button');
+
+  // Game controls
+  static const skipTurnButton = Key('tiki_golf_game_skip_turn_button');
+  static const mulliganButton = Key('tiki_golf_game_mulligan_button');
+
+  // Hole info
+  static const holeCounter = Key('tiki_golf_game_hole_counter');
+  static const holeName = Key('tiki_golf_game_hole_name');
+  static const holeImage = Key('tiki_golf_game_hole_image');
+  static const targetNumber = Key('tiki_golf_game_target_number');
+  static const parLabel = Key('tiki_golf_game_par_label');
+
+  // Dart row
+  static const dartRow = Key('tiki_golf_game_dart_row');
+  static Key dartIndicator(int index) =>
+      Key('tiki_golf_game_dart_indicator_$index');
+
+  // Scorecard
+  static const scorecard = Key('tiki_golf_game_scorecard');
+  static Key scorecardCell(String playerId, int hole) =>
+      Key('tiki_golf_game_scorecard_cell_${playerId}_$hole');
+  static LocalKey scorecardPlayerRow(String playerId) =>
+      ValueKey('tiki_golf_game_scorecard_player_row_$playerId');
+  static const scorecardCaption = Key('tiki_golf_game_scorecard_caption');
+
+  // Teams panel (Team mode)
+  static const teamsPanel = Key('tiki_golf_game_teams_panel');
+  static Key teamBox(String teamId) =>
+      Key('tiki_golf_game_team_box_$teamId');
+
+  // Takeout / mulligan modal
+  static const removeDartsModal = Key('tiki_golf_game_remove_darts_modal');
+  static const useMulliganButton = Key('tiki_golf_game_use_mulligan_button');
+  static const nextPlayerButton = Key('tiki_golf_game_next_player_button');
+
+  // Edit score / save modal
+  static const editScoreButton = Key('tiki_golf_game_edit_score_button');
+  static const saveGameModal = Key('tiki_golf_game_save_game_modal');
+}
+
+class TikiGolfResultsKeys {
+  // Action buttons
+  static const backToMenuButton = Key('tiki_golf_results_back_to_menu_button');
+  static const playAgainButton = Key('tiki_golf_results_play_again_button');
+  static const changeSettingsButton =
+      Key('tiki_golf_results_change_settings_button');
+
+  // Winner section
+  static const winnerName = Key('tiki_golf_results_winner_name');
+  static const winnerPhoto = Key('tiki_golf_results_winner_photo');
+  static const winnerTeamCrest = Key('tiki_golf_results_winner_team_crest');
+  static Key winnerTeamPlayer(String playerId) =>
+      Key('tiki_golf_results_winner_team_player_$playerId');
+  static const winnerTotal = Key('tiki_golf_results_winner_total');
+  static const winnerStats = Key('tiki_golf_results_winner_stats');
+  static const championHeading = Key('tiki_golf_results_champion_heading');
+
+  // Tied-winner section (shown when multiple players/teams tie on total).
+  static Key tiedWinnerPhoto(String playerId) =>
+      Key('tiki_golf_results_tied_winner_photo_$playerId');
+  static Key tiedWinnerName(String playerId) =>
+      Key('tiki_golf_results_tied_winner_name_$playerId');
+  static Key tiedWinnerTeamCrest(String teamId) =>
+      Key('tiki_golf_results_tied_winner_team_crest_$teamId');
+  static Key tiedWinnerTeamPlayer(String playerId) =>
+      Key('tiki_golf_results_tied_winner_team_player_$playerId');
+
+  // Scorecard
+  static const finalScorecard = Key('tiki_golf_results_final_scorecard');
+  static LocalKey playerRanking(int index) =>
+      ValueKey('tiki_golf_results_player_ranking_$index');
+  static LocalKey teamRanking(int index) =>
+      ValueKey('tiki_golf_results_team_ranking_$index');
+  static LocalKey teamScorecardBlock(String teamId) =>
+      ValueKey('tiki_golf_results_team_scorecard_block_$teamId');
+  static LocalKey teamBlockTotal(String teamId) =>
+      ValueKey('tiki_golf_results_team_block_total_$teamId');
+
+  // Scroll container
+  static const scorecardsScroll = Key('tiki_golf_results_scorecards_scroll');
 }

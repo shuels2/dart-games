@@ -328,4 +328,45 @@ class RemoveDartsModalConfig {
       maxWidth: double.infinity,
     );
   }
+
+  /// Tiki Golf — Palm Green bg, Lagoon Blue border, Boogaloo/Nunito fonts
+  factory RemoveDartsModalConfig.tikiGolf() {
+    return RemoveDartsModalConfig(
+      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      backgroundOpacity: 0.97,
+      borderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      borderWidth: 4,
+      boxShadowColor: Colors.black,
+      boxShadowOpacity: 0.5,
+      iconColor: const Color(0xFFFFF5E1), // Sand White
+      iconSize: 48,
+      playerNameTextStyle: GoogleFonts.boogaloo(
+        color: const Color(0xFFFF8C42), // Tropical Orange
+        fontSize: 28,
+        shadows: const [
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, 1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, 1), blurRadius: 0),
+        ],
+      ),
+      instructionTextStyle: GoogleFonts.nunito(
+        color: const Color(0xFFFFF5E1), // Sand White
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+      buttonBackgroundColor: const Color(0xFF00B4D8), // Lagoon Blue
+      buttonForegroundColor: const Color(0xFFFFF5E1), // Sand White
+      buttonBorderSide: const BorderSide(
+        color: Color(0xFFFF8C42), // Tropical Orange
+        width: 2,
+      ),
+      buttonTextStyle: GoogleFonts.boogaloo(
+        fontSize: 20,
+        color: const Color(0xFFFFF5E1),
+      ),
+      editButtonText: 'Edit player score',
+      maxWidth: double.infinity,
+    );
+  }
 }

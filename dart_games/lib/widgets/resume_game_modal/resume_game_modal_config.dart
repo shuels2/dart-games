@@ -545,4 +545,69 @@ class ResumeGameModalConfig {
       ),
     );
   }
+
+  /// Tiki Golf — Palm Green bg, Lagoon Blue border, Boogaloo/Nunito fonts
+  factory ResumeGameModalConfig.tikiGolf() {
+    return ResumeGameModalConfig(
+      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      borderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      boxShadowColor: Colors.black,
+      boxShadowOpacity: 0.5,
+      titleTextStyle: GoogleFonts.boogaloo(
+        color: const Color(0xFFFFF5E1), // Sand White
+        fontSize: 26,
+        shadows: const [
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, 1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, 1), blurRadius: 0),
+        ],
+      ),
+      tileBackgroundColor: const Color(0xFF2D6A4F).withOpacity(0.6),
+      tileSelectedBackgroundColor: const Color(0xFF00B4D8).withOpacity(0.15),
+      tileBorderColor: const Color(0xFFFFF5E1).withOpacity(0.3),
+      tileSelectedBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      tileDateTextStyle: GoogleFonts.nunito(
+        color: const Color(0xFFFFF5E1).withOpacity(0.7),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      tilePlayersTextStyle: GoogleFonts.nunito(
+        color: const Color(0xFFFFF5E1),
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      tileProgressTextStyle: GoogleFonts.boogaloo(
+        color: const Color(0xFFFF8C42), // Tropical Orange
+        fontSize: 14,
+      ),
+      tileModeTextStyle: GoogleFonts.nunito(
+        color: const Color(0xFFFFF5E1).withOpacity(0.7),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      tileLeaderTextStyle: GoogleFonts.nunito(
+        color: const Color(0xFFFFF5E1),
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+      deleteButtonColor: const Color(0xFFFF69B4), // Hibiscus Pink
+      resumeButtonColor: const Color(0xFF00B4D8), // Lagoon Blue
+      resumeButtonTextColor: const Color(0xFFFFF5E1),
+      resumeButtonTextStyle: GoogleFonts.boogaloo(fontSize: 22),
+      resumeButtonDisabledColor: Colors.grey,
+      startNewButtonColor: const Color(0xFFFFF5E1).withOpacity(0.2),
+      startNewButtonTextColor: const Color(0xFFFFF5E1),
+      startNewButtonTextStyle: GoogleFonts.nunito(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      deleteAllButtonColor: const Color(0xFFFF69B4), // Hibiscus Pink
+      deleteAllButtonTextStyle: GoogleFonts.nunito(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFFF69B4),
+      ),
+    );
+  }
 }

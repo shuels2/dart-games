@@ -20,6 +20,7 @@ import 'games/clockwork_quest/clockwork_quest_menu_screen.dart';
 import 'games/lunar_lander/lunar_lander_menu_screen.dart';
 import 'games/pirates_grid/pirates_grid_menu_screen.dart';
 import 'games/gladiator_arena/gladiator_arena_menu_screen.dart';
+import 'games/tiki_golf/tiki_golf_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -69,6 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'gladiator_arena':
         menuScreen = const GladiatorArenaMenuScreen();
         break;
+      case 'tiki_golf':
+        menuScreen = const TikiGolfMenuScreen();
+        break;
       default:
         return;
     }
@@ -89,6 +93,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // If image asset is provided, use simple icon layout
     if (imageAssetPath != null) {
+      // Three-container layout per user instruction:
+      //   - Outer container (the parent SizedBox at line 558-560 sets it to
+      //     tileWidth × 400) is the overall tile.
+      //   - Inner image container: SizedBox(height: 340) — same fixed height
+      //     for every card so all icons sit in an identical-sized box. Source
+      //     PNG dimensions are the visible content size (no transparent
+      //     padding); BoxFit.contain renders each icon at its natural aspect
+      //     inside this fixed box. Some icons render slightly taller/shorter
+      //     within the 340-tall area depending on aspect — that's expected.
+      //   - Inner label container: SizedBox(height: 44) — fixed height so the
+      //     label sits at the same Y position across every card regardless of
+      //     icon aspect or font.
+      // 340 + 44 = 384 = 400 (outer card height) - 16 (vertical padding).
+      // No Expanded anywhere, so the icon never expands to fill the column
+      // and push the label to the bottom; no AspectRatio, so the icon area
+      // never depends on tile width (which caused the 13px overflow on wide
+      // tiles previously).
       return Container(
         key: key,
         child: InkWell(
@@ -97,25 +118,33 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
+                // Image container — fixed 340 tall.
+                SizedBox(
+                  height: 340,
                   child: Opacity(
                     opacity: isDisabled ? 0.5 : 1.0,
-                    child: Image.asset(
-                      imageAssetPath,
-                      fit: BoxFit.contain,
+                    child: Center(
+                      child: Image.asset(
+                        imageAssetPath,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),
+                // Label container — fixed 44 tall; text centered within.
+                // Boogaloo (Tiki Golf) has descenders that push the visual
+                // baseline lower than peer fonts, so the Tiki Golf label sits
+                // visibly below the others. Shift it up 10px via
+                // Transform.translate (visual-only, doesn't affect layout).
                 SizedBox(
-                  height: title == 'Target Tag' || title == 'Monster Mash'
-                      ? 10
-                      : title == "Pirate's Grid"
-                          ? 6
-                          : 8,
-                ),
-                Text(
+                  height: 44,
+                  child: Center(
+                    child: Transform.translate(
+                      offset: title == 'Tiki Golf'
+                          ? const Offset(0, -7)
+                          : Offset.zero,
+                      child: Text(
                   title,
                   style: title == 'Carnival Derby'
                       ? GoogleFonts.rye(
@@ -170,11 +199,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.0,
                                 )
+                          : title == 'Tiki Golf'
+                              // Boogaloo's descender pushes the baseline visually low.
+                              // Translate up 5px to align with peer-game baselines.
+                              ? GoogleFonts.boogaloo(
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 7,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                                  height: 0.6, // tightens line-box so the text sits 5px higher
+                                )
                           : theme.textTheme.titleMedium?.copyWith(
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                               fontWeight: FontWeight.bold,
                             ),
-                  textAlign: TextAlign.center,
+                      textAlign: TextAlign.center,
+                    ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -344,6 +385,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ? () => _navigateToMenu('gladiator_arena')
             : null,
       },
+      {
+        'gameId': 'tiki_golf',
+        'title': 'Tiki Golf',
+        'key': HomeKeys.tikiGolfCard,
+        'imageAssetPath': 'assets/games/tiki_golf/icons/TikiGolf-Icon.png',
+        'color': const Color(0xFF2D6A4F), // Palm Green
+        'onTap': dartboardProvider.canPlayGames
+            ? () => _navigateToMenu('tiki_golf')
+            : null,
+      },
       // Add new games here - they will automatically be sorted alphabetically
     ];
 
@@ -497,25 +548,38 @@ class _HomeScreenState extends State<HomeScreen> {
                         rows.add(games.sublist(i, (i + itemsPerRow).clamp(0, games.length)));
                       }
 
+                      // Spacing used to fully justify a full row across the
+                      // available width — i.e. what MainAxisAlignment
+                      // .spaceBetween produces for itemsPerRow tiles.
+                      final justifiedSpacing = itemsPerRow > 1
+                          ? (availableWidth - itemsPerRow * tileWidth) /
+                              (itemsPerRow - 1)
+                          : 0.0;
+
+                      // Spacing rule:
+                      //   - Single row that is NOT full → use minSpacing
+                      //     (compact, left-justified — avoids 2 tiles
+                      //     stretching across a wide screen).
+                      //   - Otherwise (multi-row layout, OR a single full
+                      //     row) → use justifiedSpacing so every row's tiles
+                      //     land at the same x-positions as row 0's first N
+                      //     tiles. Partial last rows in a multi-row layout
+                      //     therefore align vertically with the rows above.
+                      final isOnlySinglePartialRow = rows.length == 1 &&
+                          rows[0].length < itemsPerRow;
+                      final interTileSpacing = isOnlySinglePartialRow
+                          ? minSpacing
+                          : justifiedSpacing;
+
                       return SingleChildScrollView(
                         child: Column(
                           children: [
                             for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
                               if (rowIndex > 0) const SizedBox(height: 12),
                               Row(
-                                // Full row → fully justify via spaceBetween.
-                                // Partial row (last row with < itemsPerRow
-                                // tiles) → left-justify with minSpacing
-                                // between tiles instead of the wider
-                                // justifiedSpacing, so 2 tiles on a wide
-                                // screen look compact, not stretched.
-                                mainAxisAlignment: rows[rowIndex].length == itemsPerRow
-                                    ? MainAxisAlignment.spaceBetween
-                                    : MainAxisAlignment.start,
                                 children: [
                                   for (var i = 0; i < rows[rowIndex].length; i++) ...[
-                                    if (i > 0 && rows[rowIndex].length < itemsPerRow)
-                                      const SizedBox(width: minSpacing),
+                                    if (i > 0) SizedBox(width: interTileSpacing),
                                     SizedBox(
                                       width: tileWidth,
                                       height: 400,

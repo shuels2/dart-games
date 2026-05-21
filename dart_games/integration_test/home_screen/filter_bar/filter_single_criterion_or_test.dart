@@ -25,13 +25,16 @@ void main() {
         await tester.tap(find.byKey(HomeKeys.filterMaxPlayersButton));
         await PumpSequences.simpleUpdate(tester);
 
-        // Toggle "2 (1v1)" and "Up to 10"
+        // Toggle "2 (1v1)" and "Up to 10". Two-pump settle after each tap so
+        // the checkbox onChanged bubbles up and parent setState commits — same
+        // pattern as filter_multi_criterion_and_test (cheap insurance even
+        // though both taps share one popup here).
         await tester.tap(find
             .byKey(HomeKeys.filterMaxPlayersOption(MaxPlayersBucket.twoOnly)));
-        await tester.pump();
+        await PumpSequences.simpleUpdate(tester);
         await tester.tap(find
             .byKey(HomeKeys.filterMaxPlayersOption(MaxPlayersBucket.upToTen)));
-        await tester.pump();
+        await PumpSequences.simpleUpdate(tester);
 
         // Dismiss menu by tapping outside
         await tester.tapAt(const Offset(10, 10));

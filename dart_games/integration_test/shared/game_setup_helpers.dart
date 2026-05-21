@@ -8,6 +8,43 @@ import 'provider_helpers.dart';
 import 'game_ui_config.dart';
 
 class GameSetupHelpers {
+  // ===== Tiki Golf =====
+
+  static Future<void> setupAndStartTikiGolf(
+    WidgetTester tester,
+    GameUIConfig config, {
+    int maxStrokes = 3,
+    bool mulliganEnabled = false,
+    bool teamMode = false,
+    bool manualAssignment = false,
+    int? teamCount,
+    List<String>? playerNames,
+  }) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+
+    if (teamMode) {
+      await SettingsHelpers.setTikiGolfGameModeTeam(tester);
+      await PumpSequences.fullRebuild(tester);
+      if (manualAssignment) {
+        await SettingsHelpers.setTikiGolfAssignmentManual(tester);
+        await PumpSequences.fullRebuild(tester);
+      }
+    }
+    if (maxStrokes != 3) {
+      await SettingsHelpers.setTikiGolfMaxStrokes(tester, maxStrokes);
+    }
+    if (mulliganEnabled) {
+      await SettingsHelpers.toggleTikiGolfMulligan(tester);
+    }
+
+    final names = playerNames ?? ['Player A', 'Player B'];
+    for (final name in names) {
+      await UITestHelpers.addPlayer(tester, name, config);
+    }
+
+    await UITestHelpers.startGame(tester, config);
+  }
+
   // ===== Gladiator Arena =====
 
   static Future<void> setupAndStartGladiatorArena(

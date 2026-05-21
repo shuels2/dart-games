@@ -127,9 +127,11 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
           child: _buildPlayerList(playerProvider, allPlayers, selectedPlayers),
         ),
         if (_isManualTeamMode) ...[
-          const SizedBox(height: 16),
-          Text(config.teamAssignmentLabel, style: config.teamAssignmentLabelStyle),
-          const SizedBox(height: 8),
+          SizedBox(height: config.teamBoxesTopSpacing),
+          if (config.showTeamAssignmentLabel) ...[
+            Text(config.teamAssignmentLabel, style: config.teamAssignmentLabelStyle),
+            const SizedBox(height: 8),
+          ],
           _buildTeamAssignmentBoxes(selectedPlayers),
         ],
       ],
@@ -164,9 +166,11 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
             ),
           ),
           if (_isManualTeamMode) ...[
-            const SizedBox(height: 16),
-            Text(config.teamAssignmentLabel, style: config.teamAssignmentLabelStyle),
-            const SizedBox(height: 8),
+            SizedBox(height: config.teamBoxesTopSpacing),
+            if (config.showTeamAssignmentLabel) ...[
+              Text(config.teamAssignmentLabel, style: config.teamAssignmentLabelStyle),
+              const SizedBox(height: 8),
+            ],
             _buildTeamAssignmentBoxes(selectedPlayers),
           ],
         ],
@@ -180,12 +184,12 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
     int minPlayers,
     bool isReady,
   ) {
-    return Row(
+    final headerRow = Row(
       children: [
         Text(config.headerText, style: config.headerTextStyle),
         const SizedBox(width: 8),
         Text(
-          '(${selectedPlayers.length}/${config.maxPlayers} selected)',
+          '(${selectedPlayers.length}/${widget.isTeamMode ? config.maxPlayers : (config.maxPlayersSoloMode ?? config.maxPlayers)} selected)',
           style: config.headerCountStyle.copyWith(
             color: isReady ? config.headerCountColorWhenReady : null,
           ),
@@ -208,6 +212,12 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
           ),
       ],
     );
+    // Optional per-game header inset (e.g. Tiki Golf aligns header with the
+    // option-box content above). Other games leave headerPadding null.
+    if (config.headerPadding != null) {
+      return Padding(padding: config.headerPadding!, child: headerRow);
+    }
+    return headerRow;
   }
 
   Widget _buildPlayerList(
@@ -283,7 +293,10 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
             if (isSelected) {
               playerProvider.deselectPlayer(player.id);
             } else {
-              playerProvider.selectPlayer(player, maxPlayers: config.maxPlayers);
+              final effectiveMax = widget.isTeamMode
+                  ? config.maxPlayers
+                  : (config.maxPlayersSoloMode ?? config.maxPlayers);
+              playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
             }
           },
         );
@@ -381,7 +394,10 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
               });
               _notifyTeamAssignmentsChanged();
             } else {
-              playerProvider.selectPlayer(player, maxPlayers: config.maxPlayers);
+              final effectiveMax = widget.isTeamMode
+                  ? config.maxPlayers
+                  : (config.maxPlayersSoloMode ?? config.maxPlayers);
+              playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
             }
           },
           borderRadius: BorderRadius.circular(8),
@@ -455,7 +471,7 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
               style: config.dialogTitleTextStyle,
             ),
             content: SizedBox(
-              width: 400,
+              width: config.dialogContentWidth ?? 400,
               child: Wrap(
                 spacing: 16,
                 runSpacing: 16,
@@ -626,36 +642,46 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
         .where((p) => _playerTeamAssignments[p.id] == teamId)
         .toList();
 
+    final badge = Container(
+      width: config.teamBoxSize,
+      height: config.teamBoxSize,
+      decoration: BoxDecoration(
+        color: config.teamBoxBackgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: teamPlayers.isNotEmpty
+              ? config.teamBoxActiveBorderColor
+              : config.teamBoxBorderColor,
+          width: 2,
+        ),
+      ),
+      child: teamIndex < widget.teamIconPaths.length
+          ? Image.asset(
+              widget.teamIconPaths[teamIndex],
+              fit: BoxFit.contain,
+            )
+          : null,
+    );
+
+    final countText = Text(
+      '${teamPlayers.length}',
+      style: teamPlayers.isNotEmpty
+          ? config.teamBoxActiveCountStyle
+          : config.teamBoxCountStyle,
+    );
+
+    // Horizontal layout (badge | spacer | count) for games that want a
+    // compact, vertically tighter team box (e.g. Tiki Golf). Vertical
+    // (default) stacks the count below the badge.
+    if (config.teamBoxLayout == Axis.horizontal) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [badge, const SizedBox(width: 8), countText],
+      );
+    }
     return Column(
-      children: [
-        Container(
-          width: config.teamBoxSize,
-          height: config.teamBoxSize,
-          decoration: BoxDecoration(
-            color: config.teamBoxBackgroundColor,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: teamPlayers.isNotEmpty
-                  ? config.teamBoxActiveBorderColor
-                  : config.teamBoxBorderColor,
-              width: 2,
-            ),
-          ),
-          child: teamIndex < widget.teamIconPaths.length
-              ? Image.asset(
-                  widget.teamIconPaths[teamIndex],
-                  fit: BoxFit.contain,
-                )
-              : null,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${teamPlayers.length}',
-          style: teamPlayers.isNotEmpty
-              ? config.teamBoxActiveCountStyle
-              : config.teamBoxCountStyle,
-        ),
-      ],
+      mainAxisSize: MainAxisSize.min,
+      children: [badge, const SizedBox(height: 4), countText],
     );
   }
 
@@ -669,8 +695,11 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
       final playerProvider = context.read<PlayerProvider>();
       await playerProvider.savePlayer(player);
 
-      if (playerProvider.selectedPlayers.length < config.maxPlayers) {
-        playerProvider.selectPlayer(player, maxPlayers: config.maxPlayers);
+      final effectiveMax = widget.isTeamMode
+          ? config.maxPlayers
+          : (config.maxPlayersSoloMode ?? config.maxPlayers);
+      if (playerProvider.selectedPlayers.length < effectiveMax) {
+        playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
       }
 
       widget.onPlayerAdded?.call(player);

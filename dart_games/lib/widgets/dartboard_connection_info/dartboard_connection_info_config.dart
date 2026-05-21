@@ -370,4 +370,36 @@ class DartboardConnectionInfoConfig {
       errorColor: const Color(0xFFC0392B), // Blood Red
     );
   }
+
+  /// Tiki Golf — Palm Green panel, Lagoon Blue accents for all dartboard
+  /// status indicators (border, icon, connected text) per user request so the
+  /// status reads the same color across all three Tiki Golf AppBars. Pink
+  /// is kept for disconnected/error so the user still gets a clear failure
+  /// signal that's visually distinct from the normal blue.
+  factory DartboardConnectionInfoConfig.tikiGolf() {
+    return DartboardConnectionInfoConfig(
+      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      backgroundOpacity: 0.95,
+      emulatorBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      hardwareBorderColor: const Color(0xFF00B4D8), // Lagoon Blue (was Tropical Orange)
+      nameTextStyle: GoogleFonts.boogaloo(
+        fontSize: 12,
+        color: const Color(0xFFFFF5E1), // Sand White
+      ),
+      statusTextStyle: GoogleFonts.nunito(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      emulatorLabelTextStyle: GoogleFonts.nunito(
+        fontSize: 10,
+        color: const Color(0xFF00B4D8), // Lagoon Blue
+      ),
+      emulatorIconColor: const Color(0xFF00B4D8), // Lagoon Blue
+      hardwareIconColor: const Color(0xFF00B4D8), // Lagoon Blue (was Tropical Orange)
+      connectedColor: const Color(0xFF00B4D8), // Lagoon Blue
+      connectingColor: const Color(0xFF00B4D8), // Lagoon Blue (was Tropical Orange)
+      disconnectedColor: const Color(0xFFFF69B4), // Hibiscus Pink
+      errorColor: const Color(0xFFFF69B4), // Hibiscus Pink
+    );
+  }
 }

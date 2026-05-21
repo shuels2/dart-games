@@ -86,6 +86,15 @@ class GameFilterRegistry {
       gameLength: GameLength.long,
       soloTeam: SoloTeamSupport.soloOrTeam,
     ),
+    GameMetadata(
+      gameId: 'tiki_golf',
+      displayName: 'Tiki Golf',
+      maxPlayers: MaxPlayersBucket.upToSixteen,
+      gameplayStyles: {GameplayStyle.race},
+      playerInteraction: PlayerInteraction.parallel,
+      gameLength: GameLength.medium,
+      soloTeam: SoloTeamSupport.soloOrTeam,
+    ),
   ];
 
   /// Every registered game's metadata, in registration order.

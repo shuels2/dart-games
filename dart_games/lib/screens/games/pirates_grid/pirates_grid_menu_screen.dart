@@ -61,16 +61,17 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
   void initState() {
     super.initState();
 
-    // Restore settings — prefer explicitly passed values (from results screen
-    // "NEW VOYAGE"), then fall back to provider's currentGame (re-entry via
-    // back button during a game), then keep defaults.
-    final lastGame = context.read<PiratesGridProvider>().currentGame;
-    _difficulty = widget.initialDifficulty ??
-        lastGame?.targetDifficulty ??
-        TargetDifficulty.easy;
-    _bestOf = widget.initialBestOf ?? lastGame?.bestOf ?? 1;
-    _stealMode = widget.initialStealMode ?? lastGame?.stealMode ?? false;
-    _speedPlay = widget.initialSpeedPlay ?? lastGame?.speedPlay ?? false;
+    // Settings hydration:
+    //   - widget.initialX is supplied ONLY via "New Voyage" from the
+    //     results screen (preserves the just-played settings).
+    //   - On any other entry (home-screen tap, back-button re-entry, etc.)
+    //     params are null and we fall back to defaults — NOT to the prior
+    //     game's settings. Per user: entering a game from the home menu
+    //     should always show defaults.
+    _difficulty = widget.initialDifficulty ?? TargetDifficulty.easy;
+    _bestOf = widget.initialBestOf ?? 1;
+    _stealMode = widget.initialStealMode ?? false;
+    _speedPlay = widget.initialSpeedPlay ?? false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Refresh player roster and clear cross-game selection leak

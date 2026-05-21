@@ -12,39 +12,44 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-      'Navigation: settings are preserved after navigating away and back',
+      'Navigation: leaving to home and re-entering resets settings to defaults',
       (WidgetTester tester) async {
+    // Policy: when a user leaves a game (back to home) and re-enters from
+    // the home screen, the menu rehydrates to defaults — only the
+    // "Change Settings" button on the victory screen passes the prior
+    // game's values through to the menu via the menu's `initialX` params.
+    // This test exercises the home-roundtrip path and verifies the reset.
     await UITestHelpers.resetServerState();
     await UITestHelpers.navigateToGameMenu(tester, config);
 
-    // Change settings: target=300, Shield ON, Speed Play ON
+    // Change settings away from defaults: target=300, Shield ON, Speed Play ON
     await SettingsHelpers.setGladiatorArenaTargetScore(tester, 300);
     await SettingsHelpers.toggleGladiatorArenaShieldRound(tester);
     await SettingsHelpers.toggleGladiatorArenaSpeedPlay(tester);
 
-    // Navigate to home and back
+    // Navigate to home
     final backButton = ElementFinders.getGladiatorArenaBackButton();
     await tester.tap(backButton);
     await PumpSequences.navigation(tester);
 
-    // Back to menu
+    // Re-enter from home (this is the path that should reset)
     await UITestHelpers.tapGameCard(tester, config);
     await PumpSequences.asyncDataLoad(tester);
 
-    // Verify settings preserved
+    // Verify settings reset to defaults (target=200, Shield OFF, Speed Play OFF)
     final sliderWidget = tester.widget<Slider>(
         ElementFinders.getGladiatorArenaTargetScoreSlider());
-    expect(sliderWidget.value.toInt(), 300,
-        reason: 'Target score should still be 300');
+    expect(sliderWidget.value.toInt(), 200,
+        reason: 'Target score should reset to default (200) after home roundtrip');
 
     final shieldSwitch = tester.widget<Switch>(
         ElementFinders.getGladiatorArenaShieldRoundSwitch());
-    expect(shieldSwitch.value, isTrue,
-        reason: 'Shield Round should still be ON');
+    expect(shieldSwitch.value, isFalse,
+        reason: 'Shield Round should reset to default (OFF) after home roundtrip');
 
     final speedSwitch = tester.widget<Switch>(
         ElementFinders.getGladiatorArenaSpeedPlaySwitch());
-    expect(speedSwitch.value, isTrue,
-        reason: 'Speed Play should still be ON');
+    expect(speedSwitch.value, isFalse,
+        reason: 'Speed Play should reset to default (OFF) after home roundtrip');
   });
 }

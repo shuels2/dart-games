@@ -600,4 +600,59 @@ class AddPlayerDialogConfig {
       errorTextColor: theme.colorScheme.error,
     );
   }
+
+  /// Tiki Golf theme — Palm Green bg, Lagoon Blue/Tropical Orange accents, Boogaloo/Nunito fonts
+  factory AddPlayerDialogConfig.tikiGolf() {
+    return AddPlayerDialogConfig(
+      backgroundColor: const Color(0xFF2D6A4F).withOpacity(0.97), // Palm Green
+      textColor: const Color(0xFFFFF5E1), // Sand White
+      titleStyle: GoogleFonts.boogaloo(
+        fontSize: 26,
+        color: const Color(0xFFFFF5E1), // Sand White
+        shadows: const [
+          Shadow(color: Color(0xFF00B4D8), offset: Offset(1, 1), blurRadius: 0),
+          Shadow(color: Color(0xFF00B4D8), offset: Offset(-1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF00B4D8), offset: Offset(1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF00B4D8), offset: Offset(-1, 1), blurRadius: 0),
+        ],
+      ),
+      inputLabelStyle: GoogleFonts.nunito(
+        fontSize: 16,
+        color: const Color(0xFFFFF5E1), // Sand White
+      ),
+      inputBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      inputFocusedBorderColor: const Color(0xFFFF8C42), // Tropical Orange
+      inputErrorBorderColor: const Color(0xFFFF69B4), // Hibiscus Pink
+      photoLabelStyle: GoogleFonts.nunito(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFFFFF5E1), // Sand White
+      ),
+      photoButtonColor: const Color(0xFF2D6A4F), // Palm Green
+      photoButtonForegroundColor: const Color(0xFFFFF5E1),
+      photoButtonBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      photoButtonTextStyle: GoogleFonts.nunito(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF5E1),
+      ),
+      photoButtonWidth: null,
+      addButtonColor: const Color(0xFF00B4D8), // Lagoon Blue
+      addButtonForegroundColor: const Color(0xFFFFF5E1), // Sand White
+      addButtonBorderColor: const Color(0xFF00B4D8),
+      addButtonTextStyle: GoogleFonts.boogaloo(
+        fontSize: 18,
+        color: const Color(0xFFFFF5E1),
+      ),
+      cancelButtonColor: const Color(0xFF8B5E3C), // Tiki Brown
+      cancelButtonForegroundColor: const Color(0xFFFFF5E1),
+      cancelButtonBorderColor: const Color(0xFF8B5E3C),
+      cancelButtonTextStyle: GoogleFonts.nunito(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFFFF5E1),
+      ),
+      errorTextColor: const Color(0xFFFF69B4), // Hibiscus Pink
+    );
+  }
 }

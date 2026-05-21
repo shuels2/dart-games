@@ -283,4 +283,40 @@ class SaveGameModalConfig {
       dontSaveButtonPadding: const EdgeInsets.only(top: 12, bottom: 16),
     );
   }
+
+  /// Tiki Golf — Palm Green bg, Lagoon Blue border, Boogaloo/Nunito fonts
+  factory SaveGameModalConfig.tikiGolf() {
+    return SaveGameModalConfig(
+      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      borderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      boxShadowColor: Colors.black,
+      boxShadowOpacity: 0.5,
+      iconColor: const Color(0xFFFF8C42), // Tropical Orange
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.boogaloo(
+        color: const Color(0xFFFFF5E1), // Sand White
+        fontSize: 28,
+        shadows: const [
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, 1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, 1), blurRadius: 0),
+        ],
+      ),
+      messageTextStyle: GoogleFonts.nunito(
+        color: const Color(0xFFFFF5E1), // Sand White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      saveButtonColor: const Color(0xFF00B4D8), // Lagoon Blue
+      saveButtonTextColor: const Color(0xFFFFF5E1), // Sand White
+      saveButtonTextStyle: GoogleFonts.boogaloo(fontSize: 22),
+      dontSaveButtonColor: Colors.transparent,
+      dontSaveButtonTextColor: const Color(0xFFFFF5E1),
+      dontSaveButtonTextStyle: GoogleFonts.nunito(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 }

@@ -9,6 +9,7 @@ import 'package:dart_games/providers/clockwork_quest_provider.dart';
 import 'package:dart_games/providers/lunar_lander_provider.dart';
 import 'package:dart_games/providers/pirates_grid_provider.dart';
 import 'package:dart_games/providers/gladiator_arena_provider.dart';
+import 'package:dart_games/providers/tiki_golf_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/models/player.dart';
@@ -721,5 +722,115 @@ class ProviderHelpers {
       WidgetTester tester, String playerId) {
     final provider = getGladiatorArenaProvider(tester);
     return provider.getCurrentTurnDartSegments(playerId);
+  }
+
+  // ==========================================================================
+  // TIKI GOLF HELPERS
+  // ==========================================================================
+
+  /// Get Tiki Golf provider
+  static TikiGolfProvider getTikiGolfProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<TikiGolfProvider>(context, listen: false);
+  }
+
+  /// Tiki Golf: Check for winner
+  static bool tikiGolfHasWinner(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Tiki Golf: Get current player ID
+  static String? getTikiGolfCurrentPlayerId(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.currentPlayerId;
+  }
+
+  /// Tiki Golf: Get current team ID (team mode)
+  static String? getTikiGolfCurrentTeamId(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.currentTeamId;
+  }
+
+  /// Tiki Golf: Check if game is active
+  static bool isTikiGolfGameActive(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Tiki Golf: Check if should prompt takeout (turn ended or winner)
+  static bool tikiGolfShouldPromptTakeout(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.shouldPromptTakeout;
+  }
+
+  /// Tiki Golf: Get current hole number (1-9)
+  static int getTikiGolfCurrentHole(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.currentGame?.currentHole ?? 1;
+  }
+
+  /// Tiki Golf: Get the randomly assigned target number for a given hole (1-indexed)
+  static int getTikiGolfHoleTarget(WidgetTester tester, int hole) {
+    final provider = getTikiGolfProvider(tester);
+    final targets = provider.currentGame?.holeTargets;
+    if (targets == null || hole < 1 || hole > 9) return 1;
+    return targets[hole - 1];
+  }
+
+  /// Tiki Golf: Get hole image path for a given hole (1-indexed)
+  static String? getTikiGolfHoleImagePath(WidgetTester tester, int hole) {
+    final provider = getTikiGolfProvider(tester);
+    final images = provider.currentGame?.holeImagePaths;
+    if (images == null || hole < 1 || hole > 9) return null;
+    return images[hole - 1];
+  }
+
+  /// Tiki Golf: Get player's score for a specific hole (1-indexed). Null = not played yet.
+  static int? getTikiGolfPlayerHoleScore(
+      WidgetTester tester, String playerId, int hole) {
+    final provider = getTikiGolfProvider(tester);
+    final scores = provider.currentGame?.playerHoleScores[playerId];
+    if (scores == null || hole < 1 || hole > 9) return null;
+    return scores[hole - 1];
+  }
+
+  /// Tiki Golf: Get player's running total strokes across all completed holes.
+  static int getTikiGolfPlayerTotal(WidgetTester tester, String playerId) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.currentGame?.totalForPlayer(playerId) ?? 0;
+  }
+
+  /// Tiki Golf: Check if a player has their mulligan available this game.
+  static bool isTikiGolfMulliganAvailable(
+      WidgetTester tester, String playerId) {
+    final provider = getTikiGolfProvider(tester);
+    final game = provider.currentGame;
+    if (game == null) return false;
+    return (game.playerMulligansUsed[playerId] ?? 0) == 0;
+  }
+
+  /// Tiki Golf: Get max strokes setting from current game.
+  static int getTikiGolfMaxStrokes(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.currentGame?.maxStrokes ?? 3;
+  }
+
+  /// Tiki Golf: Check if mulligan is enabled in the current game.
+  static bool isTikiGolfMulliganEnabled(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.currentGame?.mulliganEnabled ?? false;
+  }
+
+  /// Tiki Golf: Get winner player ID (solo mode).
+  static String? getTikiGolfWinnerId(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.currentGame?.winnerId;
+  }
+
+  /// Tiki Golf: Get winner team ID (team mode).
+  static String? getTikiGolfWinnerTeamId(WidgetTester tester) {
+    final provider = getTikiGolfProvider(tester);
+    return provider.currentGame?.winnerTeamId;
   }
 }

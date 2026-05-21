@@ -791,24 +791,33 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   - **Each screen's back arrow MUST use its own keys class** (`MenuKeys.backButton`, `GameKeys.backButton`) — never reuse another game's key class. Define `backButton` on each Keys class even if not currently referenced by tests.
 >   - **Menu and game screens MUST be identical in size, color, and hover-suppression** — a consistent, predictable back-arrow experience.
 >   - **Results screen MUST NOT have a back arrow** — set `automaticallyImplyLeading: false` on the AppBar and do NOT supply a `leading:` widget. Navigation off the results screen is exclusively via the 3 action buttons (Play Again, Change Settings, Back to Menu). Reference: Clockwork Quest, Reef Royale, Monster Mash, Target Tag, Carnival Derby — all 5 reference games omit the back arrow on results.
-> - **initState pattern (mandatory — Clockwork Quest reference):**
+> - **initState pattern (mandatory — Tiki Golf reference):**
 >   ```dart
 >   @override
 >   void initState() {
 >     super.initState();
 >
->     // 1. Restore settings from the most recent game (when reentering via
->     //    Results → CHANGE MISSION). The provider retains `currentGame` after
->     //    the game ends; CHANGE MISSION pushes a fresh menu without clearing
->     //    it. Reading those values here makes the menu remember the user's
->     //    last settings instead of resetting to defaults.
->     final lastGame = context.read<[GAME_NAME_PASCAL]Provider>().currentGame;
->     if (lastGame != null) {
->       // Read each spec-defined setting from lastGame and assign to local state
->       _settingA = lastGame.settingA;
->       _settingB = lastGame.settingB;
->       // ...
->     }
+>     // 1. Settings hydration. RULE: every option must hydrate as
+>     //        widget.initialX ?? <default>
+>     //    and NOTHING else. NO fallback to provider.currentGame.
+>     //    NO fallback to a provider.pendingMenuSettings layer.
+>     //
+>     //    - widget.initialX is supplied ONLY by the results screen's
+>     //      "Change Settings" navigation (the constructor wires the
+>     //      just-played values forward so the user doesn't have to re-pick).
+>     //    - Every OTHER entry (home-screen tap, back-from-game,
+>     //      back-from-results-without-Change-Settings) leaves
+>     //      widget.initialX null → defaults apply.
+>     //
+>     //    Past failure (audit-fixed in tiki-golf-dev): every game except
+>     //    Tiki Golf, Monster Mash, Reef Royale, Target Tag, Clockwork
+>     //    Quest, and Carnival Derby had a `lastGame = provider.currentGame`
+>     //    fallback here, which made the prior game's settings re-appear
+>     //    when the user tapped the game card on the home screen.
+>     _settingA = widget.initialSettingA ?? <default_A>;
+>     _settingB = widget.initialSettingB ?? <default_B>;
+>     // ... etc for every spec-defined setting
+>
 >
 >     // 2. Initial saved-games check — if any saves exist on first menu entry,
 >     //    AUTO-OPEN the resume modal. Subsequent re-checks (after games
@@ -1245,7 +1254,7 @@ After the sub-agent returns:
 > (v2) **Provider data hoisted to top of `build()`** — read the first ~20 lines of the build method and verify `context.watch<DartboardProvider>()`, `context.watch<[GAME]Provider>()`, and (when needed for outer-Stack modals) `context.watch<PlayerProvider>()` are called there. Variables computed inside a `Consumer<X>` builder are NOT visible to outer-Stack siblings; this fails compilation or silently strips data from the modals.
 > (v3) **Results screen uses `context.watch` (NOT `context.read`) for the game and player providers in `build()`** — read the first ~10 lines of the results screen's build method and verify the game-specific provider AND `PlayerProvider` are accessed via `context.watch` (or `Provider.of<X>(context)` which defaults to listen=true, or wrapped in a `Consumer`). If they use `context.read` AND the screen has any early-return path for `currentGame == null` / `winners.isEmpty` / `winnerId == null`, the screen will get stuck on the placeholder when the test/user reaches it before provider data finishes loading — Play Again / Change Settings / Back to Menu buttons never appear. Recurring miss: caught in Lunar Lander, Monster Mash, Reef Royale, Target Tag in past sessions. The `DartboardProvider` itself can stay on `context.watch` (it's already correct in all games).
 > (w) **DualPlayerListPanel has bounded height** on the menu screen — wrapped in `Expanded(...)` for wide layout AND `SizedBox(height: ...)` for narrow scrollable layout. Read the menu screen and verify both branches.
-> (x) **Menu screen initState restores settings from `provider.currentGame`** when it's not null (so CHANGE MISSION preserves them). Read `initState()` and verify the read.
+> (x) **Menu screen initState hydrates settings via `widget.initialX ?? <default>` ONLY — no fallback to `provider.currentGame` or any `provider.pendingMenuSettings`-style layer.** Read `initState()` and verify EVERY spec-defined setting matches this pattern. The `widget.initialX` constructor params are wired by the results screen's CHANGE SETTINGS navigation, which is the only path that should preserve the just-played values; every other entry (home-screen tap, back-from-game, etc.) must show defaults. Past failure: Tiki Golf + Gladiator Arena + Lunar Lander + Pirate's Grid all originally fell back to `provider.currentGame`, which meant tapping the game card on the home screen kept the prior session's settings instead of resetting them. Confirm there is no `final lastGame = ...currentGame` line in initState, no `??` chain reading from a provider, and no `provider.pendingX` fallback either.
 > (y) **Menu screen initState auto-shows resume modal when saved games exist on initial entry** — `setState(() { _hasSavedGames = hasSaved; _showResumeModal = hasSaved; })` inside the initial `addPostFrameCallback`.
 > (z) **Victory flow waits for DARTS REMOVED** — the game screen MUST NOT auto-navigate to results when `hasWinner` becomes true. Grep the game screen for `addPostFrameCallback(_handleGameWon)` and `simulateTakeoutFinished` inside `hasWinner` blocks — neither should exist. `_handleGameWon()` must ONLY be called from `_handleTakeoutFinished()`. The `shouldPromptTakeout` condition should be `dartsThrown >= 3 || provider.hasWinner` so RemoveDartsModal (and the Edit Score button inside it) is always accessible after a winning turn.
 > (aa) **Edit Score `initialSegments` maps thrown miss (score 0) to `'Miss'`, NOT `'-'`.** Read the menu/game screen's onEditScore handler and verify the segment building. The `'-'` value invalidates the dialog Save button; thrown misses must be `'Miss'`.
@@ -1797,6 +1806,105 @@ If FAIL:
 > **7a. Screenshot test** — `[GAME_NAME_SNAKE]_screenshot_test.dart`:
 > - Capture every state listed in the spec's Testing Plan visual checklist
 > - **CRITICAL:** must be runnable via `test_driver/screenshot_test.dart` as the driver
+> - **CRITICAL — keep each screenshot test file UNDER 600s (10 min) total runtime.** This is the ACTUAL failure mode that bit Tiki Golf — listed first because the three structural patterns below produce a visually identical symptom and you'll waste a day chasing them if you don't check duration first. The parallel UI worker (`run_ui_tests_parallel_worker.bat:253`) polls the per-test log for done patterns for up to 600 seconds, then kills Chrome. A still-running test at 600s → framework never emits "All tests passed" → log shows only "Debug service listening" → `SocketException` at `WebDriver.quit`. **Diagnostic check (do this FIRST):** look at `DURATION=` in `integration_test_output/parallel/<game>_results.txt`. If it's near 600s, the cause is total runtime, not test structure.
+>
+>   **Fix when over budget:** split the screenshot test across multiple files. Both filenames must contain `"screenshot"` so the worker auto-routes both through `test_driver/screenshot_test.dart` — each `flutter drive` invocation gets its own 600s budget. Suggested cut: `<game>_screenshot_test.dart` for menu + early gameplay scenarios, `<game>_screenshot_results_test.dart` for endgame + results-screen scenarios (the slowest captures, typically including full game completions). Apply the same inline-helper patterns to every file.
+>
+>   **Past failure (Tiki Golf timeout):** the full screenshot test ran 698 lines / 28 captures including 2 full 9-hole rapid-completion loops. Total runtime ~12 minutes — failed silently every parallel run. Three earlier "fix" rounds (consolidate `testWidgets`, remove `_helpers.dart`, inline helper bodies) all looked plausible because the symptom is identical — only the duration told us it was the timeout. Final fix: split into `tiki_golf_screenshot_test.dart` (PARTS 1-5) + `tiki_golf_screenshot_results_test.dart` (PARTS 6-10), each well under 600s.
+>
+> - **PATTERN — ONE `testWidgets` block per file.** All screenshot captures go inside a single continuous `testWidgets`. Every working game's screenshot test follows this. The `integration_test_driver_extended` protocol is documented as expecting one test per file (it uses a request/response loop). Originally written as "splitting causes SocketException at `WebDriver.quit` ~14s in under parallel `-d web-server`" — that attribution traces to Tiki Golf and turned out to be the runtime timeout, not multiple `testWidgets`. The pattern is still worth following (no upside to diverging from a known-working shape).
+>
+> - **PATTERN — Define ALL helpers AND helper BODIES inline in the screenshot test file.** Do NOT import a sibling `_helpers.dart`. Do NOT delegate to `shared/dart_throw_helpers.dart` or `shared/game_setup_helpers.dart` — talk to `package:dart_games/services/mock_scolia_api_service.dart` directly and write out the `mockApi.simulateDartThrow(...)` / `mockApi.simulateTakeoutFinished()` calls inline. The per-test `SettingsHelpers` / `UITestHelpers` / `PumpSequences` / `ProviderHelpers` shared files ARE fine. The "cache hazard" attribution from earlier docs (`cea7027` / `4d1377e`) was based on the same Tiki Golf failure, which turned out to be the runtime timeout — so we have no isolated test case proving these specific imports cause hangs. The pattern is still worth following — every working game's screenshot test does it. The template below mirrors `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`.
+>
+>   **Template** (mirror `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`):
+>   ```dart
+>   import 'package:flutter/material.dart';
+>   import 'package:flutter_test/flutter_test.dart';
+>   import 'package:integration_test/integration_test.dart';
+>   import 'package:dart_games/services/mock_scolia_api_service.dart';
+>   import 'package:dart_games/constants/test_keys.dart';
+>
+>   import '../../shared/ui_test_helpers.dart';
+>   import '../../shared/pump_sequences.dart';
+>   import '../../shared/settings_helpers.dart';
+>   import '../../shared/game_ui_config.dart';
+>   import '../../shared/provider_helpers.dart';
+>   import '../../shared/element_finders.dart';
+>   // NO _helpers.dart, NO dart_throw_helpers.dart, NO game_setup_helpers.dart
+>
+>   // Test-local helpers with FULL BODIES inlined:
+>   MockScoliaApiService? getMockApi(WidgetTester tester) {
+>     final dartboardProvider = ProviderHelpers.getDartboardProvider(tester);
+>     return dartboardProvider.apiService;
+>   }
+>
+>   Future<void> throwDartViaMock(WidgetTester tester, int n,
+>       {String multiplier = 'single'}) async {
+>     final mockApi = getMockApi(tester);
+>     if (mockApi != null) {
+>       mockApi.simulateDartThrow(
+>         score: n * (multiplier == 'double' ? 2 : multiplier == 'triple' ? 3 : 1),
+>         multiplier: multiplier, playerName: 'Player', baseScore: n,
+>         widgetX: 125.0, widgetY: 125.0, widgetSize: 250.0,
+>       );
+>       await tester.pump();
+>       await tester.pump(const Duration(milliseconds: 500));
+>       await tester.pump(); await tester.pump(); await tester.pump();
+>     }
+>   }
+>
+>   Future<void> screenshot(IntegrationTestWidgetsFlutterBinding binding,
+>       WidgetTester tester, String name) async {
+>     await tester.pump(const Duration(seconds: 2));
+>     await tester.pump(); await tester.pump(); await tester.pump();
+>     print('SCREENSHOT: Taking screenshot: $name');
+>     await binding.takeScreenshot(name);
+>   }
+>
+>   // ... any other one-off helpers (simulateTakeout, setupAndStartGame,
+>   // throwAllMissesToSplash, etc.) — write each body inline here too.
+>
+>   void main() {
+>     final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+>     final config = GameUIConfig.[GAME_NAME_CAMEL]();
+>
+>     group('[GAME_NAME] - Screenshot Capture', () {
+>       setUp(() async {
+>         await UITestHelpers.resetServerState();
+>       });
+>
+>       // Single continuous flow capturing all spec §12C visual states.
+>       testWidgets('Full screenshot flow', (WidgetTester tester) async {
+>         // === PART 1: MENU SCREEN STATES ===
+>         await UITestHelpers.navigateToGameMenu(tester, config);
+>         await screenshot(binding, tester, '01_menu_...');
+>         // ... more menu captures, settings toggles, etc.
+>
+>         // === PART 2: GAME SCREEN STATES ===
+>         // For scenarios needing fresh state (different players / option
+>         // values that conflict with PART 1), call `resetServerState()`
+>         // first so addPlayer doesn't hit "player already exists".
+>         await UITestHelpers.resetServerState();
+>         // Inline the setup-and-start sequence (do NOT call out to
+>         // GameSetupHelpers — see CRITICAL note above):
+>         await UITestHelpers.navigateToGameMenu(tester, config);
+>         await UITestHelpers.addPlayer(tester, '...', config);
+>         // ... more addPlayer calls + any SettingsHelpers.X toggles
+>         await UITestHelpers.startGame(tester, config);
+>         await screenshot(binding, tester, '05_game_...');
+>         // ... more captures
+>
+>         // ... etc — every part inside this one testWidgets
+>       });
+>     });
+>   }
+>   ```
+>
+>   **Reference implementations** (all confirmed to pass in parallel mode):
+>   `integration_test/gladiator_arena/visual_validation/gladiator_arena_screenshot_test.dart`,
+>   `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`,
+>   `integration_test/tiki_golf/visual_validation/tiki_golf_screenshot_test.dart`.
+>
 > - **CRITICAL:** do NOT use `pumpAndSettle()` — splash screen `CircularProgressIndicator` prevents settling. Use manual `pump()` sequences from `pump_sequences.dart`.
 > - **CRITICAL state-reset pattern between scenes:** when transitioning between screen scenarios within a single test (e.g., from "default game" to "Hard Landing ON game"), use the PROGRAMMATIC reset pattern instead of fragile back-from-game user-flow navigation:
 >   ```dart
@@ -3041,9 +3149,9 @@ class [Game]MenuScreen extends StatefulWidget {
 }
 ```
 
-**Menu `initState`** — prefer widget params, then `provider.currentGame`, then defaults:
+**Menu `initState`** — hydrate ONLY from widget params, then defaults. NO `provider.currentGame` fallback (entry from the home screen must show defaults; only `widget.initialX` from the results-screen CHANGE SETTINGS path should preserve the prior values):
 ```dart
-_difficulty = widget.initialDifficulty ?? lastGame?.targetDifficulty ?? TargetDifficulty.easy;
+_difficulty = widget.initialDifficulty ?? TargetDifficulty.easy;
 ```
 After `clearSelection()` in `addPostFrameCallback`, re-select previous players:
 ```dart
@@ -3625,6 +3733,410 @@ grep -c 'taskkill /F /IM chromedriver' run_ui_tests_parallel.bat  # must be > 0 
 grep -c 'pubspec.yaml' run_ui_tests_parallel.bat         # must be > 0 (existence check)
 grep '_WORKTREE_BASE=' run_ui_tests_parallel.bat | grep -c '_SCRIPT_DIR'  # must be > 0 (absolute path)
 ```
+
+---
+
+### 44. PlayerListPanel widget choice — extract in Phase 0, brief every Phase 2 sub-agent
+Tiki Golf was the first team-game build under this skill. Its initial Stage A wireframe was authored against `DualPlayerListPanel` conventions (two side-by-side AVAILABLE / SELECTED panes) because the Phase 4 prompt template heavily documents DualPlayerListPanel layout rules. The spec actually called for `TeamPlayerListPanel` (a single scrolling list — Target Tag pattern). Reviewer caught it; corrective sub-agent had to redo the panel.
+
+**Two widgets, two layouts. Cite which one the spec uses BEFORE wireframing:**
+- **`TeamPlayerListPanel`** (Target Tag, Tiki Golf, any future team-mode game) — SINGLE scrolling player list with header row (count chip + ADD PLAYER button), per-row selected/unselected accent borders. Selected players sort to the top. In Manual team mode, each selected row gets a trailing team-crest icon and the team-assignment boxes appear BELOW the list.
+- **`DualPlayerListPanel`** (Carnival Derby, Reef Royale, Clockwork Quest, Lunar Lander, Monster Mash, Pirate's Grid) — two side-by-side AVAILABLE / SELECTED panes with players moved between them. Specific recipe: `availableContainerMargin: EdgeInsets.zero`, `selectedContainerMargin: EdgeInsets.zero`, `listGap: 4`. The recipe is documented in detail in the Phase 4 prompt template's DualPlayerListPanel section.
+
+**Phase 0 Step 8 must extract the widget choice from spec Section 1 ("Player List Pattern" row in the Overview table)** and propagate it as a sub-agent prompt placeholder `[PLAYER_LIST_WIDGET]` so the Phase 2 Stage A prompt knows which layout to author.
+
+**The DualPlayerListPanel-specific recipe (`availableContainerMargin: zero, selectedContainerMargin: zero, listGap: 4`) DOES NOT apply to TeamPlayerListPanel.** Do not cite or apply it when the spec uses TeamPlayerListPanel.
+
+**How to apply:** when extracting the player-panel widget choice in Phase 0, save it to memory (or `temp_wireframes/<game>/asset_paths.md` carry-forward decisions) so every later Phase 2 / Phase 4 sub-agent gets a literal reference to the correct widget name in its prompt's "Read first" section. AR-4 audit (pp) gains an extra grep: `grep -c 'TeamPlayerListPanel\|DualPlayerListPanel' lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart` — exactly one of those must appear, matching the spec.
+
+---
+
+### 45. TeamPlayerListPanel is single-column regardless of player count
+At 16 selected players (Team mode max), Tiki Golf's initial wireframe sub-agent assumed the list was "too long" for one column and switched to a 2-column CSS grid. Target Tag uses a single scrolling column even at its own max player count; the underlying widget renders one column.
+
+**Rule:** the TeamPlayerListPanel's scrollable list is ALWAYS a single vertical column with `overflow-y: auto` for long lists. Do NOT switch to a 2-column grid at high player counts. Match the underlying widget's `ListView.builder` shape exactly (`team_player_list_panel.dart:243-292`).
+
+**How to apply:** Phase 2 Stage D Team variants. When authoring `menu_team_random_<N>p.html` for N ≥ 12, the player list is still `display: block` (or `display: flex; flex-direction: column`) inside a scrollable container. AR-2 review adds a check: `grep -c 'grid-template-columns' temp_wireframes/<game>/menu_team_*.html` — only the settings-grid (`1fr 1fr`) should match; any grid on the player list is a violation.
+
+---
+
+### 46. Team-mode menu: team-assignment boxes stack BELOW the player list
+Initial Tiki Golf wireframe placed the team-assignment boxes alongside the player list in a horizontal `flex-direction: row` panel body. Target Tag stacks them vertically — player list on top, then an "Assign Teams" caption, then the team boxes below. Reference: `lib/widgets/player_list_panel/team_player_list_panel.dart:109-136` (`_buildFixedHeightLayout`) which uses a `Column` with the team boxes as the LAST children after the player list.
+
+**Rule:** in Team + Manual mode wireframes, the player-panel body is `flex-direction: column`. Inside (top → bottom): (a) header row with count + ADD PLAYER button; (b) scrollable player list with `max-height: ~160-180px` so it doesn't push team boxes off-screen; (c) "Assign Teams" caption (Boogaloo 14pt with 4-corner text-shadow); (d) the row of 4 team-assignment boxes as `display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex-shrink: 0`. The panel body uses `overflow: visible` so children aren't clipped.
+
+**How to apply:** Phase 2 Stage D Team+Manual prompt template includes this layout explicitly. AR-2 grep: in any `menu_team_manual_*p.html`, `grep -c '"player-panel-body"' file | column-flex` must match. AR-4 grep on the Phase 4 menu screen: `grep -c 'crossAxisAlignment.*start\|Column(' lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart` near the player-panel block must show a single-column structure.
+
+---
+
+### 47. Team-assignment box content: ONLY crest + player count (no team name, no player-name chips)
+Initial Tiki Golf team boxes contained crest + team name + a list of player-name chips. Reviewer wanted: just the crest (focal point) + a count caption ("N players"). Player NAMES live on the player tiles as trailing team-crest icons — that's the Target Tag-style visual mapping between players and teams.
+
+**Rule:** each team-assignment box in Team+Manual mode contains ONLY:
+- Team crest (~56–64 px circular)
+- Player count caption: "N players" (Boogaloo 14pt Sand White with 4-corner text-shadow)
+
+DO NOT render the team name text inside the box. DO NOT render player-name chips inside the box. When a player is selected AND assigned to a team in Manual mode, the team's crest renders as a SMALL trailing icon on the player tile in the main player list — that's the only place where the player-to-team mapping is visible.
+
+Box CSS pattern:
+```css
+.team-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 6px;
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 8px;
+}
+.team-crest-large { width: 56px; height: 56px; border-radius: 50%; overflow: hidden; }
+.team-player-count { font-family: var(--font-display); font-size: 14pt; color: var(--sand-white); text-shadow: <4-corner outline>; }
+```
+
+**How to apply:** Phase 2 Stage D Team+Manual prompt template specifies this layout. Phase 4 menu-screen sub-agent renders the actual widget the same way; the TeamPlayerListPanel widget's `_buildTeamAssignmentBoxes` (`team_player_list_panel.dart:613`) already follows this convention internally. AR-2 review: in any `menu_team_manual_*p.html`, `grep -c '"team-name\|"team-player-chip' file` must be 0 in the HTML (CSS definitions kept as `display: none` for backward compatibility are fine).
+
+---
+
+### 48. Mode-dependent maxPlayers cap — solve in Phase 0, surface to Phase 4
+Tiki Golf specs `maxPlayers: 16` for the `TeamPlayerListPanelConfig.tikiGolf()` but Solo mode caps at 4 and Team mode caps at 16. The default widget reads a single `config.maxPlayers` for the count chip ("N/16 selected") which is wrong in Solo. This is a recurring spec/widget mismatch for any game whose Solo and Team modes have different caps.
+
+**Rule:** when the spec has different player-count caps per mode (Solo vs Team), surface it in the Phase 0 build plan as a Phase 4 implementation decision. Two valid implementation paths:
+- **Preferred:** add `maxPlayersSoloMode: <N>` to `TeamPlayerListPanelConfig`; the widget reads the mode-appropriate value for the header count chip + `selectPlayer(maxPlayers:)` call.
+- **Alternative:** menu screen overrides the cap via a screen-level intermediary that gates `selectPlayer` based on the current mode flag.
+
+Wireframes must show the mode-appropriate cap in the count chip: `N/4 selected` in Solo wireframes, `N/16 selected` in Team wireframes. The asset_paths.md manifest captures the implementation decision so Phase 4 picks it up.
+
+**How to apply:** Phase 0 Step 8 spec-extraction adds: "Player-count caps per mode — extract from Overview / spec Section 1 / Section 7. If Solo and Team caps differ, record both AND record the implementation-path decision (config-knob preferred) in the asset_paths.md manifest." AR-3 gains: verify the count-chip rendering path reads the mode-appropriate cap in the menu screen unit tests.
+
+---
+
+### 49. Team gameplay screen: transparent Teams panel; logo + score only; no team names
+Tiki Golf spec Section 10B described per-team boxes with team-color bg + 2px Lagoon Blue border for the active team. Reviewer wanted simpler: no boxes at all (transparent), no team names; each team shows just the crest + the running team score below it. Active team distinguished only by a left-edge accent + a faint bg tint.
+
+**Rule:** the left-side Teams panel on the game screen (Team mode only):
+- 160px wide, transparent background, no border on the panel container
+- "TEAMS" header at top (optional — many specs omit this)
+- One row per configured team, each row shows:
+  - Team crest at 56×56 (slightly larger because it's the only visual identifier)
+  - Team's running ± par score below the crest (Boogaloo 18pt Bold; Lagoon Blue under par / Sand White even / `#FF8C42` over par)
+- Active team: `border-left: 3px solid var(--lagoon-blue)` + `background: rgba(0,180,216,0.10)` (slight tint). Inactive teams: `opacity: 0.60`, no other decoration.
+- NO team names anywhere. NO per-team boxes/borders/bg fills.
+
+Reference: `temp_wireframes/tiki_golf/game_team_early_8p.html` is the canonical example.
+
+**How to apply:** Phase 2 Stage D Team gameplay prompt template includes this spec. Phase 4 menu-screen sub-agent implements the panel the same way. AR-4 audit: read the game screen and verify the Teams panel renders zero team-name text widgets (only crest + score), zero per-team Container backgrounds, only the active-team's left-edge accent.
+
+---
+
+### 50. Team gameplay scorecard: ONLY the current team's players (Solo-style)
+Tiki Golf spec Section 10B described a multi-team scorecard with team primary rows + collapsed teammate sub-rows. Reviewer simplified: the scorecard shows ONLY the 1–4 players on the CURRENT team using the SAME layout as Solo mode. Team-level totals live in the Teams panel; the scorecard is per-player for the active team.
+
+**Rule:** in Team mode, the game-screen scorecard renders one row per player on the currently-throwing team (max 4 rows). Headers and per-cell styling are IDENTICAL to Solo mode (H1–H9 + Total, current player's row highlighted with Lagoon Blue tint + left-edge accent + Lagoon Blue name). DO NOT render team primary rows. DO NOT render teammate sub-rows for other teams. DO NOT render best-ball-contributing dot indicators.
+
+Above the scorecard, add a small caption naming the active team (e.g., "Sharks scorecard" Boogaloo 14pt Sand White with 4-corner text-shadow) so the user knows which team's data is shown.
+
+**How to apply:** Phase 2 Stage D Team gameplay prompt template specifies this exact pattern. Phase 4 game-screen sub-agent builds the scorecard with a `currentTeamPlayerIds` selector and renders one row per id. AR-4 audit: `grep -c 'team-primary-row\|team-sub-row' lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart` must be 0 (no nested team/sub-row rendering); the scorecard structure matches Solo.
+
+---
+
+### 51. Team results screen: 2-column team-blocks + internal-scroll scorecards
+Tiki Golf spec Section 10C described a single wide scorecard. Reviewer wanted: each team gets its own mini-scorecard block, blocks arranged in 2 columns (4 teams → 2+2, 3 teams → 2+1, 2 teams → 1+1, 1 team → centered). Plus the scorecards area must scroll internally so the action buttons stay visible at the bottom of the 1366×768 viewport.
+
+**Rule:** team-mode results screen replaces the single wide scorecard with a 2-column team-blocks layout. Each team-block contains:
+- Team crest 64×64 at the top
+- Team name caption below (Boogaloo 16pt Sand White; Lagoon Blue for the winning team)
+- Mini-scorecard table (headers + per-player rows + a best-ball total footer row)
+- Winning team's block has a `border: 2px solid var(--lagoon-blue)` and Lagoon Blue team total
+
+**Distribution rule:** left-to-right, 2 teams per column when possible.
+- 4 teams → col1: Teams 1+2; col2: Teams 3+4
+- 3 teams → col1: Teams 1+2; col2: Team 3
+- 2 teams → 1 per column
+- 1 team → single-column centered
+
+**Scroll rule:** wrap the team-blocks columns in a `.scorecards-scroll` container with `flex: 1; min-height: 0; overflow-y: auto`. The action buttons sit OUTSIDE this container (last child of `.main-area`) with `flex-shrink: 0` so they stay pinned at the bottom of the canvas. Winner card stays at the top with `flex-shrink: 0`.
+
+**Heading text:** "GOLDEN TIKI CHAMPIONS!" (plural — team mode) vs "GOLDEN TIKI CHAMPION!" (singular — solo). The Dart screen branches on `gameMode` to pick the right text. Pluralize equivalents for non-golf games (CHAMPS / WINNERS / etc.).
+
+**How to apply:** Phase 2 Stage D Team results prompt template includes the 2-column distribution rule + the scrollable container. Phase 4 results-screen sub-agent renders the same structure. AR-4 audit: `grep -c '"scorecards-scroll\|overflow-y' lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_results_screen.dart` ≥ 1 in team-mode branch; action buttons live in a Row that is a sibling of (not nested inside) the scroll container.
+
+---
+
+### 52. Random N-of-M team-crest selection — wireframe varies, Phase 4 implements
+When a spec calls for "N team crests picked at random from a pool of M" (M > N), this is a runtime randomization akin to Reef Royale's creature shuffle.
+
+**Rule for wireframes (Phase 2 Stage D):** pick N specific crests for the wireframe to demonstrate one valid distribution. Don't always use the first N from the spec — vary across mode-variant files so a reviewer sees that any random subset is valid. Include a code comment near the team-crest rendering: `<!-- In production, N of the M available crests are randomly picked per game; this wireframe shows one such pick. -->`. Capture the random-pick rule for Phase 4 in `temp_wireframes/<game>/asset_paths.md`.
+
+**Rule for Phase 4 implementation:** the provider's game-construction (model factory) calls `crests..shuffle(Random())..take(N)` and stores the picked list on the game model (e.g., `List<String> teamCrestPaths` length N, frozen after construction). Resume restores the same list from saved-game JSON. Mirror Reef Royale's `lib/models/reef_royale_game.dart:206-236` creature-assignment pattern.
+
+**How to apply:** Phase 2 Stage D prompt template includes the random-pick wireframe convention. Phase 3 model+provider prompt cites the shuffle pattern. Non-UI test for the model: "two consecutive constructions produce different `teamCrestPaths` ordering across N≥20 fresh games (statistical sanity)" — same approach as Reef Royale Random Reefs test #38.
+
+---
+
+### 53. Random team-distribution table — full-table coverage tests are mandatory
+Tiki Golf's spec Section 5 defines a deterministic `randomDistribution(N)` table mapping selected-player count → team count + sizes, with special-case rules (N=8 → [4,4] instead of [2,2,2,2]; N≥12 → T=4). Naive heuristics ("minimize team count" or "minimize team size") do NOT reproduce the table.
+
+**Rule:** any game whose Team-mode spec defines a deterministic team-count + sizes table from player count MUST:
+1. Implement the function as `randomDistribution(int N)` (or equivalent) in the provider returning `{int teamCount, List<int> sizes}`
+2. Author a full-table non-UI test that iterates every N in the spec's table and asserts the returned (team count, sorted-sizes multiset) matches the spec row exactly
+3. Author a UI test (in `integration_test/<game>/team_setup_test.dart` or equivalent) that for every N in the table: selects N players, taps TEE OFF in Random mode, then asserts the resulting team count + sorted sizes match the spec
+4. Hard-code every special-case row explicitly in the algorithm (don't rely on a single heuristic to produce the table)
+
+**How to apply:** Phase 3 prompt template adds a mandatory "Random Distribution Coverage" test group. AR-3 audit reads the spec table, counts rows, verifies the non-UI test file iterates all rows. AR-6 audit verifies the UI test file iterates all rows.
+
+---
+
+### 54. Shared TeamAssignmentDialog already exists — wire keys, don't reinvent
+The Target Tag implementation of `TeamAssignmentDialog` at `lib/widgets/player_list_panel/team_assignment_dialog.dart` is already shared infrastructure for Team+Manual mode. The TeamPlayerListPanel widget calls into it directly via `_showTeamSelectionDialog`. Any new Team-mode game reuses this dialog wholesale — there's no game-specific TeamAssignmentDialog config factory required.
+
+**Rule:** in Phase 4 menu screen, wire the dialog's keys through `TeamPlayerListPanel` parameters:
+- `teamDialogContainerKey: [GAME_NAME_PASCAL]MenuKeys.teamDialogContainer`
+- `teamDialogDropdownKey: (id) => [GAME_NAME_PASCAL]MenuKeys.teamDialogDropdown(id)`
+- `teamDialogCancelKey: [GAME_NAME_PASCAL]MenuKeys.teamDialogCancel`
+
+Add these three keys to `[GAME_NAME_PASCAL]MenuKeys` in `lib/constants/test_keys.dart`. Do NOT author a new dialog. Do NOT create a `TeamAssignmentDialogConfig.[gameName]()` factory method.
+
+**How to apply:** Phase 4 prompt template under "Create config factory methods" already lists every shared widget config method — explicitly exclude `TeamAssignmentDialogConfig` from the list for Team-mode games (only the keys need to be added). AR-4 audit: verify the keys are wired correctly when `_isManualTeamMode == true`.
+
+---
+
+### 55. Invisible-placeholder pattern for "neighbor previews" of the current item
+When a UI shows "neighbors of the current item" (e.g., Tiki Golf's previous/next hole previews on the gameplay screen, or any future game that previews adjacent pieces/positions/players), use invisible-but-width-preserving placeholders for slots without valid neighbors. This keeps the central item stationary as the user progresses through the list, instead of shifting horizontally when previews appear/disappear at the edges.
+
+**Rule:** for any "current item ± N neighbors" UI:
+```css
+.item-preview { display: flex; align-items: center; flex-shrink: 0; }
+.item-preview.outer { width: 140px; }
+.item-preview.inner { width: 182px; }   /* +30% from outer per Tiki Golf precedent */
+.item-preview.empty {
+  visibility: hidden;                    /* preserves layout width but renders nothing */
+}
+```
+
+Empty placeholders match the natural slot width (outer vs inner) so the row's flex distribution doesn't shift. Use `align-items: center` for vertical-center alignment of neighbors against the (larger) central item. Use `justify-content: space-between` for screen-spanning distribution.
+
+**How to apply:** Phase 2 Stage B / Phase 4 game-screen prompt templates cite this pattern when the spec includes neighbor previews. AR-4 audit: read the game screen and verify empty-slot Container widths match valid-slot Container widths so the central item stays centered.
+
+---
+
+### 56. Menu option boxes: label-left + control-right on one row, vertically centered
+Past games and the Tiki Golf v1 build laid out each settings-grid option box as a vertical `Column[Label, SizedBox(8), ControlRow]` with `minHeight: 110`. The user consistently asked for this to be redone as a one-row layout: label on the left, control on the right, vertically centered inside the box. The minHeight constraint also reads as too tall.
+
+**Rule:** every option box in the menu screen settings grid renders as `Row(MainAxisAlignment.spaceBetween, crossAxisAlignment.center, [Label, Control])`. The outer box is a `Container(padding: 12h/8v)` with the box's background/border. Wrap the Row in `Center(child: ...)` so the content is vertically centered inside the box. DO NOT set a fixed `minHeight` — let the box size to its content. All boxes in a row will naturally share the same height via `IntrinsicHeight(Row(Expanded(box)...))` on the parent.
+
+**Canonical pattern:**
+```dart
+Widget _buildSettingsBox({required Widget child}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(/*bg + border + radius*/),
+    child: Center(child: child),  // vertically center label + control
+  );
+}
+// Each box content:
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  crossAxisAlignment: CrossAxisAlignment.center,
+  children: [Text('Label', style: labelStyle), controlWidget],
+)
+```
+
+For boxes with a conditional secondary control (e.g., team-count dropdown that only appears in a sub-mode), prefer to omit the secondary entirely (Rule §67) rather than nest it in the box.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template — add this as the canonical option-box layout. AR-4 audit greps: each `_buildXxxBox` method must contain `MainAxisAlignment.spaceBetween` AND `crossAxisAlignment: CrossAxisAlignment.center` somewhere in the Row, AND must NOT contain `minHeight:` in the SettingsBox wrapper.
+
+---
+
+### 57. Menu option label and control text should be within 2pt of each other
+Tiki Golf v1 had labels at 14pt and toggle text at 14pt; after the polish iteration the user wanted labels at 22pt and toggle/dropdown text at 20pt — a 2pt hierarchy difference. Old versions with 6-8pt size differences between label and control read as inconsistent.
+
+**Rule:** in the settings grid, option labels (e.g., "Game Mode", "Max Strokes", "Mulligan") and their controls' visible text (toggle segment text "SOLO"/"TEAM", dropdown selected value, toggle on/off labels) should be within 2pt of each other. Labels can be the slightly larger of the two for hierarchy.
+
+**Recommended sizes for menu screens using display fonts (Boogaloo/Bangers/Rye):**
+- Option label: 22pt
+- Toggle segment text + dropdown text: 20pt
+- Toggle on/off labels (OFF / ON): 20pt
+- Inline subtitle (e.g., "1 do-over per player" in parens): 14pt Nunito (Rule §66)
+
+For games using more neutral display fonts, use the same 22/20 split and tune visually.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template defaults to label 22 / control 20. AR-4 audit: every menu-screen option-box file should have label fontSize and control fontSize within 2pt of each other.
+
+---
+
+### 58. How-To-Play / left panel: top-align with the first option row (don't stretch full-height)
+By default a `Row` with `crossAxisAlignment: stretch` (the default for many layouts) makes both columns fill the parent's height. The how-to-play panel on the left then stretches to canvas height, while the right panel's first option row starts at `y = padding-top`. The visible top of the green container ends up ABOVE the visible top of the first option box — visually jarring.
+
+**Rule:** the menu's main-content Row uses `crossAxisAlignment: CrossAxisAlignment.start`, so the left panel doesn't auto-stretch. Wrap the left panel in `Padding(EdgeInsets.only(top: <right-panel-padding-top>, left: <small-left-inset>))` so the green container's top edge aligns with the first option box's top edge.
+
+**Canonical pattern (Tiki Golf reference):**
+```dart
+Row(
+  crossAxisAlignment: CrossAxisAlignment.start, // top-align both columns
+  children: [
+    SizedBox(
+      width: constraints.maxWidth * 0.437,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 16, left: 16),
+        child: _buildLeftPanel(),
+      ),
+    ),
+    Expanded(child: _buildRightPanel(...)),
+  ],
+);
+// _buildLeftPanel is a Container with EdgeInsets.all(16) padding so its
+// content has the same equal top + bottom inset.
+```
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template specifies this. AR-4 audit: confirm `crossAxisAlignment: start` on the menu's main-content Row AND a Padding wrapper on the left panel sized to match the right panel's padding-top.
+
+---
+
+### 59. Horizontal gap between left and right panels — 8px sweet spot (16px is too generous)
+Tiki Golf v1 used `EdgeInsets.all(16)` on the right panel, which combined with the left panel's right edge gave a visible 16px gap between the two panels. The user asked for that gap to be halved.
+
+**Rule:** the right panel uses asymmetric padding `EdgeInsets.fromLTRB(8, 16, 16, 16)` (8px on the left side facing the left panel; 16px on the other three sides). This halves the inter-panel gap while preserving the visible right and bottom margins.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template specifies this for the right panel container. AR-4 audit: read the right panel's outer Container `padding` and confirm `fromLTRB(8, 16, 16, 16)` (or equivalent asymmetric with `left < right`).
+
+---
+
+### 60. Right-panel section gaps — 8px between sections (16px reads too airy)
+Tiki Golf v1 had `SizedBox(height: 16)` between settings-grid ↔ player-panel and between player-panel ↔ TEE-OFF button. The user wanted these halved.
+
+**Rule:** the vertical gaps between major sections inside the right panel (settings grid, player panel, primary button) default to **8px**. Use 16px only when there's a deliberate visual-break reason (e.g., separating ungrouped content categories).
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template specifies `SizedBox(height: 8)` between sections. AR-4 audit: grep `SizedBox(height: 16)` in the menu screen — should appear only inside the left panel (between How-To-Play headers and body) if at all.
+
+---
+
+### 61. TeamPlayerListPanel header indent: use the `headerPadding` config, NEVER wrap the panel in Padding
+The `TeamPlayerListPanel` widget returns `Expanded(child: Column(...))` when `useFixedHeight: false`. `Expanded` requires a **direct** Flex (Row/Column) parent — any intermediate widget (Padding, Container, Transform, Align) between Expanded and its Flex parent triggers `Incorrect use of ParentDataWidget` at runtime. This bit the Tiki Golf build twice during the polish iteration.
+
+**Rule:** to indent the player panel's HEADER (the "Available Players" label + count chip + ADD PLAYER button) relative to the panel's list rows, use the shared widget's `headerPadding: EdgeInsetsGeometry?` config field. The widget wraps `_buildHeader`'s Row in a Padding only when the field is set. **DO NOT wrap `TeamPlayerListPanel` itself in any non-Flex widget** (Padding, Container with margin, Align, Transform, etc.) — it will break at runtime when `useFixedHeight: false`.
+
+If you need to indent the entire panel (rows AND header), you have two options:
+- Set `useFixedHeight: true` (returns Column, not Expanded — Padding wrapping then works) AND override the panel's `soloListHeight` / `teamListHeight` so the content fits in the available vertical space.
+- OR change the menu screen's outer right-panel padding so the entire right-panel content shifts inward.
+
+**Canonical pattern (Tiki Golf reference):**
+```dart
+// In <Game>PlayerListPanelConfig factory:
+headerPadding: const EdgeInsets.symmetric(horizontal: 12),
+
+// In the menu screen — DO NOT do this:
+//   Padding(child: TeamPlayerListPanel(useFixedHeight: false, ...))  ← runtime crash
+// Just pass the panel directly:
+TeamPlayerListPanel(config: <Game>PlayerListPanelConfig.<game>(), useFixedHeight: scrollable, ...)
+```
+
+**How to apply:** AR-4 audit greps `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart` for `Padding` wrapping `TeamPlayerListPanel(`. Any such match is a runtime-crash risk — replace with `headerPadding` (header-only indent) or `useFixedHeight: true` (whole-panel indent via outer wrapper).
+
+---
+
+### 62. Suppress the "Team Assignment" label above team boxes when it's redundant
+By default the shared `TeamPlayerListPanel` renders the `config.teamAssignmentLabel` text ("Assign Teams" or similar) above the team-assignment boxes in Manual mode. When the team-badge images themselves clearly communicate "these are the teams", the label is redundant and just adds vertical space.
+
+**Rule:** the shared config has `showTeamAssignmentLabel: bool` (default true). Games where the team badges are self-explanatory should set it to `false`. When false, both the label AND its surrounding 16px/8px SizedBox spacers are skipped.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template includes the option. AR-4 audit: for any new game with team mode, surface to the user during build review: "should the 'Team Assignment' label above the team boxes be hidden?" — set `showTeamAssignmentLabel: false` if the user says yes.
+
+---
+
+### 63. Allow team-box chrome to be transparent for a clean badges-only look
+The shared `TeamPlayerListPanel` wraps each team crest in a `Container` with `teamBoxBackgroundColor` + `teamBoxBorderColor` + `teamBoxActiveBorderColor`. These add visual chrome around each badge. For games where the crest images are detailed enough to stand on their own (e.g., circular crests with rope borders, full-bleed images), the Container chrome competes with the artwork.
+
+**Rule:** set all three team-box color config fields to `Colors.transparent` to render the badges with no container chrome. The active-team visual cue can come from other places (a left-edge accent on the active team's parent row, a glow on the badge image via `BoxShadow` or `ImageFiltered`, or a 2px translucent border via a different config) — see Rule §49 for the canonical Teams-panel transparent treatment.
+
+**Canonical pattern (Tiki Golf reference):**
+```dart
+teamBoxBackgroundColor: Colors.transparent,
+teamBoxBorderColor: Colors.transparent,
+teamBoxActiveBorderColor: Colors.transparent,
+teamBoxSize: 84.0,   // can size larger when no chrome competes
+```
+
+**How to apply:** Phase 4 prompt template suggests this for games where the crests are visually self-sufficient. AR-4 audit: when reviewing the team-mode setup screen, the user should be asked "do the team-box backgrounds and borders feel necessary?" — if no, set all three to transparent.
+
+---
+
+### 64. Heavy-descender display fonts (Boogaloo, Bangers, etc.) need line-height tightening on home-card labels
+Boogaloo, Bangers, and similar handwritten/casual display fonts have heavier descenders than the more uniform fonts used by other games (Fredoka, Luckiest Guy, Cinzel, etc.). On the home-screen game card, the label's baseline sits visually lower than peer-game labels — the descender pushes the rendered text down within its line box, even when the SizedBox spacer above is shrunk.
+
+**Rule:** for games using Boogaloo, Bangers, Pirata One, or other heavy-descender display fonts on the home-screen card, apply BOTH of these tweaks to align the label baseline with peer games:
+1. Reduce the SizedBox between the icon and the label (default 8px → 3px for Boogaloo, 6px for Pirata One)
+2. Tighten the TextStyle line-height with `height: 0.6` (or similar < 1.0) to compress the line box and shift the rendered glyphs up
+
+**Canonical pattern (Tiki Golf reference):**
+```dart
+// In the SizedBox conditional in home_screen.dart:
+height: title == 'Tiki Golf' ? 3 : <peer-game-default>,
+// In the TextStyle conditional:
+GoogleFonts.boogaloo(
+  fontSize: <size>,
+  fontWeight: FontWeight.bold,
+  color: ...,
+  height: 0.6,   // tightens the line-box so text sits higher
+),
+```
+
+**How to apply:** Phase 4 home-card sub-agent prompt template includes this tweak for any game whose Style section uses a heavy-descender font. AR-4 audit: open the home screen at full resolution and verify the game's label baseline visually aligns with at least 2 peer-game labels (or the user reports it does).
+
+---
+
+### 65. AppBar title size for branded display fonts — 28-34pt (default 20pt is too small)
+Default Material AppBar `titleStyle` is ~20pt. For games that use a branded display font (Boogaloo, Bangers, Cinzel, Rye, Pirata One) for the AppBar title, 20pt reads as cramped and undersells the game's visual identity. The user consistently asked Tiki Golf's titles bumped from 20pt → 28pt → 34pt over multiple iterations.
+
+**Rule:** for the AppBar title on EVERY new game's three screens (menu / game / results), use **28-34pt** when the spec uses a branded display font. Pick a size by font weight:
+- Heavier display fonts (Bangers, Pirata One, Rye): 28pt
+- Medium-weight display fonts (Boogaloo, Cinzel, Cinzel Decorative): 32-34pt
+- Light/condensed display fonts (Fredoka, Orbitron): 24-28pt
+
+**How to apply:** Phase 4 prompt template for menu/game/results screen authors specifies the AppBar title at 28-34pt by default. AR-4 audit: read the three AppBar titles and verify fontSize ≥ 24 when the font is a Google Fonts display font.
+
+---
+
+### 66. Inline parenthetical subtitle (RichText) instead of below-row subtitle
+When an option box needs a one-line clarifying subtitle (e.g., "Mulligan" with "1 do-over per player"), the user prefers the subtitle inline next to the label as a smaller parenthetical, rather than on a separate row below the option's primary row. The inline pattern keeps the box height matching the other options' boxes.
+
+**Rule:** for option boxes that need a clarifying subtitle, use `RichText` with two TextSpans:
+- Primary label at the full option-label size (e.g., 22pt Boogaloo)
+- Parenthetical subtitle at a smaller body-font size (e.g., 14pt Nunito with 0.75 opacity)
+
+**Canonical pattern (Tiki Golf Mulligan box reference):**
+```dart
+Flexible(
+  child: RichText(
+    overflow: TextOverflow.visible,
+    text: TextSpan(children: [
+      TextSpan(
+        text: 'Mulligan ',
+        style: GoogleFonts.boogaloo(fontSize: 22, color: ..., shadows: ...),
+      ),
+      TextSpan(
+        text: '(1 do-over per player)',
+        style: GoogleFonts.nunito(fontSize: 14, color: ...withOpacity(0.75)),
+      ),
+    ]),
+  ),
+),
+```
+
+DO NOT use a separate Column[PrimaryRow, SizedBox, SubtitleText] — that makes the box taller than its peers in the same settings row.
+
+**How to apply:** Phase 4 menu-screen sub-agent prompt template suggests this pattern when a spec includes per-option clarifying text. AR-4 audit: any option box with both a primary label and a clarifying subtitle should use RichText inline, not Column + Text below.
+
+---
+
+### 67. Inline secondary controls — consider removing them entirely if a sensible default exists
+Tiki Golf v1 had a "Teams: [4 ▾]" inline dropdown inside the Game Mode option box, shown only in Team + Manual mode. The user removed it entirely, accepting a default of 4 teams. The control was visually noisy and added little value when the user can always manage team membership by which slots they fill.
+
+**Rule:** for inline secondary controls that appear conditionally (only in a sub-mode) AND have a sensible default value AND can be worked around via other UI (e.g., the user picks team assignments which implicitly determines team count), surface to the user during build review: "is this secondary control needed, or should we default it and remove the UI?" Often the answer is "remove" — fewer controls = cleaner menu.
+
+When removing: KEEP the underlying state variable in the screen (it's still used downstream by the provider/game) and DEFAULT it to a sensible value. Just remove the UI that exposed it.
+
+**How to apply:** Phase 4 prompt template, when authoring an option box that has a conditional secondary control inside it, instructs the sub-agent to flag the secondary control as a removal candidate. AR-4 audit: when the user is reviewing the menu screen visually, ask if any conditional secondary controls feel necessary; remove them if the answer is no.
 
 ---
 

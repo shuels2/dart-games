@@ -155,17 +155,16 @@ int getSelectedPlayerCount(WidgetTester tester) {
 }
 
 void verifyDartDisplay(WidgetTester tester, String d1, String d2, String d3) {
-  expect(find.text('D1'), findsOneWidget);
+  // D1/D2/D3 position labels were removed from the dart display by request —
+  // only verify the score values now.
   if (d1 != '-') {
-    expect(find.text(d1), findsWidgets, reason: 'Expected D1 score to show "$d1"');
+    expect(find.text(d1), findsWidgets, reason: 'Expected dart 1 score to show "$d1"');
   }
-  expect(find.text('D2'), findsOneWidget);
   if (d2 != '-') {
-    expect(find.text(d2), findsWidgets, reason: 'Expected D2 score to show "$d2"');
+    expect(find.text(d2), findsWidgets, reason: 'Expected dart 2 score to show "$d2"');
   }
-  expect(find.text('D3'), findsOneWidget);
   if (d3 != '-') {
-    expect(find.text(d3), findsWidgets, reason: 'Expected D3 score to show "$d3"');
+    expect(find.text(d3), findsWidgets, reason: 'Expected dart 3 score to show "$d3"');
   }
 }
 

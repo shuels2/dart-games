@@ -207,6 +207,28 @@ class GameUIConfig {
     );
   }
 
+  /// Tiki Golf game configuration
+  factory GameUIConfig.tikiGolf() {
+    return GameUIConfig._(
+      gameName: 'Tiki Golf',
+      getGameCard: ElementFinders.getTikiGolfCard,
+      getAddPlayerButton: ElementFinders.getTikiGolfAddPlayerButton,
+      getPlayerTile: ElementFinders.getTikiGolfPlayerTile,
+      getStartButton: ElementFinders.getTikiGolfStartButton,
+      getSkipTurnButton: ElementFinders.getTikiGolfSkipTurnButton,
+      getEditScoreButton: ElementFinders.getTikiGolfEditScoreButton,
+      getDartButton: (multiplier, number) =>
+          find.text('Not used in Tiki Golf directly'),
+      getBullseyeButton: () => find.text('Not used in Tiki Golf directly'),
+      getOuterBullButton: () => find.text('Not used in Tiki Golf directly'),
+      getMissButton: () => find.text('Not used in Tiki Golf directly'),
+      getPlayAgainButton: ElementFinders.getTikiGolfPlayAgainButton,
+      getChangeSettingsButton: ElementFinders.getTikiGolfChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getTikiGolfBackToMenuButton,
+      getGameBackButton: ElementFinders.getTikiGolfGameBackButton,
+    );
+  }
+
   /// Clockwork Quest game configuration
   factory GameUIConfig.clockworkQuest() {
     return GameUIConfig._(

@@ -82,30 +82,17 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
   void initState() {
     super.initState();
 
-    // Restore settings — preference order:
-    //   1. Explicitly passed values (CHANGE RULES from results screen)
-    //   2. Provider's currentGame (re-entry via game-screen back button)
-    //   3. Provider's pendingMenuSettings (re-entry via menu back button, no game)
-    //   4. Defaults
-    final provider = context.read<GladiatorArenaProvider>();
-    final lastGame = provider.currentGame;
-    _targetScore = (widget.initialTargetScore ??
-            lastGame?.targetScore ??
-            provider.pendingTargetScore ??
-            200)
-        .toDouble();
-    _doubleFinishEnabled = widget.initialDoubleFinishEnabled ??
-        lastGame?.doubleFinishEnabled ??
-        provider.pendingDoubleFinishEnabled ??
-        true;
-    _shieldRoundEnabled = widget.initialShieldRoundEnabled ??
-        lastGame?.shieldRoundEnabled ??
-        provider.pendingShieldRoundEnabled ??
-        false;
-    _speedPlayEnabled = widget.initialSpeedPlayEnabled ??
-        lastGame?.speedPlayEnabled ??
-        provider.pendingSpeedPlayEnabled ??
-        false;
+    // Settings hydration:
+    //   - widget.initialX is supplied ONLY via "Change Rules" from the
+    //     results screen (preserves the just-played settings).
+    //   - On any other entry (home-screen tap, back-button re-entry, etc.)
+    //     the constructor params are null and we fall back to defaults —
+    //     NOT to the prior game or stored pending settings. Per user:
+    //     entering a game from the home menu should always show defaults.
+    _targetScore = (widget.initialTargetScore ?? 200).toDouble();
+    _doubleFinishEnabled = widget.initialDoubleFinishEnabled ?? true;
+    _shieldRoundEnabled = widget.initialShieldRoundEnabled ?? false;
+    _speedPlayEnabled = widget.initialSpeedPlayEnabled ?? false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Refresh roster and wipe inherited selection (Rule 41).

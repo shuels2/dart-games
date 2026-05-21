@@ -234,4 +234,31 @@ class DartboardPausedModalConfig {
       ),
     );
   }
+
+  /// Tiki Golf — Palm Green bg, Hibiscus Pink border (signals disconnection)
+  factory DartboardPausedModalConfig.tikiGolf() {
+    return DartboardPausedModalConfig(
+      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      borderColor: const Color(0xFFFF69B4), // Hibiscus Pink
+      boxShadowColor: Colors.black,
+      boxShadowOpacity: 0.5,
+      iconColor: const Color(0xFFFF69B4), // Hibiscus Pink
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.boogaloo(
+        color: const Color(0xFFFF69B4), // Hibiscus Pink
+        fontSize: 28,
+        shadows: const [
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, 1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, 1), blurRadius: 0),
+        ],
+      ),
+      messageTextStyle: GoogleFonts.nunito(
+        color: const Color(0xFFFFF5E1), // Sand White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 }

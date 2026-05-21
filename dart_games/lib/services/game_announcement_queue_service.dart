@@ -9,9 +9,17 @@ import 'game_announcement_models.dart';
 
 /// Global announcement queue service used by all games
 ///
-/// This service manages a priority-based queue of announcements with optional
-/// sound effects. All games (Target Tag, Carnival Derby, etc.) use this service
-/// to ensure announcements don't overlap and play in the correct order.
+/// This service manages a FIFO queue of announcements with optional sound
+/// effects. All games use this service to ensure announcements don't overlap
+/// and play in the order they were queued. Each announcement runs to its full
+/// estimated duration (max of TTS estimate + sound effect length) before the
+/// next iteration starts, so short SFX never get cut off.
+///
+/// (Historical note: the queue used to sort by AudioPriority and preempt
+/// lower-priority items mid-flight. That existed to handle announcement
+/// stacking but the game screens now prevent redundant queues at the call
+/// site, so strict FIFO is the desired behavior — `priority` is retained on
+/// `QueuedAnnouncement` only for backwards compatibility and debug logging.)
 ///
 /// Usage:
 /// ```dart
@@ -110,17 +118,9 @@ class GameAnnouncementQueueService {
         }
         if (_disposed) break;
 
-        // Sort queue by priority (high to low), then by timestamp (FIFO)
-        final sortedQueue = _queue.toList()
-          ..sort((a, b) {
-            final priorityCompare = b.priority.value.compareTo(a.priority.value);
-            if (priorityCompare != 0) return priorityCompare;
-            return a.queuedAt.compareTo(b.queuedAt);
-          });
-
-        // Get highest priority item
-        final announcement = sortedQueue.first;
-        _queue.remove(announcement);
+        // Strict FIFO — pop the oldest-queued announcement. Priority is no
+        // longer used for ordering (see class doc).
+        final announcement = _queue.removeFirst();
 
         // Speak the announcement and play sound effect simultaneously
         _isSpeaking = true;
@@ -162,11 +162,27 @@ class GameAnnouncementQueueService {
 
         if (_disposed) break;
 
-        // Wait for speech to complete with generous buffer
-        // Speech takes approximately 500ms per word + extra time for pauses
+        // Wait long enough for BOTH the TTS estimate AND the sound effect
+        // to finish, so the next iteration doesn't interrupt either one.
+        // - TTS: approx 500ms/word + 1500ms buffer
+        // - Sound effect: explicit (endSeconds - startSeconds) when set,
+        //   otherwise a 5-second cap for "play entire file" SFX. Most
+        //   game SFX are short clips well under 5s; longer ones would
+        //   still get cut, but that's an acceptable tradeoff vs. blocking
+        //   the queue indefinitely.
         final wordCount = announcement.text.split(' ').length;
-        final estimatedDuration = Duration(milliseconds: wordCount * 500 + 1500);
-        await Future.delayed(estimatedDuration);
+        final ttsMs = wordCount * 500 + 1500;
+        int sfxMs = 0;
+        if (announcement.soundEffect != null) {
+          final sfx = announcement.soundEffect!;
+          if (sfx.endSeconds != null) {
+            sfxMs = ((sfx.endSeconds! - sfx.startSeconds) * 1000).toInt();
+          } else {
+            sfxMs = 5000;
+          }
+        }
+        final waitMs = ttsMs > sfxMs ? ttsMs : sfxMs;
+        await Future.delayed(Duration(milliseconds: waitMs));
 
         _isSpeaking = false;
       }

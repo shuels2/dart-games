@@ -14,9 +14,11 @@ import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/pirates_grid_announcement_helper.dart';
 import '../../../services/play_to_complete/pirates_grid_strategy.dart';
+import '../../../services/play_to_tie/pirates_grid_strategy.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
 import '../../../widgets/dartboard_emulator/play_to_complete_runner.dart';
+import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
@@ -47,6 +49,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       DartboardEmulatorController();
 
   PlayToCompleteRunner? _playToCompleteRunner;
+  PlayToTieRunner? _playToTieRunner;
   bool _gameCompleted = false;
   bool _showSaveModal = false;
   PiratesGridAnnouncementHelper? _audioQueue;
@@ -163,6 +166,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   void dispose() {
     _audioQueue?.dispose();
     _playToCompleteRunner?.dispose();
+    _playToTieRunner?.dispose();
     _dartboardSubscription?.cancel();
     _dartboardEmulatorController.dispose();
     _speedPlayTimer?.cancel();
@@ -190,8 +194,28 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     _playToCompleteRunner!.run();
   }
 
+  void _onPlayToTie() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+    _speedPlayTimer?.cancel();
+
+    _playToTieRunner = PlayToTieRunner(
+      strategy: PiratesGridTieStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToTieRunner!.run();
+  }
+
   void _onCancelAutoPlay() {
     _playToCompleteRunner?.cancel();
+    _playToTieRunner?.cancel();
     _dartboardEmulatorController.setAutoPlaying(false);
     _dartboardEmulatorController.show();
 
@@ -761,6 +785,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
               playToCompleteConfig:
                   _mockApi != null ? PlayToCompleteButtonConfig.piratesGrid() : null,
+              // Play to Stalemate — Pirate's Grid can always produce a
+              // cat's-game draw (fixed cell-claim sequence that ends
+              // with no 3-in-a-row).
+              onPlayToTie: _mockApi != null ? _onPlayToTie : null,
+              playToTieConfig:
+                  _mockApi != null ? PlayToTieButtonConfig.piratesGrid() : null,
             ),
           ),
           // 5. DartboardEmulatorFAB — Positioned bottom-right 16,16

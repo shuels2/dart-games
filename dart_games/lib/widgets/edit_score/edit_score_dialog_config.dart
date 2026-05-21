@@ -474,4 +474,61 @@ class EditScoreDialogConfig {
       ),
     );
   }
+
+  /// Tiki Golf theme — Palm Green bg, Lagoon Blue/Tropical Orange accents, Boogaloo/Nunito fonts.
+  ///
+  /// Note: the Edit Score dialog for Tiki Golf shows up to `maxStrokes` dart
+  /// dropdowns (3–6) dynamically — not hardcoded 3. The dialog widget must read
+  /// `maxStrokes` from the game state and call this config with the appropriate
+  /// count. The config itself is style-only; the dynamic column count is wired
+  /// in the game screen (Pass 2).
+  factory EditScoreDialogConfig.tikiGolf() {
+    return EditScoreDialogConfig(
+      backgroundColor: const Color(0xFF2D6A4F).withOpacity(0.97), // Palm Green
+      borderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      borderWidth: 4,
+      titleStyle: GoogleFonts.boogaloo(
+        fontSize: 24,
+        color: const Color(0xFFFFF5E1), // Sand White
+        shadows: const [
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, 1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, -1), blurRadius: 0),
+          Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, 1), blurRadius: 0),
+        ],
+      ),
+      dartLabelStyle: GoogleFonts.nunito(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF5E1), // Sand White
+        letterSpacing: 0.5,
+      ),
+      scoreBoxBackgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      scoreBoxDefaultBorderColor: const Color(0xFF00B4D8).withOpacity(0.5), // Lagoon Blue
+      scoreTextStyle: GoogleFonts.nunito(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF5E1), // Sand White
+      ),
+      buttonUnselectedColor: const Color(0xFF3A7B5E), // slightly lighter Palm Green
+      buttonUnselectedForeground: const Color(0xFFFFF5E1),
+      buttonSelectedColor: const Color(0xFF00B4D8), // Lagoon Blue
+      buttonSelectedForeground: const Color(0xFFFFF5E1),
+      buttonTextStyle: GoogleFonts.nunito(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      cancelButtonColor: const Color(0xFF8B5E3C).withOpacity(0.85), // Tiki Brown
+      cancelButtonForeground: const Color(0xFFFFF5E1),
+      cancelButtonTextStyle: GoogleFonts.nunito(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+      submitButtonColor: const Color(0xFFFF8C42).withOpacity(0.90), // Tropical Orange
+      submitButtonForeground: const Color(0xFFFFF5E1),
+      submitButtonTextStyle: GoogleFonts.boogaloo(
+        fontSize: 18,
+      ),
+    );
+  }
 }

@@ -87,6 +87,21 @@
 9. Save & Resume: 16 tests
 10. Visual Validation: 7 tests (1 screenshot test + 6 programmatic)
 
+### Tiki Golf (110 files)
+1. Visual Validation: 1 file (27 screenshot captures covering menu, game, results across Solo/Team variants + mulligan state + Max Darts variants)
+2. Menu and Settings: 11 files
+3. Add Player: 6 files
+4. Navigation: 4 files (mandatory pack — menu back, game back settings persist, change settings back to home, change settings preserves settings)
+5. Gameplay: 13 files
+6. Pause Modal: 3 files (20 testWidgets total)
+7. Results Screen: 5 files
+8. Save & Resume: 16 files (1 testWidget each — includes holeTargets + holeImagePaths preservation)
+9. Edit Score: 5 files
+10. Play to Complete: 5 files
+11. Randomization: 4 files (Tiki Golf-specific — hole targets unique, targets vary between games, images shuffled, hole name follows image)
+12. Team Setup: 10 files (Tiki Golf-specific — Solo/Team caps, random distribution table including N=8 and N=12 special cases, manual assignment, team crests)
+13. Team Mode Gameplay: 10 files (Tiki Golf-specific — grouped turn order, best-ball scoring, team panel display, per-player mulligan in team mode)
+
 **Known infrastructure flake:** `save_resume/resumed_state_correct_test.dart` — test assertions all pass ("All tests passed!" in log) but `flutter drive` crashes during chromedriver teardown with `SocketException: errno = 1225`. Both retry attempts hit the same deterministic teardown crash. Effective pass rate: 45/46. This is a `flutter drive` infrastructure bug, not a Lunar Lander code defect.
 
 ## Mandatory Results Screen Coverage
@@ -226,6 +241,93 @@ Use with: `flutter drive --driver=test_driver/screenshot_test.dart`
 | No | `test_driver/integration_test.dart` |
 | Yes | `test_driver/screenshot_test.dart` |
 
+### Screenshot Test File Structure — ONE `testWidgets`, Helper Bodies Fully Inlined
+
+**Three patterns every working game's screenshot test follows:**
+
+1. A screenshot test file contains exactly **one** `testWidgets` block, with all screenshot captures inside it.
+2. Helpers are **defined inline** in the screenshot test file. No `import '_helpers.dart' as h;` (or any sibling file).
+3. Helper *bodies* are also inlined — no imports of `shared/dart_throw_helpers.dart` or `shared/game_setup_helpers.dart`. Talk directly to `package:dart_games/services/mock_scolia_api_service.dart` and to the per-test `SettingsHelpers` / `UITestHelpers` / `PumpSequences` / `ProviderHelpers` shared files.
+
+**Why are these "patterns" and not "rules"?** They were originally documented as preventing a `SocketException` at `WebDriver.quit` (a "cache hazard" / "DWDS disconnect" claim). That attribution was based on the Tiki Golf screenshot test failure — but we later applied all three structural fixes to Tiki Golf and the failure persisted unchanged. The actual cause turned out to be the 600s runtime-budget rule (next section), not any of these three patterns. So we don't have an isolated test case proving any pattern, on its own, causes that SocketException.
+
+That said, the patterns are still worth following:
+
+- `integration_test_driver_extended` genuinely uses a request/response loop and is documented as expecting one test per file. Multiple `testWidgets` in a screenshot test under `-d web-server` is at minimum protocol-fragile.
+- Every working game's screenshot test follows all three. Diverging from a known-working shape with no upside isn't worth it.
+
+**Diagnostic ordering when a screenshot test fails with `SocketException` at `WebDriver.quit` and no test prints in the log:**
+
+1. **Check `DURATION=` in `integration_test_output/parallel/<game>_results.txt` first.** If it's near 600s, the cause is total runtime — see next section. (This is the Tiki Golf case.)
+2. Only if duration is well under 600s: look at the three patterns above, and check whether `test_driver/integration_test.dart` (basic driver, no `onScreenshot`) is accidentally being used instead of `test_driver/screenshot_test.dart`.
+
+**Pattern (use this template):**
+
+```dart
+// Imports: package + shared/ ONLY. NO `import '_helpers.dart' as h;`
+import '../../shared/ui_test_helpers.dart';
+import '../../shared/game_setup_helpers.dart';
+import '../../shared/dart_throw_helpers.dart';
+// ... other shared/ imports as needed ...
+
+// Inline test-local helpers here (not in a sibling file):
+Future<void> _screenshot(IntegrationTestWidgetsFlutterBinding binding,
+    WidgetTester tester, String name) async { /* ... */ }
+Future<void> _throwDartViaMock(WidgetTester tester, int n, {String multiplier = 'single'}) =>
+    DartThrowHelpers.throwDartViaMock(tester, n, multiplier: multiplier);
+// ... etc
+
+void main() {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final config = GameUIConfig.<game>();
+
+  group('<Game> - Screenshot Capture', () {
+    setUp(() async {
+      await UITestHelpers.resetServerState();
+    });
+
+    // Single continuous flow capturing all spec §12C visual states.
+    testWidgets('Full screenshot flow', (WidgetTester tester) async {
+      // === PART 1: MENU SCREEN STATES ===
+      await UITestHelpers.navigateToGameMenu(tester, config);
+      await _screenshot(binding, tester, '01_menu_...');
+      // ... more captures ...
+
+      // === PART 2: GAME SCREEN STATES ===
+      // For scenarios needing different players/settings, call
+      // `await UITestHelpers.resetServerState();` between parts to
+      // avoid "player already exists" errors.
+      await UITestHelpers.resetServerState();
+      await GameSetupHelpers.setupAndStart<Game>(tester, config, playerNames: [...]);
+      await _screenshot(binding, tester, '05_game_...');
+      // ... more captures ...
+
+      // ... etc — concatenate every part inside this one testWidgets
+    });
+  });
+}
+```
+
+**Reference implementations:** `integration_test/gladiator_arena/visual_validation/gladiator_arena_screenshot_test.dart`, `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`, `integration_test/tiki_golf/visual_validation/tiki_golf_screenshot_test.dart` — all use ONE `testWidgets`, inline helpers, no sibling-file imports.
+
+### Screenshot Test File Runtime Budget — keep each file under 600s (10 min)
+
+The parallel UI worker (`run_ui_tests_parallel_worker.bat`, line 253) polls each test's log every 3 seconds for one of `'All tests passed' | 'Some tests failed' | 'Application finished' | 'Failed to compile application'`, for **up to 600 seconds**. If the test is still executing at 600s, the worker kills Chrome — the framework never gets to emit "All tests passed", so the log shows only "Debug service listening" followed by a `SocketException` at `WebDriver.quit` (which is just teardown failing against a dead Chrome session). The on-disk signature is **identical** to the multi-`testWidgets` / helper-import failure modes documented above.
+
+**Diagnostic check.** If a screenshot test fails with that SocketException signature, look at the worker's `DURATION=` field in `integration_test_output/parallel/<game>_results.txt`. If it's near 600s, total runtime is the root cause — not a structural bug in the test. Don't go down the deep-research path of bisecting `testWidgets` blocks and helper imports until you've ruled out the timeout.
+
+**Fix.** Split the screenshot test across multiple files. Both files must contain `"screenshot"` in their filename (the worker auto-routes `findstr /i "screenshot"` matches to `test_driver/screenshot_test.dart`). Each file then runs as its own `flutter drive` invocation with its own fresh 600s budget. Same inline-helper rules apply to every file.
+
+**Suggested split for a 9-hole / round-based game with 10+ scenarios:**
+```
+<game>_screenshot_test.dart         — menu states + early/mid gameplay
+<game>_screenshot_results_test.dart — endgame + results screens (the heaviest scenarios)
+```
+
+The full-game-completion scenarios (rapid 9-hole loops, full match plays) are usually the slowest captures and the natural cut point.
+
+**Past failure (Tiki Golf):** the full screenshot test was 698 lines / 28 captures including 2 full 9-hole rapid-completion loops. Total runtime ~12 minutes — well over the 600s budget. The test was failing identically to a structural bug for three rounds of fixes (consolidating `testWidgets`, removing `_helpers.dart`, inlining helper bodies) before we realized the timeout was the actual cause. Fix: split into `tiki_golf_screenshot_test.dart` (PARTS 1-5, ~7 min) + `tiki_golf_screenshot_results_test.dart` (PARTS 6-10, ~5 min). Both passed under their own 600s budgets.
+
 ## Running UI Tests in Parallel
 
 The parallel runner executes all 5 game categories simultaneously, reducing wall-clock time from ~507 minutes to ~143 minutes (~3.5x speedup). Each game gets its own ChromeDriver and backend server instance. All Chrome sessions run **fully headless** — no interactive browser windows are launched.
@@ -261,8 +363,9 @@ Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_paralle
 | lunar_lander | 9006 | 4449 |
 | pirates_grid | 9007 | 4450 |
 | gladiator_arena | 9008 | 4451 |
-| home_screen | 9009 | 4452 |
-| pause_modal | 9010 | 4453 |
+| tiki_golf | 9009 | 4452 |
+| home_screen | 9010 | 4453 |
+| pause_modal | 9011 | 4454 |
 
 Directories the runners intentionally skip: `_smoke/` (manual self-tests for the failure-screenshot helper, run via direct `flutter drive` invocation) and `shared/` (helper files, no tests).
 

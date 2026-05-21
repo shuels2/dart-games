@@ -2,7 +2,7 @@
 
 ## Overview
 
-1991 non-UI tests (1801 Flutter + 190 server) validate models, providers, services, widgets, game logic, API client, and server routes.
+2250 non-UI tests (2060 Flutter + 190 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
 **Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
@@ -36,7 +36,7 @@
 - ApiLogEntry: 17 tests (creation, formatting, duration tracking)
 - SavedGameMetadata: 20 tests (creation, JSON serialization, progress info)
 
-### Model Serialization Tests (103 tests)
+### Model Serialization Tests (118 tests)
 
 **HorseRaceGame (10 tests)** - `test/models/horse_race_game_serialization_test.dart`
 **TargetTagGame (13 tests)** - `test/models/target_tag_game_serialization_test.dart`
@@ -51,6 +51,16 @@
 
 **PiratesGridGame (24 tests)** - `test/models/pirates_grid_serialization_test.dart`
 **GladiatorArenaGame (17 tests)** - `test/models/gladiator_arena_serialization_test.dart`
+**TikiGolfGame (15 tests)** - `test/models/tiki_golf_serialization_test.dart`
+- toJson/fromJson roundtrip for all TikiGolfGame fields
+- holeTargets List (length 9, distinct ints) serialized and deserialized correctly
+- holeImagePaths List (length 9) serialized and deserialized correctly
+- playerHoleScores Map (playerId → List of nullable ints) preserved
+- playerMulliganAvailable and playerMulliganUsedThisGame maps preserved
+- Game options (maxDarts, mulliganEnabled, isTeamMode) preserved
+- Team assignments and teamCrestPaths preserved
+- winnerId/winnerTeamId (nullable) roundtrip
+- Backward compatibility: missing optional fields default gracefully
 - toJson/fromJson roundtrip for all GladiatorArenaGame fields
 - playerScores Map (playerId → int) serialized and deserialized correctly
 - playerCharacters Map (playerId → character name string) roundtrip
@@ -95,6 +105,7 @@
 **LunarLanderProvider (7 tests)** - `test/providers/lunar_lander_save_restore_test.dart`
 **PiratesGridProvider (12 tests)** - `test/providers/pirates_grid_save_restore_test.dart`
 **GladiatorArenaProvider (15 tests)** - `test/providers/gladiator_arena_save_restore_test.dart`
+**TikiGolfProvider (13 tests)** - `test/providers/tiki_golf_save_restore_test.dart`
 - Save game metadata creation and restoration
 - Full game state restore (scores, round, player index, knockoff history)
 - Options preserved across save/restore (targetScore, doubleFinish, shieldRound, speedPlay)
@@ -153,6 +164,22 @@
 **TargetTagProvider (45 tests)** - `test/providers/target_tag_provider_game_test.dart`
 
 **GladiatorArenaProvider (81 tests)** - `test/providers/gladiator_arena_provider_game_test.dart`
+
+**TikiGolfProvider (67 tests)** - `test/providers/tiki_golf_provider_game_test.dart`
+- startGame validation (Solo 2-4 players, Team 3-16 players)
+- processDartThrow: hit detection, turn-end conditions, currentTurnEnded flag toggle
+- Variable darts per turn: Max Darts 3/4/5/6 all behave correctly
+- shouldPromptTakeout = currentTurnEnded || hasWinner (NOT dartsThrown >= fixedN)
+- Mulligan flow: useMulligan() clears score, resets darts, clears currentTurnEnded
+- skipTurn(): records Splash, sets currentTurnEnded, mulligan eligible
+- advanceToNextPlayer(): Solo sequential; Team grouped-then-handoff rotation
+- totalTurns increments exactly once on dart 1 (unchanged by Max Darts setting)
+- Team best-ball aggregation: MIN of team player scores per hole
+- Random team distribution: all 14 N-values (3-16) produce correct team count/sizes
+- Special cases: N=8 → [4,4] not [2,2,2,2]; N=12 → 4×3 not 3×4
+- Win condition detection after hole 9 completion (Solo + Team)
+- editScore / updateAllDartScores: replay, re-evaluate win/mulligan eligibility
+- clearGame / endGame
 - startGame (player count, character assignment, options initialization)
 - processDartThrow (scoring accumulation, turn total, shouldPromptTakeout)
 - Bust detection (overshoot, non-double at exact target, both are Double Finish ON only)
@@ -353,6 +380,32 @@
 - Shield block fires instead of knockoff during shield round
 - Remove Darts fires unconditionally alongside other announcements
 
+**Tiki Golf Game Logic (72 tests)** - `test/screens/games/tiki_golf/tiki_golf_game_test.dart`
+- Per-game randomization: holeTargets (9 distinct from 1-20) and holeImagePaths shuffle correctness
+- Variable darts per turn: Max Darts 3/4/5/6 all behave correctly
+- Turn-end detection: target hit ends turn immediately; all-darts-missed → Splash; Skip Turn → Splash
+- Splash threshold: maxDarts + 1 for each Max Darts setting
+- Mulligan mechanics: per-player, single-use, replace Splash score, re-throw full Max Darts
+- Team best-ball aggregation: MIN of team player scores per hole
+- Team grouped rotation: each team plays through before next team
+- Win conditions: Solo (lowest total) and Team (lowest team total) with tiebreakers
+- Save/restore: holeTargets and holeImagePaths preserved across serialization
+
+**Tiki Golf Announcements (36 tests)** - `test/screens/games/tiki_golf/tiki_golf_announcement_test.dart`
+- All 14 announcement events with correct text and sound effects
+- 11-rank precedence chain verification
+- MAX 2 announcements per dart enforcement
+- Mulligan reminder vs plain Splash announcement selection (conditionally suppresses)
+- announceRemoveDarts fires unconditionally and does not count against budget
+- Team mode player turn includes team name prefix ("Sharks: Alice up to putt!")
+
+**Tiki Golf Game With Announcements (18 tests)** - `test/screens/games/tiki_golf/tiki_golf_game_with_announcements_test.dart`
+- Full dart processing triggering correct announcement sequences
+- Birdie/Par/Bogey/Splash fire hitConfirm correctly combined with statusChange events
+- Mulligan reminder fires with Splash when mulligan is available
+- Victory fires on hole 9 completion, precedes all other simultaneous announcements
+- Remove Darts fires unconditionally alongside other announcements
+
 ### Utility Tests (34 tests)
 
 **DartboardLayout (34 tests)** - `test/utils/dartboard_layout_test.dart`
@@ -463,7 +516,7 @@
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests (1801 tests)
+# Flutter tests (2060 tests)
 flutter test
 
 # Server tests (190 tests)
@@ -490,6 +543,10 @@ flutter test test/screens/games/clockwork_quest/
 flutter test test/screens/games/lunar_lander/
 flutter test test/screens/games/pirates_grid/
 flutter test test/screens/games/gladiator_arena/
+flutter test test/screens/games/tiki_golf/
+flutter test test/providers/tiki_golf_provider_game_test.dart
+flutter test test/providers/tiki_golf_save_restore_test.dart
+flutter test test/models/tiki_golf_serialization_test.dart
 ```
 
 ## Test Patterns
