@@ -1,11 +1,29 @@
 /// Configuration for the Dart Games backend API.
 ///
-/// The server URL defaults to the same host as the web app on port 8080.
-/// For production, configure via [ApiConfig.configure].
+/// The server URL defaults to the same host as the web app on port 8080
+/// during local development. For production same-origin deployments,
+/// build with `--dart-define=API_BASE_URL=` (empty value) and the
+/// client will issue relative URLs (`/api/v1/...`) that the browser
+/// resolves against `window.location.origin`. For split-origin
+/// deployments, pass an absolute URL via
+/// `--dart-define=API_BASE_URL=https://api.example.com`.
+///
+/// Runtime overrides are still supported via [ApiConfig.configure].
 class ApiConfig {
   static const _defaultPort =
       String.fromEnvironment('SERVER_PORT', defaultValue: '8080');
-  static String _baseUrl = 'http://localhost:$_defaultPort';
+
+  // bool.hasEnvironment distinguishes "dart-define passed (even with
+  // empty value)" from "dart-define not passed at all", which
+  // String.fromEnvironment alone cannot. Empty value is the
+  // same-origin / relative-URL build mode.
+  static const _hasBaseUrlOverride = bool.hasEnvironment('API_BASE_URL');
+  static const _baseUrlOverride =
+      String.fromEnvironment('API_BASE_URL', defaultValue: '');
+
+  static String _baseUrl = _hasBaseUrlOverride
+      ? _baseUrlOverride
+      : 'http://localhost:$_defaultPort';
 
   /// The base URL for all API requests.
   static String get baseUrl => _baseUrl;
