@@ -833,8 +833,51 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >       }
 >     });
 >   }
+>
+>   /// Refresh the Resume button enabled state. Called by the
+>   /// `Navigator.push(...).then((_) => _checkForSavedGames())` callback
+>   /// after the user returns from the game screen (save-and-back,
+>   /// finished game, etc.). DOES NOT touch `_showResumeModal` —
+>   /// auto-popup is INITIAL-ENTRY-ONLY so the user is not interrupted
+>   /// with the modal after they have just chosen to save and exit.
+>   Future<void> _checkForSavedGames() async {
+>     final hasSaved = await SaveGameService().hasSavedGames('[GAME_NAME_SNAKE]');
+>     if (mounted) {
+>       setState(() => _hasSavedGames = hasSaved);
+>     }
+>   }
 >   ```
 >   Reference: `clockwork_quest_menu_screen.dart` lines 63-77 + 79-84.
+>
+>   **ANTI-PATTERN (do NOT do this):**
+>   ```dart
+>   // ❌ WRONG — auto-popup logic INSIDE _checkForSavedGames() means
+>   //    the Resume modal pops up every time the user returns from the
+>   //    game screen via Navigator.push.then((_) => _checkForSavedGames()).
+>   //    Tiki Golf shipped with this bug; symptom: start game → throw
+>   //    dart → back → Save Game modal → tap Save → Resume Game modal
+>   //    immediately pops up on the menu. The user did NOT ask to
+>   //    resume — they asked to save and exit.
+>   //
+>   //    A "_initialSavedCheckDone" guard does NOT fix this: the gate
+>   //    only trips when hasSaved is true on the FIRST check, which
+>   //    is false in the normal fresh-entry case, so it never trips
+>   //    and the bug persists. The fix is to keep auto-popup logic
+>   //    INLINE in initState (see the correct pattern above).
+>   Future<void> _checkForSavedGames() async {
+>     final hasSaved = await SaveGameService().hasSavedGames('[GAME]');
+>     if (mounted) {
+>       setState(() {
+>         _hasSavedGames = hasSaved;
+>         if (hasSaved && !_initialSavedCheckDone) {
+>           _showResumeModal = true;        // ← BUG: re-fires on return
+>           _initialSavedCheckDone = true;
+>         }
+>       });
+>     }
+>   }
+>   ```
+>   Regression guard: `integration_test/[GAME_NAME_SNAKE]/save_resume/save_and_back_no_auto_resume_modal_test.dart` (see Tiki Golf's copy for the canonical template).
 > - **MENU SCREEN STRUCTURE — outer-Stack modal pattern (MANDATORY, apply EXACTLY — same shape as game screen):**
 >   The menu screen wraps `Scaffold` in an outer `Stack` so menu modals paint OVER the AppBar (back arrow, ResumeGameButton, DartboardConnectionInfo). The build method's return value is `Stack`, NOT `Scaffold`.
 >   ```dart
@@ -1255,7 +1298,12 @@ After the sub-agent returns:
 > (v3) **Results screen uses `context.watch` (NOT `context.read`) for the game and player providers in `build()`** — read the first ~10 lines of the results screen's build method and verify the game-specific provider AND `PlayerProvider` are accessed via `context.watch` (or `Provider.of<X>(context)` which defaults to listen=true, or wrapped in a `Consumer`). If they use `context.read` AND the screen has any early-return path for `currentGame == null` / `winners.isEmpty` / `winnerId == null`, the screen will get stuck on the placeholder when the test/user reaches it before provider data finishes loading — Play Again / Change Settings / Back to Menu buttons never appear. Recurring miss: caught in Lunar Lander, Monster Mash, Reef Royale, Target Tag in past sessions. The `DartboardProvider` itself can stay on `context.watch` (it's already correct in all games).
 > (w) **DualPlayerListPanel has bounded height** on the menu screen — wrapped in `Expanded(...)` for wide layout AND `SizedBox(height: ...)` for narrow scrollable layout. Read the menu screen and verify both branches.
 > (x) **Menu screen initState hydrates settings via `widget.initialX ?? <default>` ONLY — no fallback to `provider.currentGame` or any `provider.pendingMenuSettings`-style layer.** Read `initState()` and verify EVERY spec-defined setting matches this pattern. The `widget.initialX` constructor params are wired by the results screen's CHANGE SETTINGS navigation, which is the only path that should preserve the just-played values; every other entry (home-screen tap, back-from-game, etc.) must show defaults. Past failure: Tiki Golf + Gladiator Arena + Lunar Lander + Pirate's Grid all originally fell back to `provider.currentGame`, which meant tapping the game card on the home screen kept the prior session's settings instead of resetting them. Confirm there is no `final lastGame = ...currentGame` line in initState, no `??` chain reading from a provider, and no `provider.pendingX` fallback either.
-> (y) **Menu screen initState auto-shows resume modal when saved games exist on initial entry** — `setState(() { _hasSavedGames = hasSaved; _showResumeModal = hasSaved; })` inside the initial `addPostFrameCallback`.
+> (y) **Menu screen initState auto-shows resume modal when saved games exist on initial entry** — `setState(() { _hasSavedGames = hasSaved; _showResumeModal = hasSaved; })` inside the initial `addPostFrameCallback`. **Equally important: `_checkForSavedGames()` must ONLY refresh `_hasSavedGames`** — it must NOT touch `_showResumeModal`, and the menu must NOT define an `_initialSavedCheckDone`-style gate. Auto-popup is INITIAL-ENTRY-ONLY; the helper is called by `Navigator.push(...).then((_) => _checkForSavedGames())` after every game-screen pop (save-and-back, finished game), and re-popping the modal there interrupts the user immediately after they chose to save and exit. **Mandatory grep audit:**
+>     ```
+>     grep -nE "_showResumeModal\s*=|_initialSavedCheckDone" \
+>       lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart
+>     ```
+>     Must show: `_showResumeModal = hasSaved` (or `= true`) ONLY inside the initial `addPostFrameCallback` block, plus the `_showResumeModal = false` lines in the modal's close-callbacks and the AppBar `ResumeGameButton` `_showResumeModal = true` callback. Must show ZERO occurrences of `_initialSavedCheckDone`. **Regression guard:** `integration_test/[GAME_NAME_SNAKE]/save_resume/save_and_back_no_auto_resume_modal_test.dart` — throws a dart, hits back, taps Save, then asserts `ElementFinders.getResumeGameModalOverlay()` is `findsNothing` on the menu. Past failure: Tiki Golf shipped with the `_initialSavedCheckDone` anti-pattern; symptom was start game → throw dart → back → Save → menu screen immediately auto-popped the Resume modal.
 > (z) **Victory flow waits for DARTS REMOVED** — the game screen MUST NOT auto-navigate to results when `hasWinner` becomes true. Grep the game screen for `addPostFrameCallback(_handleGameWon)` and `simulateTakeoutFinished` inside `hasWinner` blocks — neither should exist. `_handleGameWon()` must ONLY be called from `_handleTakeoutFinished()`. The `shouldPromptTakeout` condition should be `dartsThrown >= 3 || provider.hasWinner` so RemoveDartsModal (and the Edit Score button inside it) is always accessible after a winning turn.
 > (aa) **Edit Score `initialSegments` maps thrown miss (score 0) to `'Miss'`, NOT `'-'`.** Read the menu/game screen's onEditScore handler and verify the segment building. The `'-'` value invalidates the dialog Save button; thrown misses must be `'Miss'`.
 > (bb) **Character images on game screen + winner card are rendered NATIVELY (no circle clipping).** Grep for `border-radius:.*5[0-9]%` and `BorderRadius.circular(.*5[0-9]\.0` near `Image.asset(.*characters/`. Avatar widgets in the player tile / rankings list MAY use circles (initials placeholders); the active player panel + descent/coral/shield + winner card MUST NOT clip the character art.
