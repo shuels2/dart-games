@@ -99,4 +99,17 @@ class AppSettings {
   static Future<String?> getResponsiveVoice() async {
     return await _api.getSetting('responsive_voice');
   }
+
+  /// Save voice playback rate (1.0 = normal). Range typically 0.7-1.5 in the
+  /// settings UI; clients should clamp.
+  static Future<void> saveVoicePlaybackRate(double rate) async {
+    await _api.putSetting('voice_playback_rate', rate.toString());
+  }
+
+  /// Get voice playback rate (defaults to 1.0 if not set / unparseable).
+  static Future<double> getVoicePlaybackRate() async {
+    final value = await _api.getSetting('voice_playback_rate');
+    if (value == null) return 1.0;
+    return double.tryParse(value) ?? 1.0;
+  }
 }

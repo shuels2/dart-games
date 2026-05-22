@@ -1,4 +1,5 @@
 // ignore: avoid_web_libraries_in_flutter
+import 'dart:async';
 import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
@@ -20,6 +21,7 @@ extension type ResponsiveVoiceOptions._(JSObject _) implements JSObject {
     JSNumber pitch,
     JSNumber rate,
     JSNumber volume,
+    JSFunction? onend,
   });
 }
 
@@ -66,35 +68,58 @@ class ResponsiveVoiceService {
     }
   }
 
-  /// Speak text using ResponsiveVoice
-  void speak(String text, {
+  /// Speak text using ResponsiveVoice.
+  ///
+  /// Returns a `Future<void>` that resolves when the underlying JS engine
+  /// fires its `onend` callback (i.e. speech has actually finished). If the
+  /// service is not ready or the call throws synchronously, the future
+  /// resolves immediately (so callers can always `await` safely).
+  ///
+  /// The queue service relies on this future to know exactly when the
+  /// current utterance ended, so the next announcement can start without
+  /// the conservative wordCount-based estimate that used to gate it.
+  Future<void> speak(String text, {
     String voiceName = 'US English Female',
     double pitch = 1.0,
     double rate = 1.0,
     double volume = 1.0,
   }) {
+    final completer = Completer<void>();
     try {
       if (!isReady()) {
         print('ResponsiveVoice not ready, cannot speak');
-        return;
+        completer.complete();
+        return completer.future;
       }
 
       final rv = responsiveVoice;
-      if (rv == null) return;
+      if (rv == null) {
+        completer.complete();
+        return completer.future;
+      }
 
-      // Create options object using the new JS interop
+      // onend fires when the JS engine has actually finished speaking. Wrap
+      // the completion in a guard so a duplicate/late onend can't double-
+      // complete the Completer.
+      final onEndCallback = (() {
+        if (!completer.isCompleted) completer.complete();
+      }).toJS;
+
       final options = ResponsiveVoiceOptions(
         pitch: pitch.toJS,
         rate: rate.toJS,
         volume: volume.toJS,
+        onend: onEndCallback,
       );
 
       // Call responsiveVoice.speak(text, voiceName, options)
       rv.speak(text.toJS, voiceName.toJS, options);
-      print('Speaking: "$text" with voice: $voiceName');
+      print('Speaking: "$text" with voice: $voiceName (rate: $rate)');
     } catch (e) {
       print('ResponsiveVoice speak error: $e');
+      if (!completer.isCompleted) completer.complete();
     }
+    return completer.future;
   }
 
   /// Cancel current speech

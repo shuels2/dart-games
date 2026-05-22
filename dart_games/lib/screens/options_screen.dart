@@ -36,6 +36,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
   AnnouncerVoice _selectedVoice = AnnouncerVoice.professional;
   String _selectedSystemVoice = '';
   String _selectedResponsiveVoice = 'Australian Female';
+  // User-tunable playback rate (1.0 = normal). Slider range 0.7-1.5.
+  double _playbackRate = 1.0;
   List<dynamic> _systemVoices = [];
   bool _responsiveVoiceReady = false;
   bool _isSaving = false;
@@ -174,11 +176,15 @@ class _OptionsScreenState extends State<OptionsScreen> {
     // Load ResponsiveVoice
     final responsiveVoice = await AppSettings.getResponsiveVoice() ?? 'Australian Female';
 
+    // Load playback rate (default 1.0)
+    final playbackRate = await AppSettings.getVoicePlaybackRate();
+
     setState(() {
       _voiceEngine = voiceEngine;
       _selectedVoice = selectedVoice;
       _selectedSystemVoice = systemVoice;
       _selectedResponsiveVoice = responsiveVoice;
+      _playbackRate = playbackRate.clamp(0.7, 1.5);
     });
 
     // Load victory music files from service
@@ -202,6 +208,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
       await AppSettings.saveAnnouncerStyle(_selectedVoice.name);
       await AppSettings.saveSystemVoice(_selectedSystemVoice);
       await AppSettings.saveResponsiveVoice(_selectedResponsiveVoice);
+      await AppSettings.saveVoicePlaybackRate(_playbackRate);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -242,6 +249,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
         widget.announcer.setSystemVoice(_selectedSystemVoice);
       }
     }
+    widget.announcer.setPlaybackRate(_playbackRate);
   }
 
   void _testVoice() {
@@ -1540,6 +1548,66 @@ class _OptionsScreenState extends State<OptionsScreen> {
                   ),
                 ),
               ),
+            const SizedBox(height: 16),
+
+            // Playback Rate (applies to BOTH engines). 1.0 = normal speed.
+            // Range 0.7 – 1.5 in 0.05 steps. Persisted as
+            // voice_playback_rate via AppSettings. Applied immediately on
+            // change so the user hears the new rate from the next Test
+            // Voice press without needing to Save first.
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.speed),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Playback Speed',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${_playbackRate.toStringAsFixed(2)}×',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Slider(
+                      value: _playbackRate,
+                      min: 0.7,
+                      max: 1.5,
+                      divisions: 16, // 0.05 steps
+                      label: '${_playbackRate.toStringAsFixed(2)}×',
+                      onChanged: (value) {
+                        setState(() => _playbackRate = value);
+                        _applySettings();
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('0.7× slower',
+                              style: theme.textTheme.bodySmall),
+                          Text('1.0× normal',
+                              style: theme.textTheme.bodySmall),
+                          Text('1.5× faster',
+                              style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
 
             // Personality Style (only for browser voices)

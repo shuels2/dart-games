@@ -36,7 +36,6 @@ class GameAnnouncementQueueService {
   final DartAnnouncerService _announcer = DartAnnouncerService();
   final Queue<QueuedAnnouncement> _queue = Queue<QueuedAnnouncement>();
   final AudioPlayer _soundEffectPlayer = AudioPlayer();
-  bool _isSpeaking = false;
   bool _isProcessing = false;
   bool _disposed = false;
 
@@ -80,7 +79,13 @@ class GameAnnouncementQueueService {
         }
       }
 
-      debugPrint('Game announcement queue loaded settings: engine=$voiceEngine, style=$announcerVoice');
+      // User-configurable playback rate (1.0 = normal). Applied to both
+      // engines on the next speak() call.
+      final rate = await AppSettings.getVoicePlaybackRate();
+      _announcer.setPlaybackRate(rate);
+
+      debugPrint('Game announcement queue loaded settings: '
+          'engine=$voiceEngine, style=$announcerVoice, rate=$rate');
     } catch (e) {
       debugPrint('Error loading announcer settings: $e');
     }
@@ -105,48 +110,59 @@ class GameAnnouncementQueueService {
     }
   }
 
-  // Process the queue (priority-based FIFO)
+  // Process the queue (strict FIFO).
+  //
+  // Loop body for each announcement:
+  //   1. Pop FIFO.
+  //   2. Kick off the SFX (fire-and-forget; SFX plays in parallel with speech).
+  //   3. `await _announcer.speak(text)` — event-driven: ResponsiveVoice's
+  //      `onend` callback (or flutter_tts's setCompletionHandler) resolves
+  //      the future the moment speech finishes. Wrapped in `.timeout()`
+  //      with a tightened fallback estimate (350ms/word + 300ms) as a
+  //      safety net in case the engine never fires its completion event.
+  //   4. If the SFX is longer than the speech, wait the remaining SFX
+  //      time so the next iteration doesn't cut it off.
+  //
+  // Previous version waited a fixed `wordCount * 500 + 1500ms` after EVERY
+  // utterance regardless of how long the speech actually took, plus a
+  // 100ms polling loop guarding `_isSpeaking`. That added 2-4 seconds of
+  // dead air between announcements on a typical phrase. The user reported
+  // it as "noticeable delay between dartboard label updates and audio,
+  // and the same between audio segments."
   Future<void> _processQueue() async {
     if (_isProcessing) return;
     _isProcessing = true;
 
     try {
       while (_queue.isNotEmpty && !_disposed) {
-        // Wait if currently speaking
-        while (_isSpeaking && !_disposed) {
-          await Future.delayed(const Duration(milliseconds: 100));
-        }
-        if (_disposed) break;
-
         // Strict FIFO — pop the oldest-queued announcement. Priority is no
         // longer used for ordering (see class doc).
         final announcement = _queue.removeFirst();
-
-        // Speak the announcement and play sound effect simultaneously
-        _isSpeaking = true;
         debugPrint('Speaking (${announcement.priority.name}): ${announcement.text}');
 
-        // Play sound effect if provided
+        // Play sound effect if provided (fire-and-forget — SFX plays in
+        // parallel with the speech below).
+        int sfxMs = 0;
         if (announcement.soundEffect != null && !_disposed) {
           try {
             final sfx = announcement.soundEffect!;
+            sfxMs = sfx.endSeconds != null
+                ? ((sfx.endSeconds! - sfx.startSeconds) * 1000).toInt()
+                : 5000; // 5s cap for "play entire file" SFX
+
             await _soundEffectPlayer.stop(); // Stop any previous sound effect
-
-            // Set release mode to stop (don't loop or release)
             await _soundEffectPlayer.setReleaseMode(ReleaseMode.stop);
-
-            // Play from start position
             await _soundEffectPlayer.play(
               AssetSource(sfx.assetPath),
               position: Duration(milliseconds: (sfx.startSeconds * 1000).toInt()),
             );
 
-            debugPrint('Playing sound effect: ${sfx.assetPath} (start: ${sfx.startSeconds}s, end: ${sfx.endSeconds != null ? "${sfx.endSeconds}s" : "end of file"})');
+            debugPrint('Playing sound effect: ${sfx.assetPath} '
+                '(start: ${sfx.startSeconds}s, end: ${sfx.endSeconds != null ? "${sfx.endSeconds}s" : "end of file"})');
 
-            // If there's an end time, schedule stopping the audio
+            // Schedule SFX stop if end time is set.
             if (sfx.endSeconds != null && !_disposed) {
-              final duration = sfx.endSeconds! - sfx.startSeconds;
-              Future.delayed(Duration(milliseconds: (duration * 1000).toInt()), () {
+              Future.delayed(Duration(milliseconds: sfxMs), () {
                 if (!_disposed) _soundEffectPlayer.stop();
               });
             }
@@ -157,34 +173,32 @@ class GameAnnouncementQueueService {
 
         if (_disposed) break;
 
-        // Speak the announcement (happens simultaneously with sound effect)
-        await _announcer.speak(announcement.text);
+        // Event-driven speech: await until the engine's onend / completion
+        // callback fires. Tightened wordCount * 350 + 300 acts as a safety
+        // timeout if the callback never fires (rare, but possible on some
+        // engine/browser combos).
+        final wordCount = announcement.text.split(' ').length;
+        final ttsFallbackMs = wordCount * 350 + 300;
+        final speakStart = DateTime.now();
+        await _announcer.speak(announcement.text).timeout(
+          Duration(milliseconds: ttsFallbackMs),
+          onTimeout: () {
+            debugPrint('Speak timed out at fallback (${ttsFallbackMs}ms) — '
+                'engine onend may not have fired for: ${announcement.text}');
+          },
+        );
 
         if (_disposed) break;
 
-        // Wait long enough for BOTH the TTS estimate AND the sound effect
-        // to finish, so the next iteration doesn't interrupt either one.
-        // - TTS: approx 500ms/word + 1500ms buffer
-        // - Sound effect: explicit (endSeconds - startSeconds) when set,
-        //   otherwise a 5-second cap for "play entire file" SFX. Most
-        //   game SFX are short clips well under 5s; longer ones would
-        //   still get cut, but that's an acceptable tradeoff vs. blocking
-        //   the queue indefinitely.
-        final wordCount = announcement.text.split(' ').length;
-        final ttsMs = wordCount * 500 + 1500;
-        int sfxMs = 0;
-        if (announcement.soundEffect != null) {
-          final sfx = announcement.soundEffect!;
-          if (sfx.endSeconds != null) {
-            sfxMs = ((sfx.endSeconds! - sfx.startSeconds) * 1000).toInt();
-          } else {
-            sfxMs = 5000;
-          }
+        // If the SFX is longer than the speech that just played, wait
+        // out the remainder so it doesn't get clipped by the next
+        // iteration's `_soundEffectPlayer.stop()` call.
+        final speechElapsedMs =
+            DateTime.now().difference(speakStart).inMilliseconds;
+        final remainingSfxMs = sfxMs - speechElapsedMs;
+        if (remainingSfxMs > 0) {
+          await Future.delayed(Duration(milliseconds: remainingSfxMs));
         }
-        final waitMs = ttsMs > sfxMs ? ttsMs : sfxMs;
-        await Future.delayed(Duration(milliseconds: waitMs));
-
-        _isSpeaking = false;
       }
     } catch (e) {
       debugPrint('Announcement queue processing stopped: $e');
@@ -207,7 +221,6 @@ class GameAnnouncementQueueService {
   void dispose() {
     _disposed = true;
     _queue.clear();
-    _isSpeaking = false;
     _isProcessing = false;
     _soundEffectPlayer.dispose();
     _announcer.dispose();
