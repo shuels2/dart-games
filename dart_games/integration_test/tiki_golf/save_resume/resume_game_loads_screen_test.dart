@@ -20,9 +20,9 @@ void main() {
     await UITestHelpers.tapGameScreenBackButton(tester, config);
     await UITestHelpers.tapSaveGameButton(tester);
 
-    // After saving, the menu screen auto-shows the resume modal (full-screen
-    // overlay covering AppBar). Dismiss it so the back button is reachable.
-    await UITestHelpers.tapStartNewGameButton(tester);
+    // Save-and-back lands the user back on the menu WITHOUT auto-popping
+    // the Resume modal — see save_and_back_no_auto_resume_modal_test.dart
+    // for the regression guard. Just tap back to go home.
 
     // Back to home from menu
     await tester.tap(find.byKey(TikiGolfMenuKeys.backButton));

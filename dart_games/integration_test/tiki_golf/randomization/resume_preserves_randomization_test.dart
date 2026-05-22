@@ -17,7 +17,6 @@ import 'package:dart_games/constants/test_keys.dart';
 import 'package:dart_games/services/save_game_service.dart';
 
 import '../../shared/ui_test_helpers.dart';
-import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
 import '_helpers.dart';
 
@@ -45,8 +44,9 @@ void main() {
     await UITestHelpers.tapGameScreenBackButton(tester, config);
     await UITestHelpers.tapSaveGameButton(tester);
 
-    // After saving, dismiss any resume modal
-    await UITestHelpers.tapStartNewGameButton(tester);
+    // Save-and-back lands the user back on the menu WITHOUT auto-popping
+    // the Resume modal — see save_and_back_no_auto_resume_modal_test.dart
+    // for the regression guard. Just tap back to go home.
 
     // Back to home
     await tester.tap(find.byKey(TikiGolfMenuKeys.backButton));

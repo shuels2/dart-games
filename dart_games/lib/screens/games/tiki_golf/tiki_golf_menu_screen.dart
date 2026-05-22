@@ -91,7 +91,6 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
   // ─── Resume game state ────────────────────────────────────────────────────
   bool _hasSavedGames = false;
   bool _showResumeModal = false;
-  bool _initialSavedCheckDone = false;
 
   @override
   void initState() {
@@ -141,20 +140,31 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
         }
       }
 
-      _checkForSavedGames();
+      // Initial-entry saved-games check: matches the pattern used by
+      // every other game (Target Tag etc.). _showResumeModal is set
+      // INLINE here so the auto-popup only fires on the FIRST menu
+      // entry. Subsequent returns from the game screen (via the
+      // `.then((_) => _checkForSavedGames())` callback below) only
+      // refresh the Resume button state, never re-show the modal.
+      final hasSaved = await SaveGameService().hasSavedGames('tiki_golf');
+      if (mounted) {
+        setState(() {
+          _hasSavedGames = hasSaved;
+          _showResumeModal = hasSaved;
+        });
+      }
     });
   }
 
+  /// Refresh the Resume button enabled state. Called after the user
+  /// returns from the game screen (save-and-back, finished game, etc.).
+  /// Does NOT touch `_showResumeModal` — auto-popup is initial-entry-
+  /// only so the user is not interrupted with the modal after they
+  /// have just chosen to save and exit.
   Future<void> _checkForSavedGames() async {
     final hasSaved = await SaveGameService().hasSavedGames('tiki_golf');
     if (mounted) {
-      setState(() {
-        _hasSavedGames = hasSaved;
-        if (hasSaved && !_initialSavedCheckDone) {
-          _showResumeModal = true;
-          _initialSavedCheckDone = true;
-        }
-      });
+      setState(() => _hasSavedGames = hasSaved);
     }
   }
 
