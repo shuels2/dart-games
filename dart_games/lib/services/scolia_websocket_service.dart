@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'api_logger_service.dart';
@@ -46,10 +47,13 @@ class ScoliaWebSocketService {
     try {
       final uri = Uri.parse(
           '$_wsBaseUrl?serialNumber=$serialNumber&accessToken=$accessToken');
+      debugPrint('[Dartboard][WS] Connecting to $_wsBaseUrl '
+          '(serial=$serialNumber, token=<present>)');
       _channel = WebSocketChannel.connect(uri);
 
       // Wait for the underlying connection to be ready
       await _channel!.ready;
+      debugPrint('[Dartboard][WS] Channel ready, waiting for HELLO_CLIENT...');
 
       final completer = Completer<bool>();
 
@@ -60,12 +64,14 @@ class ScoliaWebSocketService {
           // First HELLO_CLIENT message means successful auth
           if (!completer.isCompleted && parsed != null) {
             if (parsed['type'] == 'HELLO_CLIENT') {
+              debugPrint('[Dartboard][WS] HELLO_CLIENT received — auth OK');
               _isConnected = true;
               completer.complete(true);
             }
           }
         },
         onError: (error) {
+          debugPrint('[Dartboard][WS] onError: $error');
           _isConnected = false;
           if (!completer.isCompleted) completer.complete(false);
           _handleDisconnect(error: error.toString());
@@ -73,6 +79,8 @@ class ScoliaWebSocketService {
         onDone: () {
           final closeCode = _channel?.closeCode;
           final closeReason = _channel?.closeReason;
+          debugPrint('[Dartboard][WS] onDone: closeCode=$closeCode '
+              'closeReason=${closeReason ?? "<null>"}');
           _isConnected = false;
           if (!completer.isCompleted) completer.complete(false);
           _handleDisconnect(
@@ -277,6 +285,9 @@ class ScoliaWebSocketService {
 
   void _handleDisconnect({int? closeCode, String? closeReason, String? error}) {
     if (_isDisposed) return;
+
+    debugPrint('[Dartboard][WS] _handleDisconnect: closeCode=$closeCode '
+        'closeReason=${closeReason ?? "<null>"} error=${error ?? "<null>"}');
 
     String disconnectInfo = 'WebSocket disconnected';
     if (closeCode != null) {

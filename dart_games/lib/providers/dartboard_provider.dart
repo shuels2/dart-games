@@ -75,6 +75,12 @@ class DartboardProvider with ChangeNotifier {
       final apiKey = config['apiKey'] as String?;
       final useEmulator = config['useEmulator'] as bool? ?? false;
 
+      debugPrint('[Dartboard] loadConfiguration response: '
+          'name=${name ?? "<null>"}, '
+          'serial=${serial ?? "<null>"}, '
+          'apiKey=${apiKey == null ? "<null>" : "<present>"}, '
+          'useEmulator=$useEmulator');
+
       if (name != null && serial != null) {
         _dartboard = Dartboard(
           name: name,
@@ -85,12 +91,40 @@ class DartboardProvider with ChangeNotifier {
 
         // Try to connect if not using emulator
         if (_useEmulatorMode) {
+          debugPrint('[Dartboard] Activating emulator mode');
           _activateEmulator();
         } else if (apiKey != null) {
+          debugPrint('[Dartboard] Attempting real connection to Scolia...');
           await _attemptConnection();
-          // Start status checking for non-emulator dartboards
-          startStatusChecking();
+          // Only fall back to REST polling if the WebSocket connection
+          // failed. When the WS is alive it does its own GET_SBC_STATUS
+          // every 10s over the existing channel (see
+          // scolia_websocket_service.dart `_startStatusCheckTimer`) —
+          // no CORS, no redundant REST, no overwriting the `connected`
+          // status the WS just established. Past failure: on web the
+          // REST endpoint at https://game.scoliadarts.com/api/sbc/status/
+          // is CORS-blocked from the browser, so calling it
+          // unconditionally caused `ClientException: Failed to fetch`
+          // every 10 seconds, which flipped status from connected back
+          // to error and re-popped the Pause modal even though the
+          // WebSocket was perfectly fine.
+          if (_webSocketService == null) {
+            debugPrint('[Dartboard] WebSocket unavailable — falling back '
+                'to REST status polling.');
+            startStatusChecking();
+          } else {
+            debugPrint('[Dartboard] WebSocket established — skipping REST '
+                'status polling (the WS does its own 10s GET_SBC_STATUS).');
+          }
+        } else {
+          debugPrint('[Dartboard] SKIPPED connection: useEmulator=false but '
+              'apiKey is null. Status stays at "disconnected". Modal will '
+              'remain up until a real dartboard config is saved.');
         }
+      } else {
+        debugPrint('[Dartboard] SKIPPED connection: name or serialNumber is '
+            'null in saved config. Status stays at "disconnected". Modal '
+            'will remain up until a dartboard config is saved.');
       }
     } catch (e) {
       print('Error loading dartboard configuration: $e');
@@ -210,8 +244,15 @@ class DartboardProvider with ChangeNotifier {
 
   // Attempt to reconnect with saved configuration
   Future<void> _attemptConnection() async {
-    if (_apiKey == null || _dartboard == null) return;
+    if (_apiKey == null || _dartboard == null) {
+      debugPrint('[Dartboard] _attemptConnection bailed early: '
+          'apiKey=${_apiKey == null ? "<null>" : "<present>"}, '
+          'dartboard=${_dartboard == null ? "<null>" : _dartboard!.serialNumber}');
+      return;
+    }
 
+    debugPrint('[Dartboard] _attemptConnection starting WebSocket for '
+        'serial=${_dartboard!.serialNumber}');
     _status = DartboardConnectionStatus.connecting;
     notifyListeners();
 
@@ -224,19 +265,28 @@ class DartboardProvider with ChangeNotifier {
       accessToken: _apiKey!,
     );
 
+    debugPrint('[Dartboard] WebSocket connect() returned: $success');
+
     if (success) {
       _status = DartboardConnectionStatus.connected;
       _error = null;
+      debugPrint('[Dartboard] Status -> connected. Subscribing to event stream.');
 
       // Listen for disconnect/status events
       _webSocketService!.eventStream.listen((event) {
         if (event['type'] == 'disconnected') {
+          debugPrint('[Dartboard] event: disconnected '
+              '(message=${event['data']?['message']}). Status -> error. '
+              'NOTE: no auto-reconnect — the WebSocket is now dead until '
+              'loadConfiguration() / connectToScolia() runs again.');
           _status = DartboardConnectionStatus.error;
           _error = event['data']?['message'] ?? 'Dartboard disconnected';
           notifyListeners();
         } else if (event['type'] == 'sbc_status_changed') {
           final payload = event['data']?['payload'];
           final boardStatus = payload?['boardStatus'] as String?;
+          debugPrint('[Dartboard] event: sbc_status_changed '
+              'boardStatus=$boardStatus');
           if (boardStatus == 'Ready' || boardStatus == 'Throw' || boardStatus == 'Takeout') {
             _status = DartboardConnectionStatus.connected;
             _error = null;
@@ -245,12 +295,18 @@ class DartboardProvider with ChangeNotifier {
             _error = boardStatus == 'Offline'
                 ? 'Dartboard is offline'
                 : 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
+          } else {
+            debugPrint('[Dartboard]   (unrecognized boardStatus — status '
+                'stays at ${_status.name})');
           }
           notifyListeners();
         }
       });
     } else {
       // WebSocket failed — fall back to status checking via REST
+      debugPrint('[Dartboard] WebSocket connect() returned false. '
+          'Status -> error. NOTE: no automatic retry on startup either; '
+          'the modal will remain up.');
       _webSocketService?.dispose();
       _webSocketService = null;
       _status = DartboardConnectionStatus.error;
@@ -328,6 +384,7 @@ class DartboardProvider with ChangeNotifier {
     try {
       final endpoint = '/api/sbc/status/${_dartboard!.serialNumber}';
       final url = Uri.parse('$_scoliaBaseUrl$endpoint');
+      debugPrint('[Dartboard][REST] GET $url');
       final response = await http.get(
         url,
         headers: {
@@ -335,6 +392,9 @@ class DartboardProvider with ChangeNotifier {
           'Content-Type': 'application/json',
         },
       ).timeout(const Duration(seconds: 5));
+
+      debugPrint('[Dartboard][REST] -> statusCode=${response.statusCode}, '
+          'body=${response.body.length > 200 ? "${response.body.substring(0, 200)}..." : response.body}');
 
       // Log the API call
       Map<String, dynamic>? responseBody;
@@ -353,6 +413,8 @@ class DartboardProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         // Successfully connected and got status
         if (_status != DartboardConnectionStatus.connected) {
+          debugPrint('[Dartboard][REST] 200 OK — flipping status from '
+              '${_status.name} to connected');
           _status = DartboardConnectionStatus.connected;
           _error = null;
           notifyListeners();
@@ -360,12 +422,20 @@ class DartboardProvider with ChangeNotifier {
       } else {
         // API error
         if (_status != DartboardConnectionStatus.error) {
+          debugPrint('[Dartboard][REST] non-200 (${response.statusCode}) — '
+              'flipping status from ${_status.name} to error. THIS IS '
+              'LIKELY WHAT IS KEEPING THE PAUSE MODAL UP even though the '
+              'WebSocket connected successfully.');
           _status = DartboardConnectionStatus.error;
           _error = 'Unable to Connect';
           notifyListeners();
         }
       }
     } catch (e) {
+      debugPrint('[Dartboard][REST] threw: $e — flipping status from '
+          '${_status.name} to error. THIS IS LIKELY WHAT IS KEEPING THE '
+          'PAUSE MODAL UP even though the WebSocket connected successfully. '
+          'Common causes on web: CORS blocked, network error, or timeout.');
       // Log the failed call
       ApiLoggerService.logApiCall(
         method: 'GET',
