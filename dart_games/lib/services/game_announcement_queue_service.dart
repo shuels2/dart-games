@@ -177,11 +177,22 @@ class GameAnnouncementQueueService {
         if (_disposed) break;
 
         // Event-driven speech: await until the engine's onend / completion
-        // callback fires. Tightened wordCount * 350 + 300 acts as a safety
-        // timeout if the callback never fires (rare, but possible on some
-        // engine/browser combos).
+        // callback fires. Past tuning iteration:
+        //   - Original: wordCount * 500 + 1500 (no event-driven path)
+        //   - First "tightened" pass: wordCount * 350 + 300 — TOO
+        //     aggressive. Diagnostic run on Monster Mash showed onend
+        //     reliably fires but at 450-880 ms/word once per-call
+        //     overhead is included (e.g. "Single 20" at 1756 ms for
+        //     2 words). The timeout consistently beat onend, causing
+        //     the queue to advance early, calling _soundEffectPlayer
+        //     .stop() on the NEXT iteration which clipped the still-
+        //     playing SFX of the current announcement.
+        //   - Current: wordCount * 1000 + 1500 — generous safety net
+        //     that should only ever fire if onend genuinely hangs
+        //     (page hidden, JS error). Observed onend max is ~880 ms/
+        //     word, so the new fallback has 100%+ headroom.
         final wordCount = announcement.text.split(' ').length;
-        final ttsFallbackMs = wordCount * 350 + 300;
+        final ttsFallbackMs = wordCount * 1000 + 1500;
         final speakStart = DateTime.now();
         bool timedOut = false;
         await _announcer.speak(announcement.text).timeout(
