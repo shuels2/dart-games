@@ -1590,18 +1590,34 @@ class _OptionsScreenState extends State<OptionsScreen> {
                         _applySettings();
                       },
                     ),
+                    // Labels under the slider. "1.0× normal" is positioned
+                    // proportionally — at 37.5% across the 0.7-1.5 range —
+                    // not at the visual midpoint of the bar. Using
+                    // Alignment(2 * fraction - 1, 0): fraction = (1.0 -
+                    // 0.7) / (1.5 - 0.7) = 0.375 → alignment.x = -0.25.
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('0.7× slower',
-                              style: theme.textTheme.bodySmall),
-                          Text('1.0× normal',
-                              style: theme.textTheme.bodySmall),
-                          Text('1.5× faster',
-                              style: theme.textTheme.bodySmall),
-                        ],
+                      child: SizedBox(
+                        height: 16,
+                        child: Stack(
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text('0.7× slower',
+                                  style: theme.textTheme.bodySmall),
+                            ),
+                            Align(
+                              alignment: const Alignment(-0.25, 0),
+                              child: Text('1.0× normal',
+                                  style: theme.textTheme.bodySmall),
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text('1.5× faster',
+                                  style: theme.textTheme.bodySmall),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
