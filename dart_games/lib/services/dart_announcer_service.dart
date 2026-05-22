@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:math' as math;
@@ -40,9 +41,28 @@ class DartAnnouncerService {
   String? _selectedVoiceName;
   String _responsiveVoiceName = 'US English Female'; // Default ResponsiveVoice
 
+  // User-configurable playback rate multiplier. 1.0 = normal. Applied on
+  // top of per-personality rates in announceDart() and as the rate for
+  // the generic speak() path. See AppSettings.getVoicePlaybackRate.
+  double _playbackRate = 1.0;
+
+  // Browser-TTS completion: flutter_tts supports a one-shot completion
+  // handler. We park a Completer here for the current utterance and
+  // resolve it from setCompletionHandler so speak() can be awaited
+  // event-driven instead of estimated.
+  Completer<void>? _ttsCompleter;
+
   DartAnnouncerService() {
     _initializeTts();
   }
+
+  /// Set the user-configurable playback rate. 1.0 = normal speed.
+  /// Range typically 0.7-1.5 (clamped by the settings UI).
+  void setPlaybackRate(double rate) {
+    _playbackRate = rate;
+  }
+
+  double get playbackRate => _playbackRate;
 
   Future<void> _initializeTts() async {
     // Configure TTS for web
@@ -50,6 +70,26 @@ class DartAnnouncerService {
     await _tts.setSpeechRate(0.5);
     await _tts.setVolume(1.0);
     await _tts.setPitch(1.0);
+
+    // Event-driven completion for the browser-TTS path. The queue
+    // service awaits speak() and relies on this callback to know
+    // exactly when an utterance finished, eliminating the wordCount-
+    // based wait estimate that used to gate the next announcement.
+    _tts.setCompletionHandler(() {
+      final c = _ttsCompleter;
+      _ttsCompleter = null;
+      if (c != null && !c.isCompleted) c.complete();
+    });
+    _tts.setErrorHandler((_) {
+      final c = _ttsCompleter;
+      _ttsCompleter = null;
+      if (c != null && !c.isCompleted) c.complete();
+    });
+    _tts.setCancelHandler(() {
+      final c = _ttsCompleter;
+      _ttsCompleter = null;
+      if (c != null && !c.isCompleted) c.complete();
+    });
 
     // Get available voices
     _availableVoices = await _tts.getVoices ?? [];
@@ -220,11 +260,12 @@ class DartAnnouncerService {
       _responsiveVoice.speak(
         phrase,
         voiceName: _responsiveVoiceName,
-        rate: rate,
+        rate: rate * _playbackRate,
         pitch: pitch,
       );
     } else {
       // Use browser TTS
+      await _tts.setSpeechRate(_playbackRate.clamp(0.0, 2.0));
       await _tts.speak(phrase);
     }
   }
@@ -430,20 +471,45 @@ class DartAnnouncerService {
     }
 
     if (_engine == VoiceEngine.responsiveVoice && _responsiveVoice.isReady()) {
-      _responsiveVoice.speak(phrase, voiceName: _responsiveVoiceName);
+      _responsiveVoice.speak(
+        phrase,
+        voiceName: _responsiveVoiceName,
+        rate: _playbackRate,
+      );
     } else {
+      await _tts.setSpeechRate(_playbackRate.clamp(0.0, 2.0));
       await _tts.speak(phrase);
     }
   }
 
-  /// Speak a custom phrase using current engine and voice settings
+  /// Speak a custom phrase using current engine and voice settings.
+  ///
+  /// Returns a `Future<void>` that resolves when the speech engine has
+  /// actually finished speaking (via ResponsiveVoice's `onend` callback
+  /// or flutter_tts's `setCompletionHandler`), NOT when the speak call
+  /// is dispatched. The queue service awaits this so it knows when to
+  /// start the next utterance — no wordCount-based estimate required.
+  ///
+  /// The user-configurable [playbackRate] is applied to both engines.
   Future<void> speak(String text) async {
     if (!_enabled) return;
 
     if (_engine == VoiceEngine.responsiveVoice && _responsiveVoice.isReady()) {
-      _responsiveVoice.speak(text, voiceName: _responsiveVoiceName);
+      await _responsiveVoice.speak(
+        text,
+        voiceName: _responsiveVoiceName,
+        rate: _playbackRate,
+      );
     } else {
+      // flutter_tts: the completion callback resolves _ttsCompleter
+      // (wired in _initializeTts). _tts.speak typically returns when
+      // the utterance STARTS, so we use the completer as the actual
+      // "speech finished" signal.
+      _ttsCompleter = Completer<void>();
+      // Browser-TTS rate range tends to be 0.0-2.0. Use the same multiplier.
+      await _tts.setSpeechRate(_playbackRate.clamp(0.0, 2.0));
       await _tts.speak(text);
+      await _ttsCompleter!.future;
     }
   }
 

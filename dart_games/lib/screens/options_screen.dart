@@ -36,6 +36,12 @@ class _OptionsScreenState extends State<OptionsScreen> {
   AnnouncerVoice _selectedVoice = AnnouncerVoice.professional;
   String _selectedSystemVoice = '';
   String _selectedResponsiveVoice = 'Australian Female';
+  // User-tunable playback rate (1.0 = normal). Slider range 0.7-1.5.
+  double _playbackRate = 1.0;
+  // Gameplay setting: when false (default), helpers in Carnival Derby,
+  // Target Tag, and Monster Mash skip the generic per-dart score
+  // readout ("Single 20" etc.) so per-turn audio stays short.
+  bool _perDartScoreAnnouncements = false;
   List<dynamic> _systemVoices = [];
   bool _responsiveVoiceReady = false;
   bool _isSaving = false;
@@ -46,6 +52,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _playersListScrollController = ScrollController();
   final GlobalKey _announcerKey = GlobalKey();
+  final GlobalKey _gameplayKey = GlobalKey();
   final GlobalKey _musicKey = GlobalKey();
   final GlobalKey _userManagementKey = GlobalKey();
   final GlobalKey _adminKey = GlobalKey();
@@ -88,6 +95,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     // Check which section is currently visible
     final announcerPosition = _getKeyPosition(_announcerKey);
+    final gameplayPosition = _getKeyPosition(_gameplayKey);
     final musicPosition = _getKeyPosition(_musicKey);
     final userManagementPosition = _getKeyPosition(_userManagementKey);
     final adminPosition = _getKeyPosition(_adminKey);
@@ -98,6 +106,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
       newSection = 'userManagement';
     } else if (musicPosition != null && scrollPosition >= musicPosition - 100) {
       newSection = 'music';
+    } else if (gameplayPosition != null && scrollPosition >= gameplayPosition - 100) {
+      newSection = 'gameplay';
     } else {
       newSection = 'announcer';
     }
@@ -174,11 +184,20 @@ class _OptionsScreenState extends State<OptionsScreen> {
     // Load ResponsiveVoice
     final responsiveVoice = await AppSettings.getResponsiveVoice() ?? 'Australian Female';
 
+    // Load playback rate (default 1.0)
+    final playbackRate = await AppSettings.getVoicePlaybackRate();
+
+    // Load gameplay settings
+    final perDartScoreAnnouncements =
+        await AppSettings.getPerDartScoreAnnouncements();
+
     setState(() {
       _voiceEngine = voiceEngine;
       _selectedVoice = selectedVoice;
       _selectedSystemVoice = systemVoice;
       _selectedResponsiveVoice = responsiveVoice;
+      _playbackRate = playbackRate.clamp(0.7, 1.5);
+      _perDartScoreAnnouncements = perDartScoreAnnouncements;
     });
 
     // Load victory music files from service
@@ -202,6 +221,9 @@ class _OptionsScreenState extends State<OptionsScreen> {
       await AppSettings.saveAnnouncerStyle(_selectedVoice.name);
       await AppSettings.saveSystemVoice(_selectedSystemVoice);
       await AppSettings.saveResponsiveVoice(_selectedResponsiveVoice);
+      await AppSettings.saveVoicePlaybackRate(_playbackRate);
+      await AppSettings.savePerDartScoreAnnouncements(
+          _perDartScoreAnnouncements);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -242,6 +264,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
         widget.announcer.setSystemVoice(_selectedSystemVoice);
       }
     }
+    widget.announcer.setPlaybackRate(_playbackRate);
   }
 
   void _testVoice() {
@@ -1072,6 +1095,14 @@ class _OptionsScreenState extends State<OptionsScreen> {
           const SizedBox(height: 8),
           _buildNavItem(
             theme: theme,
+            icon: Icons.sports_esports,
+            label: 'Gameplay',
+            sectionKey: 'gameplay',
+            onTap: () => _scrollToSection(_gameplayKey),
+          ),
+          const SizedBox(height: 8),
+          _buildNavItem(
+            theme: theme,
             icon: Icons.music_note,
             label: 'Celebration Music',
             sectionKey: 'music',
@@ -1542,6 +1573,82 @@ class _OptionsScreenState extends State<OptionsScreen> {
               ),
             const SizedBox(height: 16),
 
+            // Playback Rate (applies to BOTH engines). 1.0 = normal speed.
+            // Range 0.7 – 1.5 in 0.05 steps. Persisted as
+            // voice_playback_rate via AppSettings. Applied immediately on
+            // change so the user hears the new rate from the next Test
+            // Voice press without needing to Save first.
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.speed),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Playback Speed',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${_playbackRate.toStringAsFixed(2)}×',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Slider(
+                      value: _playbackRate,
+                      min: 0.7,
+                      max: 1.5,
+                      divisions: 16, // 0.05 steps
+                      label: '${_playbackRate.toStringAsFixed(2)}×',
+                      onChanged: (value) {
+                        setState(() => _playbackRate = value);
+                        _applySettings();
+                      },
+                    ),
+                    // Labels under the slider. "1.0× normal" is positioned
+                    // proportionally — at 37.5% across the 0.7-1.5 range —
+                    // not at the visual midpoint of the bar. Using
+                    // Alignment(2 * fraction - 1, 0): fraction = (1.0 -
+                    // 0.7) / (1.5 - 0.7) = 0.375 → alignment.x = -0.25.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: SizedBox(
+                        height: 16,
+                        child: Stack(
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text('0.7× slower',
+                                  style: theme.textTheme.bodySmall),
+                            ),
+                            Align(
+                              alignment: const Alignment(-0.25, 0),
+                              child: Text('1.0× normal',
+                                  style: theme.textTheme.bodySmall),
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text('1.5× faster',
+                                  style: theme.textTheme.bodySmall),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             // Personality Style (only for browser voices)
             if (_voiceEngine == VoiceEngine.browser)
               Card(
@@ -1622,6 +1729,61 @@ class _OptionsScreenState extends State<OptionsScreen> {
                 ),
               ],
             ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+
+                  // Gameplay Settings Section — non-audio preferences that
+                  // affect how each game plays. Currently houses the
+                  // "Per-dart score announcements" toggle (Tier A audio
+                  // reduction from the gameplay-feedback-updates branch).
+                  Container(
+                    key: _gameplayKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Gameplay',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Controls how each game behaves during play. '
+                          'These take effect the next time you enter a game.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Card(
+                          child: SwitchListTile(
+                            secondary: const Icon(Icons.record_voice_over),
+                            title: const Text('Per-dart score announcements'),
+                            subtitle: const Text(
+                              'Speak each dart hit (e.g. "Single 20", '
+                              '"Bullseye!") in Carnival Derby, Target Tag, '
+                              'and Monster Mash. Off by default for faster '
+                              'gameplay — you still hear the dart SFX and '
+                              'all game-specific announcements (attacks, '
+                              'eliminations, etc.).',
+                            ),
+                            value: _perDartScoreAnnouncements,
+                            onChanged: (value) async {
+                              setState(() {
+                                _perDartScoreAnnouncements = value;
+                              });
+                              // Persist immediately — no Save button on
+                              // this section. The change takes effect
+                              // the next time a game's queue runs
+                              // loadSettings (i.e. next game start).
+                              await AppSettings
+                                  .savePerDartScoreAnnouncements(value);
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ),

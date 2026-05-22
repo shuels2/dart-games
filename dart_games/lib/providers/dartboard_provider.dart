@@ -162,32 +162,7 @@ class DartboardProvider with ChangeNotifier {
 
       if (success) {
         await _saveConfiguration(name, serialNumber, apiKey, false);
-        _status = DartboardConnectionStatus.connected;
-        _error = null;
-
-        // Listen for disconnect events to update status
-        _webSocketService!.eventStream.listen((event) {
-          if (event['type'] == 'disconnected') {
-            _status = DartboardConnectionStatus.error;
-            _error = event['data']?['message'] ?? 'Dartboard disconnected';
-            notifyListeners();
-          } else if (event['type'] == 'sbc_status_changed') {
-            final payload = event['data']?['payload'];
-            final boardStatus = payload?['boardStatus'] as String?;
-            if (boardStatus == 'Ready' || boardStatus == 'Throw' || boardStatus == 'Takeout') {
-              _status = DartboardConnectionStatus.connected;
-              _error = null;
-            } else if (boardStatus == 'Offline' || boardStatus == 'Error' || boardStatus == null) {
-              _status = DartboardConnectionStatus.error;
-              _error = boardStatus == 'Offline'
-                  ? 'Dartboard is offline'
-                  : 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
-            }
-            notifyListeners();
-          }
-        });
-
-        notifyListeners();
+        _onWebSocketConnected();
         return true;
       } else {
         // WebSocket connection failed
@@ -268,40 +243,7 @@ class DartboardProvider with ChangeNotifier {
     debugPrint('[Dartboard] WebSocket connect() returned: $success');
 
     if (success) {
-      _status = DartboardConnectionStatus.connected;
-      _error = null;
-      debugPrint('[Dartboard] Status -> connected. Subscribing to event stream.');
-
-      // Listen for disconnect/status events
-      _webSocketService!.eventStream.listen((event) {
-        if (event['type'] == 'disconnected') {
-          debugPrint('[Dartboard] event: disconnected '
-              '(message=${event['data']?['message']}). Status -> error. '
-              'NOTE: no auto-reconnect — the WebSocket is now dead until '
-              'loadConfiguration() / connectToScolia() runs again.');
-          _status = DartboardConnectionStatus.error;
-          _error = event['data']?['message'] ?? 'Dartboard disconnected';
-          notifyListeners();
-        } else if (event['type'] == 'sbc_status_changed') {
-          final payload = event['data']?['payload'];
-          final boardStatus = payload?['boardStatus'] as String?;
-          debugPrint('[Dartboard] event: sbc_status_changed '
-              'boardStatus=$boardStatus');
-          if (boardStatus == 'Ready' || boardStatus == 'Throw' || boardStatus == 'Takeout') {
-            _status = DartboardConnectionStatus.connected;
-            _error = null;
-          } else if (boardStatus == 'Offline' || boardStatus == 'Error' || boardStatus == null) {
-            _status = DartboardConnectionStatus.error;
-            _error = boardStatus == 'Offline'
-                ? 'Dartboard is offline'
-                : 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
-          } else {
-            debugPrint('[Dartboard]   (unrecognized boardStatus — status '
-                'stays at ${_status.name})');
-          }
-          notifyListeners();
-        }
-      });
+      _onWebSocketConnected();
     } else {
       // WebSocket failed — fall back to status checking via REST
       debugPrint('[Dartboard] WebSocket connect() returned false. '
@@ -311,6 +253,115 @@ class DartboardProvider with ChangeNotifier {
       _webSocketService = null;
       _status = DartboardConnectionStatus.error;
       _error = 'Unable to Connect';
+      notifyListeners();
+    }
+  }
+
+  /// Wire the post-connect event listener and resolve the initial status
+  /// based on what the dartboard hardware reports — NOT just on the
+  /// WebSocket auth handshake. Called from both connectToScolia (the
+  /// setup-screen explicit connect) and _attemptConnection (the saved-
+  /// config reconnect on app startup) after `connect()` returns true.
+  ///
+  /// Past bug: we used to flip status to `connected` the instant
+  /// HELLO_CLIENT arrived. HELLO_CLIENT only proves Scolia's server
+  /// accepted the WebSocket auth — it says nothing about whether the
+  /// physical dartboard is powered on. With the hardware off, the user
+  /// saw "connected" and tappable game tiles even though throws would
+  /// never register. This helper instead:
+  ///
+  ///   1. Subscribes to events FIRST (so a racing SBC reply isn't lost).
+  ///   2. Reads any boardStatus that was already attached to HELLO_CLIENT
+  ///      and only declares `connected` if it's Ready/Throw/Takeout.
+  ///   3. Otherwise stays in `connecting`, explicitly sends GET_SBC_STATUS
+  ///      (instead of waiting up to 10s for the status-check timer's
+  ///      first tick), and falls through to `error` after 5s if the
+  ///      hardware never replies (the "dartboard powered off" case —
+  ///      Scolia may not respond at all).
+  void _onWebSocketConnected() {
+    // 1. Subscribe BEFORE setting status so any SBC status event that
+    //    races us (e.g. arrives between connect() returning and us
+    //    subscribing) is caught.
+    debugPrint('[Dartboard] WebSocket auth OK. Subscribing to event stream '
+        'before resolving status.');
+    _webSocketService!.eventStream.listen((event) {
+      if (event['type'] == 'disconnected') {
+        debugPrint('[Dartboard] event: disconnected '
+            '(message=${event['data']?['message']}). Status -> error. '
+            'NOTE: no auto-reconnect — the WebSocket is now dead until '
+            'loadConfiguration() / connectToScolia() runs again.');
+        _status = DartboardConnectionStatus.error;
+        _error = event['data']?['message'] ?? 'Dartboard disconnected';
+        notifyListeners();
+      } else if (event['type'] == 'sbc_status_changed') {
+        final payload = event['data']?['payload'];
+        final boardStatus = payload?['boardStatus'] as String?;
+        debugPrint('[Dartboard] event: sbc_status_changed '
+            'boardStatus=$boardStatus');
+        _applyBoardStatus(boardStatus, payload);
+      }
+    });
+
+    // 2. Use whatever boardStatus HELLO_CLIENT already gave us. When the
+    //    hardware is online Scolia typically embeds it; when it's offline
+    //    the field is missing or null.
+    final initialBoardStatus = _webSocketService?.boardStatus;
+    debugPrint('[Dartboard] HELLO_CLIENT carried boardStatus='
+        '${initialBoardStatus ?? "<null>"}');
+
+    if (initialBoardStatus == 'Ready' ||
+        initialBoardStatus == 'Throw' ||
+        initialBoardStatus == 'Takeout') {
+      _status = DartboardConnectionStatus.connected;
+      _error = null;
+      debugPrint('[Dartboard] Status -> connected (HELLO_CLIENT confirmed '
+          'hardware online).');
+      notifyListeners();
+      return;
+    }
+
+    // 3. HELLO_CLIENT didn't confirm online. Stay in `connecting`,
+    //    explicitly request the current status, and arm a 5-second
+    //    timeout for the "hardware powered off, no reply at all" case.
+    _status = DartboardConnectionStatus.connecting;
+    debugPrint('[Dartboard] Status -> connecting. Sending explicit '
+        'GET_SBC_STATUS. Timeout: 5s.');
+    notifyListeners();
+    _webSocketService?.sendGetSbcStatus();
+
+    Future.delayed(const Duration(seconds: 5), () {
+      if (_status == DartboardConnectionStatus.connecting) {
+        debugPrint('[Dartboard] SBC status timeout (5s) — hardware did NOT '
+            'respond. Status -> error. The dartboard is likely powered off '
+            'or unreachable.');
+        _status = DartboardConnectionStatus.error;
+        _error = 'Dartboard did not respond. Is it powered on?';
+        notifyListeners();
+      }
+    });
+  }
+
+  /// Apply a boardStatus value from an SBC_STATUS_CHANGED event and
+  /// notify listeners. Shared between the live event handler and the
+  /// initial-status resolver. Recognized values are Ready/Throw/Takeout
+  /// (→ connected) and Offline/Error/null (→ error). Anything else
+  /// leaves the current status untouched.
+  void _applyBoardStatus(String? boardStatus, dynamic payload) {
+    if (boardStatus == 'Ready' ||
+        boardStatus == 'Throw' ||
+        boardStatus == 'Takeout') {
+      _status = DartboardConnectionStatus.connected;
+      _error = null;
+    } else if (boardStatus == 'Offline' ||
+        boardStatus == 'Error' ||
+        boardStatus == null) {
+      _status = DartboardConnectionStatus.error;
+      _error = boardStatus == 'Offline'
+          ? 'Dartboard is offline'
+          : 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
+    } else {
+      debugPrint('[Dartboard]   (unrecognized boardStatus="$boardStatus" — '
+          'status stays at ${_status.name})');
     }
     notifyListeners();
   }
