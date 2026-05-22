@@ -102,7 +102,8 @@ class GameAnnouncementQueueService {
     );
 
     _queue.add(announcement);
-    debugPrint('Queued (${priority.name}): $text${soundEffect != null ? " [SFX: ${soundEffect.assetPath}]" : ""}');
+    debugPrint('[Audio] Queued (depth=${_queue.length}, pri=${priority.name}): '
+        '"$text"${soundEffect != null ? " [SFX: ${soundEffect.assetPath}]" : ""}');
 
     // Start processing if not already
     if (!_isProcessing) {
@@ -138,7 +139,9 @@ class GameAnnouncementQueueService {
         // Strict FIFO — pop the oldest-queued announcement. Priority is no
         // longer used for ordering (see class doc).
         final announcement = _queue.removeFirst();
-        debugPrint('Speaking (${announcement.priority.name}): ${announcement.text}');
+        final speakIssuedAt = DateTime.now().millisecondsSinceEpoch;
+        debugPrint('[Audio] Speaking (depth=${_queue.length} remain): '
+            '"${announcement.text}"');
 
         // Play sound effect if provided (fire-and-forget — SFX plays in
         // parallel with the speech below).
@@ -180,21 +183,29 @@ class GameAnnouncementQueueService {
         final wordCount = announcement.text.split(' ').length;
         final ttsFallbackMs = wordCount * 350 + 300;
         final speakStart = DateTime.now();
+        bool timedOut = false;
         await _announcer.speak(announcement.text).timeout(
           Duration(milliseconds: ttsFallbackMs),
           onTimeout: () {
-            debugPrint('Speak timed out at fallback (${ttsFallbackMs}ms) — '
-                'engine onend may not have fired for: ${announcement.text}');
+            timedOut = true;
+            debugPrint('[Audio] TIMEOUT after ${ttsFallbackMs}ms — engine '
+                'onend did NOT fire for: "${announcement.text}". This is '
+                'the slow path; if it fires often the fallback is '
+                'effectively the inter-announcement gap.');
           },
         );
+        final speechElapsedMs =
+            DateTime.now().difference(speakStart).inMilliseconds;
+        debugPrint('[Audio] Done (${timedOut ? "TIMEOUT" : "onend"}, '
+            'elapsed=${speechElapsedMs}ms, queue-to-start='
+            '${speakStart.millisecondsSinceEpoch - speakIssuedAt}ms): '
+            '"${announcement.text}"');
 
         if (_disposed) break;
 
         // If the SFX is longer than the speech that just played, wait
         // out the remainder so it doesn't get clipped by the next
         // iteration's `_soundEffectPlayer.stop()` call.
-        final speechElapsedMs =
-            DateTime.now().difference(speakStart).inMilliseconds;
         final remainingSfxMs = sfxMs - speechElapsedMs;
         if (remainingSfxMs > 0) {
           await Future.delayed(Duration(milliseconds: remainingSfxMs));

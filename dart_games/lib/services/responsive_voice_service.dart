@@ -101,7 +101,11 @@ class ResponsiveVoiceService {
       // onend fires when the JS engine has actually finished speaking. Wrap
       // the completion in a guard so a duplicate/late onend can't double-
       // complete the Completer.
+      final startTimeMs = DateTime.now().millisecondsSinceEpoch;
       final onEndCallback = (() {
+        final elapsedMs =
+            DateTime.now().millisecondsSinceEpoch - startTimeMs;
+        print('[Audio][RV] onend fired after ${elapsedMs}ms for: "$text"');
         if (!completer.isCompleted) completer.complete();
       }).toJS;
 
