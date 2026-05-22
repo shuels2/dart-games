@@ -155,6 +155,12 @@ class PiratesGridAnnouncementHelper {
   /// "Remove your darts" prompt — ALWAYS called unconditionally in the
   /// takeout handler. NEVER suppressed by the precedence chain.
   void announceRemoveDarts(String playerName) {
+    // Disabled 2026-05-22 by user direction: the "Remove your darts"
+    // announcement adds noticeable per-turn audio. The original queue
+    // call is left intact below as documentation and a one-line revert
+    // — drop the `return;` to re-enable.
+    return;
+    // ignore: dead_code
     _queueService.announce(
       '$playerName, remove your darts',
       AudioPriority.turnTransition,

@@ -46,6 +46,12 @@ class LunarLanderAnnouncementHelper {
   /// This is ALWAYS called unconditionally at takeout — it is NEVER gated by
   /// the moment-announcement precedence chain.
   void announceRemoveDarts() {
+    // Disabled 2026-05-22 by user direction: the "Remove your darts"
+    // announcement adds noticeable per-turn audio. The original queue
+    // call is left intact below as documentation and a one-line revert
+    // — drop the `return;` to re-enable.
+    return;
+    // ignore: dead_code
     _queue.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
