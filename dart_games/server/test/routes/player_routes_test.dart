@@ -219,12 +219,12 @@ void main() {
 
       expect(response.statusCode, 200);
       final body = await _readJson(response) as Map<String, dynamic>;
-      expect(body['photoPath'], isA<String>());
-      expect(body['photoPath'], contains(playerId));
-
-      // Verify the file was actually written to disk
-      final file = File(body['photoPath'] as String);
-      expect(file.existsSync(), isTrue);
+      // Response returns the API URL the client should fetch the photo at
+      // (NOT the server's local filesystem path — that would be useless
+      // to a web client). The actual file still lives at
+      // <dataDir>/photos/<id>.png on disk.
+      expect(body['photoPath'], '/api/v1/players/$playerId/photo');
+      expect(File('$dataDir/photos/$playerId.png').existsSync(), isTrue);
     });
 
     test('GET /<id>/photo serves the uploaded photo', () async {
@@ -270,20 +270,58 @@ void main() {
       expect(body['error'], contains('not found'));
     });
 
-    test('DELETE /<id>/photo removes photo and returns 204', () async {
+    test('GET /<id> returns API URL in photoPath after upload', () async {
       await createPlayer();
-
-      // Upload a photo first
-      final uploadResponse = await handler(
+      await handler(
         _jsonRequest('POST', '/$playerId/photo', {
           'photoData': _tinyPng,
           'fileName': 'avatar.png',
         }),
       );
-      final uploadBody =
-          await _readJson(uploadResponse) as Map<String, dynamic>;
-      final photoPath = uploadBody['photoPath'] as String;
-      expect(File(photoPath).existsSync(), isTrue);
+
+      // Fetching the player record should return the API URL, NOT the
+      // server-side filesystem path that's actually in the database. The
+      // web client renders this via NetworkImage and needs a fetchable URL.
+      final response = await handler(
+        Request('GET', Uri.parse('http://localhost/$playerId')),
+      );
+      expect(response.statusCode, 200);
+      final body = await _readJson(response) as Map<String, dynamic>;
+      expect(body['photoPath'], '/api/v1/players/$playerId/photo');
+    });
+
+    test('GET / returns API URL in photoPath for players with photos',
+        () async {
+      await createPlayer();
+      await handler(
+        _jsonRequest('POST', '/$playerId/photo', {
+          'photoData': _tinyPng,
+          'fileName': 'avatar.png',
+        }),
+      );
+
+      final response = await handler(
+        Request('GET', Uri.parse('http://localhost/')),
+      );
+      expect(response.statusCode, 200);
+      final body = await _readJson(response) as List;
+      final entry = body.firstWhere((p) => p['id'] == playerId)
+          as Map<String, dynamic>;
+      expect(entry['photoPath'], '/api/v1/players/$playerId/photo');
+    });
+
+    test('DELETE /<id>/photo removes photo and returns 204', () async {
+      await createPlayer();
+
+      // Upload a photo first
+      await handler(
+        _jsonRequest('POST', '/$playerId/photo', {
+          'photoData': _tinyPng,
+          'fileName': 'avatar.png',
+        }),
+      );
+      final onDiskPath = '$dataDir/photos/$playerId.png';
+      expect(File(onDiskPath).existsSync(), isTrue);
 
       // Delete the photo
       final response = await handler(
@@ -293,7 +331,7 @@ void main() {
       expect(response.statusCode, 204);
 
       // Verify file is removed from disk
-      expect(File(photoPath).existsSync(), isFalse);
+      expect(File(onDiskPath).existsSync(), isFalse);
 
       // Verify GET photo now returns 404
       final getResponse = await handler(
@@ -306,16 +344,14 @@ void main() {
       await createPlayer();
 
       // Upload a photo
-      final uploadResponse = await handler(
+      await handler(
         _jsonRequest('POST', '/$playerId/photo', {
           'photoData': _tinyPng,
           'fileName': 'avatar.png',
         }),
       );
-      final uploadBody =
-          await _readJson(uploadResponse) as Map<String, dynamic>;
-      final photoPath = uploadBody['photoPath'] as String;
-      expect(File(photoPath).existsSync(), isTrue);
+      final onDiskPath = '$dataDir/photos/$playerId.png';
+      expect(File(onDiskPath).existsSync(), isTrue);
 
       // Delete the player
       await handler(
@@ -323,7 +359,7 @@ void main() {
       );
 
       // Verify the photo file was cleaned up
-      expect(File(photoPath).existsSync(), isFalse);
+      expect(File(onDiskPath).existsSync(), isFalse);
     });
   });
 
