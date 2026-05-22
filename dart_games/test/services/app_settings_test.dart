@@ -270,4 +270,30 @@ void main() {
       expect(await AppSettings.getGoogleApiKey(), apiKey);
     });
   });
+
+  group('AppSettings - Per-dart score announcements', () {
+    test('defaults to false when no value saved', () async {
+      final value = await AppSettings.getPerDartScoreAnnouncements();
+      expect(value, isFalse);
+    });
+
+    test('saves and retrieves true', () async {
+      await AppSettings.savePerDartScoreAnnouncements(true);
+      final value = await AppSettings.getPerDartScoreAnnouncements();
+      expect(value, isTrue);
+    });
+
+    test('saves and retrieves false (explicit opt-out)', () async {
+      await AppSettings.savePerDartScoreAnnouncements(false);
+      final value = await AppSettings.getPerDartScoreAnnouncements();
+      expect(value, isFalse);
+    });
+
+    test('overwrites a previous value', () async {
+      await AppSettings.savePerDartScoreAnnouncements(true);
+      await AppSettings.savePerDartScoreAnnouncements(false);
+      final value = await AppSettings.getPerDartScoreAnnouncements();
+      expect(value, isFalse);
+    });
+  });
 }

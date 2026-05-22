@@ -25,8 +25,17 @@ class MonsterMashAnnouncementHelper {
     );
   }
 
-  // Announce dart hit
+  // NORMAL_PER_DART announcement (generic score readout: "Single 20",
+  // "Bullseye!", "Miss"). Gated by the System Settings → Gameplay →
+  // "Per-dart score announcements" toggle. When the toggle is OFF
+  // (the default), this method no-ops; the dart-hit SFX from the game
+  // screen still plays and all game-specific announcements
+  // (Strike/damage, Hat Trick, Elimination, ClutchHeal, etc.) still
+  // fire as before. The game screen calls this only when there is no
+  // secondary effect to announce (the !hasSecondary fallback path).
   void announceHit(int number, String multiplier, {bool isMiss = false}) {
+    if (!_queue.perDartScoreAnnouncementsEnabled) return;
+
     if (isMiss) {
       _queue.announce('Miss', AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.dartHit);
       return;
