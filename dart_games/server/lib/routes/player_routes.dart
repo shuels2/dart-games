@@ -104,6 +104,23 @@ class PlayerRoutes {
     return dir;
   }
 
+  /// Replace the raw `photoPath` field in a player-shaped JSON map with the
+  /// API URL the client should fetch the photo from. The database stores
+  /// the server-side filesystem path (so the upload handler can write to
+  /// the right place), but that path is meaningless to the web client —
+  /// the client needs a URL it can pass to NetworkImage. We expose
+  /// `/api/v1/players/<id>/photo` instead, which is served by `_getPhoto`
+  /// below.
+  ///
+  /// When `photoPath` is null, the field stays null (no change).
+  Map<String, dynamic> _withApiPhotoUrl(Map<String, dynamic> playerJson) {
+    if (playerJson['photoPath'] == null) return playerJson;
+    final id = playerJson['id'] as String;
+    final copy = Map<String, dynamic>.from(playerJson);
+    copy['photoPath'] = '/api/v1/players/$id/photo';
+    return copy;
+  }
+
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
@@ -174,7 +191,7 @@ class PlayerRoutes {
 
     final players = order.map((id) {
       final p = byId[id]!;
-      return ServerPlayer(
+      return _withApiPhotoUrl(ServerPlayer(
         id: p.id,
         name: p.name,
         photoPath: p.photoPath,
@@ -182,7 +199,7 @@ class PlayerRoutes {
         gamesPlayed: p.gamesPlayed,
         gamesWon: p.gamesWon,
         gameHistory: histories[id]!,
-      ).toJson();
+      ).toJson());
     }).toList();
 
     return Response.ok(
@@ -201,7 +218,7 @@ class PlayerRoutes {
       );
     }
     return Response.ok(
-      jsonEncode(player.toJson()),
+      jsonEncode(_withApiPhotoUrl(player.toJson())),
       headers: _jsonHeaders,
     );
   }
@@ -229,7 +246,7 @@ class PlayerRoutes {
     final player = _loadPlayer(id)!;
     return Response(
       201,
-      body: jsonEncode(player.toJson()),
+      body: jsonEncode(_withApiPhotoUrl(player.toJson())),
       headers: _jsonHeaders,
     );
   }
@@ -254,7 +271,7 @@ class PlayerRoutes {
 
     final player = _loadPlayer(id)!;
     return Response.ok(
-      jsonEncode(player.toJson()),
+      jsonEncode(_withApiPhotoUrl(player.toJson())),
       headers: _jsonHeaders,
     );
   }
@@ -332,8 +349,11 @@ class PlayerRoutes {
       [filePath, id],
     );
 
+    // Return the API URL (not the server-side filesystem path) so the
+    // client's saved value matches what subsequent GET /players responses
+    // will return.
     return Response.ok(
-      jsonEncode({'photoPath': filePath}),
+      jsonEncode({'photoPath': '/api/v1/players/$id/photo'}),
       headers: _jsonHeaders,
     );
   }

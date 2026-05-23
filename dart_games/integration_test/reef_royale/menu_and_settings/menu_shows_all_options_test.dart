@@ -17,12 +17,14 @@ void main() {
     // Verify game mode dropdown exists
     expect(ElementFinders.getReefRoyaleGameModeDropdown(), findsOneWidget);
 
-    // Verify toggle switches exist
+    // Verify toggle switches exist. Include Bull replaced Show Hints
+    // in the menu (the Show Hints toggle was removed; hints are now
+    // always on for new games).
     expect(ElementFinders.getReefRoyaleEasyClaimSwitch(), findsOneWidget);
     expect(ElementFinders.getReefRoyaleNeighborNumbersSwitch(), findsOneWidget);
     expect(ElementFinders.getReefRoyaleRandomReefsSwitch(), findsOneWidget);
     expect(ElementFinders.getReefRoyaleBonusBuffsSwitch(), findsOneWidget);
-    expect(ElementFinders.getReefRoyaleShowHintsSwitch(), findsOneWidget);
+    expect(ElementFinders.getReefRoyaleIncludeBullSwitch(), findsOneWidget);
     expect(ElementFinders.getReefRoyaleSpeedPlaySwitch(), findsOneWidget);
   });
 }

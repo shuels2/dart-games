@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -17,6 +16,7 @@ import 'test_dartboard_screen.dart';
 import 'api_logger_screen.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
+import '../widgets/player_avatar_widget.dart';
 import '../providers/dartboard_provider.dart';
 
 class OptionsScreen extends StatefulWidget {
@@ -820,7 +820,12 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
   Widget _buildPlayerListTile(Player player, PlayerProvider playerProvider) {
     return ExpansionTile(
-      leading: _buildPlayerAvatar(player),
+      // Using the shared PlayerAvatarWidget (single source of truth for
+      // photo rendering — handles data URLs, server-served HTTP URLs,
+      // and mobile filesystem paths via the same code path PlayerSelectionCard
+      // uses in every game's player list). Size 20 matches the previous
+      // CircleAvatar(radius: 20, ...) shape.
+      leading: PlayerAvatarWidget(player: player, size: 20.0),
       title: Text(
         player.name,
         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -849,30 +854,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
       children: [
         _buildPlayerDetails(player, playerProvider),
       ],
-    );
-  }
-
-  Widget _buildPlayerAvatar(Player player) {
-    if (player.photoPath != null) {
-      if (player.photoPath!.startsWith('data:')) {
-        // Web data URL
-        return CircleAvatar(
-          radius: 20,
-          backgroundImage: MemoryImage(
-            base64Decode(player.photoPath!.split(',')[1]),
-          ),
-        );
-      } else {
-        // Mobile file path
-        return CircleAvatar(
-          radius: 20,
-          backgroundImage: FileImage(File(player.photoPath!)),
-        );
-      }
-    }
-    return const CircleAvatar(
-      radius: 20,
-      child: Icon(Icons.person),
     );
   }
 

@@ -821,7 +821,7 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
           initialNeighborNumbers: currentGame.neighborNumbers,
           initialRandomReefs: currentGame.randomReefs,
           initialBonusBuffs: currentGame.bonusBuffsEnabled,
-          initialShowHints: currentGame.showHints,
+          initialIncludeBull: currentGame.includeBull,
           initialSpeedPlay: currentGame.speedPlayEnabled,
           initialRoundLimit: currentGame.roundLimit,
         ),

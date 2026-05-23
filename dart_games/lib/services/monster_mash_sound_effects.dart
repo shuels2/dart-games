@@ -10,14 +10,16 @@ class MonsterMashSoundEffects {
   static const SoundEffectConfig gameStart = SoundEffectConfig(
     assetPath: '${_basePath}MonsterMash-Organ.mp3',
     startSeconds: 1.75,
-    endSeconds: 9.0,
+    endSeconds: 4.0,
+    fadeOutMs: 1500,
   );
 
   // PRIORITY 1: Turn Transitions
   static const SoundEffectConfig turnStart = SoundEffectConfig(
     assetPath: '${_basePath}MonsterMash-MonsterScream.mp3',
     startSeconds: 3.0,
-    endSeconds: 7.5,
+    endSeconds: 5.5,
+    fadeOutMs: 1500,
   );
 
   static const SoundEffectConfig removeDarts = SoundEffectConfig(
@@ -50,13 +52,15 @@ class MonsterMashSoundEffects {
     assetPath: '${_targetTagPath}TargetTag-Ominous.mp3',
     startSeconds: 0.0,
     endSeconds: null, // Play entire file
+    fadeOutMs: 1500,
   );
 
   // PRIORITY 4: Status Changes
   static const SoundEffectConfig elimination = SoundEffectConfig(
     assetPath: '${_targetTagPath}TargetTag-Villain.mp3',
     startSeconds: 0.0,
-    endSeconds: null, // Play entire file
+    endSeconds: 3.0,
+    fadeOutMs: 1500,
   );
 
   static const SoundEffectConfig hatTrick = SoundEffectConfig(

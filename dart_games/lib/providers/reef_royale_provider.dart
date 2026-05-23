@@ -104,8 +104,9 @@ class ReefRoyaleProvider extends ChangeNotifier {
     bool bonusBuffs,
     bool showHints,
     bool speedPlay,
-    int roundLimit,
-  ) {
+    int roundLimit, {
+    bool includeBull = false,
+  }) {
     if (players.length < 2) {
       debugPrint('Cannot start game with less than 2 players');
       return;
@@ -120,6 +121,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
       randomReefs: randomReefs,
       bonusBuffsEnabled: bonusBuffs,
       showHints: showHints,
+      includeBull: includeBull,
       speedPlayEnabled: speedPlay,
       roundLimit: roundLimit,
     );

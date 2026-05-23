@@ -12,6 +12,7 @@ void main() {
         randomReefs: false,
         bonusBuffsEnabled: true,
         showHints: true,
+        includeBull: true,
         speedPlayEnabled: true,
         roundLimit: 8,
       );
@@ -40,6 +41,7 @@ void main() {
       expect(json['randomReefs'], false);
       expect(json['bonusBuffsEnabled'], true);
       expect(json['showHints'], true);
+      expect(json['includeBull'], true);
       expect(json['speedPlayEnabled'], true);
       expect(json['roundLimit'], 8);
       expect(json['playerIds'], ['p1', 'p2', 'p3']);
@@ -108,6 +110,7 @@ void main() {
       expect(restored.randomReefs, original.randomReefs);
       expect(restored.bonusBuffsEnabled, original.bonusBuffsEnabled);
       expect(restored.showHints, original.showHints);
+      expect(restored.includeBull, original.includeBull);
       expect(restored.speedPlayEnabled, original.speedPlayEnabled);
       expect(restored.roundLimit, original.roundLimit);
       expect(restored.playerIds, original.playerIds);

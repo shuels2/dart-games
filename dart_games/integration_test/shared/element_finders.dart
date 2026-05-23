@@ -356,8 +356,8 @@ class ElementFinders {
     return find.byKey(ReefRoyaleMenuKeys.bonusBuffsSwitch);
   }
 
-  static Finder getReefRoyaleShowHintsSwitch() {
-    return find.byKey(ReefRoyaleMenuKeys.showHintsSwitch);
+  static Finder getReefRoyaleIncludeBullSwitch() {
+    return find.byKey(ReefRoyaleMenuKeys.includeBullSwitch);
   }
 
   static Finder getReefRoyaleSpeedPlaySwitch() {

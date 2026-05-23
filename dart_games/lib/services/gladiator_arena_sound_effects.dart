@@ -10,9 +10,12 @@ class GladiatorArenaSoundEffects {
     assetPath: '${_basePath}GladiatorArena-SwordClash.mp3',
   );
 
-  /// Crowd cheer — plays full clip
+  /// Crowd cheer — plays 0.0s to 3.0s with a 1.5s tail fade
   static const SoundEffectConfig crowdCheer = SoundEffectConfig(
     assetPath: '${_basePath}GladiatorArena-CrowdCheer.mp3',
+    startSeconds: 0.0,
+    endSeconds: 3.0,
+    fadeOutMs: 1500,
   );
 
   /// Crowd gasp — plays from 0.0s to 1.5s
@@ -32,11 +35,12 @@ class GladiatorArenaSoundEffects {
     assetPath: '${_basePath}GladiatorArena-TrumpetFanfare.mp3',
   );
 
-  /// Turn bell — plays from 0.0s to 4.0s
+  /// Turn bell — plays from 0.0s to 2.0s with a 1.0s tail fade
   static const SoundEffectConfig turnBell = SoundEffectConfig(
     assetPath: '${_basePath}GladiatorArena-TurnBell.mp3',
     startSeconds: 0.0,
-    endSeconds: 4.0,
+    endSeconds: 2.0,
+    fadeOutMs: 1000,
   );
 
   /// Miss thud — plays full clip

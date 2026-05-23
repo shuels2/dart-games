@@ -10,9 +10,12 @@ void main() {
 
   testWidgets('Test 6: Hint overlay shows when enabled',
       (WidgetTester tester) async {
+    // Hints are always on for new games now (the Show Hints menu
+    // toggle was removed), so the overlay should appear without any
+    // explicit option flip.
     await UITestHelpers.resetServerState();
 
-    await setupAndStartGame(tester, config, showHints: true);
+    await setupAndStartGame(tester, config);
 
     expect(find.byKey(ReefRoyaleGameKeys.hintOverlay), findsOneWidget);
   });

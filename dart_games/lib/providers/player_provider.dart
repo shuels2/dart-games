@@ -3,6 +3,7 @@ import '../models/player.dart';
 import '../models/game_history_entry.dart';
 import '../services/photo_service.dart';
 import '../services/api/api_client.dart';
+import '../services/api/api_config.dart';
 
 class PlayerProvider extends ChangeNotifier {
   static const String _lastSortedKey = 'players_last_sorted_at';
@@ -167,10 +168,14 @@ class PlayerProvider extends ChangeNotifier {
       final index = _allPlayers.indexWhere((p) => p.id == player.id);
 
       if (index >= 0) {
-        // Update existing player
+        // Update existing player. Capture the previous photo path BEFORE we
+        // overwrite the in-memory entry so _syncPlayerPhoto can tell whether
+        // the user removed a photo (previous non-null, new null → delete).
+        final previousPhotoPath = _allPlayers[index].photoPath;
         _allPlayers[index] = player;
         notifyListeners();
         await _api.updatePlayer(player.id, {'name': player.name});
+        await _syncPlayerPhoto(player, previousPhotoPath);
       } else {
         // Optimistically add to the local list before the server round-trip.
         // This prevents a concurrent loadPlayers() from returning a list
@@ -195,6 +200,9 @@ class PlayerProvider extends ChangeNotifier {
             _allPlayers.add(player);
             notifyListeners();
           }
+          // Fresh player has no previous photo on the server, so any
+          // non-null photoPath here is a freshly-captured upload candidate.
+          await _syncPlayerPhoto(player, null);
         } catch (e) {
           // Roll back the optimistic add on server failure
           _allPlayers.removeWhere((p) => p.id == player.id);
@@ -207,6 +215,68 @@ class PlayerProvider extends ChangeNotifier {
       print(_error);
       notifyListeners();
     }
+  }
+
+  /// Synchronize the player's photo with the server based on the difference
+  /// between `player.photoPath` (the value the caller wants to persist) and
+  /// `previousPhotoPath` (what was on the in-memory record before the save).
+  ///
+  /// Three cases:
+  ///   1. New photoPath is a `data:image/...;base64,...` URL (the format
+  ///      WebCameraWidget returns on web) → strip the prefix and POST to
+  ///      `/players/<id>/photo`. After a successful upload, swap the local
+  ///      photoPath to the API URL the server returns photos at, so
+  ///      PlayerAvatarWidget's NetworkImage can fetch it the same way as
+  ///      a player loaded fresh from the server.
+  ///   2. New photoPath is null AND previous was non-null → user removed
+  ///      the photo via the dialog's "remove" button. DELETE on the server.
+  ///   3. Anything else (mobile filesystem path, already-an-API URL, null
+  ///      with no previous photo) → no-op. Mobile photos stay local; an
+  ///      unchanged API URL is already in sync.
+  ///
+  /// Photo upload failures don't roll back the create/update — the player
+  /// record is still valid, just photo-less server-side. The error is
+  /// logged so the user sees a hint in DevTools.
+  Future<void> _syncPlayerPhoto(
+      Player player, String? previousPhotoPath) async {
+    final newPhoto = player.photoPath;
+
+    // Case 2: photo removed.
+    if (newPhoto == null && previousPhotoPath != null) {
+      try {
+        await _api.deletePlayerPhoto(player.id);
+      } catch (e) {
+        debugPrint('[Photo] DELETE failed for player ${player.id}: $e');
+      }
+      return;
+    }
+
+    if (newPhoto == null) return;
+
+    // Case 1: new capture (data URL → upload).
+    if (newPhoto.startsWith('data:image/')) {
+      final commaIdx = newPhoto.indexOf(',');
+      if (commaIdx < 0) return; // malformed; bail silently
+      final base64Data = newPhoto.substring(commaIdx + 1);
+      try {
+        await _api.uploadPlayerPhoto(player.id, base64Data, 'photo.jpg');
+        // Swap the in-memory photoPath from the data URL to the API URL so
+        // subsequent renders use the server-served photo (matches the way
+        // photos load from loadPlayers).
+        final idx = _allPlayers.indexWhere((p) => p.id == player.id);
+        if (idx >= 0) {
+          _allPlayers[idx] = _allPlayers[idx].copyWith(
+            photoPath: ApiConfig.url('/api/v1/players/${player.id}/photo'),
+          );
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('[Photo] Upload failed for player ${player.id}: $e');
+      }
+      return;
+    }
+
+    // Case 3: filesystem path / existing API URL / unchanged — no-op.
   }
 
   /// Persist a list of pre-existing GameHistoryEntries to the server for a

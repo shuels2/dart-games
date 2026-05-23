@@ -272,16 +272,13 @@ class GameSetupHelpers {
     bool speedPlay = false,
     int? roundLimit,
     bool randomReefs = false,
-    bool showHints = false,
+    bool includeBull = false,
     List<String>? playerNames,
   }) async {
     await UITestHelpers.navigateToGameMenu(tester, config);
 
     if (cursedTide) {
       await SettingsHelpers.setReefRoyaleGameMode(tester, 'Cursed Tide');
-    }
-    if (showHints) {
-      await SettingsHelpers.toggleReefRoyaleShowHints(tester);
     }
     if (easyClaim) {
       await SettingsHelpers.toggleReefRoyaleEasyClaim(tester);
@@ -291,6 +288,11 @@ class GameSetupHelpers {
     }
     if (randomReefs) {
       await SettingsHelpers.toggleReefRoyaleRandomReefs(tester);
+    }
+    // Include Bull must be toggled AFTER Random Reefs — the menu
+    // disables the Include Bull switch while Random Reefs is OFF.
+    if (includeBull) {
+      await SettingsHelpers.toggleReefRoyaleIncludeBull(tester);
     }
     if (bonusBuffs) {
       await SettingsHelpers.toggleReefRoyaleBonusBuffs(tester);

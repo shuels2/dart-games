@@ -29,6 +29,7 @@ void main() {
     int roundLimit = 10,
     ReefRoyaleGameMode gameMode = ReefRoyaleGameMode.standard,
     List<Player>? customPlayers,
+    bool includeBull = false,
   }) {
     provider.startGame(
       customPlayers ?? players,
@@ -40,6 +41,7 @@ void main() {
       showHints,
       speedPlay,
       roundLimit,
+      includeBull: includeBull,
     );
   }
 
@@ -568,6 +570,178 @@ void main() {
       provider.processDartThrow('S20');
 
       expect(provider.getPlayerPearls('p1'), 20); // 20 * 1 = 20 pearls
+    });
+  });
+
+  // -------------------------------------------------------
+  // Win condition regression — claim-all-then-overtake
+  // -------------------------------------------------------
+  group('win condition', () {
+    test('declares winner when a player who already claimed all corals '
+        'later takes the pearl lead', () {
+      // Regression for the bug where ReefRoyaleGame._checkWinCondition was
+      // only called from _processMarkingForTarget (the path that runs while
+      // a player is still claiming corals). Once Alice has claimed all 7
+      // corals, EVERY subsequent dart she throws routes through
+      // _processScoringForTarget, which updates pearls but used to NEVER
+      // re-check the win condition. The bug: Alice could overtake Bob on
+      // pearls and the engine would silently stay in `playing` state.
+      //
+      // Fix: call _checkWinCondition at the end of processDart.
+      //
+      // Scenario:
+      //   * 3 players (P3 stays idle so no coral ever gets fully locked).
+      //   * Alice claims all 7 corals via triples with 0 excess marks ->
+      //     0 pearls accumulated.
+      //   * Bob claims target 20 (also 0 excess) then over-hits it twice
+      //     with singles -> 40 pearls.
+      //   * Alice finishes claiming all 7 corals while still on 0 pearls;
+      //     game must continue (no pearl lead).
+      //   * Alice throws T20 next turn -> already claimed by Alice -> Path
+      //     B scoring -> 60 pearls -> Alice now leads.
+      //   * With the fix in place, the end-of-processDart _checkWinCondition
+      //     call sees claimed-all + pearl-lead and declares Alice the winner.
+      final threePlayers = [
+        Player(id: 'p1', name: 'Alice', createdAt: DateTime.now()),
+        Player(id: 'p2', name: 'Bob', createdAt: DateTime.now()),
+        Player(id: 'p3', name: 'Carol', createdAt: DateTime.now()),
+      ];
+      startStandardGame(customPlayers: threePlayers);
+
+      void missTurn() {
+        provider.processDartThrow('None');
+        provider.processDartThrow('None');
+        provider.processDartThrow('None');
+        provider.handleTakeoutFinished();
+      }
+
+      // Turn 1 — Alice claims 20, 19, 18 (0 pearls).
+      expect(provider.getCurrentPlayerId(), 'p1');
+      provider.processDartThrow('T20');
+      provider.processDartThrow('T19');
+      provider.processDartThrow('T18');
+      provider.handleTakeoutFinished();
+      expect(provider.getPlayerPearls('p1'), 0);
+      expect(provider.getPlayerClaimedCount('p1'), 3);
+
+      // Turn 2 — Bob claims target 20 with 0 excess, then over-hits twice
+      // (singles on his own claimed target while Carol still hasn't
+      // claimed it -> Path B scoring fires).
+      expect(provider.getCurrentPlayerId(), 'p2');
+      provider.processDartThrow('T20'); // mark to threshold, 0 excess
+      provider.processDartThrow('S20'); // Path B: 20 * 1 = 20 pearls
+      provider.processDartThrow('S20'); // Path B: 20 more pearls
+      provider.handleTakeoutFinished();
+      expect(provider.hasPlayerClaimed('p2', 20), isTrue);
+      expect(provider.getPlayerPearls('p2'), 40);
+
+      // Turn 3 — Carol misses.
+      expect(provider.getCurrentPlayerId(), 'p3');
+      missTurn();
+      expect(provider.getPlayerPearls('p3'), 0);
+
+      // Turn 4 — Alice claims 17, 16, 15 (still 0 pearls).
+      expect(provider.getCurrentPlayerId(), 'p1');
+      provider.processDartThrow('T17');
+      provider.processDartThrow('T16');
+      provider.processDartThrow('T15');
+      provider.handleTakeoutFinished();
+      expect(provider.getPlayerClaimedCount('p1'), 6);
+
+      // Turns 5 & 6 — Bob and Carol both miss.
+      missTurn();
+      missTurn();
+
+      // Turn 7 — Alice claims target 25 (the Bull coral) with three
+      // '25' outer-bull darts (1 mark each, 3 = threshold, 0 excess).
+      // Inner '50' Bull would be 2 marks/dart and would push excess
+      // marks onto the threshold-cross dart, leaking pearls; '25'
+      // keeps Alice's pearls at exactly 0 here.
+      expect(provider.getCurrentPlayerId(), 'p1');
+      provider.processDartThrow('25');
+      provider.processDartThrow('25');
+      provider.processDartThrow('25');
+      expect(provider.hasPlayerClaimed('p1', 25), isTrue);
+
+      // Alice has all 7 corals but no pearl lead — game must continue.
+      // This is the moment the OLD code would also-correctly stay in
+      // `playing` state; the bug surfaces on subsequent darts.
+      expect(provider.getPlayerClaimedCount('p1'), 7);
+      expect(provider.getPlayerPearls('p1'), 0);
+      expect(provider.getPlayerPearls('p2'), 40);
+      expect(provider.hasWinner, isFalse,
+          reason: 'Alice has all corals but no pearl lead — game must '
+              'continue');
+      provider.handleTakeoutFinished();
+
+      // Turns 8 & 9 — Bob and Carol miss.
+      missTurn();
+      missTurn();
+
+      // Turn 10 — Alice throws T20. She has already claimed 20, so this
+      // routes through _processScoringForTarget. Bob has also claimed
+      // 20, but Carol still hasn't, so `anyOpponentUnclaimed` is true
+      // and pearls flow to Alice: target 20 * triple = 60.
+      //
+      // WITHOUT the fix: hasWinner stays false here — _checkWinCondition
+      //   was only wired into the marking path, never the scoring path,
+      //   and Alice has already finished marking everything she can.
+      // WITH the fix: _checkWinCondition runs at the end of processDart,
+      //   sees Alice has all 7 corals and 60 > Bob's 40 pearls, and
+      //   declares her the winner immediately.
+      expect(provider.getCurrentPlayerId(), 'p1');
+      provider.processDartThrow('T20');
+
+      expect(provider.getPlayerPearls('p1'), 60);
+      expect(provider.hasWinner, isTrue,
+          reason: 'Alice took the pearl lead after claiming all corals — '
+              'the game should end the moment this dart resolves');
+      expect(provider.currentGame!.winnerId, 'p1');
+      expect(provider.currentGame!.winnerIds, ['p1']);
+    });
+  });
+
+  // -------------------------------------------------------
+  // Include Bull option
+  // -------------------------------------------------------
+  group('Include Bull option', () {
+    test('randomReefs ON + includeBull ON: 7 corals, Bull is the 7th', () {
+      startStandardGame(randomReefs: true, includeBull: true);
+      final targets = provider.currentGame!.activeTargets;
+      expect(targets.length, 7);
+      expect(targets.last, 25, reason: 'Bull occupies slot 7');
+      // First 6 are unique 1-20.
+      final numberTargets = targets.sublist(0, 6);
+      expect(numberTargets.toSet().length, 6);
+      for (final t in numberTargets) {
+        expect(t, inInclusiveRange(1, 20));
+      }
+    });
+
+    test('randomReefs ON + includeBull OFF: 7 number corals, Bull excluded',
+        () {
+      startStandardGame(randomReefs: true, includeBull: false);
+      final targets = provider.currentGame!.activeTargets;
+      expect(targets.length, 7);
+      expect(targets.contains(25), isFalse,
+          reason: 'Bull (25) must not appear when includeBull is off');
+      // All 7 are unique 1-20.
+      expect(targets.toSet().length, 7);
+      for (final t in targets) {
+        expect(t, inInclusiveRange(1, 20));
+      }
+    });
+
+    test('randomReefs OFF: includeBull is inert; Bull is always present', () {
+      // Both toggle values must produce the canonical standard list.
+      // The Include Bull setting only affects the random-reefs path.
+      for (final includeBull in [true, false]) {
+        startStandardGame(randomReefs: false, includeBull: includeBull);
+        expect(provider.currentGame!.activeTargets,
+            [20, 19, 18, 17, 16, 15, 25],
+            reason: 'standard target list is unaffected by includeBull '
+                '(includeBull=$includeBull)');
+      }
     });
   });
 }

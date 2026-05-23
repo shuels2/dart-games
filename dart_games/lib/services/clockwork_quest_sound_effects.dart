@@ -20,11 +20,12 @@ class ClockworkQuestSoundEffects {
     endSeconds: 2.5,
   );
 
-  /// Fanfare for victory
+  /// Fanfare for victory — 1.5s tail fade
   static const SoundEffectConfig victoryFanfare = SoundEffectConfig(
     assetPath: '${_basePath}ClockworkQuest-Fanfare.mp3',
     startSeconds: 0.0,
     endSeconds: 3.5,
+    fadeOutMs: 1500,
   );
 
   /// Single gear click for single gear activation

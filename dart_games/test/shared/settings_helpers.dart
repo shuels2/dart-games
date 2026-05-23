@@ -355,9 +355,9 @@ class SettingsHelpers {
     await toggleSwitch(tester, ElementFinders.getReefRoyaleBonusBuffsSwitch());
   }
 
-  /// Reef Royale: Toggle Show Hints
-  static Future<void> toggleReefRoyaleShowHints(WidgetTester tester) async {
-    await toggleSwitch(tester, ElementFinders.getReefRoyaleShowHintsSwitch());
+  /// Reef Royale: Toggle Include Bull (only enabled when Random Reefs is ON).
+  static Future<void> toggleReefRoyaleIncludeBull(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getReefRoyaleIncludeBullSwitch());
   }
 
   /// Reef Royale: Toggle Speed Play
