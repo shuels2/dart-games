@@ -87,21 +87,25 @@ void _announceForThrow({
   // Hole complete: all players have scored the current hole AND turn just ended
   final holeComplete = currentTurnEnded && !hasWinner && game.isCurrentHoleComplete;
 
-  // Score (only when turn ended with a score)
+  // Score (only when turn ended with a score). Mirrors the classifier in
+  // lib/screens/games/tiki_golf/tiki_golf_game_screen.dart — splash wins
+  // first, then per-dart bogey flavor.
   String? score;
   if (currentTurnEnded && holeScore != null) {
-    if (holeScore == 1) {
+    if (holeScore == game.maxStrokes + 1) {
+      score = 'splash';
+    } else if (holeScore == 1) {
       score = 'birdie';
     } else if (holeScore == 2) {
       score = 'par';
     } else if (holeScore == 3) {
       score = 'bogey';
-    } else if (holeScore > game.maxStrokes) {
-      score = 'splash';
-    } else {
-      // 4, 5, 6 — no named "golf term" in spec beyond bogey for defaults,
-      // but per spec table these are still bogey variants.  Announce as 'bogey'.
-      score = 'bogey';
+    } else if (holeScore == 4) {
+      score = 'doubleBogey';
+    } else if (holeScore == 5) {
+      score = 'tripleBogey';
+    } else if (holeScore == 6) {
+      score = 'quadrupleBogey';
     }
   }
 
@@ -114,9 +118,9 @@ void _announceForThrow({
       !mulliganAlreadyUsed &&
       !holeComplete; // if hole is complete, HoleComplete outranks MulliganReminder
 
-  // Almost there: penultimate dart, no hit
+  // Almost there: dart 1 missed, dart 2 (the par dart) is next.
   final almostThere = !currentTurnEnded &&
-      dartsThrown == game.maxStrokes - 1 &&
+      dartsThrown == 1 &&
       holeScore == null;
 
   // Miss: mid-turn, no hit, not the penultimate dart
@@ -272,13 +276,19 @@ void main() {
       expect(queue.announcements[1], equals('Remove your darts'));
     });
 
-    test('Mid-turn miss (dart 1 of 3): Miss fires, Remove Darts does NOT fire', () {
+    test('Mid-turn miss (dart 2 of 3): Miss fires, Remove Darts does NOT fire', () {
       final rng = Random(1);
       final provider = _makeSoloProvider(maxStrokes: 3, random: rng);
       final game = provider.currentGame!;
       final target = _target(game, 0);
       final queue = MockTikiGolfAudioQueueService();
 
+      // Dart 1 miss fires Almost There — clear before checking dart 2.
+      provider.processDartThrow(sector: _missSector(target), score: 0);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+      queue.clearAnnouncements();
+
+      // Dart 2 miss → Miss (par is gone, no Almost There).
       provider.processDartThrow(sector: _missSector(target), score: 0);
       _announceForThrow(queue: queue, provider: provider, prevHole: 1);
 
@@ -286,24 +296,139 @@ void main() {
       expect(queue.announcements[0], equals('That one went wide!'));
     });
 
-    test('Almost There: penultimate dart miss fires Almost There, not Miss', () {
+    test('Almost There: dart 1 miss fires Almost There (next dart could still be Par)',
+        () {
       final rng = Random(1);
       final provider = _makeSoloProvider(maxStrokes: 3, random: rng);
       final game = provider.currentGame!;
       final target = _target(game, 0);
       final queue = MockTikiGolfAudioQueueService();
 
-      // Dart 1 miss (not penultimate for maxStrokes=3)
-      provider.processDartThrow(sector: _missSector(target), score: 0);
-      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
-      queue.clearAnnouncements();
-
-      // Dart 2 miss (penultimate: dartsThrown == maxStrokes - 1 == 2)
+      // Dart 1 miss → Almost There (dart 2 hit would still be Par)
       provider.processDartThrow(sector: _missSector(target), score: 0);
       _announceForThrow(queue: queue, provider: provider, prevHole: 1);
 
       expect(queue.announcements.length, equals(1));
       expect(queue.announcements[0], contains('one dart left'));
+    });
+
+    test('Almost There does NOT fire on dart 2 miss (par is already gone)', () {
+      final rng = Random(1);
+      final provider = _makeSoloProvider(maxStrokes: 3, random: rng);
+      final game = provider.currentGame!;
+      final target = _target(game, 0);
+      final queue = MockTikiGolfAudioQueueService();
+
+      // Dart 1 miss → Almost There
+      provider.processDartThrow(sector: _missSector(target), score: 0);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+      queue.clearAnnouncements();
+
+      // Dart 2 miss → Miss (NOT Almost There — dart 3 hit would be Bogey)
+      provider.processDartThrow(sector: _missSector(target), score: 0);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+
+      expect(queue.announcements.length, equals(1));
+      expect(queue.announcements[0], equals('That one went wide!'));
+    });
+
+    test('Double Bogey: 4th-dart hit at maxStrokes=4 → double bogey + Remove Darts',
+        () {
+      final rng = Random(1);
+      final provider = _makeSoloProvider(maxStrokes: 4, random: rng);
+      final game = provider.currentGame!;
+      final target = _target(game, 0);
+      final queue = MockTikiGolfAudioQueueService();
+
+      // Darts 1-3: miss
+      for (int i = 0; i < 3; i++) {
+        provider.processDartThrow(sector: _missSector(target), score: 0);
+        _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+        queue.clearAnnouncements();
+      }
+
+      // Dart 4: hit
+      provider.processDartThrow(sector: _hitSector(target), score: target);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+
+      expect(queue.announcements.length, equals(2));
+      expect(queue.announcements[0], contains('Double bogey'));
+      expect(queue.announcements[1], equals('Remove your darts'));
+    });
+
+    test('Triple Bogey: 5th-dart hit at maxStrokes=5 → triple bogey + Remove Darts',
+        () {
+      final rng = Random(1);
+      final provider = _makeSoloProvider(maxStrokes: 5, random: rng);
+      final game = provider.currentGame!;
+      final target = _target(game, 0);
+      final queue = MockTikiGolfAudioQueueService();
+
+      // Darts 1-4: miss
+      for (int i = 0; i < 4; i++) {
+        provider.processDartThrow(sector: _missSector(target), score: 0);
+        _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+        queue.clearAnnouncements();
+      }
+
+      // Dart 5: hit
+      provider.processDartThrow(sector: _hitSector(target), score: target);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+
+      expect(queue.announcements.length, equals(2));
+      expect(queue.announcements[0], contains('Triple bogey'));
+      expect(queue.announcements[1], equals('Remove your darts'));
+    });
+
+    test('Quadruple Bogey: 6th-dart hit at maxStrokes=6 → quadruple bogey + Remove Darts',
+        () {
+      final rng = Random(1);
+      final provider = _makeSoloProvider(maxStrokes: 6, random: rng);
+      final game = provider.currentGame!;
+      final target = _target(game, 0);
+      final queue = MockTikiGolfAudioQueueService();
+
+      // Darts 1-5: miss
+      for (int i = 0; i < 5; i++) {
+        provider.processDartThrow(sector: _missSector(target), score: 0);
+        _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+        queue.clearAnnouncements();
+      }
+
+      // Dart 6: hit
+      provider.processDartThrow(sector: _hitSector(target), score: target);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+
+      expect(queue.announcements.length, equals(2));
+      expect(queue.announcements[0], contains('Quadruple bogey'));
+      expect(queue.announcements[1], equals('Remove your darts'));
+    });
+
+    test('Almost There fires on dart 1 only at maxStrokes=4 (dart 2 hit would still be Par)',
+        () {
+      final rng = Random(1);
+      final provider = _makeSoloProvider(maxStrokes: 4, random: rng);
+      final game = provider.currentGame!;
+      final target = _target(game, 0);
+      final queue = MockTikiGolfAudioQueueService();
+
+      // Dart 1: miss → Almost There
+      provider.processDartThrow(sector: _missSector(target), score: 0);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+      expect(queue.announcements[0], contains('one dart left'));
+      queue.clearAnnouncements();
+
+      // Dart 2: miss → Miss (NOT Almost There — par gone)
+      provider.processDartThrow(sector: _missSector(target), score: 0);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+      expect(queue.announcements[0], equals('That one went wide!'));
+      queue.clearAnnouncements();
+
+      // Dart 3: miss → still Miss
+      provider.processDartThrow(sector: _missSector(target), score: 0);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 1);
+      expect(queue.announcements.length, equals(1));
+      expect(queue.announcements[0], equals('That one went wide!'));
     });
   });
 

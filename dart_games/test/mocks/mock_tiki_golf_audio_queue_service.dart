@@ -43,6 +43,18 @@ class MockTikiGolfAudioQueueService {
     announce('Bogey! Just squeaked that one in!');
   }
 
+  void announceDoubleBogey(String playerName) {
+    announce('Double bogey! Squeaked it out, $playerName!');
+  }
+
+  void announceTripleBogey(String playerName) {
+    announce('Triple bogey! Barely hung in, $playerName!');
+  }
+
+  void announceQuadrupleBogey(String playerName) {
+    announce('Quadruple bogey! That was a wild one, $playerName!');
+  }
+
   void announceSplash(String playerName) {
     announce('Splash! $playerName misses them all!');
   }
@@ -122,6 +134,15 @@ class MockTikiGolfAudioQueueService {
           break;
         case 'bogey':
           announceBogey(scorePlayerName);
+          break;
+        case 'doubleBogey':
+          announceDoubleBogey(scorePlayerName);
+          break;
+        case 'tripleBogey':
+          announceTripleBogey(scorePlayerName);
+          break;
+        case 'quadrupleBogey':
+          announceQuadrupleBogey(scorePlayerName);
           break;
         case 'splash':
           announceSplash(scorePlayerName);

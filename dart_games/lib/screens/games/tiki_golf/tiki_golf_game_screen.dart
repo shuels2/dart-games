@@ -301,20 +301,31 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
     String? scoreLabel;
     if (currentTurnEnded && holeScore != null) {
-      if (holeScore == 1) {
+      // Splash (never hit) takes priority over the bogey-flavor buckets so
+      // that holeScore == maxStrokes+1 always announces Splash regardless of
+      // which numeric stroke that lands on.
+      if (holeScore == game.maxStrokes + 1) {
+        scoreLabel = 'splash';
+      } else if (holeScore == 1) {
         scoreLabel = 'birdie';
       } else if (holeScore == 2) {
         scoreLabel = 'par';
-      } else if (holeScore == game.maxStrokes + 1) {
-        scoreLabel = 'splash';
-      } else {
+      } else if (holeScore == 3) {
         scoreLabel = 'bogey';
+      } else if (holeScore == 4) {
+        scoreLabel = 'doubleBogey';
+      } else if (holeScore == 5) {
+        scoreLabel = 'tripleBogey';
+      } else if (holeScore == 6) {
+        scoreLabel = 'quadrupleBogey';
       }
     }
 
-    // almostThere: penultimate dart no-hit (dartsThrown == maxStrokes - 1, no score)
+    // almostThere: fire only after dart 1 missed, when the next dart can
+    // still land Par (holeScore == 2). dartsThrown == 1 → player has thrown
+    // 1 dart, dart 2 is next. Past that falls through to the `miss` handler.
     final almostThere = !currentTurnEnded &&
-        dartsThrown == game.maxStrokes - 1 &&
+        dartsThrown == 1 &&
         holeScore == null;
 
     // miss: mid-turn non-hit that does not end the turn and is not penultimate
@@ -1088,7 +1099,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           holeName,
           style: GoogleFonts.boogaloo(
             fontSize: 40,
-            color: _lagoonBlue,
+            color: _hibiscusPink,
             shadows: _outlineShadow(),
           ),
         ),
@@ -1108,7 +1119,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           '$target',
           style: GoogleFonts.boogaloo(
             fontSize: 40,
-            color: _lagoonBlue,
+            color: _hibiscusPink,
             shadows: _outlineShadow(),
           ),
         ),

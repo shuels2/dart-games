@@ -61,6 +61,30 @@ class TikiGolfAnnouncementHelper {
     );
   }
 
+  void announceDoubleBogey(String playerName) {
+    _queueService.announce(
+      'Double bogey! Squeaked it out, $playerName!',
+      AudioPriority.hitConfirm,
+      soundEffect: TikiGolfSoundEffects.putt,
+    );
+  }
+
+  void announceTripleBogey(String playerName) {
+    _queueService.announce(
+      'Triple bogey! Barely hung in, $playerName!',
+      AudioPriority.hitConfirm,
+      soundEffect: TikiGolfSoundEffects.putt,
+    );
+  }
+
+  void announceQuadrupleBogey(String playerName) {
+    _queueService.announce(
+      'Quadruple bogey! That was a wild one, $playerName!',
+      AudioPriority.hitConfirm,
+      soundEffect: TikiGolfSoundEffects.putt,
+    );
+  }
+
   void announceSplash(String playerName) {
     _queueService.announce(
       'Splash! $playerName misses them all!',
@@ -169,7 +193,7 @@ class TikiGolfAnnouncementHelper {
     bool mulliganUsed = false,
     String? mulliganUsedPlayerName,
     // Rank 5
-    String? score, // 'birdie' | 'par' | 'bogey' | 'splash' | null
+    String? score, // 'birdie' | 'par' | 'bogey' | 'doubleBogey' | 'tripleBogey' | 'quadrupleBogey' | 'splash' | null
     String? scorePlayerName,
     // Rank 6
     bool almostThere = false,
@@ -217,6 +241,15 @@ class TikiGolfAnnouncementHelper {
           break;
         case 'bogey':
           announceBogey(scorePlayerName);
+          break;
+        case 'doubleBogey':
+          announceDoubleBogey(scorePlayerName);
+          break;
+        case 'tripleBogey':
+          announceTripleBogey(scorePlayerName);
+          break;
+        case 'quadrupleBogey':
+          announceQuadrupleBogey(scorePlayerName);
           break;
         case 'splash':
           announceSplash(scorePlayerName);

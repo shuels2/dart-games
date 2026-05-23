@@ -62,6 +62,24 @@ void main() {
       expect(queue.announcements, equals(['Bogey! Just squeaked that one in!']));
     });
 
+    test('announceDoubleBogey fires correct text', () {
+      queue.announceDoubleBogey('Dave');
+      expect(queue.announcements,
+          equals(['Double bogey! Squeaked it out, Dave!']));
+    });
+
+    test('announceTripleBogey fires correct text', () {
+      queue.announceTripleBogey('Dave');
+      expect(queue.announcements,
+          equals(['Triple bogey! Barely hung in, Dave!']));
+    });
+
+    test('announceQuadrupleBogey fires correct text', () {
+      queue.announceQuadrupleBogey('Dave');
+      expect(queue.announcements,
+          equals(['Quadruple bogey! That was a wild one, Dave!']));
+    });
+
     // ── 7. Splash ─────────────────────────────────────────────────────────────
 
     test('announceSplash fires correct text', () {
@@ -248,6 +266,33 @@ void main() {
         scorePlayerName: 'Grace',
       );
       expect(queue.announcements, equals(['Bogey! Just squeaked that one in!']));
+    });
+
+    test('Score=doubleBogey fires Double Bogey announcement (rank 5)', () {
+      queue.pickAndAnnounceMoment(
+        score: 'doubleBogey',
+        scorePlayerName: 'Grace',
+      );
+      expect(queue.announcements,
+          equals(['Double bogey! Squeaked it out, Grace!']));
+    });
+
+    test('Score=tripleBogey fires Triple Bogey announcement (rank 5)', () {
+      queue.pickAndAnnounceMoment(
+        score: 'tripleBogey',
+        scorePlayerName: 'Grace',
+      );
+      expect(queue.announcements,
+          equals(['Triple bogey! Barely hung in, Grace!']));
+    });
+
+    test('Score=quadrupleBogey fires Quadruple Bogey announcement (rank 5)', () {
+      queue.pickAndAnnounceMoment(
+        score: 'quadrupleBogey',
+        scorePlayerName: 'Grace',
+      );
+      expect(queue.announcements,
+          equals(['Quadruple bogey! That was a wild one, Grace!']));
     });
 
     test('Score=splash fires Splash announcement (rank 5)', () {
