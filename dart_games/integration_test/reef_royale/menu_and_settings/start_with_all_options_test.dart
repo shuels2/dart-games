@@ -15,12 +15,15 @@ void main() {
 
     await UITestHelpers.navigateToGameMenu(tester, config);
 
-    // Enable all options
+    // Enable all options. Include Bull replaced Show Hints in the menu
+    // (Show Hints toggle was removed; hints are always on for new
+    // games). Random Reefs must be toggled BEFORE Include Bull —
+    // Include Bull is disabled while Random Reefs is OFF.
     await SettingsHelpers.toggleReefRoyaleEasyClaim(tester);
     await SettingsHelpers.toggleReefRoyaleNeighborNumbers(tester);
     await SettingsHelpers.toggleReefRoyaleRandomReefs(tester);
     await SettingsHelpers.toggleReefRoyaleBonusBuffs(tester);
-    await SettingsHelpers.toggleReefRoyaleShowHints(tester);
+    await SettingsHelpers.toggleReefRoyaleIncludeBull(tester);
     await SettingsHelpers.toggleReefRoyaleSpeedPlay(tester);
 
     // Add players (auto-selected when added)

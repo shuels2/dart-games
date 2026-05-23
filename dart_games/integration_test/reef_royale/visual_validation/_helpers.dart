@@ -23,15 +23,18 @@ Future<void> clickDartsRemoved(WidgetTester tester) =>
     DartThrowHelpers.clickDartsRemoved(tester);
 
 Future<void> setupAndStartGame(WidgetTester tester, GameUIConfig config, {
-  bool showHints = false,
   bool bonusBuffs = false,
   bool cursedTide = false,
   bool neighborNumbers = false,
 }) =>
+    // NOTE: `showHints` was removed from the helper signature when the
+    // Show Hints menu toggle was deleted (hints are always on for new
+    // games now). Callers that previously passed showHints:true can
+    // just drop the named argument — the game starts with hints on
+    // automatically.
     GameSetupHelpers.setupAndStartReefRoyale(
       tester,
       config,
-      showHints: showHints,
       bonusBuffs: bonusBuffs,
       cursedTide: cursedTide,
       neighborNumbers: neighborNumbers,
