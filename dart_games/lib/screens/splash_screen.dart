@@ -31,15 +31,40 @@ class _SplashScreenState extends State<SplashScreen> {
       playerProvider.loadPlayers(),
     ]);
 
+    // loadConfiguration() returns before _onWebSocketConnected's 5s
+    // hardware-status timeout can fire — when HELLO_CLIENT auth succeeds
+    // but the dartboard hardware is powered off, status sits in
+    // `connecting` for up to 5 more seconds. Poll briefly so the
+    // navigation decision below sees the FINAL status, not the
+    // mid-resolution one.
+    final stopwatch = Stopwatch()..start();
+    while (mounted &&
+        dartboardProvider.status == DartboardConnectionStatus.connecting &&
+        stopwatch.elapsedMilliseconds < 6000) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
     if (!mounted) return;
 
-    // If no dartboard configured, go to setup screen
+    // No saved config → setup screen (existing behaviour).
     if (!dartboardProvider.isRegistered) {
       Navigator.of(context).pushReplacementNamed('/dartboard-setup');
       return;
     }
 
-    // If dartboard is configured, go to home
+    // Saved config exists but auto-reconnect failed (hardware off,
+    // wrong serial/API key, network down, etc.) → send the user to the
+    // dartboard setup screen so they can register a new one or fix the
+    // existing config without being blocked by the paused-modal overlay
+    // that home would otherwise show. The saved config is intentionally
+    // NOT cleared — if the user just needs to power on their dartboard
+    // and retry, the existing config is still in place.
+    if (!dartboardProvider.canPlayGames) {
+      Navigator.of(context).pushReplacementNamed('/dartboard-setup');
+      return;
+    }
+
+    // Saved config + reachable dartboard (or emulator mode) → home.
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
