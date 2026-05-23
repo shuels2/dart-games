@@ -13,13 +13,19 @@ void main() {
       (WidgetTester tester) async {
     await UITestHelpers.resetServerState();
 
-    await setupAndStartGame(tester, config, randomReefs: true);
+    // includeBull: true preserves the "6 random + Bull always last" layout
+    // that this test was written for. With randomReefs alone (post-Show-Hints-
+    // removal), the default is 7 random with NO Bull — see the menu's
+    // Include Bull toggle.
+    await setupAndStartGame(tester, config,
+        randomReefs: true, includeBull: true);
 
-    // With random reefs, the game should still have coral cards displayed
-    // The exact targets will be random, but we verify via the provider
+    // With random reefs + include bull, the game should still have coral
+    // cards displayed. The exact targets will be random, but we verify
+    // via the provider.
     final provider = ProviderHelpers.getReefRoyaleProvider(tester);
     final targets = provider.currentGame!.activeTargets;
-    expect(targets.length, 7); // Still 7 targets (6 random + Bull)
+    expect(targets.length, 7); // 6 random + Bull
     expect(targets.last, 25); // Bull always last
 
     // Verify coral cards exist for whatever targets were selected

@@ -15,7 +15,10 @@ void main() {
     await UITestHelpers.navigateToGameMenu(tester, config);
 
     await SettingsHelpers.setMonsterMashHealthMax(tester, 10);
-    await SettingsHelpers.toggleMonsterMashBonusBuffs(tester);
+    // Bonus Buffs intentionally NOT enabled — this test verifies the
+    // Change Settings navigation flow, not buff mechanics. With buffs on,
+    // the shadowWalk buff (~1/12 chance per game) sets damage to 0 and
+    // the deterministic 10-HP kill in completeGameToVictory never lands.
 
     await UITestHelpers.addPlayer(tester, 'Player A', config);
     await UITestHelpers.addPlayer(tester, 'Player B', config);

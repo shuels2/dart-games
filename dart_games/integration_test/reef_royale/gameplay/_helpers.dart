@@ -39,6 +39,7 @@ Future<void> setupAndStartGame(
   bool speedPlay = false,
   int? roundLimit,
   bool randomReefs = false,
+  bool includeBull = false,
 }) =>
     GameSetupHelpers.setupAndStartReefRoyale(
       tester,
@@ -50,6 +51,7 @@ Future<void> setupAndStartGame(
       speedPlay: speedPlay,
       roundLimit: roundLimit,
       randomReefs: randomReefs,
+      includeBull: includeBull,
     );
 
 // ===== GAME-SPECIFIC HELPERS =====
