@@ -464,6 +464,17 @@ class ReefRoyaleGame {
     dartThrowIsNeighbor[playerId]!.add(!anyDirectHit); // Neighbor only if NO direct hits
     dartThrowPearlRecipientId[playerId]!.add(pearlRecipient);
     dartThrowTargetCount[playerId]!.add(resolvedTargets.length);
+
+    // Re-check win condition at end of every dart. The earlier
+    // _checkWinCondition call inside _processMarkingForTarget only
+    // runs when a coral is first claimed; once a player has claimed
+    // every coral, ALL subsequent darts route through
+    // _processScoringForTarget (which only updates pearls). Without
+    // this final check, a player who finishes claiming corals while
+    // BEHIND on pearls could later overtake the leader via excess-
+    // mark scoring on still-unclaimed-by-others corals and never
+    // win — the game would stall until all corals are locked.
+    _checkWinCondition();
   }
 
   /// Process marking for a single target and return results (does not add to tracking lists)
