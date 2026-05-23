@@ -10,16 +10,27 @@ enum AudioPriority {
   const AudioPriority(this.value);
 }
 
-// Sound effect configuration (asset path + start/end times)
+// Sound effect configuration (asset path + start/end times + fade-out)
 class SoundEffectConfig {
   final String assetPath;
   final double startSeconds;
   final double? endSeconds; // null = play to end of file
 
+  /// Linear fade-out duration in milliseconds, applied over the LAST
+  /// `fadeOutMs` of the clip (i.e. starts at `endSeconds - fadeOutMs/1000`
+  /// and reaches volume 0 at `endSeconds`). Defaults to 0 — hard stop at
+  /// `endSeconds`, matching the original engine behaviour. Only meaningful
+  /// when `endSeconds` is non-null (full-file clips have no defined fade
+  /// anchor); will be ignored otherwise. Set per-clip when you want a
+  /// long-tail SFX (organ, fanfare, scream) to dissolve cleanly instead
+  /// of being chopped off.
+  final int fadeOutMs;
+
   const SoundEffectConfig({
     required this.assetPath,
     this.startSeconds = 0.0,
     this.endSeconds,
+    this.fadeOutMs = 0,
   });
 }
 
