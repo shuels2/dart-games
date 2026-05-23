@@ -43,6 +43,17 @@ class PlayerProvider extends ChangeNotifier {
   /// now-empty list.
   int _generation = 0;
 
+  /// Per-player cache-bust token for photo URLs. The photo upload
+  /// endpoint is the same URL on every replace — `/api/v1/players/<id>
+  /// /photo` — and NetworkImage / the browser image cache key off URL
+  /// alone, so without a bust suffix a freshly uploaded photo keeps
+  /// rendering as the OLD cached bytes. Generated on every successful
+  /// upload, cleared on deletion, applied by [_doLoadPlayers] when it
+  /// promotes relative server-issued URLs to absolute so the bust
+  /// survives subsequent loadPlayers() calls (every game-menu screen
+  /// fires one on init).
+  final Map<String, String> _photoBusts = {};
+
   final PhotoService _photoService = PhotoService();
   ApiClient? _apiClient;
 
@@ -72,6 +83,7 @@ class PlayerProvider extends ChangeNotifier {
     _isLoading = false;
     _error = null;
     _lastSortedAt = null;
+    _photoBusts.clear();
     notifyListeners();
   }
 
@@ -112,7 +124,30 @@ class PlayerProvider extends ChangeNotifier {
       if (_generation != loadGeneration) return;
 
       final serverPlayers =
-          playersJson.map((json) => Player.fromJson(json)).toList();
+          playersJson.map((json) => Player.fromJson(json)).map((p) {
+        // Server returns photoPath as a RELATIVE URL (e.g.
+        // `/api/v1/players/<id>/photo`) because it doesn't know its own
+        // public base. On Flutter web, NetworkImage with a relative URL
+        // resolves against the PAGE origin (the Flutter web devserver),
+        // not against the API server — so the fetch silently fails.
+        // Promote to absolute here using the currently-configured API
+        // base so PlayerAvatarWidget and all `NetworkImage(photoPath!)`
+        // consumers fetch from the right host.
+        //
+        // Also re-apply any per-player cache-bust token that was set by
+        // a prior upload this session — without it, loadPlayers() would
+        // reset photoPath to the canonical (un-busted) URL and the
+        // browser would serve the OLD cached bytes that were fetched
+        // before the user took a new photo.
+        final path = p.photoPath;
+        if (path == null) return p;
+        if (path.startsWith('/')) {
+          final bust = _photoBusts[p.id];
+          final busted = bust != null ? '$path?v=$bust' : path;
+          return p.copyWith(photoPath: ApiConfig.url(busted));
+        }
+        return p;
+      }).toList();
 
       // Merge: start with the server's authoritative list, then preserve
       // any locally-known players that the server doesn't have yet
@@ -245,6 +280,10 @@ class PlayerProvider extends ChangeNotifier {
     if (newPhoto == null && previousPhotoPath != null) {
       try {
         await _api.deletePlayerPhoto(player.id);
+        // Clear any stale bust — the photo no longer exists so future
+        // loadPlayers should leave photoPath null without trying to
+        // construct a busted URL for a missing resource.
+        _photoBusts.remove(player.id);
       } catch (e) {
         debugPrint('[Photo] DELETE failed for player ${player.id}: $e');
       }
@@ -260,13 +299,23 @@ class PlayerProvider extends ChangeNotifier {
       final base64Data = newPhoto.substring(commaIdx + 1);
       try {
         await _api.uploadPlayerPhoto(player.id, base64Data, 'photo.jpg');
-        // Swap the in-memory photoPath from the data URL to the API URL so
-        // subsequent renders use the server-served photo (matches the way
-        // photos load from loadPlayers).
+        // Store + apply a per-player cache-bust token. The upload
+        // replaces the file behind the SAME endpoint `/api/v1/players/
+        // <id>/photo`, and NetworkImage / the browser image cache key
+        // off URL alone, so without the suffix a re-uploaded photo
+        // serves the stale cached image. Storing the bust in
+        // [_photoBusts] also lets [_doLoadPlayers] re-apply it on
+        // every subsequent loadPlayers() — without that persistence,
+        // the next game-menu's initState-time loadPlayers() would
+        // wipe the bust and the browser cache would re-serve the OLD
+        // photo bytes that were cached BEFORE the upload happened.
+        final cacheBust = DateTime.now().millisecondsSinceEpoch.toString();
+        _photoBusts[player.id] = cacheBust;
         final idx = _allPlayers.indexWhere((p) => p.id == player.id);
         if (idx >= 0) {
           _allPlayers[idx] = _allPlayers[idx].copyWith(
-            photoPath: ApiConfig.url('/api/v1/players/${player.id}/photo'),
+            photoPath: ApiConfig.url(
+                '/api/v1/players/${player.id}/photo?v=$cacheBust'),
           );
           notifyListeners();
         }
