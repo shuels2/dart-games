@@ -45,6 +45,7 @@ class TikiGolfSoundEffects {
     assetPath: '${_basePath}TikiGolf-VictoryFanfare.mp3',
     startSeconds: 7.0,
     endSeconds: 11.0,
+    fadeOutMs: 1500,
   );
 
   static const SoundEffectConfig mulligan = SoundEffectConfig(

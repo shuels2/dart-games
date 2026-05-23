@@ -18,11 +18,12 @@ class PiratesGridSoundEffects {
     endSeconds: 2.0,
   );
 
-  /// Wave crash for misses and draws — plays 0.0s to 5.0s
+  /// Wave crash for misses and draws — plays 0.0s to 4.0s with a 1.5s tail fade
   static const SoundEffectConfig waveCrash = SoundEffectConfig(
     assetPath: '${_basePath}PiratesGrid-WaveCrash.mp3',
     startSeconds: 0.0,
-    endSeconds: 5.0,
+    endSeconds: 4.0,
+    fadeOutMs: 1500,
   );
 
   /// Treasure found jingle for round victory — plays 0.0s to 1.25s
