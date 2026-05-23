@@ -193,11 +193,11 @@ void main() {
       await SettingsHelpers.toggleReefRoyaleBonusBuffs(tester);
       print('SCREENSHOT: Bonus Buffs toggled back off');
 
-      print('SCREENSHOT: Toggling Show Hints...');
-      await SettingsHelpers.toggleReefRoyaleShowHints(tester);
-      await screenshot(binding, tester, '06_menu_show_hints_on');
-      await SettingsHelpers.toggleReefRoyaleShowHints(tester);
-      print('SCREENSHOT: Show Hints toggled back off');
+      // Show Hints toggle was removed from the menu (always on for new
+      // games now). The screenshot at index 06 is intentionally skipped
+      // to preserve the existing 07_menu_speed_play_on naming. If/when
+      // the Include Bull toggle screenshot is desired, it can be added
+      // here as a successor (requires Random Reefs ON first).
 
       print('SCREENSHOT: Toggling Speed Play...');
       await SettingsHelpers.toggleReefRoyaleSpeedPlay(tester);

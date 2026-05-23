@@ -80,6 +80,39 @@ void main() {
       expect(newProvider.currentGame!.marks['p1']![20]! > 0, true);
     });
 
+    test('restoreGame round-trips includeBull', () async {
+      // Regression guard for the include-bull option: starting a random-
+      // reefs game with includeBull=true must survive save/restore so a
+      // resumed game still has the same reef layout (Bull present in
+      // slot 7) as when it was saved.
+      provider.startGame(
+        players,
+        ReefRoyaleGameMode.standard,
+        false, false,
+        true,  // randomReefs
+        false, false, false, 10,
+        includeBull: true,
+      );
+
+      // Capture the pre-save layout
+      final originalIncludeBull = provider.currentGame!.includeBull;
+      final originalTargets = List<int>.from(provider.currentGame!.activeTargets);
+      expect(originalIncludeBull, isTrue);
+      expect(originalTargets.contains(25), isTrue,
+          reason: 'includeBull=true random game must contain Bull');
+
+      await provider.saveGame(players);
+      final saved = await SaveGameService(mockServer.apiClient)
+          .loadSavedGames('reef_royale');
+
+      final newProvider =
+          ReefRoyaleProvider(apiClient: mockServer.apiClient);
+      newProvider.restoreGame(saved[0]);
+
+      expect(newProvider.currentGame!.includeBull, isTrue);
+      expect(newProvider.currentGame!.activeTargets, originalTargets);
+    });
+
     test('restoreGame restores waitingForTakeout', () async {
       provider.startGame(
         players,

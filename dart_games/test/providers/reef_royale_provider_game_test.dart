@@ -29,6 +29,7 @@ void main() {
     int roundLimit = 10,
     ReefRoyaleGameMode gameMode = ReefRoyaleGameMode.standard,
     List<Player>? customPlayers,
+    bool includeBull = false,
   }) {
     provider.startGame(
       customPlayers ?? players,
@@ -40,6 +41,7 @@ void main() {
       showHints,
       speedPlay,
       roundLimit,
+      includeBull: includeBull,
     );
   }
 
@@ -696,6 +698,50 @@ void main() {
               'the game should end the moment this dart resolves');
       expect(provider.currentGame!.winnerId, 'p1');
       expect(provider.currentGame!.winnerIds, ['p1']);
+    });
+  });
+
+  // -------------------------------------------------------
+  // Include Bull option
+  // -------------------------------------------------------
+  group('Include Bull option', () {
+    test('randomReefs ON + includeBull ON: 7 corals, Bull is the 7th', () {
+      startStandardGame(randomReefs: true, includeBull: true);
+      final targets = provider.currentGame!.activeTargets;
+      expect(targets.length, 7);
+      expect(targets.last, 25, reason: 'Bull occupies slot 7');
+      // First 6 are unique 1-20.
+      final numberTargets = targets.sublist(0, 6);
+      expect(numberTargets.toSet().length, 6);
+      for (final t in numberTargets) {
+        expect(t, inInclusiveRange(1, 20));
+      }
+    });
+
+    test('randomReefs ON + includeBull OFF: 7 number corals, Bull excluded',
+        () {
+      startStandardGame(randomReefs: true, includeBull: false);
+      final targets = provider.currentGame!.activeTargets;
+      expect(targets.length, 7);
+      expect(targets.contains(25), isFalse,
+          reason: 'Bull (25) must not appear when includeBull is off');
+      // All 7 are unique 1-20.
+      expect(targets.toSet().length, 7);
+      for (final t in targets) {
+        expect(t, inInclusiveRange(1, 20));
+      }
+    });
+
+    test('randomReefs OFF: includeBull is inert; Bull is always present', () {
+      // Both toggle values must produce the canonical standard list.
+      // The Include Bull setting only affects the random-reefs path.
+      for (final includeBull in [true, false]) {
+        startStandardGame(randomReefs: false, includeBull: includeBull);
+        expect(provider.currentGame!.activeTargets,
+            [20, 19, 18, 17, 16, 15, 25],
+            reason: 'standard target list is unaffected by includeBull '
+                '(includeBull=$includeBull)');
+      }
     });
   });
 }

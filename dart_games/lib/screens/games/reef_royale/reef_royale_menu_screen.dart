@@ -24,7 +24,10 @@ class ReefRoyaleMenuScreen extends StatefulWidget {
   final bool? initialNeighborNumbers;
   final bool? initialRandomReefs;
   final bool? initialBonusBuffs;
-  final bool? initialShowHints;
+  // NOTE: `initialShowHints` was removed when the Show Hints toggle was
+  // dropped from the menu. New games always run with hints on; the
+  // model's `showHints` field still exists for save/resume integrity.
+  final bool? initialIncludeBull;
   final bool? initialSpeedPlay;
   final int? initialRoundLimit;
 
@@ -36,7 +39,7 @@ class ReefRoyaleMenuScreen extends StatefulWidget {
     this.initialNeighborNumbers,
     this.initialRandomReefs,
     this.initialBonusBuffs,
-    this.initialShowHints,
+    this.initialIncludeBull,
     this.initialSpeedPlay,
     this.initialRoundLimit,
   });
@@ -51,7 +54,11 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
   bool _neighborNumbers = false;
   bool _randomReefs = false;
   bool _bonusBuffs = false;
-  bool _showHints = false;
+  // Include Bull: when randomReefs is ON, controls whether Bull (target
+  // 25) is part of the random selection pool. Inert when randomReefs is
+  // OFF (the standard target list always includes Bull). Defaults to
+  // false so random games start with all-numeric corals.
+  bool _includeBull = false;
   bool _speedPlay = false;
   double _roundLimit = 10.0;
   bool _showResumeModal = false;
@@ -78,7 +85,9 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
       _randomReefs = widget.initialRandomReefs!;
     if (widget.initialBonusBuffs != null)
       _bonusBuffs = widget.initialBonusBuffs!;
-    if (widget.initialShowHints != null) _showHints = widget.initialShowHints!;
+    if (widget.initialIncludeBull != null) {
+      _includeBull = widget.initialIncludeBull!;
+    }
     if (widget.initialSpeedPlay != null) _speedPlay = widget.initialSpeedPlay!;
     if (widget.initialRoundLimit != null)
       _roundLimit = widget.initialRoundLimit!.toDouble();
@@ -343,8 +352,9 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 'Only 2 marks needed instead of 3 — great for younger players!'),
             _buildBullet('Neighbor Numbers:',
                 'Adjacent dartboard numbers also count — more hits, more fun!'),
-            _buildBullet('Show Hints:',
-                'Highlights valid target areas on the dartboard.'),
+            _buildBullet('Include Bull:',
+                'Choose whether to include the Bull in the list of '
+                'possible coral targets when playing with Random Reefs.'),
             const SizedBox(height: 8),
             Text(
               'Dive in and rule the reef!',
@@ -496,7 +506,12 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
           ),
         ),
 
-        // Row 3: Bonus Buffs switch | Show Hints switch
+        // Row 3: Bonus Buffs switch | Include Bull switch
+        // (Show Hints was removed — hints are always on for new games.)
+        // Include Bull is wired to be enabled ONLY while Random Reefs is
+        // ON: passing null onChanged makes the switch render disabled
+        // and dimmed. When Random Reefs is OFF the standard target list
+        // already includes Bull, so the option has no effect there.
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
           child: Row(
@@ -511,10 +526,12 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
               const SizedBox(width: 8),
               Expanded(
                   child: _buildSwitchBox(
-                'Show Hints',
-                _showHints,
-                ReefRoyaleMenuKeys.showHintsSwitch,
-                (value) => setState(() => _showHints = value),
+                'Include Bull',
+                _includeBull,
+                ReefRoyaleMenuKeys.includeBullSwitch,
+                _randomReefs
+                    ? (value) => setState(() => _includeBull = value)
+                    : null,
               )),
             ],
           ),
@@ -621,18 +638,25 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
     String label,
     bool value,
     Key switchKey,
-    ValueChanged<bool> onChanged, {
+    ValueChanged<bool>? onChanged, {
     Color activeColor = _seafoamGreen,
   }) {
+    // onChanged == null marks the switch as disabled (used by Include
+    // Bull when Random Reefs is OFF). Switch widget interprets null
+    // onChanged as "disabled"; the label / Off / On labels are dimmed
+    // to match so the box reads as inactive.
+    final bool disabled = onChanged == null;
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: _deepReefBlue.withOpacity(0.85),
+        color: _deepReefBlue.withOpacity(disabled ? 0.45 : 0.85),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: value ? _sandyGold : _seafoamGreen.withOpacity(0.3),
-          width: value ? 2.5 : 1.5,
+          color: value && !disabled
+              ? _sandyGold
+              : _seafoamGreen.withOpacity(disabled ? 0.15 : 0.3),
+          width: value && !disabled ? 2.5 : 1.5,
         ),
       ),
       child: Row(
@@ -644,7 +668,9 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
               style: GoogleFonts.fredoka(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: value ? _pearlWhite : _pearlWhite.withOpacity(0.7),
+                color: disabled
+                    ? _pearlWhite.withOpacity(0.4)
+                    : (value ? _pearlWhite : _pearlWhite.withOpacity(0.7)),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -657,7 +683,9 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: !value ? FontWeight.bold : FontWeight.normal,
-                  color: !value ? _pearlWhite : _pearlWhite.withOpacity(0.4),
+                  color: disabled
+                      ? _pearlWhite.withOpacity(0.25)
+                      : (!value ? _pearlWhite : _pearlWhite.withOpacity(0.4)),
                 ),
               ),
               Transform.scale(
@@ -677,7 +705,9 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
                 style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: value ? FontWeight.bold : FontWeight.normal,
-                  color: value ? _sandyGold : _pearlWhite.withOpacity(0.4),
+                  color: disabled
+                      ? _pearlWhite.withOpacity(0.25)
+                      : (value ? _sandyGold : _pearlWhite.withOpacity(0.4)),
                 ),
               ),
             ],
@@ -820,9 +850,13 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
       _neighborNumbers,
       _randomReefs,
       _bonusBuffs,
-      _showHints,
+      // Show Hints is always on for new games; the menu toggle was
+      // removed but the model field still flows through for save/resume
+      // compatibility. Existing saved games keep their stored value.
+      true,
       _speedPlay,
       _roundLimit.toInt(),
+      includeBull: _includeBull,
     );
 
     Navigator.push(

@@ -519,6 +519,7 @@ class ReefRoyaleMenuKeys {
   static const randomReefsSwitch = Key('reef_menu_random_reefs_switch');
   static const bonusBuffsSwitch = Key('reef_menu_bonus_buffs_switch');
   static const showHintsSwitch = Key('reef_menu_show_hints_switch');
+  static const includeBullSwitch = Key('reef_menu_include_bull_switch');
   static const speedPlaySwitch = Key('reef_menu_speed_play_switch');
   static const roundLimitSlider = Key('reef_menu_round_limit_slider');
   static const startGameButton = Key('reef_menu_start_game_button');

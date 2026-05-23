@@ -16,6 +16,7 @@ void main() {
     bool showHints = true,
     bool speedPlayEnabled = false,
     int roundLimit = 10,
+    bool includeBull = false,
   }) {
     final ids = playerIds ?? ['p1', 'p2'];
     return ReefRoyaleGame.create(
@@ -26,6 +27,7 @@ void main() {
       randomReefs: randomReefs,
       bonusBuffsEnabled: bonusBuffsEnabled,
       showHints: showHints,
+      includeBull: includeBull,
       speedPlayEnabled: speedPlayEnabled,
       roundLimit: roundLimit,
     );
@@ -196,15 +198,43 @@ void main() {
       expect(game.activeTargets, [20, 19, 18, 17, 16, 15, 25]);
     });
 
-    test('uses 6 random + Bull when randomReefs is on', () {
-      final game = createGame(randomReefs: true);
+    test('uses 6 random + Bull when randomReefs and includeBull are both on',
+        () {
+      final game = createGame(randomReefs: true, includeBull: true);
       expect(game.activeTargets.length, 7);
-      expect(game.activeTargets.last, 25); // Bull always last
-      // First 6 should be unique numbers 1-20
+      expect(game.activeTargets.last, 25); // Bull last
       final numberTargets = game.activeTargets.sublist(0, 6);
       expect(numberTargets.toSet().length, 6);
       for (final t in numberTargets) {
         expect(t, inInclusiveRange(1, 20));
+      }
+    });
+
+    test('uses 7 random numbers and excludes Bull when randomReefs is on '
+        'and includeBull is off (default)', () {
+      // Regression for the include-bull design: with randomReefs on and
+      // includeBull off, all 7 corals are number-targets in 1-20, never 25.
+      final game = createGame(randomReefs: true, includeBull: false);
+      expect(game.activeTargets.length, 7);
+      expect(game.activeTargets.contains(25), isFalse,
+          reason: 'Bull (25) must be excluded when includeBull is off');
+      expect(game.activeTargets.toSet().length, 7,
+          reason: 'all 7 random numbers must be unique');
+      for (final t in game.activeTargets) {
+        expect(t, inInclusiveRange(1, 20));
+      }
+    });
+
+    test('ignores includeBull when randomReefs is off (Bull is always '
+        'in the standard target list)', () {
+      // Whether includeBull is true or false, randomReefs=false should
+      // produce the canonical [20, 19, 18, 17, 16, 15, 25] list.
+      for (final includeBull in [true, false]) {
+        final game =
+            createGame(randomReefs: false, includeBull: includeBull);
+        expect(game.activeTargets, [20, 19, 18, 17, 16, 15, 25],
+            reason: 'standard target list is unaffected by includeBull '
+                '(includeBull=$includeBull)');
       }
     });
 

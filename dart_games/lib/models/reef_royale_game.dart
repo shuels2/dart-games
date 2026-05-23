@@ -31,6 +31,13 @@ class ReefRoyaleGame {
   final bool randomReefs;
   final bool bonusBuffsEnabled;
   final bool showHints;
+  // When true AND randomReefs is true, Bull (target 25) is included in the
+  // randomly-selected 7 corals (in slot 7). When false AND randomReefs is
+  // true, Bull is excluded — all 7 corals are picked from 1-20. Inert when
+  // randomReefs is false (the standard non-random target list always
+  // includes Bull as the 7th coral). Defaults to false so the random-mode
+  // pool of corals stays full-numeric unless the user opts in.
+  final bool includeBull;
   final bool speedPlayEnabled;
   final int roundLimit;
 
@@ -111,6 +118,7 @@ class ReefRoyaleGame {
     required this.randomReefs,
     required this.bonusBuffsEnabled,
     required this.showHints,
+    this.includeBull = false,
     required this.speedPlayEnabled,
     required this.roundLimit,
     required this.playerIds,
@@ -202,6 +210,7 @@ class ReefRoyaleGame {
     required bool showHints,
     required bool speedPlayEnabled,
     required int roundLimit,
+    bool includeBull = false,
   }) {
     final random = Random();
 
@@ -213,14 +222,29 @@ class ReefRoyaleGame {
       creatureAssignments[playerIds[i]] = availableCreatures[i];
     }
 
-    // Determine targets and coral order
+    // Determine targets and coral order.
+    //
+    // randomReefs OFF: standard target list ([20..15, 25]). Bull is always
+    //   the 7th coral. The new `includeBull` toggle is inert in this mode.
+    // randomReefs ON + includeBull TRUE: 6 random numbers from 1-20 +
+    //   Bull as the 7th coral (legacy behavior).
+    // randomReefs ON + includeBull FALSE: 7 random numbers from 1-20, no
+    //   Bull. Coral order reuses the 6 numberCorals + PearlOyster as the
+    //   7th slot's art (no separate 7th-coral asset exists; PearlOyster's
+    //   visual is reused for the extra number slot). This matches the
+    //   approved plan from the design discussion.
     List<int> activeTargets;
     List<String> coralOrder;
     if (randomReefs) {
       final numbers = List.generate(20, (i) => i + 1)..shuffle(random);
-      activeTargets = numbers.take(6).toList()
-        ..sort((a, b) => b.compareTo(a));
-      activeTargets.add(25); // Bull always 7th
+      if (includeBull) {
+        activeTargets = numbers.take(6).toList()
+          ..sort((a, b) => b.compareTo(a));
+        activeTargets.add(25); // Bull is the 7th coral
+      } else {
+        activeTargets = numbers.take(7).toList()
+          ..sort((a, b) => b.compareTo(a));
+      }
       final numberCorals = [
         'FireCoral',
         'BrainCoral',
@@ -245,6 +269,7 @@ class ReefRoyaleGame {
       randomReefs: randomReefs,
       bonusBuffsEnabled: bonusBuffsEnabled,
       showHints: showHints,
+      includeBull: includeBull,
       speedPlayEnabled: speedPlayEnabled,
       roundLimit: roundLimit,
       playerIds: playerIds,
@@ -907,6 +932,7 @@ class ReefRoyaleGame {
       'randomReefs': randomReefs,
       'bonusBuffsEnabled': bonusBuffsEnabled,
       'showHints': showHints,
+      'includeBull': includeBull,
       'speedPlayEnabled': speedPlayEnabled,
       'roundLimit': roundLimit,
       'playerIds': playerIds,
@@ -980,6 +1006,7 @@ class ReefRoyaleGame {
       randomReefs: json['randomReefs'] ?? false,
       bonusBuffsEnabled: json['bonusBuffsEnabled'] ?? false,
       showHints: json['showHints'] ?? false,
+      includeBull: json['includeBull'] ?? false,
       speedPlayEnabled: json['speedPlayEnabled'] ?? false,
       roundLimit: json['roundLimit'] ?? 10,
       playerIds: List<String>.from(json['playerIds']),
