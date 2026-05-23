@@ -717,13 +717,13 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
       key: ReefRoyaleGameKeys.buffBanner,
       width: double.infinity,
       height: 40,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            _biolumPurple.withOpacity(0.8),
-            _deepReefBlue.withOpacity(0.8),
-            _biolumPurple.withOpacity(0.8),
-          ],
+          colors: [_biolumPurple, _coralPink, _biolumPurple],
+        ),
+        border: Border(
+          top: BorderSide(color: _sandyGold, width: 2),
+          bottom: BorderSide(color: _sandyGold, width: 2),
         ),
       ),
       child: Center(
@@ -733,6 +733,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: _sandyGold,
+            shadows: const [
+              Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
+            ],
           ),
         ),
       ),
