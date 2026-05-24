@@ -1556,8 +1556,8 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     const yellowColor = Color(0xFFFFCC00);
     const greenColor = Color(0xFF00CC00);
 
-    final height = compact ? (compactHeight ?? 14.0) : 22.0;
-    final fontSize = compact ? (height * 0.7).clamp(7.0, 12.0) : 14.0;
+    final height = compact ? (compactHeight ?? 14.0) : 30.0;
+    final fontSize = compact ? (height * 0.7).clamp(7.0, 12.0) : 18.0;
     final hp = healthPercent.clamp(0.0, 1.0);
 
     return Container(
