@@ -10,7 +10,7 @@ class MonsterMashSoundEffects {
   static const SoundEffectConfig gameStart = SoundEffectConfig(
     assetPath: '${_basePath}MonsterMash-Organ.mp3',
     startSeconds: 1.75,
-    endSeconds: 4.0,
+    endSeconds: 8.75,
     fadeOutMs: 500,
   );
 
