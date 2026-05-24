@@ -11,7 +11,7 @@ class MonsterMashSoundEffects {
     assetPath: '${_basePath}MonsterMash-Organ.mp3',
     startSeconds: 1.75,
     endSeconds: 4.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   // PRIORITY 1: Turn Transitions
