@@ -510,6 +510,55 @@ Test your game logic with simulated dart throws, not the dartboard component its
 - **Component Source:** `lib/widgets/dartboard_emulator/`
 - **Strategies:** `lib/services/play_to_complete/`
 
+## Buff-Toggle Buttons (emulator-only, games with bonus buffs)
+
+For any game whose spec defines bonus buffs (currently Monster Mash and Reef Royale), the dartboard emulator section can render a column of buff-toggle buttons on each side of the dartboard. Tapping a button sets the game's `activeBuff` to that buff via the provider; tapping the currently active button clears it (sets `activeBuff = null`). One button can be active at a time, matching the game's natural random-roll behavior.
+
+**Purpose:** Visual testing only. The buttons let the developer flip through buff states (banner, shields, label, hidden-info effects) without waiting for the random roll at round boundaries.
+
+**Visibility rules:**
+- Only rendered when the dartboard emulator is active (gated by `_mockApi != null`, the same gate Play to Complete uses).
+- No buttons rendered when there's no current game (the section is hidden entirely in that state).
+- When a game is running but **Bonus Buffs is OFF** in the options, the buttons render but are **disabled** (40% opacity, no tap response) — the affordance is visible so the developer understands it exists, but toggling wouldn't affect the active game's natural roll anyway.
+
+**Round-roll behavior:** when a round ends naturally (`advanceToNextPlayer` rolls a new buff), the model's RNG can overwrite a manual toggle. This is expected — the buttons are a visual-state injector, not a buff lock.
+
+**Components:**
+- `BuffToggleSpec<T>` (`lib/widgets/dartboard_emulator/buff_toggle_column.dart`) — one entry per button: buff enum value, display label, `isActive`, `isEnabled`, optional `buttonKey`, and a `BuffToggleButtonConfig` for visual styling.
+- `BuffToggleColumn<T>` — renders a vertical Column of buttons from a spec list.
+- `BuffToggleButtonConfig` (`lib/widgets/dartboard_emulator/dartboard_emulator_config.dart`) — per-buff visual config; game-specific factories like `BuffToggleButtonConfig.monsterMash(BonusBuff buff)` and `BuffToggleButtonConfig.reefRoyale(ReefBuff buff)` return a config carrying that buff's flavor colors.
+- `DartboardEmulatorSection` accepts optional `buffToggles`, `onBuffToggle`, and `maxButtonsPerColumn`. When `buffToggles` is non-null, the dartboard Container is wrapped in a `Row` with toggle columns flanking it (index-parity split: even indexes left, odd right, innermost column closest to the dartboard). Columns spill outward when their button count exceeds `maxButtonsPerColumn` (default 6).
+- `DartboardEmulatorKeys.buffToggleButton(String enumName)` — widget key helper keyed by the buff enum's `.name`.
+
+**Wiring pattern (for both games):**
+
+```dart
+DartboardEmulatorSection(
+  // ... existing params ...
+  buffToggles: _mockApi != null
+      ? GameBuffEnum.values
+          .map<BuffToggleSpec<Object>>((b) => BuffToggleSpec<Object>(
+                buff: b,
+                label: GameModel.getBuffDisplayName(b),
+                isActive: currentGame.activeBuff == b,
+                isEnabled: currentGame.bonusBuffsEnabled,
+                buttonKey: DartboardEmulatorKeys.buffToggleButton(b.name),
+                config: BuffToggleButtonConfig.gameName(b),
+              ))
+          .toList()
+      : null,
+  onBuffToggle: _mockApi != null
+      ? (Object buff) {
+          final b = buff as GameBuffEnum;
+          final current = gameProvider.currentGame?.activeBuff;
+          gameProvider.setActiveBuff(current == b ? null : b);
+        }
+      : null,
+),
+```
+
+**Provider requirement:** the game's provider must expose `void setActiveBuff(GameBuffEnum? buff)` that mutates the game model and calls `notifyListeners()`. Reference: `ReefRoyaleProvider.setActiveBuff` and `MonsterMashProvider.setActiveBuff`.
+
 ## Related Documentation
 
 - [Adding New Games](adding-games.md)

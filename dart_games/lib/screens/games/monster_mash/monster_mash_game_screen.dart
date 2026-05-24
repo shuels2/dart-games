@@ -749,6 +749,30 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                   ? PlayToTieButtonConfig.monsterMash()
                   : null,
               playToTieEnabled: currentGame.speedPlayEnabled,
+              // Emulator-only buff-toggle buttons. Disabled (greyed)
+              // when bonusBuffsEnabled is off so the user understands
+              // toggling won't affect the active game's natural roll.
+              buffToggles: _mockApi != null
+                  ? BonusBuff.values
+                      .map<BuffToggleSpec<Object>>((b) => BuffToggleSpec<Object>(
+                            buff: b,
+                            label: MonsterMashGame.getBuffDisplayName(b),
+                            isActive: currentGame.activeBuff == b,
+                            isEnabled: currentGame.bonusBuffsEnabled,
+                            buttonKey:
+                                DartboardEmulatorKeys.buffToggleButton(b.name),
+                            config: BuffToggleButtonConfig.monsterMash(b),
+                          ))
+                      .toList()
+                  : null,
+              onBuffToggle: _mockApi != null
+                  ? (Object buff) {
+                      final b = buff as BonusBuff;
+                      final current =
+                          monsterMashProvider.currentGame?.activeBuff;
+                      monsterMashProvider.setActiveBuff(current == b ? null : b);
+                    }
+                  : null,
             ),
           ),
           // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal

@@ -75,6 +75,14 @@ class MonsterMashProvider extends ChangeNotifier {
     return _currentGame?.activeBuff;
   }
 
+  /// Set the active buff programmatically. Used by the emulator-only
+  /// buff-toggle buttons for visual testing. Pass `null` to clear.
+  void setActiveBuff(BonusBuff? buff) {
+    if (_currentGame == null) return;
+    _currentGame!.activeBuff = buff;
+    notifyListeners();
+  }
+
   int getCurrentRound() {
     return _currentGame?.currentRound ?? 1;
   }

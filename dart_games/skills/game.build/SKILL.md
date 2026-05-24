@@ -713,6 +713,28 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > - `SaveGameModalConfig.[gameName]()` in `lib/widgets/save_game_modal/save_game_modal_config.dart`
 > - `ResumeGameModalConfig.[gameName]()` in `lib/widgets/resume_game_modal/resume_game_modal_config.dart`
 >
+> **2a. CONDITIONAL — Bonus-Buff emulator toggle buttons (ONLY if the spec defines bonus buffs):**
+>
+> If the spec includes a `bonus_buffs` option AND an enum of named buffs (like `BonusBuff` in Monster Mash or `ReefBuff` in Reef Royale), the game gets a column of emulator-only buff-toggle buttons flanking the dartboard for visual testing. Reference: `docs/development/dartboard-emulator.md` § Buff-Toggle Buttons.
+>
+> Required pieces:
+> - Add `BuffToggleButtonConfig.[gameName]([BuffEnum] buff)` factory to `lib/widgets/dartboard_emulator/dartboard_emulator_config.dart` — one branch per buff value, with colors matching the spec's buff palette. Reference the existing `monsterMash(BonusBuff)` and `reefRoyale(ReefBuff)` factories for the per-buff-color pattern.
+> - Add `void setActiveBuff([BuffEnum]? buff)` to the game's provider — mutates `_currentGame.activeBuff` and calls `notifyListeners()`. Mirror `ReefRoyaleProvider.setActiveBuff`.
+> - In the game screen's `DartboardEmulatorSection` call, pass:
+>   - `buffToggles`: a `List<BuffToggleSpec<Object>>` built from `[BuffEnum].values` (only when `_mockApi != null`), each spec carrying `buff`, `label` (from the model's `getBuffDisplayName`), `isActive: currentGame.activeBuff == b`, `isEnabled: currentGame.bonusBuffsEnabled`, `buttonKey: DartboardEmulatorKeys.buffToggleButton(b.name)`, and `config: BuffToggleButtonConfig.[gameName](b)`.
+>   - `onBuffToggle`: cast the `Object buff` back to the game's enum and call `setActiveBuff(current == b ? null : b)` so tapping the active button clears it.
+>
+> Visibility / enabled state rules — these are intentional and MUST be preserved:
+> - **No buttons rendered when there's no current game.** The emulator section is hidden entirely when the game hasn't started — no special handling needed beyond `_mockApi != null`.
+> - **Buttons render but are DISABLED (40% opacity, no taps) when `bonusBuffsEnabled` is false.** The user can see the affordance exists, but toggling wouldn't influence the active game's natural roll, so the buttons remain non-interactive. The `isEnabled` flag on each `BuffToggleSpec` carries this; do NOT instead conditionally omit the buttons.
+> - **Round-roll overwrites are expected.** When a round ends, the model's RNG may overwrite a manually-toggled buff. This is the intended natural game flow; do NOT add a "buff lock" mechanism.
+>
+> Tests (lightweight — visual testing feature, NOT a gameplay path):
+> - `setActiveBuff` provider test (state mutation + listener notification + null clears). Mirror the `setActiveBuff` group in `test/providers/monster_mash_provider_game_test.dart`.
+> - No additional integration test required — the shared `BuffToggleColumn` widget test in `test/widgets/buff_toggle_column_test.dart` already covers button rendering, tap-callback firing, disabled-state behavior, and active-state styling, and is generic across buff enums.
+>
+> Skip this entire sub-step if the spec does NOT include bonus buffs.
+>
 > **3. Create the Play-to-Complete strategy:**
 > - File: `lib/services/play_to_complete/[GAME_NAME_SNAKE]_strategy.dart`
 > - Implement `PlayToCompleteStrategy` (from `lib/widgets/dartboard_emulator/play_to_complete_strategy.dart`). The interface has THREE methods — **all take `BuildContext context`, NOT a provider**. The strategy itself calls `context.read<[GAME_NAME_PASCAL]Provider>()` to access state.

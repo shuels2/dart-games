@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:dart_games/models/monster_mash_game.dart';
+import 'package:dart_games/models/reef_royale_game.dart';
 
 class DartboardSectionConfig {
   final Color backgroundColor;
@@ -535,6 +537,125 @@ class PlayToTieButtonConfig {
         color: const Color(0xFF003049),
       ),
       buttonText: 'Play to Tie',
+    );
+  }
+}
+
+/// Visual config for a single buff-toggle button (emulator-only debug
+/// control that flanks the dartboard in games with bonus buffs).
+///
+/// Active state: filled with [activeBackgroundColor] + [borderColor] border.
+/// Inactive state: filled with [inactiveBackgroundColor] + [borderColor] border.
+/// Disabled state (bonus buffs not enabled): rendered at half opacity by
+/// the surrounding column.
+class BuffToggleButtonConfig {
+  final Color activeBackgroundColor;
+  final Color inactiveBackgroundColor;
+  final Color borderColor;
+  final TextStyle activeTextStyle;
+  final TextStyle inactiveTextStyle;
+
+  const BuffToggleButtonConfig({
+    required this.activeBackgroundColor,
+    required this.inactiveBackgroundColor,
+    required this.borderColor,
+    required this.activeTextStyle,
+    required this.inactiveTextStyle,
+  });
+
+  /// Monster Mash buff-toggle styling — one factory per buff so each
+  /// button carries the visual flavor of its in-game effect.
+  factory BuffToggleButtonConfig.monsterMash(BonusBuff buff) {
+    // Shared chrome: PirataOne font, Aged Parchment label, Ecto-Green
+    // border — matches the rest of the Monster Mash emulator chrome.
+    const aged = Color(0xFFF5F5DC); // Aged Parchment
+    const ecto = Color(0xFF7FFF00); // Ecto-Green
+    const haunted = Color(0xFF4B0082); // Haunted Purple
+    final inactiveStyle = GoogleFonts.pirataOne(
+      fontSize: 11,
+      letterSpacing: 0.5,
+      height: 1.1,
+      color: aged.withOpacity(0.55),
+    );
+    final activeStyle = GoogleFonts.pirataOne(
+      fontSize: 11,
+      letterSpacing: 0.5,
+      height: 1.1,
+      color: aged,
+    );
+
+    // Each buff's active color carries its in-game effect's vibe.
+    Color active;
+    switch (buff) {
+      case BonusBuff.bloodMoon:
+        active = const Color(0xFFFF4444); // Blood Red — damage doubling
+      case BonusBuff.ancientBandages:
+        active = ecto; // Ecto-Green — healing
+      case BonusBuff.shadowWalk:
+        active = const Color(0xFF2F4F4F); // Iron Gate — null damage
+      case BonusBuff.laboratorySpark:
+        active = const Color(0xFFFF8C00); // Pumpkin Orange — electric zap
+    }
+
+    // For Ancient Bandages the active bg matches the border color, so
+    // swap the border to Haunted Purple so the active state still has
+    // a visible outline.
+    final border = buff == BonusBuff.ancientBandages ? haunted : ecto;
+
+    return BuffToggleButtonConfig(
+      activeBackgroundColor: active,
+      inactiveBackgroundColor: haunted.withOpacity(0.35),
+      borderColor: border,
+      activeTextStyle: activeStyle,
+      inactiveTextStyle: inactiveStyle,
+    );
+  }
+
+  /// Reef Royale buff-toggle styling — one factory per buff.
+  factory BuffToggleButtonConfig.reefRoyale(ReefBuff buff) {
+    const pearl = Color(0xFFFFF8F0); // Pearl White
+    const deepReef = Color(0xFF0B3D91); // Deep Reef Blue
+    const sandyGold = Color(0xFFF4D03F);
+    final inactiveStyle = GoogleFonts.fredoka(
+      fontSize: 11,
+      fontWeight: FontWeight.bold,
+      height: 1.1,
+      color: pearl.withOpacity(0.55),
+    );
+    final activeStyle = GoogleFonts.fredoka(
+      fontSize: 11,
+      fontWeight: FontWeight.bold,
+      height: 1.1,
+      color: pearl,
+    );
+
+    Color active;
+    switch (buff) {
+      case ReefBuff.riptideRush:
+        active = const Color(0xFF48D1CC); // Seafoam Green — double marks
+      case ReefBuff.pearlFever:
+        active = sandyGold; // Sandy Gold — double pearls
+      case ReefBuff.inkCloud:
+        active = const Color(0xFF9B59B6); // Biolum Purple — hides info
+    }
+
+    // Pearl Fever's gold active bg clashes with light text — swap the
+    // active text color to deep reef for legibility on that one.
+    final activeText = buff == ReefBuff.pearlFever
+        ? GoogleFonts.fredoka(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            height: 1.1,
+            color: deepReef,
+          )
+        : activeStyle;
+
+    return BuffToggleButtonConfig(
+      activeBackgroundColor: active,
+      inactiveBackgroundColor: deepReef.withOpacity(0.5),
+      borderColor: sandyGold,
+      activeTextStyle: activeText,
+      inactiveTextStyle: inactiveStyle,
     );
   }
 }

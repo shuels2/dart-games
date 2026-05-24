@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../interactive_dartboard.dart';
 import 'dartboard_emulator_controller.dart';
 import 'dartboard_emulator_config.dart';
+import 'buff_toggle_column.dart';
 import 'package:dart_games/constants/test_keys.dart';
 
 class DartboardEmulatorSection extends StatelessWidget {
@@ -28,6 +29,22 @@ class DartboardEmulatorSection extends StatelessWidget {
   final PlayToTieButtonConfig? playToTieConfig;
   final bool playToTieEnabled;
 
+  /// Optional buff-toggle specs (emulator-only debug control).
+  /// Only games with bonus buffs (Monster Mash, Reef Royale) supply
+  /// this; null/empty keeps the original dartboard-only layout.
+  /// Generic over `dynamic` so this widget can host both enum types
+  /// — game screens know which enum they're passing back.
+  final List<BuffToggleSpec<Object>>? buffToggles;
+
+  /// Called when a buff button is tapped. Receives the buff enum
+  /// value. Cast to the game's enum type in the game-screen handler.
+  final void Function(Object buff)? onBuffToggle;
+
+  /// Max buttons per column before spilling into a new outer column.
+  /// Defaults to 6 — neither Monster Mash (4) nor Reef Royale (3) hits
+  /// this today, but future games can grow beyond it.
+  final int maxButtonsPerColumn;
+
   const DartboardEmulatorSection({
     super.key,
     required this.controller,
@@ -42,6 +59,9 @@ class DartboardEmulatorSection extends StatelessWidget {
     this.onPlayToTie,
     this.playToTieConfig,
     this.playToTieEnabled = true,
+    this.buffToggles,
+    this.onBuffToggle,
+    this.maxButtonsPerColumn = 6,
   });
 
   @override
@@ -65,37 +85,104 @@ class DartboardEmulatorSection extends StatelessWidget {
             // runner has started the user can't kick off the other.
             if (onPlayToComplete != null && playToCompleteConfig != null)
               _buildAutoPlayButtonsRow(),
-            Container(
-              padding: config.padding,
-              decoration: BoxDecoration(
-                color: config.backgroundColor,
-                borderRadius: config.borderRadius,
-                border: config.border,
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  AbsorbPointer(
-                    absorbing: shouldPromptTakeout || controller.isAutoPlaying,
-                    child: Opacity(
-                      opacity: shouldPromptTakeout ? 0.5 : 1.0,
-                      child: InteractiveDartboard(
-                        key: dartboardKey,
-                        size: 250,
-                        onDartThrow: onDartThrow,
-                        onRemoveDarts: onRemoveDarts,
-                      ),
-                    ),
-                  ),
-                  if (shouldPromptTakeout)
-                    _buildDisabledOverlay(),
-                ],
-              ),
-            ),
+            _buildDartboardWithBuffColumns(),
           ],
         );
       },
     );
+  }
+
+  /// Builds the dartboard Container, optionally flanked by columns of
+  /// buff-toggle buttons (left + right of the dartboard). When
+  /// [buffToggles] is null/empty the result is just the dartboard
+  /// Container, identical to the original layout.
+  Widget _buildDartboardWithBuffColumns() {
+    final dartboardContainer = Container(
+      padding: config.padding,
+      decoration: BoxDecoration(
+        color: config.backgroundColor,
+        borderRadius: config.borderRadius,
+        border: config.border,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AbsorbPointer(
+            absorbing: shouldPromptTakeout || controller.isAutoPlaying,
+            child: Opacity(
+              opacity: shouldPromptTakeout ? 0.5 : 1.0,
+              child: InteractiveDartboard(
+                key: dartboardKey,
+                size: 250,
+                onDartThrow: onDartThrow,
+                onRemoveDarts: onRemoveDarts,
+              ),
+            ),
+          ),
+          if (shouldPromptTakeout) _buildDisabledOverlay(),
+        ],
+      ),
+    );
+
+    final toggles = buffToggles;
+    if (toggles == null || toggles.isEmpty || onBuffToggle == null) {
+      return dartboardContainer;
+    }
+
+    // Split index-parity left vs right (even indexes left, odd right)
+    // then break each side into stacked columns of at most
+    // [maxButtonsPerColumn] buttons each. Innermost column hugs the
+    // dartboard; later columns spill outward.
+    final leftSpecs = <BuffToggleSpec<Object>>[];
+    final rightSpecs = <BuffToggleSpec<Object>>[];
+    for (int i = 0; i < toggles.length; i++) {
+      (i.isEven ? leftSpecs : rightSpecs).add(toggles[i]);
+    }
+    final leftColumns = _chunkIntoColumns(leftSpecs, maxButtonsPerColumn);
+    final rightColumns = _chunkIntoColumns(rightSpecs, maxButtonsPerColumn);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Outer-most spillover columns rendered first on the left so
+        // the innermost column sits closest to the dartboard.
+        for (int i = leftColumns.length - 1; i >= 0; i--) ...[
+          BuffToggleColumn<Object>(
+            specs: leftColumns[i],
+            onToggle: onBuffToggle!,
+          ),
+          const SizedBox(width: 8),
+        ],
+        dartboardContainer,
+        for (int i = 0; i < rightColumns.length; i++) ...[
+          const SizedBox(width: 8),
+          BuffToggleColumn<Object>(
+            specs: rightColumns[i],
+            onToggle: onBuffToggle!,
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Split [specs] into chunks of at most [maxPerColumn] entries each.
+  /// First chunk is the innermost column (closest to dartboard).
+  static List<List<BuffToggleSpec<Object>>> _chunkIntoColumns(
+    List<BuffToggleSpec<Object>> specs,
+    int maxPerColumn,
+  ) {
+    if (specs.isEmpty) return const [];
+    final chunks = <List<BuffToggleSpec<Object>>>[];
+    for (int i = 0; i < specs.length; i += maxPerColumn) {
+      chunks.add(
+        specs.sublist(
+          i,
+          (i + maxPerColumn).clamp(0, specs.length),
+        ),
+      );
+    }
+    return chunks;
   }
 
   /// Render Play to Complete and (if wired) Play to Tie side-by-side.

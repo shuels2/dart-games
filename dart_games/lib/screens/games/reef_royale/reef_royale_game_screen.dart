@@ -673,6 +673,26 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                   ? PlayToTieButtonConfig.reefRoyale()
                   : null,
               playToTieEnabled: currentGame.speedPlayEnabled,
+              buffToggles: _mockApi != null
+                  ? ReefBuff.values
+                      .map<BuffToggleSpec<Object>>((b) => BuffToggleSpec<Object>(
+                            buff: b,
+                            label: ReefRoyaleGame.getBuffDisplayName(b),
+                            isActive: currentGame.activeBuff == b,
+                            isEnabled: currentGame.bonusBuffsEnabled,
+                            buttonKey:
+                                DartboardEmulatorKeys.buffToggleButton(b.name),
+                            config: BuffToggleButtonConfig.reefRoyale(b),
+                          ))
+                      .toList()
+                  : null,
+              onBuffToggle: _mockApi != null
+                  ? (Object buff) {
+                      final b = buff as ReefBuff;
+                      final current = reefProvider.currentGame?.activeBuff;
+                      reefProvider.setActiveBuff(current == b ? null : b);
+                    }
+                  : null,
             ),
           ),
 
