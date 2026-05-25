@@ -19,16 +19,7 @@ class CarnivalDerbyAnnouncementHelper {
   }
 
   // Announce dart hit with appropriate sound effect.
-  //
-  // NORMAL_PER_DART announcement: gated by the System Settings →
-  // Gameplay → "Per-dart score announcements" toggle. When the toggle
-  // is OFF (the default), this method returns early — the player still
-  // hears the dart-hit SFX from the game screen + the dartboard label
-  // updates immediately, but the "Single 20 / Triple 14 / Bullseye!"
-  // voice line is suppressed so per-turn audio stays short.
   void announceDart(int score, String multiplier) {
-    if (!_queue.perDartScoreAnnouncementsEnabled) return;
-
     // Determine sound effect based on multiplier type
     SoundEffectConfig? soundEffect;
 
@@ -110,10 +101,8 @@ class CarnivalDerbyAnnouncementHelper {
     }
   }
 
-  // Announce miss. Same NORMAL_PER_DART gate as announceDart — see its
-  // comment for rationale.
+  // Announce miss
   void announceMiss() {
-    if (!_queue.perDartScoreAnnouncementsEnabled) return;
     _queue.announce(
       'Miss',
       AudioPriority.hitConfirm,

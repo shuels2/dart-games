@@ -112,26 +112,4 @@ class AppSettings {
     if (value == null) return 1.0;
     return double.tryParse(value) ?? 1.0;
   }
-
-  // ---- Gameplay settings ----
-
-  /// Save the "per-dart score announcements" toggle. When false (the
-  /// default), games suppress the generic per-dart score readout
-  /// (Carnival Derby "Single 20", Target Tag "Single 20", Monster Mash
-  /// "Single 20") that previously fired on every dart with no other
-  /// special game effect. Dart-hit SFX and game-specific announcements
-  /// (attacks, eliminations, taglines, etc.) still play.
-  static Future<void> savePerDartScoreAnnouncements(bool enabled) async {
-    await _api.putSetting('per_dart_score_announcements', enabled.toString());
-  }
-
-  /// Get the "per-dart score announcements" toggle. Defaults to false
-  /// (no per-dart score readout) — chosen to keep the per-turn audio
-  /// short by default. Users who want the readouts back can re-enable
-  /// from System Settings → Gameplay.
-  static Future<bool> getPerDartScoreAnnouncements() async {
-    final value = await _api.getSetting('per_dart_score_announcements');
-    if (value == null) return false;
-    return value == 'true';
-  }
 }

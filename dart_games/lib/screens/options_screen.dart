@@ -38,10 +38,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
   String _selectedResponsiveVoice = 'Australian Female';
   // User-tunable playback rate (1.0 = normal). Slider range 0.7-1.5.
   double _playbackRate = 1.0;
-  // Gameplay setting: when false (default), helpers in Carnival Derby,
-  // Target Tag, and Monster Mash skip the generic per-dart score
-  // readout ("Single 20" etc.) so per-turn audio stays short.
-  bool _perDartScoreAnnouncements = false;
   List<dynamic> _systemVoices = [];
   bool _responsiveVoiceReady = false;
   bool _isSaving = false;
@@ -52,7 +48,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _playersListScrollController = ScrollController();
   final GlobalKey _announcerKey = GlobalKey();
-  final GlobalKey _gameplayKey = GlobalKey();
   final GlobalKey _musicKey = GlobalKey();
   final GlobalKey _userManagementKey = GlobalKey();
   final GlobalKey _adminKey = GlobalKey();
@@ -95,7 +90,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     // Check which section is currently visible
     final announcerPosition = _getKeyPosition(_announcerKey);
-    final gameplayPosition = _getKeyPosition(_gameplayKey);
     final musicPosition = _getKeyPosition(_musicKey);
     final userManagementPosition = _getKeyPosition(_userManagementKey);
     final adminPosition = _getKeyPosition(_adminKey);
@@ -106,8 +100,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
       newSection = 'userManagement';
     } else if (musicPosition != null && scrollPosition >= musicPosition - 100) {
       newSection = 'music';
-    } else if (gameplayPosition != null && scrollPosition >= gameplayPosition - 100) {
-      newSection = 'gameplay';
     } else {
       newSection = 'announcer';
     }
@@ -187,17 +179,12 @@ class _OptionsScreenState extends State<OptionsScreen> {
     // Load playback rate (default 1.0)
     final playbackRate = await AppSettings.getVoicePlaybackRate();
 
-    // Load gameplay settings
-    final perDartScoreAnnouncements =
-        await AppSettings.getPerDartScoreAnnouncements();
-
     setState(() {
       _voiceEngine = voiceEngine;
       _selectedVoice = selectedVoice;
       _selectedSystemVoice = systemVoice;
       _selectedResponsiveVoice = responsiveVoice;
       _playbackRate = playbackRate.clamp(0.7, 1.5);
-      _perDartScoreAnnouncements = perDartScoreAnnouncements;
     });
 
     // Load victory music files from service
@@ -222,8 +209,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
       await AppSettings.saveSystemVoice(_selectedSystemVoice);
       await AppSettings.saveResponsiveVoice(_selectedResponsiveVoice);
       await AppSettings.saveVoicePlaybackRate(_playbackRate);
-      await AppSettings.savePerDartScoreAnnouncements(
-          _perDartScoreAnnouncements);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1076,14 +1061,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
           const SizedBox(height: 8),
           _buildNavItem(
             theme: theme,
-            icon: Icons.sports_esports,
-            label: 'Gameplay',
-            sectionKey: 'gameplay',
-            onTap: () => _scrollToSection(_gameplayKey),
-          ),
-          const SizedBox(height: 8),
-          _buildNavItem(
-            theme: theme,
             icon: Icons.music_note,
             label: 'Celebration Music',
             sectionKey: 'music',
@@ -1710,61 +1687,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
                 ),
               ],
             ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Gameplay Settings Section — non-audio preferences that
-                  // affect how each game plays. Currently houses the
-                  // "Per-dart score announcements" toggle (Tier A audio
-                  // reduction from the gameplay-feedback-updates branch).
-                  Container(
-                    key: _gameplayKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Gameplay',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Controls how each game behaves during play. '
-                          'These take effect the next time you enter a game.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Card(
-                          child: SwitchListTile(
-                            secondary: const Icon(Icons.record_voice_over),
-                            title: const Text('Per-dart score announcements'),
-                            subtitle: const Text(
-                              'Speak each dart hit (e.g. "Single 20", '
-                              '"Bullseye!") in Carnival Derby, Target Tag, '
-                              'and Monster Mash. Off by default for faster '
-                              'gameplay — you still hear the dart SFX and '
-                              'all game-specific announcements (attacks, '
-                              'eliminations, etc.).',
-                            ),
-                            value: _perDartScoreAnnouncements,
-                            onChanged: (value) async {
-                              setState(() {
-                                _perDartScoreAnnouncements = value;
-                              });
-                              // Persist immediately — no Save button on
-                              // this section. The change takes effect
-                              // the next time a game's queue runs
-                              // loadSettings (i.e. next game start).
-                              await AppSettings
-                                  .savePerDartScoreAnnouncements(value);
-                            },
-                          ),
-                        ),
                       ],
                     ),
                   ),
