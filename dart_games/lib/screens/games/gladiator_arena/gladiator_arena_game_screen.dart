@@ -765,8 +765,11 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                     ),
                     // Elimination Zone
                     _buildEliminationZone(game, allPlayers),
-                    // Bottom padding for emulator overlay (halved per design)
-                    const SizedBox(height: 60),
+                    // Bottom padding for emulator overlay (halved per design).
+                    // Was 60 — trimmed by 10 to absorb the elimination-zone's
+                    // height bump (30 → 40) for the larger knockoff label so
+                    // the podium row above doesn't shift.
+                    const SizedBox(height: 50),
                   ],
                 ),
               ],
@@ -1231,16 +1234,26 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
 
     return Container(
       key: GladiatorArenaGameKeys.eliminationZone,
-      height: 30,
+      height: 40,
       width: double.infinity,
       child: Center(
         child: showKnockoff
             ? Text(
                 knockoffText,
                 style: GoogleFonts.lato(
-                  fontSize: 14,
+                  fontSize: 20,
                   color: _kBloodRed,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                  shadows: const [
+                    // Black outline — stacked 0-blur shadows at 4 offsets
+                    Shadow(color: Colors.black, offset: Offset(-1.5, 0), blurRadius: 0),
+                    Shadow(color: Colors.black, offset: Offset(1.5, 0), blurRadius: 0),
+                    Shadow(color: Colors.black, offset: Offset(0, -1.5), blurRadius: 0),
+                    Shadow(color: Colors.black, offset: Offset(0, 1.5), blurRadius: 0),
+                    // Soft drop shadow for depth
+                    Shadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 5),
+                  ],
                 ),
                 textAlign: TextAlign.center,
               )
