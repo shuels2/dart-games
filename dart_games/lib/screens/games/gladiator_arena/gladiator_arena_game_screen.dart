@@ -766,10 +766,10 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                     // Elimination Zone
                     _buildEliminationZone(game, allPlayers),
                     // Bottom padding for emulator overlay (halved per design).
-                    // Was 60 — trimmed by 20 to absorb the elimination-zone's
-                    // height growth (30 → 50) for the larger knockoff label so
-                    // the podium row above doesn't shift.
-                    const SizedBox(height: 40),
+                    // Was 60 — trimmed by 45 to absorb the elimination-zone's
+                    // height growth (30 → 75) for the larger 2-line knockoff
+                    // label so the podium row above doesn't shift.
+                    const SizedBox(height: 15),
                   ],
                 ),
               ],
@@ -1229,19 +1229,20 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
       final victim = allPlayers.where((p) => p.id == victimId).firstOrNull;
       final attacker = allPlayers.where((p) => p.id == attackerId).firstOrNull;
       knockoffText =
-          '${victim?.name ?? 'Player'} was knocked off by ${attacker?.name ?? 'Player'}!';
+          'Devastating blow! ${victim?.name ?? 'Player'} was knocked off '
+          'their pedestal by ${attacker?.name ?? 'Player'}!';
     }
 
     return Container(
       key: GladiatorArenaGameKeys.eliminationZone,
-      height: 50,
+      height: 75,
       width: double.infinity,
       child: Center(
         child: showKnockoff
             ? Text(
                 knockoffText,
                 style: GoogleFonts.lato(
-                  fontSize: 26,
+                  fontSize: 30,
                   color: _kBloodRed,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
@@ -1256,6 +1257,8 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                   ],
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               )
             : const SizedBox.shrink(),
       ),
