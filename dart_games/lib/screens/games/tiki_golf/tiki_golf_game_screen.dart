@@ -22,6 +22,7 @@ import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_status_announcer.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'tiki_golf_results_screen.dart';
 
@@ -532,7 +533,10 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         game.dartsThrown.values.any((c) => c > 0) ||
         game.totalTurns.values.any((c) => c > 0);
 
-    return PopScope(
+    return DartboardStatusAnnouncer(
+      onPaused: () => _audioQueue?.announceGamePaused(),
+      onReconnected: () => _audioQueue?.announceConnectionRestored(),
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -765,6 +769,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
               config: DartboardPausedModalConfig.tikiGolf(),
             ),
         ],
+      ),
       ),
     );
   }

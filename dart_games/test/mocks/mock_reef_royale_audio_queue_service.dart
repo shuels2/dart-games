@@ -110,6 +110,16 @@ class MockReefRoyaleAudioQueueService {
     announce('All hail $playerName, Crown of the Reef!');
   }
 
+  void announceGamePaused() {
+    announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+    );
+  }
+
+  void announceConnectionRestored() {
+    announce('Dartboard reconnected. Resume play when ready.');
+  }
+
   void dispose() {
     _announcements.clear();
   }

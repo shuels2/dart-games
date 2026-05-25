@@ -147,6 +147,16 @@ class MockTargetTagAudioQueueService {
     announce('Remove your darts');
   }
 
+  void announceGamePaused() {
+    announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+    );
+  }
+
+  void announceConnectionRestored() {
+    announce('Dartboard reconnected. Resume play when ready.');
+  }
+
   void dispose() {
     _announcements.clear();
   }

@@ -202,6 +202,26 @@ class LunarLanderAnnouncementHelper {
     );
   }
 
+  // ─── Connection-status announcements ────────────────────────────────────────
+
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queue.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queue.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
   // ─── Dispose ─────────────────────────────────────────────────────────────────
 
   void dispose() {

@@ -586,6 +586,17 @@ class DartboardProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Direct test-only status mutator. Used by DartboardStatusAnnouncer
+  /// widget tests that need to drive the full status lifecycle (e.g.
+  /// connected → disconnected → connected) without going through the
+  /// hardware-shaped simulate* helpers above.
+  @visibleForTesting
+  void setStatusForTesting(DartboardConnectionStatus status) {
+    _status = status;
+    _error = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     stopStatusChecking();

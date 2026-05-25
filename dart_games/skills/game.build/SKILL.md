@@ -687,6 +687,7 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 > - `lib/screens/games/target_tag/target_tag_game_screen.dart` — canonical Play-to-Complete wiring (field name `_playToCompleteRunner`, `_onPlayToComplete()`, `_onCancelAutoPlay()`, dispose)
 > - `docs/development/resume-game-button.md` — exact menu state setup (`_hasSavedGames`, `_checkForSavedGames()`, `addPostFrameCallback`)
 > - `docs/development/dartboard-paused-modal.md` — the conditional: show only if `!dartboardProvider.isEmulator && status != connected && status != emulator`
+> - `lib/widgets/dartboard_paused_modal/dartboard_status_announcer.dart` — wraps the game screen's outer `PopScope`; fires `onPaused` / `onReconnected` callbacks on dartboard status transitions for the voice counterpart to the visual paused modal
 > - `docs/development/save-resume-game.md` — `_deleteResumedSavedGame()` runs INDEPENDENTLY in `addPostFrameCallback`, NOT awaited inline after `_updatePlayerStats()`
 > - `docs/development/announcement-system.md` — `announceRemoveDarts` MUST be called UNCONDITIONALLY on takeout (not inside a precedence `else` block)
 > - At least one existing game's screens for reference (e.g., `lib/screens/games/target_tag/`, including its play-to-complete integration)
@@ -1018,6 +1019,28 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >       ),
 >     );
 >   }
+>
+>   // The entire `return PopScope(...)` above MUST be wrapped in a
+>   // `DartboardStatusAnnouncer` so the user hears a voice line when
+>   // the dartboard disconnects mid-game and when it reconnects.
+>   // Resulting top-of-build pattern:
+>   //
+>   //   return DartboardStatusAnnouncer(
+>   //     onPaused: () => _audioQueue?.announceGamePaused(),
+>   //     onReconnected: () => _audioQueue?.announceConnectionRestored(),
+>   //     child: PopScope(
+>   //       canPop: ...,
+>   //       onPopInvokedWithResult: ...,
+>   //       child: Stack(children: [ /* the layers above */ ]),
+>   //     ),
+>   //   );
+>   //
+>   // The game's announcement helper MUST expose both
+>   // `announceGamePaused()` and `announceConnectionRestored()` (utility
+>   // voice-only, no SFX, priority `statusChange` — same text across all
+>   // games; copy is in the shared spec, not per-game flavor). The mock
+>   // helper in `test/mocks/mock_<game>_audio_queue_service.dart` must
+>   // mirror these methods.
 >   // 6. EditScoreDialog — NOT an outer-Stack child. It is a Flutter routed dialog
 >   //    (`showDialog()`) launched from the "Edit Score" button INSIDE RemoveDartsModal.
 >   //    Navigator routes always paint above the underlying page, so when shown it
