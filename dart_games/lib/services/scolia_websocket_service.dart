@@ -28,6 +28,38 @@ class ScoliaWebSocketService {
   bool _isConnected = false;
   bool _isDisposed = false;
 
+  /// Timestamp of the most-recent outbound GET_SBC_STATUS for which no
+  /// reply has been observed yet. Cleared by any inbound message that
+  /// proves the socket is still alive (SBC_STATUS / SBC_STATUS_CHANGED /
+  /// THROW_DETECTED / TAKEOUT_*). If the next periodic tick fires and
+  /// this is still set with elapsed > [_heartbeatTimeoutMs], we treat
+  /// the connection as half-dead and emit a synthetic disconnect.
+  ///
+  /// Why this exists: when the client computer sleeps and wakes up the
+  /// WebSocket can be in a "half-open" state — both sides appear
+  /// connected but data won't flow. Without this, GET_SBC_STATUS sends
+  /// into the void and status sits at error forever.
+  DateTime? _lastStatusSentAt;
+
+  /// Max age of an unanswered GET_SBC_STATUS before we declare the WS
+  /// half-dead. Tuned so a single dropped reply doesn't trigger it (the
+  /// ticker is 10s, so 7s leaves ~3s of slack for normal reply jitter)
+  /// but a fully wedged connection is detected within one tick.
+  @visibleForTesting
+  static const int heartbeatTimeoutMs = 7000;
+
+  /// Pure-function helper used by the periodic status-check tick to
+  /// decide whether the connection is half-dead. Exposed for tests so
+  /// the logic can be exercised without a real WebSocket.
+  @visibleForTesting
+  static bool isHeartbeatStale({
+    required DateTime? lastSentAt,
+    required DateTime now,
+  }) {
+    if (lastSentAt == null) return false;
+    return now.difference(lastSentAt).inMilliseconds > heartbeatTimeoutMs;
+  }
+
   Stream<Map<String, dynamic>> get eventStream =>
       _eventStreamController.stream;
   bool get isConnected => _isConnected;
@@ -159,6 +191,11 @@ class ScoliaWebSocketService {
           break;
       }
 
+      // Any inbound message proves the connection is alive — clear
+      // the heartbeat-pending stamp regardless of message type. (Even
+      // an ACKNOWLEDGED or REFUSED that isn't forwarded counts.)
+      _lastStatusSentAt = null;
+
       return message;
     } catch (e) {
       print('Error parsing WebSocket message: $e');
@@ -232,9 +269,34 @@ class ScoliaWebSocketService {
     _statusCheckTimer = Timer.periodic(
       const Duration(seconds: 10),
       (_) {
-        if (_isConnected) {
-          sendGetSbcStatus();
+        if (!_isConnected) return;
+
+        // Heartbeat-timeout check: if a previous GET_SBC_STATUS is
+        // still unanswered after _heartbeatTimeoutMs, the WS is
+        // half-dead (the most common cause is the client OS sleeping
+        // and waking — the socket stays "open" both ends but data
+        // won't flow). Synthesize a disconnect so the provider can
+        // tear down + reconnect.
+        if (isHeartbeatStale(
+          lastSentAt: _lastStatusSentAt,
+          now: DateTime.now(),
+        )) {
+          final age =
+              DateTime.now().difference(_lastStatusSentAt!).inMilliseconds;
+          debugPrint('[Dartboard][WS] Heartbeat timeout: GET_SBC_STATUS '
+              'unanswered for ${age}ms — treating connection as dead');
+          _isConnected = false;
+          _handleDisconnect(
+            closeCode: -1,
+            closeReason: 'client heartbeat timeout',
+          );
+          // Tear down the channel so callers don't try to send into it.
+          // The provider's reconnect logic will create a fresh service.
+          disconnect();
+          return;
         }
+
+        sendGetSbcStatus();
       },
     );
   }
@@ -244,6 +306,8 @@ class ScoliaWebSocketService {
   /// Request current SBC status and phase.
   void sendGetSbcStatus() {
     _sendMessage({'type': 'GET_SBC_STATUS', 'id': _uuid.v4()});
+    // Stamp send time so the next tick can detect a missing reply.
+    _lastStatusSentAt = DateTime.now();
   }
 
   /// Reset the SBC phase to "Throw" and clear current round throws.
