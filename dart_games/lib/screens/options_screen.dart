@@ -933,7 +933,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
               ),
             )
           else
-            ...history.reversed.take(5).map((entry) {
+            ...history.take(5).map((entry) {
               final isWin = entry.metadata?['won'] == true;
               return ListTile(
                 dense: true,
