@@ -15,7 +15,7 @@ class GladiatorArenaSoundEffects {
     assetPath: '${_basePath}GladiatorArena-CrowdCheer.mp3',
     startSeconds: 0.0,
     endSeconds: 3.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   /// Crowd gasp — plays from 0.0s to 1.5s
@@ -40,7 +40,7 @@ class GladiatorArenaSoundEffects {
     assetPath: '${_basePath}GladiatorArena-TurnBell.mp3',
     startSeconds: 0.0,
     endSeconds: 2.0,
-    fadeOutMs: 1000,
+    fadeOutMs: 500,
   );
 
   /// Miss thud — plays full clip

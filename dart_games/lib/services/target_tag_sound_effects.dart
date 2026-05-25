@@ -10,7 +10,7 @@ class TargetTagSoundEffects {
     assetPath: '${_basePath}TargetTag-Fanfare.mp3',
     startSeconds: 0.0,
     endSeconds: null, // Play entire file
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   static const SoundEffectConfig removeDarts = SoundEffectConfig(
@@ -42,7 +42,7 @@ class TargetTagSoundEffects {
     assetPath: '${_basePath}TargetTag-Choir.mp3',
     startSeconds: 0.0,
     endSeconds: 3.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   static const SoundEffectConfig outerBull = SoundEffectConfig(
@@ -55,7 +55,7 @@ class TargetTagSoundEffects {
     assetPath: '${_basePath}TargetTag-Teasing.mp3',
     startSeconds: 0.0,
     endSeconds: null, // Play entire file
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   // PRIORITY 3: Shield Status
@@ -76,7 +76,7 @@ class TargetTagSoundEffects {
     assetPath: '${_basePath}TargetTag-Villain.mp3',
     startSeconds: 0.0,
     endSeconds: null, // Play entire file
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   // PRIORITY 5: Victory/Game Events
@@ -84,7 +84,7 @@ class TargetTagSoundEffects {
     assetPath: '${_basePath}TargetTag-Magical.mp3',
     startSeconds: 0.0,
     endSeconds: 4.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   // Additional Status/Event Sounds

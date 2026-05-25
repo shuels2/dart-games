@@ -44,7 +44,7 @@ class ReefRoyaleSoundEffects {
     assetPath: '${_basePath}ReefRoyale-RushingWater.mp3',
     startSeconds: 0.0,
     endSeconds: 3.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   // Victory Fanfare

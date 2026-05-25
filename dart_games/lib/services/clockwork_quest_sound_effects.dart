@@ -25,7 +25,7 @@ class ClockworkQuestSoundEffects {
     assetPath: '${_basePath}ClockworkQuest-Fanfare.mp3',
     startSeconds: 0.0,
     endSeconds: 3.5,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   /// Single gear click for single gear activation

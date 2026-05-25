@@ -12,7 +12,7 @@ class CarnivalDerbySoundEffects {
     assetPath: '${_basePath}CarnivalDerby-HorseRace-Start.mp3',
     startSeconds: 0.0,
     endSeconds: 4.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   static const SoundEffectConfig removeDarts = SoundEffectConfig(
@@ -26,7 +26,7 @@ class CarnivalDerbySoundEffects {
     assetPath: '${_targetTagPath}TargetTag-Teasing.mp3',
     startSeconds: 0.0,
     endSeconds: null, // Play entire file
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   static const SoundEffectConfig singleHit = SoundEffectConfig(
@@ -51,7 +51,7 @@ class CarnivalDerbySoundEffects {
     assetPath: '${_targetTagPath}TargetTag-Choir.mp3',
     startSeconds: 0.0,
     endSeconds: 3.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   static const SoundEffectConfig outerBull = SoundEffectConfig(
@@ -65,7 +65,7 @@ class CarnivalDerbySoundEffects {
     assetPath: '${_targetTagPath}TargetTag-Ominous.mp3',
     startSeconds: 0.0,
     endSeconds: null, // Play entire file
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   // PRIORITY 4: Victory

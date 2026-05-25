@@ -30,11 +30,11 @@ class LunarLanderSoundEffects {
     startSeconds: 0.0,
   );
 
-  /// Mission control chatter — plays 0s to 1.25s
+  /// Mission control chatter — plays 0s to 3.5s
   static const SoundEffectConfig missionControl = SoundEffectConfig(
     assetPath: '${_basePath}LunarLander-MissionControl.mp3',
     startSeconds: 0.0,
-    endSeconds: 1.25,
+    endSeconds: 3.5,
   );
 
   /// Warning alarm — plays full clip
@@ -48,7 +48,7 @@ class LunarLanderSoundEffects {
     assetPath: '${_basePath}LunarLander-DriftSound.mp3',
     startSeconds: 1.0,
     endSeconds: 4.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   /// Victory fanfare — plays 0.5s to 4.0s with a 1.5s tail fade
@@ -56,6 +56,6 @@ class LunarLanderSoundEffects {
     assetPath: '${_basePath}LunarLander-VictoryFanfare.mp3',
     startSeconds: 0.5,
     endSeconds: 4.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 }
