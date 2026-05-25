@@ -1,0 +1,41 @@
+# Cache-control rules for Apache-served Flutter web deploys.
+#
+# Strategy:
+#   - index.html: NEVER cached. It's tiny and always fetched fresh so
+#     the browser discovers the latest main.dart.js immediately after
+#     a deploy.
+#   - flutter_service_worker.js: NEVER cached. Defensive — even though
+#     we build with --pwa-strategy=none (no service worker), we don't
+#     want a stale one persisting if the strategy is ever flipped back.
+#   - Everything else (main.dart.js, canvaskit, fonts, images): cached
+#     for 5 minutes so revisits are fast but a deploy propagates
+#     app-wide within 5 minutes even without a manual reload.
+#
+# Requires Apache's mod_headers module. Enable once on the server:
+#   sudo a2enmod headers
+#   sudo systemctl reload apache2
+#
+# The hosting Apache must also have `AllowOverride All` (or at least
+# `AllowOverride Limit FileInfo`) for the deploy directory, otherwise
+# this .htaccess is silently ignored.
+
+<IfModule mod_headers.c>
+    # index.html: always fetch fresh — it points at the latest JS bundle
+    <Files "index.html">
+        Header set Cache-Control "no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </Files>
+
+    # service worker: never cache (defensive — strategy is `none` today)
+    <Files "flutter_service_worker.js">
+        Header set Cache-Control "no-store, must-revalidate"
+    </Files>
+
+    # JS, CSS, wasm, images, fonts, JSON: 5-minute cache. Long enough
+    # to keep page loads snappy on revisits, short enough that deploys
+    # propagate quickly without forcing a manual reload.
+    <FilesMatch "\.(js|css|wasm|png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|otf|json)$">
+        Header set Cache-Control "public, max-age=300, must-revalidate"
+    </FilesMatch>
+</IfModule>
