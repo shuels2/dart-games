@@ -40,8 +40,11 @@ class MockLunarLanderAudioQueueService {
     _record('Mission control, altitude $startingAltitude! Begin descent!');
   }
 
-  void announcePlayerTurn({required String playerName}) {
-    _record('$playerName, you have the controls!');
+  void announcePlayerTurn({
+    required String playerName,
+    required int altitude,
+  }) {
+    _record('$playerName, you have the controls! Altitude: $altitude!');
   }
 
   /// Always-fires remove-darts prompt (unconditional, never suppressed).
@@ -78,9 +81,9 @@ class MockLunarLanderAudioQueueService {
     } else if (newAltitude > 0 && newAltitude <= 20) {
       _announceNearLanding(playerName: playerName, altitude: newAltitude);
     } else if (dartScore >= 40) {
-      _announceBigDescent(playerName: playerName, score: dartScore, newAltitude: newAltitude);
+      _announceBigDescent(playerName: playerName, score: dartScore);
     } else if (dartScore >= 1) {
-      _announceStandardDescent(playerName: playerName, score: dartScore, newAltitude: newAltitude);
+      _announceStandardDescent(playerName: playerName, score: dartScore);
     } else {
       _announceMiss(playerName: playerName);
     }
@@ -124,17 +127,15 @@ class MockLunarLanderAudioQueueService {
   void _announceBigDescent({
     required String playerName,
     required int score,
-    required int newAltitude,
   }) {
-    _record('Major burn! $playerName drops $score! Altitude: $newAltitude!');
+    _record('Major burn! $playerName drops $score!');
   }
 
   void _announceStandardDescent({
     required String playerName,
     required int score,
-    required int newAltitude,
   }) {
-    _record('$playerName descends $score! Altitude: $newAltitude!');
+    _record('$playerName descends $score!');
   }
 
   void _announceMiss({required String playerName}) {

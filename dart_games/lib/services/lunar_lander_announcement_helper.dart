@@ -33,9 +33,16 @@ class LunarLanderAnnouncementHelper {
   }
 
   /// Plays the player-turn announcement (e.g. after takeout).
-  void announcePlayerTurn({required String playerName}) {
+  ///
+  /// [altitude] is the current remaining altitude. It's announced here as
+  /// the per-turn altitude readout; per-dart announcements no longer include
+  /// altitude for the routine Big-Descent / Standard-Descent branches.
+  void announcePlayerTurn({
+    required String playerName,
+    required int altitude,
+  }) {
     _queue.announce(
-      '$playerName, you have the controls!',
+      '$playerName, you have the controls! Altitude: $altitude!',
       AudioPriority.turnTransition,
       soundEffect: LunarLanderSoundEffects.radioBeep,
     );
@@ -93,9 +100,9 @@ class LunarLanderAnnouncementHelper {
     } else if (newAltitude > 0 && newAltitude <= 20) {
       _announceNearLanding(playerName: playerName, altitude: newAltitude);
     } else if (dartScore >= 40) {
-      _announceBigDescent(playerName: playerName, score: dartScore, newAltitude: newAltitude);
+      _announceBigDescent(playerName: playerName, score: dartScore);
     } else if (dartScore >= 1) {
-      _announceStandardDescent(playerName: playerName, score: dartScore, newAltitude: newAltitude);
+      _announceStandardDescent(playerName: playerName, score: dartScore);
     } else {
       _announceMiss(playerName: playerName);
     }
@@ -168,10 +175,9 @@ class LunarLanderAnnouncementHelper {
   void _announceBigDescent({
     required String playerName,
     required int score,
-    required int newAltitude,
   }) {
     _queue.announce(
-      'Major burn! $playerName drops $score! Altitude: $newAltitude!',
+      'Major burn! $playerName drops $score!',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
     );
@@ -180,10 +186,9 @@ class LunarLanderAnnouncementHelper {
   void _announceStandardDescent({
     required String playerName,
     required int score,
-    required int newAltitude,
   }) {
     _queue.announce(
-      '$playerName descends $score! Altitude: $newAltitude!',
+      '$playerName descends $score!',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
     );

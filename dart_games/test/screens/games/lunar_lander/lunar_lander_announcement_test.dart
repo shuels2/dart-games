@@ -46,20 +46,21 @@ void main() {
           contains('altitude 100'));
     });
 
-    test('3. announcePlayerTurn fires with player name', () {
-      mock.announcePlayerTurn(playerName: 'Alice');
+    test('3. announcePlayerTurn fires with player name and altitude', () {
+      mock.announcePlayerTurn(playerName: 'Alice', altitude: 200);
 
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Alice, you have the controls!',
+        'Alice, you have the controls! Altitude: 200!',
       );
     });
 
-    test('4. announcePlayerTurn uses provided name', () {
-      mock.announcePlayerTurn(playerName: 'Rocket Bob');
+    test('4. announcePlayerTurn uses provided name and current altitude', () {
+      mock.announcePlayerTurn(playerName: 'Rocket Bob', altitude: 145);
 
       expect(mock.recordedAnnouncements[0], contains('Rocket Bob'));
+      expect(mock.recordedAnnouncements[0], contains('Altitude: 145'));
     });
   });
 
@@ -83,7 +84,7 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Alice descends 20! Altitude: 180!',
+        'Alice descends 20!',
       );
     });
 
@@ -101,7 +102,7 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Major burn! Alice drops 60! Altitude: 140!',
+        'Major burn! Alice drops 60!',
       );
     });
 
@@ -539,7 +540,7 @@ void main() {
       expect(text, contains('15'));
     });
 
-    test('27. Standard descent text contains player name, score, and new altitude', () {
+    test('27. Standard descent text contains player name and score (altitude lives in turn announcement)', () {
       mock.announceMomentForDart(
         playerName: 'Alice',
         dartScore: 20,
@@ -553,10 +554,11 @@ void main() {
       final text = mock.recordedAnnouncements[0];
       expect(text, contains('Alice'));
       expect(text, contains('20'));
-      expect(text, contains('130'));
+      // Per-dart no longer announces altitude (moved to announcePlayerTurn).
+      expect(text, isNot(contains('130')));
     });
 
-    test('28. Big descent text contains "Major burn", player name, score, and altitude', () {
+    test('28. Big descent text contains "Major burn", player name, and score (altitude lives in turn announcement)', () {
       mock.announceMomentForDart(
         playerName: 'Bob',
         dartScore: 57, // triple-19
@@ -571,7 +573,8 @@ void main() {
       expect(text, contains('Major burn'));
       expect(text, contains('Bob'));
       expect(text, contains('57'));
-      expect(text, contains('143'));
+      // Per-dart no longer announces altitude (moved to announcePlayerTurn).
+      expect(text, isNot(contains('143')));
     });
 
     test('29. Miss text contains player name and "drifts in orbit"', () {
@@ -631,11 +634,12 @@ void main() {
       expect(mock.recordedAnnouncements[0], contains('Mission control'));
     });
 
-    test('33. Player turn text includes player name and "controls"', () {
-      mock.announcePlayerTurn(playerName: 'Pilot Joe');
+    test('33. Player turn text includes player name, "controls", and altitude', () {
+      mock.announcePlayerTurn(playerName: 'Pilot Joe', altitude: 175);
 
       expect(mock.recordedAnnouncements[0], contains('Pilot Joe'));
       expect(mock.recordedAnnouncements[0], contains('controls'));
+      expect(mock.recordedAnnouncements[0], contains('Altitude: 175'));
     });
   });
 }

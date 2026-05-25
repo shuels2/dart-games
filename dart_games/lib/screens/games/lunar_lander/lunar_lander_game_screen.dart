@@ -259,7 +259,10 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         .where((p) => p.id == currentPlayerId)
         .firstOrNull;
     if (player != null) {
-      _audioQueue?.announcePlayerTurn(playerName: player.name);
+      _audioQueue?.announcePlayerTurn(
+        playerName: player.name,
+        altitude: provider.getCurrentAltitude(currentPlayerId),
+      );
     }
   }
 
