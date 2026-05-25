@@ -450,7 +450,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveGame(List<Player> players) async {
+  Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
     debugPrint('[ClockworkQuestProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
     if (_currentGame == null || _saving) {
       debugPrint('[ClockworkQuestProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
@@ -492,6 +492,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
       leadingPlayerScore: 'Lap ${leaderLaps + 1}, #$leaderTarget',
       gameState: game.toJson(),
       waitingForTakeout: _waitingForTakeout,
+      isAutoSave: isAutoSave,
       existingId: _resumedSavedGameId,
     );
 

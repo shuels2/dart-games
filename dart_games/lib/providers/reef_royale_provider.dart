@@ -367,7 +367,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
     _resumedSavedGameId = null;
   }
 
-  Future<void> saveGame(List<Player> players) async {
+  Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
     debugPrint('[ReefRoyaleProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
     if (_currentGame == null || _saving) {
       debugPrint('[ReefRoyaleProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
@@ -396,6 +396,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
       leadingPlayerScore: '$leaderCorals/7 corals',
       gameState: game.toJson(),
       waitingForTakeout: _waitingForTakeout,
+      isAutoSave: isAutoSave,
       existingId: _resumedSavedGameId,
     );
 

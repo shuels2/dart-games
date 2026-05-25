@@ -217,4 +217,48 @@ void main() {
       expect(loaded[0].gameState['nullableField'], isNull);
     });
   });
+
+  group('SavedGameMetadata - isAutoSave roundtrip', () {
+    test('defaults to false when not specified', () {
+      final m = _createMetadata();
+      expect(m.isAutoSave, isFalse);
+    });
+
+    test('isAutoSave=true survives toJson/fromJson', () {
+      final source = SavedGameMetadata(
+        id: 'auto-1',
+        gameType: 'monster_mash',
+        savedAt: DateTime.parse('2026-01-15T12:00:00Z'),
+        playerNames: const ['Alice'],
+        progressInfo: 'Round 2',
+        gameModeName: 'HP 20',
+        leadingPlayerName: 'Alice',
+        leadingPlayerScore: '15 HP',
+        gameState: const {},
+        isAutoSave: true,
+      );
+      final roundtripped = SavedGameMetadata.fromJson(source.toJson());
+      expect(roundtripped.isAutoSave, isTrue);
+      expect(roundtripped.id, source.id);
+    });
+
+    test('legacy JSON without isAutoSave field defaults to false', () {
+      // Simulates a saved row that was created before the V4 migration.
+      final json = <String, dynamic>{
+        'id': 'legacy-1',
+        'gameType': 'target_tag',
+        'savedAt': '2026-01-15T12:00:00.000Z',
+        'playerNames': <String>['Alice'],
+        'progressInfo': 'Round 1',
+        'gameModeName': 'Default',
+        'leadingPlayerName': 'Alice',
+        'leadingPlayerScore': '0 pts',
+        'gameState': <String, dynamic>{},
+        'waitingForTakeout': false,
+        // 'isAutoSave' deliberately omitted
+      };
+      final m = SavedGameMetadata.fromJson(json);
+      expect(m.isAutoSave, isFalse);
+    });
+  });
 }

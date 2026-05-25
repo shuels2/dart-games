@@ -85,8 +85,8 @@ class SavedGameRoutes {
       INSERT OR REPLACE INTO saved_games
         (id, game_type, saved_at, player_names, progress_info,
          game_mode_name, leading_player_name, leading_player_score,
-         game_state, waiting_for_takeout)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         game_state, waiting_for_takeout, is_auto_save)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     ''');
     try {
       stmt.execute([
@@ -100,6 +100,7 @@ class SavedGameRoutes {
         game.leadingPlayerScore,
         jsonEncode(game.gameState),
         game.waitingForTakeout ? 1 : 0,
+        game.isAutoSave ? 1 : 0,
       ]);
     } finally {
       stmt.dispose();

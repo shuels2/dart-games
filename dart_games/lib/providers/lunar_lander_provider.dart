@@ -382,7 +382,7 @@ class LunarLanderProvider extends ChangeNotifier {
     _resumedSavedGameId = null;
   }
 
-  Future<void> saveGame(List<Player> players) async {
+  Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
     debugPrint(
         '[LunarLanderProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
     if (_currentGame == null || _saving) {
@@ -424,6 +424,7 @@ class LunarLanderProvider extends ChangeNotifier {
         leadingPlayerScore: 'Alt: $lowestAlt',
         gameState: game.toJson(),
         waitingForTakeout: _waitingForTakeout,
+        isAutoSave: isAutoSave,
         existingId: _resumedSavedGameId,
       );
 

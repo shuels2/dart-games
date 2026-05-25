@@ -181,11 +181,26 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Date
-                  Text(
-                    _formatDate(game.savedAt),
+                  // Date — prefixed with "AUTOSAVE — " for rows created
+                  // by the auto-save-on-pause mechanism. The prefix uses
+                  // a warning-style color so it's visually distinct from
+                  // the rest of the date string.
+                  RichText(
                     key: ResumeGameModalKeys.tileDate(game.id),
-                    style: config.tileDateTextStyle,
+                    text: TextSpan(
+                      style: config.tileDateTextStyle,
+                      children: [
+                        if (game.isAutoSave)
+                          TextSpan(
+                            text: 'AUTOSAVE — ',
+                            style: config.tileDateTextStyle.copyWith(
+                              color: const Color(0xFFE63946),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        TextSpan(text: _formatDate(game.savedAt)),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 4),
                   // Players

@@ -329,7 +329,7 @@ class PiratesGridProvider extends ChangeNotifier {
 
   // ─── Save / Restore ──────────────────────────────────────────────────────────
 
-  Future<void> saveGame(List<Player> players) async {
+  Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
     if (_currentGame == null || _saving) return;
     _saving = true;
     try {
@@ -371,6 +371,7 @@ class PiratesGridProvider extends ChangeNotifier {
         leadingPlayerScore: '$leadWins round${leadWins == 1 ? "" : "s"} won',
         gameState: game.toJson(),
         waitingForTakeout: _waitingForTakeout,
+        isAutoSave: isAutoSave,
         existingId: _resumedSavedGameId,
       );
 

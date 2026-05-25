@@ -23,6 +23,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'target_tag_results_screen.dart';
 
@@ -575,7 +576,12 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final hasDartsThrown =
         currentGame.totalDartsThrown.values.any((c) => c > 0);
 
-    return PopScope(
+    return AutoSaveOnPause(
+      onPaused: () {
+        if (!hasDartsThrown) return;
+        targetTagProvider.saveGame(allPlayers, isAutoSave: true);
+      },
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -967,6 +973,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
               config: DartboardPausedModalConfig.targetTag(),
             ),
         ],
+      ),
       ),
     );
   }

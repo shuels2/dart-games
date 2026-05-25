@@ -608,7 +608,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
 
   // ─── saveGame ─────────────────────────────────────────────────────────────────
 
-  Future<void> saveGame(List<dynamic> players) async {
+  Future<void> saveGame(List<dynamic> players, {bool isAutoSave = false}) async {
     if (_currentGame == null || _saving) return;
     _saving = true;
     try {
@@ -661,6 +661,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
         leadingPlayerScore: leaderScore,
         gameState: game.toJson(),
         waitingForTakeout: _waitingForTakeout,
+        isAutoSave: isAutoSave,
         existingId: _resumedSavedGameId,
       );
 

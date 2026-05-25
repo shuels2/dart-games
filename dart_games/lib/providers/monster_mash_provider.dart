@@ -344,7 +344,7 @@ class MonsterMashProvider extends ChangeNotifier {
     _resumedSavedGameId = null;
   }
 
-  Future<void> saveGame(List<Player> players) async {
+  Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
     debugPrint('[MonsterMashProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
     if (_currentGame == null || _saving) {
       debugPrint('[MonsterMashProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
@@ -379,6 +379,7 @@ class MonsterMashProvider extends ChangeNotifier {
       leadingPlayerScore: '$maxHealth HP',
       gameState: game.toJson(),
       waitingForTakeout: _waitingForTakeout,
+      isAutoSave: isAutoSave,
       existingId: _resumedSavedGameId,
     );
 

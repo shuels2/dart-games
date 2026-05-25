@@ -306,7 +306,7 @@ void main() {
       });
 
       test('currentVersion reflects highest migration version', () {
-        expect(MigrationRunner.currentVersion, 3);
+        expect(MigrationRunner.currentVersion, 4);
       });
 
       test('currentVersion is 0 with no migrations', () {
@@ -586,10 +586,17 @@ void main() {
       expect(tables.length, 1);
     });
 
-    test('schema version is 3 after initialization', () {
+    test('schema version is 4 after initialization', () {
       final result = database.rawDb.select('SELECT version FROM schema_version;');
       expect(result.length, 1);
-      expect(result.first['version'], 3);
+      expect(result.first['version'], 4);
+    });
+
+    test('saved_games has is_auto_save column after V4 migration', () {
+      final info =
+          database.rawDb.select("PRAGMA table_info('saved_games');");
+      final columnNames = info.map((row) => row['name'] as String).toList();
+      expect(columnNames, contains('is_auto_save'));
     });
   });
 }
