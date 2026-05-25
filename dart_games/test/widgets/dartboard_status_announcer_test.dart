@@ -47,14 +47,16 @@ void main() {
     provider.dispose();
   });
 
-  testWidgets('fires onPaused once when widget mounts with status=error',
+  testWidgets('initial mount is silent regardless of status (no prior connected)',
       (tester) async {
     int paused = 0;
     int reconnected = 0;
 
-    // Start in an explicit `error` state BEFORE the widget mounts.
-    // Only `error` triggers the initial-frame fire — `disconnected`
-    // is the app's default unloaded state and is deliberately silent.
+    // Even an explicit `error` status on mount is silent — the
+    // announcer has never seen a successful `connected` in this
+    // session, so it can't tell whether `error` represents a
+    // genuine mid-session drop or an app cold-boot with a
+    // dartboard that's offline.
     provider.setStatusForTesting(DartboardConnectionStatus.error);
 
     await _pumpAnnouncer(
@@ -64,19 +66,21 @@ void main() {
       onReconnected: () => reconnected++,
     );
 
-    expect(paused, 1, reason: 'first-frame error should fire onPaused once');
+    expect(paused, 0, reason: 'no prior connected → cold-boot path → silent');
     expect(reconnected, 0);
   });
 
-  testWidgets('does NOT fire onPaused on first frame when status is the default disconnected',
+  testWidgets('cold-boot disconnected→connecting→error is silent',
       (tester) async {
     int paused = 0;
     int reconnected = 0;
 
-    // The provider's default initial status is `disconnected` (no
-    // config loaded yet). The global announcer mounted at app root
-    // must NOT fire here — otherwise every app start produces a
-    // spurious "Game paused" announcement.
+    // Reproduces the user-reported bug: laptop has a saved dartboard
+    // but no network. Provider attempts to connect on splash, fails.
+    // The app correctly routes to dartboard-setup but historically
+    // the announcer fired "Game paused" on the connecting→error
+    // transition. After the _hasObservedConnected gate, it stays
+    // silent.
     provider.setStatusForTesting(DartboardConnectionStatus.disconnected);
 
     await _pumpAnnouncer(
@@ -86,8 +90,14 @@ void main() {
       onReconnected: () => reconnected++,
     );
 
+    // Splash → loadConfiguration → _attemptConnection sequence.
+    provider.setStatusForTesting(DartboardConnectionStatus.connecting);
+    await tester.pump();
+    provider.setStatusForTesting(DartboardConnectionStatus.error);
+    await tester.pump();
+
     expect(paused, 0,
-        reason: 'initial `disconnected` is the unloaded default — silent');
+        reason: 'cold-boot with no reachable dartboard must not fire onPaused');
     expect(reconnected, 0);
   });
 
@@ -114,12 +124,14 @@ void main() {
     expect(reconnected, 0);
   });
 
-  testWidgets('error → connected fires onReconnected',
+  testWidgets('connected → error → connected fires both callbacks',
       (tester) async {
     int paused = 0;
     int reconnected = 0;
 
-    provider.setStatusForTesting(DartboardConnectionStatus.error);
+    // Establish a successful connection FIRST — that latches
+    // _hasObservedConnected so future drops can fire onPaused.
+    provider.setStatusForTesting(DartboardConnectionStatus.connected);
 
     await _pumpAnnouncer(
       tester,
@@ -128,18 +140,19 @@ void main() {
       onReconnected: () => reconnected++,
     );
 
-    expect(paused, 1, reason: 'initial `error` fires the paused callback');
+    provider.setStatusForTesting(DartboardConnectionStatus.error);
+    await tester.pump();
+    expect(paused, 1, reason: 'mid-session drop fires onPaused');
     expect(reconnected, 0);
 
     provider.setStatusForTesting(DartboardConnectionStatus.connected);
     await tester.pump();
-
     expect(paused, 1);
-    expect(reconnected, 1);
+    expect(reconnected, 1, reason: 'direct paused→connected fires onReconnected');
   });
 
   testWidgets(
-      'error → connecting → connected still fires onReconnected '
+      'connected → error → connecting → connected still fires onReconnected '
       '(regression: real reconnect path passes through `connecting`)',
       (tester) async {
     int paused = 0;

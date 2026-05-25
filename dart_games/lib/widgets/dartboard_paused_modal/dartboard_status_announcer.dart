@@ -67,6 +67,15 @@ class _DartboardStatusAnnouncerState extends State<DartboardStatusAnnouncer> {
   /// regardless of what intermediate states we passed through.
   bool _pendingReconnect = false;
 
+  /// Latches true the first time we observe a successful `connected`
+  /// status in this session. Gates [onPaused] so it only fires when
+  /// the connection actually drops mid-session — NOT when the app
+  /// cold-boots with the dartboard offline (which would otherwise
+  /// fire on the `disconnected → connecting → error` startup
+  /// sequence and play "Game paused" while the user is still being
+  /// routed to the dartboard-setup screen).
+  bool _hasObservedConnected = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -119,23 +128,30 @@ class _DartboardStatusAnnouncerState extends State<DartboardStatusAnnouncer> {
     final wasPaused = _lastStatus == null ? false : _isPaused(_lastStatus!);
     final nowPaused = _isPaused(status);
 
+    // Latch _hasObservedConnected the moment we see a successful
+    // connection. This gates onPaused so the announcement only fires
+    // when the connection actually DROPS mid-session — never on the
+    // cold-boot "no dartboard reachable" path.
+    if (status == DartboardConnectionStatus.connected) {
+      _hasObservedConnected = true;
+    }
+
     if (initialFrame) {
-      // No prior state to transition from. Only fire onPaused if the
-      // status is explicitly `error` — an actual connection failure
-      // that the user needs to know about. We deliberately do NOT
-      // fire on the default `disconnected` status because that's the
-      // app's initial pre-configuration-load state (every app start
-      // would otherwise produce a spurious "Game paused" announcement
-      // when this widget is mounted at app root).
-      if (status == DartboardConnectionStatus.error &&
-          _shouldFire(_lastPausedAt)) {
-        _lastPausedAt = DateTime.now();
-        _pendingReconnect = true;
-        widget.onPaused();
-      }
+      // No prior state to transition from — there's no meaningful
+      // pause to announce yet. Just prime _lastStatus below and let
+      // subsequent provider notifications drive the transition logic.
     } else {
-      // Pause: any transition from a non-paused state to a paused one.
-      if (!wasPaused && nowPaused && _shouldFire(_lastPausedAt)) {
+      // Pause: any transition from a non-paused state to a paused one,
+      // GATED on having observed a successful connection at some
+      // point this session. Without that gate, the app-root announcer
+      // fires "Game paused" during the normal startup sequence when
+      // the dartboard isn't reachable (status flows
+      // disconnected → connecting → error) — the app correctly
+      // routes the user to dartboard-setup but the audio is wrong.
+      if (!wasPaused &&
+          nowPaused &&
+          _hasObservedConnected &&
+          _shouldFire(_lastPausedAt)) {
         _lastPausedAt = DateTime.now();
         _pendingReconnect = true;
         widget.onPaused();
@@ -146,7 +162,9 @@ class _DartboardStatusAnnouncerState extends State<DartboardStatusAnnouncer> {
       // intermediate state (error → connecting → connected) — the
       // direct `wasPaused && status == connected` check would miss
       // that because `wasPaused` is false by the time we hit
-      // `connected`.
+      // `connected`. _pendingReconnect can only be true if a prior
+      // onPaused fired (which requires _hasObservedConnected), so
+      // we don't need to gate this branch explicitly.
       else if (status == DartboardConnectionStatus.connected &&
           _pendingReconnect &&
           _shouldFire(_lastReconnectedAt)) {
