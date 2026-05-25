@@ -766,10 +766,10 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                     // Elimination Zone
                     _buildEliminationZone(game, allPlayers),
                     // Bottom padding for emulator overlay (halved per design).
-                    // Was 60 — trimmed by 10 to absorb the elimination-zone's
-                    // height bump (30 → 40) for the larger knockoff label so
+                    // Was 60 — trimmed by 20 to absorb the elimination-zone's
+                    // height growth (30 → 50) for the larger knockoff label so
                     // the podium row above doesn't shift.
-                    const SizedBox(height: 50),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ],
@@ -1234,14 +1234,14 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
 
     return Container(
       key: GladiatorArenaGameKeys.eliminationZone,
-      height: 40,
+      height: 50,
       width: double.infinity,
       child: Center(
         child: showKnockoff
             ? Text(
                 knockoffText,
                 style: GoogleFonts.lato(
-                  fontSize: 20,
+                  fontSize: 26,
                   color: _kBloodRed,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
