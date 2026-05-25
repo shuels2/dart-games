@@ -386,11 +386,24 @@ All features must work on all platforms. See [Cross-Platform](docs/critical-rule
 
 ### Flutter Commands
 ```bash
-flutter run -d chrome          # Run on web
+flutter run -d chrome          # Run on web (Build label shows "Build dev")
 flutter test                    # Run all Flutter non-UI tests
-flutter build web               # Build for web
+flutter build web               # Build for web (Build label shows "Build dev")
 flutter doctor                  # Check Flutter setup
 ```
+
+### Build wrappers (inject git commit count as build number)
+```bash
+./build.bat run -d chrome       # Windows: forward to `flutter run` with BUILD_NUMBER set
+./build.sh run -d chrome        # macOS/Linux: same
+./build.bat build web           # Windows: forward to `flutter build web` with BUILD_NUMBER
+./build.sh build web --release  # macOS/Linux: passes any flags through
+```
+
+These wrappers compute `BUILD_NUMBER = git rev-list --count HEAD` and pass it
+via `--dart-define`. The System Settings sidebar shows it as **"Build N"**.
+Use the wrappers when you want a real build number; raw `flutter run` works
+fine for everyday dev but the label falls back to `'dev'`.
 
 ### Server Commands
 ```bash

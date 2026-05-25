@@ -18,6 +18,7 @@ import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../widgets/player_avatar_widget.dart';
 import '../providers/dartboard_provider.dart';
+import '../build_info.dart';
 
 class OptionsScreen extends StatefulWidget {
   final DartAnnouncerService announcer;
@@ -1040,47 +1041,66 @@ class _OptionsScreenState extends State<OptionsScreen> {
           ),
         ),
       ),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Settings',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurfaceVariant,
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text(
+                  'Settings',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildNavItem(
+                  theme: theme,
+                  icon: Icons.campaign,
+                  label: 'Game Announcer',
+                  sectionKey: 'announcer',
+                  onTap: () => _scrollToSection(_announcerKey),
+                ),
+                const SizedBox(height: 8),
+                _buildNavItem(
+                  theme: theme,
+                  icon: Icons.music_note,
+                  label: 'Celebration Music',
+                  sectionKey: 'music',
+                  onTap: () => _scrollToSection(_musicKey),
+                ),
+                const SizedBox(height: 8),
+                _buildNavItem(
+                  theme: theme,
+                  icon: Icons.people,
+                  label: 'User Management',
+                  sectionKey: 'userManagement',
+                  onTap: () => _scrollToSection(_userManagementKey),
+                ),
+                const SizedBox(height: 8),
+                _buildNavItem(
+                  theme: theme,
+                  icon: Icons.admin_panel_settings,
+                  label: 'Admin',
+                  sectionKey: 'admin',
+                  onTap: () => _scrollToSection(_adminKey),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          _buildNavItem(
-            theme: theme,
-            icon: Icons.campaign,
-            label: 'Game Announcer',
-            sectionKey: 'announcer',
-            onTap: () => _scrollToSection(_announcerKey),
-          ),
-          const SizedBox(height: 8),
-          _buildNavItem(
-            theme: theme,
-            icon: Icons.music_note,
-            label: 'Celebration Music',
-            sectionKey: 'music',
-            onTap: () => _scrollToSection(_musicKey),
-          ),
-          const SizedBox(height: 8),
-          _buildNavItem(
-            theme: theme,
-            icon: Icons.people,
-            label: 'User Management',
-            sectionKey: 'userManagement',
-            onTap: () => _scrollToSection(_userManagementKey),
-          ),
-          const SizedBox(height: 8),
-          _buildNavItem(
-            theme: theme,
-            icon: Icons.admin_panel_settings,
-            label: 'Admin',
-            sectionKey: 'admin',
-            onTap: () => _scrollToSection(_adminKey),
+          // Build identifier — injected via --dart-define=BUILD_NUMBER
+          // from build.bat / build.sh wrappers. Falls back to 'dev'
+          // when launched directly with `flutter run`.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Text(
+              'Build ${BuildInfo.number}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+              ),
+            ),
           ),
         ],
       ),
