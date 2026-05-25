@@ -11,7 +11,7 @@ class CarnivalDerbySoundEffects {
   static const SoundEffectConfig horseraceStart = SoundEffectConfig(
     assetPath: '${_basePath}CarnivalDerby-HorseRace-Start.mp3',
     startSeconds: 0.0,
-    endSeconds: 4.0,
+    endSeconds: 3.8,
     fadeOutMs: 500,
   );
 
