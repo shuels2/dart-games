@@ -1020,27 +1020,14 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >     );
 >   }
 >
->   // The entire `return PopScope(...)` above MUST be wrapped in a
->   // `DartboardStatusAnnouncer` so the user hears a voice line when
->   // the dartboard disconnects mid-game and when it reconnects.
->   // Resulting top-of-build pattern:
->   //
->   //   return DartboardStatusAnnouncer(
->   //     onPaused: () => _audioQueue?.announceGamePaused(),
->   //     onReconnected: () => _audioQueue?.announceConnectionRestored(),
->   //     child: PopScope(
->   //       canPop: ...,
->   //       onPopInvokedWithResult: ...,
->   //       child: Stack(children: [ /* the layers above */ ]),
->   //     ),
->   //   );
->   //
->   // The game's announcement helper MUST expose both
->   // `announceGamePaused()` and `announceConnectionRestored()` (utility
->   // voice-only, no SFX, priority `statusChange` — same text across all
->   // games; copy is in the shared spec, not per-game flavor). The mock
->   // helper in `test/mocks/mock_<game>_audio_queue_service.dart` must
->   // mirror these methods.
+>   // Dartboard pause / reconnect voice announcements are handled by
+>   // a single `DartboardStatusAnnouncer` mounted at the app root
+>   // (in `main.dart`, wrapping `MaterialApp`). The global announcer
+>   // uses `GlobalConnectionAnnouncer.instance.announceGamePaused` /
+>   // `announceConnectionRestored`. New game screens do NOT need to
+>   // wrap themselves — adding a per-screen wrap would double-fire
+>   // the announcement. The visual `DartboardPausedModal` is still
+>   // mounted per-screen as shown above.
 >   // 6. EditScoreDialog — NOT an outer-Stack child. It is a Flutter routed dialog
 >   //    (`showDialog()`) launched from the "Edit Score" button INSIDE RemoveDartsModal.
 >   //    Navigator routes always paint above the underlying page, so when shown it

@@ -26,7 +26,6 @@ import '../../../widgets/edit_score/edit_score_dialog_config.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal_config.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/dartboard_status_announcer.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../widgets/save_game_modal/save_game_modal_config.dart';
@@ -619,10 +618,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     // Current turn dart segments
     final currentDartSegments = provider.getCurrentTurnDartSegments(currentPlayerId);
 
-    return DartboardStatusAnnouncer(
-      onPaused: () => _audioQueue?.announceGamePaused(),
-      onReconnected: () => _audioQueue?.announceConnectionRestored(),
-      child: PopScope(
+    return PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -826,7 +822,6 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               config: DartboardPausedModalConfig.piratesGrid(),
             ),
         ],
-      ),
       ),
     );
   }

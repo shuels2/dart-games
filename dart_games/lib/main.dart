@@ -17,6 +17,8 @@ import 'services/api/api_config.dart';
 import 'services/app_settings.dart';
 import 'services/storage_service.dart';
 import 'services/victory_music_service.dart';
+import 'services/global_connection_announcer.dart';
+import 'widgets/dartboard_paused_modal/dartboard_status_announcer.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
@@ -60,6 +62,13 @@ Future<void> main() async {
   AppSettings.initialize(apiClient);
   StorageService.initialize(apiClient);
   VictoryMusicService().initializeApi(apiClient);
+
+  // Initialize the app-root pause/reconnect announcer. Owns its own
+  // GameAnnouncementQueueService so the dartboard disconnect /
+  // reconnect voice lines work from EVERY screen (home, game menus,
+  // game screens, results) — not just from inside a game where the
+  // per-game audio helper exists.
+  await GlobalConnectionAnnouncer.instance.initialize();
 
   // Preload all Google Fonts used in the app to prevent FOUT (Flash of Unstyled Text)
   await _preloadFonts();
@@ -175,7 +184,16 @@ class DartGamesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GladiatorArenaProvider(apiClient: apiClient)),
         ChangeNotifierProvider(create: (_) => TikiGolfProvider()),
       ],
-      child: MaterialApp(
+      // App-root dartboard pause/reconnect announcer. Wired here so the
+      // voice line fires from EVERY screen (home, game menus, game
+      // screens, results) — matching where DartboardPausedModal is
+      // shown. The widget renders its child unchanged; it's purely a
+      // side-effect listener on DartboardProvider status transitions.
+      child: DartboardStatusAnnouncer(
+        onPaused: GlobalConnectionAnnouncer.instance.announceGamePaused,
+        onReconnected:
+            GlobalConnectionAnnouncer.instance.announceConnectionRestored,
+        child: MaterialApp(
         title: 'Dart Games',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -414,6 +432,7 @@ class DartGamesApp extends StatelessWidget {
           '/tiki-golf-game': (context) => const TikiGolfGameScreen(),
           '/tiki-golf-results': (context) => const TikiGolfResultsScreen(),
         },
+      ),
       ),
     );
   }

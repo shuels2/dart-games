@@ -22,7 +22,6 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/dartboard_status_announcer.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../utils/dartboard_layout.dart';
 import 'reef_royale_results_screen.dart';
@@ -400,10 +399,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     final hasDartsThrown =
         currentGame.totalDartsThrown.values.any((c) => c > 0);
 
-    return DartboardStatusAnnouncer(
-      onPaused: () => _audioQueue?.announceGamePaused(),
-      onReconnected: () => _audioQueue?.announceConnectionRestored(),
-      child: PopScope(
+    return PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -732,7 +728,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               config: DartboardPausedModalConfig.reefRoyale(),
             ),
         ],
-      ),
       ),
     );
   }

@@ -47,12 +47,36 @@ void main() {
     provider.dispose();
   });
 
-  testWidgets('fires onPaused once when game opens already disconnected',
+  testWidgets('fires onPaused once when widget mounts with status=error',
       (tester) async {
     int paused = 0;
     int reconnected = 0;
 
-    // Start in a paused state BEFORE the widget mounts.
+    // Start in an explicit `error` state BEFORE the widget mounts.
+    // Only `error` triggers the initial-frame fire — `disconnected`
+    // is the app's default unloaded state and is deliberately silent.
+    provider.setStatusForTesting(DartboardConnectionStatus.error);
+
+    await _pumpAnnouncer(
+      tester,
+      provider: provider,
+      onPaused: () => paused++,
+      onReconnected: () => reconnected++,
+    );
+
+    expect(paused, 1, reason: 'first-frame error should fire onPaused once');
+    expect(reconnected, 0);
+  });
+
+  testWidgets('does NOT fire onPaused on first frame when status is the default disconnected',
+      (tester) async {
+    int paused = 0;
+    int reconnected = 0;
+
+    // The provider's default initial status is `disconnected` (no
+    // config loaded yet). The global announcer mounted at app root
+    // must NOT fire here — otherwise every app start produces a
+    // spurious "Game paused" announcement.
     provider.setStatusForTesting(DartboardConnectionStatus.disconnected);
 
     await _pumpAnnouncer(
@@ -62,7 +86,8 @@ void main() {
       onReconnected: () => reconnected++,
     );
 
-    expect(paused, 1, reason: 'first-frame paused should fire onPaused once');
+    expect(paused, 0,
+        reason: 'initial `disconnected` is the unloaded default — silent');
     expect(reconnected, 0);
   });
 
@@ -89,12 +114,12 @@ void main() {
     expect(reconnected, 0);
   });
 
-  testWidgets('disconnected → connected fires onReconnected',
+  testWidgets('error → connected fires onReconnected',
       (tester) async {
     int paused = 0;
     int reconnected = 0;
 
-    provider.setStatusForTesting(DartboardConnectionStatus.disconnected);
+    provider.setStatusForTesting(DartboardConnectionStatus.error);
 
     await _pumpAnnouncer(
       tester,
@@ -103,7 +128,7 @@ void main() {
       onReconnected: () => reconnected++,
     );
 
-    expect(paused, 1);
+    expect(paused, 1, reason: 'initial `error` fires the paused callback');
     expect(reconnected, 0);
 
     provider.setStatusForTesting(DartboardConnectionStatus.connected);

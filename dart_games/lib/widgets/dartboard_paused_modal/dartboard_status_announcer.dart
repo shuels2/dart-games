@@ -106,9 +106,15 @@ class _DartboardStatusAnnouncerState extends State<DartboardStatusAnnouncer> {
     final nowPaused = _isPaused(status);
 
     if (initialFrame) {
-      // No prior state to transition from; fire onPaused if the screen
-      // opened already disconnected so the user knows why the modal is up.
-      if (nowPaused && _shouldFire(_lastPausedAt)) {
+      // No prior state to transition from. Only fire onPaused if the
+      // status is explicitly `error` — an actual connection failure
+      // that the user needs to know about. We deliberately do NOT
+      // fire on the default `disconnected` status because that's the
+      // app's initial pre-configuration-load state (every app start
+      // would otherwise produce a spurious "Game paused" announcement
+      // when this widget is mounted at app root).
+      if (status == DartboardConnectionStatus.error &&
+          _shouldFire(_lastPausedAt)) {
         _lastPausedAt = DateTime.now();
         widget.onPaused();
       }
