@@ -53,6 +53,20 @@ class _DartboardStatusAnnouncerState extends State<DartboardStatusAnnouncer> {
   DartboardProvider? _provider;
   bool _firstObservationDone = false;
 
+  /// Tracks whether the last announcement we fired was [onPaused] (and
+  /// we haven't yet fired the matching [onReconnected]). Set true when
+  /// we fire onPaused; cleared when we fire onReconnected.
+  ///
+  /// Why this exists: a real reconnect goes through `connecting` as an
+  /// intermediate state — provider notifies error → connecting →
+  /// connected with two notifyListeners() calls. Without this flag, the
+  /// transition logic checks `wasPaused && status == connected`, which
+  /// fails because by the time we hit `connected`, `_lastStatus` is
+  /// already `connecting` (not paused). The flag lets us fire
+  /// onReconnected whenever we reach `connected` after a pause,
+  /// regardless of what intermediate states we passed through.
+  bool _pendingReconnect = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -116,16 +130,28 @@ class _DartboardStatusAnnouncerState extends State<DartboardStatusAnnouncer> {
       if (status == DartboardConnectionStatus.error &&
           _shouldFire(_lastPausedAt)) {
         _lastPausedAt = DateTime.now();
+        _pendingReconnect = true;
         widget.onPaused();
       }
     } else {
+      // Pause: any transition from a non-paused state to a paused one.
       if (!wasPaused && nowPaused && _shouldFire(_lastPausedAt)) {
         _lastPausedAt = DateTime.now();
+        _pendingReconnect = true;
         widget.onPaused();
-      } else if (wasPaused &&
-          status == DartboardConnectionStatus.connected &&
+      }
+      // Reconnect: we've reached `connected` AND we have an unresolved
+      // pause to announce the recovery for. This handles the real-world
+      // reconnect path that passes through `connecting` as an
+      // intermediate state (error → connecting → connected) — the
+      // direct `wasPaused && status == connected` check would miss
+      // that because `wasPaused` is false by the time we hit
+      // `connected`.
+      else if (status == DartboardConnectionStatus.connected &&
+          _pendingReconnect &&
           _shouldFire(_lastReconnectedAt)) {
         _lastReconnectedAt = DateTime.now();
+        _pendingReconnect = false;
         widget.onReconnected();
       }
     }

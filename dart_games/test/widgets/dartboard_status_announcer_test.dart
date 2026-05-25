@@ -138,6 +138,46 @@ void main() {
     expect(reconnected, 1);
   });
 
+  testWidgets(
+      'error → connecting → connected still fires onReconnected '
+      '(regression: real reconnect path passes through `connecting`)',
+      (tester) async {
+    int paused = 0;
+    int reconnected = 0;
+
+    provider.setStatusForTesting(DartboardConnectionStatus.connected);
+
+    await _pumpAnnouncer(
+      tester,
+      provider: provider,
+      onPaused: () => paused++,
+      onReconnected: () => reconnected++,
+    );
+
+    // Drop the connection.
+    provider.setStatusForTesting(DartboardConnectionStatus.error);
+    await tester.pump();
+    expect(paused, 1);
+    expect(reconnected, 0);
+
+    // Auto-reconnect kicks off — provider flips through `connecting`
+    // first (which is NEITHER a paused state nor `connected`).
+    provider.setStatusForTesting(DartboardConnectionStatus.connecting);
+    await tester.pump();
+    expect(paused, 1);
+    expect(reconnected, 0,
+        reason: 'connecting is intermediate — no announcement yet');
+
+    // ...then settles to `connected` once HELLO_CLIENT + sbc status
+    // confirms hardware online. THIS is where onReconnected must fire.
+    provider.setStatusForTesting(DartboardConnectionStatus.connected);
+    await tester.pump();
+    expect(paused, 1);
+    expect(reconnected, 1,
+        reason:
+            'reconnect must fire even after passing through `connecting`');
+  });
+
   testWidgets('emulator mode fires neither callback on any transition',
       (tester) async {
     int paused = 0;
