@@ -31,8 +31,8 @@ class CarnivalDerbySoundEffects {
 
   static const SoundEffectConfig singleHit = SoundEffectConfig(
     assetPath: '${_targetTagPath}TargetTag-Spring.mp3',
-    startSeconds: 3.7,
-    endSeconds: null, // Play from 3.7s to end
+    startSeconds: 3.9,
+    endSeconds: null, // Play from 3.9s to end
   );
 
   static const SoundEffectConfig doubleHit = SoundEffectConfig(
