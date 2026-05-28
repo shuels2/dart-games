@@ -421,7 +421,7 @@ void main() {
         // Takeout triggers victory
         handleTakeoutFinished(provider, audioQueue, players);
         expect(audioQueue.announcements, contains(
-            'All gears turn! Alice wins the Clockwork Crown!'));
+            'Alice wins the Clockwork Crown!'));
       });
     });
 

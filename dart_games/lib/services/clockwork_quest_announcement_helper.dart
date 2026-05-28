@@ -104,7 +104,7 @@ class ClockworkQuestAnnouncementHelper {
   /// Victory
   void announceVictory(Player winner) {
     _queueService.announce(
-      'All gears turn! ${winner.name} wins the Clockwork Crown!',
+      '${winner.name} wins the Clockwork Crown!',
       AudioPriority.victory,
       soundEffect: ClockworkQuestSoundEffects.victoryFanfare,
     );

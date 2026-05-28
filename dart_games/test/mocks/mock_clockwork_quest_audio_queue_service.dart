@@ -60,7 +60,7 @@ class MockClockworkQuestAudioQueueService {
   }
 
   void announceVictory(Player winner) {
-    announce('All gears turn! ${winner.name} wins the Clockwork Crown!');
+    announce('${winner.name} wins the Clockwork Crown!');
   }
 
   void announceRemoveDarts(Player player) {

@@ -186,7 +186,7 @@ class GladiatorArenaAnnouncementHelper {
 
   void announceSmallHit(String playerName, int n) {
     _queueService.announce(
-      '$playerName scores $n points.',
+      '$n points.',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.swordClash,
     );
@@ -288,14 +288,14 @@ class GladiatorArenaAnnouncementHelper {
       return;
     }
 
-    // 10. Good Hit (20-39, single)
-    if (dartValue >= 20 && multiplier == 'single') {
+    // 10. Good Hit (20-39)
+    if (dartValue >= 20) {
       announceGoodHit(dartValue);
       return;
     }
 
-    // 11. Small Hit (1-19, single)
-    if (dartValue >= 1 && multiplier == 'single') {
+    // 11. Small Hit (1-19)
+    if (dartValue >= 1) {
       announceSmallHit(playerName, dartValue);
       return;
     }

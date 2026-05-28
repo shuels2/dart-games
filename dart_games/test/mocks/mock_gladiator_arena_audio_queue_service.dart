@@ -122,7 +122,7 @@ class MockGladiatorArenaAudioQueueService {
   }
 
   void announceSmallHit(String playerName, int n) {
-    _record('$playerName scores $n points.');
+    _record('$n points.');
   }
 
   void announceMiss() {

@@ -87,7 +87,7 @@ void main() {
       mockQueue.announceVictory(testPlayer);
       expect(mockQueue.announcements.length, 1);
       expect(mockQueue.announcements[0],
-          'All gears turn! TestPlayer wins the Clockwork Crown!');
+          'TestPlayer wins the Clockwork Crown!');
     });
 
     test('Remove Darts announcement', () {
