@@ -174,28 +174,32 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final multiplierList = provider.getDartThrowMultiplier(playerId);
     final advancedList = provider.getDartThrowAdvanced(playerId);
     final completedLapList = provider.getDartThrowCompletedLap(playerId);
+    final targetNumberList = provider.getDartThrowTargetNumber(playerId);
     if (hitTargetList.isEmpty) return;
 
     final hitTarget = hitTargetList.last;
     final multiplier = multiplierList.last;
     final advanced = advancedList.last;
     final completedLap = completedLapList.last;
+    final dartTargetNumber = targetNumberList.last;
     final newTarget = provider.getPlayerCurrentTarget(playerId);
     final completedTargets = provider.getPlayerCompletedTargets(playerId);
 
-    if (provider.hasWinner) return;
-
-    if (completedLap) {
+    // Slot 1: moment announcement (highest priority wins)
+    if (completedLap && !provider.hasWinner) {
       _audioQueue?.announceLapComplete();
       _bullseyeTargetAnnouncedFor.remove(playerId);
-    } else if (hitTarget && advanced && newTarget == 21) {
+    } else if (hitTarget && advanced && (newTarget == 21 || dartTargetNumber == 21)) {
       _audioQueue?.announceBullseyeHit();
     } else if (hitTarget && advanced) {
-      _audioQueue?.announceGearActivated(newTarget - 1);
-    } else if (!hitTarget) {
+      _audioQueue?.announceGearActivated(dartTargetNumber);
+    } else if (!hitTarget && !provider.hasWinner) {
       _audioQueue?.announceMiss();
     }
 
+    if (provider.hasWinner) return;
+
+    // Slot 2: milestone announcement
     if (newTarget == 21 && !completedLap && _bullseyeTargetAnnouncedFor.add(playerId)) {
       _audioQueue?.announceBullseyeTarget();
     } else if (completedTargets.length == 10) {
@@ -788,7 +792,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               ),
             ),
             Text(
-              '$currentTarget/$maxTarget',
+              '${currentTarget - 1}/$maxTarget',
               style: GoogleFonts.lato(
                 fontSize: labelFontSize,
                 color: const Color(0xFFF5F0E8).withOpacity(0.5),
@@ -935,8 +939,9 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final target = provider.getPlayerCurrentTarget(opponentId);
     final laps = provider.getPlayerLapsCompleted(opponentId);
     final maxTarget = game.maxTarget as int;
-    final gearsActivated = laps * maxTarget + (target - 1);
+    final gearsActivated = target - 1;
     final inventorPath = provider.getInventorImagePath(opponentId);
+    final showLaps = (game.numberOfLaps as int) > 1;
 
     return Container(
       key: ClockworkQuestGameKeys.playerTile(opponentId),
@@ -996,6 +1001,15 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
+              if (showLaps)
+                Text(
+                  'Lap ${laps + 1}/${game.numberOfLaps}',
+                  style: GoogleFonts.lato(
+                    fontSize: 12,
+                    color: const Color(0xFFF5F0E8).withOpacity(0.6),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
             ],
           );
         },

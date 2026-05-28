@@ -86,29 +86,30 @@ void announceDartResult(
   final multiplierList = provider.getDartThrowMultiplier(playerId);
   final advancedList = provider.getDartThrowAdvanced(playerId);
   final completedLapList = provider.getDartThrowCompletedLap(playerId);
+  final targetNumberList = provider.getDartThrowTargetNumber(playerId);
   if (hitTargetList.isEmpty) return;
 
   final hitTarget = hitTargetList.last;
   final multiplier = multiplierList.last;
   final advanced = advancedList.last;
   final completedLap = completedLapList.last;
+  final dartTargetNumber = targetNumberList.last;
   final newTarget = provider.getPlayerCurrentTarget(playerId);
   final completedTargets = provider.getPlayerCompletedTargets(playerId);
 
-  // Victory suppresses all dart result announcements
-  if (provider.hasWinner) return;
-
   // Slot 1: moment announcement (highest priority wins)
-  if (completedLap) {
+  if (completedLap && !provider.hasWinner) {
     audioQueue.announceLapComplete();
     bullseyeTargetAnnouncedFor.remove(playerId);
-  } else if (hitTarget && advanced && newTarget == 21) {
+  } else if (hitTarget && advanced && (newTarget == 21 || dartTargetNumber == 21)) {
     audioQueue.announceBullseyeHit();
   } else if (hitTarget && advanced) {
-    audioQueue.announceGearActivated(newTarget - 1);
-  } else if (!hitTarget) {
+    audioQueue.announceGearActivated(dartTargetNumber);
+  } else if (!hitTarget && !provider.hasWinner) {
     audioQueue.announceMiss();
   }
+
+  if (provider.hasWinner) return;
 
   // Slot 2: milestone announcement
   if (newTarget == 21 && !completedLap && bullseyeTargetAnnouncedFor.add(playerId)) {
@@ -407,8 +408,9 @@ void main() {
           provider, audioQueue, players, 'S20',
         );
 
-        // Victory suppresses _announceDartResult, but remove darts fires
-        // (hasWinner triggers remove darts)
+        // Winning dart fires gear activated, then remove darts
+        expect(audioQueue.announcements, contains(
+            'Gear 20 turns! Onward!'));
         expect(audioQueue.announcements, contains(
             'Alice, remove your darts!'));
         // Victory announcement should NOT be in here yet -- it fires on takeout
@@ -546,29 +548,23 @@ void main() {
           provider, audioQueue, players, 'S20',
         );
 
-        // _announceDartResult returns early when hasWinner is true.
-        // So no gear activated, no lap complete, no milestone announcements.
-        // Only turn announcement (fires before provider.processDartThrow)
-        // and remove darts (fires because hasWinner).
+        // The winning dart still fires a gear-activated announcement,
+        // but lap complete, miss, and milestone announcements are suppressed.
         expect(audioQueue.announcements.where(
             (a) => a.contains('Lap complete')).length, 0,
             reason: 'Lap complete must be suppressed by victory');
         expect(audioQueue.announcements.where(
-            (a) => a.contains('Gear') && a.contains('turns')).length, 0,
-            reason: 'Gear activated must be suppressed by victory');
-        expect(audioQueue.announcements.where(
             (a) => a.contains('not the right gear')).length, 0,
             reason: 'Miss must be suppressed by victory');
-        expect(audioQueue.announcements.where(
-            (a) => a.contains('crown gear')).length, 0,
-            reason: 'Bullseye hit must be suppressed by victory');
 
-        // Turn + remove darts are the only announcements
+        // Turn + gear activated + remove darts
         expect(audioQueue.announcements, contains(
             'Alice, your turn to tinker!'));
         expect(audioQueue.announcements, contains(
+            'Gear 20 turns! Onward!'));
+        expect(audioQueue.announcements, contains(
             'Alice, remove your darts!'));
-        expect(audioQueue.announcements.length, 2);
+        expect(audioQueue.announcements.length, 3);
       });
 
       // Test 16: Max 2 announcements per dart event
