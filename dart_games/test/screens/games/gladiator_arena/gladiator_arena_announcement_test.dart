@@ -167,7 +167,7 @@ void main() {
 
       expect(mock.announcementCount, 1);
       expect(mock.queuedTexts[0],
-          'Not a double! The champion must earn their laurel!');
+          'Not a double! Bust!');
     });
 
     test('14. Bull inner fires "Bullseye! 50 glory points!"', () {

@@ -170,8 +170,13 @@ class GladiatorArenaGame {
 
   // ─── Computed Properties ─────────────────────────────────────────────────────
 
+  /// Emulator-only override: when non-null, forces isShieldRound on or off.
+  bool? shieldRoundOverride;
+
   /// True when it is a shield round: option must be ON and round divisible by 5.
-  bool get isShieldRound => shieldRoundEnabled && round % 5 == 0;
+  /// Emulator override takes precedence when set.
+  bool get isShieldRound =>
+      shieldRoundOverride ?? (shieldRoundEnabled && round % 5 == 0);
 
   String get currentPlayerId => playerIds[currentPlayerIndex];
 

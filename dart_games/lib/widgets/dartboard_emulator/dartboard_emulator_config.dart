@@ -658,4 +658,28 @@ class BuffToggleButtonConfig {
       inactiveTextStyle: inactiveStyle,
     );
   }
+
+  /// Gladiator Arena shield-round toggle styling.
+  factory BuffToggleButtonConfig.gladiatorArena() {
+    const gold = Color(0xFFD4AF37);
+    const imperial = Color(0xFF4A0E4E);
+    const marble = Color(0xFFF5F0E8);
+    return BuffToggleButtonConfig(
+      activeBackgroundColor: const Color(0xFF2E7D32),
+      inactiveBackgroundColor: imperial.withOpacity(0.35),
+      borderColor: gold,
+      activeTextStyle: GoogleFonts.cinzel(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        height: 1.1,
+        color: marble,
+      ),
+      inactiveTextStyle: GoogleFonts.cinzel(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        height: 1.1,
+        color: marble.withOpacity(0.55),
+      ),
+    );
+  }
 }

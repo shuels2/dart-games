@@ -98,7 +98,7 @@ class MockGladiatorArenaAudioQueueService {
   }
 
   void announceBustNoDouble() {
-    _record('Not a double! The champion must earn their laurel!');
+    _record('Not a double! Bust!');
   }
 
   void announceBullInner() {

@@ -138,7 +138,7 @@ class GladiatorArenaAnnouncementHelper {
 
   void announceBustNoDouble() {
     _queueService.announce(
-      'Not a double! The champion must earn their laurel!',
+      'Not a double! Bust!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.crowdGasp,
     );

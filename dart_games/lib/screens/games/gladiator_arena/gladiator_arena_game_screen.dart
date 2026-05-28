@@ -14,6 +14,7 @@ import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/gladiator_arena_announcement_helper.dart';
 import '../../../services/play_to_complete/gladiator_arena_strategy.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
+import '../../../widgets/dartboard_emulator/buff_toggle_column.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
 import '../../../widgets/dartboard_emulator/play_to_complete_runner.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -758,17 +759,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                                 ),
                               ),
                             ],
-                            if (game.speedPlayEnabled) ...[
-                              const SizedBox(width: 12),
-                              Text(
-                                'Round ${game.round}',
-                                style: GoogleFonts.cinzel(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.bold,
-                                  color: _kMarbleWhite,
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ),
@@ -841,6 +831,23 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.gladiatorArena()
+                  : null,
+              buffToggles: _mockApi != null
+                  ? [
+                      BuffToggleSpec<Object>(
+                        buff: 'shieldRound',
+                        label: 'Shield\nRound',
+                        isActive: game.isShieldRound,
+                        isEnabled: game.shieldRoundEnabled,
+                        buttonKey: DartboardEmulatorKeys.buffToggleButton('shieldRound'),
+                        config: BuffToggleButtonConfig.gladiatorArena(),
+                      ),
+                    ]
+                  : null,
+              onBuffToggle: _mockApi != null
+                  ? (_) {
+                      context.read<GladiatorArenaProvider>().toggleShieldRoundOverride();
+                    }
                   : null,
             ),
           ),
