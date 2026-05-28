@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -211,9 +212,9 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                 child: Container(color: const Color(0xA61B2838)),
               ),
               // Main content
-              Center(
+              Positioned.fill(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(24, 2, 24, 24),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -222,7 +223,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                         headline,
                         key: PiratesGridResultsKeys.headlineText,
                         style: GoogleFonts.pirataOne(
-                          fontSize: 52,
+                          fontSize: 56,
                           color: headlineColor,
                           letterSpacing: 1.5,
                           shadows: [
@@ -239,17 +240,17 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
                       // Winner content
                       isMatchDraw
                           ? _buildDrawContent(game, players)
                           : winnerId != null
                               ? _buildWinnerContent(game, players, winnerId)
                               : const SizedBox.shrink(),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 16),
                       // Rankings card
                       _buildRankingsCard(game, players, winnerId, isMatchDraw),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 16),
                       // Action buttons
                       _buildActionButtons(game),
                     ],
@@ -299,7 +300,10 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
       final availW = constraints.maxWidth.isFinite
           ? constraints.maxWidth
           : MediaQuery.of(context).size.width;
-      final characterSize = (availW * 0.32).clamp(180.0, 460.0);
+      final availH = MediaQuery.of(context).size.height;
+      final widthBased = availW * 0.32;
+      final heightBased = (availH - 350) * 0.60;
+      final characterSize = math.min(widthBased, heightBased).clamp(120.0, 460.0);
       final nameFontSize = (characterSize * 0.115).clamp(28.0, 56.0);
 
       return Column(
@@ -358,21 +362,33 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                 fontSize: 18,
                 color: _parchmentTan,
                 fontWeight: FontWeight.w600,
+                shadows: const [
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+                  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+                ],
               ),
             ),
+            if (game.bestOf > 1) ...[
+              const SizedBox(width: 24),
+              Text(
+                '⚓ Rounds won: $roundsWon/$totalRounds',
+                style: GoogleFonts.lora(
+                  fontSize: 18,
+                  color: _parchmentTan,
+                  fontWeight: FontWeight.w600,
+                  shadows: const [
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
-        if (game.bestOf > 1) ...[
-          const SizedBox(height: 4),
-          Text(
-            '⚓ Rounds won: $roundsWon/$totalRounds',
-            style: GoogleFonts.lora(
-              fontSize: 18,
-              color: _parchmentTan,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ],
     );
     });
@@ -380,6 +396,9 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
 
   Widget _buildDrawContent(dynamic game, List<Player> players) {
     if (players.length < 2) return const SizedBox.shrink();
+
+    final availH = MediaQuery.of(context).size.height;
+    final drawCharSize = ((availH - 450) * 0.4).clamp(100.0, 200.0);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -391,8 +410,8 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
               Opacity(
                 opacity: 0.85,
                 child: SizedBox(
-                  width: 200,
-                  height: 200,
+                  width: drawCharSize,
+                  height: drawCharSize,
                   child: Image.asset(
                     i == 0
                         ? 'assets/games/pirates_grid/characters/CaptainCrossbones.png'
@@ -571,7 +590,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: _compassBronze,
             foregroundColor: _parchmentTan,
-            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 40),
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 40),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -579,7 +598,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           child: Text(
             'SET SAIL AGAIN',
             style: GoogleFonts.pirataOne(
-              fontSize: 22,
+              fontSize: 25,
               color: _parchmentTan,
               letterSpacing: 1.0,
             ),
@@ -592,7 +611,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: _treasureGold,
             foregroundColor: _inkBlack,
-            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 40),
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 40),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -600,7 +619,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           child: Text(
             'NEW VOYAGE',
             style: GoogleFonts.pirataOne(
-              fontSize: 22,
+              fontSize: 25,
               color: _inkBlack,
               letterSpacing: 1.0,
             ),
@@ -613,7 +632,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: _bloodRed,
             foregroundColor: _parchmentTan,
-            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 40),
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 40),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -621,7 +640,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           child: Text(
             'HOME PORT',
             style: GoogleFonts.pirataOne(
-              fontSize: 22,
+              fontSize: 25,
               color: _parchmentTan,
               letterSpacing: 1.0,
             ),

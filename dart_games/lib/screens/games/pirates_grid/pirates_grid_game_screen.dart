@@ -363,7 +363,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         if (wasMatched && wasMatchedCellEmpty) {
           _audioQueue?.announceFlagPlanted(playerName, cellTargetLabel);
         } else if (wasMatched && wasMatchedCellOpponent && gameAfter.stealMode) {
-          _audioQueue?.announceSquareStolen(playerName, opponentName);
+          _audioQueue?.announceSquareStolen(playerName, cellTargetLabel, opponentName);
         }
       } else if (justWonRound) {
         _audioQueue?.announceRoundVictory(playerName);
@@ -372,11 +372,11 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       } else if (justDrewRound) {
         _audioQueue?.announceRoundDraw();
       } else if (justGotTwoInARow) {
-        _audioQueue?.announceTwoInARow(playerName);
+        _audioQueue?.announceTwoInARow(playerName, cellTargetLabel);
       } else if (justPlantedFlag) {
         _audioQueue?.announceFlagPlanted(playerName, cellTargetLabel);
       } else if (justStole) {
-        _audioQueue?.announceSquareStolen(playerName, opponentName);
+        _audioQueue?.announceSquareStolen(playerName, cellTargetLabel, opponentName);
       } else if (justAlreadyOwn) {
         _audioQueue?.announceAlreadyClaimed(isOwn: true);
       } else if (justAlreadyOpponent) {
@@ -644,20 +644,6 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
             backgroundColor: _oceanNavy,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
-              // Ocean Navy → Sea Foam Teal → Blood Red 3-stop gradient.
-              // Navy holds solid for the first quarter, eases into teal
-              // through the middle, then warms into blood red on the far
-              // right. Shared with the menu and results AppBars.
-              flexibleSpace: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [_oceanNavy, _seaFoamTeal, _bloodRed],
-                    stops: [0.25, 0.525, 1.0], // navy 0–25%, teal 25–52.5%, red 52.5–100% (red +10% of bar width)
-                  ),
-                ),
-              ),
               leading: IconButton(
                 key: PiratesGridGameKeys.backButton,
                 icon: const Icon(
@@ -683,6 +669,43 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                   color: _treasureGold,
                   letterSpacing: 1.5,
                 ),
+              ),
+              flexibleSpace: Stack(
+                children: [
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [_oceanNavy, _seaFoamTeal, _bloodRed],
+                        stops: [0.25, 0.525, 1.0],
+                      ),
+                    ),
+                  ),
+                  if (game.stealMode)
+                    SafeArea(
+                      child: Center(
+                        child: Container(
+                          key: PiratesGridGameKeys.stealModeBadge,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _bloodRed,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: _compassBronze, width: 1.5),
+                          ),
+                          child: Text(
+                            '⚔ STEAL',
+                            style: GoogleFonts.pirataOne(
+                              fontSize: 28,
+                              height: 0.95,
+                              color: _parchmentTan,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               actions: [
                 DartboardConnectionInfo(
@@ -860,15 +883,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         builder: (context, constraints) {
           final availW = constraints.maxWidth;
           // Grid takes 40% of width; clamp by available height so 3 stacked
-          // cells fit. Subtract round tracker (~80px when bestOf > 1) and
-          // STEAL MODE badge (~60px when stealMode on) — both are non-flex
-          // siblings of the Expanded(Row) and reduce its available height.
+          // cells fit. Subtract round tracker (~50px when bestOf > 1) —
+          // non-flex sibling of the Expanded(Row) that reduces available height.
+          // Steal Mode badge is now in the AppBar, not the body.
           final gridW = availW * 0.40;
           final widthBasedCell = (gridW - 18.0) / 3.0;
           final colMaxH = constraints.maxHeight
-              - (game.bestOf > 1 ? 80.0 : 0.0)
-              - (game.stealMode ? 60.0 : 0.0);
-          final heightBasedCell = (colMaxH - 200.0) / 3.0;
+              - (game.bestOf > 1 ? 50.0 : 0.0);
+          final heightBasedCell = (colMaxH - 120.0) / 3.0;
           final cellSize = math.min(widthBasedCell, heightBasedCell);
           // Width-based desired char size; the inner LayoutBuilder inside
           // _buildPlayerColumn will down-clamp by the column's *actual*
@@ -938,26 +960,6 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                   ],
                 ),
               ),
-              // Steal Mode badge (only when stealMode ON)
-              if (game.stealMode)
-                Container(
-                  key: PiratesGridGameKeys.stealModeBadge,
-                  margin: const EdgeInsets.only(top: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: _bloodRed,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: _compassBronze, width: 1.5),
-                  ),
-                  child: Text(
-                    '⚔ STEAL MODE',
-                    style: GoogleFonts.pirataOne(
-                      fontSize: 22,
-                      color: _parchmentTan,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
             ],
           );
         },
@@ -979,8 +981,8 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
 
     return Container(
       key: PiratesGridGameKeys.roundTracker,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
+      margin: EdgeInsets.zero,
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 6),
       decoration: BoxDecoration(
         color: _oceanNavy.withOpacity(0.85),
         borderRadius: BorderRadius.circular(12),
@@ -1002,7 +1004,15 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
             ),
             TextSpan(
               text: '$p1Name: $p1Wins',
-              style: const TextStyle(color: _p1FlagColor),
+              style: const TextStyle(
+                color: _p1FlagColor,
+                shadows: [
+                  Shadow(color: _inkBlack, offset: Offset(-1.5, -1.5), blurRadius: 0),
+                  Shadow(color: _inkBlack, offset: Offset( 1.5, -1.5), blurRadius: 0),
+                  Shadow(color: _inkBlack, offset: Offset(-1.5,  1.5), blurRadius: 0),
+                  Shadow(color: _inkBlack, offset: Offset( 1.5,  1.5), blurRadius: 0),
+                ],
+              ),
             ),
             const TextSpan(
               text: '     ',
@@ -1010,7 +1020,15 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
             ),
             TextSpan(
               text: '$p2Name: $p2Wins',
-              style: const TextStyle(color: _p2FlagColor),
+              style: const TextStyle(
+                color: _p2FlagColor,
+                shadows: [
+                  Shadow(color: _inkBlack, offset: Offset(-1.5, -1.5), blurRadius: 0),
+                  Shadow(color: _inkBlack, offset: Offset( 1.5, -1.5), blurRadius: 0),
+                  Shadow(color: _inkBlack, offset: Offset(-1.5,  1.5), blurRadius: 0),
+                  Shadow(color: _inkBlack, offset: Offset( 1.5,  1.5), blurRadius: 0),
+                ],
+              ),
             ),
           ],
         ),
@@ -1105,9 +1123,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
           style: GoogleFonts.pirataOne(
             fontSize: isActive ? 30 : 20,
             color: _parchmentTan,
-            shadows: isActive
-                ? const [Shadow(color: _inkBlack, offset: Offset(1, 1), blurRadius: 3)]
-                : null,
+            shadows: const [
+              Shadow(color: _inkBlack, offset: Offset(-1.5, -1.5), blurRadius: 0),
+              Shadow(color: _inkBlack, offset: Offset( 1.5, -1.5), blurRadius: 0),
+              Shadow(color: _inkBlack, offset: Offset(-1.5,  1.5), blurRadius: 0),
+              Shadow(color: _inkBlack, offset: Offset( 1.5,  1.5), blurRadius: 0),
+            ],
           ),
           textAlign: TextAlign.center,
           overflow: TextOverflow.ellipsis,
@@ -1166,10 +1187,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                 // Empty slot
                 slotColor = _compassBronze;
                 scoreLabel = '—';
-              } else if (isSkipSeg || isMiss) {
-                // Explicit miss or skip
+              } else if (isSkipSeg) {
                 slotColor = _compassBronze;
                 scoreLabel = '—';
+              } else if (isMiss) {
+                slotColor = _compassBronze;
+                scoreLabel = 'Miss';
               } else if (isGridHit) {
                 // Successfully matched a grid cell → player color
                 slotColor = flagColor;

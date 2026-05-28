@@ -195,11 +195,11 @@ void _simulateDartThrow({
     } else if (justDrewRound) {
       mock.announceRoundDraw();
     } else if (justGotTwoInARow) {
-      mock.announceTwoInARow(playerName);
+      mock.announceTwoInARow(playerName, cellTargetLabel);
     } else if (justPlantedFlag) {
       mock.announceFlagPlanted(playerName, cellTargetLabel);
     } else if (justStole) {
-      mock.announceSquareStolen(playerName, opponentName);
+      mock.announceSquareStolen(playerName, cellTargetLabel, opponentName);
     } else if (justAlreadyOwn) {
       mock.announceAlreadyClaimed(isOwn: true);
     } else if (justAlreadyOpponent) {
@@ -352,7 +352,7 @@ void main() {
       );
 
       expect(mock.announcementCount, 1);
-      expect(mock.recordedAnnouncements[0], contains('plants a flag'));
+      expect(mock.recordedAnnouncements[0], contains('Flag planted'));
       // The announcement contains the actual target number at (0,0)
       expect(mock.recordedAnnouncements[0], contains('${_n(provider, 0, 0)}'));
     });
@@ -430,7 +430,7 @@ void main() {
 
       expect(mock.announcementCount, 1);
       expect(mock.recordedAnnouncements[0], contains('Mutiny'));
-      expect(mock.recordedAnnouncements[0], contains('steals the square'));
+      expect(mock.recordedAnnouncements[0], contains('steals'));
     });
 
     test('10. Two in a row — 2nd flag in a line with empty 3rd → announceTwoInARow fires', () {
@@ -547,7 +547,7 @@ void main() {
       expect(mock.recordedAnnouncements[0], contains('two in a row'),
           reason: 'Two in a row must suppress Flag Planted');
       expect(
-        mock.recordedAnnouncements.any((a) => a.contains('plants a flag')),
+        mock.recordedAnnouncements.any((a) => a.contains('Flag planted')),
         isFalse,
         reason: 'Flag Planted must be suppressed when Two in a Row fires',
       );
@@ -853,7 +853,7 @@ void main() {
       );
 
       expect(mock.announcementCount, 2);
-      expect(mock.recordedAnnouncements[0], contains('plants a flag'));
+      expect(mock.recordedAnnouncements[0], contains('Flag planted'));
       expect(mock.recordedAnnouncements[1], contains('remove your darts'));
     });
   });

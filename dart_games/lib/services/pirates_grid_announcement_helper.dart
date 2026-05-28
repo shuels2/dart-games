@@ -66,16 +66,16 @@ class PiratesGridAnnouncementHelper {
   /// Flag planted on an empty cell.
   void announceFlagPlanted(String playerName, String target) {
     _queueService.announce(
-      '$playerName plants a flag at $target!',
+      'Flag planted at $target!',
       AudioPriority.hitConfirm,
       soundEffect: PiratesGridSoundEffects.flagPlant,
     );
   }
 
   /// Square stolen from opponent (Steal Mode ON).
-  void announceSquareStolen(String playerName, String opponentName) {
+  void announceSquareStolen(String playerName, String target, String opponentName) {
     _queueService.announce(
-      'Mutiny! $playerName steals the square from $opponentName!',
+      'Mutiny! $playerName steals $target!',
       AudioPriority.hitConfirm,
       soundEffect: PiratesGridSoundEffects.swordClash,
     );
@@ -106,9 +106,9 @@ class PiratesGridAnnouncementHelper {
   }
 
   /// Player has exactly 2 flags in a line with the third cell still empty.
-  void announceTwoInARow(String playerName) {
+  void announceTwoInARow(String playerName, String target) {
     _queueService.announce(
-      '$playerName has two in a row! One more for treasure!',
+      '$target claimed! That\'s two in a row! One more for treasure!',
       AudioPriority.statusChange,
       soundEffect: PiratesGridSoundEffects.flagPlant,
     );

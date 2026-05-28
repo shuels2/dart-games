@@ -55,11 +55,11 @@ class MockPiratesGridAudioQueueService {
   // ─── Per-dart moment announcements ────────────────────────────────────────
 
   void announceFlagPlanted(String playerName, String target) {
-    _record('$playerName plants a flag at $target!');
+    _record('Flag planted at $target!');
   }
 
-  void announceSquareStolen(String playerName, String opponentName) {
-    _record('Mutiny! $playerName steals the square from $opponentName!');
+  void announceSquareStolen(String playerName, String target, String opponentName) {
+    _record('Mutiny! $playerName steals $target!');
   }
 
   void announceMiss() {
@@ -73,8 +73,8 @@ class MockPiratesGridAudioQueueService {
     _record(text);
   }
 
-  void announceTwoInARow(String playerName) {
-    _record('$playerName has two in a row! One more for treasure!');
+  void announceTwoInARow(String playerName, String target) {
+    _record('$target claimed! That\'s two in a row! One more for treasure!');
   }
 
   void announceRoundVictory(String playerName) {

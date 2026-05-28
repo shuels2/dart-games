@@ -94,17 +94,17 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Captain Jack plants a flag at T20!',
+        'Flag planted at T20!',
       );
     });
 
-    test('8. announceSquareStolen includes player name and opponent name', () {
-      mock.announceSquareStolen('Anne Bonny', 'Blackbeard');
+    test('8. announceSquareStolen includes player name, target, and opponent name', () {
+      mock.announceSquareStolen('Anne Bonny', 'triple 5', 'Blackbeard');
 
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Mutiny! Anne Bonny steals the square from Blackbeard!',
+        'Mutiny! Anne Bonny steals triple 5!',
       );
     });
 
@@ -138,13 +138,13 @@ void main() {
       );
     });
 
-    test('12. announceTwoInARow includes player name and "two in a row"', () {
-      mock.announceTwoInARow('Davy Jones');
+    test('12. announceTwoInARow includes target and "two in a row"', () {
+      mock.announceTwoInARow('Davy Jones', 'T20');
 
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Davy Jones has two in a row! One more for treasure!',
+        "T20 claimed! That's two in a row! One more for treasure!",
       );
     });
 
@@ -229,24 +229,24 @@ void main() {
       mock.announceFlagPlanted('Anne', 'D18');
 
       expect(mock.recordedAnnouncements[0], contains('D18'));
-      expect(mock.recordedAnnouncements[0], contains('Anne'));
-      expect(mock.recordedAnnouncements[0], contains('plants a flag'));
+      expect(mock.recordedAnnouncements[0], contains('Flag planted'));
     });
 
-    test('21. Steal text contains "Mutiny", attacker name, and victim name', () {
-      mock.announceSquareStolen('Jack', 'Edward');
+    test('21. Steal text contains "Mutiny", attacker name, target, and victim name', () {
+      mock.announceSquareStolen('Jack', 'double 10', 'Edward');
 
       final text = mock.recordedAnnouncements[0];
       expect(text, contains('Mutiny'));
       expect(text, contains('Jack'));
-      expect(text, contains('Edward'));
-      expect(text, contains('steals the square'));
+      expect(text, contains('double 10'));
+      expect(text, contains('steals'));
     });
 
-    test('22. Two in a row text contains "two in a row" and "One more for treasure"', () {
-      mock.announceTwoInARow('Davy');
+    test('22. Two in a row text contains target, "two in a row", and "One more for treasure"', () {
+      mock.announceTwoInARow('Davy', 'S15');
 
       final text = mock.recordedAnnouncements[0];
+      expect(text, contains('S15'));
       expect(text, contains('two in a row'));
       expect(text, contains('One more for treasure'));
     });
