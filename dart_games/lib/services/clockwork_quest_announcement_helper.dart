@@ -38,28 +38,10 @@ class ClockworkQuestAnnouncementHelper {
     );
   }
 
-  /// Double Advance
-  void announceDoubleAdvance(Player player) {
-    _queueService.announce(
-      '${player.name} hits a double! Two gears turn!',
-      AudioPriority.hitConfirm,
-      soundEffect: ClockworkQuestSoundEffects.gearSpin,
-    );
-  }
-
-  /// Triple Advance
-  void announceTripleAdvance(Player player) {
-    _queueService.announce(
-      '${player.name} hits a triple! Three gears turn!',
-      AudioPriority.hitConfirm,
-      soundEffect: ClockworkQuestSoundEffects.gearSpin,
-    );
-  }
-
   /// Miss (wrong number)
   void announceMiss() {
     _queueService.announce(
-      'Steam vents! That\'s not the right gear!',
+      'That\'s not the right gear!',
       AudioPriority.hitConfirm,
       soundEffect: ClockworkQuestSoundEffects.steamHiss,
     );

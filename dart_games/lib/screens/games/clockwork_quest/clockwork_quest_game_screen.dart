@@ -46,6 +46,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
   PlayToCompleteRunner? _playToCompleteRunner;
   bool _showSaveModal = false;
   bool _gameCompleted = false;
+  final Set<String> _bullseyeTargetAnnouncedFor = {};
 
   @override
   void initState() {
@@ -186,21 +187,16 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
 
     if (completedLap) {
       _audioQueue?.announceLapComplete();
+      _bullseyeTargetAnnouncedFor.remove(playerId);
     } else if (hitTarget && advanced && newTarget == 21) {
       _audioQueue?.announceBullseyeHit();
     } else if (hitTarget && advanced) {
-      if (multiplier == 3) {
-        _audioQueue?.announceTripleAdvance(player);
-      } else if (multiplier == 2) {
-        _audioQueue?.announceDoubleAdvance(player);
-      } else {
-        _audioQueue?.announceGearActivated(newTarget - 1);
-      }
+      _audioQueue?.announceGearActivated(newTarget - 1);
     } else if (!hitTarget) {
       _audioQueue?.announceMiss();
     }
 
-    if (newTarget == 21 && !completedLap) {
+    if (newTarget == 21 && !completedLap && _bullseyeTargetAnnouncedFor.add(playerId)) {
       _audioQueue?.announceBullseyeTarget();
     } else if (completedTargets.length == 10) {
       _audioQueue?.announceHalfway(player);
@@ -584,6 +580,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                       totalGears,
                       completedTargets: completedTargets,
                       isSpeedMode: isSpeedMode,
+                      hasWinner: provider.hasWinner,
                     ),
                   if (game.includeBullseye)
                     _positionedGearOnClock(
@@ -599,6 +596,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                       isBull: true,
                       completedTargets: completedTargets,
                       isSpeedMode: isSpeedMode,
+                      hasWinner: provider.hasWinner,
                     ),
 
                   // Active player at the center
@@ -629,11 +627,14 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     bool isBull = false,
     List<int> completedTargets = const [],
     bool isSpeedMode = false,
+    bool hasWinner = false,
   }) {
-    final bool isActive = isSpeedMode
-        ? completedTargets.contains(number)
-        : number < currentTarget;
-    final bool isCurrent = isSpeedMode ? false : number == currentTarget;
+    final bool isActive = hasWinner
+        ? true
+        : isSpeedMode
+            ? completedTargets.contains(number)
+            : number < currentTarget;
+    final bool isCurrent = hasWinner ? false : isSpeedMode ? false : number == currentTarget;
     // Position by clock index, starting at 12 o'clock, going clockwise
     final double angle = positionIndex / totalGears * 2 * pi - pi / 2;
     final double size = isCurrent ? currentGearSize : gearSize;

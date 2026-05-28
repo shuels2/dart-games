@@ -31,16 +31,8 @@ class MockClockworkQuestAudioQueueService {
     announce('Gear $gearNumber turns! Onward!');
   }
 
-  void announceDoubleAdvance(Player player) {
-    announce('${player.name} hits a double! Two gears turn!');
-  }
-
-  void announceTripleAdvance(Player player) {
-    announce('${player.name} hits a triple! Three gears turn!');
-  }
-
   void announceMiss() {
-    announce('Steam vents! That\'s not the right gear!');
+    announce('That\'s not the right gear!');
   }
 
   void announceBullseyeTarget() {
