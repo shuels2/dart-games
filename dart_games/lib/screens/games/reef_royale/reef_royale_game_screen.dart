@@ -266,7 +266,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             playerProvider.allPlayers.firstWhere((p) => p.id == winnerId);
         _audioQueue?.announceVictory(winner.name);
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 

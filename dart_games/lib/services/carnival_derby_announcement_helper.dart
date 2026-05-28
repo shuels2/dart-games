@@ -162,7 +162,8 @@ class CarnivalDerbyAnnouncementHelper {
     );
   }
 
-  // Dispose the underlying queue
+  Future<void> whenIdle() => _queue.whenIdle();
+
   void dispose() {
     _queue.dispose();
   }

@@ -551,7 +551,9 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         final winnerNames = winners.map((p) => p.name).toList();
         _audioQueue?.announceWinner(winnerNames);
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 

@@ -259,7 +259,9 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         );
         _audioQueue?.announceVictory(winner);
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 

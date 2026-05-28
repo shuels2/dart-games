@@ -528,7 +528,9 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       if (winners.isNotEmpty) {
         _audioQueue?.announceWinners(winners.map((p) => p.name).toList());
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 

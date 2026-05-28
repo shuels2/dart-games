@@ -34,7 +34,8 @@ class LunarLanderSoundEffects {
   static const SoundEffectConfig missionControl = SoundEffectConfig(
     assetPath: '${_basePath}LunarLander-MissionControl.mp3',
     startSeconds: 0.0,
-    endSeconds: 3.5,
+    endSeconds: 2.5,
+    fadeOutMs: 500,
   );
 
   /// Warning alarm — plays full clip

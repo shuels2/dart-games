@@ -234,13 +234,7 @@ class GladiatorArenaAnnouncementHelper {
     required bool wasBustOvershoot,
     required bool wasBustNoDouble,
   }) {
-    // 1. Victory
-    if (hasWinner) {
-      announceVictory(playerName);
-      return;
-    }
-
-    // 2. Knockoff!
+    // 1. Knockoff!
     if (knockoffVictimName != null) {
       announceKnockoff(knockoffVictimName);
       return;
@@ -324,7 +318,7 @@ class GladiatorArenaAnnouncementHelper {
     );
   }
 
-  // ─── Dispose ─────────────────────────────────────────────────────────────────
+  Future<void> whenIdle() => _queueService.whenIdle();
 
   void dispose() {
     _queueService.dispose();

@@ -485,7 +485,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           _audioQueue?.announceVictory(winnerName);
         }
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 

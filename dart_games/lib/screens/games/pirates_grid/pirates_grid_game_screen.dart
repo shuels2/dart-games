@@ -359,7 +359,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     // ── Pick winner from precedence chain (skip if isAutoPlaying) ──────────
     if (!_dartboardEmulatorController.isAutoPlaying) {
       if (justWonMatch) {
-        // Victory announcement deferred to _handleGameWon (after takeout)
+        // Victory deferred to _handleGameWon. Fire the dart-level announcement.
+        if (wasMatched && wasMatchedCellEmpty) {
+          _audioQueue?.announceFlagPlanted(playerName, cellTargetLabel);
+        } else if (wasMatched && wasMatchedCellOpponent && gameAfter.stealMode) {
+          _audioQueue?.announceSquareStolen(playerName, opponentName);
+        }
       } else if (justWonRound) {
         _audioQueue?.announceRoundVictory(playerName);
       } else if (justDrewMatch) {
@@ -536,7 +541,9 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       final playerProvider = context.read<PlayerProvider>();
       final winnerName = playerProvider.getPlayerById(winnerId ?? '')?.name ?? '';
       _audioQueue?.announceWinner(winnerName);
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 

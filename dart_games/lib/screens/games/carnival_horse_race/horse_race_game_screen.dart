@@ -356,7 +356,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       if (winner != null) {
         _audioQueue?.announceWinner(winner.name);
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 

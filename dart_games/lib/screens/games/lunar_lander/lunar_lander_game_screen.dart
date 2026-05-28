@@ -292,7 +292,9 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         );
         _audioQueue?.announceWinner(winner.name);
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 

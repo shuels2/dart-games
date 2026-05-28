@@ -136,6 +136,8 @@ class ClockworkQuestAnnouncementHelper {
     );
   }
 
+  Future<void> whenIdle() => _queueService.whenIdle();
+
   void dispose() {
     _queueService.dispose();
   }

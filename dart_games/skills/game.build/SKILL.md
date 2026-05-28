@@ -1127,7 +1127,7 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   }
 >   ```
 >
->   **Standardized `_handleGameWon()` pattern (all 6 games follow this):**
+>   **Standardized `_handleGameWon()` pattern (all 9 games follow this):**
 >   ```dart
 >   void _handleGameWon() {
 >     if (_gameCompleted) return;
@@ -1153,7 +1153,9 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >         );
 >         _audioQueue?.announceWinner(winner.name);
 >       }
->       Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+>       _audioQueue?.whenIdle().then((_) {
+>         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+>       });
 >     }
 >   }
 >   ```
@@ -1161,14 +1163,14 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   Key requirements:
 >   - (1) `_gameCompleted` guard prevents double navigation.
 >   - (2) `isAutoPlaying` check skips the delay and announcement for Play-to-Complete.
->   - (3) Winner announcement fires BEFORE the 3000ms delay (announcement plays during the delay).
->   - (4) 3000ms delay gives time for victory announcement before navigation.
+>   - (3) Winner announcement fires, then `whenIdle()` waits for TTS to finish before navigating.
+>   - (4) 250ms post-idle delay provides a brief transition pause after the announcement completes.
 >   - (5) Navigation uses `Navigator.pushReplacement` with `MaterialPageRoute` (NOT `pushReplacementNamed`).
 >   - (6) `hasWinner` check is at the TOP of `_handleTakeoutFinished`, BEFORE calling the provider advance method.
->   - (7) The game's announcement helper MUST have a public `announceWinner(String playerName)` method (or equivalent like `announceVictory`).
+>   - (7) The game's announcement helper MUST have a public `announceWinner(String playerName)` method (or equivalent like `announceVictory`) AND a `Future<void> whenIdle()` method that delegates to `_queue.whenIdle()`.
 >   - (8) The `_audioQueue` field (typed as the game's `AnnouncementHelper`) MUST be initialized in `_initializeGame()`.
->
->   - (9) **Victory announcements must ONLY fire from `_handleGameWon()`** — never from `_handleDartThrow()` or the per-dart precedence chain. The standard announcement sequence on a winning dart is: dart-hit sound → remove darts (1.5s) → takeout → victory announcement (in `_handleGameWon`) → navigate (3s). This ensures the player hears remove darts before the victory fanfare.
+>   - (9) **Victory announcements must ONLY fire from `_handleGameWon()`** — never from `_handleDartThrow()` or the per-dart precedence chain. The standard announcement sequence on a winning dart is: dart-hit sound → remove darts (1.5s) → takeout → victory announcement (in `_handleGameWon`) → `whenIdle()` → 250ms → navigate to results.
+>   - (10) **Do NOT use a fixed `Future.delayed(3000ms)` for victory navigation** — use `_audioQueue?.whenIdle().then((_) { Future.delayed(250ms, navigateToResults); })` so navigation timing adapts to actual announcement duration.
 >
 >   **Reference:** All 9 game screens follow this pattern. Use any as reference.
 > - **Edit Score `initialSegments` MUST map a thrown miss (score 0) to `'Miss'`, NOT `'-'`.** The shared EditScoreDialog distinguishes between:
@@ -1345,10 +1347,13 @@ After the sub-agent returns:
 > (dd) **Sound effects config `_basePath` has no `assets/` prefix** — read the `_basePath` constant in `lib/services/[GAME_NAME_SNAKE]_sound_effects.dart` and verify it starts with `'games/'` not `'assets/games/'`.
 > (ee) **Sound effects config has trim times** — verify every `SoundEffectConfig` has a non-null `endSeconds` value matching the spec's Asset Checklist.
 > (ff) **Announcement helper has `dispose()` method** — read the helper class and verify a `void dispose()` method exists that calls `_queueService.dispose()`.
+> (ff-b) **Announcement helper has `whenIdle()` method** — read the helper class and verify a `Future<void> whenIdle()` method exists that delegates to `_queue.whenIdle()` (or `_queueService.whenIdle()`). This is used by `_handleGameWon()` to wait for the victory announcement to finish before navigating.
 > (gg) **Game screen calls `announceGameStart()` in `_initializeGame()`** — grep the game screen for `announceGameStart` and verify it fires after `_audioQueue` creation. Also verify first turn is announced with a 2s delay.
 > (hh) **Game screen disposes `_audioQueue`** — read the `dispose()` method and verify `_audioQueue?.dispose()` is present.
 > (ii) **Per-dart announcements wired in `_handleDartThrow`** — verify the game screen calls announcement methods after `processDartThrow()` with an `isAutoPlaying` guard. Announcements must follow precedence (milestone > advance > miss). **Victory announcements must NOT fire from the dart-throw handler** — they fire only from `_handleGameWon()` after the takeout flow completes. This ensures the standard sequence: dart hit → remove darts → takeout → victory announcement.
-> (ii-b) **Victory announcement fires ONLY from `_handleGameWon()`, NEVER from `_handleDartThrow()` or the per-dart precedence chain** — grep the game screen for `announceVictory\|announceWinner\|announceMatchVictory` and verify every match is inside `_handleGameWon()`. If the announcement helper has a `pickAndAnnounceMoment()` method, verify that `hasWinner: true` is never passed to it (or the victory branch is unreachable). The standard victory sequence across all 9 games is: winning dart hit → per-dart announcement (gear activated / score / etc.) → remove darts (1.5s) → takeout → `_handleTakeoutFinished()` detects winner → `_handleGameWon()` fires `announceVictory` → navigate to results (3s). Violating this order causes the victory fanfare to play before "remove your darts", which sounds wrong.
+> (ii-b) **Victory announcement fires ONLY from `_handleGameWon()`, NEVER from `_handleDartThrow()` or the per-dart precedence chain** — grep the game screen for `announceVictory\|announceWinner\|announceMatchVictory` and verify every match is inside `_handleGameWon()`. If the announcement helper has a `pickAndAnnounceMoment()` method, verify that `hasWinner: true` is never passed to it (or the victory branch is unreachable). The standard victory sequence across all 9 games is: winning dart hit → per-dart announcement (gear activated / score / etc.) → remove darts (1.5s) → takeout → `_handleTakeoutFinished()` detects winner → `_handleGameWon()` fires `announceVictory` → `whenIdle()` → 250ms → navigate to results. Violating this order causes the victory fanfare to play before "remove your darts", which sounds wrong.
+> (ii-c) **Victory navigation uses `whenIdle()` + 250ms, NOT a fixed 3000ms delay** — grep the game screen for `Future.delayed.*3000.*navigateToResults` — must return zero hits. Grep for `whenIdle()` inside `_handleGameWon()` — must return one hit. The pattern is `_audioQueue?.whenIdle().then((_) { Future.delayed(const Duration(milliseconds: 250), navigateToResults); })`. A fixed 3000ms delay either cuts off long announcements or wastes time after short ones.
+> (ii-d) **Winning dart STILL gets its per-dart announcement** — the `hasWinner` flag must NOT suppress the per-dart score/hit announcement on the winning throw. Only the victory announcement is deferred to `_handleGameWon()`. Verify by tracing the announcement code path when `hasWinner == true`: the per-dart announcement (score readout, gear activated, flag planted, elimination, descent, etc.) must still fire. Common violations: (1) announcement helper's `pickAndAnnounceMoment()` has a `if (hasWinner) return;` early exit — remove it or restructure so score branches still fire; (2) game screen wraps the entire announcement call in `if (!provider.hasWinner)` — remove the guard; (3) fact-flag computation excludes the winning dart (e.g. `justPlantedFlag = ... && !justWonMatch`) — add a separate dart-level announcement inside the `justWonMatch` block. The correct sequence is: winning dart hit announcement → remove darts → takeout → victory announcement. All 9 games follow this pattern.
 > (jj) **Game-with-announcements integration test exists** — verify `test/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_with_announcements_test.dart` exists with lifecycle, moment, precedence, and auto-play suppression tests.
 > (kk) **DartboardPausedModal UI tests exist** — verify `integration_test/[GAME_NAME_SNAKE]/pause_modal/` directory exists with 3 test files: `menu_pause_test.dart` (7 tests), `gameplay_pause_test.dart` (8 tests), `results_pause_test.dart` (5 tests). These verify the pause modal appears on disconnect, blocks all interaction (AppBar, buttons, modals), and dismisses on reconnect. The gameplay test must verify EditScoreDialog auto-closes on disconnect.
 > (ll) **Continuous-animation subtrees wrapped in `RepaintBoundary`** — grep `lib/screens/games/[GAME_NAME_SNAKE]/` and `lib/widgets/[GAME_NAME_SNAKE]_*` for every `AnimatedBuilder(` and verify a `RepaintBoundary` ancestor wraps the animated subtree as closely as possible. Without it, animation frames dirty sibling widgets and force the entire screen to repaint per frame. Also flag any AnimationController-driven custom widget that paints continuously (background pulses, progress glow, character animations) without an enclosing `RepaintBoundary`. Reference: `lib/widgets/carnival_string_lights.dart` `_buildBulb` for the canonical pattern. Per-finding history: `docs/perf-audits/2026-05-05-full.md` finding A4.
@@ -1492,6 +1497,7 @@ After the sub-agent returns, read `lib/services/[GAME_NAME_SNAKE]_announcement_h
 > (e) Verify the count does not exceed 2 (1 moment + Remove Darts)
 > (f) **Trace the game-screen takeout handler** — read the actual code and verify `announceRemoveDarts` is called UNCONDITIONALLY (not inside a precedence `else`, not gated by the moment-announcement winner). Cite the file and line.
 > (f-b) **Verify victory announcement fires ONLY from `_handleGameWon()`** — grep the game screen for `announceVictory`, `announceWinner`, `announceMatchVictory`. Every hit must be inside `_handleGameWon()`. If any hit is inside `_handleDartThrow()`, `_fireDartAnnouncement()`, or `pickAndAnnounceMoment()`, the victory fanfare will play before "remove your darts" — FAIL.
+> (f-c) **Verify winning dart still gets its per-dart announcement** — trace the announcement code path when `hasWinner == true` after `processDartThrow()`. The per-dart score/hit announcement (descent, gear activated, flag planted, score readout, etc.) must still fire. If the helper has `if (hasWinner) return;` at the top of the precedence chain, or the game screen wraps the call in `if (!provider.hasWinner)`, the winning dart will be silent — FAIL. The correct sequence is: per-dart announcement → remove darts → takeout → victory.
 > (g) Verify there is a test that covers this worst-case scenario, and that the test asserts both the count limit and Remove-Darts presence
 >
 > Worst-case scenario: [describe]
@@ -3060,6 +3066,8 @@ Verify EVERY item:
 - [ ] Provider/model code shape matches house style
 - [ ] Screen widget tree shape consistent with references
 - [ ] Victory announcement fires ONLY from `_handleGameWon()` (never from dart-throw handler)
+- [ ] Winning dart still gets its per-dart announcement (not suppressed by hasWinner)
+- [ ] Victory navigation uses `whenIdle()` + 250ms (no fixed 3000ms delay)
 - [ ] Test organization and helper usage match references
 - [ ] Visual consistency with reference games verified
 - [ ] Documentation depth and structure parity with references

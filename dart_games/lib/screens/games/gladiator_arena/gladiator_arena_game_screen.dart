@@ -256,19 +256,17 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           .firstOrNull;
       final currentPlayerName = currentPlayer?.name ?? 'Player';
 
-      if (!provider.hasWinner) {
-        _audioQueue?.pickAndAnnounceMoment(
-          playerName: currentPlayerName,
-          dartValue: dartValue,
-          multiplier: dartMultiplier,
-          sector: dartSector,
-          hasWinner: false,
-          knockoffVictimName: knockoffVictimName,
-          shieldBlockedName: shieldBlockedName,
-          wasBustOvershoot: wasBustOvershoot,
-          wasBustNoDouble: wasBustNoDouble,
-        );
-      }
+      _audioQueue?.pickAndAnnounceMoment(
+        playerName: currentPlayerName,
+        dartValue: dartValue,
+        multiplier: dartMultiplier,
+        sector: dartSector,
+        hasWinner: provider.hasWinner,
+        knockoffVictimName: knockoffVictimName,
+        shieldBlockedName: shieldBlockedName,
+        wasBustOvershoot: wasBustOvershoot,
+        wasBustNoDouble: wasBustNoDouble,
+      );
 
       // Milestone announcements — fire on the dart that *crosses* the active
       // player into the double-range or near-victory zone. Matches the
@@ -466,7 +464,9 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           _audioQueue?.announceVictory(winner.name);
         }
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 

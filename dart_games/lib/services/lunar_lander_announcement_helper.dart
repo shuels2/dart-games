@@ -42,7 +42,7 @@ class LunarLanderAnnouncementHelper {
     required int altitude,
   }) {
     _queue.announce(
-      '$playerName, you have the controls! Altitude: $altitude!',
+      '$playerName, you have the controls!',
       AudioPriority.turnTransition,
       soundEffect: LunarLanderSoundEffects.radioBeep,
     );
@@ -86,9 +86,9 @@ class LunarLanderAnnouncementHelper {
     required bool hardLandingEnabled,
   }) {
     // Pick ONE moment announcement based on precedence (highest first).
-    if (hasWinner) {
-      _announceTouchdown(playerName: playerName);
-    } else if (wasBust) {
+    // Victory announcement deferred to _handleGameWon (after takeout).
+    // The winning dart still gets its descent/score announcement.
+    if (wasBust) {
       _announceCrashLanding(playerName: playerName, revertedAltitude: newAltitude);
     } else if (!hardLandingEnabled &&
         previousAltitude < 0 &&
@@ -96,7 +96,7 @@ class LunarLanderAnnouncementHelper {
         newAltitude < 0) {
       _announceClimbingBack(playerName: playerName, altitude: newAltitude);
     } else if (!hardLandingEnabled && newAltitude < 0) {
-      _announceNegativeAltitude(playerName: playerName, altitude: newAltitude);
+      _announceNegativeAltitude(score: dartScore);
     } else if (newAltitude > 0 && newAltitude <= 20) {
       _announceNearLanding(playerName: playerName, altitude: newAltitude);
     } else if (dartScore >= 40) {
@@ -133,7 +133,7 @@ class LunarLanderAnnouncementHelper {
     required int revertedAltitude,
   }) {
     _queue.announce(
-      'Crash landing! $playerName pulls back to $revertedAltitude!',
+      'Crash landing! Pulling back to $revertedAltitude.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.crashLanding,
     );
@@ -144,18 +144,17 @@ class LunarLanderAnnouncementHelper {
     required int altitude,
   }) {
     _queue.announce(
-      '$playerName is climbing back! Altitude: $altitude!',
+      'Climbing back! Altitude $altitude.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
     );
   }
 
   void _announceNegativeAltitude({
-    required String playerName,
-    required int altitude,
+    required int score,
   }) {
     _queue.announce(
-      '$playerName overshot! Altitude: $altitude!',
+      'Rough landing! Descending $score.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.crashLanding,
     );
@@ -166,7 +165,7 @@ class LunarLanderAnnouncementHelper {
     required int altitude,
   }) {
     _queue.announce(
-      'Final approach! $playerName at altitude $altitude!',
+      'Final approach! Altitude $altitude!',
       AudioPriority.statusChange,
       soundEffect: LunarLanderSoundEffects.warningAlarm,
     );
@@ -177,7 +176,7 @@ class LunarLanderAnnouncementHelper {
     required int score,
   }) {
     _queue.announce(
-      'Major burn! $playerName drops $score!',
+      'Major burn! Descending $score.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
     );
@@ -188,7 +187,7 @@ class LunarLanderAnnouncementHelper {
     required int score,
   }) {
     _queue.announce(
-      '$playerName descends $score!',
+      'Descending $score!',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
     );
@@ -196,7 +195,7 @@ class LunarLanderAnnouncementHelper {
 
   void _announceMiss({required String playerName}) {
     _queue.announce(
-      '$playerName drifts in orbit!',
+      'Whiff. Drifting in orbit!',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.driftSound,
     );
@@ -222,7 +221,7 @@ class LunarLanderAnnouncementHelper {
     );
   }
 
-  // ─── Dispose ─────────────────────────────────────────────────────────────────
+  Future<void> whenIdle() => _queue.whenIdle();
 
   void dispose() {
     _queue.dispose();

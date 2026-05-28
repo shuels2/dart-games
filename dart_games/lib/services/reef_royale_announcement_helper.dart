@@ -201,6 +201,8 @@ class ReefRoyaleAnnouncementHelper {
     );
   }
 
+  Future<void> whenIdle() => _queue.whenIdle();
+
   void dispose() {
     _queue.dispose();
   }
