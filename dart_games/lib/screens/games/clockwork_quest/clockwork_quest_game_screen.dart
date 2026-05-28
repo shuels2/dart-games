@@ -993,20 +993,33 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              Text(
-                '$gearsActivated/$maxTarget',
-                style: GoogleFonts.lato(
-                  fontSize: 14,
-                  color: const Color(0xFFFFBF00),
-                ),
-                textAlign: TextAlign.center,
-              ),
               if (showLaps)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Lap ${laps + 1}/${game.numberOfLaps}',
+                      style: GoogleFonts.lato(
+                        fontSize: 14,
+                        color: const Color(0xFFF5F0E8).withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$gearsActivated/$maxTarget',
+                      style: GoogleFonts.lato(
+                        fontSize: 14,
+                        color: const Color(0xFFFFBF00),
+                      ),
+                    ),
+                  ],
+                )
+              else
                 Text(
-                  'Lap ${laps + 1}/${game.numberOfLaps}',
+                  '$gearsActivated/$maxTarget',
                   style: GoogleFonts.lato(
-                    fontSize: 12,
-                    color: const Color(0xFFF5F0E8).withOpacity(0.6),
+                    fontSize: 14,
+                    color: const Color(0xFFFFBF00),
                   ),
                   textAlign: TextAlign.center,
                 ),

@@ -1168,7 +1168,9 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   - (7) The game's announcement helper MUST have a public `announceWinner(String playerName)` method (or equivalent like `announceVictory`).
 >   - (8) The `_audioQueue` field (typed as the game's `AnnouncementHelper`) MUST be initialized in `_initializeGame()`.
 >
->   **Reference:** All 6 game screens now follow this pattern. Use any as reference.
+>   - (9) **Victory announcements must ONLY fire from `_handleGameWon()`** — never from `_handleDartThrow()` or the per-dart precedence chain. The standard announcement sequence on a winning dart is: dart-hit sound → remove darts (1.5s) → takeout → victory announcement (in `_handleGameWon`) → navigate (3s). This ensures the player hears remove darts before the victory fanfare.
+>
+>   **Reference:** All 9 game screens follow this pattern. Use any as reference.
 > - **Edit Score `initialSegments` MUST map a thrown miss (score 0) to `'Miss'`, NOT `'-'`.** The shared EditScoreDialog distinguishes between:
 >   - `'-'` or empty → dart NOT yet thrown (`ring=null` → invalidates the dialog Save button)
 >   - `'Miss'` → dart thrown as a miss (`ring='Miss'` → valid)
@@ -1345,7 +1347,8 @@ After the sub-agent returns:
 > (ff) **Announcement helper has `dispose()` method** — read the helper class and verify a `void dispose()` method exists that calls `_queueService.dispose()`.
 > (gg) **Game screen calls `announceGameStart()` in `_initializeGame()`** — grep the game screen for `announceGameStart` and verify it fires after `_audioQueue` creation. Also verify first turn is announced with a 2s delay.
 > (hh) **Game screen disposes `_audioQueue`** — read the `dispose()` method and verify `_audioQueue?.dispose()` is present.
-> (ii) **Per-dart announcements wired in `_handleDartThrow`** — verify the game screen calls announcement methods after `processDartThrow()` with an `isAutoPlaying` guard. Announcements must follow precedence (victory > milestone > advance > miss).
+> (ii) **Per-dart announcements wired in `_handleDartThrow`** — verify the game screen calls announcement methods after `processDartThrow()` with an `isAutoPlaying` guard. Announcements must follow precedence (milestone > advance > miss). **Victory announcements must NOT fire from the dart-throw handler** — they fire only from `_handleGameWon()` after the takeout flow completes. This ensures the standard sequence: dart hit → remove darts → takeout → victory announcement.
+> (ii-b) **Victory announcement fires ONLY from `_handleGameWon()`, NEVER from `_handleDartThrow()` or the per-dart precedence chain** — grep the game screen for `announceVictory\|announceWinner\|announceMatchVictory` and verify every match is inside `_handleGameWon()`. If the announcement helper has a `pickAndAnnounceMoment()` method, verify that `hasWinner: true` is never passed to it (or the victory branch is unreachable). The standard victory sequence across all 9 games is: winning dart hit → per-dart announcement (gear activated / score / etc.) → remove darts (1.5s) → takeout → `_handleTakeoutFinished()` detects winner → `_handleGameWon()` fires `announceVictory` → navigate to results (3s). Violating this order causes the victory fanfare to play before "remove your darts", which sounds wrong.
 > (jj) **Game-with-announcements integration test exists** — verify `test/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_with_announcements_test.dart` exists with lifecycle, moment, precedence, and auto-play suppression tests.
 > (kk) **DartboardPausedModal UI tests exist** — verify `integration_test/[GAME_NAME_SNAKE]/pause_modal/` directory exists with 3 test files: `menu_pause_test.dart` (7 tests), `gameplay_pause_test.dart` (8 tests), `results_pause_test.dart` (5 tests). These verify the pause modal appears on disconnect, blocks all interaction (AppBar, buttons, modals), and dismisses on reconnect. The gameplay test must verify EditScoreDialog auto-closes on disconnect.
 > (ll) **Continuous-animation subtrees wrapped in `RepaintBoundary`** — grep `lib/screens/games/[GAME_NAME_SNAKE]/` and `lib/widgets/[GAME_NAME_SNAKE]_*` for every `AnimatedBuilder(` and verify a `RepaintBoundary` ancestor wraps the animated subtree as closely as possible. Without it, animation frames dirty sibling widgets and force the entire screen to repaint per frame. Also flag any AnimationController-driven custom widget that paints continuously (background pulses, progress glow, character animations) without an enclosing `RepaintBoundary`. Reference: `lib/widgets/carnival_string_lights.dart` `_buildBulb` for the canonical pattern. Per-finding history: `docs/perf-audits/2026-05-05-full.md` finding A4.
@@ -1488,6 +1491,7 @@ After the sub-agent returns, read `lib/services/[GAME_NAME_SNAKE]_announcement_h
 > (d) Count how many announcements would actually fire for this worst case
 > (e) Verify the count does not exceed 2 (1 moment + Remove Darts)
 > (f) **Trace the game-screen takeout handler** — read the actual code and verify `announceRemoveDarts` is called UNCONDITIONALLY (not inside a precedence `else`, not gated by the moment-announcement winner). Cite the file and line.
+> (f-b) **Verify victory announcement fires ONLY from `_handleGameWon()`** — grep the game screen for `announceVictory`, `announceWinner`, `announceMatchVictory`. Every hit must be inside `_handleGameWon()`. If any hit is inside `_handleDartThrow()`, `_fireDartAnnouncement()`, or `pickAndAnnounceMoment()`, the victory fanfare will play before "remove your darts" — FAIL.
 > (g) Verify there is a test that covers this worst-case scenario, and that the test asserts both the count limit and Remove-Darts presence
 >
 > Worst-case scenario: [describe]
@@ -3055,6 +3059,7 @@ Verify EVERY item:
 **Cross-Game Consistency (AR-9):**
 - [ ] Provider/model code shape matches house style
 - [ ] Screen widget tree shape consistent with references
+- [ ] Victory announcement fires ONLY from `_handleGameWon()` (never from dart-throw handler)
 - [ ] Test organization and helper usage match references
 - [ ] Visual consistency with reference games verified
 - [ ] Documentation depth and structure parity with references

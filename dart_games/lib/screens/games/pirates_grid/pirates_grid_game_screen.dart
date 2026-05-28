@@ -359,7 +359,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     // ── Pick winner from precedence chain (skip if isAutoPlaying) ──────────
     if (!_dartboardEmulatorController.isAutoPlaying) {
       if (justWonMatch) {
-        _audioQueue?.announceMatchVictory(playerName);
+        // Victory announcement deferred to _handleGameWon (after takeout)
       } else if (justWonRound) {
         _audioQueue?.announceRoundVictory(playerName);
       } else if (justDrewMatch) {

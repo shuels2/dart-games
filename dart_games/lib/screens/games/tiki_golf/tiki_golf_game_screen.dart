@@ -285,7 +285,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     final hasWinner = game.hasWinner;
 
     // ── Compute fact flags ──────────────────────────────────────────────────
-    final victory = hasWinner && currentTurnEnded;
+    final victory = false; // Victory deferred to _handleGameWon (after takeout)
 
     final holeComplete =
         currentTurnEnded && !hasWinner && game.isCurrentHoleComplete;

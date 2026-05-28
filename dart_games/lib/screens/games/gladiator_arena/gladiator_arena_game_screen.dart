@@ -255,17 +255,19 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           .firstOrNull;
       final currentPlayerName = currentPlayer?.name ?? 'Player';
 
-      _audioQueue?.pickAndAnnounceMoment(
-        playerName: currentPlayerName,
-        dartValue: dartValue,
-        multiplier: dartMultiplier,
-        sector: dartSector,
-        hasWinner: provider.hasWinner,
-        knockoffVictimName: knockoffVictimName,
-        shieldBlockedName: shieldBlockedName,
-        wasBustOvershoot: wasBustOvershoot,
-        wasBustNoDouble: wasBustNoDouble,
-      );
+      if (!provider.hasWinner) {
+        _audioQueue?.pickAndAnnounceMoment(
+          playerName: currentPlayerName,
+          dartValue: dartValue,
+          multiplier: dartMultiplier,
+          sector: dartSector,
+          hasWinner: false,
+          knockoffVictimName: knockoffVictimName,
+          shieldBlockedName: shieldBlockedName,
+          wasBustOvershoot: wasBustOvershoot,
+          wasBustNoDouble: wasBustNoDouble,
+        );
+      }
 
       // Milestone announcements — fire on the dart that *crosses* the active
       // player into the double-range or near-victory zone. Matches the
@@ -454,8 +456,15 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     if (_dartboardEmulatorController.isAutoPlaying) {
       navigateToResults();
     } else {
-      // Victory announcement fires when the winning dart is detected (via
-      // pickAndAnnounceMoment in _handleDartThrow). Navigate after delay.
+      final provider = context.read<GladiatorArenaProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final winnerId = provider.currentGame?.winnerId;
+      if (winnerId != null) {
+        final winner = playerProvider.getPlayerById(winnerId);
+        if (winner != null) {
+          _audioQueue?.announceVictory(winner.name);
+        }
+      }
       Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
     }
   }
