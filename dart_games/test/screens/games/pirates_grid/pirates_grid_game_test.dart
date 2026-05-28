@@ -201,6 +201,14 @@ void main() {
         expect(cell.claimedBy, equals('p1'));
       });
 
+      test('Triple hit on cell plants flag (Medium)', () {
+        provider.startGame(['p1', 'p2'], TargetDifficulty.medium, 1, false, false);
+        final n = _n(provider, 0, 1);
+        provider.processDartThrow(score: n, multiplier: 3, sector: 'T$n');
+        final cell = provider.currentGame!.grid[0][1];
+        expect(cell.claimedBy, equals('p1'));
+      });
+
       test('Triple hit on T cell plants flag (Hard)', () {
         provider.startGame(['p1', 'p2'], TargetDifficulty.hard, 1, false, false);
         // (0,0) is a corner — requires tripleOnly

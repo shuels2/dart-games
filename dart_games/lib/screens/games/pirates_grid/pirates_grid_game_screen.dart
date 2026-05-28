@@ -285,23 +285,25 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
 
     // Build target label for announcements
     String cellTargetLabel = '';
+    String cellTargetVoice = '';
     if (wasMatched && hitRow >= 0) {
       final target = game.grid[hitRow][hitCol].target;
       if (target.requirement == CellRequirement.bull) {
         cellTargetLabel = 'Bull';
-      } else if (game.targetDifficulty == TargetDifficulty.hard) {
-        switch (target.requirement) {
-          case CellRequirement.tripleOnly:
-            cellTargetLabel = 'T${target.number}';
-            break;
-          case CellRequirement.doubleOnly:
-            cellTargetLabel = 'D${target.number}';
-            break;
-          default:
-            cellTargetLabel = '${target.number}';
-        }
+        cellTargetVoice = 'Bull';
+      } else if (target.requirement == CellRequirement.tripleOnly) {
+        cellTargetLabel = 'T${target.number}';
+        cellTargetVoice = 'Triple ${target.number}';
+      } else if (target.requirement == CellRequirement.doubleOnly) {
+        cellTargetLabel = 'D${target.number}';
+        cellTargetVoice = 'Double ${target.number}';
+      } else if (target.requirement == CellRequirement.doubleOrTriple) {
+        cellTargetLabel = 'D/T${target.number}';
+        final multName = multiplier == 3 ? 'Triple' : 'Double';
+        cellTargetVoice = '$multName ${target.number}';
       } else {
         cellTargetLabel = '${target.number}';
+        cellTargetVoice = '${target.number}';
       }
     }
 
@@ -359,9 +361,9 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       if (justWonMatch) {
         // Victory deferred to _handleGameWon. Fire the dart-level announcement.
         if (wasMatched && wasMatchedCellEmpty) {
-          _audioQueue?.announceFlagPlanted(playerName, cellTargetLabel);
+          _audioQueue?.announceFlagPlanted(playerName, cellTargetVoice);
         } else if (wasMatched && wasMatchedCellOpponent && gameAfter.stealMode) {
-          _audioQueue?.announceSquareStolen(playerName, cellTargetLabel, opponentName);
+          _audioQueue?.announceSquareStolen(playerName, cellTargetVoice, opponentName);
         }
       } else if (justWonRound) {
         _audioQueue?.announceRoundVictory(playerName);
@@ -370,11 +372,11 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       } else if (justDrewRound) {
         _audioQueue?.announceRoundDraw();
       } else if (justGotTwoInARow) {
-        _audioQueue?.announceTwoInARow(playerName, cellTargetLabel);
+        _audioQueue?.announceTwoInARow(playerName, cellTargetVoice);
       } else if (justPlantedFlag) {
-        _audioQueue?.announceFlagPlanted(playerName, cellTargetLabel);
+        _audioQueue?.announceFlagPlanted(playerName, cellTargetVoice);
       } else if (justStole) {
-        _audioQueue?.announceSquareStolen(playerName, cellTargetLabel, opponentName);
+        _audioQueue?.announceSquareStolen(playerName, cellTargetVoice, opponentName);
       } else if (justAlreadyOwn) {
         _audioQueue?.announceAlreadyClaimed(isOwn: true);
       } else if (justAlreadyOpponent) {
@@ -1408,14 +1410,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
           targetLabel = '${target.number}';
       }
     } else if (game.targetDifficulty == TargetDifficulty.medium) {
-      targetLabel = 'D${target.number}';
+      targetLabel = 'D${target.number}\nT${target.number}';
     } else {
       targetLabel = '${target.number}';
     }
 
     // Medium difficulty: show a "D" badge in Sea Foam Teal in the top-right corner
-    final bool showMediumBadge = game.targetDifficulty == TargetDifficulty.medium &&
-        target.requirement != CellRequirement.bull;
 
     return Container(
       key: PiratesGridGameKeys.gridCell(row, col),
@@ -1470,15 +1470,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
             child: Text(
               targetLabel,
               key: PiratesGridGameKeys.gridCellTargetLabel(row, col),
+              textAlign: TextAlign.center,
               style: GoogleFonts.pirataOne(
-                // Hard's labels are wider ("T20"/"D18") so they keep a
-                // smaller scaling factor to fit inside the cell.
-                // Medium's labels include a "D" prefix so also use the
-                // slightly smaller factor to avoid overflow.
-                fontSize: (game.targetDifficulty == TargetDifficulty.hard ||
-                            game.targetDifficulty == TargetDifficulty.medium)
-                    ? cellSize * 0.31
-                    : cellSize * 0.40,
+                fontSize: game.targetDifficulty == TargetDifficulty.medium
+                    ? cellSize * 0.30
+                    : game.targetDifficulty == TargetDifficulty.hard
+                        ? cellSize * 0.31
+                        : cellSize * 0.40,
+                height: game.targetDifficulty == TargetDifficulty.medium ? 1.0 : null,
                 color: claimedBy != null ? _parchmentTan : _treasureGold,
                 shadows: const [
                   Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
@@ -1489,28 +1488,6 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               ),
             ),
           ),
-          // Medium difficulty: "D" badge in Sea Foam Teal in the top-right corner
-          if (showMediumBadge)
-            Positioned(
-              top: 3,
-              right: 3,
-              child: Container(
-                key: Key('pirates_grid_medium_badge_${row}_$col'),
-                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-                decoration: BoxDecoration(
-                  color: _seaFoamTeal,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'D',
-                  style: GoogleFonts.pirataOne(
-                    fontSize: cellSize * 0.18,
-                    color: _parchmentTan,
-                    height: 1.0,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
