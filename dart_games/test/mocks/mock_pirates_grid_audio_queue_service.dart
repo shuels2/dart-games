@@ -48,6 +48,10 @@ class MockPiratesGridAudioQueueService {
     _record('Round $round! Reset the grid!');
   }
 
+  void announceSpeedTimerWarning() {
+    _record('The wind is picking up!');
+  }
+
   void announceTimerExpired() {
     _record("Time's up! The wind takes yer darts!");
   }

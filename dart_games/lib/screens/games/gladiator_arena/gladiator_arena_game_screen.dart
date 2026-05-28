@@ -106,7 +106,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     // Announce first player turn after brief delay
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
-        _startSpeedPlayTimerIfNeeded();
         final p = context.read<GladiatorArenaProvider>();
         final game = p.currentGame;
         if (game != null) {
@@ -117,6 +116,9 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           if (firstPlayer != null) {
             _audioQueue?.announcePlayerTurn(firstPlayer.name);
           }
+          _audioQueue?.whenIdle().then((_) {
+            if (mounted) _startSpeedPlayTimerIfNeeded();
+          });
         }
       }
     });
@@ -378,6 +380,13 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
 
     provider.handleTakeoutFinished();
 
+    // Reset timer display immediately so new player sees full time
+    final game = provider.currentGame;
+    if (game != null && game.speedPlayEnabled) {
+      _speedPlayTimer?.cancel();
+      setState(() => _speedPlaySecondsRemaining = 25);
+    }
+
     // Announce next player's turn after takeout (500ms delay)
     if (!_dartboardEmulatorController.isAutoPlaying) {
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -393,8 +402,12 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               _audioQueue?.announcePlayerTurn(nextPlayer.name);
             }
           }
+          _audioQueue?.whenIdle().then((_) {
+            if (mounted) _startSpeedPlayTimerIfNeeded();
+          });
         }
       });
+    } else {
       _startSpeedPlayTimerIfNeeded();
     }
 
@@ -435,7 +448,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         Future.delayed(const Duration(milliseconds: 3500), () {
           if (mounted) _mockApi?.simulateTakeoutStarted();
         });
-        setState(() {});
       }
     });
   }

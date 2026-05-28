@@ -52,6 +52,15 @@ class PiratesGridAnnouncementHelper {
     );
   }
 
+  /// Speed Play timer warning — fires once at 5 seconds remaining.
+  void announceSpeedTimerWarning() {
+    _queueService.announce(
+      'The wind is picking up!',
+      AudioPriority.statusChange,
+      soundEffect: PiratesGridSoundEffects.timerTick,
+    );
+  }
+
   /// Speed Play timer expired — fires when turn auto-ends.
   void announceTimerExpired() {
     _queueService.announce(

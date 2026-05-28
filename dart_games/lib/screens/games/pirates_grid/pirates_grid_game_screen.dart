@@ -145,6 +145,11 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
           if (!_dartboardEmulatorController.isAutoPlaying) {
             _audioQueue?.announcePlayerTurn(playerName);
           }
+          _audioQueue?.whenIdle().then((_) {
+            if (mounted && game.speedPlay) {
+              _startSpeedPlayTimerForCurrentPlayer(game);
+            }
+          });
         }
       }
     });
@@ -153,13 +158,6 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     final eventStream = dartboardProvider.dartboardEventStream;
     if (eventStream != null) {
       _dartboardSubscription = eventStream.listen(_handleDartboardEvent);
-    }
-
-    // Start Speed Play timer if applicable
-    final provider = context.read<PiratesGridProvider>();
-    final game = provider.currentGame;
-    if (game != null && game.speedPlay) {
-      _startSpeedPlayTimerForCurrentPlayer(game);
     }
   }
 
@@ -495,10 +493,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
 
     provider.handleTakeoutFinished();
 
-    // Reset Speed Play timer for next player
     final game = provider.currentGame;
-    if (game != null && game.speedPlay && !_dartboardEmulatorController.isAutoPlaying) {
-      _startSpeedPlayTimerForCurrentPlayer(game);
+
+    // Reset timer display immediately so new player sees full time
+    if (game != null && game.speedPlay) {
+      _speedPlayTimer?.cancel();
+      setState(() => _speedPlaySecondsRemaining = 25);
     }
 
     // Announce round transition or next player turn (with 500ms delay)
@@ -514,7 +514,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         final playerName = playerProvider.getPlayerById(currentPlayerId)?.name ??
             'Player ${game.currentPlayerIndex + 1}';
         _audioQueue?.announcePlayerTurn(playerName);
+        _audioQueue?.whenIdle().then((_) {
+          if (mounted && game.speedPlay) {
+            _startSpeedPlayTimerForCurrentPlayer(game);
+          }
+        });
       });
+    } else if (game != null && game.speedPlay) {
+      _startSpeedPlayTimerForCurrentPlayer(game);
     }
 
     setState(() {});
@@ -560,9 +567,9 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       }
       setState(() => _speedPlaySecondsRemaining--);
 
-      // Timer tick sound at 5-1
-      if (_speedPlaySecondsRemaining >= 1 && _speedPlaySecondsRemaining <= 5) {
-        _audioQueue?.announceTimerExpired(); // plays TimerTick SFX
+      // Warning tick at 5 seconds
+      if (_speedPlaySecondsRemaining == 5) {
+        _audioQueue?.announceSpeedTimerWarning();
       }
 
       if (_speedPlaySecondsRemaining <= 0) {
@@ -878,7 +885,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     final isP1Active = currentPlayerId == p1Id;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 100),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final availW = constraints.maxWidth;
