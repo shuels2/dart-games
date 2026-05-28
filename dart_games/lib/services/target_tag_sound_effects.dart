@@ -22,8 +22,8 @@ class TargetTagSoundEffects {
   // PRIORITY 2: Hit Confirmations
   static const SoundEffectConfig singleHit = SoundEffectConfig(
     assetPath: '${_basePath}TargetTag-Spring.mp3',
-    startSeconds: 3.5,
-    endSeconds: null, // Play from 3.5s to end
+    startSeconds: 3.9,
+    endSeconds: null, // Play from 3.9s to end
   );
 
   static const SoundEffectConfig doubleHit = SoundEffectConfig(
@@ -98,6 +98,7 @@ class TargetTagSoundEffects {
     assetPath: '${_basePath}TargetTag-Ominous.mp3',
     startSeconds: 0.0,
     endSeconds: null, // Play entire file
+    fadeOutMs: 500,
   );
 
   static const SoundEffectConfig taggedOut = SoundEffectConfig(
