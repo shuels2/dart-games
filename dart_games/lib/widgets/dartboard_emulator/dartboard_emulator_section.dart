@@ -141,27 +141,41 @@ class DartboardEmulatorSection extends StatelessWidget {
     final leftColumns = _chunkIntoColumns(leftSpecs, maxButtonsPerColumn);
     final rightColumns = _chunkIntoColumns(rightSpecs, maxButtonsPerColumn);
 
-    return Row(
+    // Row with Expanded spacers keeps the dartboard centered regardless
+    // of how many buff columns exist on each side.
+    final leftWidget = Row(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Outer-most spillover columns rendered first on the left so
-        // the innermost column sits closest to the dartboard.
         for (int i = leftColumns.length - 1; i >= 0; i--) ...[
+          if (i < leftColumns.length - 1) const SizedBox(width: 8),
           BuffToggleColumn<Object>(
             specs: leftColumns[i],
             onToggle: onBuffToggle!,
           ),
-          const SizedBox(width: 8),
         ],
-        dartboardContainer,
+        if (leftColumns.isNotEmpty) const SizedBox(width: 8),
+      ],
+    );
+    final rightWidget = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (rightColumns.isNotEmpty) const SizedBox(width: 8),
         for (int i = 0; i < rightColumns.length; i++) ...[
-          const SizedBox(width: 8),
+          if (i > 0) const SizedBox(width: 8),
           BuffToggleColumn<Object>(
             specs: rightColumns[i],
             onToggle: onBuffToggle!,
           ),
         ],
+      ],
+    );
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(child: Align(alignment: Alignment.centerRight, child: leftWidget)),
+        dartboardContainer,
+        Expanded(child: Align(alignment: Alignment.centerLeft, child: rightWidget)),
       ],
     );
   }
