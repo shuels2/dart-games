@@ -188,7 +188,7 @@ class MonsterMashTestHelper {
         hasElimination &&
         newlyEliminated.contains(hatTrickTargetId)) {
       // Rule 8: Merged hat trick + elimination
-      audioQueue.announceHatTrickElimination(hatTrickTargetName!);
+      audioQueue.announceHatTrickElimination(hatTrickTargetName!, attackDamage);
       // Handle any OTHER eliminations not covered by the hat trick
       final otherEliminated =
           newlyEliminated.where((id) => id != hatTrickTargetId).toList();
@@ -214,21 +214,20 @@ class MonsterMashTestHelper {
       }
     } else if (hasHatTrick) {
       // Rule 7: Hat trick supersedes attack and health warning
-      audioQueue.announceHatTrick(hatTrickTargetName!);
+      audioQueue.announceHatTrick(hatTrickTargetName!, attackDamage);
     } else if (hasClutchHeal) {
       // Rule 5: Clutch heal supersedes healing amount
       audioQueue.announceClutchHeal(currentPlayer.name);
     } else if (hasAttack) {
-      // Attack fires (hit already suppressed by rule 1)
-      audioQueue.announceAttack(attackTargetName!, attackMultiplier, attackDamage);
-      // Rule 6: Health warning only on tier crossing
       if (hasHealthWarningCrossing) {
-        audioQueue.announceHealthWarning(attackTargetName!, warningPct!);
+        audioQueue.announceHealthWarning(attackTargetName!, warningPct!, damage: attackDamage);
+      } else {
+        audioQueue.announceAttack(attackTargetName!, attackMultiplier, attackDamage);
       }
     } else if (hasHealing) {
-      // Healing fires (hit already suppressed by rule 1)
       final multiplierStr = parsed?['multiplier'] as String? ?? 'single';
-      audioQueue.announceHealing(multiplierStr, healAmount);
+      final dartNumber = parsed?['number'] as int?;
+      audioQueue.announceHealing(multiplierStr, healAmount, dartNumber: dartNumber);
     }
 
     // Remove darts if turn is over (always fires)

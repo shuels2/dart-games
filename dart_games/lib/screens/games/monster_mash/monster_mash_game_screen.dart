@@ -382,7 +382,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       if (hasHatTrick &&
           hasElimination &&
           newlyEliminated.contains(hatTrickTargetId)) {
-        _audioQueue?.announceHatTrickElimination(hatTrickTargetName!);
+        _audioQueue?.announceHatTrickElimination(hatTrickTargetName!, attackDamage);
         final otherEliminated =
             newlyEliminated.where((id) => id != hatTrickTargetId).toList();
         if (otherEliminated.isNotEmpty) {
@@ -405,18 +405,20 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
           _audioQueue?.announceElimination(eliminatedNames.first);
         }
       } else if (hasHatTrick) {
-        _audioQueue?.announceHatTrick(hatTrickTargetName!);
+        _audioQueue?.announceHatTrick(hatTrickTargetName!, attackDamage);
       } else if (hasClutchHeal) {
         _audioQueue?.announceClutchHeal(currentPlayer.name);
       } else if (hasAttack) {
-        _audioQueue?.announceAttack(
-            attackTargetName!, attackMultiplier, attackDamage);
         if (hasHealthWarningCrossing) {
-          _audioQueue?.announceHealthWarning(attackTargetName!, warningPct!);
+          _audioQueue?.announceHealthWarning(attackTargetName!, warningPct!, damage: attackDamage);
+        } else {
+          _audioQueue?.announceAttack(
+              attackTargetName!, attackMultiplier, attackDamage);
         }
       } else if (hasHealing) {
         final multiplierStr = parsed?['multiplier'] as String? ?? 'single';
-        _audioQueue?.announceHealing(multiplierStr, healAmount);
+        final dartNumber = parsed?['number'] as int?;
+        _audioQueue?.announceHealing(multiplierStr, healAmount, dartNumber: dartNumber);
       }
     }
 

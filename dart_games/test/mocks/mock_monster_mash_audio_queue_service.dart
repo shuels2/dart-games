@@ -54,16 +54,23 @@ class MockMonsterMashAudioQueueService {
     announce(text);
   }
 
-  void announceHealing(String multiplier, int amount) {
+  void announceHealing(String multiplier, int amount, {int? dartNumber}) {
     if (amount <= 0) return;
+
+    String prefix = '';
+    if (dartNumber == 50) {
+      prefix = 'Bullseye! ';
+    } else if (dartNumber == 25) {
+      prefix = 'Outer bull! ';
+    }
 
     String text;
     if (amount >= 50) {
-      text = 'Max Health!';
+      text = '${prefix}Max Health!';
     } else if (amount == 5) {
-      text = 'Plus 5!';
+      text = '${prefix}Plus 5 health!';
     } else {
-      text = 'Plus $amount!';
+      text = '${prefix}Plus $amount health!';
     }
 
     announce(text);
@@ -72,26 +79,27 @@ class MockMonsterMashAudioQueueService {
   void announceAttack(String playerName, String multiplier, int damage) {
     String text;
     if (damage <= 0) {
-      text = 'The shadows protect $playerName!';
+      text = 'The shadows protect $playerName! No damage!';
     } else if (multiplier == 'triple') {
       text = 'Devastating strike! $playerName takes $damage damage!';
     } else if (multiplier == 'double') {
-      text = 'Powerful hit! $playerName feels the pain!';
+      text = 'Powerful double hit! $playerName feels the pain!';
     } else {
-      text = 'A glancing blow! $playerName feels the sting.';
+      text = 'A single glancing blow! $playerName feels the sting.';
     }
 
     announce(text);
   }
 
-  void announceHealthWarning(String playerName, double percentage) {
+  void announceHealthWarning(String playerName, double percentage, {int? damage}) {
+    String prefix = damage != null ? '$damage damage! ' : '';
     String text;
     if (percentage <= 0.10) {
-      text = '$playerName is barely clinging to life!';
+      text = '$prefix$playerName is barely clinging to life!';
     } else if (percentage <= 0.30) {
-      text = '$playerName is in critical condition!';
+      text = '$prefix$playerName is in critical condition!';
     } else if (percentage <= 0.70) {
-      text = '$playerName is starting to weaken!';
+      text = '$prefix$playerName is starting to weaken!';
     } else {
       return; // No announcement above 70%
     }
@@ -103,12 +111,12 @@ class MockMonsterMashAudioQueueService {
     announce('$playerName! Back to the shadows!');
   }
 
-  void announceHatTrick(String playerName) {
-    announce('MONSTROUS! Triple strike on $playerName!');
+  void announceHatTrick(String playerName, int damage) {
+    announce('MONSTROUS! $damage damage! Triple strike on $playerName!');
   }
 
-  void announceHatTrickElimination(String playerName) {
-    announce('MONSTROUS! Triple strike eliminates $playerName!');
+  void announceHatTrickElimination(String playerName, int damage) {
+    announce('MONSTROUS! $damage damage! Triple strike eliminates $playerName!');
   }
 
   void announceCombinedElimination(List<String> playerNames) {

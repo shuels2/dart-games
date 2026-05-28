@@ -202,7 +202,7 @@ void main() {
       helper.verifyAnnouncements([
         'Alice, your turn',
         // 'Single 10' suppressed — attack is secondary
-        'A glancing blow! Bob feels the sting.',  // single attack
+        'A single glancing blow! Bob feels the sting.',  // single attack
         // No health warning — Bob at 19/20 = 95% > 70%, tier 0
       ]);
       helper.clearAnnouncements();
@@ -211,7 +211,7 @@ void main() {
       helper.processDartThrowWithAnnouncements('D10');
       helper.verifyAnnouncements([
         // 'Double 10' suppressed
-        'Powerful hit! Bob feels the pain!',  // double attack
+        'Powerful double hit! Bob feels the pain!',  // double attack
         // Bob at 17/20 = 85% > 70%, tier 0, no crossing
       ]);
       helper.clearAnnouncements();
@@ -222,7 +222,7 @@ void main() {
         // 'Triple 10' suppressed
         // Attack suppressed by hat trick
         // Health warning suppressed by hat trick (Bob 14/20=70% → tier 1 crossing)
-        'MONSTROUS! Triple strike on Bob!',  // Hat trick
+        'MONSTROUS! 3 damage! Triple strike on Bob!',  // Hat trick
         'Remove your darts',
       ]);
       helper.clearAnnouncements();
@@ -252,23 +252,21 @@ void main() {
       helper.verifyAnnouncements([
         'Alice, your turn',
         // 'Single 5' suppressed — healing is secondary
-        'Plus 1!',  // Heal +1
+        'Plus 1 health!',  // Heal +1
       ]);
       helper.clearAnnouncements();
 
-      // Alice hits outer bull (25) → heals +5, hit suppressed
+      // Alice hits outer bull (25) → heals +5
       helper.processDartThrowWithAnnouncements('25');
       helper.verifyAnnouncements([
-        // 'Outer bull' suppressed
-        'Plus 5!',  // Heal +5
+        'Outer bull! Plus 5 health!',  // Heal +5
       ]);
       helper.clearAnnouncements();
 
-      // Alice hits bullseye (50) → heals to max, hit suppressed
+      // Alice hits bullseye (50) → heals to max
       helper.processDartThrowWithAnnouncements('Bull');
       helper.verifyAnnouncements([
-        // 'Bullseye!' suppressed
-        'Plus 4!',  // Healed 4 (16→20)
+        'Bullseye! Plus 4 health!',  // Healed 4 (16→20)
         'Remove your darts',
       ]);
       helper.clearAnnouncements();
@@ -300,9 +298,8 @@ void main() {
       helper.processDartThrowWithAnnouncements('S10');
       helper.verifyAnnouncements([
         'Alice, your turn',
-        // 'Single 10' suppressed
-        'A glancing blow! Bob feels the sting.',
-        'Bob is in critical condition!',  // Tier crossing 1→2
+        // 'Single 10' suppressed — attack with tier crossing
+        '1 damage! Bob is in critical condition!',  // Tier crossing 1→2
       ]);
       helper.clearAnnouncements();
 
@@ -311,7 +308,7 @@ void main() {
       helper.processDartThrowWithAnnouncements('D10');
       helper.verifyAnnouncements([
         // 'Double 10' suppressed
-        'Powerful hit! Bob feels the pain!',
+        'Powerful double hit! Bob feels the pain!',
         // No health warning — same tier (2→2)
       ]);
       helper.clearAnnouncements();
@@ -326,7 +323,7 @@ void main() {
         // 'Single 10' suppressed
         // Attack suppressed by hat trick + elimination
         // Health warning suppressed by elimination
-        'MONSTROUS! Triple strike eliminates Bob!',  // Merged hat trick + elimination
+        'MONSTROUS! 1 damage! Triple strike eliminates Bob!',  // Merged hat trick + elimination
         'Remove your darts',
       ]);
       helper.clearAnnouncements();
@@ -365,7 +362,7 @@ void main() {
       helper.verifyAnnouncements([
         // 'Single 10' suppressed
         // Attack suppressed by hat trick
-        'MONSTROUS! Triple strike on Bob!',  // Hat trick
+        'MONSTROUS! 1 damage! Triple strike on Bob!',  // Hat trick
         'Remove your darts',
       ]);
       helper.clearAnnouncements();
@@ -394,7 +391,7 @@ void main() {
       helper.verifyAnnouncements([
         'Alice, your turn',
         // 'Single 5' suppressed — clutch heal is secondary
-        // 'Plus 1!' suppressed — clutch heal supersedes
+        // 'Plus 1 health!' suppressed — clutch heal supersedes
         'Alice rises from near death!',  // Clutch heal
       ]);
       helper.clearAnnouncements();
@@ -589,8 +586,8 @@ void main() {
       helper.processDartThrowWithAnnouncements('S10');
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'A glancing blow! Bob feels the sting.',
-        'Bob is starting to weaken!',  // Tier crossing 0→1
+        // Attack replaced by health warning with damage on tier crossing
+        '1 damage! Bob is starting to weaken!',  // Tier crossing 0→1
       ]);
       helper.clearAnnouncements();
 
@@ -600,8 +597,7 @@ void main() {
       // Dart 2: S10 → Bob 3→2 (10%, tier 3) → tier 1→3 crossing
       helper.processDartThrowWithAnnouncements('S10');
       helper.verifyAnnouncements([
-        'A glancing blow! Bob feels the sting.',
-        'Bob is barely clinging to life!',  // Tier crossing 1→3
+        '1 damage! Bob is barely clinging to life!',  // Tier crossing 1→3
       ]);
       helper.clearAnnouncements();
 
@@ -636,7 +632,7 @@ void main() {
       helper.verifyAnnouncements([
         'Alice, your turn',
         // 'Single 10' suppressed — attack is secondary
-        'The shadows protect Bob!',  // Shadow Walk 0-damage
+        'The shadows protect Bob! No damage!',  // Shadow Walk 0-damage
         // No health warning — no health change
       ]);
       helper.clearAnnouncements();
@@ -694,7 +690,7 @@ void main() {
       helper.verifyAnnouncements([
         'Alice, your turn',
         // 'Single 5' suppressed — healing is secondary
-        'Plus 5!',  // Ancient Bandages boosts to +5
+        'Plus 5 health!',  // Ancient Bandages boosts to +5
       ]);
       helper.clearAnnouncements();
     });
