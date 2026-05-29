@@ -801,10 +801,10 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         children: [
           // Hole info row
           _buildHoleInfoRow(game),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
           // Hole image row (main + neighbor previews)
           _buildHoleImageRow(game),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
           // Above the scorecard: Par + dart slots on the left, Skip Turn
           // button on the right edge (lined up with the scorecard's right
           // edge — the scorecard below fills the same horizontal extent).
@@ -886,9 +886,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildHoleInfoRow(game),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
                 _buildHoleImageRow(game),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
                 // Above the scorecard: Par + dart slots on the left, Skip
                 // Turn on the right. Per-team caption removed — Teams panel
                 // on the left already shows the active team.
@@ -1101,9 +1101,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           key: TikiGolfGameKeys.holeCounter,
           'Hole ${game.currentHole}/9',
           style: GoogleFonts.boogaloo(
-            fontSize: 40,
+            fontSize: 50,
             color: _sandWhite,
-            shadows: _outlineShadow(),
+            shadows: [
+              ..._heavyOutline(_tikiBrown),
+              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+            ],
           ),
         ),
         const SizedBox(width: 12),
@@ -1112,29 +1115,37 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           key: TikiGolfGameKeys.holeName,
           holeName,
           style: GoogleFonts.boogaloo(
-            fontSize: 40,
+            fontSize: 50,
             color: _hibiscusPink,
-            shadows: _outlineShadow(),
+            shadows: [
+              ..._heavyOutline(_tikiBrown),
+              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+            ],
           ),
         ),
         const SizedBox(width: 48),
-        // Par label moved to the dart row above the scorecard.
         // Target label
         Text(
           'Target: ',
           style: GoogleFonts.boogaloo(
-            fontSize: 40,
+            fontSize: 50,
             color: _sandWhite,
-            shadows: _outlineShadow(),
+            shadows: [
+              ..._heavyOutline(_tikiBrown),
+              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+            ],
           ),
         ),
         Text(
           key: TikiGolfGameKeys.targetNumber,
           '$target',
           style: GoogleFonts.boogaloo(
-            fontSize: 40,
+            fontSize: 50,
             color: _hibiscusPink,
-            shadows: _outlineShadow(),
+            shadows: [
+              ..._heavyOutline(_tikiBrown),
+              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+            ],
           ),
         ),
       ],

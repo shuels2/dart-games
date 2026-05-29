@@ -309,7 +309,7 @@ void main() {
       _announceForThrow(queue: queue, provider: provider, prevHole: 1);
 
       expect(queue.announcements.length, equals(1));
-      expect(queue.announcements[0], contains('one dart left'));
+      expect(queue.announcements[0], contains('One dart left'));
     });
 
     test('Almost There does NOT fire on dart 2 miss (par is already gone)', () {
@@ -415,7 +415,7 @@ void main() {
       // Dart 1: miss → Almost There
       provider.processDartThrow(sector: _missSector(target), score: 0);
       _announceForThrow(queue: queue, provider: provider, prevHole: 1);
-      expect(queue.announcements[0], contains('one dart left'));
+      expect(queue.announcements[0], contains('One dart left'));
       queue.clearAnnouncements();
 
       // Dart 2: miss → Miss (NOT Almost There — par gone)

@@ -39,7 +39,7 @@ class TikiGolfAnnouncementHelper {
 
   void announceBirdie(String playerName) {
     _queueService.announce(
-      'Birdie! $playerName sinks it on the first dart!',
+      'Birdie! You sunk it on the first dart!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.clap,
     );
@@ -47,7 +47,7 @@ class TikiGolfAnnouncementHelper {
 
   void announcePar(String playerName) {
     _queueService.announce(
-      'Par! Solid shot, $playerName!',
+      'Par! Solid shot!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.ballDrop,
     );
@@ -63,7 +63,7 @@ class TikiGolfAnnouncementHelper {
 
   void announceDoubleBogey(String playerName) {
     _queueService.announce(
-      'Double bogey! Squeaked it out, $playerName!',
+      'Double bogey! Squeaked it out!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.putt,
     );
@@ -71,7 +71,7 @@ class TikiGolfAnnouncementHelper {
 
   void announceTripleBogey(String playerName) {
     _queueService.announce(
-      'Triple bogey! Barely hung in, $playerName!',
+      'Triple bogey! Barely hung in!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.putt,
     );
@@ -79,7 +79,7 @@ class TikiGolfAnnouncementHelper {
 
   void announceQuadrupleBogey(String playerName) {
     _queueService.announce(
-      'Quadruple bogey! That was a wild one, $playerName!',
+      'Quadruple bogey! That was a wild one!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.putt,
     );
@@ -87,7 +87,7 @@ class TikiGolfAnnouncementHelper {
 
   void announceSplash(String playerName) {
     _queueService.announce(
-      'Splash! $playerName misses them all!',
+      'Splash! Missed them all!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.splash,
     );
@@ -103,7 +103,7 @@ class TikiGolfAnnouncementHelper {
 
   void announceAlmostThere(String playerName) {
     _queueService.announce(
-      '$playerName, one dart left to save par!',
+      'One dart left to save par!',
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.tikiChime,
     );

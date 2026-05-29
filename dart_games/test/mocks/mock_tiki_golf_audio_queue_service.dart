@@ -32,11 +32,11 @@ class MockTikiGolfAudioQueueService {
   }
 
   void announceBirdie(String playerName) {
-    announce('Birdie! $playerName sinks it on the first dart!');
+    announce('Birdie! You sunk it on the first dart!');
   }
 
   void announcePar(String playerName) {
-    announce('Par! Solid shot, $playerName!');
+    announce('Par! Solid shot!');
   }
 
   void announceBogey(String playerName) {
@@ -44,19 +44,19 @@ class MockTikiGolfAudioQueueService {
   }
 
   void announceDoubleBogey(String playerName) {
-    announce('Double bogey! Squeaked it out, $playerName!');
+    announce('Double bogey! Squeaked it out!');
   }
 
   void announceTripleBogey(String playerName) {
-    announce('Triple bogey! Barely hung in, $playerName!');
+    announce('Triple bogey! Barely hung in!');
   }
 
   void announceQuadrupleBogey(String playerName) {
-    announce('Quadruple bogey! That was a wild one, $playerName!');
+    announce('Quadruple bogey! That was a wild one!');
   }
 
   void announceSplash(String playerName) {
-    announce('Splash! $playerName misses them all!');
+    announce('Splash! Missed them all!');
   }
 
   void announceMiss() {
@@ -64,7 +64,7 @@ class MockTikiGolfAudioQueueService {
   }
 
   void announceAlmostThere(String playerName) {
-    announce('$playerName, one dart left to save par!');
+    announce('One dart left to save par!');
   }
 
   void announceMulliganUsed(String playerName) {
