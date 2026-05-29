@@ -943,25 +943,32 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     required List<String> teamIds,
     required String? activeTeamId,
   }) {
-    return Container(
+    return LayoutBuilder(builder: (context, constraints) {
+      final availH = constraints.maxHeight;
+      final teamCount = teamIds.length;
+      // Reserve ~50px for header + padding. Distribute rest among teams.
+      final perTeamH = (availH - 50) / teamCount;
+      final crestSize = (perTeamH * 0.72).clamp(60.0, 200.0);
+      final scoreFontSize = (crestSize * 0.155).clamp(15.0, 26.0);
+      final headerFontSize = (crestSize * 0.175).clamp(17.0, 28.0);
+      final teamSpacing = (perTeamH * 0.04).clamp(2.0, 12.0);
+
+      return Container(
       key: TikiGolfGameKeys.teamsPanel,
-      // Tight left margin so the larger 98px badges sit close to the screen
-      // edge; right padding stays at 8 to keep separation from center content.
-      padding: const EdgeInsets.fromLTRB(4, 12, 8, 12),
-      // Transparent — no background color, no border
+      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Text(
             'TEAMS',
             style: GoogleFonts.boogaloo(
-              fontSize: 26,
+              fontSize: headerFontSize,
               fontWeight: FontWeight.bold,
               color: _sandWhite,
               shadows: _outlineShadow(),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: teamSpacing),
           ...teamIds.asMap().entries.map((entry) {
             final index = entry.key;
             final teamId = entry.value;
@@ -1001,7 +1008,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
               opacity: isActive ? 1.0 : 0.60,
               child: Container(
                 key: TikiGolfGameKeys.teamBox(teamId),
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: teamSpacing),
                 decoration: isActive
                     ? BoxDecoration(
                         border: const Border(
@@ -1019,12 +1026,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                     if (crestPath != null)
                       Image.asset(
                         crestPath,
-                        width: 184,
-                        height: 184,
+                        width: crestSize,
+                        height: crestSize,
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => Container(
-                          width: 184,
-                          height: 184,
+                          width: crestSize,
+                          height: crestSize,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: _lagoonBlue.withOpacity(0.3),
@@ -1033,8 +1040,8 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       )
                     else
                       Container(
-                        width: 184,
-                        height: 184,
+                        width: crestSize,
+                        height: crestSize,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: _lagoonBlue.withOpacity(0.3),
@@ -1048,7 +1055,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       textAlign: TextAlign.center,
                       text: TextSpan(
                         style: GoogleFonts.boogaloo(
-                          fontSize: 24,
+                          fontSize: scoreFontSize,
                           fontWeight: FontWeight.bold,
                           color: _sandWhite,
                           shadows: _outlineShadow(),
@@ -1059,7 +1066,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                           TextSpan(
                             text: '($parLabel)',
                             style: GoogleFonts.boogaloo(
-                              fontSize: 24,
+                              fontSize: scoreFontSize,
                               fontWeight: FontWeight.bold,
                               color: parColor,
                               shadows: _outlineShadow(),
@@ -1076,6 +1083,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         ],
       ),
     );
+    });
   }
 
   // ─── Hole info row ────────────────────────────────────────────────────────────
