@@ -497,7 +497,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                     Text(
                       'Team mode',
                       style: GoogleFonts.fredoka(
-                        fontSize: 13,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -508,7 +508,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                         Text(
                           'Solo',
                           style: GoogleFonts.fredoka(
-                            fontSize: 13,
+                            fontSize: 17,
                             fontWeight: _isTeamMode
                                 ? FontWeight.normal
                                 : FontWeight.bold,
@@ -533,7 +533,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                         Text(
                           'Team',
                           style: GoogleFonts.fredoka(
-                            fontSize: 13,
+                            fontSize: 17,
                             fontWeight: _isTeamMode
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -552,7 +552,8 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
               child: Container(
                 height: 60,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    const EdgeInsets.fromLTRB(12, 10, 0, 10),
+                clipBehavior: Clip.none,
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A3E).withOpacity(0.85),
                   borderRadius: BorderRadius.circular(8),
@@ -564,16 +565,17 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                 child: Row(
                   children: [
                     Text(
-                      'Shield Max: ${_shieldMax.toInt()}',
+                      'Shield Max:  ${_shieldMax.toInt()}',
                       style: GoogleFonts.fredoka(
-                        fontSize: 13,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(width: 12),
                     Expanded(
-                      child: Slider(
+                      child: Transform.translate(
+                        offset: const Offset(10, 0),
+                        child: Slider(
                         key: TargetTagMenuKeys.shieldMaxSlider,
                         value: _shieldMax,
                         min: 1,
@@ -586,6 +588,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                             _shieldMax = value;
                           });
                         },
+                      ),
                       ),
                     ),
                   ],
@@ -624,7 +627,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                     Text(
                       'Assign teams',
                       style: GoogleFonts.fredoka(
-                        fontSize: 13,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: _isTeamMode ? Colors.white : Colors.white38,
                       ),
@@ -635,7 +638,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                         Text(
                           'Random',
                           style: GoogleFonts.fredoka(
-                            fontSize: 13,
+                            fontSize: 17,
                             fontWeight: _isRandomTeams
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -666,7 +669,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                         Text(
                           'Manually',
                           style: GoogleFonts.fredoka(
-                            fontSize: 13,
+                            fontSize: 17,
                             fontWeight: !_isRandomTeams
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -709,7 +712,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                     Text(
                       'Hero Bonus',
                       style: GoogleFonts.fredoka(
-                        fontSize: 13,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: soloHeroBonusEnabled
                             ? Colors.white
@@ -722,7 +725,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                         Text(
                           'Off',
                           style: GoogleFonts.fredoka(
-                            fontSize: 13,
+                            fontSize: 17,
                             fontWeight: !_soloHeroBonus
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -748,7 +751,7 @@ class _TargetTagMenuScreenState extends State<TargetTagMenuScreen>
                         Text(
                           'On',
                           style: GoogleFonts.fredoka(
-                            fontSize: 13,
+                            fontSize: 17,
                             fontWeight: _soloHeroBonus
                                 ? FontWeight.bold
                                 : FontWeight.normal,
