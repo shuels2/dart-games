@@ -640,6 +640,7 @@ void main() {
         expect(restored.dartsThrown['p1'], equals(game.dartsThrown['p1']));
         expect(restored.totalTurns['p1'], equals(game.totalTurns['p1']));
         expect(restored.state.name, equals(game.state.name));
+        expect(restored.flagsPlantedPerRound, equals(game.flagsPlantedPerRound));
       });
 
       test('All enums serialize as .name strings', () {
@@ -652,6 +653,58 @@ void main() {
         final gridData = json['grid'] as List;
         final firstCell = (gridData[0] as List)[0] as Map<String, dynamic>;
         expect(firstCell['target']['requirement'], equals('doubleOrTriple'));
+      });
+    });
+
+    // ── Per-round flag tracking (2 tests) ─────────────────────────────────────
+
+    group('Per-round flag tracking', () {
+      test('flagsPlantedPerRound captures flags at end of each round', () {
+        provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 3, false, false);
+        final game = provider.currentGame!;
+
+        // Round 1: P1 wins with 3 flags (top row)
+        game.currentPlayerIndex = 0;
+        game.grid[0][0].claimedBy = 'p1';
+        game.grid[0][1].claimedBy = 'p1';
+        // P2 planted 1 flag
+        game.grid[1][0].claimedBy = 'p2';
+        _hitCell(provider, 0, 2); // P1 wins round
+        provider.handleTakeoutFinished();
+
+        expect(game.flagsPlantedPerRound['p1']!.length, 1);
+        expect(game.flagsPlantedPerRound['p1']![0], 3);
+        expect(game.flagsPlantedPerRound['p2']!.length, 1);
+        expect(game.flagsPlantedPerRound['p2']![0], 1);
+
+        // Round 2: P1 wins again with 3 flags
+        game.currentPlayerIndex = game.playerIds.indexOf('p1');
+        game.grid[0][0].claimedBy = 'p1';
+        game.grid[0][1].claimedBy = 'p1';
+        game.grid[2][2].claimedBy = 'p2';
+        game.grid[2][1].claimedBy = 'p2';
+        _hitCell(provider, 0, 2); // P1 wins match
+        provider.handleTakeoutFinished();
+
+        expect(game.flagsPlantedPerRound['p1']!.length, 2);
+        expect(game.flagsPlantedPerRound['p1']![1], 3);
+        expect(game.flagsPlantedPerRound['p2']!.length, 2);
+        expect(game.flagsPlantedPerRound['p2']![1], 2);
+        expect(game.matchWinnerId, equals('p1'));
+      });
+
+      test('flagsPlantedPerRound round-trips through JSON', () {
+        provider.startGame(['p1', 'p2'], TargetDifficulty.easy, 3, false, false);
+        final game = provider.currentGame!;
+
+        game.flagsPlantedPerRound['p1'] = [3, 4];
+        game.flagsPlantedPerRound['p2'] = [2, 1];
+
+        final json = game.toJson();
+        final restored = PiratesGridGame.fromJson(json);
+
+        expect(restored.flagsPlantedPerRound['p1'], equals([3, 4]));
+        expect(restored.flagsPlantedPerRound['p2'], equals([2, 1]));
       });
     });
   });

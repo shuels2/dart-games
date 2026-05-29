@@ -15,6 +15,7 @@ import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/pirates_grid_announcement_helper.dart';
 import '../../../services/play_to_complete/pirates_grid_strategy.dart';
 import '../../../services/play_to_tie/pirates_grid_strategy.dart';
+import '../../../widgets/dartboard_emulator/buff_toggle_column.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
 import '../../../widgets/dartboard_emulator/play_to_complete_runner.dart';
@@ -747,19 +748,25 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               ],
             ),
           ),
-          // 2. Round Complete overlay (bestOf > 1, non-final round)
-          if (_showRoundCompleteOverlay && game.bestOf > 1)
+          // 2. Round Complete overlay (bestOf > 1 during gameplay, or emulator toggle)
+          if (_showRoundCompleteOverlay && (game.bestOf > 1 || _mockApi != null))
             Positioned.fill(
               child: IgnorePointer(
-                child: Container(
+                child: Material(
                   color: Colors.black54,
                   child: Center(
                     child: Text(
                       'Round $_roundCompleteRound Complete!',
                       key: const Key('pirates_grid_round_complete_overlay'),
                       style: GoogleFonts.pirataOne(
-                        fontSize: 28,
+                        fontSize: 124,
                         color: _treasureGold,
+                        shadows: const [
+                          Shadow(color: _inkBlack, offset: Offset(-1.5, -1.5), blurRadius: 0),
+                          Shadow(color: _inkBlack, offset: Offset( 1.5, -1.5), blurRadius: 0),
+                          Shadow(color: _inkBlack, offset: Offset(-1.5,  1.5), blurRadius: 0),
+                          Shadow(color: _inkBlack, offset: Offset( 1.5,  1.5), blurRadius: 0),
+                        ],
                       ),
                     ),
                   ),
@@ -842,6 +849,26 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
               onPlayToTie: _mockApi != null ? _onPlayToTie : null,
               playToTieConfig:
                   _mockApi != null ? PlayToTieButtonConfig.piratesGrid() : null,
+              buffToggles: _mockApi != null
+                  ? [
+                      BuffToggleSpec<Object>(
+                        buff: 'roundComplete',
+                        label: 'Round\nComplete',
+                        isActive: _showRoundCompleteOverlay,
+                        isEnabled: true,
+                        buttonKey: DartboardEmulatorKeys.buffToggleButton('roundComplete'),
+                        config: BuffToggleButtonConfig.piratesGrid(),
+                      ),
+                    ]
+                  : null,
+              onBuffToggle: _mockApi != null
+                  ? (_) {
+                      setState(() {
+                        _showRoundCompleteOverlay = !_showRoundCompleteOverlay;
+                        _roundCompleteRound = provider.currentGame?.currentRound ?? 1;
+                      });
+                    }
+                  : null,
             ),
           ),
           // 5. DartboardEmulatorFAB — Positioned bottom-right 16,16

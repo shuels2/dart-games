@@ -458,6 +458,12 @@ class PiratesGridProvider extends ChangeNotifier {
 
   /// Updates roundsWon and checks for match end.
   void _applyRoundResult(PiratesGridGame game, {required String? winnerId}) {
+    // Capture flags planted this round
+    for (final playerId in game.playerIds) {
+      game.flagsPlantedPerRound[playerId] ??= [];
+      game.flagsPlantedPerRound[playerId]!.add(game.getFlagsPlanted(playerId));
+    }
+
     if (winnerId != null) {
       game.roundsWon[winnerId] = (game.roundsWon[winnerId] ?? 0) + 1;
     }

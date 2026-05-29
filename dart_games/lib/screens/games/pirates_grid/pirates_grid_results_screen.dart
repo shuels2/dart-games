@@ -356,24 +356,39 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                 Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
               ],
             ),
-            Text(
-              ' Flags planted: $flagsPlanted',
-              style: GoogleFonts.lora(
-                fontSize: 18,
-                color: _parchmentTan,
-                fontWeight: FontWeight.w600,
-                shadows: const [
-                  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
-                  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
-                  Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
-                  Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
-                ],
-              ),
-            ),
             if (game.bestOf > 1) ...[
+              Text(
+                ' Flags: ${(game.flagsPlantedPerRound[winnerId] ?? []).join(' / ')}',
+                style: GoogleFonts.lora(
+                  fontSize: 18,
+                  color: _parchmentTan,
+                  fontWeight: FontWeight.w600,
+                  shadows: const [
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+                  ],
+                ),
+              ),
               const SizedBox(width: 24),
               Text(
                 '⚓ Rounds won: $roundsWon/$totalRounds',
+                style: GoogleFonts.lora(
+                  fontSize: 18,
+                  color: _parchmentTan,
+                  fontWeight: FontWeight.w600,
+                  shadows: const [
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+                  ],
+                ),
+              ),
+            ] else ...[
+              Text(
+                ' Flags planted: $flagsPlanted',
                 style: GoogleFonts.lora(
                   fontSize: 18,
                   color: _parchmentTan,
@@ -455,7 +470,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
   ) {
     return Container(
       key: PiratesGridResultsKeys.rankingsList,
-      constraints: const BoxConstraints(maxWidth: 500),
+      constraints: const BoxConstraints(maxWidth: 600),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _oceanNavy.withOpacity(0.85),
@@ -528,7 +543,9 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                       ],
                     ),
                     Text(
-                      ' $flagsPlanted',
+                      game.bestOf > 1
+                          ? ' ${(game.flagsPlantedPerRound[player.id] ?? []).join('/')}'
+                          : ' $flagsPlanted',
                       style: GoogleFonts.lora(
                         fontSize: 14,
                         color: _parchmentTan,
@@ -537,7 +554,7 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
                   ],
                 ),
                 if (game.bestOf > 1) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 16),
                   Text(
                     '⚓ $roundsWon',
                     style: GoogleFonts.lora(

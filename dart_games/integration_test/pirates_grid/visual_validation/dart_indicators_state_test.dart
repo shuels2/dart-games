@@ -113,8 +113,8 @@ void main() {
       // Explicit miss
       await throwMissViaMock(tester);
 
-      expect(_dartText(tester, 0), '—',
-          reason: 'Slot 0 should show — after explicit miss');
+      expect(_dartText(tester, 0), 'Miss',
+          reason: 'Slot 0 should show Miss after explicit miss');
       expect(_isBronze(tester, 0), isTrue,
           reason: 'Slot 0 border should be bronze after miss');
 
@@ -145,8 +145,8 @@ void main() {
       expect(_dartBorderColor(tester, 0), _p1Color);
 
       // Slot 1 miss
-      expect(_dartText(tester, 1), '—',
-          reason: 'Slot 1: miss should show dash');
+      expect(_dartText(tester, 1), 'Miss',
+          reason: 'Slot 1: miss should show Miss');
       expect(_isBronze(tester, 1), isTrue,
           reason: 'Slot 1: miss border should be bronze');
 
@@ -190,7 +190,37 @@ void main() {
       expect(_dartText(tester, 2), '—');
     });
 
-    // ── Scenario 6: indicators reset between turns ────────────────────────
+    // ── Scenario 6: hitting opponent's claimed cell (steals off) shows bronze
+    testWidgets(
+        'Defended cell (steals off): dart indicator shows bronze, not hit color',
+        (WidgetTester tester) async {
+      await UITestHelpers.resetServerState();
+      await setupAndStartGame(tester, config,
+          stealMode: false,
+          playerNames: ['Player A', 'Player B']);
+
+      // P1 claims cell (0,0)
+      final targetNum = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+      await throwDartViaMock(tester, targetNum);
+
+      // Verify P1's dart 1 shows as hit (red)
+      expect(_dartBorderColor(tester, 0), _p1Color,
+          reason: 'P1 dart 1 should be red after claiming cell');
+
+      // Complete P1's turn
+      await DartThrowHelpers.completeTurnWithMisses(tester);
+
+      // P2 hits the same cell — defended, steals off
+      await throwDartViaMock(tester, targetNum);
+
+      // P2's dart indicator should be bronze (not teal) since the cell is defended
+      expect(_isBronze(tester, 0), isTrue,
+          reason: 'Defended cell hit should show bronze border, not teal');
+      expect(_dartText(tester, 0), isNot('—'),
+          reason: 'Slot 0 should show the target number, not a dash');
+    });
+
+    // ── Scenario 7: indicators reset between turns ────────────────────────
     testWidgets('all 3 indicators reset to dash at start of each new turn',
         (WidgetTester tester) async {
       await UITestHelpers.resetServerState();

@@ -682,4 +682,27 @@ class BuffToggleButtonConfig {
       ),
     );
   }
+
+  factory BuffToggleButtonConfig.piratesGrid() {
+    const parchment = Color(0xFFF5E6C8);
+    const oceanNavy = Color(0xFF1B2838);
+    const compassBronze = Color(0xFFCD7F32);
+    return BuffToggleButtonConfig(
+      activeBackgroundColor: const Color(0xFF2E8B8B),
+      inactiveBackgroundColor: oceanNavy.withOpacity(0.5),
+      borderColor: compassBronze,
+      activeTextStyle: GoogleFonts.pirataOne(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        height: 1.1,
+        color: parchment,
+      ),
+      inactiveTextStyle: GoogleFonts.pirataOne(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        height: 1.1,
+        color: parchment.withOpacity(0.55),
+      ),
+    );
+  }
 }
