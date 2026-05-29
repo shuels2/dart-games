@@ -887,6 +887,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: _pearlWhite,
+              shadows: const [
+                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+              ],
             ),
             textAlign: TextAlign.center,
             maxLines: 2,
@@ -910,6 +913,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               color: game.gameMode == ReefRoyaleGameMode.cursedTide
                   ? _coralPink
                   : _sandyGold,
+              shadows: const [
+                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+              ],
             ),
           ),
 
@@ -921,6 +927,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: _seafoamGreen,
+              shadows: const [
+                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -1140,6 +1149,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: _pearlWhite,
+                          shadows: const [
+                            Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1161,6 +1173,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: _seafoamGreen,
+                                        shadows: const [
+                                          Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                                        ],
                                       ),
                                     ),
                                     TextSpan(
@@ -1168,6 +1183,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                                       style: GoogleFonts.nunito(
                                         fontSize: 16,
                                         color: _sunlitAqua.withOpacity(0.8),
+                                        shadows: const [
+                                          Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -1185,6 +1203,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: _seafoamGreen,
+                              shadows: const [
+                                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                              ],
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -1254,7 +1275,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     return Container(
       key: ReefRoyaleGameKeys.coralCard(target),
       margin: const EdgeInsets.all(4),
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
       decoration: BoxDecoration(
         color: isLocked
             ? Colors.grey.withOpacity(0.3)
@@ -1273,26 +1294,54 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
       ),
       child: Column(
         children: [
-          // Target number
-          Text(
-            game.getTargetDisplayName(target),
-            style: GoogleFonts.fredoka(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: isLocked ? Colors.grey : _pearlWhite,
-            ),
-          ),
-
-          // Coral image (fills available space)
+          // Coral image with target number overlaid
           if (coralImagePath.isNotEmpty)
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Image.asset(
-                  coralImagePath,
-                  fit: BoxFit.contain,
-                  opacity: AlwaysStoppedAnimation(isLocked ? 0.4 : 1.0),
-                ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Image.asset(
+                        coralImagePath,
+                        fit: BoxFit.contain,
+                        opacity: AlwaysStoppedAnimation(isLocked ? 0.4 : 1.0),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 2,
+                    left: 0,
+                    right: 0,
+                    child: Text(
+                      game.getTargetDisplayName(target),
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.fredoka(
+                        fontSize: 65,
+                        height: 0.9,
+                        fontWeight: FontWeight.bold,
+                        color: isLocked ? Colors.grey : _pearlWhite,
+                        shadows: isLocked ? null : const [
+                          Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1.5, 1.5)),
+                          Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 0)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Text(
+              game.getTargetDisplayName(target),
+              style: GoogleFonts.fredoka(
+                fontSize: 52,
+                fontWeight: FontWeight.bold,
+                color: isLocked ? Colors.grey : _pearlWhite,
+                shadows: isLocked ? null : const [
+                  Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1.5, 1.5)),
+                  Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 0)),
+                ],
               ),
             ),
 
@@ -1524,40 +1573,37 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: _pearlWhite,
+                            shadows: const [
+                              Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                            ],
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         if (showInfo) ...[
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '$pearls pearls',
-                                style: GoogleFonts.nunito(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color:
-                                      game.gameMode == ReefRoyaleGameMode.cursedTide
-                                          ? _coralPink
-                                          : _sandyGold,
-                                  shadows: const [
-                                    Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                '$claimedCount/7 corals',
-                                style: GoogleFonts.nunito(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: _seafoamGreen,
-                                  shadows: const [
-                                    Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          Text(
+                            '$pearls pearls',
+                            style: GoogleFonts.nunito(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color:
+                                  game.gameMode == ReefRoyaleGameMode.cursedTide
+                                      ? _coralPink
+                                      : _sandyGold,
+                              shadows: const [
+                                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '$claimedCount/7 corals',
+                            style: GoogleFonts.nunito(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: _seafoamGreen,
+                              shadows: const [
+                                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                              ],
+                            ),
                           ),
                         ] else
                           Text(
