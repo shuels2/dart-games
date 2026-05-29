@@ -308,12 +308,18 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     }
 
     // ── Track per-dart grid-hit status for indicator coloring ───────────────
+    // A dart counts as a "hit" only if it claimed a square (empty cell or
+    // steal). Hitting your own cell or an opponent's cell with steals off
+    // is not a successful hit.
+    final wasEffectiveHit = wasMatched &&
+        (wasMatchedCellEmpty ||
+         (wasMatchedCellOpponent && game.stealMode));
     if (_lastTurnPlayerId != playerId) {
       _currentTurnHits = [];
       _lastTurnPlayerId = playerId;
     }
     if (_currentTurnHits.length < 3) {
-      _currentTurnHits = [..._currentTurnHits, wasMatched];
+      _currentTurnHits = [..._currentTurnHits, wasEffectiveHit];
     }
 
     // ── Process the dart ────────────────────────────────────────────────────

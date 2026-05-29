@@ -302,8 +302,8 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
           : MediaQuery.of(context).size.width;
       final availH = MediaQuery.of(context).size.height;
       final widthBased = availW * 0.32;
-      final heightBased = (availH - 350) * 0.60;
-      final characterSize = math.min(widthBased, heightBased).clamp(120.0, 460.0);
+      final heightBased = (availH - 350) * 0.66;
+      final characterSize = math.min(widthBased, heightBased).clamp(120.0, 500.0);
       final nameFontSize = (characterSize * 0.115).clamp(28.0, 56.0);
 
       return Column(
@@ -397,31 +397,31 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
   Widget _buildDrawContent(dynamic game, List<Player> players) {
     if (players.length < 2) return const SizedBox.shrink();
 
+    final availW = MediaQuery.of(context).size.width;
     final availH = MediaQuery.of(context).size.height;
-    final drawCharSize = ((availH - 450) * 0.4).clamp(100.0, 200.0);
+    final heightBased = (availH - 350) * 0.66;
+    final drawCharSize = heightBased.clamp(120.0, 500.0);
+    final nameFontSize = (drawCharSize * 0.115).clamp(28.0, 56.0);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         for (int i = 0; i < 2; i++) ...[
-          if (i > 0) const SizedBox(width: 32),
+          if (i > 0) const SizedBox(width: 60),
           Column(
             children: [
-              Opacity(
-                opacity: 0.85,
-                child: SizedBox(
-                  width: drawCharSize,
-                  height: drawCharSize,
-                  child: Image.asset(
-                    i == 0
-                        ? 'assets/games/pirates_grid/characters/CaptainCrossbones.png'
-                        : 'assets/games/pirates_grid/characters/CaptainRedbeard.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Icon(
-                      Icons.person,
-                      color: i == 0 ? _p1FlagColor : _p2FlagColor,
-                      size: 140,
-                    ),
+              SizedBox(
+                width: drawCharSize,
+                height: drawCharSize,
+                child: Image.asset(
+                  i == 0
+                      ? 'assets/games/pirates_grid/characters/CaptainCrossbones.png'
+                      : 'assets/games/pirates_grid/characters/CaptainRedbeard.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.person,
+                    color: i == 0 ? _p1FlagColor : _p2FlagColor,
+                    size: drawCharSize * 0.72,
                   ),
                 ),
               ),
@@ -429,8 +429,14 @@ class _PiratesGridResultsScreenState extends State<PiratesGridResultsScreen> {
               Text(
                 players[i].name,
                 style: GoogleFonts.pirataOne(
-                  fontSize: 24,
-                  color: i == 0 ? _p1FlagColor : _p2FlagColor,
+                  fontSize: nameFontSize,
+                  color: _parchmentTan,
+                  shadows: const [
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5, -1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5, -1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset(-1.5,  1.5), blurRadius: 0),
+                    Shadow(color: Color(0xFF1A1A1A), offset: Offset( 1.5,  1.5), blurRadius: 0),
+                  ],
                 ),
                 textAlign: TextAlign.center,
               ),
