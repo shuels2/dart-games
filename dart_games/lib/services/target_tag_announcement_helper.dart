@@ -78,14 +78,14 @@ class TargetTagAnnouncementHelper {
 
   void announceTaggedIn(List<String> playerNames, {List<String>? allPlayerNames}) {
     final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
-    final verb = verb(playerNames, allPlayerNames: allPlayerNames);
-    _queue.announce('JACKPOT! $names $verb TAGGED IN!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedIn);
+    final v = verb(playerNames, allPlayerNames: allPlayerNames);
+    _queue.announce('JACKPOT! $names ${v} TAGGED IN!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedIn);
   }
 
   void announceTaggedOut(List<String> playerNames, {List<String>? allPlayerNames}) {
     final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
-    final verb = verb(playerNames, allPlayerNames: allPlayerNames);
-    _queue.announce('Shield compromised! $names $verb back on the hunt.', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedOut);
+    final v = verb(playerNames, allPlayerNames: allPlayerNames);
+    _queue.announce('Shield compromised! $names ${v} back on the hunt.', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedOut);
   }
 
   void announceLowShields(List<String> playerNames, {List<String>? allPlayerNames}) {
@@ -95,14 +95,14 @@ class TargetTagAnnouncementHelper {
 
   void announceVulnerable(List<String> playerNames, {List<String>? allPlayerNames}) {
     final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
-    final verb = verb(playerNames, allPlayerNames: allPlayerNames);
-    _queue.announce('DANGER! $names $verb vulnerable! One more hit and you\'re out!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
+    final v = verb(playerNames, allPlayerNames: allPlayerNames);
+    _queue.announce('DANGER! $names ${v} vulnerable! One more hit and you\'re out!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
   }
 
   void announceEliminated(List<String> playerNames, {List<String>? allPlayerNames}) {
     final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
-    final verb = verb(playerNames, allPlayerNames: allPlayerNames);
-    _queue.announce('$names $verb Tagged Out! Better luck next time!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.eliminated);
+    final v = verb(playerNames, allPlayerNames: allPlayerNames);
+    _queue.announce('$names ${v} Tagged Out! Better luck next time!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.eliminated);
   }
 
   // Announce successful tag on opponent
