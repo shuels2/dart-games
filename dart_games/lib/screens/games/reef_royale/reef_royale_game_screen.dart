@@ -223,10 +223,14 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     }
 
     if (reefProvider.hasWinner) {
-      if (!_dartboardEmulatorController.isAutoPlaying) {
+      if (_dartboardEmulatorController.isAutoPlaying) {
+        _handleGameWon();
+      } else {
         _audioQueue?.announceSpeedPlayEnd();
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) _handleGameWon();
+        _audioQueue?.whenIdle().then((_) {
+          Future.delayed(const Duration(milliseconds: 250), () {
+            if (mounted) _handleGameWon();
+          });
         });
       }
       return;
@@ -764,18 +768,22 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
           bottom: BorderSide(color: _sandyGold, width: 2),
         ),
       ),
-      child: Center(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 5),
+        child: Center(
         child: Text(
           '${ReefRoyaleGame.getBuffDisplayName(buff)} — ${ReefRoyaleGame.getBuffDescription(buff)}',
           style: GoogleFonts.fredoka(
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: _sandyGold,
+            height: 0.95,
             shadows: const [
               Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -1520,22 +1528,36 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                           overflow: TextOverflow.ellipsis,
                         ),
                         if (showInfo) ...[
-                          Text(
-                            '$pearls pearls',
-                            style: GoogleFonts.nunito(
-                              fontSize: 15,
-                              color:
-                                  game.gameMode == ReefRoyaleGameMode.cursedTide
-                                      ? _coralPink
-                                      : _sandyGold,
-                            ),
-                          ),
-                          Text(
-                            '$claimedCount/7 corals',
-                            style: GoogleFonts.nunito(
-                              fontSize: 15,
-                              color: _seafoamGreen,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '$pearls pearls',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color:
+                                      game.gameMode == ReefRoyaleGameMode.cursedTide
+                                          ? _coralPink
+                                          : _sandyGold,
+                                  shadows: const [
+                                    Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                '$claimedCount/7 corals',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: _seafoamGreen,
+                                  shadows: const [
+                                    Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ] else
                           Text(
