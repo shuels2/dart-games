@@ -143,6 +143,10 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     final allPlayers = playerProvider.allPlayers;
     final currentPlayer = targetTagProvider.getCurrentPlayer(allPlayers);
     if (currentPlayer == null) return;
+    final currentGame0 = targetTagProvider.currentGame!;
+    final allPlayerNames = currentGame0.playerIds
+        .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+        .toList();
 
     final wasTaggedIn = targetTagProvider.isTaggedIn(currentPlayer.id);
     final shieldsBefore = targetTagProvider.getShields(currentPlayer.id);
@@ -279,104 +283,40 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 
       // Pick highest-priority moment and fire exactly one
       if (hasElimination) {
-        if (currentGame.mode == GameMode.team) {
-          final eliminatedTeams = <String, List<String>>{};
-          for (final eliminatedId in newlyEliminated) {
-            final teamId = currentGame.playerToTeam![eliminatedId]!;
-            if (!eliminatedTeams.containsKey(teamId)) {
-              eliminatedTeams[teamId] = [];
-            }
-            final player = playerProvider.byId(eliminatedId)!;
-            eliminatedTeams[teamId]!.add(player.name);
-          }
-          for (final playerNames in eliminatedTeams.values) {
-            _audioQueue?.announceEliminated(playerNames);
-          }
-        } else {
-          for (final eliminatedId in newlyEliminated) {
-            final eliminatedPlayer =
-                playerProvider.byId(eliminatedId)!;
-            _audioQueue?.announceEliminated([eliminatedPlayer.name]);
-          }
-        }
+        final eliminatedNames = newlyEliminated
+            .map((id) => playerProvider.byId(id)!.name)
+            .toList();
+        _audioQueue?.announceEliminated(eliminatedNames, allPlayerNames: allPlayerNames);
       } else if (hasVulnerable) {
-        if (currentGame.mode == GameMode.team) {
-          final vulnerableTeams = <String, List<String>>{};
-          for (final playerId in vulnerablePlayers) {
-            final teamId = currentGame.playerToTeam![playerId]!;
-            if (!vulnerableTeams.containsKey(teamId)) {
-              vulnerableTeams[teamId] = [];
-            }
-          }
-          for (final teamId in vulnerableTeams.keys) {
-            final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-            final playerNames = teamPlayerIds
-                .map((id) => playerProvider.byId(id)!.name)
-                .toList();
-            _audioQueue?.announceVulnerable(playerNames);
-          }
-        } else {
-          for (final playerId in vulnerablePlayers) {
-            final player = playerProvider.byId(playerId)!;
-            _audioQueue?.announceVulnerable([player.name]);
-          }
-        }
+        final vulnerableNames = vulnerablePlayers
+            .map((id) => playerProvider.byId(id)!.name)
+            .toList();
+        _audioQueue?.announceVulnerable(vulnerableNames, allPlayerNames: allPlayerNames);
       } else if (hasLowShields) {
-        if (currentGame.mode == GameMode.team) {
-          final lowShieldTeams = <String, List<String>>{};
-          for (final playerId in lowShieldPlayers) {
-            final teamId = currentGame.playerToTeam![playerId]!;
-            if (!lowShieldTeams.containsKey(teamId)) {
-              lowShieldTeams[teamId] = [];
-            }
-          }
-          for (final teamId in lowShieldTeams.keys) {
-            final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-            final playerNames = teamPlayerIds
-                .map((id) => playerProvider.byId(id)!.name)
-                .toList();
-            _audioQueue?.announceLowShields(playerNames);
-          }
-        } else {
-          for (final playerId in lowShieldPlayers) {
-            final player = playerProvider.byId(playerId)!;
-            _audioQueue?.announceLowShields([player.name]);
-          }
-        }
+        final lowShieldNames = lowShieldPlayers
+            .map((id) => playerProvider.byId(id)!.name)
+            .toList();
+        _audioQueue?.announceLowShields(lowShieldNames, allPlayerNames: allPlayerNames);
       } else if (hasTaggedOut) {
-        if (currentGame.mode == GameMode.team) {
-          final lostByTeam = <String, List<String>>{};
-          for (final playerId in lostTaggedInPlayers) {
-            final teamId = currentGame.playerToTeam![playerId]!;
-            lostByTeam[teamId] ??= [];
-          }
-          for (final teamId in lostByTeam.keys) {
-            final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-            final playerNames = teamPlayerIds
-                .map((id) => playerProvider.byId(id)!.name)
-                .toList();
-            _audioQueue?.announceTaggedOut(playerNames);
-          }
-        } else {
-          final lostNames = lostTaggedInPlayers
-              .map((id) => playerProvider.byId(id)!.name)
-              .toList();
-          _audioQueue?.announceTaggedOut(lostNames);
-        }
+        final lostNames = lostTaggedInPlayers
+            .map((id) => playerProvider.byId(id)!.name)
+            .toList();
+        _audioQueue?.announceTaggedOut(lostNames, allPlayerNames: allPlayerNames);
       } else if (hasSuccessfulTag) {
         _audioQueue?.announceSuccessfulTag();
       } else if (hasTaggedIn) {
-        List<String> playerNames;
+        // In team mode, all team members get tagged in together
+        List<String> taggedInNames;
         if (currentGame.mode == GameMode.team) {
           final teamId = currentGame.playerToTeam![currentPlayer.id]!;
           final teamPlayerIds = currentGame.teamPlayers![teamId]!;
-          playerNames = teamPlayerIds
+          taggedInNames = teamPlayerIds
               .map((id) => playerProvider.byId(id)!.name)
               .toList();
         } else {
-          playerNames = [currentPlayer.name];
+          taggedInNames = [currentPlayer.name];
         }
-        _audioQueue?.announceTaggedIn(playerNames);
+        _audioQueue?.announceTaggedIn(taggedInNames, allPlayerNames: allPlayerNames);
       } else if (hasShieldGain) {
         _audioQueue?.announceShieldGained(
           currentPlayer.name,

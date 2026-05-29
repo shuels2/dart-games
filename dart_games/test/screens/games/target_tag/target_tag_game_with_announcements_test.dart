@@ -226,7 +226,7 @@ void main() {
       expect(provider.getShields(bob.id), 1);
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Warning! Bob\'s shields are almost gone!',
+        'Warning! Shields almost gone for Bob!',
       ]);
       helper.clearAnnouncements();
 
@@ -278,7 +278,7 @@ void main() {
       helper.processDartThrowWithAnnouncements('D17');
       expect(provider.getShields(carol.id), 1);
       helper.verifyAnnouncements([
-        'Warning! Carol\'s shields are almost gone!',
+        'Warning! Shields almost gone for Carol!',
       ]);
       helper.clearAnnouncements();
 
@@ -318,14 +318,14 @@ void main() {
       expect(provider.getShields(bob.id), 1);
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Warning! Bob\'s shields are almost gone!',
+        'Warning! Shields almost gone for Bob!',
       ]);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 1);
       helper.verifyAnnouncements([
-        'Warning! Carol\'s shields are almost gone!',
+        'Warning! Shields almost gone for Carol!',
       ]);
       helper.clearAnnouncements();
 
@@ -701,7 +701,7 @@ void main() {
       helper.processDartThrowWithAnnouncements('S17');
       expect(provider.getShields(carol.id), 1);
       expect(provider.getShields(dave.id), 1);
-      helper.verifyAnnouncements(['Warning! Carol and Dave\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Shields almost gone for Carol and Dave!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -939,7 +939,7 @@ void main() {
       helper.processDartThrowWithAnnouncements('D7');
       expect(provider.getShields(bob.id), 1);
       expect(provider.getShields(carol.id), 2);
-      helper.verifyAnnouncements(['Warning! Bob\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Shields almost gone for Bob!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -1010,7 +1010,7 @@ void main() {
       expect(provider.getShields(dave.id), 1);
       expect(provider.getShields(eve.id), 2);
       expect(provider.getShields(frank.id), 2);
-      helper.verifyAnnouncements(['Warning! Carol and Dave\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Shields almost gone for Carol and Dave!']);
       helper.clearAnnouncements();
 
       helper.processDartThrowWithAnnouncements('Miss');
@@ -1229,7 +1229,7 @@ void main() {
       provider.updateDartScore(alice.id, 1, 'D17');
       audioQueue.announceLowShields([carol.name]);
       expect(provider.getShields(carol.id), 1);
-      helper.verifyAnnouncements(['Warning! Carol\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Shields almost gone for Carol!']);
 
       expect(provider.getShields(alice.id), 5);
       expect(provider.getShields(bob.id), 2);
@@ -1272,7 +1272,7 @@ void main() {
       provider.updateDartScore(bob.id, 0, 'S17');
       audioQueue.announceLowShields([carol.name]);
       expect(provider.getShields(carol.id), 1);
-      helper.verifyAnnouncements(['Warning! Carol\'s shields are almost gone!']);
+      helper.verifyAnnouncements(['Warning! Shields almost gone for Carol!']);
       helper.clearAnnouncements();
 
       // Step 3: Edit dart 1 to Single 17 (vulnerable > tag, hit suppressed)
@@ -2347,7 +2347,7 @@ void main() {
       // Low Shields (priority 3) wins over Tagged Out (priority 4)
       helper.verifyAnnouncements([
         'Alice, your turn',
-        'Warning! Carol\'s shields are almost gone!',
+        'Warning! Shields almost gone for Carol!',
       ]);
     });
 
@@ -2691,6 +2691,135 @@ void main() {
         'Remove your darts',
         'GAME OVER! Alice is the Target Tag Champion!',
       ]);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Name Formatting Tests — verify announcements scale for large player counts
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('Name Formatting Tests', () {
+    late MockTargetTagAudioQueueService audioQueue;
+
+    setUp(() {
+      audioQueue = MockTargetTagAudioQueueService();
+    });
+
+    // ── announceTaggedIn ──────────────────────────────────────────────────
+
+    test('TaggedIn: 1 player lists name', () {
+      audioQueue.announceTaggedIn(['Alice'], allPlayerNames: ['Alice', 'Bob', 'Charlie']);
+      expect(audioQueue.announcements[0], 'JACKPOT! Alice is TAGGED IN!');
+    });
+
+    test('TaggedIn: 2 players lists both names', () {
+      audioQueue.announceTaggedIn(['Alice', 'Bob'], allPlayerNames: ['Alice', 'Bob', 'Charlie']);
+      expect(audioQueue.announcements[0], 'JACKPOT! Alice and Bob are TAGGED IN!');
+    });
+
+    test('TaggedIn: 3 players lists all with comma', () {
+      audioQueue.announceTaggedIn(['Alice', 'Bob', 'Charlie'], allPlayerNames: ['Alice', 'Bob', 'Charlie', 'Dave']);
+      expect(audioQueue.announcements[0], 'JACKPOT! Alice, Bob, and Charlie are TAGGED IN!');
+    });
+
+    test('TaggedIn: 4 players lists all', () {
+      audioQueue.announceTaggedIn(['A', 'B', 'C', 'D'], allPlayerNames: ['A', 'B', 'C', 'D', 'E', 'F']);
+      expect(audioQueue.announcements[0], 'JACKPOT! A, B, C, and D are TAGGED IN!');
+    });
+
+    test('TaggedIn: 5 of 7 uses except with 2 excluded', () {
+      audioQueue.announceTaggedIn(['A', 'B', 'C', 'D', 'E'],
+          allPlayerNames: ['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+      expect(audioQueue.announcements[0], 'JACKPOT! all players except F and G are TAGGED IN!');
+    });
+
+    test('TaggedIn: 7 of 9 uses except with 2 excluded', () {
+      audioQueue.announceTaggedIn(['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+          allPlayerNames: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']);
+      expect(audioQueue.announcements[0], 'JACKPOT! all players except H and I are TAGGED IN!');
+    });
+
+    test('TaggedIn: all players says all players', () {
+      audioQueue.announceTaggedIn(['A', 'B', 'C', 'D', 'E'],
+          allPlayerNames: ['A', 'B', 'C', 'D', 'E']);
+      expect(audioQueue.announcements[0], 'JACKPOT! all players are TAGGED IN!');
+    });
+
+    test('TaggedIn: without allPlayerNames always lists names', () {
+      audioQueue.announceTaggedIn(['Alice', 'Bob']);
+      expect(audioQueue.announcements[0], 'JACKPOT! Alice and Bob are TAGGED IN!');
+    });
+
+    // ── announceLowShields ────────────────────────────────────────────────
+
+    test('LowShields: 1 player', () {
+      audioQueue.announceLowShields(['Bob'], allPlayerNames: ['Alice', 'Bob']);
+      expect(audioQueue.announcements[0], 'Warning! Shields almost gone for Bob!');
+    });
+
+    test('LowShields: 5 of 8 uses except', () {
+      audioQueue.announceLowShields(['A', 'B', 'C', 'D', 'E'],
+          allPlayerNames: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+      expect(audioQueue.announcements[0],
+          'Warning! Shields almost gone for all players except F, G, and H!');
+    });
+
+    test('LowShields: all players', () {
+      audioQueue.announceLowShields(['A', 'B', 'C'],
+          allPlayerNames: ['A', 'B', 'C']);
+      expect(audioQueue.announcements[0],
+          'Warning! Shields almost gone for all players!');
+    });
+
+    // ── announceVulnerable ────────────────────────────────────────────────
+
+    test('Vulnerable: 1 player', () {
+      audioQueue.announceVulnerable(['Bob'], allPlayerNames: ['Alice', 'Bob', 'Charlie']);
+      expect(audioQueue.announcements[0],
+          'DANGER! Bob is vulnerable! One more hit and you\'re out!');
+    });
+
+    test('Vulnerable: 6 of 8 uses except', () {
+      audioQueue.announceVulnerable(['A', 'B', 'C', 'D', 'E', 'F'],
+          allPlayerNames: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+      expect(audioQueue.announcements[0],
+          'DANGER! all players except G and H are vulnerable! One more hit and you\'re out!');
+    });
+
+    // ── announceEliminated ────────────────────────────────────────────────
+
+    test('Eliminated: 1 player', () {
+      audioQueue.announceEliminated(['Bob'], allPlayerNames: ['Alice', 'Bob', 'Charlie']);
+      expect(audioQueue.announcements[0], 'Bob is Tagged Out! Better luck next time!');
+    });
+
+    test('Eliminated: 5 of 7 uses except', () {
+      audioQueue.announceEliminated(['A', 'B', 'C', 'D', 'E'],
+          allPlayerNames: ['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+      expect(audioQueue.announcements[0],
+          'all players except F and G are Tagged Out! Better luck next time!');
+    });
+
+    // ── announceTaggedOut ─────────────────────────────────────────────────
+
+    test('TaggedOut: 1 player', () {
+      audioQueue.announceTaggedOut(['Alice'], allPlayerNames: ['Alice', 'Bob']);
+      expect(audioQueue.announcements[0],
+          'Shield compromised! Alice is back on the hunt.');
+    });
+
+    test('TaggedOut: 5 of 9 uses except with 4 excluded', () {
+      audioQueue.announceTaggedOut(['A', 'B', 'C', 'D', 'E'],
+          allPlayerNames: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']);
+      expect(audioQueue.announcements[0],
+          'Shield compromised! all players except F, G, H, and I are back on the hunt.');
+    });
+
+    test('TaggedOut: all players', () {
+      audioQueue.announceTaggedOut(['A', 'B', 'C', 'D', 'E'],
+          allPlayerNames: ['A', 'B', 'C', 'D', 'E']);
+      expect(audioQueue.announcements[0],
+          'Shield compromised! all players are back on the hunt.');
     });
   });
 }

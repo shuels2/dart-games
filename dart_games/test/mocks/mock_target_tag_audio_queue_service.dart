@@ -19,7 +19,31 @@ class MockTargetTagAudioQueueService {
     debugPrint('Mock announcement: $text');
   }
 
-  // Game-specific announcement methods (matching real service)
+  // ─── Name formatting (mirrors TargetTagAnnouncementHelper) ─────────────
+
+  static String _formatNames(List<String> names, {List<String>? allPlayerNames}) {
+    if (allPlayerNames != null && names.length == allPlayerNames.length && allPlayerNames.length > 1) {
+      return 'all players';
+    }
+    if (allPlayerNames == null || names.length <= 4) {
+      if (names.length == 1) return names[0];
+      if (names.length == 2) return '${names[0]} and ${names[1]}';
+      return '${names.sublist(0, names.length - 1).join(', ')}, and ${names.last}';
+    }
+    final excluded = allPlayerNames!.where((n) => !names.contains(n)).toList();
+    if (excluded.isEmpty) return 'all players';
+    if (excluded.length == 1) return 'all players except ${excluded[0]}';
+    if (excluded.length == 2) return 'all players except ${excluded[0]} and ${excluded[1]}';
+    return 'all players except ${excluded.sublist(0, excluded.length - 1).join(', ')}, and ${excluded.last}';
+  }
+
+  static String _verb(List<String> names, {List<String>? allPlayerNames}) {
+    if (names.length >= 5) return 'are';
+    if (allPlayerNames != null && names.length == allPlayerNames.length && allPlayerNames.length > 1) return 'are';
+    return names.length == 1 ? 'is' : 'are';
+  }
+
+  // ─── Game-specific announcement methods ────────────────────────────────
 
   void announceHit(int number, String multiplier, {bool isMiss = false}) {
     if (isMiss) {
@@ -43,76 +67,33 @@ class MockTargetTagAudioQueueService {
     announce('$shields shields');
   }
 
-  void announceTaggedIn(List<String> playerNames) {
-    String names;
-    if (playerNames.length == 1) {
-      names = '${playerNames[0]} is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]} are';
-    } else {
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last} are';
-    }
-    announce('JACKPOT! $names TAGGED IN!');
+  void announceTaggedIn(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = _formatNames(playerNames, allPlayerNames: allPlayerNames);
+    final verb = _verb(playerNames, allPlayerNames: allPlayerNames);
+    announce('JACKPOT! $names $verb TAGGED IN!');
   }
 
-  void announceTaggedOut(List<String> playerNames) {
-    String names;
-    String verb;
-    if (playerNames.length == 1) {
-      names = playerNames[0];
-      verb = 'is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]}';
-      verb = 'are';
-    } else {
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}';
-      verb = 'are';
-    }
+  void announceTaggedOut(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = _formatNames(playerNames, allPlayerNames: allPlayerNames);
+    final verb = _verb(playerNames, allPlayerNames: allPlayerNames);
     announce('Shield compromised! $names $verb back on the hunt.');
   }
 
-  void announceLowShields(List<String> playerNames) {
-    String names;
-    String verb;
-    if (playerNames.length == 1) {
-      names = '${playerNames[0]}\'s';
-      verb = 'are';  // Changed from 'is' to 'are' for consistency
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]}\'s';
-      verb = 'are';
-    } else {
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}\'s';
-      verb = 'are';
-    }
-    announce('Warning! $names shields $verb almost gone!');
+  void announceLowShields(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = _formatNames(playerNames, allPlayerNames: allPlayerNames);
+    announce('Warning! Shields almost gone for $names!');
   }
 
-  void announceVulnerable(List<String> playerNames) {
-    String names;
-    String verb;
-    if (playerNames.length == 1) {
-      names = playerNames[0];
-      verb = 'is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]}';
-      verb = 'are';
-    } else {
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}';
-      verb = 'are';
-    }
+  void announceVulnerable(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = _formatNames(playerNames, allPlayerNames: allPlayerNames);
+    final verb = _verb(playerNames, allPlayerNames: allPlayerNames);
     announce('DANGER! $names $verb vulnerable! One more hit and you\'re out!');
   }
 
-  void announceEliminated(List<String> playerNames) {
-    String names;
-    if (playerNames.length == 1) {
-      names = '${playerNames[0]} is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]} are';
-    } else {
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last} are';
-    }
-    announce('$names Tagged Out! Better luck next time!');
+  void announceEliminated(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = _formatNames(playerNames, allPlayerNames: allPlayerNames);
+    final verb = _verb(playerNames, allPlayerNames: allPlayerNames);
+    announce('$names $verb Tagged Out! Better luck next time!');
   }
 
   void announceSuccessfulTag() {
