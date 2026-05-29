@@ -594,7 +594,7 @@ void main() {
       game.advanceToNextPlayer();
       game.processDart('p1', 20, 'single',
           resolvedTargets: [20]);
-      expect(game.dartThrowPearlRecipientId['p1']!.last, 'p2');
+      expect(game.dartThrowPearlRecipientIds['p1']!.last, ['p2']);
     });
   });
 

@@ -104,7 +104,7 @@ void main() {
   group('Scoring Events', () {
     test('standard scoring announcement', () {
       mockQueue.announceScoring('Alice', 20);
-      expect(mockQueue.announcements, contains('Alice harvests 20 pearls!'));
+      expect(mockQueue.announcements, contains('20 pearls harvested!'));
     });
 
     test('big score announcement (40+)', () {
@@ -112,9 +112,25 @@ void main() {
       expect(mockQueue.announcements, contains('A massive pearl haul! 60 pearls!'));
     });
 
-    test('cursed tide scoring announcement', () {
-      mockQueue.announceCursedScoring(20, 'Bob');
-      expect(mockQueue.announcements, contains('Cursed tide! 20 pearls weigh down Bob!'));
+    test('cursed tide scoring — 1 of 1 opponent (all opponents)', () {
+      mockQueue.announceCursedScoring(20, ['Bob'], allOpponentNames: ['Bob']);
+      expect(mockQueue.announcements, contains('Cursed tide! 20 pearls weigh down all opponents!'));
+    });
+
+    test('cursed tide scoring — 2 of 3 opponents (names listed)', () {
+      mockQueue.announceCursedScoring(20, ['Bob', 'Charlie'], allOpponentNames: ['Bob', 'Charlie', 'Dave']);
+      expect(mockQueue.announcements, contains('Cursed tide! 20 pearls weigh down Bob and Charlie!'));
+    });
+
+    test('cursed tide scoring — 3 of 3 opponents (all opponents)', () {
+      mockQueue.announceCursedScoring(20, ['Bob', 'Charlie', 'Dave'], allOpponentNames: ['Bob', 'Charlie', 'Dave']);
+      expect(mockQueue.announcements, contains('Cursed tide! 20 pearls weigh down all opponents!'));
+    });
+
+    test('cursed tide scoring — 5 of 7 opponents (except names)', () {
+      mockQueue.announceCursedScoring(20, ['A', 'B', 'C', 'D', 'E'],
+          allOpponentNames: ['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+      expect(mockQueue.announcements, contains('Cursed tide! 20 pearls weigh down all opponents except F and G!'));
     });
   });
 

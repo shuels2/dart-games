@@ -300,7 +300,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     final pearlsList = provider.getDartThrowPearlsScored(playerId);
     final marksAddedList = provider.getDartThrowMarksAdded(playerId);
     final isNeighborList = provider.getDartThrowIsNeighbor(playerId);
-    final recipientList = provider.getDartThrowPearlRecipientId(playerId);
+    final recipientList = provider.getDartThrowPearlRecipientIds(playerId);
 
     final justClaimed =
         dartIndex < claimedList.length && claimedList[dartIndex];
@@ -311,8 +311,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
         dartIndex < marksAddedList.length ? marksAddedList[dartIndex] : 0;
     final isNeighbor =
         dartIndex < isNeighborList.length && isNeighborList[dartIndex];
-    final recipientId =
-        dartIndex < recipientList.length ? recipientList[dartIndex] : null;
+    final recipientIds =
+        dartIndex < recipientList.length ? recipientList[dartIndex] : <String>[];
 
     // Locked target - no announcement
     if (marksAdded == 0 && !justClaimed && pearlsScored == 0) return;
@@ -337,11 +337,20 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
     if (pearlsScored > 0 && count < 2) {
       if (currentGame.gameMode == ReefRoyaleGameMode.cursedTide &&
-          recipientId != null) {
-        final opponentName = playerProvider.allPlayers
-            .firstWhere((p) => p.id == recipientId)
-            .name;
-        _audioQueue?.announceCursedScoring(pearlsScored, opponentName);
+          recipientIds.isNotEmpty) {
+        final opponentNames = recipientIds
+            .map((id) => playerProvider.allPlayers
+                .firstWhere((p) => p.id == id)
+                .name)
+            .toList();
+        final allOpponentNames = currentGame.playerIds
+            .where((id) => id != playerId)
+            .map((id) => playerProvider.allPlayers
+                .firstWhere((p) => p.id == id)
+                .name)
+            .toList();
+        _audioQueue?.announceCursedScoring(pearlsScored, opponentNames,
+            allOpponentNames: allOpponentNames);
       } else {
         _audioQueue?.announceScoring(playerName, pearlsScored);
       }

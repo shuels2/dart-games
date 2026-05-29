@@ -118,16 +118,27 @@ class ReefRoyaleAnnouncementHelper {
       );
     } else {
       _queue.announce(
-        '$playerName harvests $pearls pearls!',
+        '$pearls pearls harvested!',
         AudioPriority.hitConfirm,
         soundEffect: ReefRoyaleSoundEffects.pearlChime,
       );
     }
   }
 
-  void announceCursedScoring(int pearls, String opponentName) {
+  void announceCursedScoring(int pearls, List<String> affectedNames, {required List<String> allOpponentNames}) {
+    final String text;
+    if (affectedNames.length == allOpponentNames.length) {
+      text = 'Cursed tide! $pearls pearls weigh down all opponents!';
+    } else if (affectedNames.length <= 3) {
+      final names = affectedNames.join(' and ');
+      text = 'Cursed tide! $pearls pearls weigh down $names!';
+    } else {
+      final excludedNames = allOpponentNames.where((n) => !affectedNames.contains(n)).toList();
+      final excluded = excludedNames.join(' and ');
+      text = 'Cursed tide! $pearls pearls weigh down all opponents except $excluded!';
+    }
     _queue.announce(
-      'Cursed tide! $pearls pearls weigh down $opponentName!',
+      text,
       AudioPriority.hitConfirm,
       soundEffect: ReefRoyaleSoundEffects.splash,
     );
