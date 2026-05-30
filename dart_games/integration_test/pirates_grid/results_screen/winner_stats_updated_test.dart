@@ -23,6 +23,12 @@ void main() {
 
     // Wait for results + let _updatePlayerStats async API calls complete
     await ResultsHelpers.pumpUntilResults(tester, config);
+    // VictoryMusicService.initialize() + _updatePlayerStats() API call run async
+    // AFTER the Play Again button mounts; pumpUntilResults only settles ~1s
+    // post-button, which isn't enough under heavy parallel load.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    await tester.pump();
 
     // MANDATORY: _playVictoryMusic() initialized
     expect(VictoryMusicService().isInitialized, isTrue,
