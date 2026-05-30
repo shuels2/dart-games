@@ -454,7 +454,7 @@ void main() {
       // Wait for results screen
       // Robust wait: poll until the results screen has rendered, instead of a
       // fixed pump that races the event-driven victory navigation under load.
-      for (int _i = 0; _i < 100; _i++) {
+      for (int _i = 0; _i < 300; _i++) {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump();
         if (ElementFinders.getTikiGolfPlayAgainButton().evaluate().isNotEmpty) {

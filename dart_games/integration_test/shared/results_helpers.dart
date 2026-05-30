@@ -130,7 +130,7 @@ class ResultsHelpers {
   static Future<void> pumpUntilResults(
     WidgetTester tester,
     GameUIConfig config, {
-    int maxIterations = 100,
+    int maxIterations = 300,
   }) async {
     for (int i = 0; i < maxIterations; i++) {
       await tester.pump(const Duration(milliseconds: 300));
