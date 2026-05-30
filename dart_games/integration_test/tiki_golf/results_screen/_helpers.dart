@@ -92,10 +92,7 @@ Future<String?> driveToCompletion(WidgetTester tester,
   }
 
   // Wait for results navigation
-  await tester.pump(const Duration(seconds: 3));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 2));
-  await tester.pump();
+  await ResultsHelpers.pumpUntilResults(tester, config);
 
   return ProviderHelpers.getTikiGolfWinnerId(tester);
 }
@@ -117,8 +114,5 @@ Future<void> driveToTie(WidgetTester tester) async {
   }
 
   // Wait for results navigation
-  await tester.pump(const Duration(seconds: 3));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 2));
-  await tester.pump();
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }

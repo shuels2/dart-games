@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -37,9 +38,7 @@ void main() {
 
     // After 10 * S20 * 3 = 60 pts/turn, P1 wins around turn 9 (9*60=540 >= 500).
     // Wait for the 3-second navigation delay in _handleGameWon → results screen.
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     expect(ElementFinders.getGladiatorArenaPlayAgainButton(), findsOneWidget,
         reason: 'Game should eventually complete at target=500');

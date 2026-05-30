@@ -7,9 +7,9 @@ import 'package:dart_games/services/mock_scolia_api_service.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/dart_throw_helpers.dart';
-import '../../shared/pump_sequences.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/edit_score_helpers.dart';
+import '../../shared/results_helpers.dart';
 
 export '../../shared/ui_test_helpers.dart';
 export '../../shared/pump_sequences.dart';
@@ -77,9 +77,5 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   }
 
   // Wait for results screen navigation
-  await tester.pump(const Duration(seconds: 3));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 2));
-  await tester.pump();
-  await PumpSequences.fullRebuild(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }

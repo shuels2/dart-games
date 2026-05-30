@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/pump_sequences.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -16,7 +17,7 @@ void main() {
 
     // Complete game then Play Again to get fresh game screen
     await completeGameToVictory(tester);
-    await PumpSequences.fullRebuild(tester);
+    await ResultsHelpers.pumpUntilResults(tester, config);
     expect(config.getPlayAgainButton(), findsOneWidget);
     await UITestHelpers.clickPlayAgain(tester, config);
 

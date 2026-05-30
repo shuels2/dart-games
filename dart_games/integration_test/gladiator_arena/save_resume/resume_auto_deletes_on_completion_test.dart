@@ -7,6 +7,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
 import '../../shared/game_setup_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -65,15 +66,7 @@ void main() {
     }
 
     // Wait for navigation (3s delayed) + results initState + HTTP delete call
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Saved game should be auto-deleted
     saves = await SaveGameService().loadSavedGames(gameType);

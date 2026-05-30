@@ -9,7 +9,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
-import '../../shared/pump_sequences.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -24,8 +24,7 @@ void main() {
 
     // Both players birdie every hole → tied at total=9 strokes each.
     await driveToTie(tester);
-    await tester.pump(const Duration(seconds: 5));
-    await PumpSequences.fullRebuild(tester);
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Provider reflects the tie
     final provider = ProviderHelpers.getTikiGolfProvider(tester);

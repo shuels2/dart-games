@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -38,10 +39,7 @@ void main() {
     // Click DARTS REMOVED to advance to results
     await clickDartsRemoved(tester);
 
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Verify results screen appears
     expect(find.text('Winner!'), findsOneWidget);

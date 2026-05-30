@@ -3,7 +3,7 @@ import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
-import '../../shared/pump_sequences.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 /// Per-dart win evaluation (MANDATORY): when the last player completes their
@@ -64,9 +64,7 @@ void main() {
 
     // Navigate through takeout to results screen
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Results screen should be showing
     expect(config.getPlayAgainButton(), findsOneWidget,

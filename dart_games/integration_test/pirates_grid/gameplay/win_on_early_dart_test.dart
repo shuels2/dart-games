@@ -3,6 +3,7 @@ import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 /// Per-dart win evaluation: if the round-winning flag is planted on dart 1
@@ -41,9 +42,7 @@ void main() {
         reason: 'P1 should be match winner on dart 1 of the turn');
 
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     expect(config.getPlayAgainButton(), findsOneWidget,
         reason: 'Should navigate to results after dart-1 match win');

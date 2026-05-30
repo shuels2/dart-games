@@ -6,6 +6,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/pump_sequences.dart';
 import '../../shared/edit_score_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -49,15 +50,7 @@ void main() {
     await clickDartsRemoved(tester);
 
     // Wait for results screen and stats updates
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // MANDATORY: VictoryMusicService initialized
     expect(VictoryMusicService().isInitialized, isTrue,

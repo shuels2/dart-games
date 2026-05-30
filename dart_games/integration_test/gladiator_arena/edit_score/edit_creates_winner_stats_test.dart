@@ -5,6 +5,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -68,22 +69,7 @@ void main() {
     await clickDartsRemoved(tester);
 
     // Wait for results navigation (3s delayed) and stats update.
-    // Pattern mirrors monster_mash/edit_score/edit_creates_winner_stats_test.dart
-    // which uses 4s + pumps + 5s + pumps + fullRebuild.
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
-    // Extra wait for server stats round-trip (batchAddPlayerHistory HTTP call)
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Should be on results screen
     expect(ElementFinders.getGladiatorArenaPlayAgainButton(), findsOneWidget,

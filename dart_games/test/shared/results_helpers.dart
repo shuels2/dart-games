@@ -118,6 +118,33 @@ class ResultsHelpers {
   // WAIT FOR RESULTS HELPERS
   // ==========================================================================
 
+  /// Pump-and-poll until the results screen has rendered, then settle.
+  ///
+  /// Replaces the fixed [PumpSequences.fullRebuild] wait, which raced the
+  /// event-driven victory navigation under heavy (parallel) CPU load — the
+  /// results screen had not finished building when the test asserted, so the
+  /// Play Again button / winner name came back "Found 0 widgets". Uses the
+  /// same poll-loop idiom proven by PlayToCompleteHelpers.waitForGameCompletion
+  /// (pump a short slice, check, break early), polling for the Play Again
+  /// button as the canonical "results screen is up" marker.
+  static Future<void> pumpUntilResults(
+    WidgetTester tester,
+    GameUIConfig config, {
+    int maxIterations = 100,
+  }) async {
+    for (int i = 0; i < maxIterations; i++) {
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      if (config.getPlayAgainButton().evaluate().isNotEmpty) break;
+    }
+    // Settle post-navigation animations + async stat updates.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    await tester.pump();
+  }
+
+  /// Fixed-duration settle. Prefer [pumpUntilResults] when a [GameUIConfig] is
+  /// available — it is robust to slow victory navigation under load.
   static Future<void> waitForResults(WidgetTester tester) async {
     await PumpSequences.fullRebuild(tester);
   }
@@ -126,7 +153,7 @@ class ResultsHelpers {
     WidgetTester tester,
     GameUIConfig config,
   ) async {
-    await waitForResults(tester);
+    await pumpUntilResults(tester, config);
     verifyResultsScreenVisible(config);
   }
 

@@ -35,15 +35,7 @@ void main() {
     await clickDartsRemoved(tester);
 
     // Wait for victory animations and stats API calls
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     expect(VictoryMusicService().isInitialized, isTrue);
 

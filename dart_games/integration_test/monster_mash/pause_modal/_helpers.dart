@@ -6,13 +6,14 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/edit_score_helpers.dart';
 import '../../shared/provider_helpers.dart';
-import '../../shared/pump_sequences.dart';
 
 export '../../shared/ui_test_helpers.dart';
 export '../../shared/pump_sequences.dart';
 export '../../shared/pause_modal_helpers.dart';
 export '../../shared/provider_helpers.dart';
 export '../../shared/edit_score_helpers.dart';
+
+import '../../shared/results_helpers.dart';
 
 final config = GameUIConfig.monsterMash();
 
@@ -85,11 +86,5 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   await clickDartsRemoved(tester);
 
   // Wait for victory screen
-  await tester.pump(const Duration(seconds: 3));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 2));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 1));
-  await tester.pump();
-  await PumpSequences.fullRebuild(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }

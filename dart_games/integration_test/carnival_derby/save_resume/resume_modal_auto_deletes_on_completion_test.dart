@@ -5,6 +5,7 @@ import 'package:dart_games/services/save_game_service.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/pump_sequences.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -45,10 +46,7 @@ void main() {
     await throwDartViaMock(tester, 20);
     await clickDartsRemoved(tester);
 
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     expect(config.getPlayAgainButton(), findsOneWidget);
 

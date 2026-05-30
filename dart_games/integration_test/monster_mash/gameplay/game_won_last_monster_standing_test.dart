@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/settings_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -47,10 +48,7 @@ void main() {
 
     // Click darts removed and wait for results screen
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Verify results screen appears
     final playAgainButton = config.getPlayAgainButton();

@@ -3,6 +3,7 @@ import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/settings_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -27,14 +28,8 @@ void main() {
 
     await completeGameToVictoryTeamMode(tester, 'TeamA1', 'TeamB1');
 
-    // Extra pumps to ensure results screen is fully rendered and interactive for team mode
-    // Team mode requires significantly more time for all victory announcements and screen transition
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
+    // Wait for the results screen to fully render before asserting.
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Verify results screen is visible before clicking
     expect(find.textContaining('WINNER'), findsOneWidget);

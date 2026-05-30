@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 /// Per-dart win evaluation: a touchdown reached on dart 1 or dart 2 must
@@ -32,9 +33,7 @@ void main() {
             'Overshoot on dart 2 with Hard Landing OFF should win immediately');
 
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     expect(config.getPlayAgainButton(), findsOneWidget,
         reason: 'Should navigate to results after dart-2 touchdown');

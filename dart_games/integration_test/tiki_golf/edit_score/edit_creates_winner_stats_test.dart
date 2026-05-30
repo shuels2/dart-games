@@ -6,6 +6,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
 import '../../shared/edit_score_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 /// MANDATORY: Edit Score — editing a non-winning turn (Splash on last hole)
@@ -108,11 +109,7 @@ void main() {
 
     // Confirm Bob's takeout → confirmTurnEnd → _endGame → hasWinner=true
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     expect(VictoryMusicService().isInitialized, isTrue,
         reason: 'VictoryMusicService should be initialized after results');

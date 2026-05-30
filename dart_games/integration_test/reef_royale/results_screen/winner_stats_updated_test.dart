@@ -5,6 +5,7 @@ import 'package:dart_games/services/victory_music_service.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -16,12 +17,8 @@ void main() {
     await setupAndStartGame(tester, config);
     await completeGameToVictory(tester);
 
-    // Extra pumps to let _updatePlayerStats async API calls complete
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
+    // Wait for results + let _updatePlayerStats async API calls complete
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     expect(VictoryMusicService().isInitialized, isTrue);
 

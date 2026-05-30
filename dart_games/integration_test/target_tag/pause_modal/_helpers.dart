@@ -5,6 +5,7 @@ import '../../shared/dart_throw_helpers.dart';
 import '../../shared/pump_sequences.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '../../shared/settings_helpers.dart';
 
 final config = GameUIConfig.targetTag();
@@ -80,8 +81,5 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   await clickDartsRemoved(tester);
 
   // Wait for _handleGameWon 3s navigation delay
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 4));
-  await tester.pump();
-  await PumpSequences.fullRebuild(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }

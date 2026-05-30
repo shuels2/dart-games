@@ -12,7 +12,7 @@ import '../../shared/game_setup_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
-import '../../shared/pump_sequences.dart';
+import '../../shared/results_helpers.dart';
 
 // NOTE: this test deliberately calls GameSetupHelpers.setupAndStartTikiGolf
 // directly instead of importing the sibling `../team_mode_gameplay/_helpers.dart`.
@@ -54,8 +54,7 @@ void main() {
       await tester.pump();
     }
 
-    await tester.pump(const Duration(seconds: 5));
-    await PumpSequences.fullRebuild(tester);
+    await ResultsHelpers.pumpUntilResults(tester, _config);
 
     // Provider reflects the team tie
     final winnerTeamIds = provider.currentGame!.winnerTeamIds!;
