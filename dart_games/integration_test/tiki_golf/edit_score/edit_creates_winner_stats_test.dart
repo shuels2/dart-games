@@ -110,6 +110,12 @@ void main() {
     // Confirm Bob's takeout → confirmTurnEnd → _endGame → hasWinner=true
     await clickDartsRemoved(tester);
     await ResultsHelpers.pumpUntilResults(tester, config);
+    // VictoryMusicService.initialize() + _updatePlayerStats() API call run async
+    // AFTER the Play Again button mounts; pumpUntilResults only settles ~1s
+    // post-button, which isn't enough under heavy parallel load.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    await PumpSequences.fullRebuild(tester);
 
     expect(VictoryMusicService().isInitialized, isTrue,
         reason: 'VictoryMusicService should be initialized after results');
@@ -119,11 +125,6 @@ void main() {
     expect(winnerId, bobId,
         reason:
             'Bob should win with total=9 vs Alice total=12 after edit');
-
-    // Winner (Bob) should have gamesPlayed=1, gamesWon=1
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
 
     final winnerPlayer = ProviderHelpers.findPlayerById(tester, bobId);
     expect(winnerPlayer, isNotNull);
