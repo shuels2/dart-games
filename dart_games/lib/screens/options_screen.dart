@@ -463,16 +463,18 @@ class _OptionsScreenState extends State<OptionsScreen> {
     if (player != null && mounted) {
       final playerProvider = context.read<PlayerProvider>();
       await playerProvider.savePlayer(player);
+      // savePlayer is an HTTP roundtrip; the screen may unmount during the
+      // gap. Early-return to avoid touching disposed state below (snackbar
+      // ScaffoldMessenger, ScrollController in _scrollToNewPlayer).
+      if (!mounted) return;
 
       // Show success snackbar (Options screen only)
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Player "${player.name}" added'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Player "${player.name}" added'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
       // Scroll to show the new player after dialog closes
       _scrollToNewPlayer();

@@ -77,6 +77,11 @@ class _PiratesGridMenuScreenState extends State<PiratesGridMenuScreen> {
       // Refresh player roster and clear cross-game selection leak
       final playerProvider = context.read<PlayerProvider>();
       await playerProvider.loadPlayers();
+      // loadPlayers is an HTTP roundtrip; the widget may unmount during the
+      // gap (user backs out, dartboard disconnect grabs nav, test teardown).
+      // Touching the provider after disposal triggers a "ChangeNotifier was
+      // used after being disposed" assertion.
+      if (!mounted) return;
       playerProvider.clearSelection();
 
       // Re-select players from the previous game if provided (NEW VOYAGE path)
