@@ -29,7 +29,8 @@ void main() {
 
     // Verify menu with settings preserved
     expect(config.getStartButton(), findsOneWidget);
-    expect(find.text('Shield Max: 3'), findsOneWidget);
+    // Two spaces between "Max:" and the value — see commit a1fbe11.
+    expect(find.text('Shield Max:  3'), findsOneWidget);
 
     // Verify players are still present
     expect(find.text('Player A'), findsWidgets);
