@@ -46,8 +46,8 @@ void main() {
           contains('altitude 100'));
     });
 
-    test('3. announcePlayerTurn fires with player name', () {
-      mock.announcePlayerTurn(playerName: 'Alice');
+    test('3. announcePlayerTurn fires with player name and altitude', () {
+      mock.announcePlayerTurn(playerName: 'Alice', altitude: 200);
 
       expect(mock.announcementCount, 1);
       expect(
@@ -57,9 +57,10 @@ void main() {
     });
 
     test('4. announcePlayerTurn uses provided name', () {
-      mock.announcePlayerTurn(playerName: 'Rocket Bob');
+      mock.announcePlayerTurn(playerName: 'Rocket Bob', altitude: 145);
 
       expect(mock.recordedAnnouncements[0], contains('Rocket Bob'));
+      expect(mock.recordedAnnouncements[0], contains('controls'));
     });
   });
 
@@ -83,7 +84,7 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Alice descends 20! Altitude: 180!',
+        'Descending 20!',
       );
     });
 
@@ -101,7 +102,7 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Major burn! Alice drops 60! Altitude: 140!',
+        'Major burn! Descending 60.',
       );
     });
 
@@ -119,7 +120,7 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Alice drifts in orbit!',
+        'Whiff. Drifting in orbit!',
       );
     });
 
@@ -137,7 +138,7 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Final approach! Alice at altitude 20!',
+        'Final approach! Altitude 20!',
       );
     });
 
@@ -170,11 +171,11 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Crash landing! Alice pulls back to 50!',
+        'Crash landing! Pulling back to 50.',
       );
     });
 
-    test('11. Touchdown (hasWinner=true) plays touchdown and suppresses all others', () {
+    test('11. Touchdown (hasWinner=true) suppresses moment — victory deferred to _handleGameWon', () {
       mock.announceMomentForDart(
         playerName: 'Alice',
         dartScore: 20,
@@ -185,7 +186,11 @@ void main() {
         hardLandingEnabled: false,
       );
 
-      // 2 entries: touchdown voice + victory fanfare sound-only
+      // No moment announcement on winning dart — victory fires from _handleGameWon
+      expect(mock.announcementCount, 0);
+
+      // announceWinner fires separately (from _handleGameWon)
+      mock.announceWinner('Alice');
       expect(mock.announcementCount, 2);
       expect(
         mock.recordedAnnouncements[0],
@@ -228,7 +233,7 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Alice is climbing back! Altitude: -10!',
+        'Climbing back! Altitude -10.',
       );
     });
 
@@ -246,7 +251,7 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Alice overshot! Altitude: -10!',
+        'Rough landing! Descending 20.',
       );
     });
 
@@ -263,7 +268,7 @@ void main() {
       );
 
       expect(mock.announcementCount, 1);
-      expect(mock.recordedAnnouncements[0], contains('overshot'));
+      expect(mock.recordedAnnouncements[0], contains('Rough landing'));
     });
   });
 
@@ -289,12 +294,12 @@ void main() {
       expect(mock.announcementCount, 1);
       expect(
         mock.recordedAnnouncements[0],
-        'Final approach! Alice at altitude 20!',
+        'Final approach! Altitude 20!',
         reason: 'Near Landing must suppress Big Descent',
       );
     });
 
-    test('16. Worst-case: big-descent + win simultaneously → only Touchdown fires (1 moment)', () {
+    test('16. Worst-case: big-descent + win simultaneously → no moment fires (victory deferred)', () {
       mock.announceMomentForDart(
         playerName: 'Alice',
         dartScore: 60, // big descent score
@@ -305,18 +310,13 @@ void main() {
         hardLandingEnabled: false,
       );
 
-      // Touchdown voice + victory fanfare = 2 entries, but only 1 voice announcement
-      // and the fanfare is sound-only (empty text). Touchdown won over Big Descent.
-      expect(
-        mock.recordedAnnouncements[0],
-        'Touchdown! Alice lands on the moon!',
-        reason: 'Touchdown must suppress Big Descent',
-      );
-      // No big-descent text
+      // No moment announcement on winning dart — victory deferred to _handleGameWon
+      expect(mock.announcementCount, 0,
+        reason: 'Victory suppresses all moment announcements on the winning dart');
       expect(
         mock.recordedAnnouncements.any((a) => a.contains('Major burn')),
         isFalse,
-        reason: 'Big Descent must be suppressed when Touchdown fires',
+        reason: 'Big Descent must be suppressed when winner detected',
       );
     });
 
@@ -417,7 +417,7 @@ void main() {
       expect(mock.announcementCount, 2,
           reason: 'Crash landing (1) + Remove darts (1) = 2 total');
       expect(mock.recordedAnnouncements[0],
-          'Crash landing! Alice pulls back to 30!');
+          'Crash landing! Pulling back to 30.');
       expect(mock.recordedAnnouncements[1], 'Remove your darts');
     });
 
@@ -453,7 +453,7 @@ void main() {
       expect(mock.recordedAnnouncements.any((a) => a.contains('Major burn')), isFalse);
     });
 
-    test('22. Touchdown takes precedence over Near Landing (newAlt=0 + win)', () {
+    test('22. Victory suppresses Near Landing (newAlt=0 + win) — deferred to _handleGameWon', () {
       mock.announceMomentForDart(
         playerName: 'Alice',
         dartScore: 10,
@@ -464,7 +464,8 @@ void main() {
         hardLandingEnabled: false,
       );
 
-      expect(mock.recordedAnnouncements[0], contains('Touchdown'));
+      expect(mock.announcementCount, 0,
+        reason: 'Victory suppresses all moment announcements');
       expect(mock.recordedAnnouncements.any((a) => a.contains('Final approach')), isFalse);
     });
 
@@ -490,23 +491,16 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   group('Group 4 — Text content', () {
-    test('24. Touchdown text contains player name', () {
-      mock.announceMomentForDart(
-        playerName: 'Commander Alice',
-        dartScore: 20,
-        previousAltitude: 20,
-        newAltitude: 0,
-        wasBust: false,
-        hasWinner: true,
-        hardLandingEnabled: false,
-      );
+    test('24. Touchdown text (via announceWinner) contains player name', () {
+      // Victory fires from announceWinner (called by _handleGameWon), not announceMomentForDart
+      mock.announceWinner('Commander Alice');
 
       expect(mock.recordedAnnouncements[0], contains('Commander Alice'));
       expect(mock.recordedAnnouncements[0], contains('Touchdown'));
       expect(mock.recordedAnnouncements[0], contains('moon'));
     });
 
-    test('25. Crash landing text contains "Crash landing", player name, and reverted altitude', () {
+    test('25. Crash landing text contains "Crash landing" and reverted altitude', () {
       mock.announceMomentForDart(
         playerName: 'Bob',
         dartScore: 40,
@@ -519,7 +513,7 @@ void main() {
 
       final text = mock.recordedAnnouncements[0];
       expect(text, contains('Crash landing'));
-      expect(text, contains('Bob'));
+      expect(text, contains('Pulling back'));
       expect(text, contains('25'));
     });
 
@@ -539,7 +533,7 @@ void main() {
       expect(text, contains('15'));
     });
 
-    test('27. Standard descent text contains player name, score, and new altitude', () {
+    test('27. Standard descent text contains "Descending" and score', () {
       mock.announceMomentForDart(
         playerName: 'Alice',
         dartScore: 20,
@@ -551,12 +545,11 @@ void main() {
       );
 
       final text = mock.recordedAnnouncements[0];
-      expect(text, contains('Alice'));
+      expect(text, contains('Descending'));
       expect(text, contains('20'));
-      expect(text, contains('130'));
     });
 
-    test('28. Big descent text contains "Major burn", player name, score, and altitude', () {
+    test('28. Big descent text contains "Major burn" and score', () {
       mock.announceMomentForDart(
         playerName: 'Bob',
         dartScore: 57, // triple-19
@@ -569,12 +562,11 @@ void main() {
 
       final text = mock.recordedAnnouncements[0];
       expect(text, contains('Major burn'));
-      expect(text, contains('Bob'));
+      expect(text, contains('Descending'));
       expect(text, contains('57'));
-      expect(text, contains('143'));
     });
 
-    test('29. Miss text contains player name and "drifts in orbit"', () {
+    test('29. Miss text contains "Whiff" and "Drifting in orbit"', () {
       mock.announceMomentForDart(
         playerName: 'Alice',
         dartScore: 0,
@@ -586,11 +578,11 @@ void main() {
       );
 
       final text = mock.recordedAnnouncements[0];
-      expect(text, contains('Alice'));
-      expect(text, contains('drifts in orbit'));
+      expect(text, contains('Whiff'));
+      expect(text, contains('Drifting in orbit'));
     });
 
-    test('30. Negative altitude text contains player name, "overshot", and negative altitude', () {
+    test('30. Negative altitude text contains "Rough landing" and dart score', () {
       mock.announceMomentForDart(
         playerName: 'Alice',
         dartScore: 30,
@@ -602,25 +594,23 @@ void main() {
       );
 
       final text = mock.recordedAnnouncements[0];
-      expect(text, contains('Alice'));
-      expect(text, contains('overshot'));
-      expect(text, contains('-10'));
+      expect(text, contains('Rough landing'));
+      expect(text, contains('30'));
     });
 
-    test('31. Climbing back text contains player name, "climbing back", and altitude', () {
+    test('31. Climbing back text contains "Climbing back" and altitude', () {
       mock.announceMomentForDart(
         playerName: 'Bob',
-        dartScore: 0, // dartScore doesn't matter for this branch
+        dartScore: 0,
         previousAltitude: -30,
-        newAltitude: -10, // climbing toward 0
+        newAltitude: -10,
         wasBust: false,
         hasWinner: false,
         hardLandingEnabled: false,
       );
 
       final text = mock.recordedAnnouncements[0];
-      expect(text, contains('Bob'));
-      expect(text, contains('climbing back'));
+      expect(text, contains('Climbing back'));
       expect(text, contains('-10'));
     });
 
@@ -632,7 +622,7 @@ void main() {
     });
 
     test('33. Player turn text includes player name and "controls"', () {
-      mock.announcePlayerTurn(playerName: 'Pilot Joe');
+      mock.announcePlayerTurn(playerName: 'Pilot Joe', altitude: 175);
 
       expect(mock.recordedAnnouncements[0], contains('Pilot Joe'));
       expect(mock.recordedAnnouncements[0], contains('controls'));

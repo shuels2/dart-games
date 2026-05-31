@@ -3,6 +3,7 @@ import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/pump_sequences.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -20,7 +21,7 @@ void main() {
     await UITestHelpers.startGame(tester, config);
 
     await completeGameToVictory(tester, 'Player A', 'Player B');
-    await PumpSequences.fullRebuild(tester);
+    await ResultsHelpers.pumpUntilResults(tester, config);
     expect(config.getPlayAgainButton(), findsOneWidget);
 
     // Click Change Settings on results screen
@@ -28,7 +29,8 @@ void main() {
 
     // Verify menu with settings preserved
     expect(config.getStartButton(), findsOneWidget);
-    expect(find.text('Shield Max: 3'), findsOneWidget);
+    // Two spaces between "Max:" and the value — see commit a1fbe11.
+    expect(find.text('Shield Max:  3'), findsOneWidget);
 
     // Verify players are still present
     expect(find.text('Player A'), findsWidgets);

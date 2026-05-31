@@ -55,6 +55,9 @@ class TargetTagTestHelper {
 
     final currentPlayer = players.firstWhere((p) => p.id == _currentPlayerId);
     final game = provider.currentGame!;
+    final allPlayerNames = game.playerIds
+        .map((id) => players.firstWhere((p) => p.id == id).name)
+        .toList();
 
     // Announce turn if this is the first dart
     final dartsThrown = provider.getCurrentPlayerDartsThrown();
@@ -162,109 +165,39 @@ class TargetTagTestHelper {
     // Pick highest-priority moment and fire exactly one
     if (hasElimination) {
       // Priority 1: Elimination
-      if (game.mode == GameMode.team) {
-        final eliminatedByTeam = <String, List<String>>{};
-        for (final playerId in newlyEliminated) {
-          final teamId = game.playerToTeam![playerId]!;
-          eliminatedByTeam[teamId] ??= [];
-          final playerName = players.firstWhere((p) => p.id == playerId).name;
-          if (!eliminatedByTeam[teamId]!.contains(playerName)) {
-            eliminatedByTeam[teamId]!.add(playerName);
-          }
-        }
-        for (final entry in eliminatedByTeam.entries) {
-          final teamId = entry.key;
-          final teamPlayerIds = game.teamPlayers![teamId]!;
-          final teamNames = teamPlayerIds
-              .map((id) => players.firstWhere((p) => p.id == id).name)
-              .toList();
-          audioQueue.announceEliminated(teamNames);
-        }
-      } else {
-        final eliminatedNames = newlyEliminated
-            .map((id) => players.firstWhere((p) => p.id == id).name)
-            .toList();
-        audioQueue.announceEliminated(eliminatedNames);
-      }
+      final eliminatedNames = newlyEliminated
+          .map((id) => players.firstWhere((p) => p.id == id).name)
+          .toList();
+      audioQueue.announceEliminated(eliminatedNames, allPlayerNames: allPlayerNames);
     } else if (hasVulnerable) {
-      // Priority 2: Vulnerable
-      if (game.mode == GameMode.team) {
-        final vulnerableByTeam = <String, List<String>>{};
-        for (final playerId in vulnerablePlayers) {
-          final teamId = game.playerToTeam![playerId]!;
-          vulnerableByTeam[teamId] ??= [];
-        }
-        for (final teamId in vulnerableByTeam.keys) {
-          final teamPlayerIds = game.teamPlayers![teamId]!;
-          final teamNames = teamPlayerIds
-              .map((id) => players.firstWhere((p) => p.id == id).name)
-              .toList();
-          audioQueue.announceVulnerable(teamNames);
-        }
-      } else {
-        final vulnerableNames = vulnerablePlayers
-            .map((id) => players.firstWhere((p) => p.id == id).name)
-            .toList();
-        audioQueue.announceVulnerable(vulnerableNames);
-      }
+      final vulnerableNames = vulnerablePlayers
+          .map((id) => players.firstWhere((p) => p.id == id).name)
+          .toList();
+      audioQueue.announceVulnerable(vulnerableNames, allPlayerNames: allPlayerNames);
     } else if (hasLowShields) {
-      // Priority 3: Low Shields
-      if (game.mode == GameMode.team) {
-        final lowShieldsByTeam = <String, List<String>>{};
-        for (final playerId in lowShieldPlayers) {
-          final teamId = game.playerToTeam![playerId]!;
-          lowShieldsByTeam[teamId] ??= [];
-        }
-        for (final teamId in lowShieldsByTeam.keys) {
-          final teamPlayerIds = game.teamPlayers![teamId]!;
-          final teamNames = teamPlayerIds
-              .map((id) => players.firstWhere((p) => p.id == id).name)
-              .toList();
-          audioQueue.announceLowShields(teamNames);
-        }
-      } else {
-        final lowShieldNames = lowShieldPlayers
-            .map((id) => players.firstWhere((p) => p.id == id).name)
-            .toList();
-        audioQueue.announceLowShields(lowShieldNames);
-      }
+      final lowShieldNames = lowShieldPlayers
+          .map((id) => players.firstWhere((p) => p.id == id).name)
+          .toList();
+      audioQueue.announceLowShields(lowShieldNames, allPlayerNames: allPlayerNames);
     } else if (hasTaggedOut) {
-      // Priority 4: Tagged Out
-      if (game.mode == GameMode.team) {
-        final lostByTeam = <String, List<String>>{};
-        for (final playerId in lostTaggedInPlayers) {
-          final teamId = game.playerToTeam![playerId]!;
-          lostByTeam[teamId] ??= [];
-        }
-        for (final teamId in lostByTeam.keys) {
-          final teamPlayerIds = game.teamPlayers![teamId]!;
-          final teamNames = teamPlayerIds
-              .map((id) => players.firstWhere((p) => p.id == id).name)
-              .toList();
-          audioQueue.announceTaggedOut(teamNames);
-        }
-      } else {
-        final lostNames = lostTaggedInPlayers
-            .map((id) => players.firstWhere((p) => p.id == id).name)
-            .toList();
-        audioQueue.announceTaggedOut(lostNames);
-      }
+      final lostNames = lostTaggedInPlayers
+          .map((id) => players.firstWhere((p) => p.id == id).name)
+          .toList();
+      audioQueue.announceTaggedOut(lostNames, allPlayerNames: allPlayerNames);
     } else if (hasSuccessfulTag) {
-      // Priority 5: Successful Tag (no status change triggered)
       audioQueue.announceSuccessfulTag();
     } else if (hasTaggedIn) {
-      // Priority 6: Tagged In
-      List<String> playerNames;
+      List<String> taggedInNames;
       if (game.mode == GameMode.team) {
         final teamId = game.playerToTeam![currentPlayer.id]!;
         final teamPlayerIds = game.teamPlayers![teamId]!;
-        playerNames = teamPlayerIds
+        taggedInNames = teamPlayerIds
             .map((id) => players.firstWhere((p) => p.id == id).name)
             .toList();
       } else {
-        playerNames = [currentPlayer.name];
+        taggedInNames = [currentPlayer.name];
       }
-      audioQueue.announceTaggedIn(playerNames);
+      audioQueue.announceTaggedIn(taggedInNames, allPlayerNames: allPlayerNames);
     } else if (hasShieldGain) {
       // Priority 7: Shield Gained
       audioQueue.announceShieldGained(currentPlayer.name, shieldsAfter, game.shieldMax);

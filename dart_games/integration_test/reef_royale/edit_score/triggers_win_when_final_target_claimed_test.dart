@@ -5,6 +5,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/pump_sequences.dart';
 import '../../shared/edit_score_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '_helpers.dart';
 
@@ -114,10 +115,7 @@ void main() {
     }
 
     // Wait for results screen navigation (3000ms delay in _handleGameWon)
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Results screen should be visible with winner name
     final winnerName = ElementFinders.getReefRoyaleWinnerName();

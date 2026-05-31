@@ -32,19 +32,31 @@ class MockTikiGolfAudioQueueService {
   }
 
   void announceBirdie(String playerName) {
-    announce('Birdie! $playerName sinks it on the first dart!');
+    announce('Birdie! You sunk it on the first dart!');
   }
 
   void announcePar(String playerName) {
-    announce('Par! Solid shot, $playerName!');
+    announce('Par! Solid shot!');
   }
 
   void announceBogey(String playerName) {
     announce('Bogey! Just squeaked that one in!');
   }
 
+  void announceDoubleBogey(String playerName) {
+    announce('Double bogey! Squeaked it out!');
+  }
+
+  void announceTripleBogey(String playerName) {
+    announce('Triple bogey! Barely hung in!');
+  }
+
+  void announceQuadrupleBogey(String playerName) {
+    announce('Quadruple bogey! That was a wild one!');
+  }
+
   void announceSplash(String playerName) {
-    announce('Splash! $playerName misses them all!');
+    announce('Splash! Missed them all!');
   }
 
   void announceMiss() {
@@ -52,7 +64,7 @@ class MockTikiGolfAudioQueueService {
   }
 
   void announceAlmostThere(String playerName) {
-    announce('$playerName, one dart left to save par!');
+    announce('One dart left to save par!');
   }
 
   void announceMulliganUsed(String playerName) {
@@ -123,6 +135,15 @@ class MockTikiGolfAudioQueueService {
         case 'bogey':
           announceBogey(scorePlayerName);
           break;
+        case 'doubleBogey':
+          announceDoubleBogey(scorePlayerName);
+          break;
+        case 'tripleBogey':
+          announceTripleBogey(scorePlayerName);
+          break;
+        case 'quadrupleBogey':
+          announceQuadrupleBogey(scorePlayerName);
+          break;
         case 'splash':
           announceSplash(scorePlayerName);
           break;
@@ -140,6 +161,16 @@ class MockTikiGolfAudioQueueService {
     } else if (nearWin && nearWinPlayerName != null && nearWinLeadBy != null) {
       announceNearWin(nearWinPlayerName, nearWinLeadBy);
     }
+  }
+
+  void announceGamePaused() {
+    announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+    );
+  }
+
+  void announceConnectionRestored() {
+    announce('Dartboard reconnected. Resume play when ready.');
   }
 
   void dispose() {

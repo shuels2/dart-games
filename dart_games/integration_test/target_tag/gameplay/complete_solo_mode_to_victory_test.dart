@@ -3,6 +3,7 @@ import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -53,11 +54,7 @@ void main() {
 
     // ===== Step 4: Verify victory screen appears =====
     // Wait for game ending logic, stats updates, and navigation to results screen
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 3)); // Wait for navigation to results screen
-    await tester.pump(); // Build results screen
-    await tester.pump(); // Layout results screen
-    await tester.pump(); // Paint results screen
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Check if we're on results screen
     final playAgainButton = config.getPlayAgainButton();

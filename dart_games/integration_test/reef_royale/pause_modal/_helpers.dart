@@ -13,6 +13,8 @@ export '../../shared/pause_modal_helpers.dart';
 export '../../shared/provider_helpers.dart';
 export '../../shared/edit_score_helpers.dart';
 
+import '../../shared/results_helpers.dart';
+
 final config = GameUIConfig.reefRoyale();
 
 // ===== DELEGATES TO SHARED HELPERS =====
@@ -95,9 +97,5 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   await clickDartsRemoved(tester);
 
   // Wait for results screen navigation (3000ms delay in _handleGameWon)
-  await tester.pump(const Duration(seconds: 4));
-  await tester.pump();
-  await tester.pump();
-  await tester.pump();
-  await PumpSequences.fullRebuild(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }

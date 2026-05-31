@@ -642,6 +642,11 @@ class DartboardEmulatorKeys {
   static const toggleFAB = Key('dartboard_emulator_toggle_fab');
   static const playToCompleteButton = Key('dartboard_emulator_play_to_complete_button');
   static const playToTieButton = Key('dartboard_emulator_play_to_tie_button');
+
+  /// Emulator-only buff toggle button keyed by the buff enum's `.name`.
+  /// Used by Monster Mash + Reef Royale (any game with bonus buffs).
+  static Key buffToggleButton(String enumName) =>
+      Key('dartboard_emulator_buff_toggle_$enumName');
 }
 
 // ============================================================================

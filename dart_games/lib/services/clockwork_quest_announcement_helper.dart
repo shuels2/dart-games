@@ -38,28 +38,10 @@ class ClockworkQuestAnnouncementHelper {
     );
   }
 
-  /// Double Advance
-  void announceDoubleAdvance(Player player) {
-    _queueService.announce(
-      '${player.name} hits a double! Two gears turn!',
-      AudioPriority.hitConfirm,
-      soundEffect: ClockworkQuestSoundEffects.gearSpin,
-    );
-  }
-
-  /// Triple Advance
-  void announceTripleAdvance(Player player) {
-    _queueService.announce(
-      '${player.name} hits a triple! Three gears turn!',
-      AudioPriority.hitConfirm,
-      soundEffect: ClockworkQuestSoundEffects.gearSpin,
-    );
-  }
-
   /// Miss (wrong number)
   void announceMiss() {
     _queueService.announce(
-      'Steam vents! That\'s not the right gear!',
+      'That\'s not the right gear!',
       AudioPriority.hitConfirm,
       soundEffect: ClockworkQuestSoundEffects.steamHiss,
     );
@@ -122,7 +104,7 @@ class ClockworkQuestAnnouncementHelper {
   /// Victory
   void announceVictory(Player winner) {
     _queueService.announce(
-      'All gears turn! ${winner.name} wins the Clockwork Crown!',
+      '${winner.name} wins the Clockwork Crown!',
       AudioPriority.victory,
       soundEffect: ClockworkQuestSoundEffects.victoryFanfare,
     );
@@ -130,17 +112,31 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Remove Darts (end of turn)
   void announceRemoveDarts(Player player) {
-    // Disabled 2026-05-22 by user direction: the "Remove your darts"
-    // announcement adds noticeable per-turn audio. The original queue
-    // call is left intact below as documentation and a one-line revert
-    // — drop the `return;` to re-enable.
-    return;
-    // ignore: dead_code
     _queueService.announce(
       '${player.name}, remove your darts!',
       AudioPriority.turnTransition,
     );
   }
+
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queueService.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queueService.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  Future<void> whenIdle() => _queueService.whenIdle();
 
   void dispose() {
     _queueService.dispose();

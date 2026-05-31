@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/edit_score_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 /// MANDATORY: Edit Score — editing a score BEFORE game end prevents stats from
@@ -111,16 +112,31 @@ void main() {
     expect(provider.currentGame?.winnerId, aliceId,
         reason: 'Alice should win (total=9 vs Bob total=12 after edit)');
 
-    // No stats should be persisted yet (still in game — stats update on results screen)
-    // Verify game is in finished state but stats aren't persisted until results loads
+    // Wait for the results screen + stats persistence. Stats are updated by
+    // the results screen on load, so verifying them confirms the EDITED
+    // outcome flowed through (not the pre-edit near-tie).
+    await ResultsHelpers.pumpUntilResults(tester, config);
+    // VictoryMusicService.initialize() + _updatePlayerStats() API call run
+    // async AFTER the Play Again button mounts; pumpUntilResults only
+    // settles ~1 s post-button, which isn't enough under heavy parallel load.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    await tester.pump();
+
+    // Stats reflect the EDITED outcome: Alice (winner) gets the win, Bob
+    // doesn't. This is the test's stated purpose per the docstring above.
     final alice = ProviderHelpers.findPlayerByName(tester, 'Alice');
     expect(alice, isNotNull);
-    expect(alice!.gamesPlayed, 0,
-        reason: 'Alice gamesPlayed should be 0 — results screen not yet loaded');
+    expect(alice!.gamesPlayed, 1, reason: 'Alice should have played 1 game');
+    expect(alice.gamesWon, 1,
+        reason:
+            'Alice should have won (Bob edited to Splash, Alice total=9 < Bob 12)');
 
     final bob = ProviderHelpers.findPlayerByName(tester, 'Bob');
     expect(bob, isNotNull);
-    expect(bob!.gamesPlayed, 0,
-        reason: 'Bob gamesPlayed should be 0 — results screen not yet loaded');
+    expect(bob!.gamesPlayed, 1, reason: 'Bob should have played 1 game');
+    expect(bob.gamesWon, 0,
+        reason:
+            'Bob should NOT have won — edit made his hole 9 a Splash (12 > 9)');
   });
 }

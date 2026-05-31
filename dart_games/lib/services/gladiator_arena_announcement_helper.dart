@@ -96,12 +96,6 @@ class GladiatorArenaAnnouncementHelper {
   /// This is ALWAYS called unconditionally at takeout — it is NEVER gated by
   /// the moment-announcement precedence chain.
   void announceRemoveDarts() {
-    // Disabled 2026-05-22 by user direction: the "Remove your darts"
-    // announcement adds noticeable per-turn audio. The original queue
-    // call is left intact below as documentation and a one-line revert
-    // — drop the `return;` to re-enable.
-    return;
-    // ignore: dead_code
     _queueService.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
@@ -144,7 +138,7 @@ class GladiatorArenaAnnouncementHelper {
 
   void announceBustNoDouble() {
     _queueService.announce(
-      'Not a double! The champion must earn their laurel!',
+      'Not a double! Bust!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.crowdGasp,
     );
@@ -192,7 +186,7 @@ class GladiatorArenaAnnouncementHelper {
 
   void announceSmallHit(String playerName, int n) {
     _queueService.announce(
-      '$playerName scores $n points.',
+      '$n points.',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.swordClash,
     );
@@ -240,13 +234,7 @@ class GladiatorArenaAnnouncementHelper {
     required bool wasBustOvershoot,
     required bool wasBustNoDouble,
   }) {
-    // 1. Victory
-    if (hasWinner) {
-      announceVictory(playerName);
-      return;
-    }
-
-    // 2. Knockoff!
+    // 1. Knockoff!
     if (knockoffVictimName != null) {
       announceKnockoff(knockoffVictimName);
       return;
@@ -294,14 +282,14 @@ class GladiatorArenaAnnouncementHelper {
       return;
     }
 
-    // 10. Good Hit (20-39, single)
-    if (dartValue >= 20 && multiplier == 'single') {
+    // 10. Good Hit (20-39)
+    if (dartValue >= 20) {
       announceGoodHit(dartValue);
       return;
     }
 
-    // 11. Small Hit (1-19, single)
-    if (dartValue >= 1 && multiplier == 'single') {
+    // 11. Small Hit (1-19)
+    if (dartValue >= 1) {
       announceSmallHit(playerName, dartValue);
       return;
     }
@@ -310,7 +298,27 @@ class GladiatorArenaAnnouncementHelper {
     announceMiss();
   }
 
-  // ─── Dispose ─────────────────────────────────────────────────────────────────
+  // ─── Connection-status announcements ────────────────────────────────────────
+
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queueService.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queueService.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  Future<void> whenIdle() => _queueService.whenIdle();
 
   void dispose() {
     _queueService.dispose();

@@ -22,6 +22,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../utils/dartboard_layout.dart';
 import 'reef_royale_results_screen.dart';
@@ -222,10 +223,14 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     }
 
     if (reefProvider.hasWinner) {
-      if (!_dartboardEmulatorController.isAutoPlaying) {
+      if (_dartboardEmulatorController.isAutoPlaying) {
+        _handleGameWon();
+      } else {
         _audioQueue?.announceSpeedPlayEnd();
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) _handleGameWon();
+        _audioQueue?.whenIdle().then((_) {
+          Future.delayed(const Duration(milliseconds: 250), () {
+            if (mounted) _handleGameWon();
+          });
         });
       }
       return;
@@ -265,7 +270,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             playerProvider.allPlayers.firstWhere((p) => p.id == winnerId);
         _audioQueue?.announceVictory(winner.name);
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 
@@ -297,7 +304,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     final pearlsList = provider.getDartThrowPearlsScored(playerId);
     final marksAddedList = provider.getDartThrowMarksAdded(playerId);
     final isNeighborList = provider.getDartThrowIsNeighbor(playerId);
-    final recipientList = provider.getDartThrowPearlRecipientId(playerId);
+    final recipientList = provider.getDartThrowPearlRecipientIds(playerId);
 
     final justClaimed =
         dartIndex < claimedList.length && claimedList[dartIndex];
@@ -308,8 +315,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
         dartIndex < marksAddedList.length ? marksAddedList[dartIndex] : 0;
     final isNeighbor =
         dartIndex < isNeighborList.length && isNeighborList[dartIndex];
-    final recipientId =
-        dartIndex < recipientList.length ? recipientList[dartIndex] : null;
+    final recipientIds =
+        dartIndex < recipientList.length ? recipientList[dartIndex] : <String>[];
 
     // Locked target - no announcement
     if (marksAdded == 0 && !justClaimed && pearlsScored == 0) return;
@@ -334,11 +341,20 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
     if (pearlsScored > 0 && count < 2) {
       if (currentGame.gameMode == ReefRoyaleGameMode.cursedTide &&
-          recipientId != null) {
-        final opponentName = playerProvider.allPlayers
-            .firstWhere((p) => p.id == recipientId)
-            .name;
-        _audioQueue?.announceCursedScoring(pearlsScored, opponentName);
+          recipientIds.isNotEmpty) {
+        final opponentNames = recipientIds
+            .map((id) => playerProvider.allPlayers
+                .firstWhere((p) => p.id == id)
+                .name)
+            .toList();
+        final allOpponentNames = currentGame.playerIds
+            .where((id) => id != playerId)
+            .map((id) => playerProvider.allPlayers
+                .firstWhere((p) => p.id == id)
+                .name)
+            .toList();
+        _audioQueue?.announceCursedScoring(pearlsScored, opponentNames,
+            allOpponentNames: allOpponentNames);
       } else {
         _audioQueue?.announceScoring(playerName, pearlsScored);
       }
@@ -399,7 +415,12 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     final hasDartsThrown =
         currentGame.totalDartsThrown.values.any((c) => c > 0);
 
-    return PopScope(
+    return AutoSaveOnPause(
+      onPaused: () {
+        if (!hasDartsThrown) return;
+        reefProvider.saveGame(allPlayers, isAutoSave: true);
+      },
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -673,6 +694,26 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                   ? PlayToTieButtonConfig.reefRoyale()
                   : null,
               playToTieEnabled: currentGame.speedPlayEnabled,
+              buffToggles: _mockApi != null
+                  ? ReefBuff.values
+                      .map<BuffToggleSpec<Object>>((b) => BuffToggleSpec<Object>(
+                            buff: b,
+                            label: ReefRoyaleGame.getBuffDisplayName(b),
+                            isActive: currentGame.activeBuff == b,
+                            isEnabled: currentGame.bonusBuffsEnabled,
+                            buttonKey:
+                                DartboardEmulatorKeys.buffToggleButton(b.name),
+                            config: BuffToggleButtonConfig.reefRoyale(b),
+                          ))
+                      .toList()
+                  : null,
+              onBuffToggle: _mockApi != null
+                  ? (Object buff) {
+                      final b = buff as ReefBuff;
+                      final current = reefProvider.currentGame?.activeBuff;
+                      reefProvider.setActiveBuff(current == b ? null : b);
+                    }
+                  : null,
             ),
           ),
 
@@ -709,6 +750,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             ),
         ],
       ),
+      ),
     );
   }
 
@@ -717,24 +759,31 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
       key: ReefRoyaleGameKeys.buffBanner,
       width: double.infinity,
       height: 40,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            _biolumPurple.withOpacity(0.8),
-            _deepReefBlue.withOpacity(0.8),
-            _biolumPurple.withOpacity(0.8),
-          ],
+          colors: [_biolumPurple, _coralPink, _biolumPurple],
+        ),
+        border: Border(
+          top: BorderSide(color: _sandyGold, width: 2),
+          bottom: BorderSide(color: _sandyGold, width: 2),
         ),
       ),
-      child: Center(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 5),
+        child: Center(
         child: Text(
           '${ReefRoyaleGame.getBuffDisplayName(buff)} — ${ReefRoyaleGame.getBuffDescription(buff)}',
           style: GoogleFonts.fredoka(
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: _sandyGold,
+            height: 0.95,
+            shadows: const [
+              Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1)),
+            ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -838,6 +887,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: _pearlWhite,
+              shadows: const [
+                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+              ],
             ),
             textAlign: TextAlign.center,
             maxLines: 2,
@@ -861,6 +913,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               color: game.gameMode == ReefRoyaleGameMode.cursedTide
                   ? _coralPink
                   : _sandyGold,
+              shadows: const [
+                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+              ],
             ),
           ),
 
@@ -872,6 +927,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: _seafoamGreen,
+              shadows: const [
+                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -1091,6 +1149,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: _pearlWhite,
+                          shadows: const [
+                            Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1112,6 +1173,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: _seafoamGreen,
+                                        shadows: const [
+                                          Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                                        ],
                                       ),
                                     ),
                                     TextSpan(
@@ -1119,6 +1183,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                                       style: GoogleFonts.nunito(
                                         fontSize: 16,
                                         color: _sunlitAqua.withOpacity(0.8),
+                                        shadows: const [
+                                          Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -1136,6 +1203,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: _seafoamGreen,
+                              shadows: const [
+                                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                              ],
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -1205,7 +1275,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     return Container(
       key: ReefRoyaleGameKeys.coralCard(target),
       margin: const EdgeInsets.all(4),
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
       decoration: BoxDecoration(
         color: isLocked
             ? Colors.grey.withOpacity(0.3)
@@ -1224,26 +1294,54 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
       ),
       child: Column(
         children: [
-          // Target number
-          Text(
-            game.getTargetDisplayName(target),
-            style: GoogleFonts.fredoka(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: isLocked ? Colors.grey : _pearlWhite,
-            ),
-          ),
-
-          // Coral image (fills available space)
+          // Coral image with target number overlaid
           if (coralImagePath.isNotEmpty)
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Image.asset(
-                  coralImagePath,
-                  fit: BoxFit.contain,
-                  opacity: AlwaysStoppedAnimation(isLocked ? 0.4 : 1.0),
-                ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Image.asset(
+                        coralImagePath,
+                        fit: BoxFit.contain,
+                        opacity: AlwaysStoppedAnimation(isLocked ? 0.4 : 1.0),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 2,
+                    left: 0,
+                    right: 0,
+                    child: Text(
+                      game.getTargetDisplayName(target),
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.fredoka(
+                        fontSize: 65,
+                        height: 0.9,
+                        fontWeight: FontWeight.bold,
+                        color: isLocked ? Colors.grey : _pearlWhite,
+                        shadows: isLocked ? null : const [
+                          Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1.5, 1.5)),
+                          Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 0)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Text(
+              game.getTargetDisplayName(target),
+              style: GoogleFonts.fredoka(
+                fontSize: 52,
+                fontWeight: FontWeight.bold,
+                color: isLocked ? Colors.grey : _pearlWhite,
+                shadows: isLocked ? null : const [
+                  Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1.5, 1.5)),
+                  Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 0)),
+                ],
               ),
             ),
 
@@ -1475,6 +1573,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: _pearlWhite,
+                            shadows: const [
+                              Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                            ],
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1482,18 +1583,26 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                           Text(
                             '$pearls pearls',
                             style: GoogleFonts.nunito(
-                              fontSize: 15,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
                               color:
                                   game.gameMode == ReefRoyaleGameMode.cursedTide
                                       ? _coralPink
                                       : _sandyGold,
+                              shadows: const [
+                                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                              ],
                             ),
                           ),
                           Text(
                             '$claimedCount/7 corals',
                             style: GoogleFonts.nunito(
-                              fontSize: 15,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
                               color: _seafoamGreen,
+                              shadows: const [
+                                Shadow(color: Colors.black, blurRadius: 3, offset: Offset(1, 1)),
+                              ],
                             ),
                           ),
                         ] else

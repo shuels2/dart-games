@@ -385,7 +385,7 @@ void main() {
       );
 
       expect(mock.queuedTexts[0],
-          'Not a double! The champion must earn their laurel!',
+          'Not a double! Bust!',
           reason: 'Bust-no-double fires, not Good Hit');
       expect(mock.queuedTexts.any((t) => t.contains('mighty strike')), isFalse);
     });
@@ -859,7 +859,7 @@ void main() {
           dartValue: 50);
 
       expect(mock.queuedTexts[0],
-          'Not a double! The champion must earn their laurel!',
+          'Not a double! Bust!',
           reason: 'Bust-no-double (step 5) beats Bull-Inner (step 6)');
       expect(mock.queuedTexts.any((t) => t.contains('Bullseye')), isFalse);
     });

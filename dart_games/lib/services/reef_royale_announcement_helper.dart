@@ -37,12 +37,6 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceRemoveDarts() {
-    // Disabled 2026-05-22 by user direction: the "Remove your darts"
-    // announcement adds noticeable per-turn audio. The original queue
-    // call is left intact below as documentation and a one-line revert
-    // — drop the `return;` to re-enable.
-    return;
-    // ignore: dead_code
     _queue.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
@@ -124,16 +118,27 @@ class ReefRoyaleAnnouncementHelper {
       );
     } else {
       _queue.announce(
-        '$playerName harvests $pearls pearls!',
+        '$pearls pearls harvested!',
         AudioPriority.hitConfirm,
         soundEffect: ReefRoyaleSoundEffects.pearlChime,
       );
     }
   }
 
-  void announceCursedScoring(int pearls, String opponentName) {
+  void announceCursedScoring(int pearls, List<String> affectedNames, {required List<String> allOpponentNames}) {
+    final String text;
+    if (affectedNames.length == allOpponentNames.length) {
+      text = 'Cursed tide! $pearls pearls weigh down all opponents!';
+    } else if (affectedNames.length <= 3) {
+      final names = affectedNames.join(' and ');
+      text = 'Cursed tide! $pearls pearls weigh down $names!';
+    } else {
+      final excludedNames = allOpponentNames.where((n) => !affectedNames.contains(n)).toList();
+      final excluded = excludedNames.join(' and ');
+      text = 'Cursed tide! $pearls pearls weigh down all opponents except $excluded!';
+    }
     _queue.announce(
-      'Cursed tide! $pearls pearls weigh down $opponentName!',
+      text,
       AudioPriority.hitConfirm,
       soundEffect: ReefRoyaleSoundEffects.splash,
     );
@@ -188,6 +193,26 @@ class ReefRoyaleAnnouncementHelper {
   void announceLockedOnTarget(int target) {
     // Locked target - no effect, no announcement
   }
+
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queue.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queue.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  Future<void> whenIdle() => _queue.whenIdle();
 
   void dispose() {
     _queue.dispose();

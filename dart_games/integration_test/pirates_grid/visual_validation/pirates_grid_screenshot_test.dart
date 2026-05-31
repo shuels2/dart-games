@@ -280,9 +280,16 @@ void main() {
       await clickDartsRemovedViaMock(tester);
       // Wait for the 3-second Future.delayed in _handleGameWon() to fire
       // and the Navigator.pushReplacement to complete.
-      await tester.pump(const Duration(seconds: 4));
-      await tester.pump();
-      await tester.pump();
+      // Robust wait: poll until the results screen has rendered, instead of a
+      // fixed pump that races the event-driven victory navigation under load.
+      for (int _i = 0; _i < 300; _i++) {
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+        if (find.byKey(PiratesGridResultsKeys.playAgainButton).evaluate().isNotEmpty) {
+          break;
+        }
+      }
+      await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
       // ================================================================

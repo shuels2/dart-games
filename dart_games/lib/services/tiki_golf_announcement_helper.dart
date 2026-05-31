@@ -39,7 +39,7 @@ class TikiGolfAnnouncementHelper {
 
   void announceBirdie(String playerName) {
     _queueService.announce(
-      'Birdie! $playerName sinks it on the first dart!',
+      'Birdie! You sunk it on the first dart!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.clap,
     );
@@ -47,7 +47,7 @@ class TikiGolfAnnouncementHelper {
 
   void announcePar(String playerName) {
     _queueService.announce(
-      'Par! Solid shot, $playerName!',
+      'Par! Solid shot!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.ballDrop,
     );
@@ -61,9 +61,33 @@ class TikiGolfAnnouncementHelper {
     );
   }
 
+  void announceDoubleBogey(String playerName) {
+    _queueService.announce(
+      'Double bogey! Squeaked it out!',
+      AudioPriority.hitConfirm,
+      soundEffect: TikiGolfSoundEffects.putt,
+    );
+  }
+
+  void announceTripleBogey(String playerName) {
+    _queueService.announce(
+      'Triple bogey! Barely hung in!',
+      AudioPriority.hitConfirm,
+      soundEffect: TikiGolfSoundEffects.putt,
+    );
+  }
+
+  void announceQuadrupleBogey(String playerName) {
+    _queueService.announce(
+      'Quadruple bogey! That was a wild one!',
+      AudioPriority.hitConfirm,
+      soundEffect: TikiGolfSoundEffects.putt,
+    );
+  }
+
   void announceSplash(String playerName) {
     _queueService.announce(
-      'Splash! $playerName misses them all!',
+      'Splash! Missed them all!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.splash,
     );
@@ -79,7 +103,7 @@ class TikiGolfAnnouncementHelper {
 
   void announceAlmostThere(String playerName) {
     _queueService.announce(
-      '$playerName, one dart left to save par!',
+      'One dart left to save par!',
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.tikiChime,
     );
@@ -128,12 +152,6 @@ class TikiGolfAnnouncementHelper {
   /// Unconditional remove-darts announcement.  Called by the game screen on
   /// every turn-end, OUTSIDE the precedence chain.
   void announceRemoveDarts(String playerName) {
-    // Disabled 2026-05-22 by user direction: the "Remove your darts"
-    // announcement adds noticeable per-turn audio. The original queue
-    // call is left intact below as documentation and a one-line revert
-    // — drop the `return;` to re-enable.
-    return;
-    // ignore: dead_code
     _queueService.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
@@ -175,7 +193,7 @@ class TikiGolfAnnouncementHelper {
     bool mulliganUsed = false,
     String? mulliganUsedPlayerName,
     // Rank 5
-    String? score, // 'birdie' | 'par' | 'bogey' | 'splash' | null
+    String? score, // 'birdie' | 'par' | 'bogey' | 'doubleBogey' | 'tripleBogey' | 'quadrupleBogey' | 'splash' | null
     String? scorePlayerName,
     // Rank 6
     bool almostThere = false,
@@ -224,6 +242,15 @@ class TikiGolfAnnouncementHelper {
         case 'bogey':
           announceBogey(scorePlayerName);
           break;
+        case 'doubleBogey':
+          announceDoubleBogey(scorePlayerName);
+          break;
+        case 'tripleBogey':
+          announceTripleBogey(scorePlayerName);
+          break;
+        case 'quadrupleBogey':
+          announceQuadrupleBogey(scorePlayerName);
+          break;
         case 'splash':
           announceSplash(scorePlayerName);
           break;
@@ -257,7 +284,27 @@ class TikiGolfAnnouncementHelper {
     }
   }
 
-  // ─── Dispose ─────────────────────────────────────────────────────────────────
+  // ─── Connection-status announcements ────────────────────────────────────────
+
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queueService.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queueService.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  Future<void> whenIdle() => _queueService.whenIdle();
 
   void dispose() {
     _queueService.dispose();

@@ -52,6 +52,15 @@ class PiratesGridAnnouncementHelper {
     );
   }
 
+  /// Speed Play timer warning — fires once at 5 seconds remaining.
+  void announceSpeedTimerWarning() {
+    _queueService.announce(
+      'The wind is picking up!',
+      AudioPriority.statusChange,
+      soundEffect: PiratesGridSoundEffects.timerTick,
+    );
+  }
+
   /// Speed Play timer expired — fires when turn auto-ends.
   void announceTimerExpired() {
     _queueService.announce(
@@ -66,16 +75,16 @@ class PiratesGridAnnouncementHelper {
   /// Flag planted on an empty cell.
   void announceFlagPlanted(String playerName, String target) {
     _queueService.announce(
-      '$playerName plants a flag at $target!',
+      'Flag planted at $target!',
       AudioPriority.hitConfirm,
       soundEffect: PiratesGridSoundEffects.flagPlant,
     );
   }
 
   /// Square stolen from opponent (Steal Mode ON).
-  void announceSquareStolen(String playerName, String opponentName) {
+  void announceSquareStolen(String playerName, String target, String opponentName) {
     _queueService.announce(
-      'Mutiny! $playerName steals the square from $opponentName!',
+      'Mutiny! $playerName steals $target!',
       AudioPriority.hitConfirm,
       soundEffect: PiratesGridSoundEffects.swordClash,
     );
@@ -106,9 +115,9 @@ class PiratesGridAnnouncementHelper {
   }
 
   /// Player has exactly 2 flags in a line with the third cell still empty.
-  void announceTwoInARow(String playerName) {
+  void announceTwoInARow(String playerName, String target) {
     _queueService.announce(
-      '$playerName has two in a row! One more for treasure!',
+      '$target claimed! That\'s two in a row! One more for treasure!',
       AudioPriority.statusChange,
       soundEffect: PiratesGridSoundEffects.flagPlant,
     );
@@ -155,12 +164,6 @@ class PiratesGridAnnouncementHelper {
   /// "Remove your darts" prompt — ALWAYS called unconditionally in the
   /// takeout handler. NEVER suppressed by the precedence chain.
   void announceRemoveDarts(String playerName) {
-    // Disabled 2026-05-22 by user direction: the "Remove your darts"
-    // announcement adds noticeable per-turn audio. The original queue
-    // call is left intact below as documentation and a one-line revert
-    // — drop the `return;` to re-enable.
-    return;
-    // ignore: dead_code
     _queueService.announce(
       '$playerName, remove your darts',
       AudioPriority.turnTransition,
@@ -175,7 +178,27 @@ class PiratesGridAnnouncementHelper {
     announceMatchVictory(playerName);
   }
 
-  // ─── Dispose ─────────────────────────────────────────────────────────────────
+  // ─── Connection-status announcements ────────────────────────────────────────
+
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queueService.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queueService.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  Future<void> whenIdle() => _queueService.whenIdle();
 
   void dispose() {
     _queueService.dispose();

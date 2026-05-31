@@ -31,16 +31,8 @@ class MockClockworkQuestAudioQueueService {
     announce('Gear $gearNumber turns! Onward!');
   }
 
-  void announceDoubleAdvance(Player player) {
-    announce('${player.name} hits a double! Two gears turn!');
-  }
-
-  void announceTripleAdvance(Player player) {
-    announce('${player.name} hits a triple! Three gears turn!');
-  }
-
   void announceMiss() {
-    announce('Steam vents! That\'s not the right gear!');
+    announce('That\'s not the right gear!');
   }
 
   void announceBullseyeTarget() {
@@ -68,11 +60,21 @@ class MockClockworkQuestAudioQueueService {
   }
 
   void announceVictory(Player winner) {
-    announce('All gears turn! ${winner.name} wins the Clockwork Crown!');
+    announce('${winner.name} wins the Clockwork Crown!');
   }
 
   void announceRemoveDarts(Player player) {
     announce('${player.name}, remove your darts!');
+  }
+
+  void announceGamePaused() {
+    announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+    );
+  }
+
+  void announceConnectionRestored() {
+    announce('Dartboard reconnected. Resume play when ready.');
   }
 
   void dispose() {

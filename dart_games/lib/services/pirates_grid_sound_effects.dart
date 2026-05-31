@@ -23,7 +23,7 @@ class PiratesGridSoundEffects {
     assetPath: '${_basePath}PiratesGrid-WaveCrash.mp3',
     startSeconds: 0.0,
     endSeconds: 4.0,
-    fadeOutMs: 1500,
+    fadeOutMs: 500,
   );
 
   /// Treasure found jingle for round victory — plays 0.0s to 1.25s

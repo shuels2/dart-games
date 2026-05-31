@@ -19,16 +19,7 @@ class CarnivalDerbyAnnouncementHelper {
   }
 
   // Announce dart hit with appropriate sound effect.
-  //
-  // NORMAL_PER_DART announcement: gated by the System Settings →
-  // Gameplay → "Per-dart score announcements" toggle. When the toggle
-  // is OFF (the default), this method returns early — the player still
-  // hears the dart-hit SFX from the game screen + the dartboard label
-  // updates immediately, but the "Single 20 / Triple 14 / Bullseye!"
-  // voice line is suppressed so per-turn audio stays short.
   void announceDart(int score, String multiplier) {
-    if (!_queue.perDartScoreAnnouncementsEnabled) return;
-
     // Determine sound effect based on multiplier type
     SoundEffectConfig? soundEffect;
 
@@ -110,10 +101,8 @@ class CarnivalDerbyAnnouncementHelper {
     }
   }
 
-  // Announce miss. Same NORMAL_PER_DART gate as announceDart — see its
-  // comment for rationale.
+  // Announce miss
   void announceMiss() {
-    if (!_queue.perDartScoreAnnouncementsEnabled) return;
     _queue.announce(
       'Miss',
       AudioPriority.hitConfirm,
@@ -132,16 +121,9 @@ class CarnivalDerbyAnnouncementHelper {
 
   // Announce remove darts
   void announceRemoveDarts(String playerName) {
-    // Disabled 2026-05-22 by user direction: the "Remove your darts"
-    // announcement (text + SFX) adds noticeable per-turn audio. The
-    // original queue call is left intact below as documentation and a
-    // one-line revert — drop the `return;` to re-enable.
-    return;
-    // ignore: dead_code
     _queue.announce(
       '$playerName, remove your darts',
       AudioPriority.turnTransition,
-      soundEffect: CarnivalDerbySoundEffects.removeDarts,
     );
   }
 
@@ -162,7 +144,26 @@ class CarnivalDerbyAnnouncementHelper {
     );
   }
 
-  // Dispose the underlying queue
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queue.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queue.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  Future<void> whenIdle() => _queue.whenIdle();
+
   void dispose() {
     _queue.dispose();
   }

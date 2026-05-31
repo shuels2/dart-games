@@ -115,6 +115,27 @@ class SettingsHelpers {
           '(status ${dartboardResponse.statusCode}): '
           '${dartboardResponse.body}');
     }
+
+    // Disable voice announcements for the test run. Event-driven victory
+    // navigation (_handleGameWon waits on _audioQueue.whenIdle before
+    // pushing the results screen) hangs in the test environment because
+    // the speech-engine onend / setCompletionHandler callbacks don't
+    // fire reliably under flutter_drive + DDC web — each queued
+    // announcement falls back to its wordCount-based timeout (~5-7 s),
+    // and tiki golf / gladiator arena accumulate enough announcements
+    // mid-game to exceed pumpUntilResults's 90 s budget. With voice
+    // off, DartAnnouncerService.speak() short-circuits, the queue
+    // drains instantly, whenIdle resolves, and navigation fires.
+    // Game logic (provider state, scoring, hasWinner) is unaffected.
+    final voiceResponse = await http.put(
+      Uri.parse(ApiConfig.url('/api/v1/settings/voice_enabled')),
+      headers: dartboardHeaders,
+      body: jsonEncode({'value': 'false'}),
+    );
+    if (voiceResponse.statusCode != 200) {
+      print('WARNING: Failed to disable voice for test '
+          '(status ${voiceResponse.statusCode}): ${voiceResponse.body}');
+    }
   }
 
   static Future<bool> _checkServerHealth() async {

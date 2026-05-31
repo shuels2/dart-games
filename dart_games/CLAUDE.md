@@ -386,11 +386,50 @@ All features must work on all platforms. See [Cross-Platform](docs/critical-rule
 
 ### Flutter Commands
 ```bash
-flutter run -d chrome          # Run on web
+flutter run -d chrome          # Run on web (Build label shows "Build dev")
 flutter test                    # Run all Flutter non-UI tests
-flutter build web               # Build for web
+flutter build web               # Build for web (Build label shows "Build dev")
 flutter doctor                  # Check Flutter setup
 ```
+
+### Build wrappers (inject git commit count as build number)
+```bash
+./build.bat run -d chrome       # Windows: forward to `flutter run` with BUILD_NUMBER set
+./build.sh run -d chrome        # macOS/Linux: same
+./build.bat build web           # Windows: build web with BUILD_NUMBER + no service worker
+./build.sh build web --release  # macOS/Linux: passes any flags through
+```
+
+These wrappers compute `BUILD_NUMBER = git rev-list --count HEAD` and pass it
+via `--dart-define`. The System Settings sidebar shows it as **"Build N"**.
+Use the wrappers when you want a real build number; raw `flutter run` works
+fine for everyday dev but the label falls back to `'dev'`.
+
+For `build` subcommands the wrappers also add `--pwa-strategy=none`, which
+disables Flutter's PWA service worker. The app needs a live dartboard
+WebSocket so offline-mode doesn't apply; removing the service worker
+prevents browsers from serving stale cached JS after a deploy.
+
+### Apache deployment — cache headers (Ubuntu + Apache)
+The build output ships `web/.htaccess` that gets copied into `build/web/`
+when you run `./build.sh build web`. Drop the whole `build/web/` folder
+onto the Apache document root and the cache rules apply automatically.
+The rules: `index.html` is never cached (so each visit picks up the
+latest build), `flutter_service_worker.js` is never cached (defensive),
+everything else is cached for 5 minutes so revisits are snappy but
+deploys propagate app-wide within ~5 minutes without forcing reloads.
+
+Apache prerequisites on the deploy box (one-time):
+```bash
+sudo a2enmod headers          # enable mod_headers so .htaccess works
+sudo systemctl reload apache2
+```
+
+The hosting `<Directory>` block (vhost config or apache2.conf) must
+allow `.htaccess` overrides — at minimum `AllowOverride Limit FileInfo`
+but `AllowOverride All` is the simplest. Without that, the `.htaccess`
+is silently ignored and the cache strategy degrades to whatever Apache's
+defaults are (often hours of stale cache).
 
 ### Server Commands
 ```bash

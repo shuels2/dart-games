@@ -325,6 +325,12 @@ class _DualPlayerListPanelState extends State<DualPlayerListPanel> {
     if (player != null && mounted) {
       final playerProvider = context.read<PlayerProvider>();
       await playerProvider.savePlayer(player);
+      // savePlayer is an HTTP roundtrip; the widget tree (and the provider
+      // it watches) may be disposed before the response returns — e.g. the
+      // dartboard disconnect modal grabs nav focus, or the user backs out.
+      // Touching the provider after disposal triggers a "ChangeNotifier was
+      // used after being disposed" assertion. Same guard as team_player_list_panel.
+      if (!mounted) return;
 
       // Auto-select the newly added player only if max not reached
       if (playerProvider.selectedPlayers.length < config.maxPlayers) {

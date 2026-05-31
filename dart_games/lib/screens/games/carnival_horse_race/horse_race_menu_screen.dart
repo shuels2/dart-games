@@ -50,6 +50,11 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _playerProvider = context.read<PlayerProvider>();
       await _playerProvider!.loadPlayers();
+      // loadPlayers is an HTTP roundtrip; the widget may unmount during the
+      // gap (user backs out, dartboard disconnect grabs nav, test teardown).
+      // Touching the provider after disposal triggers a "ChangeNotifier was
+      // used after being disposed" assertion.
+      if (!mounted) return;
       _playerProvider!.clearSelection();
 
       // Preselect players if provided

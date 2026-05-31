@@ -22,6 +22,7 @@ import '../../../services/play_to_complete/carnival_derby_strategy.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'horse_race_results_screen.dart';
 
@@ -355,7 +356,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       if (winner != null) {
         _audioQueue?.announceWinner(winner.name);
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 
@@ -380,7 +383,12 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
     final shouldPromptTakeout = horseRaceProvider.shouldPromptTakeout;
 
-    return PopScope(
+    return AutoSaveOnPause(
+      onPaused: () {
+        if (!hasDartsThrown) return;
+        horseRaceProvider.saveGame(playerProvider.allPlayers, isAutoSave: true);
+      },
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -650,6 +658,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
               config: DartboardPausedModalConfig.carnivalDerby(),
             ),
         ],
+      ),
       ),
     );
   }

@@ -17,6 +17,7 @@ import '../../../widgets/remove_darts_modal/remove_darts_modal_config.dart';
 import '../../../widgets/edit_score/edit_score_dialog.dart';
 import '../../../widgets/edit_score/edit_score_dialog_config.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../widgets/save_game_modal/save_game_modal_config.dart';
@@ -45,6 +46,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
   PlayToCompleteRunner? _playToCompleteRunner;
   bool _showSaveModal = false;
   bool _gameCompleted = false;
+  final Set<String> _bullseyeTargetAnnouncedFor = {};
 
   @override
   void initState() {
@@ -172,34 +174,33 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final multiplierList = provider.getDartThrowMultiplier(playerId);
     final advancedList = provider.getDartThrowAdvanced(playerId);
     final completedLapList = provider.getDartThrowCompletedLap(playerId);
+    final targetNumberList = provider.getDartThrowTargetNumber(playerId);
     if (hitTargetList.isEmpty) return;
 
     final hitTarget = hitTargetList.last;
     final multiplier = multiplierList.last;
     final advanced = advancedList.last;
     final completedLap = completedLapList.last;
+    final dartTargetNumber = targetNumberList.last;
     final newTarget = provider.getPlayerCurrentTarget(playerId);
     final completedTargets = provider.getPlayerCompletedTargets(playerId);
 
-    if (provider.hasWinner) return;
-
-    if (completedLap) {
+    // Slot 1: moment announcement (highest priority wins)
+    if (completedLap && !provider.hasWinner) {
       _audioQueue?.announceLapComplete();
-    } else if (hitTarget && advanced && newTarget == 21) {
+      _bullseyeTargetAnnouncedFor.remove(playerId);
+    } else if (hitTarget && advanced && (newTarget == 21 || dartTargetNumber == 21)) {
       _audioQueue?.announceBullseyeHit();
     } else if (hitTarget && advanced) {
-      if (multiplier == 3) {
-        _audioQueue?.announceTripleAdvance(player);
-      } else if (multiplier == 2) {
-        _audioQueue?.announceDoubleAdvance(player);
-      } else {
-        _audioQueue?.announceGearActivated(newTarget - 1);
-      }
-    } else if (!hitTarget) {
+      _audioQueue?.announceGearActivated(dartTargetNumber);
+    } else if (!hitTarget && !provider.hasWinner) {
       _audioQueue?.announceMiss();
     }
 
-    if (newTarget == 21 && !completedLap) {
+    if (provider.hasWinner) return;
+
+    // Slot 2: milestone announcement
+    if (newTarget == 21 && !completedLap && _bullseyeTargetAnnouncedFor.add(playerId)) {
       _audioQueue?.announceBullseyeTarget();
     } else if (completedTargets.length == 10) {
       _audioQueue?.announceHalfway(player);
@@ -258,7 +259,9 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         );
         _audioQueue?.announceVictory(winner);
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 
@@ -284,7 +287,12 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final shouldPromptTakeout = clockworkProvider.shouldPromptTakeout;
     final hasDartsThrown = game.totalDartsThrown.values.any((c) => c > 0);
 
-    return PopScope(
+    return AutoSaveOnPause(
+      onPaused: () {
+        if (!hasDartsThrown) return;
+        clockworkProvider.saveGame(playerProvider.allPlayers, isAutoSave: true);
+      },
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -499,6 +507,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             ),
         ],
       ),
+      ),
     );
   }
 
@@ -577,6 +586,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                       totalGears,
                       completedTargets: completedTargets,
                       isSpeedMode: isSpeedMode,
+                      hasWinner: provider.hasWinner,
                     ),
                   if (game.includeBullseye)
                     _positionedGearOnClock(
@@ -592,6 +602,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                       isBull: true,
                       completedTargets: completedTargets,
                       isSpeedMode: isSpeedMode,
+                      hasWinner: provider.hasWinner,
                     ),
 
                   // Active player at the center
@@ -622,11 +633,14 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     bool isBull = false,
     List<int> completedTargets = const [],
     bool isSpeedMode = false,
+    bool hasWinner = false,
   }) {
-    final bool isActive = isSpeedMode
-        ? completedTargets.contains(number)
-        : number < currentTarget;
-    final bool isCurrent = isSpeedMode ? false : number == currentTarget;
+    final bool isActive = hasWinner
+        ? true
+        : isSpeedMode
+            ? completedTargets.contains(number)
+            : number < currentTarget;
+    final bool isCurrent = hasWinner ? false : isSpeedMode ? false : number == currentTarget;
     // Position by clock index, starting at 12 o'clock, going clockwise
     final double angle = positionIndex / totalGears * 2 * pi - pi / 2;
     final double size = isCurrent ? currentGearSize : gearSize;
@@ -780,7 +794,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
               ),
             ),
             Text(
-              '$currentTarget/$maxTarget',
+              '${currentTarget - 1}/$maxTarget',
               style: GoogleFonts.lato(
                 fontSize: labelFontSize,
                 color: const Color(0xFFF5F0E8).withOpacity(0.5),
@@ -927,8 +941,9 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final target = provider.getPlayerCurrentTarget(opponentId);
     final laps = provider.getPlayerLapsCompleted(opponentId);
     final maxTarget = game.maxTarget as int;
-    final gearsActivated = laps * maxTarget + (target - 1);
+    final gearsActivated = target - 1;
     final inventorPath = provider.getInventorImagePath(opponentId);
+    final showLaps = (game.numberOfLaps as int) > 1;
 
     return Container(
       key: ClockworkQuestGameKeys.playerTile(opponentId),
@@ -980,14 +995,36 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              Text(
-                '$gearsActivated/$maxTarget',
-                style: GoogleFonts.lato(
-                  fontSize: 14,
-                  color: const Color(0xFFFFBF00),
+              if (showLaps)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Lap ${laps + 1}/${game.numberOfLaps}',
+                      style: GoogleFonts.lato(
+                        fontSize: 14,
+                        color: const Color(0xFFF5F0E8).withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$gearsActivated/$maxTarget',
+                      style: GoogleFonts.lato(
+                        fontSize: 14,
+                        color: const Color(0xFFFFBF00),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  '$gearsActivated/$maxTarget',
+                  style: GoogleFonts.lato(
+                    fontSize: 14,
+                    color: const Color(0xFFFFBF00),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
             ],
           );
         },

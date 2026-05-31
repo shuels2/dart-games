@@ -25,17 +25,10 @@ class MonsterMashAnnouncementHelper {
     );
   }
 
-  // NORMAL_PER_DART announcement (generic score readout: "Single 20",
-  // "Bullseye!", "Miss"). Gated by the System Settings → Gameplay →
-  // "Per-dart score announcements" toggle. When the toggle is OFF
-  // (the default), this method no-ops; the dart-hit SFX from the game
-  // screen still plays and all game-specific announcements
-  // (Strike/damage, Hat Trick, Elimination, ClutchHeal, etc.) still
-  // fire as before. The game screen calls this only when there is no
-  // secondary effect to announce (the !hasSecondary fallback path).
+  // Generic per-dart score readout ("Single 20" / "Bullseye!" / "Miss").
+  // The game screen calls this only when there is no secondary effect to
+  // announce (the !hasSecondary fallback path).
   void announceHit(int number, String multiplier, {bool isMiss = false}) {
-    if (!_queue.perDartScoreAnnouncementsEnabled) return;
-
     if (isMiss) {
       _queue.announce('Miss', AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.dartHit);
       return;
@@ -55,16 +48,23 @@ class MonsterMashAnnouncementHelper {
   }
 
   // Announce healing
-  void announceHealing(String multiplier, int amount) {
+  void announceHealing(String multiplier, int amount, {int? dartNumber}) {
     if (amount <= 0) return;
+
+    String prefix = '';
+    if (dartNumber == 50) {
+      prefix = 'Bullseye! ';
+    } else if (dartNumber == 25) {
+      prefix = 'Outer bull! ';
+    }
 
     String text;
     if (amount >= 50) {
-      text = 'Max Health!';
+      text = '${prefix}Max Health!';
     } else if (amount == 5) {
-      text = 'Plus 5!';
+      text = '${prefix}Plus 5 health!';
     } else {
-      text = 'Plus $amount!';
+      text = '${prefix}Plus $amount health!';
     }
 
     _queue.announce(text, AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.healing);
@@ -74,29 +74,29 @@ class MonsterMashAnnouncementHelper {
   void announceAttack(String playerName, String multiplier, int damage) {
     String text;
     if (damage <= 0) {
-      text = 'The shadows protect $playerName!';
+      text = 'The shadows protect $playerName! No damage!';
     } else if (multiplier == 'triple') {
       text = 'Devastating strike! $playerName takes $damage damage!';
     } else if (multiplier == 'double') {
-      text = 'Powerful hit! $playerName feels the pain!';
+      text = 'Powerful double hit! $playerName feels the pain!';
     } else {
-      text = 'A glancing blow! $playerName feels the sting.';
+      text = 'A single glancing blow! $playerName feels the sting.';
     }
 
     _queue.announce(text, AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.attack);
   }
 
-  // Announce health warning at thresholds
-  void announceHealthWarning(String playerName, double percentage) {
+  void announceHealthWarning(String playerName, double percentage, {int? damage}) {
+    String prefix = damage != null ? '$damage damage! ' : '';
     String text;
     if (percentage <= 0.10) {
-      text = '$playerName is barely clinging to life!';
+      text = '$prefix$playerName is barely clinging to life!';
     } else if (percentage <= 0.30) {
-      text = '$playerName is in critical condition!';
+      text = '$prefix$playerName is in critical condition!';
     } else if (percentage <= 0.70) {
-      text = '$playerName is starting to weaken!';
+      text = '$prefix$playerName is starting to weaken!';
     } else {
-      return; // No announcement above 70%
+      return;
     }
 
     _queue.announce(text, AudioPriority.shieldStatus, soundEffect: MonsterMashSoundEffects.healthWarning);
@@ -112,18 +112,17 @@ class MonsterMashAnnouncementHelper {
   }
 
   // Announce hat trick (3 darts all hit same opponent)
-  void announceHatTrick(String playerName) {
+  void announceHatTrick(String playerName, int damage) {
     _queue.announce(
-      'MONSTROUS! Triple strike on $playerName!',
+      'MONSTROUS! $damage damage! Triple strike on $playerName!',
       AudioPriority.statusChange,
       soundEffect: MonsterMashSoundEffects.hatTrick,
     );
   }
 
-  // Announce hat trick + elimination combined
-  void announceHatTrickElimination(String playerName) {
+  void announceHatTrickElimination(String playerName, int damage) {
     _queue.announce(
-      'MONSTROUS! Triple strike eliminates $playerName!',
+      'MONSTROUS! $damage damage! Triple strike eliminates $playerName!',
       AudioPriority.statusChange,
       soundEffect: MonsterMashSoundEffects.hatTrick,
     );
@@ -167,16 +166,9 @@ class MonsterMashAnnouncementHelper {
 
   // Announce remove darts
   void announceRemoveDarts() {
-    // Disabled 2026-05-22 by user direction: the "Remove your darts"
-    // announcement (text + SFX) adds noticeable per-turn audio. The
-    // original queue call is left intact below as documentation and a
-    // one-line revert — drop the `return;` to re-enable.
-    return;
-    // ignore: dead_code
     _queue.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
-      soundEffect: MonsterMashSoundEffects.removeDarts,
     );
   }
 
@@ -195,7 +187,26 @@ class MonsterMashAnnouncementHelper {
     _queue.announce('GAME OVER! The night is shared by $names!', AudioPriority.victory);
   }
 
-  // Dispose the underlying queue
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queue.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queue.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  Future<void> whenIdle() => _queue.whenIdle();
+
   void dispose() {
     _queue.dispose();
   }

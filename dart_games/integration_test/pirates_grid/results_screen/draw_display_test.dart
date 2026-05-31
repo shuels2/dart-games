@@ -3,6 +3,7 @@ import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -39,9 +40,7 @@ void main() {
 
     // Navigate to results by triggering takeout
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Verify STALEMATE! headline
     expect(find.text('STALEMATE!'), findsOneWidget,

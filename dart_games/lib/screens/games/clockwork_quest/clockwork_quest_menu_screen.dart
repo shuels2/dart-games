@@ -57,6 +57,11 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
       final playerProvider = context.read<PlayerProvider>();
       _playerProvider = playerProvider;
       await playerProvider.loadPlayers();
+      // loadPlayers is an HTTP roundtrip; the widget may unmount during the
+      // gap (user backs out, dartboard disconnect grabs nav, test teardown).
+      // Touching the provider after disposal triggers a "ChangeNotifier was
+      // used after being disposed" assertion.
+      if (!mounted) return;
       playerProvider.clearSelection();
 
       if (widget.preselectedPlayerIds != null) {

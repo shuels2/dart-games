@@ -6,6 +6,7 @@ import '../../shared/pump_sequences.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 
 final config = GameUIConfig.clockworkQuest();
 
@@ -81,9 +82,5 @@ Future<void> completeGameToVictory(
     await clickDartsRemoved(tester);
   }
 
-  await tester.pump(const Duration(seconds: 4));
-  await tester.pump();
-  await tester.pump();
-  await tester.pump();
-  await PumpSequences.fullRebuild(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }

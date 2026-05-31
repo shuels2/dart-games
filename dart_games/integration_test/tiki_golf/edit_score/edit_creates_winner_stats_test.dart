@@ -6,6 +6,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/pump_sequences.dart';
 import '../../shared/edit_score_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 /// MANDATORY: Edit Score — editing a non-winning turn (Splash on last hole)
@@ -108,9 +109,11 @@ void main() {
 
     // Confirm Bob's takeout → confirmTurnEnd → _endGame → hasWinner=true
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 3));
+    await ResultsHelpers.pumpUntilResults(tester, config);
+    // VictoryMusicService.initialize() + _updatePlayerStats() API call run async
+    // AFTER the Play Again button mounts; pumpUntilResults only settles ~1s
+    // post-button, which isn't enough under heavy parallel load.
+    await tester.pump(const Duration(seconds: 5));
     await tester.pump();
     await PumpSequences.fullRebuild(tester);
 
@@ -122,11 +125,6 @@ void main() {
     expect(winnerId, bobId,
         reason:
             'Bob should win with total=9 vs Alice total=12 after edit');
-
-    // Winner (Bob) should have gamesPlayed=1, gamesWon=1
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
-    await PumpSequences.fullRebuild(tester);
 
     final winnerPlayer = ProviderHelpers.findPlayerById(tester, bobId);
     expect(winnerPlayer, isNotNull);

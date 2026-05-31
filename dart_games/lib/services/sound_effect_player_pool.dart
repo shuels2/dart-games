@@ -77,11 +77,18 @@ class SoundEffectPlayerPool {
   /// This method:
   ///   1. Advances the round-robin index (always).
   ///   2. Cancels any pending fade/stop timer on the reused slot.
-  ///   3. Schedules a new fade/stop timer if `sfx.endSeconds` is set.
-  ///   4. Fires the player chain (`stop` → `setVolume` → `play`) as
+  ///   3. Fires the player chain (`stop` → `setVolume` → `play`) as
   ///      fire-and-forget — the future is intentionally discarded so
   ///      the queue isn't blocked on the audio engine's response time.
   ///      The chain's errors are caught and logged.
+  ///   4. Schedules the fade/stop timer INSIDE `_playOnPlayer` AFTER
+  ///      `await player.play()` resolves. This is critical: scheduling
+  ///      it synchronously (the previous behaviour) meant the timer
+  ///      could begin its fade ramp — or even hard-stop the clip —
+  ///      while the audio engine was still loading the asset. On web,
+  ///      asset load + seek-to-position routinely takes 500–1500 ms,
+  ///      which silently chopped short tuned clips (e.g. MM gameStart
+  ///      at totalMs=2250 / fadeOutMs=1500 was inaudible after tuning).
   ///
   /// Returns a `Future<void>` that completes essentially immediately
   /// (it does no `await` of its own). The async signature is preserved
@@ -100,23 +107,11 @@ class SoundEffectPlayerPool {
     _timers[index]?.cancel();
     _timers[index] = null;
 
-    // Schedule the fade/stop timer FIRST when we know the clip's length
-    // up front (endSeconds is set). It runs on Dart's event loop and is
-    // unaffected by whether the audio engine actually starts playback.
-    // In a unit-test environment with no audio platform, this still sets
-    // up correctly; in production it correctly tracks the playing clip's
-    // lifetime.
-    if (sfx.endSeconds != null) {
-      final totalMs = ((sfx.endSeconds! - sfx.startSeconds) * 1000).toInt();
-      if (totalMs > 0) {
-        _scheduleStopOrFade(index, player, totalMs, sfx.fadeOutMs);
-      }
-    }
-
-    // Fire-and-forget the player chain. We intentionally do NOT await
-    // it — the queue calling us shouldn't be blocked on the audio
-    // engine's response time, and in unit tests the calls hang on
-    // missing MethodChannel handlers. `unawaited` documents the intent.
+    // Fire-and-forget the player chain. Timer scheduling lives INSIDE
+    // _playOnPlayer (after player.play() resolves) so the timer's
+    // wall clock starts when audio actually begins, not when the API
+    // was called. `unawaited` documents the intent — we don't block
+    // the queue on the audio engine's response time.
     unawaited(_playOnPlayer(index, generation, player, sfx));
   }
 
@@ -131,11 +126,23 @@ class SoundEffectPlayerPool {
         position: Duration(milliseconds: (sfx.startSeconds * 1000).toInt()),
       );
 
-      // Full-file + fade-out: discover the asset's true duration now that
-      // play() has resolved, then schedule the trailing fade based on
-      // actual file length. Skip if the slot has already been reused by
-      // a newer play() call (generation mismatch) or the pool is gone.
-      if (sfx.endSeconds == null && sfx.fadeOutMs > 0 && !_disposed) {
+      // Audio playback has now started. Schedule the fade/stop timer
+      // measured from THIS moment so the user's wall-clock matches the
+      // timer's wall-clock. Skip if the slot has been reused by a
+      // newer play() (generation mismatch) or the pool is gone.
+      if (_disposed) return;
+      if (_generations[index] != generation) return;
+
+      if (sfx.endSeconds != null) {
+        // Length known up-front from config: end - start.
+        final totalMs = ((sfx.endSeconds! - sfx.startSeconds) * 1000).toInt();
+        if (totalMs > 0) {
+          _scheduleStopOrFade(index, player, totalMs, sfx.fadeOutMs);
+        }
+      } else if (sfx.fadeOutMs > 0) {
+        // Full-file + fade-out: discover the asset's true duration now
+        // that play() has resolved, then schedule the trailing fade
+        // against actual file length.
         final Duration? duration = await player.getDuration();
         if (_disposed || duration == null) return;
         if (_generations[index] != generation) return;

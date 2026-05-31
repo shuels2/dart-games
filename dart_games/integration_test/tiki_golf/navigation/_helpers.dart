@@ -12,6 +12,7 @@ import '../../shared/pump_sequences.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/settings_helpers.dart';
+import '../../shared/results_helpers.dart';
 
 final config = GameUIConfig.tikiGolf();
 
@@ -74,8 +75,5 @@ Future<void> playGameToCompletion(WidgetTester tester) async {
   }
 
   // Wait for results navigation (3s victory delay + animation)
-  await tester.pump(const Duration(seconds: 3));
-  await tester.pump();
-  await tester.pump(const Duration(seconds: 2));
-  await tester.pump();
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }

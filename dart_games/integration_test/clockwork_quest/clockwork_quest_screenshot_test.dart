@@ -253,10 +253,16 @@ void main() {
       await clickDartsRemoved(tester);
 
       // Wait for 3000ms victory delay + results screen navigation
-      await tester.pump(const Duration(seconds: 4));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pump();
+      // Robust wait: poll until the results screen has rendered, instead of a
+      // fixed pump that races the event-driven victory navigation under load.
+      for (int _i = 0; _i < 300; _i++) {
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+        if (find.byKey(ClockworkQuestResultsKeys.playAgainButton).evaluate().isNotEmpty) {
+          break;
+        }
+      }
+      await tester.pump(const Duration(seconds: 1));
       await tester.pump();
       await screenshot(binding, tester, '14_results_screen');
 

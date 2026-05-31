@@ -22,6 +22,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'monster_mash_results_screen.dart';
 
@@ -381,7 +382,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       if (hasHatTrick &&
           hasElimination &&
           newlyEliminated.contains(hatTrickTargetId)) {
-        _audioQueue?.announceHatTrickElimination(hatTrickTargetName!);
+        _audioQueue?.announceHatTrickElimination(hatTrickTargetName!, attackDamage);
         final otherEliminated =
             newlyEliminated.where((id) => id != hatTrickTargetId).toList();
         if (otherEliminated.isNotEmpty) {
@@ -404,18 +405,20 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
           _audioQueue?.announceElimination(eliminatedNames.first);
         }
       } else if (hasHatTrick) {
-        _audioQueue?.announceHatTrick(hatTrickTargetName!);
+        _audioQueue?.announceHatTrick(hatTrickTargetName!, attackDamage);
       } else if (hasClutchHeal) {
         _audioQueue?.announceClutchHeal(currentPlayer.name);
       } else if (hasAttack) {
-        _audioQueue?.announceAttack(
-            attackTargetName!, attackMultiplier, attackDamage);
         if (hasHealthWarningCrossing) {
-          _audioQueue?.announceHealthWarning(attackTargetName!, warningPct!);
+          _audioQueue?.announceHealthWarning(attackTargetName!, warningPct!, damage: attackDamage);
+        } else {
+          _audioQueue?.announceAttack(
+              attackTargetName!, attackMultiplier, attackDamage);
         }
       } else if (hasHealing) {
         final multiplierStr = parsed?['multiplier'] as String? ?? 'single';
-        _audioQueue?.announceHealing(multiplierStr, healAmount);
+        final dartNumber = parsed?['number'] as int?;
+        _audioQueue?.announceHealing(multiplierStr, healAmount, dartNumber: dartNumber);
       }
     }
 
@@ -527,7 +530,9 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       if (winners.isNotEmpty) {
         _audioQueue?.announceWinners(winners.map((p) => p.name).toList());
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 
@@ -551,7 +556,12 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     final hasDartsThrown =
         currentGame.totalDartsThrown.values.any((c) => c > 0);
 
-    return PopScope(
+    return AutoSaveOnPause(
+      onPaused: () {
+        if (!hasDartsThrown) return;
+        monsterMashProvider.saveGame(allPlayers, isAutoSave: true);
+      },
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -749,6 +759,30 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                   ? PlayToTieButtonConfig.monsterMash()
                   : null,
               playToTieEnabled: currentGame.speedPlayEnabled,
+              // Emulator-only buff-toggle buttons. Disabled (greyed)
+              // when bonusBuffsEnabled is off so the user understands
+              // toggling won't affect the active game's natural roll.
+              buffToggles: _mockApi != null
+                  ? BonusBuff.values
+                      .map<BuffToggleSpec<Object>>((b) => BuffToggleSpec<Object>(
+                            buff: b,
+                            label: MonsterMashGame.getBuffDisplayName(b),
+                            isActive: currentGame.activeBuff == b,
+                            isEnabled: currentGame.bonusBuffsEnabled,
+                            buttonKey:
+                                DartboardEmulatorKeys.buffToggleButton(b.name),
+                            config: BuffToggleButtonConfig.monsterMash(b),
+                          ))
+                      .toList()
+                  : null,
+              onBuffToggle: _mockApi != null
+                  ? (Object buff) {
+                      final b = buff as BonusBuff;
+                      final current =
+                          monsterMashProvider.currentGame?.activeBuff;
+                      monsterMashProvider.setActiveBuff(current == b ? null : b);
+                    }
+                  : null,
             ),
           ),
           // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
@@ -781,6 +815,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               config: DartboardPausedModalConfig.monsterMash(),
             ),
         ],
+      ),
       ),
     );
   }
@@ -1532,8 +1567,8 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     const yellowColor = Color(0xFFFFCC00);
     const greenColor = Color(0xFF00CC00);
 
-    final height = compact ? (compactHeight ?? 14.0) : 22.0;
-    final fontSize = compact ? (height * 0.7).clamp(7.0, 12.0) : 14.0;
+    final height = compact ? (compactHeight ?? 14.0) : 30.0;
+    final fontSize = compact ? (height * 0.7).clamp(7.0, 12.0) : 18.0;
     final hp = healthPercent.clamp(0.0, 1.0);
 
     return Container(

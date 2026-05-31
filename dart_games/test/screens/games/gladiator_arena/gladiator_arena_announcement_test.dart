@@ -167,7 +167,7 @@ void main() {
 
       expect(mock.announcementCount, 1);
       expect(mock.queuedTexts[0],
-          'Not a double! The champion must earn their laurel!');
+          'Not a double! Bust!');
     });
 
     test('14. Bull inner fires "Bullseye! 50 glory points!"', () {
@@ -257,7 +257,7 @@ void main() {
       );
 
       expect(mock.announcementCount, 1);
-      expect(mock.queuedTexts[0], 'Alice scores 5 points.');
+      expect(mock.queuedTexts[0], '5 points.');
     });
 
     test('20. Miss fires "The dart finds only sand!"', () {
@@ -466,11 +466,11 @@ void main() {
       expect(mock.queuedTexts[0], contains('triple'));
     });
 
-    test('32. Small hit text contains player name and score', () {
+    test('32. Small hit text contains score', () {
       mock.announceSmallHit('Bob', 7);
 
-      expect(mock.queuedTexts[0], contains('Bob'));
       expect(mock.queuedTexts[0], contains('7'));
+      expect(mock.queuedTexts[0], contains('points'));
     });
 
     test('33. Game start text includes "arena" and target score', () {

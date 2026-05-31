@@ -636,4 +636,32 @@ void main() {
       expect(damages, [0]);
     });
   });
+
+  group('setActiveBuff (emulator-only buff toggle)', () {
+    test('sets activeBuff and notifies listeners', () {
+      provider.startGame(players, 20, true, false, 10);
+      int notifications = 0;
+      provider.addListener(() => notifications++);
+
+      provider.setActiveBuff(BonusBuff.bloodMoon);
+
+      expect(provider.currentGame!.activeBuff, BonusBuff.bloodMoon);
+      expect(notifications, greaterThanOrEqualTo(1));
+    });
+
+    test('passing null clears activeBuff', () {
+      provider.startGame(players, 20, true, false, 10);
+      provider.setActiveBuff(BonusBuff.laboratorySpark);
+      expect(provider.currentGame!.activeBuff, BonusBuff.laboratorySpark);
+
+      provider.setActiveBuff(null);
+      expect(provider.currentGame!.activeBuff, isNull);
+    });
+
+    test('is a no-op when no current game', () {
+      // No game started — setter should silently return.
+      provider.setActiveBuff(BonusBuff.bloodMoon);
+      expect(provider.currentGame, isNull);
+    });
+  });
 }

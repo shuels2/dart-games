@@ -241,7 +241,7 @@ class HorseRaceProvider extends ChangeNotifier {
     _resumedSavedGameId = null;
   }
 
-  Future<void> saveGame(List<Player> players) async {
+  Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
     debugPrint('[HorseRaceProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
     if (_currentGame == null || _saving) {
       debugPrint('[HorseRaceProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
@@ -270,6 +270,7 @@ class HorseRaceProvider extends ChangeNotifier {
       leadingPlayerScore: '$leaderScore pts',
       gameState: game.toJson(),
       waitingForTakeout: _waitingForTakeout,
+      isAutoSave: isAutoSave,
       existingId: _resumedSavedGameId,
     );
 

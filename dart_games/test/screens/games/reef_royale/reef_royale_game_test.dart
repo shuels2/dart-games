@@ -594,7 +594,7 @@ void main() {
       game.advanceToNextPlayer();
       game.processDart('p1', 20, 'single',
           resolvedTargets: [20]);
-      expect(game.dartThrowPearlRecipientId['p1']!.last, 'p2');
+      expect(game.dartThrowPearlRecipientIds['p1']!.last, ['p2']);
     });
   });
 
@@ -907,6 +907,65 @@ void main() {
           resolvedTargets: [20]);
       // Game should NOT be finished since p1 is behind in pearls
       expect(game.state, ReefRoyaleGameState.playing);
+    });
+
+    test('cursed tide: wins when all corals claimed and lowest pearls', () {
+      final game = createStandardGame(
+          gameMode: ReefRoyaleGameMode.cursedTide);
+      // p1 claims all 7 targets
+      for (final target in game.activeTargets) {
+        game.claimed['p1']!.add(target);
+      }
+      // In cursed tide, LOWEST pearls wins
+      game.pearls['p1'] = 30;
+      game.pearls['p2'] = 100;
+      // Unclaim one and reclaim via processDart to trigger win check
+      game.claimed['p1']!.remove(20);
+      game.marks['p1']![20] = 2;
+      game.dartsThrown['p1'] = 0;
+      game.processDart('p1', 20, 'single', resolvedTargets: [20]);
+      expect(game.state, ReefRoyaleGameState.finished);
+      expect(game.winnerId, 'p1');
+    });
+
+    test('cursed tide: does NOT win with all corals but highest pearls', () {
+      final game = createStandardGame(
+          gameMode: ReefRoyaleGameMode.cursedTide);
+      // p1 claims all 7 targets but has MORE pearls (bad in cursed tide)
+      for (final target in game.activeTargets) {
+        game.claimed['p1']!.add(target);
+      }
+      game.pearls['p1'] = 100;
+      game.pearls['p2'] = 30;
+      game.claimed['p1']!.remove(20);
+      game.marks['p1']![20] = 2;
+      game.dartsThrown['p1'] = 0;
+      game.processDart('p1', 20, 'single', resolvedTargets: [20]);
+      // Game should NOT be finished — p1 has most pearls (worst in cursed tide)
+      expect(game.state, ReefRoyaleGameState.playing);
+    });
+
+    test('cursed tide: win check fires on any dart, not just the all-corals player dart', () {
+      // p1 has all corals but was behind on pearls. An opponent's dart
+      // triggers _checkWinCondition which checks ALL players. If p1
+      // now has lowest pearls, p1 wins on p2's dart.
+      final game = createStandardGame(
+          playerIds: ['p1', 'p2', 'p3'],
+          gameMode: ReefRoyaleGameMode.cursedTide);
+      for (final target in game.activeTargets) {
+        game.claimed['p1']!.add(target);
+      }
+      // p1 has all corals. p1=30 (lowest), p2=50, p3=60.
+      game.pearls['p1'] = 30;
+      game.pearls['p2'] = 50;
+      game.pearls['p3'] = 60;
+      // p2 throws a dart (any target) — _checkWinCondition runs after.
+      game.dartsThrown['p2'] = 0;
+      game.currentPlayerIndex = 1;
+      game.processDart('p2', 20, 'single', resolvedTargets: [20]);
+      // p1 has all corals + lowest pearls → should win
+      expect(game.state, ReefRoyaleGameState.finished);
+      expect(game.winnerId, 'p1');
     });
 
     test('game ends when all targets locked', () {

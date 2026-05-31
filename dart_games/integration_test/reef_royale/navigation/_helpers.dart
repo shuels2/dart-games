@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 
 import '../../shared/dart_throw_helpers.dart';
-import '../../shared/pump_sequences.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
+import '../../shared/results_helpers.dart';
 
 final config = GameUIConfig.reefRoyale();
 
@@ -68,9 +68,5 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
 
   await clickDartsRemoved(tester);
 
-  await tester.pump(const Duration(seconds: 4));
-  await tester.pump();
-  await tester.pump();
-  await tester.pump();
-  await PumpSequences.fullRebuild(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }

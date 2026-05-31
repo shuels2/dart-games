@@ -38,9 +38,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 | Birdie | hitConfirm | "Birdie! {name} sinks it on the first dart!" | Crowd Clap |
 | Par | hitConfirm | "Par! Solid shot, {name}!" | Ball Drop |
 | Bogey | hitConfirm | "Bogey! Just squeaked that one in!" | Putt |
+| Double Bogey | hitConfirm | "Double bogey! Squeaked it out, {name}!" | Putt |
+| Triple Bogey | hitConfirm | "Triple bogey! Barely hung in, {name}!" | Putt |
+| Quadruple Bogey | hitConfirm | "Quadruple bogey! That was a wild one, {name}!" | Putt |
 | Splash | hitConfirm | "Splash! {name} misses them all!" | Splash |
 | Individual Miss (not last dart) | hitConfirm | "That one went wide!" | Splash |
-| Almost There (penultimate dart, no hit) | statusChange | "{name}, one dart left to save par!" | Tiki Chime |
+| Almost There (dart 1 missed) | statusChange | "{name}, one dart left to save par!" | Tiki Chime |
 | Mulligan Used | statusChange | "Mulligan! {name} gets a do-over!" | Mulligan |
 | Mulligan Available Reminder (on Splash) | statusChange | "Splash! Use your mulligan?" | Tiki Chime |
 | Near Win (last hole) | statusChange | "Final hole! {name} leads by {X}!" | Ukulele Strum |
@@ -68,12 +71,12 @@ When multiple announcements would fire for the same dart event, the MAX 2 announ
 2. **Birdie** — Hit on dart 1 (Crowd Clap)
 3. **Mulligan Used** — After USE MULLIGAN tapped (Mulligan sound)
 4. **Par** — Hit on dart 2 (Ball Drop)
-5. **Bogey** — Hit on dart 3+ (Putt)
+5. **Bogey / Double Bogey / Triple Bogey / Quadruple Bogey** — Hit on dart 3 / 4 / 5 / 6 respectively (Putt). Per-stroke variant is selected from `holeScore`.
 6. **Splash + Mulligan Reminder** — `Splash! Use your mulligan?` when mulligan available (Tiki Chime) — replaces plain Splash announcement
 7. **Splash (no mulligan)** — `Splash! {name} misses them all!` (Splash)
 8. **Near Win** — On last hole, leader's final announcement (Ukulele)
 9. **Hole Complete** — All players finished hole (Tiki Chime)
-10. **Almost There** — Penultimate dart, no hit yet (Tiki Chime)
+10. **Almost There** — Dart 1 missed (next dart can still land Par) (Tiki Chime)
 11. **Individual Miss** — Non-last dart miss (Splash sound, lowest priority)
 
 **MAX 2 rule:** A single dart event fires at most 2 announcements. "Remove your darts" (end-of-turn) ALWAYS fires unconditionally and does NOT count against the 2-announcement budget.
@@ -112,11 +115,31 @@ When multiple announcements would fire for the same dart event, the MAX 2 announ
 **Message:** "Par! Solid shot, {playerName}!"
 **Sound:** Ball Drop (0s–1.6s)
 
-### announceBogey()
+### announceBogey(String playerName)
 **Priority:** hitConfirm (2)
-**Triggers:** Player hits target on dart 3 or later (but not the last possible dart)
+**Triggers:** Player hits target on dart 3
 **Message:** "Bogey! Just squeaked that one in!"
 **Sound:** Putt (0s–0.2s)
+
+### announceDoubleBogey(String playerName)
+**Priority:** hitConfirm (2)
+**Triggers:** Player hits target on dart 4 (only when Max Darts ≥ 4)
+**Message:** "Double bogey! Squeaked it out, {playerName}!"
+**Sound:** Putt (0s–0.2s)
+
+### announceTripleBogey(String playerName)
+**Priority:** hitConfirm (2)
+**Triggers:** Player hits target on dart 5 (only when Max Darts ≥ 5)
+**Message:** "Triple bogey! Barely hung in, {playerName}!"
+**Sound:** Putt (0s–0.2s)
+
+### announceQuadrupleBogey(String playerName)
+**Priority:** hitConfirm (2)
+**Triggers:** Player hits target on dart 6 (only when Max Darts = 6)
+**Message:** "Quadruple bogey! That was a wild one, {playerName}!"
+**Sound:** Putt (0s–0.2s)
+
+> **Splash precedence:** When `holeScore == maxStrokes + 1` (target never hit), Splash always wins over any bogey-flavor announcement — e.g. at Max Darts = 3 with no hits, the player gets Splash (not Double Bogey).
 
 ### announceSplash(String playerName, {bool mulliganAvailable = false})
 **Priority:** hitConfirm (2)
@@ -134,7 +157,7 @@ When multiple announcements would fire for the same dart event, the MAX 2 announ
 
 ### announceAlmostThere(String playerName)
 **Priority:** statusChange (4)
-**Triggers:** Player is on the penultimate dart (dart Max-1) with no hit yet — one dart left to avoid Splash
+**Triggers:** Player has thrown 1 dart and missed — the next dart (dart 2) is still the Par dart. Fires regardless of Max Darts; later mid-turn misses fall through to Individual Miss.
 **Message:** "{playerName}, one dart left to save par!"
 **Sound:** Tiki Chime (full)
 

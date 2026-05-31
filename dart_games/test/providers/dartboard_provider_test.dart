@@ -357,4 +357,30 @@ void main() {
       expect(provider.error, null);
     });
   });
+
+  group('DartboardProvider.backoffMs (auto-reconnect curve)', () {
+    test('first attempt waits 1s', () {
+      expect(DartboardProvider.backoffMs(0), 1000);
+    });
+
+    test('curve doubles each attempt: 1, 2, 4, 8 s', () {
+      expect(DartboardProvider.backoffMs(0), 1000);
+      expect(DartboardProvider.backoffMs(1), 2000);
+      expect(DartboardProvider.backoffMs(2), 4000);
+      expect(DartboardProvider.backoffMs(3), 8000);
+    });
+
+    test('caps at 15s once the doubling curve exceeds it', () {
+      // 2^4 * 1000 = 16000 > cap; clamps to 15000.
+      expect(DartboardProvider.backoffMs(4), 15000);
+      expect(DartboardProvider.backoffMs(5), 15000);
+      expect(DartboardProvider.backoffMs(10), 15000);
+    });
+
+    test('never returns 0 or negative', () {
+      for (var i = 0; i < 12; i++) {
+        expect(DartboardProvider.backoffMs(i), greaterThan(0));
+      }
+    });
+  });
 }

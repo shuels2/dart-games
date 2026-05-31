@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/services/victory_music_service.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/pump_sequences.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 /// MANDATORY: Victory music initialized test.
@@ -22,11 +23,14 @@ void main() {
 
     await driveToCompletion(tester, playerNames: ['Alice', 'Bob']);
 
-    // Extra pump time for results screen initState to run
-    await tester.pump(const Duration(seconds: 3));
+    // Wait for results screen initState to run
+    await ResultsHelpers.pumpUntilResults(tester, config);
+    // VictoryMusicService.initialize() runs async AFTER the Play Again button
+    // mounts (HTTP GET /api/v1/music); pumpUntilResults only settles ~1s
+    // post-button, which isn't enough under heavy parallel load.
+    await tester.pump(const Duration(seconds: 5));
     await tester.pump();
     await tester.pump();
-    await PumpSequences.fullRebuild(tester);
 
     // VictoryMusicService should now be initialized (results screen called it)
     expect(VictoryMusicService().isInitialized, isTrue,

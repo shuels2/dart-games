@@ -40,7 +40,10 @@ class MockLunarLanderAudioQueueService {
     _record('Mission control, altitude $startingAltitude! Begin descent!');
   }
 
-  void announcePlayerTurn({required String playerName}) {
+  void announcePlayerTurn({
+    required String playerName,
+    required int altitude,
+  }) {
     _record('$playerName, you have the controls!');
   }
 
@@ -65,7 +68,7 @@ class MockLunarLanderAudioQueueService {
     required bool hardLandingEnabled,
   }) {
     if (hasWinner) {
-      _announceTouchdown(playerName: playerName);
+      return;
     } else if (wasBust) {
       _announceCrashLanding(playerName: playerName, revertedAltitude: newAltitude);
     } else if (!hardLandingEnabled &&
@@ -74,13 +77,13 @@ class MockLunarLanderAudioQueueService {
         newAltitude < 0) {
       _announceClimbingBack(playerName: playerName, altitude: newAltitude);
     } else if (!hardLandingEnabled && newAltitude < 0) {
-      _announceNegativeAltitude(playerName: playerName, altitude: newAltitude);
+      _announceNegativeAltitude(score: dartScore);
     } else if (newAltitude > 0 && newAltitude <= 20) {
       _announceNearLanding(playerName: playerName, altitude: newAltitude);
     } else if (dartScore >= 40) {
-      _announceBigDescent(playerName: playerName, score: dartScore, newAltitude: newAltitude);
+      _announceBigDescent(playerName: playerName, score: dartScore);
     } else if (dartScore >= 1) {
-      _announceStandardDescent(playerName: playerName, score: dartScore, newAltitude: newAltitude);
+      _announceStandardDescent(playerName: playerName, score: dartScore);
     } else {
       _announceMiss(playerName: playerName);
     }
@@ -93,52 +96,65 @@ class MockLunarLanderAudioQueueService {
     _record(''); // victory fanfare sound (empty text, sound-only)
   }
 
+  void announceWinner(String playerName) {
+    _announceTouchdown(playerName: playerName);
+  }
+
   void _announceCrashLanding({
     required String playerName,
     required int revertedAltitude,
   }) {
-    _record('Crash landing! $playerName pulls back to $revertedAltitude!');
+    _record('Crash landing! Pulling back to $revertedAltitude.');
   }
 
   void _announceClimbingBack({
     required String playerName,
     required int altitude,
   }) {
-    _record('$playerName is climbing back! Altitude: $altitude!');
+    _record('Climbing back! Altitude $altitude.');
   }
 
   void _announceNegativeAltitude({
-    required String playerName,
-    required int altitude,
+    required int score,
   }) {
-    _record('$playerName overshot! Altitude: $altitude!');
+    _record('Rough landing! Descending $score.');
   }
 
   void _announceNearLanding({
     required String playerName,
     required int altitude,
   }) {
-    _record('Final approach! $playerName at altitude $altitude!');
+    _record('Final approach! Altitude $altitude!');
   }
 
   void _announceBigDescent({
     required String playerName,
     required int score,
-    required int newAltitude,
   }) {
-    _record('Major burn! $playerName drops $score! Altitude: $newAltitude!');
+    _record('Major burn! Descending $score.');
   }
 
   void _announceStandardDescent({
     required String playerName,
     required int score,
-    required int newAltitude,
   }) {
-    _record('$playerName descends $score! Altitude: $newAltitude!');
+    _record('Descending $score!');
   }
 
   void _announceMiss({required String playerName}) {
-    _record('$playerName drifts in orbit!');
+    _record('Whiff. Drifting in orbit!');
+  }
+
+  // ─── Connection-status announcements ──────────────────────────────────────
+
+  void announceGamePaused() {
+    _record(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+    );
+  }
+
+  void announceConnectionRestored() {
+    _record('Dartboard reconnected. Resume play when ready.');
   }
 
   // ─── Dispose ──────────────────────────────────────────────────────────────

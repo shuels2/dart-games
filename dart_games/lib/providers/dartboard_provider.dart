@@ -8,6 +8,7 @@ import '../services/mock_scolia_api_service.dart';
 import '../services/scolia_websocket_service.dart';
 import '../services/api_logger_service.dart';
 import '../services/api/api_client.dart';
+import '../services/dartboard_wake_listener.dart';
 
 enum DartboardConnectionStatus {
   disconnected,
@@ -25,6 +26,17 @@ class DartboardProvider with ChangeNotifier {
   String? _apiKey;
   Timer? _statusCheckTimer;
 
+  // Auto-reconnect state — see _scheduleReconnect. Used when a previously-
+  // healthy WebSocket disconnects (network blip, sleep/wake, hardware
+  // power-cycle). Retries forever with exponential backoff capped at 15s.
+  Timer? _reconnectTimer;
+  int _reconnectAttempt = 0;
+
+  // Page-visibility wake listener (web-only; no-op on native). When the
+  // browser tab regains focus after sleep, this triggers an immediate
+  // reconnect bypassing the current backoff window.
+  final DartboardWakeListener _wakeListener = DartboardWakeListener();
+
   MockScoliaApiService? _mockApiService;
   ScoliaWebSocketService? _webSocketService;
 
@@ -35,6 +47,14 @@ class DartboardProvider with ChangeNotifier {
   /// Inject the ApiClient instance. Must be called before loadConfiguration().
   void initialize(ApiClient client) {
     _apiClient = client;
+    // Subscribe to browser tab visibility (web only — stub on native).
+    // When the tab becomes visible again after sleep, force an
+    // immediate reconnect if we're currently paused.
+    _wakeListener.start(() {
+      if (_status == DartboardConnectionStatus.error) {
+        forceReconnectNow();
+      }
+    });
   }
 
   ApiClient get _api {
@@ -288,11 +308,11 @@ class DartboardProvider with ChangeNotifier {
       if (event['type'] == 'disconnected') {
         debugPrint('[Dartboard] event: disconnected '
             '(message=${event['data']?['message']}). Status -> error. '
-            'NOTE: no auto-reconnect — the WebSocket is now dead until '
-            'loadConfiguration() / connectToScolia() runs again.');
+            'Scheduling auto-reconnect.');
         _status = DartboardConnectionStatus.error;
         _error = event['data']?['message'] ?? 'Dartboard disconnected';
         notifyListeners();
+        _scheduleReconnect();
       } else if (event['type'] == 'sbc_status_changed') {
         final payload = event['data']?['payload'];
         final boardStatus = payload?['boardStatus'] as String?;
@@ -314,6 +334,9 @@ class DartboardProvider with ChangeNotifier {
         initialBoardStatus == 'Takeout') {
       _status = DartboardConnectionStatus.connected;
       _error = null;
+      // Healthy connection re-established — clear any pending reconnect
+      // schedule and reset the backoff curve.
+      _resetReconnectState();
       debugPrint('[Dartboard] Status -> connected (HELLO_CLIENT confirmed '
           'hardware online).');
       notifyListeners();
@@ -352,6 +375,7 @@ class DartboardProvider with ChangeNotifier {
         boardStatus == 'Takeout') {
       _status = DartboardConnectionStatus.connected;
       _error = null;
+      _resetReconnectState();
     } else if (boardStatus == 'Offline' ||
         boardStatus == 'Error' ||
         boardStatus == null) {
@@ -389,6 +413,7 @@ class DartboardProvider with ChangeNotifier {
   // Clear dartboard configuration
   Future<void> clearDartboard() async {
     stopStatusChecking();
+    _resetReconnectState();
 
     await _api.clearDartboard();
 
@@ -586,9 +611,92 @@ class DartboardProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Direct test-only status mutator. Used by DartboardStatusAnnouncer
+  /// widget tests that need to drive the full status lifecycle (e.g.
+  /// connected → disconnected → connected) without going through the
+  /// hardware-shaped simulate* helpers above.
+  @visibleForTesting
+  void setStatusForTesting(DartboardConnectionStatus status) {
+    _status = status;
+    _error = null;
+    notifyListeners();
+  }
+
+  // ─── Auto-reconnect ────────────────────────────────────────────────────────
+
+  /// Schedule the next reconnect attempt using an exponential-backoff
+  /// curve capped at 15s: 1s, 2s, 4s, 8s, 15s, 15s, ...
+  ///
+  /// Retries forever — there's no give-up state. The user is staring at
+  /// the paused modal; the cheapest way back to gameplay is to keep
+  /// trying. Cancellation hooks: [_resetReconnectState] (success),
+  /// [clearDartboard] (user removed the board), [dispose] (provider
+  /// going away).
+  void _scheduleReconnect() {
+    if (_useEmulatorMode || _dartboard == null || _apiKey == null) {
+      // Nothing to reconnect to.
+      return;
+    }
+    _reconnectTimer?.cancel();
+    final delayMs = backoffMs(_reconnectAttempt);
+    debugPrint('[Dartboard] Scheduling reconnect attempt '
+        '#${_reconnectAttempt + 1} in ${delayMs}ms');
+    _reconnectTimer = Timer(Duration(milliseconds: delayMs), _attemptReconnect);
+  }
+
+  /// 1s → 2s → 4s → 8s → 15s → 15s ... (cap at 15s).
+  @visibleForTesting
+  static int backoffMs(int attempt) {
+    const cap = 15000;
+    final ms = 1000 * (1 << attempt); // 2^attempt seconds
+    return ms > cap ? cap : ms;
+  }
+
+  Future<void> _attemptReconnect() async {
+    _reconnectTimer = null;
+    if (_useEmulatorMode || _dartboard == null || _apiKey == null) return;
+    if (_status == DartboardConnectionStatus.connected) return;
+
+    _reconnectAttempt++;
+    debugPrint('[Dartboard] Reconnect attempt #$_reconnectAttempt');
+    await _attemptConnection();
+
+    if (_status != DartboardConnectionStatus.connected) {
+      // Schedule the next attempt. _reconnectAttempt has already been
+      // incremented, so the next call uses a larger backoff.
+      _scheduleReconnect();
+    }
+    // Success path: _resetReconnectState was called via the success
+    // handler inside _onWebSocketConnected (or _applyBoardStatus).
+  }
+
+  /// Cancel any pending reconnect timer and reset the backoff counter.
+  /// Called by every code path that establishes a healthy connection,
+  /// plus from clearDartboard / dispose to stop background work.
+  void _resetReconnectState() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectAttempt = 0;
+  }
+
+  /// Public hook used by visibility / lifecycle listeners on web to
+  /// kick off an immediate reconnect when the tab becomes visible
+  /// again after a sleep/wake cycle. Resets the backoff counter so
+  /// the user doesn't have to wait through a stale backoff window.
+  void forceReconnectNow() {
+    if (_status == DartboardConnectionStatus.connected) return;
+    if (_useEmulatorMode || _dartboard == null || _apiKey == null) return;
+    debugPrint('[Dartboard] forceReconnectNow — wake-up trigger');
+    _reconnectTimer?.cancel();
+    _reconnectAttempt = 0;
+    _attemptReconnect();
+  }
+
   @override
   void dispose() {
     stopStatusChecking();
+    _resetReconnectState();
+    _wakeListener.stop();
     _webSocketService?.dispose();
     super.dispose();
   }

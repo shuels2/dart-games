@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -44,9 +45,7 @@ void main() {
     await throwDartViaMock(tester, 20); // S20 — DART 3, prospective 100 ≥ 100 = VICTORY
     await clickDartsRemoved(tester);
 
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Should be on results screen
     expect(ElementFinders.getGladiatorArenaPlayAgainButton(), findsOneWidget,

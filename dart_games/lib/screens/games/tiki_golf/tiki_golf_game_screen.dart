@@ -22,6 +22,7 @@ import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'tiki_golf_results_screen.dart';
 
@@ -284,7 +285,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     final hasWinner = game.hasWinner;
 
     // ── Compute fact flags ──────────────────────────────────────────────────
-    final victory = hasWinner && currentTurnEnded;
+    final victory = false; // Victory deferred to _handleGameWon (after takeout)
 
     final holeComplete =
         currentTurnEnded && !hasWinner && game.isCurrentHoleComplete;
@@ -301,20 +302,31 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
     String? scoreLabel;
     if (currentTurnEnded && holeScore != null) {
-      if (holeScore == 1) {
+      // Splash (never hit) takes priority over the bogey-flavor buckets so
+      // that holeScore == maxStrokes+1 always announces Splash regardless of
+      // which numeric stroke that lands on.
+      if (holeScore == game.maxStrokes + 1) {
+        scoreLabel = 'splash';
+      } else if (holeScore == 1) {
         scoreLabel = 'birdie';
       } else if (holeScore == 2) {
         scoreLabel = 'par';
-      } else if (holeScore == game.maxStrokes + 1) {
-        scoreLabel = 'splash';
-      } else {
+      } else if (holeScore == 3) {
         scoreLabel = 'bogey';
+      } else if (holeScore == 4) {
+        scoreLabel = 'doubleBogey';
+      } else if (holeScore == 5) {
+        scoreLabel = 'tripleBogey';
+      } else if (holeScore == 6) {
+        scoreLabel = 'quadrupleBogey';
       }
     }
 
-    // almostThere: penultimate dart no-hit (dartsThrown == maxStrokes - 1, no score)
+    // almostThere: fire only after dart 1 missed, when the next dart can
+    // still land Par (holeScore == 2). dartsThrown == 1 → player has thrown
+    // 1 dart, dart 2 is next. Past that falls through to the `miss` handler.
     final almostThere = !currentTurnEnded &&
-        dartsThrown == game.maxStrokes - 1 &&
+        dartsThrown == 1 &&
         holeScore == null;
 
     // miss: mid-turn non-hit that does not end the turn and is not penultimate
@@ -473,7 +485,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           _audioQueue?.announceVictory(winnerName);
         }
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 
@@ -521,7 +535,17 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         game.dartsThrown.values.any((c) => c > 0) ||
         game.totalTurns.values.any((c) => c > 0);
 
-    return PopScope(
+    return AutoSaveOnPause(
+      onPaused: () {
+        if (!hasDartsThrown) return;
+        provider.saveGame(
+          SaveGameService(),
+          playerNames:
+              playerProvider.allPlayers.map((p) => p.name).toList(),
+          isAutoSave: true,
+        );
+      },
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -755,6 +779,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
             ),
         ],
       ),
+      ),
     );
   }
 
@@ -776,10 +801,10 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         children: [
           // Hole info row
           _buildHoleInfoRow(game),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
           // Hole image row (main + neighbor previews)
           _buildHoleImageRow(game),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
           // Above the scorecard: Par + dart slots on the left, Skip Turn
           // button on the right edge (lined up with the scorecard's right
           // edge — the scorecard below fills the same horizontal extent).
@@ -861,9 +886,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildHoleInfoRow(game),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
                 _buildHoleImageRow(game),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
                 // Above the scorecard: Par + dart slots on the left, Skip
                 // Turn on the right. Per-team caption removed — Teams panel
                 // on the left already shows the active team.
@@ -918,25 +943,32 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     required List<String> teamIds,
     required String? activeTeamId,
   }) {
-    return Container(
+    return LayoutBuilder(builder: (context, constraints) {
+      final availH = constraints.maxHeight;
+      final teamCount = teamIds.length;
+      // Reserve ~50px for header + padding. Distribute rest among teams.
+      final perTeamH = (availH - 50) / teamCount;
+      final crestSize = (perTeamH * 0.72).clamp(60.0, 200.0);
+      final scoreFontSize = (crestSize * 0.155).clamp(15.0, 26.0);
+      final headerFontSize = (crestSize * 0.175).clamp(17.0, 28.0);
+      final teamSpacing = (perTeamH * 0.04).clamp(2.0, 12.0);
+
+      return Container(
       key: TikiGolfGameKeys.teamsPanel,
-      // Tight left margin so the larger 98px badges sit close to the screen
-      // edge; right padding stays at 8 to keep separation from center content.
-      padding: const EdgeInsets.fromLTRB(4, 12, 8, 12),
-      // Transparent — no background color, no border
+      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Text(
             'TEAMS',
             style: GoogleFonts.boogaloo(
-              fontSize: 26,
+              fontSize: headerFontSize,
               fontWeight: FontWeight.bold,
               color: _sandWhite,
               shadows: _outlineShadow(),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: teamSpacing),
           ...teamIds.asMap().entries.map((entry) {
             final index = entry.key;
             final teamId = entry.value;
@@ -976,7 +1008,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
               opacity: isActive ? 1.0 : 0.60,
               child: Container(
                 key: TikiGolfGameKeys.teamBox(teamId),
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: teamSpacing),
                 decoration: isActive
                     ? BoxDecoration(
                         border: const Border(
@@ -994,12 +1026,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                     if (crestPath != null)
                       Image.asset(
                         crestPath,
-                        width: 184,
-                        height: 184,
+                        width: crestSize,
+                        height: crestSize,
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => Container(
-                          width: 184,
-                          height: 184,
+                          width: crestSize,
+                          height: crestSize,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: _lagoonBlue.withOpacity(0.3),
@@ -1008,8 +1040,8 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       )
                     else
                       Container(
-                        width: 184,
-                        height: 184,
+                        width: crestSize,
+                        height: crestSize,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: _lagoonBlue.withOpacity(0.3),
@@ -1023,7 +1055,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       textAlign: TextAlign.center,
                       text: TextSpan(
                         style: GoogleFonts.boogaloo(
-                          fontSize: 24,
+                          fontSize: scoreFontSize,
                           fontWeight: FontWeight.bold,
                           color: _sandWhite,
                           shadows: _outlineShadow(),
@@ -1034,7 +1066,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                           TextSpan(
                             text: '($parLabel)',
                             style: GoogleFonts.boogaloo(
-                              fontSize: 24,
+                              fontSize: scoreFontSize,
                               fontWeight: FontWeight.bold,
                               color: parColor,
                               shadows: _outlineShadow(),
@@ -1051,6 +1083,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         ],
       ),
     );
+    });
   }
 
   // ─── Hole info row ────────────────────────────────────────────────────────────
@@ -1076,9 +1109,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           key: TikiGolfGameKeys.holeCounter,
           'Hole ${game.currentHole}/9',
           style: GoogleFonts.boogaloo(
-            fontSize: 40,
+            fontSize: 50,
             color: _sandWhite,
-            shadows: _outlineShadow(),
+            shadows: [
+              ..._heavyOutline(_tikiBrown),
+              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+            ],
           ),
         ),
         const SizedBox(width: 12),
@@ -1087,29 +1123,37 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           key: TikiGolfGameKeys.holeName,
           holeName,
           style: GoogleFonts.boogaloo(
-            fontSize: 40,
-            color: _lagoonBlue,
-            shadows: _outlineShadow(),
+            fontSize: 50,
+            color: _hibiscusPink,
+            shadows: [
+              ..._heavyOutline(_tikiBrown),
+              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+            ],
           ),
         ),
         const SizedBox(width: 48),
-        // Par label moved to the dart row above the scorecard.
         // Target label
         Text(
           'Target: ',
           style: GoogleFonts.boogaloo(
-            fontSize: 40,
+            fontSize: 50,
             color: _sandWhite,
-            shadows: _outlineShadow(),
+            shadows: [
+              ..._heavyOutline(_tikiBrown),
+              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+            ],
           ),
         ),
         Text(
           key: TikiGolfGameKeys.targetNumber,
           '$target',
           style: GoogleFonts.boogaloo(
-            fontSize: 40,
-            color: _lagoonBlue,
-            shadows: _outlineShadow(),
+            fontSize: 50,
+            color: _hibiscusPink,
+            shadows: [
+              ..._heavyOutline(_tikiBrown),
+              const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+            ],
           ),
         ),
       ],

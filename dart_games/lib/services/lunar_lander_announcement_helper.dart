@@ -33,7 +33,14 @@ class LunarLanderAnnouncementHelper {
   }
 
   /// Plays the player-turn announcement (e.g. after takeout).
-  void announcePlayerTurn({required String playerName}) {
+  ///
+  /// [altitude] is the current remaining altitude. It's announced here as
+  /// the per-turn altitude readout; per-dart announcements no longer include
+  /// altitude for the routine Big-Descent / Standard-Descent branches.
+  void announcePlayerTurn({
+    required String playerName,
+    required int altitude,
+  }) {
     _queue.announce(
       '$playerName, you have the controls!',
       AudioPriority.turnTransition,
@@ -46,12 +53,6 @@ class LunarLanderAnnouncementHelper {
   /// This is ALWAYS called unconditionally at takeout — it is NEVER gated by
   /// the moment-announcement precedence chain.
   void announceRemoveDarts() {
-    // Disabled 2026-05-22 by user direction: the "Remove your darts"
-    // announcement adds noticeable per-turn audio. The original queue
-    // call is left intact below as documentation and a one-line revert
-    // — drop the `return;` to re-enable.
-    return;
-    // ignore: dead_code
     _queue.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
@@ -85,9 +86,9 @@ class LunarLanderAnnouncementHelper {
     required bool hardLandingEnabled,
   }) {
     // Pick ONE moment announcement based on precedence (highest first).
-    if (hasWinner) {
-      _announceTouchdown(playerName: playerName);
-    } else if (wasBust) {
+    // Victory announcement deferred to _handleGameWon (after takeout).
+    // The winning dart still gets its descent/score announcement.
+    if (wasBust) {
       _announceCrashLanding(playerName: playerName, revertedAltitude: newAltitude);
     } else if (!hardLandingEnabled &&
         previousAltitude < 0 &&
@@ -95,13 +96,13 @@ class LunarLanderAnnouncementHelper {
         newAltitude < 0) {
       _announceClimbingBack(playerName: playerName, altitude: newAltitude);
     } else if (!hardLandingEnabled && newAltitude < 0) {
-      _announceNegativeAltitude(playerName: playerName, altitude: newAltitude);
+      _announceNegativeAltitude(score: dartScore);
     } else if (newAltitude > 0 && newAltitude <= 20) {
       _announceNearLanding(playerName: playerName, altitude: newAltitude);
     } else if (dartScore >= 40) {
-      _announceBigDescent(playerName: playerName, score: dartScore, newAltitude: newAltitude);
+      _announceBigDescent(playerName: playerName, score: dartScore);
     } else if (dartScore >= 1) {
-      _announceStandardDescent(playerName: playerName, score: dartScore, newAltitude: newAltitude);
+      _announceStandardDescent(playerName: playerName, score: dartScore);
     } else {
       _announceMiss(playerName: playerName);
     }
@@ -132,7 +133,7 @@ class LunarLanderAnnouncementHelper {
     required int revertedAltitude,
   }) {
     _queue.announce(
-      'Crash landing! $playerName pulls back to $revertedAltitude!',
+      'Crash landing! Pulling back to $revertedAltitude.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.crashLanding,
     );
@@ -143,18 +144,17 @@ class LunarLanderAnnouncementHelper {
     required int altitude,
   }) {
     _queue.announce(
-      '$playerName is climbing back! Altitude: $altitude!',
+      'Climbing back! Altitude $altitude.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
     );
   }
 
   void _announceNegativeAltitude({
-    required String playerName,
-    required int altitude,
+    required int score,
   }) {
     _queue.announce(
-      '$playerName overshot! Altitude: $altitude!',
+      'Rough landing! Descending $score.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.crashLanding,
     );
@@ -165,7 +165,7 @@ class LunarLanderAnnouncementHelper {
     required int altitude,
   }) {
     _queue.announce(
-      'Final approach! $playerName at altitude $altitude!',
+      'Final approach! Altitude $altitude!',
       AudioPriority.statusChange,
       soundEffect: LunarLanderSoundEffects.warningAlarm,
     );
@@ -174,10 +174,9 @@ class LunarLanderAnnouncementHelper {
   void _announceBigDescent({
     required String playerName,
     required int score,
-    required int newAltitude,
   }) {
     _queue.announce(
-      'Major burn! $playerName drops $score! Altitude: $newAltitude!',
+      'Major burn! Descending $score.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
     );
@@ -186,10 +185,9 @@ class LunarLanderAnnouncementHelper {
   void _announceStandardDescent({
     required String playerName,
     required int score,
-    required int newAltitude,
   }) {
     _queue.announce(
-      '$playerName descends $score! Altitude: $newAltitude!',
+      'Descending $score!',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
     );
@@ -197,13 +195,33 @@ class LunarLanderAnnouncementHelper {
 
   void _announceMiss({required String playerName}) {
     _queue.announce(
-      '$playerName drifts in orbit!',
+      'Whiff. Drifting in orbit!',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.driftSound,
     );
   }
 
-  // ─── Dispose ─────────────────────────────────────────────────────────────────
+  // ─── Connection-status announcements ────────────────────────────────────────
+
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queue.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queue.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  Future<void> whenIdle() => _queue.whenIdle();
 
   void dispose() {
     _queue.dispose();

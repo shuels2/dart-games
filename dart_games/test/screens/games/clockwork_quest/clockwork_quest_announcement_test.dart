@@ -39,22 +39,10 @@ void main() {
       expect(mockQueue.announcements[0], 'Gear 5 turns! Onward!');
     });
 
-    test('Double Advance announcement', () {
-      mockQueue.announceDoubleAdvance(testPlayer);
-      expect(mockQueue.announcements.length, 1);
-      expect(mockQueue.announcements[0], 'TestPlayer hits a double! Two gears turn!');
-    });
-
-    test('Triple Advance announcement', () {
-      mockQueue.announceTripleAdvance(testPlayer);
-      expect(mockQueue.announcements.length, 1);
-      expect(mockQueue.announcements[0], 'TestPlayer hits a triple! Three gears turn!');
-    });
-
     test('Miss announcement', () {
       mockQueue.announceMiss();
       expect(mockQueue.announcements.length, 1);
-      expect(mockQueue.announcements[0], 'Steam vents! That\'s not the right gear!');
+      expect(mockQueue.announcements[0], 'That\'s not the right gear!');
     });
 
     test('Bullseye Target announcement', () {
@@ -99,7 +87,7 @@ void main() {
       mockQueue.announceVictory(testPlayer);
       expect(mockQueue.announcements.length, 1);
       expect(mockQueue.announcements[0],
-          'All gears turn! TestPlayer wins the Clockwork Crown!');
+          'TestPlayer wins the Clockwork Crown!');
     });
 
     test('Remove Darts announcement', () {

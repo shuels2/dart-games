@@ -29,7 +29,8 @@ void main() {
 
     // Should navigate back to menu with preselected settings
     expect(find.textContaining('Shield Max:'), findsOneWidget);
-    expect(find.text('Shield Max: 3'), findsOneWidget); // Verify shield max preserved
+    // Two spaces between "Max:" and the value — see commit a1fbe11.
+    expect(find.text('Shield Max:  3'), findsOneWidget); // Verify shield max preserved
     expect(find.text('Player1'), findsWidgets);
     expect(find.text('Player2'), findsWidgets);
   });

@@ -11,6 +11,7 @@ class ServerSavedGame {
   final String leadingPlayerScore;
   final Map<String, dynamic> gameState;
   final bool waitingForTakeout;
+  final bool isAutoSave;
 
   ServerSavedGame({
     required this.id,
@@ -23,6 +24,7 @@ class ServerSavedGame {
     required this.leadingPlayerScore,
     required this.gameState,
     required this.waitingForTakeout,
+    this.isAutoSave = false,
   });
 
   factory ServerSavedGame.fromDbRow(Map<String, dynamic> row) {
@@ -44,6 +46,7 @@ class ServerSavedGame {
       leadingPlayerScore: row['leading_player_score'] as String,
       gameState: gameState,
       waitingForTakeout: (row['waiting_for_takeout'] as int) == 1,
+      isAutoSave: (row['is_auto_save'] as int? ?? 0) == 1,
     );
   }
 
@@ -59,6 +62,7 @@ class ServerSavedGame {
       leadingPlayerScore: json['leadingPlayerScore'] as String,
       gameState: json['gameState'] as Map<String, dynamic>,
       waitingForTakeout: json['waitingForTakeout'] as bool,
+      isAutoSave: json['isAutoSave'] as bool? ?? false,
     );
   }
 
@@ -74,6 +78,7 @@ class ServerSavedGame {
       'leadingPlayerScore': leadingPlayerScore,
       'gameState': gameState,
       'waitingForTakeout': waitingForTakeout,
+      'isAutoSave': isAutoSave,
     };
   }
 }

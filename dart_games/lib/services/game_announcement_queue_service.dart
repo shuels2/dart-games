@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'app_settings.dart';
@@ -50,16 +51,7 @@ class GameAnnouncementQueueService {
 
   bool _isProcessing = false;
   bool _disposed = false;
-
-  // Gameplay toggle: when false, game-specific helpers should suppress
-  // their generic per-dart score readout (Carnival Derby's announceDart /
-  // announceMiss, Target Tag's announceHit, Monster Mash's announceHit
-  // fallback). Defaults to false; loaded from AppSettings at queue init.
-  // Game-specific announcements (attacks, eliminations, etc.) are never
-  // gated by this flag — they always fire.
-  bool _perDartScoreAnnouncementsEnabled = false;
-  bool get perDartScoreAnnouncementsEnabled =>
-      _perDartScoreAnnouncementsEnabled;
+  final List<Completer<void>> _idleWaiters = [];
 
   // Load announcer settings from API via AppSettings
   Future<void> loadSettings() async {
@@ -106,16 +98,8 @@ class GameAnnouncementQueueService {
       final rate = await AppSettings.getVoicePlaybackRate();
       _announcer.setPlaybackRate(rate);
 
-      // Per-dart score-readout toggle (Gameplay setting). Defaults to
-      // false so per-turn audio stays short. Game helpers read
-      // `_queue.perDartScoreAnnouncementsEnabled` to decide whether to
-      // fire their generic per-dart readout.
-      _perDartScoreAnnouncementsEnabled =
-          await AppSettings.getPerDartScoreAnnouncements();
-
       debugPrint('Game announcement queue loaded settings: '
-          'engine=$voiceEngine, style=$announcerVoice, rate=$rate, '
-          'perDartScoreAnnouncements=$_perDartScoreAnnouncementsEnabled');
+          'engine=$voiceEngine, style=$announcerVoice, rate=$rate');
     } catch (e) {
       debugPrint('Error loading announcer settings: $e');
     }
@@ -240,6 +224,17 @@ class GameAnnouncementQueueService {
     }
 
     _isProcessing = false;
+    for (final c in _idleWaiters) {
+      if (!c.isCompleted) c.complete();
+    }
+    _idleWaiters.clear();
+  }
+
+  Future<void> whenIdle() {
+    if (!_isProcessing && _queue.isEmpty) return Future.value();
+    final c = Completer<void>();
+    _idleWaiters.add(c);
+    return c.future;
   }
 
   // Clear all queued announcements
@@ -257,6 +252,10 @@ class GameAnnouncementQueueService {
     _disposed = true;
     _queue.clear();
     _isProcessing = false;
+    for (final c in _idleWaiters) {
+      if (!c.isCompleted) c.complete();
+    }
+    _idleWaiters.clear();
     _sfxPool.dispose();
     _announcer.dispose();
   }

@@ -82,8 +82,8 @@ class ReefRoyaleProvider extends ChangeNotifier {
   List<bool> getDartThrowIsNeighbor(String playerId) =>
       _currentGame?.dartThrowIsNeighbor[playerId] ?? [];
 
-  List<String?> getDartThrowPearlRecipientId(String playerId) =>
-      _currentGame?.dartThrowPearlRecipientId[playerId] ?? [];
+  List<List<String>> getDartThrowPearlRecipientIds(String playerId) =>
+      _currentGame?.dartThrowPearlRecipientIds[playerId] ?? [];
 
   List<int> getDartThrowTargetCount(String playerId) =>
       _currentGame?.dartThrowTargetCount[playerId] ?? [];
@@ -280,7 +280,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
     _currentGame!.dartThrowLockedReef[playerId] = [];
     _currentGame!.dartThrowTargetNumber[playerId] = [];
     _currentGame!.dartThrowIsNeighbor[playerId] = [];
-    _currentGame!.dartThrowPearlRecipientId[playerId] = [];
+    _currentGame!.dartThrowPearlRecipientIds[playerId] = [];
     _currentGame!.dartThrowTargetCount[playerId] = [];
 
     _currentGame!.resetToStartOfTurn(playerId);
@@ -315,7 +315,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
     _currentGame!.dartThrowLockedReef[playerId] = [];
     _currentGame!.dartThrowTargetNumber[playerId] = [];
     _currentGame!.dartThrowIsNeighbor[playerId] = [];
-    _currentGame!.dartThrowPearlRecipientId[playerId] = [];
+    _currentGame!.dartThrowPearlRecipientIds[playerId] = [];
     _currentGame!.dartThrowTargetCount[playerId] = [];
 
     _currentGame!.resetToStartOfTurn(playerId);
@@ -367,7 +367,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
     _resumedSavedGameId = null;
   }
 
-  Future<void> saveGame(List<Player> players) async {
+  Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
     debugPrint('[ReefRoyaleProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
     if (_currentGame == null || _saving) {
       debugPrint('[ReefRoyaleProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
@@ -396,6 +396,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
       leadingPlayerScore: '$leaderCorals/7 corals',
       gameState: game.toJson(),
       waitingForTakeout: _waitingForTakeout,
+      isAutoSave: isAutoSave,
       existingId: _resumedSavedGameId,
     );
 

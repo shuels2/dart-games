@@ -189,5 +189,44 @@ void main() {
       expect(pool.nextIndex, indexBefore,
           reason: 'play() after dispose() must not advance the rotation');
     });
+
+    // Regression test for the bug where the fade/stop timer was
+    // scheduled synchronously inside play() — before the audio engine
+    // had actually started playback. On web, asset load can take
+    // 500–1500 ms, which silently chopped short tuned clips (MM
+    // gameStart at totalMs=2250 / fadeOutMs=1500 became inaudible).
+    // The fix moves scheduling INSIDE _playOnPlayer, after
+    // `await player.play()` resolves.
+    //
+    // This test observes activeTimerCount IMMEDIATELY after the
+    // synchronous body of play() returns. With the bug, scheduling
+    // ran inside play() and the count was 1; with the fix, scheduling
+    // is deferred behind the unawaited(_playOnPlayer(...)) chain so
+    // the count is 0 at this point. The post-resolve state isn't
+    // asserted here because in the unit-test environment
+    // `player.play()` fails (asset bundle has no test asset) and the
+    // timer would never get scheduled — that path is exercised in
+    // production but isn't reachable from this test harness.
+    test('timer is NOT scheduled synchronously inside play()', () async {
+      final pool = SoundEffectPlayerPool(size: 1);
+      const sfx = SoundEffectConfig(
+        assetPath: 'unit-test/nonexistent.mp3',
+        startSeconds: 0.0,
+        endSeconds: 5.0,
+      );
+
+      // Fire-and-forget. The synchronous body of play() returns
+      // before _playOnPlayer's await chain has had a chance to run.
+      // ignore: unawaited_futures
+      pool.play(sfx);
+
+      // Immediately after the synchronous return: no timer.
+      // Pre-fix: this would be 1 (timer scheduled synchronously inside
+      // play() before the audio engine started).
+      expect(pool.activeTimerCount, 0,
+          reason: 'timer must NOT be scheduled before player.play() resolves');
+
+      pool.dispose();
+    });
   });
 }

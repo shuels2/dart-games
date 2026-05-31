@@ -8,17 +8,10 @@ class TargetTagAnnouncementHelper {
 
   TargetTagAnnouncementHelper(this._queue);
 
-  // NORMAL_PER_DART announcement (generic score readout: "Single 20",
-  // "Bullseye!", "Miss"). Gated by the System Settings → Gameplay →
-  // "Per-dart score announcements" toggle. When the toggle is OFF
-  // (the default), this method no-ops; the dart-hit SFX from the game
-  // screen still plays and all game-specific announcements
-  // (TaggedIn, ShieldGained, Eliminated, etc.) still fire as before.
-  // The game screen calls this only when no secondary effect is
-  // present (target_tag_game_screen.dart:270 region).
+  // Generic per-dart score readout ("Single 20" / "Bullseye!" / "Miss").
+  // The game screen calls this only when no secondary effect is present
+  // (target_tag_game_screen.dart:270 region).
   void announceHit(int number, String multiplier, {bool isMiss = false}) {
-    if (!_queue.perDartScoreAnnouncementsEnabled) return;
-
     SoundEffectConfig? sfx;
 
     if (isMiss) {
@@ -51,91 +44,65 @@ class TargetTagAnnouncementHelper {
     _queue.announce(text, AudioPriority.hitConfirm, soundEffect: sfx);
   }
 
+  /// Formats a list of names for announcements.
+  /// 1-4 names: listed ("Alice", "Alice and Bob", "Alice, Bob, and Charlie")
+  /// 5+ names (not all): "all players except {excluded}"
+  /// All names: "all players"
+  static String formatNames(List<String> names, {List<String>? allPlayerNames}) {
+    if (allPlayerNames != null && names.length == allPlayerNames.length && allPlayerNames.length > 1) {
+      return 'all players';
+    }
+    if (allPlayerNames == null || names.length <= 4) {
+      if (names.length == 1) return names[0];
+      if (names.length == 2) return '${names[0]} and ${names[1]}';
+      return '${names.sublist(0, names.length - 1).join(', ')}, and ${names.last}';
+    }
+    // 5+: use "except" with excluded names
+    final excluded = allPlayerNames!.where((n) => !names.contains(n)).toList();
+    if (excluded.isEmpty) return 'all players';
+    if (excluded.length == 1) return 'all players except ${excluded[0]}';
+    if (excluded.length == 2) return 'all players except ${excluded[0]} and ${excluded[1]}';
+    return 'all players except ${excluded.sublist(0, excluded.length - 1).join(', ')}, and ${excluded.last}';
+  }
+
+  static String verb(List<String> names, {List<String>? allPlayerNames}) {
+    if (names.length >= 5) return 'are';
+    if (allPlayerNames != null && names.length == allPlayerNames.length && allPlayerNames.length > 1) return 'are';
+    return names.length == 1 ? 'is' : 'are';
+  }
+
   // Announce shield gained
   void announceShieldGained(String playerName, int shields, int shieldMax) {
     _queue.announce('$shields shields', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.shieldGained);
   }
 
-  // Announce player(s) reached Tagged In status
-  void announceTaggedIn(List<String> playerNames) {
-    String names;
-    if (playerNames.length == 1) {
-      names = '${playerNames[0]} is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]} are';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last} are';
-    }
-    _queue.announce('JACKPOT! $names TAGGED IN!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedIn);
+  void announceTaggedIn(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
+    final v = verb(playerNames, allPlayerNames: allPlayerNames);
+    _queue.announce('JACKPOT! $names ${v} TAGGED IN!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedIn);
   }
 
-  // Announce player(s) lost Tagged In status
-  void announceTaggedOut(List<String> playerNames) {
-    String names;
-    String verb;
-    if (playerNames.length == 1) {
-      names = playerNames[0];
-      verb = 'is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]}';
-      verb = 'are';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}';
-      verb = 'are';
-    }
-    _queue.announce('Shield compromised! $names $verb back on the hunt.', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedOut);
+  void announceTaggedOut(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
+    final v = verb(playerNames, allPlayerNames: allPlayerNames);
+    _queue.announce('Shield compromised! $names ${v} back on the hunt.', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedOut);
   }
 
-  // Announce low shields warning
-  void announceLowShields(List<String> playerNames) {
-    String names;
-    String verb;
-    if (playerNames.length == 1) {
-      names = '${playerNames[0]}\'s';
-      verb = 'are';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]}\'s';
-      verb = 'are';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}\'s';
-      verb = 'are';
-    }
-    _queue.announce('Warning! $names shields $verb almost gone!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
+  void announceLowShields(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
+    _queue.announce('Warning! Shields almost gone for $names!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
   }
 
-  // Announce player(s) vulnerable (at 0 shields)
-  void announceVulnerable(List<String> playerNames) {
-    String names;
-    String verb;
-    if (playerNames.length == 1) {
-      names = playerNames[0];
-      verb = 'is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]}';
-      verb = 'are';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}';
-      verb = 'are';
-    }
-    _queue.announce('DANGER! $names $verb vulnerable! One more hit and you\'re out!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
+  void announceVulnerable(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
+    final v = verb(playerNames, allPlayerNames: allPlayerNames);
+    _queue.announce('DANGER! $names ${v} vulnerable! One more hit and you\'re out!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
   }
 
-  // Announce player(s) eliminated
-  void announceEliminated(List<String> playerNames) {
-    String names;
-    if (playerNames.length == 1) {
-      names = '${playerNames[0]} is';
-    } else if (playerNames.length == 2) {
-      names = '${playerNames[0]} and ${playerNames[1]} are';
-    } else {
-      // Handle 3+ names with commas and "and"
-      names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last} are';
-    }
-    _queue.announce('$names Tagged Out! Better luck next time!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.eliminated);
+  void announceEliminated(List<String> playerNames, {List<String>? allPlayerNames}) {
+    final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
+    final v = verb(playerNames, allPlayerNames: allPlayerNames);
+    _queue.announce('$names ${v} Tagged Out! Better luck next time!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.eliminated);
   }
 
   // Announce successful tag on opponent
@@ -173,16 +140,29 @@ class TargetTagAnnouncementHelper {
 
   // Announce remove darts
   void announceRemoveDarts() {
-    // Disabled 2026-05-22 by user direction: the "Remove your darts"
-    // announcement (text + SFX) adds noticeable per-turn audio. The
-    // original queue call is left intact below as documentation and a
-    // one-line revert — drop the `return;` to re-enable.
-    return;
-    // ignore: dead_code
-    _queue.announce('Remove your darts', AudioPriority.turnTransition, soundEffect: TargetTagSoundEffects.removeDarts);
+    _queue.announce('Remove your darts', AudioPriority.turnTransition);
   }
 
-  // Dispose the underlying queue
+  /// Voice-only "game paused — dartboard disconnected" announcement.
+  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
+  void announceGamePaused() {
+    _queue.announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  /// Voice-only "dartboard reconnected" announcement, fired by
+  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
+  void announceConnectionRestored() {
+    _queue.announce(
+      'Dartboard reconnected. Resume play when ready.',
+      AudioPriority.statusChange,
+    );
+  }
+
+  Future<void> whenIdle() => _queue.whenIdle();
+
   void dispose() {
     _queue.dispose();
   }

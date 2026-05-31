@@ -45,14 +45,14 @@ void main() {
     test('announceBirdie fires correct text', () {
       queue.announceBirdie('Bob');
       expect(queue.announcements,
-          equals(['Birdie! Bob sinks it on the first dart!']));
+          equals(['Birdie! You sunk it on the first dart!']));
     });
 
     // ── 5. Par ────────────────────────────────────────────────────────────────
 
     test('announcePar fires correct text', () {
       queue.announcePar('Carol');
-      expect(queue.announcements, equals(['Par! Solid shot, Carol!']));
+      expect(queue.announcements, equals(['Par! Solid shot!']));
     });
 
     // ── 6. Bogey ──────────────────────────────────────────────────────────────
@@ -62,11 +62,29 @@ void main() {
       expect(queue.announcements, equals(['Bogey! Just squeaked that one in!']));
     });
 
+    test('announceDoubleBogey fires correct text', () {
+      queue.announceDoubleBogey('Dave');
+      expect(queue.announcements,
+          equals(['Double bogey! Squeaked it out!']));
+    });
+
+    test('announceTripleBogey fires correct text', () {
+      queue.announceTripleBogey('Dave');
+      expect(queue.announcements,
+          equals(['Triple bogey! Barely hung in!']));
+    });
+
+    test('announceQuadrupleBogey fires correct text', () {
+      queue.announceQuadrupleBogey('Dave');
+      expect(queue.announcements,
+          equals(['Quadruple bogey! That was a wild one!']));
+    });
+
     // ── 7. Splash ─────────────────────────────────────────────────────────────
 
     test('announceSplash fires correct text', () {
       queue.announceSplash('Eve');
-      expect(queue.announcements, equals(['Splash! Eve misses them all!']));
+      expect(queue.announcements, equals(['Splash! Missed them all!']));
     });
 
     // ── 8. Miss (mid-turn) ─────────────────────────────────────────────────────
@@ -81,7 +99,7 @@ void main() {
     test('announceAlmostThere fires correct text', () {
       queue.announceAlmostThere('Frank');
       expect(queue.announcements,
-          equals(['Frank, one dart left to save par!']));
+          equals(['One dart left to save par!']));
     });
 
     // ── 10. Mulligan Used ─────────────────────────────────────────────────────
@@ -231,7 +249,7 @@ void main() {
         scorePlayerName: 'Eve',
       );
       expect(queue.announcements,
-          equals(['Birdie! Eve sinks it on the first dart!']));
+          equals(['Birdie! You sunk it on the first dart!']));
     });
 
     test('Score=par fires Par announcement (rank 5)', () {
@@ -239,7 +257,7 @@ void main() {
         score: 'par',
         scorePlayerName: 'Frank',
       );
-      expect(queue.announcements, equals(['Par! Solid shot, Frank!']));
+      expect(queue.announcements, equals(['Par! Solid shot!']));
     });
 
     test('Score=bogey fires Bogey announcement (rank 5)', () {
@@ -250,12 +268,39 @@ void main() {
       expect(queue.announcements, equals(['Bogey! Just squeaked that one in!']));
     });
 
+    test('Score=doubleBogey fires Double Bogey announcement (rank 5)', () {
+      queue.pickAndAnnounceMoment(
+        score: 'doubleBogey',
+        scorePlayerName: 'Grace',
+      );
+      expect(queue.announcements,
+          equals(['Double bogey! Squeaked it out!']));
+    });
+
+    test('Score=tripleBogey fires Triple Bogey announcement (rank 5)', () {
+      queue.pickAndAnnounceMoment(
+        score: 'tripleBogey',
+        scorePlayerName: 'Grace',
+      );
+      expect(queue.announcements,
+          equals(['Triple bogey! Barely hung in!']));
+    });
+
+    test('Score=quadrupleBogey fires Quadruple Bogey announcement (rank 5)', () {
+      queue.pickAndAnnounceMoment(
+        score: 'quadrupleBogey',
+        scorePlayerName: 'Grace',
+      );
+      expect(queue.announcements,
+          equals(['Quadruple bogey! That was a wild one!']));
+    });
+
     test('Score=splash fires Splash announcement (rank 5)', () {
       queue.pickAndAnnounceMoment(
         score: 'splash',
         scorePlayerName: 'Hank',
       );
-      expect(queue.announcements, equals(['Splash! Hank misses them all!']));
+      expect(queue.announcements, equals(['Splash! Missed them all!']));
     });
 
     // ── Rank 6: Almost There beats Miss ──────────────────────────────────────
@@ -266,7 +311,7 @@ void main() {
         almostTherePlayerName: 'Iris',
         miss: true,
       );
-      expect(queue.announcements, equals(['Iris, one dart left to save par!']));
+      expect(queue.announcements, equals(['One dart left to save par!']));
     });
 
     // ── Rank 7: Miss fires mid-turn (NO Remove Darts) ────────────────────────

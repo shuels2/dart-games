@@ -21,6 +21,7 @@ import '../../../widgets/edit_score/edit_score_dialog_config.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal_config.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../widgets/save_game_modal/save_game_modal_config.dart';
@@ -259,7 +260,10 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         .where((p) => p.id == currentPlayerId)
         .firstOrNull;
     if (player != null) {
-      _audioQueue?.announcePlayerTurn(playerName: player.name);
+      _audioQueue?.announcePlayerTurn(
+        playerName: player.name,
+        altitude: provider.getCurrentAltitude(currentPlayerId),
+      );
     }
   }
 
@@ -288,7 +292,9 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         );
         _audioQueue?.announceWinner(winner.name);
       }
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 
@@ -313,7 +319,12 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
 
     final hasDartsThrown = game.totalDartsThrown.values.any((c) => c > 0);
 
-    return PopScope(
+    return AutoSaveOnPause(
+      onPaused: () {
+        if (!hasDartsThrown) return;
+        provider.saveGame(allPlayers, isAutoSave: true);
+      },
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -643,6 +654,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
               config: DartboardPausedModalConfig.lunarLander(),
             ),
         ],
+      ),
       ),
     );
   }

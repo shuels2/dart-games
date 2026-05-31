@@ -98,7 +98,7 @@ class MockGladiatorArenaAudioQueueService {
   }
 
   void announceBustNoDouble() {
-    _record('Not a double! The champion must earn their laurel!');
+    _record('Not a double! Bust!');
   }
 
   void announceBullInner() {
@@ -122,7 +122,7 @@ class MockGladiatorArenaAudioQueueService {
   }
 
   void announceSmallHit(String playerName, int n) {
-    _record('$playerName scores $n points.');
+    _record('$n points.');
   }
 
   void announceMiss() {
@@ -211,6 +211,18 @@ class MockGladiatorArenaAudioQueueService {
 
     // 12. Miss
     announceMiss();
+  }
+
+  // ─── Connection-status announcements ──────────────────────────────────────
+
+  void announceGamePaused() {
+    _record(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+    );
+  }
+
+  void announceConnectionRestored() {
+    _record('Dartboard reconnected. Resume play when ready.');
   }
 
   // ─── Dispose ──────────────────────────────────────────────────────────────

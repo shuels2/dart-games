@@ -694,6 +694,12 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
     if (player != null && mounted) {
       final playerProvider = context.read<PlayerProvider>();
       await playerProvider.savePlayer(player);
+      // savePlayer is an HTTP roundtrip; the widget tree (and the provider
+      // it watches) may be disposed before the response returns — e.g. the
+      // dartboard disconnect modal grabs nav focus, or the user backs out.
+      // Touching the provider after disposal triggers a "ChangeNotifier was
+      // used after being disposed" assertion.
+      if (!mounted) return;
 
       final effectiveMax = widget.isTeamMode
           ? config.maxPlayers

@@ -199,8 +199,8 @@ void main() {
             original.dartThrowTargetNumber[playerId]);
         expect(restored.dartThrowIsNeighbor[playerId],
             original.dartThrowIsNeighbor[playerId]);
-        expect(restored.dartThrowPearlRecipientId[playerId],
-            original.dartThrowPearlRecipientId[playerId]);
+        expect(restored.dartThrowPearlRecipientIds[playerId],
+            original.dartThrowPearlRecipientIds[playerId]);
         expect(restored.dartThrowTargetCount[playerId],
             original.dartThrowTargetCount[playerId]);
       }

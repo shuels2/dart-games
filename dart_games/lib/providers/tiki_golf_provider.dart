@@ -567,7 +567,7 @@ class TikiGolfProvider extends ChangeNotifier {
 
   // ─── Save / Restore ─────────────────────────────────────────────────────────
 
-  Future<void> saveGame(SaveGameService service, {List<String>? playerNames}) async {
+  Future<void> saveGame(SaveGameService service, {List<String>? playerNames, bool isAutoSave = false}) async {
     if (_currentGame == null || _saving) return;
     _saving = true;
     try {
@@ -585,6 +585,7 @@ class TikiGolfProvider extends ChangeNotifier {
         leadingPlayerScore: '$completedHoles holes completed',
         gameState: game.toJson(),
         waitingForTakeout: game.currentTurnEnded,
+        isAutoSave: isAutoSave,
         existingId: _resumedSavedGameId,
       );
 

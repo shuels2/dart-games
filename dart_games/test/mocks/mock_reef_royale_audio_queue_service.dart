@@ -73,12 +73,23 @@ class MockReefRoyaleAudioQueueService {
     if (pearls >= 40) {
       announce('A massive pearl haul! $pearls pearls!');
     } else {
-      announce('$playerName harvests $pearls pearls!');
+      announce('$pearls pearls harvested!');
     }
   }
 
-  void announceCursedScoring(int pearls, String opponentName) {
-    announce('Cursed tide! $pearls pearls weigh down $opponentName!');
+  void announceCursedScoring(int pearls, List<String> affectedNames, {required List<String> allOpponentNames}) {
+    final String text;
+    if (affectedNames.length == allOpponentNames.length) {
+      text = 'Cursed tide! $pearls pearls weigh down all opponents!';
+    } else if (affectedNames.length <= 3) {
+      final names = affectedNames.join(' and ');
+      text = 'Cursed tide! $pearls pearls weigh down $names!';
+    } else {
+      final excludedNames = allOpponentNames.where((n) => !affectedNames.contains(n)).toList();
+      final excluded = excludedNames.join(' and ');
+      text = 'Cursed tide! $pearls pearls weigh down all opponents except $excluded!';
+    }
+    announce(text);
   }
 
   void announceNearVictory(String playerName) {
@@ -108,6 +119,16 @@ class MockReefRoyaleAudioQueueService {
 
   void announceVictory(String playerName) {
     announce('All hail $playerName, Crown of the Reef!');
+  }
+
+  void announceGamePaused() {
+    announce(
+      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
+    );
+  }
+
+  void announceConnectionRestored() {
+    announce('Dartboard reconnected. Resume play when ready.');
   }
 
   void dispose() {

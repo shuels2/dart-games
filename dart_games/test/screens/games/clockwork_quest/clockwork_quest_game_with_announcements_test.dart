@@ -18,9 +18,8 @@
 //   1. Victory (hasWinner) -> skip entire _announceDartResult
 //   2. Lap complete -> announceLapComplete
 //   3. Bullseye hit (target was 20, advanced to 21) -> announceBullseyeHit
-//   4. Triple advance -> announceTripleAdvance
-//   5. Double advance -> announceDoubleAdvance
-//   6. Single gear activated -> announceGearActivated
+//   4. Gear activated (single/double/triple) -> announceGearActivated
+//   5. Miss (!hitTarget) -> announceMiss
 //   7. Miss (!hitTarget) -> announceMiss
 //
 //  Slot 2 (milestone, checked after slot 1):
@@ -32,7 +31,7 @@
 //
 // TEST GROUPS:
 //  Group 1 - Lifecycle (3 tests): game start, player turn, remove darts
-//  Group 2 - Moment announcements (7 tests): gear, double, triple, miss,
+//  Group 2 - Moment announcements (5 tests): gear, miss,
 //            bullseye hit, lap complete, victory
 //  Group 3 - Milestone announcements (3 tests): bullseye target, halfway,
 //            near victory
@@ -80,43 +79,40 @@ void announceDartResult(
   ClockworkQuestProvider provider,
   String playerId,
   Player player,
-  MockClockworkQuestAudioQueueService audioQueue,
-) {
+  MockClockworkQuestAudioQueueService audioQueue, {
+  required Set<String> bullseyeTargetAnnouncedFor,
+}) {
   final hitTargetList = provider.getDartThrowHitTarget(playerId);
   final multiplierList = provider.getDartThrowMultiplier(playerId);
   final advancedList = provider.getDartThrowAdvanced(playerId);
   final completedLapList = provider.getDartThrowCompletedLap(playerId);
+  final targetNumberList = provider.getDartThrowTargetNumber(playerId);
   if (hitTargetList.isEmpty) return;
 
   final hitTarget = hitTargetList.last;
   final multiplier = multiplierList.last;
   final advanced = advancedList.last;
   final completedLap = completedLapList.last;
+  final dartTargetNumber = targetNumberList.last;
   final newTarget = provider.getPlayerCurrentTarget(playerId);
   final completedTargets = provider.getPlayerCompletedTargets(playerId);
 
-  // Victory suppresses all dart result announcements
-  if (provider.hasWinner) return;
-
   // Slot 1: moment announcement (highest priority wins)
-  if (completedLap) {
+  if (completedLap && !provider.hasWinner) {
     audioQueue.announceLapComplete();
-  } else if (hitTarget && advanced && newTarget == 21) {
+    bullseyeTargetAnnouncedFor.remove(playerId);
+  } else if (hitTarget && advanced && (newTarget == 21 || dartTargetNumber == 21)) {
     audioQueue.announceBullseyeHit();
   } else if (hitTarget && advanced) {
-    if (multiplier == 3) {
-      audioQueue.announceTripleAdvance(player);
-    } else if (multiplier == 2) {
-      audioQueue.announceDoubleAdvance(player);
-    } else {
-      audioQueue.announceGearActivated(newTarget - 1);
-    }
-  } else if (!hitTarget) {
+    audioQueue.announceGearActivated(dartTargetNumber);
+  } else if (!hitTarget && !provider.hasWinner) {
     audioQueue.announceMiss();
   }
 
+  if (provider.hasWinner) return;
+
   // Slot 2: milestone announcement
-  if (newTarget == 21 && !completedLap) {
+  if (newTarget == 21 && !completedLap && bullseyeTargetAnnouncedFor.add(playerId)) {
     audioQueue.announceBullseyeTarget();
   } else if (completedTargets.length == 10) {
     audioQueue.announceHalfway(player);
@@ -133,6 +129,8 @@ void announceDartResult(
 /// 2. Process the dart through provider
 /// 3. Announce dart result (if not auto-playing)
 /// 4. Announce remove darts when turn is over or game won
+final Set<String> _testBullseyeTargetAnnouncedFor = {};
+
 void processDartThrowWithAnnouncements(
   ClockworkQuestProvider provider,
   MockClockworkQuestAudioQueueService audioQueue,
@@ -155,7 +153,7 @@ void processDartThrowWithAnnouncements(
 
   // Announce dart result (unless auto-playing)
   if (!isAutoPlaying) {
-    announceDartResult(provider, currentPlayerId, currentPlayer, audioQueue);
+    announceDartResult(provider, currentPlayerId, currentPlayer, audioQueue, bullseyeTargetAnnouncedFor: _testBullseyeTargetAnnouncedFor);
   }
 
   // Remove darts when turn over or winner
@@ -211,6 +209,10 @@ void main() {
     late ClockworkQuestProvider provider;
     late MockClockworkQuestAudioQueueService audioQueue;
     late List<Player> players;
+
+    setUp(() {
+      _testBullseyeTargetAnnouncedFor.clear();
+    });
 
     // =========================================================================
     // Group 1 - Lifecycle announcements
@@ -296,8 +298,8 @@ void main() {
         ]));
       });
 
-      // Test 5: Double hit announces double advance
-      test('double hit announces double advance', () {
+      // Test 5: Double hit announces gear activated (same as single)
+      test('double hit announces gear activated', () {
         players = createPlayers(2);
         provider = createTestProvider(players: players);
         audioQueue = MockClockworkQuestAudioQueueService();
@@ -307,13 +309,13 @@ void main() {
           provider, audioQueue, players, 'D1',
         );
 
-        // Expect: turn announcement + double advance
+        // Expect: turn announcement + gear activated
         expect(audioQueue.announcements, contains(
-            'Alice hits a double! Two gears turn!'));
+            'Gear 1 turns! Onward!'));
       });
 
-      // Test 6: Triple hit announces triple advance
-      test('triple hit announces triple advance', () {
+      // Test 6: Triple hit announces gear activated (same as single)
+      test('triple hit announces gear activated', () {
         players = createPlayers(2);
         provider = createTestProvider(players: players);
         audioQueue = MockClockworkQuestAudioQueueService();
@@ -323,9 +325,9 @@ void main() {
           provider, audioQueue, players, 'T1',
         );
 
-        // Expect: turn announcement + triple advance
+        // Expect: turn announcement + gear activated
         expect(audioQueue.announcements, contains(
-            'Alice hits a triple! Three gears turn!'));
+            'Gear 1 turns! Onward!'));
       });
 
       // Test 7: Miss announces steam vent
@@ -341,7 +343,7 @@ void main() {
 
         // Expect: turn announcement + miss
         expect(audioQueue.announcements, contains(
-            'Steam vents! That\'s not the right gear!'));
+            'That\'s not the right gear!'));
       });
 
       // Test 8: Bullseye hit announces crown gear
@@ -406,8 +408,9 @@ void main() {
           provider, audioQueue, players, 'S20',
         );
 
-        // Victory suppresses _announceDartResult, but remove darts fires
-        // (hasWinner triggers remove darts)
+        // Winning dart fires gear activated, then remove darts
+        expect(audioQueue.announcements, contains(
+            'Gear 20 turns! Onward!'));
         expect(audioQueue.announcements, contains(
             'Alice, remove your darts!'));
         // Victory announcement should NOT be in here yet -- it fires on takeout
@@ -418,7 +421,7 @@ void main() {
         // Takeout triggers victory
         handleTakeoutFinished(provider, audioQueue, players);
         expect(audioQueue.announcements, contains(
-            'All gears turn! Alice wins the Clockwork Crown!'));
+            'Alice wins the Clockwork Crown!'));
       });
     });
 
@@ -545,29 +548,23 @@ void main() {
           provider, audioQueue, players, 'S20',
         );
 
-        // _announceDartResult returns early when hasWinner is true.
-        // So no gear activated, no lap complete, no milestone announcements.
-        // Only turn announcement (fires before provider.processDartThrow)
-        // and remove darts (fires because hasWinner).
+        // The winning dart still fires a gear-activated announcement,
+        // but lap complete, miss, and milestone announcements are suppressed.
         expect(audioQueue.announcements.where(
             (a) => a.contains('Lap complete')).length, 0,
             reason: 'Lap complete must be suppressed by victory');
         expect(audioQueue.announcements.where(
-            (a) => a.contains('Gear') && a.contains('turns')).length, 0,
-            reason: 'Gear activated must be suppressed by victory');
-        expect(audioQueue.announcements.where(
-            (a) => a.contains('Steam vents')).length, 0,
+            (a) => a.contains('not the right gear')).length, 0,
             reason: 'Miss must be suppressed by victory');
-        expect(audioQueue.announcements.where(
-            (a) => a.contains('crown gear')).length, 0,
-            reason: 'Bullseye hit must be suppressed by victory');
 
-        // Turn + remove darts are the only announcements
+        // Turn + gear activated + remove darts
         expect(audioQueue.announcements, contains(
             'Alice, your turn to tinker!'));
         expect(audioQueue.announcements, contains(
+            'Gear 20 turns! Onward!'));
+        expect(audioQueue.announcements, contains(
             'Alice, remove your darts!'));
-        expect(audioQueue.announcements.length, 2);
+        expect(audioQueue.announcements.length, 3);
       });
 
       // Test 16: Max 2 announcements per dart event

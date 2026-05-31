@@ -329,7 +329,7 @@ class PiratesGridProvider extends ChangeNotifier {
 
   // ─── Save / Restore ──────────────────────────────────────────────────────────
 
-  Future<void> saveGame(List<Player> players) async {
+  Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
     if (_currentGame == null || _saving) return;
     _saving = true;
     try {
@@ -371,6 +371,7 @@ class PiratesGridProvider extends ChangeNotifier {
         leadingPlayerScore: '$leadWins round${leadWins == 1 ? "" : "s"} won',
         gameState: game.toJson(),
         waitingForTakeout: _waitingForTakeout,
+        isAutoSave: isAutoSave,
         existingId: _resumedSavedGameId,
       );
 
@@ -457,6 +458,12 @@ class PiratesGridProvider extends ChangeNotifier {
 
   /// Updates roundsWon and checks for match end.
   void _applyRoundResult(PiratesGridGame game, {required String? winnerId}) {
+    // Capture flags planted this round
+    for (final playerId in game.playerIds) {
+      game.flagsPlantedPerRound[playerId] ??= [];
+      game.flagsPlantedPerRound[playerId]!.add(game.getFlagsPlanted(playerId));
+    }
+
     if (winnerId != null) {
       game.roundsWon[winnerId] = (game.roundsWon[winnerId] ?? 0) + 1;
     }

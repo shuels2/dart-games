@@ -310,7 +310,7 @@ class _ClockworkQuestResultsScreenState
         // Winner stats
         Text(
           provider.currentGame!.numberOfLaps > 1
-              ? 'Lap ${lapsCompleted + 1}/${provider.currentGame!.numberOfLaps}'
+              ? 'Lap $lapsCompleted/${provider.currentGame!.numberOfLaps}'
               : 'All gears activated!',
           style: GoogleFonts.cinzelDecorative(
             fontSize: 26,
@@ -458,7 +458,7 @@ class _ClockworkQuestResultsScreenState
                     final maxTarget = clockworkProvider.currentGame!.maxTarget;
                     final gearsActivated =
                         isWinner ? maxTarget : (target - 1).clamp(0, maxTarget);
-                    return 'Gear $gearsActivated/$maxTarget${clockworkProvider.currentGame!.numberOfLaps > 1 ? " (Lap ${laps + 1})" : ""}';
+                    return 'Gear $gearsActivated/$maxTarget${clockworkProvider.currentGame!.numberOfLaps > 1 ? " (Lap $laps)" : ""}';
                   }(),
                   style: GoogleFonts.lato(
                     fontSize: 14,

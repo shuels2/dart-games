@@ -144,6 +144,9 @@ class PiratesGridGame {
   bool isDraw;                   // round ended in draw
   List<GridPosition>? winningLine; // 3 cells of the winning line
 
+  // Per-round history
+  Map<String, List<int>> flagsPlantedPerRound;  // playerId → [round1flags, round2flags, ...]
+
   // Per-match outcome
   String? matchWinnerId;         // match winner (final); null until match decided
   bool isMatchDraw;              // entire Best Of ended in draws
@@ -172,6 +175,7 @@ class PiratesGridGame {
     this.winnerId,
     this.isDraw = false,
     this.winningLine,
+    Map<String, List<int>>? flagsPlantedPerRound,
     this.matchWinnerId,
     this.isMatchDraw = false,
     this.state = GameState.playing,
@@ -180,7 +184,8 @@ class PiratesGridGame {
         totalDartsThrown = totalDartsThrown ?? {},
         totalTurns = totalTurns ?? {},
         currentTurnDartSegments = currentTurnDartSegments ?? {},
-        roundsWon = roundsWon ?? {} {
+        roundsWon = roundsWon ?? {},
+        flagsPlantedPerRound = flagsPlantedPerRound ?? {} {
     // Ensure all player maps are initialized
     for (final playerId in playerIds) {
       this.dartsThrown[playerId] ??= 0;
@@ -188,6 +193,7 @@ class PiratesGridGame {
       this.totalTurns[playerId] ??= 0;
       this.currentTurnDartSegments[playerId] ??= [];
       this.roundsWon[playerId] ??= 0;
+      this.flagsPlantedPerRound[playerId] ??= [];
     }
   }
 
@@ -264,6 +270,9 @@ class PiratesGridGame {
       ),
       'currentRound': currentRound,
       'roundsWon': roundsWon,
+      'flagsPlantedPerRound': flagsPlantedPerRound.map(
+        (k, v) => MapEntry(k, List<int>.from(v)),
+      ),
       'currentRoundStartingPlayerIndex': currentRoundStartingPlayerIndex,
       'winnerId': winnerId,
       'isDraw': isDraw,
@@ -321,6 +330,10 @@ class PiratesGridGame {
       currentRound: json['currentRound'] as int? ?? 1,
       roundsWon: json['roundsWon'] != null
           ? Map<String, int>.from(json['roundsWon'])
+          : null,
+      flagsPlantedPerRound: json['flagsPlantedPerRound'] != null
+          ? (json['flagsPlantedPerRound'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<int>.from(v)))
           : null,
       currentRoundStartingPlayerIndex:
           json['currentRoundStartingPlayerIndex'] as int? ?? 0,

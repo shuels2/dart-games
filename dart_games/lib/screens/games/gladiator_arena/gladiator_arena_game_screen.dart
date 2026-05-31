@@ -14,6 +14,7 @@ import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/gladiator_arena_announcement_helper.dart';
 import '../../../services/play_to_complete/gladiator_arena_strategy.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
+import '../../../widgets/dartboard_emulator/buff_toggle_column.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
 import '../../../widgets/dartboard_emulator/play_to_complete_runner.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -23,6 +24,7 @@ import '../../../widgets/edit_score/edit_score_dialog_config.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal_config.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../widgets/save_game_modal/save_game_modal_config.dart';
@@ -104,7 +106,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     // Announce first player turn after brief delay
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
-        _startSpeedPlayTimerIfNeeded();
         final p = context.read<GladiatorArenaProvider>();
         final game = p.currentGame;
         if (game != null) {
@@ -115,6 +116,9 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           if (firstPlayer != null) {
             _audioQueue?.announcePlayerTurn(firstPlayer.name);
           }
+          _audioQueue?.whenIdle().then((_) {
+            if (mounted) _startSpeedPlayTimerIfNeeded();
+          });
         }
       }
     });
@@ -376,6 +380,13 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
 
     provider.handleTakeoutFinished();
 
+    // Reset timer display immediately so new player sees full time
+    final game = provider.currentGame;
+    if (game != null && game.speedPlayEnabled) {
+      _speedPlayTimer?.cancel();
+      setState(() => _speedPlaySecondsRemaining = 25);
+    }
+
     // Announce next player's turn after takeout (500ms delay)
     if (!_dartboardEmulatorController.isAutoPlaying) {
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -391,8 +402,12 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               _audioQueue?.announcePlayerTurn(nextPlayer.name);
             }
           }
+          _audioQueue?.whenIdle().then((_) {
+            if (mounted) _startSpeedPlayTimerIfNeeded();
+          });
         }
       });
+    } else {
       _startSpeedPlayTimerIfNeeded();
     }
 
@@ -433,7 +448,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         Future.delayed(const Duration(milliseconds: 3500), () {
           if (mounted) _mockApi?.simulateTakeoutStarted();
         });
-        setState(() {});
       }
     });
   }
@@ -453,9 +467,18 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     if (_dartboardEmulatorController.isAutoPlaying) {
       navigateToResults();
     } else {
-      // Victory announcement fires when the winning dart is detected (via
-      // pickAndAnnounceMoment in _handleDartThrow). Navigate after delay.
-      Future.delayed(const Duration(milliseconds: 3000), navigateToResults);
+      final provider = context.read<GladiatorArenaProvider>();
+      final playerProvider = context.read<PlayerProvider>();
+      final winnerId = provider.currentGame?.winnerId;
+      if (winnerId != null) {
+        final winner = playerProvider.getPlayerById(winnerId);
+        if (winner != null) {
+          _audioQueue?.announceVictory(winner.name);
+        }
+      }
+      _audioQueue?.whenIdle().then((_) {
+        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
+      });
     }
   }
 
@@ -494,7 +517,12 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     final currentPlayer = allPlayers.where((p) => p.id == currentPlayerId).firstOrNull;
     final currentPlayerName = currentPlayer?.name ?? 'Player';
 
-    return PopScope(
+    return AutoSaveOnPause(
+      onPaused: () {
+        if (!hasDartsThrown) return;
+        provider.saveGame(allPlayers, isAutoSave: true);
+      },
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -743,17 +771,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                                 ),
                               ),
                             ],
-                            if (game.speedPlayEnabled) ...[
-                              const SizedBox(width: 12),
-                              Text(
-                                'Round ${game.round}',
-                                style: GoogleFonts.cinzel(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.bold,
-                                  color: _kMarbleWhite,
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ),
@@ -765,8 +782,11 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                     ),
                     // Elimination Zone
                     _buildEliminationZone(game, allPlayers),
-                    // Bottom padding for emulator overlay (halved per design)
-                    const SizedBox(height: 60),
+                    // Bottom padding for emulator overlay (halved per design).
+                    // Was 60 — trimmed by 45 to absorb the elimination-zone's
+                    // height growth (30 → 75) for the larger 2-line knockoff
+                    // label so the podium row above doesn't shift.
+                    const SizedBox(height: 15),
                   ],
                 ),
               ],
@@ -824,6 +844,23 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.gladiatorArena()
                   : null,
+              buffToggles: _mockApi != null
+                  ? [
+                      BuffToggleSpec<Object>(
+                        buff: 'shieldRound',
+                        label: 'Shield\nRound',
+                        isActive: game.isShieldRound,
+                        isEnabled: game.shieldRoundEnabled,
+                        buttonKey: DartboardEmulatorKeys.buffToggleButton('shieldRound'),
+                        config: BuffToggleButtonConfig.gladiatorArena(),
+                      ),
+                    ]
+                  : null,
+              onBuffToggle: _mockApi != null
+                  ? (_) {
+                      context.read<GladiatorArenaProvider>().toggleShieldRoundOverride();
+                    }
+                  : null,
             ),
           ),
           // FAB
@@ -855,6 +892,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               config: DartboardPausedModalConfig.gladiatorArena(),
             ),
         ],
+      ),
       ),
     );
   }
@@ -1226,23 +1264,36 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
       final victim = allPlayers.where((p) => p.id == victimId).firstOrNull;
       final attacker = allPlayers.where((p) => p.id == attackerId).firstOrNull;
       knockoffText =
-          '${victim?.name ?? 'Player'} was knocked off by ${attacker?.name ?? 'Player'}!';
+          'Devastating blow! ${victim?.name ?? 'Player'} was knocked off '
+          'their pedestal by ${attacker?.name ?? 'Player'}!';
     }
 
     return Container(
       key: GladiatorArenaGameKeys.eliminationZone,
-      height: 30,
+      height: 75,
       width: double.infinity,
       child: Center(
         child: showKnockoff
             ? Text(
                 knockoffText,
                 style: GoogleFonts.lato(
-                  fontSize: 14,
+                  fontSize: 30,
                   color: _kBloodRed,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                  shadows: const [
+                    // Black outline — stacked 0-blur shadows at 4 offsets
+                    Shadow(color: Colors.black, offset: Offset(-1.5, 0), blurRadius: 0),
+                    Shadow(color: Colors.black, offset: Offset(1.5, 0), blurRadius: 0),
+                    Shadow(color: Colors.black, offset: Offset(0, -1.5), blurRadius: 0),
+                    Shadow(color: Colors.black, offset: Offset(0, 1.5), blurRadius: 0),
+                    // Soft drop shadow for depth
+                    Shadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 5),
+                  ],
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               )
             : const SizedBox.shrink(),
       ),

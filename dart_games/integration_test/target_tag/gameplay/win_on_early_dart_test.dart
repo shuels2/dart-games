@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/settings_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 /// Per-dart win evaluation: when a dart eliminates the last opponent on
@@ -64,10 +65,7 @@ void main() {
         reason: 'Eliminating opponent on dart 1 should end the game');
 
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     expect(config.getPlayAgainButton(), findsOneWidget,
         reason: 'Should navigate to results after dart-1 elimination win');

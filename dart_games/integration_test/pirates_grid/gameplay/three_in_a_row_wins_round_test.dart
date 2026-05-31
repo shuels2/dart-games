@@ -3,6 +3,7 @@ import 'package:integration_test/integration_test.dart';
 
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 void main() {
@@ -35,9 +36,7 @@ void main() {
 
     // Tap DARTS REMOVED → should navigate to results
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Results screen: play again button should be visible
     expect(config.getPlayAgainButton(), findsOneWidget,

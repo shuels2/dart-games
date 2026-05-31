@@ -5,6 +5,7 @@ import 'package:dart_games/models/pirates_grid_game.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/element_finders.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 // Bo5 win threshold: (5 ~/ 2) + 1 = 3 rounds.
@@ -154,9 +155,7 @@ void main() {
 
     // DARTS REMOVED → navigate to results screen
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     // Results screen should be shown
     expect(config.getPlayAgainButton(), findsOneWidget,

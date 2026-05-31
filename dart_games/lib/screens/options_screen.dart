@@ -18,6 +18,7 @@ import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../widgets/player_avatar_widget.dart';
 import '../providers/dartboard_provider.dart';
+import '../build_info.dart';
 
 class OptionsScreen extends StatefulWidget {
   final DartAnnouncerService announcer;
@@ -38,10 +39,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
   String _selectedResponsiveVoice = 'Australian Female';
   // User-tunable playback rate (1.0 = normal). Slider range 0.7-1.5.
   double _playbackRate = 1.0;
-  // Gameplay setting: when false (default), helpers in Carnival Derby,
-  // Target Tag, and Monster Mash skip the generic per-dart score
-  // readout ("Single 20" etc.) so per-turn audio stays short.
-  bool _perDartScoreAnnouncements = false;
   List<dynamic> _systemVoices = [];
   bool _responsiveVoiceReady = false;
   bool _isSaving = false;
@@ -52,7 +49,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _playersListScrollController = ScrollController();
   final GlobalKey _announcerKey = GlobalKey();
-  final GlobalKey _gameplayKey = GlobalKey();
   final GlobalKey _musicKey = GlobalKey();
   final GlobalKey _userManagementKey = GlobalKey();
   final GlobalKey _adminKey = GlobalKey();
@@ -95,7 +91,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     // Check which section is currently visible
     final announcerPosition = _getKeyPosition(_announcerKey);
-    final gameplayPosition = _getKeyPosition(_gameplayKey);
     final musicPosition = _getKeyPosition(_musicKey);
     final userManagementPosition = _getKeyPosition(_userManagementKey);
     final adminPosition = _getKeyPosition(_adminKey);
@@ -106,8 +101,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
       newSection = 'userManagement';
     } else if (musicPosition != null && scrollPosition >= musicPosition - 100) {
       newSection = 'music';
-    } else if (gameplayPosition != null && scrollPosition >= gameplayPosition - 100) {
-      newSection = 'gameplay';
     } else {
       newSection = 'announcer';
     }
@@ -187,17 +180,12 @@ class _OptionsScreenState extends State<OptionsScreen> {
     // Load playback rate (default 1.0)
     final playbackRate = await AppSettings.getVoicePlaybackRate();
 
-    // Load gameplay settings
-    final perDartScoreAnnouncements =
-        await AppSettings.getPerDartScoreAnnouncements();
-
     setState(() {
       _voiceEngine = voiceEngine;
       _selectedVoice = selectedVoice;
       _selectedSystemVoice = systemVoice;
       _selectedResponsiveVoice = responsiveVoice;
       _playbackRate = playbackRate.clamp(0.7, 1.5);
-      _perDartScoreAnnouncements = perDartScoreAnnouncements;
     });
 
     // Load victory music files from service
@@ -222,8 +210,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
       await AppSettings.saveSystemVoice(_selectedSystemVoice);
       await AppSettings.saveResponsiveVoice(_selectedResponsiveVoice);
       await AppSettings.saveVoicePlaybackRate(_playbackRate);
-      await AppSettings.savePerDartScoreAnnouncements(
-          _perDartScoreAnnouncements);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -477,16 +463,18 @@ class _OptionsScreenState extends State<OptionsScreen> {
     if (player != null && mounted) {
       final playerProvider = context.read<PlayerProvider>();
       await playerProvider.savePlayer(player);
+      // savePlayer is an HTTP roundtrip; the screen may unmount during the
+      // gap. Early-return to avoid touching disposed state below (snackbar
+      // ScaffoldMessenger, ScrollController in _scrollToNewPlayer).
+      if (!mounted) return;
 
       // Show success snackbar (Options screen only)
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Player "${player.name}" added'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Player "${player.name}" added'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
       // Scroll to show the new player after dialog closes
       _scrollToNewPlayer();
@@ -933,7 +921,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
               ),
             )
           else
-            ...history.reversed.take(5).map((entry) {
+            ...history.take(5).map((entry) {
               final isWin = entry.metadata?['won'] == true;
               return ListTile(
                 dense: true,
@@ -1055,55 +1043,66 @@ class _OptionsScreenState extends State<OptionsScreen> {
           ),
         ),
       ),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Settings',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurfaceVariant,
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text(
+                  'Settings',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildNavItem(
+                  theme: theme,
+                  icon: Icons.campaign,
+                  label: 'Game Announcer',
+                  sectionKey: 'announcer',
+                  onTap: () => _scrollToSection(_announcerKey),
+                ),
+                const SizedBox(height: 8),
+                _buildNavItem(
+                  theme: theme,
+                  icon: Icons.music_note,
+                  label: 'Celebration Music',
+                  sectionKey: 'music',
+                  onTap: () => _scrollToSection(_musicKey),
+                ),
+                const SizedBox(height: 8),
+                _buildNavItem(
+                  theme: theme,
+                  icon: Icons.people,
+                  label: 'User Management',
+                  sectionKey: 'userManagement',
+                  onTap: () => _scrollToSection(_userManagementKey),
+                ),
+                const SizedBox(height: 8),
+                _buildNavItem(
+                  theme: theme,
+                  icon: Icons.admin_panel_settings,
+                  label: 'Admin',
+                  sectionKey: 'admin',
+                  onTap: () => _scrollToSection(_adminKey),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          _buildNavItem(
-            theme: theme,
-            icon: Icons.campaign,
-            label: 'Game Announcer',
-            sectionKey: 'announcer',
-            onTap: () => _scrollToSection(_announcerKey),
-          ),
-          const SizedBox(height: 8),
-          _buildNavItem(
-            theme: theme,
-            icon: Icons.sports_esports,
-            label: 'Gameplay',
-            sectionKey: 'gameplay',
-            onTap: () => _scrollToSection(_gameplayKey),
-          ),
-          const SizedBox(height: 8),
-          _buildNavItem(
-            theme: theme,
-            icon: Icons.music_note,
-            label: 'Celebration Music',
-            sectionKey: 'music',
-            onTap: () => _scrollToSection(_musicKey),
-          ),
-          const SizedBox(height: 8),
-          _buildNavItem(
-            theme: theme,
-            icon: Icons.people,
-            label: 'User Management',
-            sectionKey: 'userManagement',
-            onTap: () => _scrollToSection(_userManagementKey),
-          ),
-          const SizedBox(height: 8),
-          _buildNavItem(
-            theme: theme,
-            icon: Icons.admin_panel_settings,
-            label: 'Admin',
-            sectionKey: 'admin',
-            onTap: () => _scrollToSection(_adminKey),
+          // Build identifier — injected via --dart-define=BUILD_NUMBER
+          // from build.bat / build.sh wrappers. Falls back to 'dev'
+          // when launched directly with `flutter run`.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Text(
+              'Build ${BuildInfo.number}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+              ),
+            ),
           ),
         ],
       ),
@@ -1710,61 +1709,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
                 ),
               ],
             ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Gameplay Settings Section — non-audio preferences that
-                  // affect how each game plays. Currently houses the
-                  // "Per-dart score announcements" toggle (Tier A audio
-                  // reduction from the gameplay-feedback-updates branch).
-                  Container(
-                    key: _gameplayKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Gameplay',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Controls how each game behaves during play. '
-                          'These take effect the next time you enter a game.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Card(
-                          child: SwitchListTile(
-                            secondary: const Icon(Icons.record_voice_over),
-                            title: const Text('Per-dart score announcements'),
-                            subtitle: const Text(
-                              'Speak each dart hit (e.g. "Single 20", '
-                              '"Bullseye!") in Carnival Derby, Target Tag, '
-                              'and Monster Mash. Off by default for faster '
-                              'gameplay — you still hear the dart SFX and '
-                              'all game-specific announcements (attacks, '
-                              'eliminations, etc.).',
-                            ),
-                            value: _perDartScoreAnnouncements,
-                            onChanged: (value) async {
-                              setState(() {
-                                _perDartScoreAnnouncements = value;
-                              });
-                              // Persist immediately — no Save button on
-                              // this section. The change takes effect
-                              // the next time a game's queue runs
-                              // loadSettings (i.e. next game start).
-                              await AppSettings
-                                  .savePerDartScoreAnnouncements(value);
-                            },
-                          ),
-                        ),
                       ],
                     ),
                   ),

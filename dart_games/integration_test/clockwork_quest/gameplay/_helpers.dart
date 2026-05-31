@@ -5,6 +5,7 @@ import '../../shared/dart_throw_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 
 final config = GameUIConfig.clockworkQuest();
 
@@ -79,10 +80,7 @@ Future<void> completeGameToVictory(
   // Remove darts to trigger victory flow (standardized: DARTS REMOVED before results)
   await clickDartsRemoved(tester);
 
-  await tester.pump(const Duration(seconds: 4));
-  await tester.pump();
-  await tester.pump();
-  await tester.pump();
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }
 
 Future<void> advancePlayerToTarget(

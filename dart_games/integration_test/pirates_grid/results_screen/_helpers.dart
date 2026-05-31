@@ -132,9 +132,5 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
     await clickDartsRemoved(tester);
   }
 
-  await tester.pump(const Duration(seconds: 4));
-  await tester.pump();
-  await tester.pump();
-  await tester.pump();
-  await PumpSequences.fullRebuild(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
 }

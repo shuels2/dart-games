@@ -5,6 +5,7 @@ import 'package:integration_test/integration_test.dart';
 import '../../shared/ui_test_helpers.dart';
 import '../../shared/element_finders.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/results_helpers.dart';
 import '_helpers.dart';
 
 /// Coverage for win-on-dart-1 under the BOTH-OPTIONS-ON corner: Double
@@ -71,9 +72,7 @@ void main() {
     // Drive navigation to Results — total post-win pump now ≈ 6 s, well
     // past the 3 s nav delay in `_handleGameWon`.
     await clickDartsRemoved(tester);
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    await tester.pump();
+    await ResultsHelpers.pumpUntilResults(tester, config);
 
     expect(ElementFinders.getGladiatorArenaPlayAgainButton(), findsOneWidget,
         reason: 'Should navigate to results after dart-1 victory');

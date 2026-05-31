@@ -80,10 +80,9 @@ void main() {
       }
     });
 
-    // ── Scenario 2: Medium — labels show "D{n}" prefix and a Sea Foam Teal
-    //    "D" badge appears in the top-right corner of each cell.
+    // ── Scenario 2: Medium — labels show "D/T{n}" prefix (no separate badge)
     testWidgets(
-        'Medium difficulty: all 9 cells show "D{n}" labels and a Sea Foam Teal "D" badge',
+        'Medium difficulty: all 9 cells show "D/T{n}" labels',
         (WidgetTester tester) async {
       await UITestHelpers.resetServerState();
       await setupAndStartGame(tester, config,
@@ -92,54 +91,35 @@ void main() {
 
       for (int row = 0; row < 3; row++) {
         for (int col = 0; col < 3; col++) {
-          // ── Assert label starts with "D" and has a numeric suffix ──────────
           final label = _cellLabelText(tester, row, col);
           expect(label, isNotNull,
               reason: 'Cell [$row,$col] should have a target label');
-          expect(label!.startsWith('D'), isTrue,
+          // Two-line format: "D{n}\nT{n}"
+          expect(label!.contains('\n'), isTrue,
               reason:
-                  'Medium cell [$row,$col] label "$label" should start with D');
-          final numStr = label.substring(1);
-          expect(int.tryParse(numStr), isNotNull,
+                  'Medium cell [$row,$col] label "$label" should have two lines');
+          final lines = label.split('\n');
+          expect(lines.length, 2,
               reason:
-                  'Medium cell [$row,$col] label "$label" should be D+integer; '
-                  'suffix "$numStr" did not parse as int');
+                  'Medium cell [$row,$col] label should have exactly 2 lines');
+          expect(lines[0].startsWith('D'), isTrue,
+              reason:
+                  'Medium cell [$row,$col] first line "${lines[0]}" should start with D');
+          expect(lines[1].startsWith('T'), isTrue,
+              reason:
+                  'Medium cell [$row,$col] second line "${lines[1]}" should start with T');
+          final num1 = lines[0].substring(1);
+          final num2 = lines[1].substring(1);
+          expect(num1, equals(num2),
+              reason:
+                  'Medium cell [$row,$col] D and T numbers should match');
 
-          // ── Assert the "D" badge Container is present with Sea Foam Teal ──
+          // No separate badge — requirement is shown in the label
           final badgeFinder =
               find.byKey(Key('pirates_grid_medium_badge_${row}_$col'));
-          expect(badgeFinder, findsOneWidget,
+          expect(badgeFinder, findsNothing,
               reason:
-                  'Medium cell [$row,$col] should have a "D" badge keyed '
-                  '"pirates_grid_medium_badge_${row}_$col"');
-
-          // Verify badge background is Sea Foam Teal via BoxDecoration color
-          final badgeContainer = tester.widget<Container>(badgeFinder);
-          final badgeDeco = badgeContainer.decoration as BoxDecoration?;
-          final badgeColor = badgeDeco?.color;
-          expect(badgeColor, isNotNull,
-              reason:
-                  'Medium cell [$row,$col] badge container should have a '
-                  'BoxDecoration color');
-          expect(
-            _colorMatches(badgeColor!, _seaFoamTeal),
-            isTrue,
-            reason:
-                'Medium cell [$row,$col] badge color should be Sea Foam Teal '
-                '(R=${_seaFoamTeal.red} G=${_seaFoamTeal.green} B=${_seaFoamTeal.blue}); '
-                'got R=${badgeColor.red} G=${badgeColor.green} B=${badgeColor.blue}',
-          );
-
-          // Verify badge Text is "D"
-          final badgeTextFinder =
-              find.descendant(of: badgeFinder, matching: find.byType(Text));
-          expect(badgeTextFinder, findsWidgets,
-              reason: 'Medium cell [$row,$col] badge should contain a Text widget');
-          final badgeText = tester.widget<Text>(badgeTextFinder.first);
-          expect(badgeText.data, equals('D'),
-              reason:
-                  'Medium cell [$row,$col] badge Text should be "D"; '
-                  'got "${badgeText.data}"');
+                  'Medium cell [$row,$col] should NOT have a separate badge');
         }
       }
     });

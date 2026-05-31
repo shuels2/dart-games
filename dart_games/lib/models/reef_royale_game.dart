@@ -76,7 +76,7 @@ class ReefRoyaleGame {
   Map<String, List<bool>> dartThrowLockedReef;
   Map<String, List<int?>> dartThrowTargetNumber;
   Map<String, List<bool>> dartThrowIsNeighbor;
-  Map<String, List<String?>> dartThrowPearlRecipientId;
+  Map<String, List<List<String>>> dartThrowPearlRecipientIds;
   Map<String, List<int>> dartThrowTargetCount; // Number of targets hit per dart (>1 = shared neighbor)
 
   // Lifetime stats
@@ -142,7 +142,7 @@ class ReefRoyaleGame {
     Map<String, List<bool>>? dartThrowLockedReef,
     Map<String, List<int?>>? dartThrowTargetNumber,
     Map<String, List<bool>>? dartThrowIsNeighbor,
-    Map<String, List<String?>>? dartThrowPearlRecipientId,
+    Map<String, List<List<String>>>? dartThrowPearlRecipientIds,
     Map<String, List<int>>? dartThrowTargetCount,
     Map<String, int>? totalDartsThrown,
     Map<String, int>? totalTurns,
@@ -167,7 +167,7 @@ class ReefRoyaleGame {
         dartThrowLockedReef = dartThrowLockedReef ?? {},
         dartThrowTargetNumber = dartThrowTargetNumber ?? {},
         dartThrowIsNeighbor = dartThrowIsNeighbor ?? {},
-        dartThrowPearlRecipientId = dartThrowPearlRecipientId ?? {},
+        dartThrowPearlRecipientIds = dartThrowPearlRecipientIds ?? {},
         dartThrowTargetCount = dartThrowTargetCount ?? {},
         totalDartsThrown = totalDartsThrown ?? {},
         totalTurns = totalTurns ?? {},
@@ -189,7 +189,7 @@ class ReefRoyaleGame {
       this.dartThrowLockedReef[playerId] ??= [];
       this.dartThrowTargetNumber[playerId] ??= [];
       this.dartThrowIsNeighbor[playerId] ??= [];
-      this.dartThrowPearlRecipientId[playerId] ??= [];
+      this.dartThrowPearlRecipientIds[playerId] ??= [];
       this.dartThrowTargetCount[playerId] ??= [];
       this.totalDartsThrown[playerId] ??= 0;
       this.totalTurns[playerId] ??= 0;
@@ -375,7 +375,7 @@ class ReefRoyaleGame {
     dartThrowLockedReef[playerId]!.add(false);
     dartThrowTargetNumber[playerId]!.add(null);
     dartThrowIsNeighbor[playerId]!.add(false);
-    dartThrowPearlRecipientId[playerId]!.add(null);
+    dartThrowPearlRecipientIds[playerId]!.add([]);
     dartThrowTargetCount[playerId]!.add(0);
   }
 
@@ -423,7 +423,7 @@ class ReefRoyaleGame {
     bool anyLockedReef = false;
     bool anyDirectHit = false; // True if ANY target was hit directly (not as neighbor)
     List<int> targetsHit = [];
-    String? pearlRecipient;
+    final Set<String> pearlRecipients = {};
 
     // Process each resolved target
     for (final target in resolvedTargets) {
@@ -470,13 +470,15 @@ class ReefRoyaleGame {
         totalPearlsScored += result['pearlsScored'] as int;
         if (result['claimed'] as bool) anyClaimedCoral = true;
         if (result['locked'] as bool) anyLockedReef = true;
-        if (result['pearlRecipient'] != null) pearlRecipient = result['pearlRecipient'] as String?;
+        final recipients = result['pearlRecipients'] as List<String>;
+        pearlRecipients.addAll(recipients);
       } else {
         // Process scoring for this target
         var result = _processScoringForTarget(playerId, target, hitNumber,
             multiplierValue, isNeighborHit);
         totalPearlsScored += result['pearlsScored'] as int;
-        if (result['pearlRecipient'] != null) pearlRecipient = result['pearlRecipient'] as String?;
+        final recipients = result['pearlRecipients'] as List<String>;
+        pearlRecipients.addAll(recipients);
       }
     }
 
@@ -487,7 +489,7 @@ class ReefRoyaleGame {
     dartThrowLockedReef[playerId]!.add(anyLockedReef);
     dartThrowTargetNumber[playerId]!.add(targetsHit.isNotEmpty ? targetsHit.first : null);
     dartThrowIsNeighbor[playerId]!.add(!anyDirectHit); // Neighbor only if NO direct hits
-    dartThrowPearlRecipientId[playerId]!.add(pearlRecipient);
+    dartThrowPearlRecipientIds[playerId]!.add(pearlRecipients.toList());
     dartThrowTargetCount[playerId]!.add(resolvedTargets.length);
 
     // Re-check win condition at end of every dart. The earlier
@@ -512,7 +514,7 @@ class ReefRoyaleGame {
     bool justClaimed = false;
     bool justLocked = false;
     int pearlsScoredThisDart = 0;
-    String? pearlRecipient;
+    List<String> pearlRecipients = [];
 
     if (newMarks >= markThreshold) {
       // Coral blooms!
@@ -537,11 +539,10 @@ class ReefRoyaleGame {
           pearlsScoredThisDart =
               _applyPearlScoring(playerId, target, pearlValue);
           if (gameMode == ReefRoyaleGameMode.cursedTide) {
-            pearlRecipient = playerIds.firstWhere(
-              (pid) =>
-                  pid != playerId && !claimed[pid]!.contains(target),
-              orElse: () => playerId,
-            );
+            pearlRecipients = playerIds
+                .where((pid) =>
+                    pid != playerId && !claimed[pid]!.contains(target))
+                .toList();
           }
         }
       }
@@ -554,7 +555,7 @@ class ReefRoyaleGame {
       'pearlsScored': pearlsScoredThisDart,
       'claimed': justClaimed,
       'locked': justLocked,
-      'pearlRecipient': pearlRecipient,
+      'pearlRecipients': pearlRecipients,
     };
   }
 
@@ -565,7 +566,7 @@ class ReefRoyaleGame {
         .any((pid) => pid != playerId && !claimed[pid]!.contains(target));
 
     int pearlsScoredThisDart = 0;
-    String? pearlRecipient;
+    List<String> pearlRecipients = [];
 
     if (anyOpponentUnclaimed) {
       int pearlValue;
@@ -574,17 +575,16 @@ class ReefRoyaleGame {
       } else if (hitNumber == 25) {
         pearlValue = 25;
       } else {
-        pearlValue = target * multiplierValue; // Applies to both direct and neighbor hits
+        pearlValue = target * multiplierValue;
       }
 
       pearlsScoredThisDart =
           _applyPearlScoring(playerId, target, pearlValue);
       if (gameMode == ReefRoyaleGameMode.cursedTide) {
-        pearlRecipient = playerIds.firstWhere(
-          (pid) =>
-              pid != playerId && !claimed[pid]!.contains(target),
-          orElse: () => playerId,
-        );
+        pearlRecipients = playerIds
+            .where((pid) =>
+                pid != playerId && !claimed[pid]!.contains(target))
+            .toList();
       }
     }
 
@@ -593,7 +593,7 @@ class ReefRoyaleGame {
       'pearlsScored': pearlsScoredThisDart,
       'claimed': false,
       'locked': false,
-      'pearlRecipient': pearlRecipient,
+      'pearlRecipients': pearlRecipients,
     };
   }
 
@@ -726,7 +726,7 @@ class ReefRoyaleGame {
     dartThrowLockedReef[currentPlayerId] = [];
     dartThrowTargetNumber[currentPlayerId] = [];
     dartThrowIsNeighbor[currentPlayerId] = [];
-    dartThrowPearlRecipientId[currentPlayerId] = [];
+    dartThrowPearlRecipientIds[currentPlayerId] = [];
     dartThrowTargetCount[currentPlayerId] = [];
 
     turnsCompletedThisRound++;
@@ -958,7 +958,7 @@ class ReefRoyaleGame {
       'dartThrowLockedReef': dartThrowLockedReef,
       'dartThrowTargetNumber': dartThrowTargetNumber,
       'dartThrowIsNeighbor': dartThrowIsNeighbor,
-      'dartThrowPearlRecipientId': dartThrowPearlRecipientId,
+      'dartThrowPearlRecipientIds': dartThrowPearlRecipientIds,
       'dartThrowTargetCount': dartThrowTargetCount,
       'totalDartsThrown': totalDartsThrown,
       'totalTurns': totalTurns,
@@ -1068,9 +1068,9 @@ class ReefRoyaleGame {
           ? (json['dartThrowIsNeighbor'] as Map<String, dynamic>).map(
               (k, v) => MapEntry(k, List<bool>.from(v)))
           : null,
-      dartThrowPearlRecipientId: json['dartThrowPearlRecipientId'] != null
-          ? (json['dartThrowPearlRecipientId'] as Map<String, dynamic>).map(
-              (k, v) => MapEntry(k, List<String?>.from(v)))
+      dartThrowPearlRecipientIds: json['dartThrowPearlRecipientIds'] != null
+          ? (json['dartThrowPearlRecipientIds'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, (v as List).map((item) => List<String>.from(item ?? [])).toList()))
           : null,
       dartThrowTargetCount: json['dartThrowTargetCount'] != null
           ? (json['dartThrowTargetCount'] as Map<String, dynamic>).map(
