@@ -1360,9 +1360,17 @@ After the sub-agent returns:
 > (ll) **Continuous-animation subtrees wrapped in `RepaintBoundary`** — grep `lib/screens/games/[GAME_NAME_SNAKE]/` and `lib/widgets/[GAME_NAME_SNAKE]_*` for every `AnimatedBuilder(` and verify a `RepaintBoundary` ancestor wraps the animated subtree as closely as possible. Without it, animation frames dirty sibling widgets and force the entire screen to repaint per frame. Also flag any AnimationController-driven custom widget that paints continuously (background pulses, progress glow, character animations) without an enclosing `RepaintBoundary`. Reference: `lib/widgets/carnival_string_lights.dart` `_buildBulb` for the canonical pattern. Per-finding history: `docs/perf-audits/2026-05-05-full.md` finding A4.
 > (mm) **No `Opacity`/`Transform`/`Color` inside `AnimatedBuilder.builder` driven by an AnimationController** — grep for `Opacity(opacity:` inside `AnimatedBuilder(...).builder` callbacks. Use `FadeTransition(opacity: anim, ...)` (or `SlideTransition`/`ScaleTransition`/`RotationTransition`) outside the builder instead — `Opacity` allocates a saveLayer per frame whereas the transition widgets short-circuit. Same rule for animated `Transform.translate`/`Transform.rotate` inside a builder. Per-finding history: `docs/perf-audits/2026-05-05-full.md` finding A5.
 > (nn) **No empty `setState(() {})` as a rebuild hack** — grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_*.dart` for `setState\(\(\) \{\}\)`. If the rebuild is needed because a `Provider` field changed, the provider's own `notifyListeners()` covers it — no setState required. If local widget state is changing, give the field an actual setter call inside the setState closure (e.g. `setState(() { _foo = bar; })`). An empty setState hides the dependency, causes spurious full-subtree rebuilds, and tends to multiply over time as code is copy-pasted between games. **Permitted exception:** rebuilding after assigning a local non-Provider field (e.g. `_mockApi = ...` in `_initializeGame`) — in that case the field assignment IS the state change and an empty closure is acceptable; cite this case in the AR-4 report. Per-finding history: `docs/perf-audits/2026-05-05-full.md` finding C3.
-> (oo) **Menu screen `initState` calls `await playerProvider.loadPlayers()` then `playerProvider.clearSelection()` inside its `addPostFrameCallback`** — read the menu screen's `initState()` and verify both calls are present, in that order, before any preselect logic (`selectPlayer(...)` / `getPlayerById(...)`). Without `clearSelection()`, `_selectedPlayers` on `PlayerProvider` is shared global state that LEAKS across games — entering the new game shows whatever players were selected on the previously-visited game's menu. Without `loadPlayers()`, players added on the home / options screen since the app booted won't appear in the new game's roster. Reference: `target_tag_menu_screen.dart:93-94`, `horse_race_menu_screen.dart:52-53`, `reef_royale_menu_screen.dart:89-90`, `clockwork_quest_menu_screen.dart:59-60`, `monster_mash_menu_screen.dart:82-83`, `lunar_lander_menu_screen.dart` (post-fix). Recurring miss: Lunar Lander shipped without these calls and exhibited the cross-game selection-leak bug until 2026-05-06.
+> (oo) **Menu screen `initState` calls `await playerProvider.loadPlayers()`, then `if (!mounted) return;`, then `playerProvider.clearSelection()` inside its `addPostFrameCallback`** — read the menu screen's `initState()` and verify all three are present, in that order, before any preselect logic (`selectPlayer(...)` / `getPlayerById(...)`). Without `clearSelection()`, `_selectedPlayers` on `PlayerProvider` is shared global state that LEAKS across games — entering the new game shows whatever players were selected on the previously-visited game's menu. Without `loadPlayers()`, players added on the home / options screen since the app booted won't appear in the new game's roster. The `if (!mounted) return;` between the two is MANDATORY (Accumulated Build Quality Rules § 72) — `loadPlayers` is an HTTP roundtrip and the widget may unmount during the gap (user backs out, dartboard disconnect grabs nav, integration-test teardown). Touching the provider after disposal triggers a `"ChangeNotifier was used after being disposed"` assertion. Reference: post-fix menu screens after commit `a6170d5`. Recurring miss: shipped in all 9 menu screens until 2026-05-31 — surfaced as `target_tag/pause_modal/menu_pause_test.dart` after-test-completed exception.
 >
-> (pp) **Accumulated Build Quality Rules compliance** — review the "## Accumulated Build Quality Rules" section at the end of this skill. For each of the 27 rules, note whether it applies to this game and verify compliance:
+> (rr) **`voice_enabled=false` in `resetServerState`** (Rule 68) — read both `integration_test/shared/settings_helpers.dart` and `test/shared/settings_helpers.dart` and verify each contains a `http.put(Uri.parse(ApiConfig.url('/api/v1/settings/voice_enabled')), ..., body: jsonEncode({'value': 'false'}))` call inside `static Future<void> resetServerState`. Confirm both files are byte-identical via `diff -q integration_test/shared/settings_helpers.dart test/shared/settings_helpers.dart` (per Rule 26). FAIL if either is missing the PUT or the files differ.
+> (ss) **`pumpUntilResults` (not fixed pump) after every game completion** (Rule 69) — for each test file under `integration_test/[GAME_NAME_SNAKE]/`, grep for `clickDartsRemoved(tester)\|completeGameToVictory` and inspect the next 20 lines. If a results-screen assertion follows (any `getPlayAgainButton`, `_results_*_button`, `_results_winner_*`, victory headline text, or `VictoryMusicService`), the wait between them MUST be `await ResultsHelpers.pumpUntilResults(tester, config);` — NOT `await tester.pump(const Duration(seconds: 4));` followed by bare pumps. Allowed exception: the per-turn skip-turn-with-darts-thrown wait (4 s for `simulateTakeoutStarted`) is unrelated; cite explicitly in the report when seen.
+> (tt) **5 s settle before VictoryMusicService / stats assertions** (Rule 70) — for every test file matching `*winner_stats_updated_test.dart`, `*victory_music_initialized_test.dart`, `*edit_creates_winner_stats_test.dart`, or any test asserting `VictoryMusicService\(\).isInitialized\|\.gamesPlayed\|\.gamesWon\|\.gameHistory`, verify the line ordering: `pumpUntilResults(tester, config)` line < `pump(const Duration(seconds: 5))` line < two bare `pump()`s < the `expect(...)` line. Programmatic check: for each affected test, capture the line numbers of the three constructs and assert strict ordering.
+> (uu) **Screenshot / showcase inline 300-iter poll** (Rule 71) — locate every `*_screenshot_test.dart` and `*_showcase_test.dart` under `integration_test/[GAME_NAME_SNAKE]/`. For each test, find every place that completes a game and then captures a results-screen screenshot or asserts on a results-screen widget. Grep for `for \(int _i = 0; _i < 300; _i\+\+\)` followed by `pump\(const Duration\(milliseconds: 300\)\)` and the game's Play Again finder break condition. Must be present at each such site. Flag any remaining `pump(const Duration(seconds: 4))` followed by a results-screen assertion / screenshot capture as a violation.
+> (vv) **`mounted` guard after every `PlayerProvider` await** (Rule 72) — grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart`, `lib/screens/options_screen.dart`, and `lib/widgets/player_list_panel/*.dart` for `await playerProvider\.\|await _playerProvider!\.`. For each match, read 5–10 lines below; verify EITHER (a) the next provider/setState/context use is preceded by `if (!mounted) return;`, OR (b) no further provider/setState/context use occurs before the function returns. The results-screen `batchUpdatePlayerStats` pattern (inside `try`/`catch` with no mutation after the await) is the only allowed bare-await pattern.
+> (ww) **Real-time pumps around popup interactions** (Rule 73) — for every UI test under `integration_test/[GAME_NAME_SNAKE]/menu_and_settings/` (or any test that taps a `DropdownButton`, `PopupMenuButton`, or `tester.tapAt(const Offset(...))` overlay-dismiss), grep within 5 lines for either a follow-up `tester.pump(const Duration(milliseconds: [0-9]+))` (correct) OR a `PumpSequences.simpleUpdate` (violation). Flag every `simpleUpdate` between a popup-related tap and the next gesture.
+> (xx) **No intermediate-state stats assertions** (Rule 74) — grep every test file under `integration_test/[GAME_NAME_SNAKE]/` for the substring `results screen not yet loaded` (case-insensitive). Must return zero hits. Also grep for `expect\(.*\.gamesPlayed,\s*0` and `expect\(.*\.gamesWon,\s*0` in the same test body as `clickDartsRemoved\|completeGameToVictory`. Must return zero hits. Either match indicates the broken intermediate-state pattern.
+>
+> (pp) **Accumulated Build Quality Rules compliance** — review the "## Accumulated Build Quality Rules" section at the end of this skill. For each of the 34 rules, note whether it applies to this game and verify compliance:
 > - Rule 1 (Character Randomization): applies if the game has more characters than players. Verify `_characterPaths` is shuffled in `initState`, not hardcoded by player index.
 > - Rule 2 (Shape-following glow): applies if active-player characters have transparent PNG backgrounds. Verify `ImageFiltered`+`ColorFiltered` approach, NOT `BoxShadow` on Container.
 > - Rule 3 (Per-player controls in player column): verify dart indicators and skip-turn button are in the player display column, not AppBar.
@@ -1814,12 +1822,12 @@ If FAIL:
 >       reason: 'Winning dart must end the game on dart 1');
 >
 >   await clickDartsRemoved(tester);
->   await tester.pump(const Duration(seconds: 4));
->   await tester.pump();
->   await tester.pump();
+>   await ResultsHelpers.pumpUntilResults(tester, config);
 >   expect(config.getPlayAgainButton(), findsOneWidget);
 > });
 > ```
+>
+> `ResultsHelpers.pumpUntilResults` is the canonical post-victory wait — it polls in 300 ms slices for up to 90 s, breaking early when the Play Again button mounts. Fixed `pump(seconds: 4)` chains are forbidden here because victory navigation is now event-driven on `_audioQueue.whenIdle()` and has unbounded wall-clock latency under heavy parallel-runner load. See Accumulated Build Quality Rules § 69.
 >
 > Reference implementations across shipped games:
 >   - `integration_test/gladiator_arena/gameplay/win_on_early_dart_test.dart` — Double Finish on/off, dart 1 + dart 2 (T20 with target=60; S20 + D20 with DF ON)
@@ -1869,7 +1877,15 @@ If FAIL:
 >
 > **6c. Edit Score winner/stats toggle tests (mandatory — add to every game's edit_score subdirectory):** Two tests that verify edit score correctly toggles winner state and that player stats are updated (or not) accordingly.
 >
-> - `edit_creates_winner_stats_test.dart` — Position the game near the win condition (programmatically or via gameplay), throw 3 non-winning darts, open Edit Score and change darts to winning values. Verify `hasWinner == true`, call `clickDartsRemoved(tester)`, wait for results screen navigation (pump 4 seconds for `_handleGameWon` delay + 5 seconds for `_updatePlayerStats` async call + `PumpSequences.fullRebuild`), then verify: `VictoryMusicService().isInitialized == true`, winner `gamesPlayed == 1`, winner `gamesWon == 1`, winner `gameHistory.length == 1`, winner `gameHistory.first.gameName == '[GAME_NAME_DISPLAY]'`, loser `gamesPlayed == 1`, loser `gamesWon == 0`.
+> - `edit_creates_winner_stats_test.dart` — Position the game near the win condition (programmatically or via gameplay), throw 3 non-winning darts, open Edit Score and change darts to winning values. Verify `hasWinner == true`, call `clickDartsRemoved(tester)`, then wait for results screen navigation with `await ResultsHelpers.pumpUntilResults(tester, config);` followed by a 5-second settle to let `VictoryMusicService.initialize()` and the `_updatePlayerStats()` API call finish (see Accumulated Build Quality Rules § 69, § 70 — fixed-pump chains like `pump(seconds: 4)` are forbidden here because victory navigation is now event-driven on `_audioQueue.whenIdle()` and has unbounded wall-clock latency). Pattern:
+> ```dart
+> await clickDartsRemoved(tester);
+> await ResultsHelpers.pumpUntilResults(tester, config);
+> await tester.pump(const Duration(seconds: 5));
+> await tester.pump();
+> await tester.pump();
+> ```
+> Then verify: `VictoryMusicService().isInitialized == true`, winner `gamesPlayed == 1`, winner `gamesWon == 1`, winner `gameHistory.length == 1`, winner `gameHistory.first.gameName == '[GAME_NAME_DISPLAY]'`, loser `gamesPlayed == 1`, loser `gamesWon == 0`.
 >
 > - `edit_removes_winner_no_stats_test.dart` — Position the game near the win condition, throw 3 darts where the **winning dart is dart 3** (not dart 1 or 2), open Edit Score and change dart 3 to a non-winning value. Verify `hasWinner == false`, call `clickDartsRemoved(tester)` (game should continue, NOT navigate to results), verify game is still active (`provider.isGameActive == true`), verify both players: `gamesPlayed == 0`, `gamesWon == 0`, `gameHistory.isEmpty`.
 >
@@ -3032,6 +3048,7 @@ Verify EVERY item:
 - [ ] Game characters NOT used as player avatars
 - [ ] No `(route) => false` in any Navigator call
 - [ ] Home-screen card with `HomeKeys.[gameName]Card` and correct icon
+- [ ] Menu screens, `team_player_list_panel.dart`, `dual_player_list_panel.dart`, and `options_screen.dart` guard every `await playerProvider.<method>()` with `if (!mounted) return;` before subsequent provider/setState/context use (Accumulated Build Quality Rules § 72)
 
 **Testing:**
 - [ ] Flutter non-UI tests pass (count: real)
@@ -3049,6 +3066,12 @@ Verify EVERY item:
 - [ ] All 4 batch files updated (run_ui_tests, run_ui_tests_stub, run_ui_tests_parallel, run_ui_tests_parallel_stub)
 - [ ] All mirrored shared helpers synchronized (`diff -rq integration_test/shared test/shared 2>&1 | grep "differ"` returns empty)
 - [ ] Every UI test calls `resetServerState()`
+- [ ] `SettingsHelpers.resetServerState` PUTs `voice_enabled=false` after the test reset (Accumulated Build Quality Rules § 68)
+- [ ] Every post-victory wait uses `ResultsHelpers.pumpUntilResults(tester, config)` — no fixed `pump(seconds: 4)`-style chains between game completion and a results-screen assertion (§ 69)
+- [ ] `VictoryMusicService().isInitialized` / `gamesPlayed` / `gamesWon` assertions are preceded by `pumpUntilResults` + a 5 s settle + 2 bare pumps, in that order (§ 70)
+- [ ] Screenshot / showcase tests use the inline 300-iteration poll loop with the game's Play Again finder as the break condition (§ 71)
+- [ ] No intermediate-state assertions ("results screen not yet loaded", `gamesPlayed == 0` after `clickDartsRemoved`) — tests verify the FINAL state (§ 74)
+- [ ] Every popup / dropdown / overlay-dismiss tap in tests is followed by `tester.pump(const Duration(milliseconds: 200))` + bare pump — never bare `pump(); pump();` chains around animations (§ 73)
 
 **Visual Validation:**
 - [ ] Screenshot test created and executed (with chromedriver sync + server start)
@@ -4233,6 +4256,123 @@ Tiki Golf v1 had a "Teams: [4 ▾]" inline dropdown inside the Game Mode option 
 When removing: KEEP the underlying state variable in the screen (it's still used downstream by the provider/game) and DEFAULT it to a sensible value. Just remove the UI that exposed it.
 
 **How to apply:** Phase 4 prompt template, when authoring an option box that has a conditional secondary control inside it, instructs the sub-agent to flag the secondary control as a removal candidate. AR-4 audit: when the user is reviewing the menu screen visually, ask if any conditional secondary controls feel necessary; remove them if the answer is no.
+
+---
+
+### 68. `SettingsHelpers.resetServerState` MUST disable voice via the API
+Every UI test reset MUST issue `PUT /api/v1/settings/voice_enabled` with body `{"value": "false"}` after the `/api/v1/test/reset` and before returning. With voice enabled in tests, `_handleGameWon()`'s `_audioQueue.whenIdle()` chain blocks indefinitely under heavy load — headless flutter_drive + DDC TTS engine's `setCompletionHandler` doesn't fire reliably, so each queued announcement falls back to its `wordCount * 1000 + 1500` ms timeout. Longer games (tiki golf 9 holes, gladiator knockoffs, monster mash multi-monster) accumulate enough mid-game announcements that the audio queue takes 60–200+ seconds to drain after victory, exceeding the `pumpUntilResults` budget so the results screen never renders. With voice off, `DartAnnouncerService.speak()` short-circuits, the queue stays empty, `whenIdle` resolves synchronously, and navigation fires. Game logic (provider state, scoring, `hasWinner`) is unaffected; only the per-test reset changes.
+
+Insert this block immediately after the dartboard-configuration PUT in `resetServerState`:
+```dart
+final voiceResponse = await http.put(
+  Uri.parse(ApiConfig.url('/api/v1/settings/voice_enabled')),
+  headers: dartboardHeaders,
+  body: jsonEncode({'value': 'false'}),
+);
+if (voiceResponse.statusCode != 200) {
+  print('WARNING: Failed to disable voice for test '
+      '(status ${voiceResponse.statusCode}): ${voiceResponse.body}');
+}
+```
+Mirror to both `integration_test/shared/settings_helpers.dart` AND `test/shared/settings_helpers.dart` per Rule 26 (byte-identical sync).
+
+**How to apply:** Phase 6/7 setup. AR-4 item (rr).
+
+---
+
+### 69. `ResultsHelpers.pumpUntilResults(tester, config)` is the canonical post-victory wait — fixed pumps are forbidden in this position
+After a victory-causing input (`completeGameToVictory`, `clickDartsRemoved` on a winning turn, `EditScoreHelpers.editScoreAndSave` that creates a winner), tests that assert on any results-screen widget — Play Again button, winner name, headline text, edit-score button, music init, stats, or any `_results_*` key — MUST wait with:
+```dart
+await ResultsHelpers.pumpUntilResults(tester, config);
+```
+Fixed `tester.pump(const Duration(seconds: 4))` chains are FORBIDDEN here. Victory navigation is now event-driven on `_audioQueue.whenIdle()` + 250 ms (per AR-4 item ii-c and Rule 68) — wall-clock latency is unbounded and any fixed budget races the navigation under parallel-runner load. `pumpUntilResults` polls with `pump(Duration(milliseconds: 300))` for up to 300 iterations (90 s wall-clock max), breaking early when the Play Again button mounts.
+
+Screenshot / showcase tests inline the equivalent loop instead (see § 71).
+
+**Allowed exception:** the per-turn skip-turn-with-darts-thrown wait described elsewhere in this skill (`pump(seconds: 4)` after `clickSkipTurn` to let the 3500 ms `simulateTakeoutStarted` schedule fire) is unrelated to results navigation and stays as-is.
+
+**How to apply:** Phase 7. AR-4 item (ss).
+
+---
+
+### 70. `VictoryMusicService` / stats assertions need an explicit 5 s settle AFTER `pumpUntilResults`
+`pumpUntilResults` exits the moment the Play Again button mounts. `VictoryMusicService.initialize()` (HTTP GET `/api/v1/music`) and `_updatePlayerStats()` (HTTP POST `/api/v1/players/.../stats/batch`) run async AFTER that mount. The helper's 1 s tail settle isn't enough under heavy parallel load. Every test that asserts `VictoryMusicService().isInitialized == true`, `player.gamesPlayed`, `player.gamesWon`, or `player.gameHistory` MUST insert this block between `pumpUntilResults` and the assertion:
+```dart
+await ResultsHelpers.pumpUntilResults(tester, config);
+// VictoryMusicService.initialize() + _updatePlayerStats() API call run async
+// AFTER the Play Again button mounts; pumpUntilResults only settles ~1s
+// post-button, which isn't enough under heavy parallel load.
+await tester.pump(const Duration(seconds: 5));
+await tester.pump();
+await tester.pump();
+
+expect(VictoryMusicService().isInitialized, isTrue);
+// ... and / or stats assertions
+```
+
+**How to apply:** Phase 7. AR-4 item (tt).
+
+---
+
+### 71. Screenshot / showcase tests use an inline 300-iteration poll loop, not a fixed pump
+Screenshot and showcase tests inline all helpers (no `_helpers.dart` import — pre-existing rule). When such a test waits for the results screen between captures or before a results-screen assertion, it MUST use this inline polling loop (300 iterations × 300 ms = 90 s budget, breaks on first hit):
+```dart
+// Robust wait: poll until the results screen has rendered, instead of a
+// fixed pump that races the event-driven victory navigation under load.
+for (int _i = 0; _i < 300; _i++) {
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump();
+  if (<results play-again finder>.evaluate().isNotEmpty) break;
+}
+await tester.pump(const Duration(seconds: 1));
+await tester.pump();
+```
+The break finder is game-specific: `ElementFinders.get[Game]PlayAgainButton()` if `element_finders.dart` is already imported, otherwise `find.byKey([Game]ResultsKeys.playAgainButton)`. Fixed `tester.pump(const Duration(seconds: 4))` chains are forbidden in this position for the same reason as Rule 69.
+
+**How to apply:** Phase 8 visual validation. AR-4 item (uu).
+
+---
+
+### 72. `mounted` guard after every `await playerProvider.<method>()` in `State` code
+`PlayerProvider`'s async methods (`loadPlayers`, `savePlayer`, `deletePlayer`, `batchUpdatePlayerStats`, etc.) are HTTP roundtrips. The widget tree may be disposed during the gap — user backs out, dartboard disconnect grabs nav focus, integration-test teardown ends the test. Calling any method on the provider after that disposal — `selectPlayer`, `clearSelection`, anything that triggers `notifyListeners` — fires the `"ChangeNotifier was used after being disposed"` assertion. Every `State<T>` class that awaits a `PlayerProvider` method MUST have `if (!mounted) return;` between the await and the next line that touches the provider, `setState`, or `context`.
+
+Pattern:
+```dart
+await playerProvider.loadPlayers();
+// HTTP roundtrip just resolved; widget may have unmounted in the gap.
+if (!mounted) return;
+playerProvider.clearSelection();   // safe now
+```
+
+Equally applies to `savePlayer` followed by `selectPlayer` (in `_handleAddPlayer` of `team_player_list_panel.dart` / `dual_player_list_panel.dart`) and to `savePlayer` followed by `_scrollToNewPlayer()` (in `options_screen.dart`'s add-player flow).
+
+**Exception:** `batchUpdatePlayerStats` calls inside a `try`/`catch` that do NOT touch the provider, `setState`, or `context` after the await (the standard results-screen `_updatePlayerStats` body) are already safe.
+
+**How to apply:** Phases 4 and 5. AR-4 items (oo) extended + (vv).
+
+---
+
+### 73. Real-time pumps (`pump(Duration(milliseconds: N))`) for popup / overlay animations
+`tester.pump()` (no Duration argument) advances the test clock by ONE frame and does NOT wait wall-clock time. `tester.pump(const Duration(milliseconds: N))` waits real wall-clock time on `LiveTestWidgetsFlutterBinding` (which integration tests use), allowing real timers — animation controllers, fade transitions, popup overlays, Material's `Tooltip`/`PopupMenuButton`/`DropdownButton` show/hide animations — to fire. Tests that interact with popups, dropdowns, dismissal overlays, modal show/hide, or any animated transition MUST use:
+```dart
+await tester.tap(<popup-affecting finder>);
+await tester.pump(const Duration(milliseconds: 200));
+await tester.pump();
+```
+between the gesture and the next gesture. Bare `pump(); pump();` chains (including `PumpSequences.simpleUpdate`) are forbidden in this position. Reference: `integration_test/home_screen/filter_bar/filter_no_match_test.dart` for the canonical pattern. Surface: was caught when `filter_multi_criterion_and_test.dart` started failing after a stabilization commit that had only added a second bare pump — the second bare pump didn't help because both pumps were synthetic.
+
+**How to apply:** Phase 7. AR-4 item (ww).
+
+---
+
+### 74. Don't assert "intermediate state not yet loaded" — assert the final state
+Pre-Rule-68, the `_handleGameWon` `Future.delayed(3 s)` gave tests a free "results screen not yet loaded" window. With voice disabled in tests (Rule 68), navigation now lands ~immediately because `_audioQueue.whenIdle()` resolves synchronously. Tests written against the old timing — typically asserting `gamesPlayed == 0` with reason `"results screen not yet loaded"` — break under the new timing because the results screen and stats persistence ARE done by the time the assertion runs.
+
+Don't write intermediate-state checks at all. Wait for the final state with `pumpUntilResults` (Rule 69) + 5 s settle (Rule 70), and assert the final values — typically `gamesPlayed == 1`, plus winner-specific (`gamesWon == 1`) and loser-specific (`gamesWon == 0`) checks. Tests with docstring claims like "stats reflect the edited outcome" should verify the actual final stats, not the intermediate "not loaded yet" state.
+
+Reference fix: `tiki_golf/edit_score/edit_removes_winner_no_stats_test.dart` post-commit `6142923`.
+
+**How to apply:** Phase 7. AR-4 item (xx).
 
 ---
 
