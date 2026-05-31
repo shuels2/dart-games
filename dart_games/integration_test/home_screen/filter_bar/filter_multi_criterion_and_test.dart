@@ -7,7 +7,6 @@ import 'package:dart_games/constants/test_keys.dart';
 import 'package:dart_games/models/game_metadata.dart';
 
 import '../../shared/ui_test_helpers.dart';
-import '../../shared/pump_sequences.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -21,28 +20,43 @@ void main() {
         await UITestHelpers.resetServerState();
         await UITestHelpers.navigateToHomeScreen(tester);
 
-        // Style: Versus
+        // Style: Versus.
+        //
+        // Use tester.pump(Duration(ms: 200)) + bare pump everywhere a popup
+        // interaction happens. Bare pumps advance the test clock but don't
+        // wait real wall-clock time, so dropdown / checkbox / overlay-dismiss
+        // animations don't progress. Under heavy parallel-runner load (9+
+        // workers contending for CPU) animations stretch out enough that the
+        // previous 2-bare-pump settle wasn't enough — the dismissal tap fired
+        // mid-animation, the next filter-button tap landed on the still-
+        // dismissing overlay, and the second filter never applied. Matches
+        // the pattern adopted in filter_no_match_test.dart for the same
+        // reason.
         await tester.tap(find.byKey(HomeKeys.filterGameplayStyleButton));
-        await PumpSequences.simpleUpdate(tester);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump();
         await tester.tap(find.byKey(
             HomeKeys.filterGameplayStyleOption(GameplayStyle.versus)));
-        // Two-pump settle so the checkbox onChanged bubbles up, parent
-        // setState commits, and the home screen rebuilds with the filter
-        // applied BEFORE we dismiss the popup. The previous single pump
-        // sometimes left the filter state mid-commit, so the corner-tap
-        // dismiss ran before the parent's setState had taken effect.
-        await PumpSequences.simpleUpdate(tester);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump();
         await tester.tapAt(const Offset(10, 10));
-        await PumpSequences.simpleUpdate(tester);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump();
 
         // Interaction: Heavy
         await tester.tap(find.byKey(HomeKeys.filterPlayerInteractionButton));
-        await PumpSequences.simpleUpdate(tester);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump();
         await tester.tap(find.byKey(HomeKeys
             .filterPlayerInteractionOption(PlayerInteraction.heavy)));
-        await PumpSequences.simpleUpdate(tester);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump();
         await tester.tapAt(const Offset(10, 10));
-        await PumpSequences.simpleUpdate(tester);
+        // Bigger final settle so the home-screen filter-commit + card
+        // rebuild definitely finishes before the assertions run.
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
+        await tester.pump();
 
         // Only TT and MM should be visible
         expect(find.byKey(HomeKeys.targetTagCard), findsOneWidget);
