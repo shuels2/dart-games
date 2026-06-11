@@ -39,6 +39,7 @@ class HomeKeys {
   static const piratesGridCard = Key('home_pirates_grid_card');
   static const gladiatorArenaCard = Key('home_card_gladiator_arena');
   static const tikiGolfCard = Key('home_card_tiki_golf');
+  static const treasureDivideCard = ValueKey('home_card_treasure_divide');
 
   // ──── Filter bar (home screen) ────
   static const filterBar = Key('home_filter_bar');
@@ -1006,4 +1007,116 @@ class TikiGolfResultsKeys {
 
   // Scroll container
   static const scorecardsScroll = Key('tiki_golf_results_scorecards_scroll');
+}
+
+// ============================================================================
+// TREASURE DIVIDE KEYS
+// ============================================================================
+
+class TreasureDivideMenuKeys {
+  // Navigation
+  static const backButton = Key('td_menu_back_button');
+  static const resumeGameButton = Key('td_menu_resume_game_button');
+  static const startGameButton = Key('td_menu_start_game_button');
+
+  // Game Mode toggle
+  static const gameModeToggle = Key('td_menu_game_mode_toggle');
+  static const gameModeSolo = Key('td_menu_game_mode_solo');
+  static const gameModeTeam = Key('td_menu_game_mode_team');
+
+  // Team settings
+  static const teamCountDropdown = Key('td_menu_team_count_dropdown');
+
+  // Assignment Mode toggle
+  static const assignmentModeToggle = Key('td_menu_assignment_mode_toggle');
+  static const assignmentModeManual = Key('td_menu_assignment_mode_manual');
+  static const assignmentModeRandom = Key('td_menu_assignment_mode_random');
+
+  // Round and scoring settings
+  static const roundsDropdown = Key('td_menu_rounds_dropdown');
+  static const quarterItSwitch = Key('td_menu_quarter_it_switch');
+  static const customTargetsSwitch = Key('td_menu_custom_targets_switch');
+
+  // Player list
+  static const addPlayerButton = Key('td_menu_add_player_button');
+  static const addPlayerButtonEmptyState = Key('td_menu_add_player_button_empty_state');
+  static const playerListView = Key('td_menu_player_list_view');
+  static Key playerTile(String id) => Key('td_menu_player_tile_$id');
+  static Key removePlayerButton(String id) => Key('td_menu_remove_player_button_$id');
+
+  // Team boxes (Manual mode)
+  static Key teamBox(int teamIndex) => Key('td_menu_team_box_$teamIndex');
+  static Key teamPlayerChip(int teamIndex, String playerId) =>
+      Key('td_menu_team_player_chip_${teamIndex}_$playerId');
+  static Key teamAssignDropdown(String playerId) =>
+      Key('td_menu_team_assign_dropdown_$playerId');
+
+  // Team Assignment dialog
+  static const teamDialogContainer = Key('td_menu_team_dialog_container');
+  static Key teamDialogDropdown(String playerId) =>
+      Key('td_menu_team_dialog_dropdown_$playerId');
+  static const teamDialogCancel = Key('td_menu_team_dialog_cancel');
+}
+
+class TreasureDivideGameKeys {
+  // Navigation + controls
+  static const backButton = Key('td_game_back_button');
+  static const skipTurnButton = Key('td_game_skip_turn_button');
+  static const editScoreButton = Key('td_game_edit_score_button');
+
+  // Treasure Map
+  static const treasureMap = Key('td_game_treasure_map');
+  static const currentTarget = Key('td_game_current_target');
+  static const roundIndicator = Key('td_game_round_indicator');
+  static const mapChestImage = Key('td_game_map_chest_image');
+
+  // Map islands (per round index)
+  static Key mapIsland(int round) => Key('td_game_map_island_$round');
+
+  // Dart indicators
+  static Key dartIndicator(int index) => Key('td_game_dart_indicator_$index');
+
+  // Per-player treasure strip
+  static const playerTreasureStrip = Key('td_game_player_treasure_strip');
+  static const playerAvatar = Key('td_game_player_avatar');
+  static const treasureScore = Key('td_game_treasure_score');
+  static const roundScore = Key('td_game_round_score');
+  static const quarterItBadge = Key('td_game_quarter_it_badge');
+  static const customBadge = Key('td_game_custom_badge');
+  static const soloCrewBadge = Key('td_game_solo_crew_badge');
+  static const activeCrewCrest = Key('td_game_active_crew_crest');
+
+  // Solo player tiles
+  static Key playerTile(String playerId) => Key('td_game_player_tile_$playerId');
+  static Key roundStatus(String playerId) => Key('td_game_round_status_$playerId');
+
+  // Team crew tiles
+  static Key crewTile(String teamId) => Key('td_game_crew_tile_$teamId');
+  static Key crewCrest(String teamId) => Key('td_game_crew_crest_$teamId');
+  static Key crewTreasureScore(String teamId) => Key('td_game_crew_treasure_score_$teamId');
+  static Key crewRoundStatus(String teamId) => Key('td_game_crew_round_status_$teamId');
+  static Key crewMemberHaul(String teamId, String playerId) =>
+      Key('td_game_crew_member_haul_${teamId}_$playerId');
+}
+
+class TreasureDivideResultsKeys {
+  // Winner section
+  static const winnerName = Key('td_results_winner_name');
+  static const winnerPhoto = Key('td_results_winner_photo');
+  static const winnerCrewCrest = Key('td_results_winner_crew_crest');
+  static const treasureScore = Key('td_results_treasure_score');
+  static const timesHalved = Key('td_results_times_halved');
+
+  // Action buttons
+  static const playAgainButton = Key('td_results_play_again_button');
+  static const changeSettingsButton = Key('td_results_change_settings_button');
+  static const backToMenuButton = Key('td_results_back_to_menu_button');
+
+  // Winner crew players (Team mode)
+  static Key winnerCrewPlayer(String playerId) =>
+      Key('td_results_winner_crew_player_$playerId');
+
+  // Rankings
+  static Key playerRanking(int index) => Key('td_results_player_ranking_$index');
+  static Key crewRanking(int index) => Key('td_results_crew_ranking_$index');
 }

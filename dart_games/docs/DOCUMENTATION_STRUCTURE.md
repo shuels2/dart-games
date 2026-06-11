@@ -138,15 +138,25 @@ dart_games/
         │   ├── assets.md             # 8 gladiator animal characters, 1 icon, 1 background, 8 sounds
         │   └── implementation-notes.md # Knockoff algorithm, bust detection paths, Pattern A display, Save/Resume
         │
-        └── tiki-golf/
-            ├── README.md             # "Lilo & Stitch-styled mini-golf dart game..." (2-16 players)
-            ├── game-rules.md         # 9 holes, stroke counting, per-game randomization, Mulligan, Team best-ball
-            ├── design-system.md      # Tropical palette (#FF8C42 substitution, Nunito AR-4 exemption), Palm Green overlay
-            ├── components.md         # TeamPlayerListPanel configs, mulligan modal variant, variable-dart DartboardSection
-            ├── announcements.md      # TikiGolfAnnouncementHelper, 14 events, 11-rank precedence chain, 8 sounds
-            ├── testing.md            # 234 non-UI + 110 UI files; randomization/, team_setup/, team_mode_gameplay/ subdirs
-            ├── assets.md             # 1 icon + 10 images + 6 team crests + 8 sounds = 26 files
-            └── implementation-notes.md # Variable-dart turn-end, mulligan flow, random distribution N=8/N=12 special cases
+        ├── tiki-golf/
+        │   ├── README.md             # "Lilo & Stitch-styled mini-golf dart game..." (2-16 players)
+        │   ├── game-rules.md         # 9 holes, stroke counting, per-game randomization, Mulligan, Team best-ball
+        │   ├── design-system.md      # Tropical palette (#FF8C42 substitution, Nunito AR-4 exemption), Palm Green overlay
+        │   ├── components.md         # TeamPlayerListPanel configs, mulligan modal variant, variable-dart DartboardSection
+        │   ├── announcements.md      # TikiGolfAnnouncementHelper, 14 events, 11-rank precedence chain, 8 sounds
+        │   ├── testing.md            # 234 non-UI + 110 UI files; randomization/, team_setup/, team_mode_gameplay/ subdirs
+        │   ├── assets.md             # 1 icon + 10 images + 6 team crests + 8 sounds = 26 files
+        │   └── implementation-notes.md # Variable-dart turn-end, mulligan flow, random distribution N=8/N=12 special cases
+        │
+        └── treasure-divide/
+            ├── README.md             # "Halve It pirate adventure..." (2-8 Solo / 3-10 Team) — score gold across treasure islands
+            ├── game-rules.md         # Halve It rules, target sequences (7/9/12 rounds), sentinel constants, Team SUM aggregation, Solo Crew 6-dart rule
+            ├── design-system.md      # Parchment/Treasure Gold/Ocean Blue/Blood Red theme, PirataOne + Merriweather fonts, halve animation
+            ├── components.md         # TreasureDivideConfig factory methods, TreasureDivideStrategy sentinel target mapping, PirateAvatarWidget, TreasureMapWidget
+            ├── announcements.md      # TreasureDivideAnnouncementHelper, 22 events, per-dart + turn-end + round-transition precedence chains, 8 sounds
+            ├── testing.md            # ~352 Flutter non-UI + 35 server + 98 UI testWidgets (83 files); team_setup/, team_mode_gameplay/ subdirs; known gaps
+            ├── assets.md             # 1 icon + 6 images/pieces + 22 theme sprites (8 themes) + 6 team crests + 8 sounds = 43 files
+            └── implementation-notes.md # Sentinel constants, dartsThisTurn getter, randomDistribution(), _isManualTeamMode, Pirate Theme Overlay System (mediapipe, face landmarks, V5 migration), Save/Resume
 ```
 
 ## Documentation Purpose by Category

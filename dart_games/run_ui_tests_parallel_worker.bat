@@ -48,6 +48,9 @@ if "%_WORKTREE_PATH%"=="" (
     exit /b 1
 )
 
+call "%~dp0check_python_deps.bat"
+if !errorlevel! neq 0 exit /b 1
+
 REM Parse optional filter tokens (args 6+)
 set "run_all=1"
 set "token_count=0"

@@ -3,6 +3,7 @@ import 'migrations/migration_v1.dart';
 import 'migrations/migration_v2.dart';
 import 'migrations/migration_v3.dart';
 import 'migrations/migration_v4.dart';
+import 'migrations/migration_v5.dart';
 
 /// Base class for all database schema migrations.
 ///
@@ -37,6 +38,7 @@ class MigrationRunner {
     MigrationV2FailedStats(),
     MigrationV3HotIndexes(),
     MigrationV4AutoSaveFlag(),
+    MigrationV5PlayerFaceLandmarks(),
   ];
 
   /// The current schema version (highest migration version).

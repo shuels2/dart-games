@@ -10,6 +10,7 @@ import 'package:dart_games/providers/lunar_lander_provider.dart';
 import 'package:dart_games/providers/pirates_grid_provider.dart';
 import 'package:dart_games/providers/gladiator_arena_provider.dart';
 import 'package:dart_games/providers/tiki_golf_provider.dart';
+import 'package:dart_games/providers/treasure_divide_provider.dart';
 import 'package:dart_games/providers/player_provider.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 import 'package:dart_games/models/player.dart';
@@ -832,5 +833,77 @@ class ProviderHelpers {
   static String? getTikiGolfWinnerTeamId(WidgetTester tester) {
     final provider = getTikiGolfProvider(tester);
     return provider.currentGame?.winnerTeamId;
+  }
+
+  // ==========================================================================
+  // TREASURE DIVIDE HELPERS
+  // ==========================================================================
+
+  /// Get Treasure Divide provider
+  static TreasureDivideProvider getTreasureDivideProvider(WidgetTester tester) {
+    final context = getContext(tester);
+    return Provider.of<TreasureDivideProvider>(context, listen: false);
+  }
+
+  /// Treasure Divide: Check for winner
+  static bool treasureDivideHasWinner(WidgetTester tester) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.hasWinner;
+  }
+
+  /// Treasure Divide: Get current player ID
+  static String? getTreasureDivideCurrentPlayerId(WidgetTester tester) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.currentPlayerId;
+  }
+
+  /// Treasure Divide: Get current team ID (team mode)
+  static String? getTreasureDivideCurrentTeamId(WidgetTester tester) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.currentTeamId;
+  }
+
+  /// Treasure Divide: Check if game is active
+  static bool isTreasureDivideGameActive(WidgetTester tester) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.isGameActive;
+  }
+
+  /// Treasure Divide: Check if should prompt takeout
+  static bool treasureDivideShouldPromptTakeout(WidgetTester tester) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.shouldPromptTakeout;
+  }
+
+  /// Treasure Divide: Get current round index (0-based)
+  static int getTreasureDivideCurrentRoundIndex(WidgetTester tester) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.currentGame?.currentRoundIndex ?? 0;
+  }
+
+  /// Treasure Divide: Get target for a given round index (0-based)
+  static int getTreasureDivideRoundTarget(WidgetTester tester, int roundIndex) {
+    final provider = getTreasureDivideProvider(tester);
+    final sequence = provider.currentGame?.targetSequence;
+    if (sequence == null || roundIndex < 0 || roundIndex >= sequence.length) return 20;
+    return sequence[roundIndex];
+  }
+
+  /// Treasure Divide: Get player's total treasure score
+  static int getTreasureDividePlayerTotal(WidgetTester tester, String playerId) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.currentGame?.totalForPlayer(playerId) ?? 0;
+  }
+
+  /// Treasure Divide: Get winner player IDs (solo mode). Empty until game finished.
+  static List<String> getTreasureDivideWinnerIds(WidgetTester tester) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.currentGame?.winnerIds ?? [];
+  }
+
+  /// Treasure Divide: Get winner team IDs (team mode). Empty until game finished.
+  static List<String> getTreasureDivideWinnerTeamIds(WidgetTester tester) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.currentGame?.winnerTeamIds ?? [];
   }
 }

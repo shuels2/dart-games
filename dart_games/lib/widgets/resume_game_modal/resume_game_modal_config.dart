@@ -610,4 +610,62 @@ class ResumeGameModalConfig {
       ),
     );
   }
+
+  /// Treasure Divide — Ocean Teal bg, Treasure Gold border, PirataOne title + Merriweather body
+  factory ResumeGameModalConfig.treasureDivide() {
+    return ResumeGameModalConfig(
+      backgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      borderColor: const Color(0xFFFFD700), // Treasure Gold
+      boxShadowColor: const Color(0xFFFFD700),
+      boxShadowOpacity: 0.3,
+      titleTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFFFFD700), // Treasure Gold
+        fontSize: 22,
+        letterSpacing: 1.2,
+      ),
+      tileBackgroundColor: const Color(0xFF008B8B).withOpacity(0.6),
+      tileSelectedBackgroundColor: const Color(0xFFFFD700).withOpacity(0.15),
+      tileBorderColor: const Color(0xFFFFF8E7).withOpacity(0.3),
+      tileSelectedBorderColor: const Color(0xFFFFD700), // Treasure Gold
+      tileDateTextStyle: GoogleFonts.merriweather(
+        color: const Color(0xFFFFF8E7).withOpacity(0.7),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      tilePlayersTextStyle: GoogleFonts.merriweather(
+        color: const Color(0xFFFFF8E7),
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      tileProgressTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFFFFD700), // Treasure Gold
+        fontSize: 14,
+        letterSpacing: 0.5,
+      ),
+      tileModeTextStyle: GoogleFonts.merriweather(
+        color: const Color(0xFFFFF8E7).withOpacity(0.7),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+      tileLeaderTextStyle: GoogleFonts.merriweather(
+        color: const Color(0xFFFFF8E7),
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+      deleteButtonColor: const Color(0xFFC41E3A), // Blood Red
+      resumeButtonColor: const Color(0xFFFFD700), // Treasure Gold
+      resumeButtonTextColor: const Color(0xFF008B8B), // Ocean Teal
+      resumeButtonTextStyle: GoogleFonts.pirataOne(fontSize: 18, letterSpacing: 1.0),
+      resumeButtonDisabledColor: Colors.grey,
+      startNewButtonColor: const Color(0xFFFFF8E7).withOpacity(0.2),
+      startNewButtonTextColor: const Color(0xFFFFF8E7),
+      startNewButtonTextStyle: GoogleFonts.merriweather(fontSize: 16, fontWeight: FontWeight.w600),
+      deleteAllButtonColor: const Color(0xFFC41E3A), // Blood Red
+      deleteAllButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFC41E3A),
+      ),
+    );
+  }
 }

@@ -297,6 +297,111 @@ class TeamPlayerListPanelConfig {
     );
   }
 
+  /// Treasure Divide theme — Ocean Teal primary, Treasure Gold accent, PirataOne/Merriweather fonts.
+  ///
+  /// Solo: 2-8 players. Team: 3-10 players across 2-5 crews of 2 (doubles format).
+  /// Crews are identified by crest image only — no crew name labels (Rule §62/§63).
+  factory TeamPlayerListPanelConfig.treasureDivide() {
+    return TeamPlayerListPanelConfig(
+      containerColor: const Color(0xFF008B8B), // Ocean Teal
+      containerOpacity: 0.85,
+      containerBorderColor: const Color(0xFF8B6914), // Plank Brown
+      containerBorderColorWhenReady: const Color(0xFFFFD700), // Treasure Gold
+      containerBorderWidth: 2,
+      headerTextStyle: GoogleFonts.pirataOne(
+        fontSize: 20,
+        color: const Color(0xFFFFF8E7), // Sail White
+        letterSpacing: 0.5,
+      ),
+      headerCountStyle: GoogleFonts.merriweather(
+        fontSize: 14,
+        color: const Color(0xFFFFF8E7).withOpacity(0.7),
+      ),
+      headerCountColorWhenReady: const Color(0xFFFFD700), // Treasure Gold
+      emptyStateTextStyle: GoogleFonts.merriweather(
+        color: const Color(0xFFFFF8E7).withOpacity(0.7),
+        fontSize: 14,
+      ),
+      addButtonColor: const Color(0xFFFFD700), // Treasure Gold
+      addButtonForegroundColor: const Color(0xFF008B8B), // Ocean Teal
+      addButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.5,
+      ),
+      emptyStateAddButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+      ),
+      selectedColor: const Color(0xFFFFD700), // Treasure Gold
+      selectedBorderColor: const Color(0xFFFFD700), // Treasure Gold
+      checkIconColor: const Color(0xFF228B22), // Island Green
+      teamAccentColor: const Color(0xFFFFD700), // Treasure Gold
+      assignTeamButtonColor: const Color(0xFFFFD700), // Treasure Gold
+      assignTeamButtonForegroundColor: const Color(0xFF008B8B), // Ocean Teal
+      assignTeamButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      // Crew identification: crest image only — no container chrome (Rule §63)
+      teamIconBorderColor: Colors.transparent,
+      teamIconBackgroundColor: Colors.transparent,
+      teamIconSize: 40.0,
+      teamBoxSize: 64.0,
+      teamBoxBackgroundColor: Colors.transparent, // no box around the crest
+      teamBoxBorderColor: Colors.transparent,
+      teamBoxActiveBorderColor: Colors.transparent,
+      teamBoxCountStyle: GoogleFonts.merriweather(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8E7).withOpacity(0.5),
+      ),
+      teamBoxActiveCountStyle: GoogleFonts.merriweather(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFD700), // Treasure Gold
+      ),
+      dialogBackgroundColor: const Color(0xFF008B8B).withOpacity(0.97), // Ocean Teal
+      dialogTitleTextStyle: GoogleFonts.pirataOne(
+        fontSize: 20,
+        color: const Color(0xFFFFF8E7), // Sail White
+        letterSpacing: 0.5,
+      ),
+      dialogTeamButtonSize: 64.0,
+      dialogTeamButtonColor: Colors.transparent,
+      dialogTeamButtonBorderColor: Colors.transparent,
+      dialogTeamButtonSelectedColor: const Color(0xFFFFD700), // Treasure Gold
+      dialogTeamButtonSelectedBorderColor: const Color(0xFFFFD700),
+      dialogHighlightGlowColor: const Color(0xFFFFD700), // Treasure Gold
+      dialogFullTeamColor: const Color(0xFFC41E3A), // Blood Red
+      dialogFullTeamTextStyle: GoogleFonts.merriweather(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8E7),
+      ),
+      dialogRemoveButtonColor: const Color(0xFFC41E3A), // Blood Red
+      dialogCancelButtonColor: const Color(0xFF8B6914), // Plank Brown
+      dialogCancelBorderColor: const Color(0xFF8B6914).withOpacity(0.5),
+      dialogButtonTextStyle: GoogleFonts.merriweather(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+      ),
+      teamAssignmentLabelStyle: GoogleFonts.pirataOne(
+        fontSize: 18,
+        color: const Color(0xFFFFF8E7), // Sail White
+      ),
+      // Hide team assignment label per Rule §62 — crests self-identify
+      showTeamAssignmentLabel: false,
+      maxPlayers: 10, // Team max
+      maxPlayersSoloMode: 8, // Solo max
+      minPlayers: 2,
+      minPlayersTeamMode: 3,
+      maxTeams: 5,
+      maxPlayersPerTeam: 2,
+      addPlayerDialogConfig: AddPlayerDialogConfig.treasureDivide(),
+    );
+  }
+
   /// Tiki Golf theme — Palm Green primary, Lagoon Blue accent, Boogaloo/Nunito fonts.
   ///
   /// Solo mode caps at 4 players (maxPlayersSoloMode: 4).

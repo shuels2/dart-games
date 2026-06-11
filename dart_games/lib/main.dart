@@ -12,6 +12,7 @@ import 'providers/lunar_lander_provider.dart';
 import 'providers/pirates_grid_provider.dart';
 import 'providers/gladiator_arena_provider.dart';
 import 'providers/tiki_golf_provider.dart';
+import 'providers/treasure_divide_provider.dart';
 import 'services/api/api_client.dart';
 import 'services/api/api_config.dart';
 import 'services/app_settings.dart';
@@ -34,6 +35,9 @@ import 'screens/games/pirates_grid/pirates_grid_results_screen.dart';
 import 'screens/games/tiki_golf/tiki_golf_menu_screen.dart';
 import 'screens/games/tiki_golf/tiki_golf_game_screen.dart';
 import 'screens/games/tiki_golf/tiki_golf_results_screen.dart';
+import 'screens/games/treasure_divide/treasure_divide_menu_screen.dart';
+import 'screens/games/treasure_divide/treasure_divide_game_screen.dart';
+import 'screens/games/treasure_divide/treasure_divide_results_screen.dart';
 
 /// Global API client instance, shared across all services.
 ///
@@ -136,6 +140,11 @@ Future<void> _preloadFonts() async {
   GoogleFonts.boogaloo();
   // Nunito already loaded as the main app font
 
+  // Preload Treasure Divide fonts (PirataOne already loaded for Monster Mash)
+  GoogleFonts.merriweather(fontWeight: FontWeight.w400);
+  GoogleFonts.merriweather(fontWeight: FontWeight.w600);
+  GoogleFonts.merriweather(fontWeight: FontWeight.w700);
+
   // Wait for all fonts to load
   await GoogleFonts.pendingFonts([
     GoogleFonts.nunito(),
@@ -154,6 +163,7 @@ Future<void> _preloadFonts() async {
     GoogleFonts.lora(),
     GoogleFonts.cinzel(),
     GoogleFonts.boogaloo(),
+    GoogleFonts.merriweather(),
   ]);
 }
 
@@ -183,6 +193,7 @@ class DartGamesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PiratesGridProvider(apiClient: apiClient)),
         ChangeNotifierProvider(create: (_) => GladiatorArenaProvider(apiClient: apiClient)),
         ChangeNotifierProvider(create: (_) => TikiGolfProvider()),
+        ChangeNotifierProvider(create: (_) => TreasureDivideProvider()),
       ],
       // App-root dartboard pause/reconnect announcer. Wired here so the
       // voice line fires from EVERY screen (home, game menus, game
@@ -431,6 +442,9 @@ class DartGamesApp extends StatelessWidget {
           '/tiki-golf-menu': (context) => const TikiGolfMenuScreen(),
           '/tiki-golf-game': (context) => const TikiGolfGameScreen(),
           '/tiki-golf-results': (context) => const TikiGolfResultsScreen(),
+          '/treasure-divide': (context) => const TreasureDivideMenuScreen(),
+          '/treasure-divide/game': (context) => const TreasureDivideGameScreen(),
+          '/treasure-divide/results': (context) => const TreasureDivideResultsScreen(),
         },
       ),
       ),

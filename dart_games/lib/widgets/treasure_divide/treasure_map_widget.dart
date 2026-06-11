@@ -1,0 +1,549 @@
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// ─── Island coordinate tables ─────────────────────────────────────────────────
+
+/// Island positions as (x%, y%) percentages of the canvas size.
+/// Each list defines the winding path for that round count.
+typedef _IslandCoord = ({double x, double y});
+
+const Map<int, List<_IslandCoord>> _islandCoordsByRoundCount = {
+  7: [
+    (x: 10, y: 55),
+    (x: 24, y: 30),
+    (x: 40, y: 50),
+    (x: 54, y: 22),
+    (x: 68, y: 45),
+    (x: 80, y: 25),
+    (x: 90, y: 55),
+  ],
+  9: [
+    (x: 13, y: 62),
+    (x: 25, y: 38),
+    (x: 37, y: 58),
+    (x: 50, y: 30),
+    (x: 62, y: 55),
+    (x: 50, y: 72),
+    (x: 62, y: 85),
+    (x: 75, y: 62),
+    (x: 88, y: 78),
+  ],
+  12: [
+    (x: 10, y: 65),
+    (x: 20, y: 42),
+    (x: 32, y: 60),
+    (x: 44, y: 30),
+    (x: 55, y: 50),
+    (x: 44, y: 68),
+    (x: 55, y: 80),
+    (x: 67, y: 55),
+    (x: 78, y: 72),
+    (x: 67, y: 85),
+    (x: 78, y: 55),
+    (x: 90, y: 70),
+  ],
+};
+
+// ─── Public helpers ───────────────────────────────────────────────────────────
+
+/// Returns the short display label for a target value.
+/// Used in island markers.
+///   20 → "20", -1 → "AD", -2 → "AT", 25 → "Bull"
+String _shortLabel(int target) {
+  if (target == -1) return 'AD';
+  if (target == -2) return 'AT';
+  if (target == 25) return 'Bull';
+  return target.toString();
+}
+
+/// Returns the full banner label for the "Target: X" header.
+///   20 → "20", -1 → "Any Double", -2 → "Any Triple", 25 → "Bull"
+String _fullLabel(int target) {
+  if (target == -1) return 'Any Double';
+  if (target == -2) return 'Any Triple';
+  if (target == 25) return 'Bull';
+  return target.toString();
+}
+
+// ─── Rope path painter ────────────────────────────────────────────────────────
+
+class _RopePainter extends CustomPainter {
+  final List<_IslandCoord> coords;
+  final int currentRoundIndex;
+  final Color ropeColor;
+
+  const _RopePainter({
+    required this.coords,
+    required this.currentRoundIndex,
+    required this.ropeColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (coords.length < 2) return;
+
+    final paint = Paint()
+      ..color = ropeColor
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    // Build one path per segment and dash it manually using PathMetrics.
+    for (int i = 0; i < coords.length - 1; i++) {
+      final p1 = Offset(
+        coords[i].x / 100 * size.width,
+        coords[i].y / 100 * size.height,
+      );
+      final p2 = Offset(
+        coords[i + 1].x / 100 * size.width,
+        coords[i + 1].y / 100 * size.height,
+      );
+
+      // Control points: perpendicular offset that alternates left/right per
+      // segment for a meandering "drawn on parchment" feel.
+      final dx = p2.dx - p1.dx;
+      final dy = p2.dy - p1.dy;
+      final chordLen = math.sqrt(dx * dx + dy * dy);
+      if (chordLen < 1) continue;
+
+      // Perpendicular unit vector
+      final perpX = -dy / chordLen;
+      final perpY = dx / chordLen;
+
+      // Alternate bend direction per segment
+      final sign = (i % 2 == 0) ? 1.0 : -1.0;
+      final bendAmt = chordLen * 0.22 * sign;
+
+      final mid = Offset((p1.dx + p2.dx) / 2, (p1.dy + p2.dy) / 2);
+      final ctrl = Offset(
+        mid.dx + perpX * bendAmt,
+        mid.dy + perpY * bendAmt,
+      );
+
+      final segPath = Path()
+        ..moveTo(p1.dx, p1.dy)
+        ..quadraticBezierTo(ctrl.dx, ctrl.dy, p2.dx, p2.dy);
+
+      // Draw dashed version via PathMetrics
+      _drawDashedPath(canvas, segPath, paint, dashLen: 3, gapLen: 5);
+    }
+  }
+
+  void _drawDashedPath(
+    Canvas canvas,
+    Path path,
+    Paint paint, {
+    required double dashLen,
+    required double gapLen,
+  }) {
+    final metrics = path.computeMetrics();
+    for (final metric in metrics) {
+      double distance = 0;
+      bool drawing = true;
+      while (distance < metric.length) {
+        final segEnd = math.min(
+          distance + (drawing ? dashLen : gapLen),
+          metric.length,
+        );
+        if (drawing) {
+          canvas.drawPath(
+            metric.extractPath(distance, segEnd),
+            paint,
+          );
+        }
+        distance = segEnd;
+        drawing = !drawing;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RopePainter old) =>
+      old.coords != coords ||
+      old.currentRoundIndex != currentRoundIndex ||
+      old.ropeColor != ropeColor;
+}
+
+// ─── TreasureMapWidget ────────────────────────────────────────────────────────
+
+/// Custom widget that renders the Treasure Divide treasure map.
+///
+/// Shows a winding path of island markers (one per round), the current-round
+/// island glowing in Treasure Gold, completed islands with a green check,
+/// a "Target: X" banner, an "Island X/Y" pill, and optional chest image
+/// and score floater.
+class TreasureMapWidget extends StatefulWidget {
+  /// Ordered list of target values for each round.
+  /// Length must equal [numberOfRounds].
+  /// Sentinel values: -1 = AnyDouble, -2 = AnyTriple, 25 = Bull
+  final List<int> targetSequence;
+
+  /// 0-based index of the current/glowing island.
+  final int currentRoundIndex;
+
+  /// Total number of rounds (7, 9, or 12).
+  final int numberOfRounds;
+
+  /// Optional treasure chest image path shown at lower-right of map.
+  final String? chestImagePath;
+
+  /// Optional "+XX" floater text shown near the current island.
+  final String? floaterText;
+
+  /// When true, future islands show "???" instead of their target number.
+  final bool customTargetsEnabled;
+
+  // ── Color params (all have sensible defaults) ─────────────────────────────
+  final Color treasureGold;
+  final Color plankBrown;
+  final Color sailWhite;
+  final Color islandGreen;
+
+  const TreasureMapWidget({
+    super.key,
+    required this.targetSequence,
+    required this.currentRoundIndex,
+    required this.numberOfRounds,
+    this.chestImagePath,
+    this.floaterText,
+    this.customTargetsEnabled = false,
+    this.treasureGold = const Color(0xFFFFD700),
+    this.plankBrown = const Color(0xFF8B6914),
+    this.sailWhite = const Color(0xFFFFF8E7),
+    this.islandGreen = const Color(0xFF228B22),
+  });
+
+  // ─── Static public helpers ─────────────────────────────────────────────────
+
+  /// Short label for a target value.
+  /// e.g. 20 → "20", -1 → "AD", -2 → "AT", 25 → "Bull"
+  static String targetLabel(
+    int target, {
+    bool custom = false,
+    bool short = false,
+  }) {
+    if (custom) return short ? '???' : '???';
+    if (short) return _shortLabel(target);
+    return _fullLabel(target);
+  }
+
+  /// Full banner label for "Target: X" display.
+  /// e.g. 20 → "20", -1 → "Any Double", -2 → "Any Triple", 25 → "Bull"
+  static String fullTargetLabel(int target) => _fullLabel(target);
+
+  @override
+  State<TreasureMapWidget> createState() => _TreasureMapWidgetState();
+}
+
+class _TreasureMapWidgetState extends State<TreasureMapWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 0.85, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  // ─── Build helpers ─────────────────────────────────────────────────────────
+
+  List<_IslandCoord> _getCoords() {
+    // Use the exact round count if in the table; otherwise use 9 as fallback.
+    return _islandCoordsByRoundCount[widget.numberOfRounds] ??
+        _islandCoordsByRoundCount[9]!;
+  }
+
+  /// 4-corner Plank Brown outline shadow — matches other games' style.
+  List<Shadow> _outlineShadow(Color color) => [
+        Shadow(color: color, offset: const Offset(1, 1), blurRadius: 0),
+        Shadow(color: color, offset: const Offset(-1, -1), blurRadius: 0),
+        Shadow(color: color, offset: const Offset(1, -1), blurRadius: 0),
+        Shadow(color: color, offset: const Offset(-1, 1), blurRadius: 0),
+      ];
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Cap the upper bound only — clamping a LOWER bound here makes the
+          // SizedBox claim more space than the parent provides, which fires a
+          // RenderFlex-overflow assertion every frame inside the game-screen
+          // Row (caught while authoring the gameplay UI test pack).
+          final w = constraints.maxWidth > 1200.0 ? 1200.0 : constraints.maxWidth;
+          final h = constraints.maxHeight > 900.0 ? 900.0 : constraints.maxHeight;
+
+          final coords = _getCoords();
+          final safeIndex =
+              widget.currentRoundIndex.clamp(0, widget.numberOfRounds - 1);
+
+          return SizedBox(
+            width: w,
+            height: h,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // ── Layer 1: Background map image ─────────────────────────
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/games/treasure_divide/pieces/TreasureMap.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      decoration: BoxDecoration(
+                        color: widget.plankBrown.withOpacity(0.15),
+                        border:
+                            Border.all(color: widget.plankBrown, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Layer 2: Rope path (CustomPaint) ──────────────────────
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _RopePainter(
+                      coords: coords,
+                      currentRoundIndex: safeIndex,
+                      ropeColor: const Color.fromARGB(242, 139, 105, 20),
+                    ),
+                  ),
+                ),
+
+                // ── Layer 3: Island markers ───────────────────────────────
+                ...List.generate(widget.numberOfRounds, (i) {
+                  if (i >= coords.length) return const SizedBox.shrink();
+
+                  final cx = coords[i].x / 100 * w;
+                  final cy = coords[i].y / 100 * h;
+
+                  final isCurrent = i == safeIndex;
+                  final isCompleted = i < safeIndex;
+                  final isFinal = i == widget.numberOfRounds - 1;
+
+                  // Marker radius
+                  double radius = isCurrent ? 28.0 : 22.0;
+                  // Clamp to a minimum at tiny viewports
+                  radius = radius.clamp(12.0, 36.0);
+
+                  final markerColor = isCurrent
+                      ? widget.treasureGold
+                      : widget.sailWhite;
+                  final borderColor = isFinal && !isCurrent
+                      ? widget.treasureGold
+                      : widget.plankBrown;
+                  final borderWidth = isCurrent ? 3.0 : 2.0;
+
+                  // Label
+                  String label;
+                  if (widget.customTargetsEnabled && i > safeIndex) {
+                    label = '???';
+                  } else if (i < widget.targetSequence.length) {
+                    label = _shortLabel(widget.targetSequence[i]);
+                  } else {
+                    label = '?';
+                  }
+
+                  final textColor = (isFinal && label == 'Bull')
+                      ? const Color(0xFFC41E3A) // Blood Red
+                      : widget.plankBrown;
+
+                  final fontSize = (label.length > 3)
+                      ? math.max(6.0, radius * 0.45)
+                      : math.max(7.0, radius * 0.6);
+
+                  Widget marker = Container(
+                    width: radius * 2,
+                    height: radius * 2,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: markerColor,
+                      border:
+                          Border.all(color: borderColor, width: borderWidth),
+                      boxShadow: isCurrent
+                          ? [
+                              BoxShadow(
+                                color: widget.treasureGold.withOpacity(0.5),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Target label
+                        Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.pirataOne(
+                            fontSize: fontSize,
+                            color: textColor,
+                            height: 1.0,
+                          ),
+                        ),
+                        // Green checkmark overlay for completed islands
+                        if (isCompleted)
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: radius * 0.7,
+                              height: radius * 0.7,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: widget.islandGreen,
+                                border: Border.all(
+                                    color: widget.sailWhite, width: 1),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '✓',
+                                  style: TextStyle(
+                                    fontSize: radius * 0.4,
+                                    color: widget.sailWhite,
+                                    height: 1.0,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+
+                  // Pulse animation only for current island
+                  if (isCurrent) {
+                    marker = RepaintBoundary(
+                      child: AnimatedBuilder(
+                        animation: _pulseAnim,
+                        builder: (context, child) => Transform.scale(
+                          scale: _pulseAnim.value,
+                          child: child,
+                        ),
+                        child: marker,
+                      ),
+                    );
+                  }
+
+                  return Positioned(
+                    left: cx - radius,
+                    top: cy - radius,
+                    child: marker,
+                  );
+                }),
+
+                // ── Layer 4: Optional "+XX" floater near current island ───
+                if (widget.floaterText != null &&
+                    safeIndex < coords.length) ...[
+                  Positioned(
+                    left: (coords[safeIndex].x / 100 * w) + 30,
+                    top: (coords[safeIndex].y / 100 * h) - 28,
+                    child: RepaintBoundary(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: widget.islandGreen,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: widget.sailWhite, width: 1.5),
+                        ),
+                        child: Text(
+                          widget.floaterText!,
+                          style: GoogleFonts.pirataOne(
+                            fontSize: 16,
+                            color: widget.sailWhite,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
+                // ── Layer 5: Round counter pill (top-left) ────────────────
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.plankBrown,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: widget.treasureGold, width: 1.5),
+                    ),
+                    child: Text(
+                      'Island ${(safeIndex + 1)}/${widget.numberOfRounds}',
+                      style: GoogleFonts.pirataOne(
+                        fontSize: 14,
+                        color: widget.treasureGold,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Layer 6: Target banner (top-center) ───────────────────
+                Positioned(
+                  top: 6,
+                  left: w * 0.25,
+                  right: w * 0.05,
+                  child: Center(
+                    child: () {
+                      final isCustom = widget.customTargetsEnabled &&
+                          safeIndex > 0; // current island is already revealed
+                      final targetStr = isCustom
+                          ? '???'
+                          : (safeIndex < widget.targetSequence.length
+                              ? _fullLabel(widget.targetSequence[safeIndex])
+                              : '?');
+                      return Text(
+                        'Target: $targetStr',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.pirataOne(
+                          fontSize: (w * 0.045).clamp(16.0, 48.0),
+                          color: widget.treasureGold,
+                          shadows: _outlineShadow(widget.plankBrown),
+                        ),
+                      );
+                    }(),
+                  ),
+                ),
+
+                // ── Layer 7: Optional chest image (lower-right) ───────────
+                if (widget.chestImagePath != null)
+                  Positioned(
+                    right: w * 0.02,
+                    bottom: h * 0.02,
+                    width: w * 0.22,
+                    height: h * 0.30,
+                    child: Image.asset(
+                      widget.chestImagePath!,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

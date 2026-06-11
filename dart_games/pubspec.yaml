@@ -185,6 +185,21 @@ flutter:
     - assets/games/tiki_golf/sounds/
     - assets/games/tiki_golf/teams/
 
+    # Treasure Divide game assets
+    - assets/games/treasure_divide/icons/
+    - assets/games/treasure_divide/images/
+    - assets/games/treasure_divide/pieces/
+    - assets/games/treasure_divide/sounds/
+    - assets/games/treasure_divide/teams/
+    - assets/games/treasure_divide/themes/captain/
+    - assets/games/treasure_divide/themes/first_mate/
+    - assets/games/treasure_divide/themes/bosun/
+    - assets/games/treasure_divide/themes/navigator/
+    - assets/games/treasure_divide/themes/lookout/
+    - assets/games/treasure_divide/themes/cook/
+    - assets/games/treasure_divide/themes/gunner/
+    - assets/games/treasure_divide/themes/cabin_boy/
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

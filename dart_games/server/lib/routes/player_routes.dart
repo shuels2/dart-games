@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -12,6 +13,7 @@ import '../database/database_helpers.dart';
 import '../database/database_registry.dart';
 import '../models/game_history_model.dart';
 import '../models/player_model.dart';
+import '../services/face_landmarks_service.dart';
 
 const _jsonHeaders = {'content-type': 'application/json'};
 
@@ -94,6 +96,7 @@ class PlayerRoutes {
       gamesPlayed: player.gamesPlayed,
       gamesWon: player.gamesWon,
       gameHistory: history,
+      faceLandmarks: player.faceLandmarks,
     );
   }
 
@@ -139,6 +142,7 @@ class PlayerRoutes {
         p.created_at      AS p_created_at,
         p.games_played    AS p_games_played,
         p.games_won       AS p_games_won,
+        p.face_landmarks  AS p_face_landmarks,
         h.id              AS h_id,
         h.game_name       AS h_game_name,
         h.timestamp       AS h_timestamp,
@@ -169,6 +173,7 @@ class PlayerRoutes {
           'created_at': row['p_created_at'],
           'games_played': row['p_games_played'],
           'games_won': row['p_games_won'],
+          'face_landmarks': row['p_face_landmarks'],
         });
         histories[pid] = [];
         order.add(pid);
@@ -199,6 +204,7 @@ class PlayerRoutes {
         gamesPlayed: p.gamesPlayed,
         gamesWon: p.gamesWon,
         gameHistory: histories[id]!,
+        faceLandmarks: p.faceLandmarks,
       ).toJson());
     }).toList();
 
@@ -347,6 +353,23 @@ class PlayerRoutes {
       _db,
       'UPDATE players SET photo_path = ? WHERE id = ?;',
       [filePath, id],
+    );
+
+    // Fire-and-forget face-landmark detection. The endpoint returns
+    // immediately; detection runs in the background and updates the DB row
+    // when complete. Errors are swallowed (logged to stderr by the service).
+    unawaited(
+      FaceLandmarksService.instance
+          .detectForImagePath(filePath)
+          .then((landmarks) {
+        if (landmarks != null) {
+          executeUpdate(
+            _db,
+            'UPDATE players SET face_landmarks = ? WHERE id = ?;',
+            [jsonEncode(landmarks), id],
+          );
+        }
+      }),
     );
 
     // Return the API URL (not the server-side filesystem path) so the

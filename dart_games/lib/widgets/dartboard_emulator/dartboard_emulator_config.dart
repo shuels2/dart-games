@@ -189,6 +189,24 @@ class DartboardSectionConfig {
       ),
     );
   }
+
+  // Factory for Treasure Divide — Ocean Teal, Treasure Gold border, Merriweather/PirataOne font
+  factory DartboardSectionConfig.treasureDivide() {
+    return DartboardSectionConfig(
+      backgroundColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFFFD700), width: 2), // Treasure Gold
+      disabledOverlayBackgroundColor: const Color(0xFF008B8B).withOpacity(0.95), // Ocean Teal
+      disabledOverlayBorderColor: const Color(0xFF8B6914), // Plank Brown
+      removeButtonBackgroundColor: const Color(0xFFFFD700), // Treasure Gold
+      removeButtonBorderColor: const Color(0xFF8B6914), // Plank Brown
+      removeButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFF008B8B), // Ocean Teal
+      ),
+    );
+  }
 }
 
 class DartboardFABConfig {
@@ -307,6 +325,21 @@ class DartboardFABConfig {
       textStyle: GoogleFonts.boogaloo(
         fontSize: 16,
       ),
+    );
+  }
+
+  // Factory for Treasure Divide — Treasure Gold bg, Ocean Teal icon/text, PirataOne font
+  factory DartboardFABConfig.treasureDivide() {
+    return DartboardFABConfig(
+      backgroundColor: const Color(0xFFFFD700), // Treasure Gold
+      iconColor: const Color(0xFF008B8B), // Ocean Teal
+      textColor: const Color(0xFF008B8B), // Ocean Teal
+      textStyle: GoogleFonts.merriweather(
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.5,
+      ),
+      showText: 'Show Dartboard',
+      hideText: 'Hide Dartboard',
     );
   }
 }
@@ -452,6 +485,21 @@ class PlayToCompleteButtonConfig {
         fontSize: 16,
         color: const Color(0xFFFFF5E1),
       ),
+    );
+  }
+
+  // Factory for Treasure Divide — Treasure Gold bg, Ocean Teal text, Plank Brown border
+  factory PlayToCompleteButtonConfig.treasureDivide() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFFFFD700), // Treasure Gold
+      foregroundColor: const Color(0xFF008B8B), // Ocean Teal
+      borderColor: const Color(0xFF8B6914), // Plank Brown
+      textStyle: GoogleFonts.merriweather(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFF008B8B), // Ocean Teal
+      ),
+      buttonText: 'SAIL TO VICTORY',
     );
   }
 }

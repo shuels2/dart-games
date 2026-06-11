@@ -20,6 +20,9 @@ echo ============================================================
 echo  Dart Games Launcher
 echo ============================================================
 
+call "%~dp0check_python_deps.bat"
+if errorlevel 1 exit /b 1
+
 set SERVER_PORT=8080
 set MODE=default
 

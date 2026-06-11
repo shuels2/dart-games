@@ -73,6 +73,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'tiki_golf':
         menuScreen = const TikiGolfMenuScreen();
         break;
+      case 'treasure_divide':
+        Navigator.pushNamed(context, '/treasure-divide');
+        return;
       default:
         return;
     }
@@ -207,6 +210,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   height: 0.6, // tightens line-box so the text sits 5px higher
+                                )
+                          : title == 'Treasure Divide'
+                              ? GoogleFonts.pirataOne(
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
+                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
+                                  letterSpacing: 1.0,
                                 )
                           : theme.textTheme.titleMedium?.copyWith(
                               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
@@ -393,6 +402,16 @@ class _HomeScreenState extends State<HomeScreen> {
         'color': const Color(0xFF2D6A4F), // Palm Green
         'onTap': dartboardProvider.canPlayGames
             ? () => _navigateToMenu('tiki_golf')
+            : null,
+      },
+      {
+        'gameId': 'treasure_divide',
+        'title': 'Treasure Divide',
+        'key': HomeKeys.treasureDivideCard,
+        'imageAssetPath': 'assets/games/treasure_divide/icons/TreasureDivide-Icon.png',
+        'color': const Color(0xFF008B8B), // Ocean Teal
+        'onTap': dartboardProvider.canPlayGames
+            ? () => _navigateToMenu('treasure_divide')
             : null,
       },
       // Add new games here - they will automatically be sorted alphabetically

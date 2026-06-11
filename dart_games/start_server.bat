@@ -19,6 +19,9 @@ echo ============================================================
 echo Dart Games Backend Server
 echo ============================================================
 
+call "%~dp0check_python_deps.bat"
+if errorlevel 1 exit /b 1
+
 REM Verify server exists
 if not exist "server\bin\server.dart" (
     echo.
