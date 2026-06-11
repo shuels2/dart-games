@@ -103,5 +103,24 @@ void main() {
         reason: 'Tied solo game should show "DIVIDED TREASURE!" heading');
     expect(find.text('A TIE BETWEEN CAPTAINS'), findsOneWidget,
         reason: 'Tied solo game should display "A TIE BETWEEN CAPTAINS" label');
+
+    // EVERY tied player gets a `gamesWon = 1` recorded.
+    // _updatePlayerStats reads `game.winnerIds` and marks
+    // `won: winners.contains(id)` — on a Solo tie, winnerIds has both
+    // players so both should be credited with a win.
+    final p1 = ProviderHelpers.findPlayerByName(tester, 'TieP1');
+    final p2 = ProviderHelpers.findPlayerByName(tester, 'TieP2');
+    expect(p1, isNotNull, reason: 'Player TieP1 should be in the provider');
+    expect(p2, isNotNull, reason: 'Player TieP2 should be in the provider');
+    expect(p1!.gamesPlayed, 1,
+        reason: 'TieP1.gamesPlayed should be 1 after the tied game');
+    expect(p2!.gamesPlayed, 1,
+        reason: 'TieP2.gamesPlayed should be 1 after the tied game');
+    expect(p1.gamesWon, 1,
+        reason: 'On a Solo tie EVERY tied player must get gamesWon = 1; '
+            'TieP1.gamesWon = ${p1.gamesWon}');
+    expect(p2.gamesWon, 1,
+        reason: 'On a Solo tie EVERY tied player must get gamesWon = 1; '
+            'TieP2.gamesWon = ${p2.gamesWon}');
   });
 }

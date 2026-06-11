@@ -109,5 +109,27 @@ void main() {
     expect(find.text('A TIE BETWEEN CREWS'), findsOneWidget,
         reason:
             'Tied team game should display "A TIE BETWEEN CREWS" label');
+
+    // EVERY player on EVERY tied crew gets `gamesWon = 1` recorded
+    // (per spec Section 5 "Player Stats on Team Win" — every member of
+    // every winning crew gets a Win). _determineTeamWinner sets
+    // `winnerIds = all members of all tied winning crews`, and
+    // _updatePlayerStats marks `won: winners.contains(id)` for each.
+    // With 2 crews tied, all 4 selected players should be credited.
+    final p1 = ProviderHelpers.findPlayerByName(tester, 'TeamTieP1');
+    final p2 = ProviderHelpers.findPlayerByName(tester, 'TeamTieP2');
+    final p3 = ProviderHelpers.findPlayerByName(tester, 'TeamTieP3');
+    final p4 = ProviderHelpers.findPlayerByName(tester, 'TeamTieP4');
+    expect(p1, isNotNull);
+    expect(p2, isNotNull);
+    expect(p3, isNotNull);
+    expect(p4, isNotNull);
+    for (final p in [p1!, p2!, p3!, p4!]) {
+      expect(p.gamesPlayed, 1,
+          reason: '${p.name}.gamesPlayed should be 1 after the tied game');
+      expect(p.gamesWon, 1,
+          reason: 'On a Team tie EVERY player on EVERY winning crew must '
+              'get gamesWon = 1; ${p.name}.gamesWon = ${p.gamesWon}');
+    }
   });
 }
