@@ -379,6 +379,20 @@ class TestDataService {
     ];
   }
 
+  /// Returns the 20 embedded sample-headshot asset paths used by the
+  /// "Load Test Data" button. Index `i` (0..19) maps 1:1 to the i-th
+  /// player produced by [generateTestPlayers]. The headshots live under
+  /// `assets/common/test_headshots/` and are declared in pubspec.yaml so
+  /// the sample data button works on any machine without requiring the
+  /// source PNGs.
+  static List<String> getTestHeadshotAssetPaths() {
+    return List<String>.generate(
+      20,
+      (i) => 'assets/common/test_headshots/headshot-'
+          '${(i + 1).toString().padLeft(2, '0')}.png',
+    );
+  }
+
   /// Get embedded test audio data URLs (actual user-created MP3 files)
   static List<Map<String, String>> getTestVictoryMusicDataUrls() {
     // These are the actual test MP3 files embedded as base64 data URLs

@@ -115,6 +115,14 @@ flutter:
     # Shared/common assets used across all games
     - assets/common/icons/
     - assets/common/images/
+    # 20 sample player headshots used by Options → "Load Test Data".
+    # Embedded so the sample-data button always works without
+    # requiring the source files on the dev machine. Each headshot is
+    # paired 1:1 with one of the 20 generated test players and is
+    # uploaded via the standard avatar endpoint, which runs the
+    # mediapipe face-landmarks pipeline as a fire-and-forget side
+    # effect — useful for exercising the landmark mapping end-to-end.
+    - assets/common/test_headshots/
 
     # Carnival Derby game assets
     - assets/games/carnival_derby/icons/

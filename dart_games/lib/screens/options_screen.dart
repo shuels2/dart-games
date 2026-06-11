@@ -1,8 +1,11 @@
+import 'dart:convert' show base64Encode;
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import '../main.dart' show apiClient;
 import '../services/dart_announcer_service.dart';
 import '../services/app_settings.dart';
 import '../services/victory_music_service.dart';
@@ -1167,6 +1170,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
           content: const Text(
             'This will add:\n'
             '• 20 sample players with varied game history\n'
+            '• 20 sample headshots (1 per player) — each runs through '
+            'the face-landmarks detector on upload\n'
             '• 2 sample victory music files\n\n'
             'These will be added to your existing data.',
           ),
@@ -1191,6 +1196,33 @@ class _OptionsScreenState extends State<OptionsScreen> {
     final testPlayers = TestDataService.generateTestPlayers();
     for (final player in testPlayers) {
       await playerProvider.savePlayer(player);
+    }
+
+    // Upload one embedded headshot per player (1:1 mapping by index).
+    // Each upload hits the standard POST /api/v1/players/<id>/photo
+    // endpoint, which fires the mediapipe face-landmarks detector as a
+    // fire-and-forget background job — useful for exercising the
+    // landmark mapping pipeline end-to-end with real photo data.
+    // Errors per-photo are caught + logged so a single bad asset (e.g.
+    // a missing file) can't break the rest of the load.
+    int photosAdded = 0;
+    final headshotPaths = TestDataService.getTestHeadshotAssetPaths();
+    for (var i = 0;
+        i < testPlayers.length && i < headshotPaths.length;
+        i++) {
+      final player = testPlayers[i];
+      final assetPath = headshotPaths[i];
+      try {
+        final bytes =
+            (await rootBundle.load(assetPath)).buffer.asUint8List();
+        final base64Data = base64Encode(bytes);
+        final fileName = assetPath.split('/').last;
+        await apiClient.uploadPlayerPhoto(player.id, base64Data, fileName);
+        photosAdded++;
+      } catch (e) {
+        debugPrint(
+            'Error uploading test headshot $assetPath for ${player.name}: $e');
+      }
     }
 
     // Persist each player's pre-populated gameHistory to the server so
@@ -1231,7 +1263,9 @@ class _OptionsScreenState extends State<OptionsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Loaded ${testPlayers.length} players and $filesAdded music files'),
+          content: Text(
+              '✅ Loaded ${testPlayers.length} players, '
+              '$photosAdded headshots, and $filesAdded music files'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
         ),
