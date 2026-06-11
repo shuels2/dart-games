@@ -559,9 +559,10 @@ void main() {
       mock.clear();
 
       // Now p1 is the leader; simulate the leader-change announcement.
-      // (The screen computes this via _maybeAnnounceLeaderChange.)
-      // In direct-helper tests, we call it directly.
-      mock.announceLeaderChange('p1', provider.currentGame!.totalForPlayer('p1'),
+      // Single-leader path uses the named announcement; tie path uses
+      // announceLeadersTied. Here p1 alone is the leader so we use names.
+      mock.announceLeaderChange('p1',
+          provider.currentGame!.totalForPlayer('p1'),
           isTeam: false);
 
       final leader = mock.announcements

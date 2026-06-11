@@ -326,50 +326,58 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     }
   }
 
-  /// Computes the current leader and fires a leader-change announcement if
-  /// the leader has changed since the last turn.
+  /// Computes the current top of the leaderboard (which may have ≥ 1
+  /// player/crew tied at the same max score) and fires the appropriate
+  /// leader announcement if the set of leaders has changed since the last
+  /// turn. Single leader → name announcement; tied leaders → score-only
+  /// "The leaders have N gold!" announcement.
   void _maybeAnnounceLeaderChange(
       TreasureDivideProvider provider, TreasureDivideGame game) {
-    String? newLeaderId;
-    int newLeaderScore = -1;
-    bool isTeam = game.gameMode == TreasureDivideGameMode.team;
+    final isTeam = game.gameMode == TreasureDivideGameMode.team;
 
-    if (isTeam) {
-      for (final teamId in game.teamPlayers.keys) {
-        final score = game.totalForTeam(teamId);
-        if (score > newLeaderScore) {
-          newLeaderScore = score;
-          newLeaderId = teamId;
-        }
-      }
-    } else {
-      for (final pid in game.playerIds) {
-        final score = game.totalForPlayer(pid);
-        if (score > newLeaderScore) {
-          newLeaderScore = score;
-          newLeaderId = pid;
-        }
-      }
+    // Two-pass: find max score, then collect every id with that score.
+    int topScore = -1;
+    final List<String> ids = isTeam
+        ? game.teamPlayers.keys.toList()
+        : game.playerIds.toList();
+    final List<int> scores = ids
+        .map((id) => isTeam ? game.totalForTeam(id) : game.totalForPlayer(id))
+        .toList();
+    for (final s in scores) {
+      if (s > topScore) topScore = s;
     }
+    final List<String> topIds = [
+      for (int i = 0; i < ids.length; i++)
+        if (scores[i] == topScore) ids[i],
+    ];
 
-    if (newLeaderId == null || newLeaderScore <= 0) return;
+    if (topIds.isEmpty || topScore <= 0) return;
 
-    // Don't fire on the very first turn of the game (no leader yet).
-    if (_lastLeaderId != null && newLeaderId != _lastLeaderId) {
-      if (isTeam) {
-        final crewName = provider.crewNameForTeam(newLeaderId);
-        _audioQueue?.announceLeaderChange(crewName, newLeaderScore,
-            isTeam: true);
+    // Signature = sorted-joined ids — changes when the set of leaders
+    // changes (single → different single, single → tied, tied → tied with
+    // different participants). The same set is silent (no re-fire).
+    final signature = (List<String>.from(topIds)..sort()).join(',');
+
+    // Don't fire on the very first turn of the game (no prior signature).
+    if (_lastLeaderId != null && signature != _lastLeaderId) {
+      if (topIds.length == 1) {
+        // Single leader — keep the name announcement.
+        final leaderId = topIds.first;
+        if (isTeam) {
+          final crewName = provider.crewNameForTeam(leaderId);
+          _audioQueue?.announceLeaderChange(crewName, topScore, isTeam: true);
+        } else {
+          final playerProvider = context.read<PlayerProvider>();
+          final name = playerProvider.getPlayerById(leaderId)?.name ?? leaderId;
+          _audioQueue?.announceLeaderChange(name, topScore, isTeam: false);
+        }
       } else {
-        final playerProvider = context.read<PlayerProvider>();
-        final name =
-            playerProvider.getPlayerById(newLeaderId)?.name ?? newLeaderId;
-        _audioQueue?.announceLeaderChange(name, newLeaderScore,
-            isTeam: false);
+        // Tied — name-free announcement so we don't enumerate names.
+        _audioQueue?.announceLeadersTied(topScore);
       }
     }
 
-    _lastLeaderId = newLeaderId;
+    _lastLeaderId = signature;
   }
 
   void _handleGameWon() {
@@ -391,20 +399,26 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       final game = provider.currentGame;
       if (game != null) {
         if (game.gameMode == TreasureDivideGameMode.solo) {
-          final winnerId =
-              game.winnerIds.isNotEmpty ? game.winnerIds.first : null;
-          if (winnerId != null) {
+          // Collect EVERY winning player's name. Ties produce
+          // winnerIds.length > 1 — the announcement helper pluralizes
+          // accordingly ("Divided treasure! A and B share the captain's
+          // title!"). Falls back to id if a name lookup misses.
+          if (game.winnerIds.isNotEmpty) {
             final playerProvider = context.read<PlayerProvider>();
-            final winner = playerProvider.allPlayers.firstWhere(
-              (p) => p.id == winnerId,
-              orElse: () => playerProvider.allPlayers.first,
-            );
-            _audioQueue?.announceVictory(winner.name);
+            final winnerNames = game.winnerIds
+                .map((id) =>
+                    playerProvider.getPlayerById(id)?.name ?? id)
+                .toList();
+            _audioQueue?.announceVictory(winnerNames);
           }
         } else {
-          final winningCrewName = provider.winningCrewName;
-          if (winningCrewName != null) {
-            _audioQueue?.announceTeamVictory(winningCrewName);
+          // Collect EVERY winning crew's name. Ties produce
+          // winnerTeamIds.length > 1 — the helper pluralizes accordingly.
+          if (game.winnerTeamIds.isNotEmpty) {
+            final winningCrewNames = game.winnerTeamIds
+                .map((tid) => provider.crewNameForTeam(tid))
+                .toList();
+            _audioQueue?.announceTeamVictory(winningCrewNames);
           }
         }
       }

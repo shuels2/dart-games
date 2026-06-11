@@ -353,15 +353,21 @@ void main() {
   // ─── Leader change ────────────────────────────────────────────────────────
 
   group('Leader change', () {
-    test('Solo leader announcement', () {
+    test('Solo single leader — names the player', () {
       mock.announceLeaderChange('Bob', 240, isTeam: false);
       expect(mock.announcements, ['Bob leads with 240 gold!']);
       expect(mock.captured.first.priority, AudioPriority.statusChange);
     });
 
-    test('Team leader announcement', () {
+    test('Team single leader — names the crew', () {
       mock.announceLeaderChange('Krakens', 180, isTeam: true);
       expect(mock.announcements, ['The Krakens lead with 180 gold!']);
+      expect(mock.captured.first.priority, AudioPriority.statusChange);
+    });
+
+    test('Tied leaders — score-only, no names (Solo or Team)', () {
+      mock.announceLeadersTied(240);
+      expect(mock.announcements, ['The leaders have 240 gold!']);
       expect(mock.captured.first.priority, AudioPriority.statusChange);
     });
   });
@@ -407,8 +413,8 @@ void main() {
   // ─── Victory ──────────────────────────────────────────────────────────────
 
   group('Victory', () {
-    test('Solo Victory — correct text and priority', () {
-      mock.announceVictory('Alice');
+    test('Solo Victory — single winner', () {
+      mock.announceVictory(['Alice']);
       expect(mock.announcements,
           ['Alice is crowned Pirate Captain! Richest on the seas!']);
       expect(mock.captured.first.priority, AudioPriority.victory);
@@ -416,13 +422,51 @@ void main() {
           contains('TreasureDivide-Fanfare.mp3'));
     });
 
-    test('Team Victory — correct text and priority', () {
-      mock.announceTeamVictory('Krakens');
+    test('Solo Victory — two-way tie names both winners', () {
+      mock.announceVictory(['Alice', 'Bob']);
+      expect(mock.announcements,
+          ["Divided treasure! Alice and Bob share the captain's title!"]);
+      expect(mock.captured.first.priority, AudioPriority.victory);
+    });
+
+    test('Solo Victory — three-way tie uses Oxford-comma list', () {
+      mock.announceVictory(['Alice', 'Bob', 'Carol']);
+      expect(mock.announcements, [
+        "Divided treasure! Alice, Bob, and Carol share the captain's title!"
+      ]);
+      expect(mock.captured.first.priority, AudioPriority.victory);
+    });
+
+    test('Team Victory — single winning crew', () {
+      mock.announceTeamVictory(['Krakens']);
       expect(mock.announcements,
           ["The Krakens are crowned Captain's Crew! Richest on the seas!"]);
       expect(mock.captured.first.priority, AudioPriority.victory);
       expect(mock.captured.first.soundAssetPath,
           contains('TreasureDivide-Fanfare.mp3'));
+    });
+
+    test('Team Victory — two-way tie names both crews', () {
+      mock.announceTeamVictory(['Krakens', 'Anchors']);
+      expect(mock.announcements, [
+        "Divided treasure! the Krakens and the Anchors share the captain's title!"
+      ]);
+      expect(mock.captured.first.priority, AudioPriority.victory);
+    });
+
+    test('Team Victory — three-way tie uses Oxford-comma list', () {
+      mock.announceTeamVictory(['Krakens', 'Anchors', 'Helmsmen']);
+      expect(mock.announcements, [
+        "Divided treasure! the Krakens, the Anchors, and the Helmsmen "
+            "share the captain's title!"
+      ]);
+      expect(mock.captured.first.priority, AudioPriority.victory);
+    });
+
+    test('Victory — empty list is a no-op', () {
+      mock.announceVictory([]);
+      mock.announceTeamVictory([]);
+      expect(mock.announcements, isEmpty);
     });
   });
 

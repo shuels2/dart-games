@@ -267,9 +267,9 @@ class TreasureDivideAnnouncementHelper {
 
   // ─── Leader change ────────────────────────────────────────────────────────────
 
-  /// "{name} leads with {value} gold!" (Solo)
-  /// "The {crewName} lead with {value} gold!" (Team)
-  /// Queued AFTER the turn-end announcement.
+  /// Single-leader announcement. Queued AFTER the turn-end announcement.
+  ///   Solo: "{name} leads with {value} gold!"
+  ///   Team: "The {crewName} lead with {value} gold!"
   void announceLeaderChange(
     String name,
     int value, {
@@ -290,6 +290,18 @@ class TreasureDivideAnnouncementHelper {
     }
   }
 
+  /// Tied-leaders announcement. Used when ≥ 2 players (Solo) or ≥ 2 crews
+  /// (Team) are tied at the top of the leaderboard — we deliberately don't
+  /// enumerate names here to keep the read-out short and avoid arbitrarily
+  /// picking one. The score itself is enough information.
+  void announceLeadersTied(int value) {
+    _queueService.announce(
+      'The leaders have $value gold!',
+      AudioPriority.statusChange,
+      soundEffect: TreasureDivideSoundEffects.coinShower,
+    );
+  }
+
   // ─── Remove darts ─────────────────────────────────────────────────────────────
 
   /// "Remove your darts!" — TTS-only, ALWAYS called unconditionally.
@@ -302,22 +314,68 @@ class TreasureDivideAnnouncementHelper {
 
   // ─── Victory ─────────────────────────────────────────────────────────────────
 
-  /// "{playerName} is crowned Pirate Captain! Richest on the seas!" (Solo)
-  void announceVictory(String winnerName) {
+  /// Solo-mode victory. Accepts a list of winning player names so ties are
+  /// announced with EVERY name spoken (matches the user's stated UX:
+  /// "victory should say all the names").
+  ///
+  /// - 1 winner:  "{name} is crowned Pirate Captain! Richest on the seas!"
+  /// - 2 winners: "Divided treasure! {a} and {b} share the captain's title!"
+  /// - 3+ winners: "Divided treasure! {a}, {b}, and {c} share the captain's title!"
+  void announceVictory(List<String> winnerNames) {
+    if (winnerNames.isEmpty) return;
+    if (winnerNames.length == 1) {
+      _queueService.announce(
+        '${winnerNames.first} is crowned Pirate Captain! '
+            'Richest on the seas!',
+        AudioPriority.victory,
+        soundEffect: TreasureDivideSoundEffects.victoryFanfare,
+      );
+      return;
+    }
+    final names = _joinWithAnd(winnerNames);
     _queueService.announce(
-      '$winnerName is crowned Pirate Captain! Richest on the seas!',
+      "Divided treasure! $names share the captain's title!",
       AudioPriority.victory,
       soundEffect: TreasureDivideSoundEffects.victoryFanfare,
     );
   }
 
-  /// "The {crewName} are crowned Captain's Crew! Richest on the seas!" (Team)
-  void announceTeamVictory(String crewName) {
+  /// Team-mode victory. Accepts a list of winning crew names so ties are
+  /// announced with EVERY crew spoken.
+  ///
+  /// - 1 crew:  "The {crew} are crowned Captain's Crew! Richest on the seas!"
+  /// - 2 crews: "Divided treasure! The {a} and the {b} share the captain's title!"
+  /// - 3+ crews: "Divided treasure! The {a}, the {b}, and the {c} share the captain's title!"
+  void announceTeamVictory(List<String> crewNames) {
+    if (crewNames.isEmpty) return;
+    if (crewNames.length == 1) {
+      _queueService.announce(
+        "The ${crewNames.first} are crowned Captain's Crew! "
+            'Richest on the seas!',
+        AudioPriority.victory,
+        soundEffect: TreasureDivideSoundEffects.victoryFanfare,
+      );
+      return;
+    }
+    // Each crew gets its own "the" prefix so the read-out sounds natural.
+    final prefixed = crewNames.map((c) => 'the $c').toList();
+    final crews = _joinWithAnd(prefixed);
     _queueService.announce(
-      "The $crewName are crowned Captain's Crew! Richest on the seas!",
+      "Divided treasure! $crews share the captain's title!",
       AudioPriority.victory,
       soundEffect: TreasureDivideSoundEffects.victoryFanfare,
     );
+  }
+
+  /// Joins a list of strings with commas + "and" at the end:
+  /// ['A']            => 'A'
+  /// ['A', 'B']       => 'A and B'
+  /// ['A', 'B', 'C']  => 'A, B, and C' (Oxford comma)
+  String _joinWithAnd(List<String> parts) {
+    if (parts.length == 1) return parts.single;
+    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
+    final head = parts.sublist(0, parts.length - 1).join(', ');
+    return '$head, and ${parts.last}';
   }
 
   // ─── Idle / dispose ───────────────────────────────────────────────────────────

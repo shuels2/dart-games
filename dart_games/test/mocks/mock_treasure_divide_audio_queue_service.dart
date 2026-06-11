@@ -237,6 +237,14 @@ class MockTreasureDivideAudioQueueService {
     }
   }
 
+  void announceLeadersTied(int value) {
+    _record(
+      'The leaders have $value gold!',
+      AudioPriority.statusChange,
+      soundAssetPath: 'games/treasure_divide/sounds/TreasureDivide-CoinClink.mp3',
+    );
+  }
+
   // ─── Remove darts ─────────────────────────────────────────────────────────────
 
   void announceRemoveDarts() {
@@ -245,20 +253,50 @@ class MockTreasureDivideAudioQueueService {
 
   // ─── Victory ─────────────────────────────────────────────────────────────────
 
-  void announceVictory(String winnerName) {
+  void announceVictory(List<String> winnerNames) {
+    if (winnerNames.isEmpty) return;
+    if (winnerNames.length == 1) {
+      _record(
+        '${winnerNames.first} is crowned Pirate Captain! '
+            'Richest on the seas!',
+        AudioPriority.victory,
+        soundAssetPath: 'games/treasure_divide/sounds/TreasureDivide-Fanfare.mp3',
+      );
+      return;
+    }
+    final names = _joinWithAnd(winnerNames);
     _record(
-      '$winnerName is crowned Pirate Captain! Richest on the seas!',
+      "Divided treasure! $names share the captain's title!",
       AudioPriority.victory,
       soundAssetPath: 'games/treasure_divide/sounds/TreasureDivide-Fanfare.mp3',
     );
   }
 
-  void announceTeamVictory(String crewName) {
+  void announceTeamVictory(List<String> crewNames) {
+    if (crewNames.isEmpty) return;
+    if (crewNames.length == 1) {
+      _record(
+        "The ${crewNames.first} are crowned Captain's Crew! "
+            'Richest on the seas!',
+        AudioPriority.victory,
+        soundAssetPath: 'games/treasure_divide/sounds/TreasureDivide-Fanfare.mp3',
+      );
+      return;
+    }
+    final prefixed = crewNames.map((c) => 'the $c').toList();
+    final crews = _joinWithAnd(prefixed);
     _record(
-      "The $crewName are crowned Captain's Crew! Richest on the seas!",
+      "Divided treasure! $crews share the captain's title!",
       AudioPriority.victory,
       soundAssetPath: 'games/treasure_divide/sounds/TreasureDivide-Fanfare.mp3',
     );
+  }
+
+  String _joinWithAnd(List<String> parts) {
+    if (parts.length == 1) return parts.single;
+    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
+    final head = parts.sublist(0, parts.length - 1).join(', ');
+    return '$head, and ${parts.last}';
   }
 
   // ─── Idle / dispose ───────────────────────────────────────────────────────────
