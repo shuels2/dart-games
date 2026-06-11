@@ -907,7 +907,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           Text(
             'Rounds',
             style: GoogleFonts.merriweather(
-              fontSize: 18,
+              fontSize: 17,
               color: _sailWhite,
             ),
           ),
@@ -916,7 +916,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
             value: _numberOfRounds,
             dropdownColor: const Color(0xFF005F5F),
             style: GoogleFonts.merriweather(
-              fontSize: 18,
+              fontSize: 17,
               color: _treasureGold,
               fontWeight: FontWeight.w700,
             ),
@@ -948,7 +948,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
             child: Text(
               'Quarter It',
               style: GoogleFonts.merriweather(
-                fontSize: 18,
+                fontSize: 17,
                 color: _sailWhite,
               ),
               overflow: TextOverflow.ellipsis,
@@ -969,7 +969,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
               Text(
                 _quarterIt ? 'ON' : 'OFF',
                 style: GoogleFonts.merriweather(
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: _quarterIt
                       ? _treasureGold
