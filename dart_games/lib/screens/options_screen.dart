@@ -1,8 +1,8 @@
-import 'dart:convert' show base64Encode;
+import 'dart:convert' show JsonEncoder, base64Encode;
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../main.dart' show apiClient;
@@ -11,6 +11,7 @@ import '../services/app_settings.dart';
 import '../services/victory_music_service.dart';
 import '../services/photo_service.dart';
 import '../services/test_data_service.dart';
+import '../services/test_headshot_landmarks_service.dart';
 import '../models/victory_music_file.dart';
 import '../widgets/add_player/add_player.dart';
 import '../models/player.dart';
@@ -667,6 +668,104 @@ class _OptionsScreenState extends State<OptionsScreen> {
     );
   }
 
+  /// Collect every loaded test-player's current face landmarks into the
+  /// `headshot-NN.png → landmarks` JSON shape, then show a copyable dialog
+  /// the user can paste into `assets/common/test_headshot_landmarks.json`.
+  ///
+  /// The match is by display name against [TestDataService.generateTestPlayers];
+  /// players with no stored landmarks are silently skipped.
+  Future<void> _exportTestHeadshotLandmarkOverrides() async {
+    final playerProvider = context.read<PlayerProvider>();
+    final overrides = TestHeadshotLandmarksService.buildExportPayload(
+      playerProvider.allPlayers,
+    );
+
+    if (overrides.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'No test-data players with stored landmarks were found. '
+              'Load Test Data, then correct landmarks via the face-mapping '
+              'icon next to each player.'),
+          duration: Duration(seconds: 5),
+        ),
+      );
+      return;
+    }
+
+    // Pretty-print so the committed JSON diffs cleanly.
+    final encoder = const JsonEncoder.withIndent('  ');
+    final pretty = encoder.convert(overrides);
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+            'Landmark overrides for ${overrides.length}/20 test players'),
+        content: SizedBox(
+          width: 600,
+          height: 400,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Copy this JSON and replace the contents of '
+                'assets/common/test_headshot_landmarks.json, then commit. '
+                'Future Load Test Data runs will apply these corrections '
+                'automatically.',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      pretty,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.copy),
+            label: const Text('Copy to clipboard'),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: pretty));
+              if (ctx.mounted) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(
+                    content: Text('Copied. Paste into '
+                        'assets/common/test_headshot_landmarks.json'),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Resolve the player's photo to an absolute URL the inspector's
   /// Image.network can load. The server stores `photoPath` as the relative
   /// API endpoint `/api/v1/players/<id>/photo`; ApiConfig knows the host.
@@ -1239,7 +1338,12 @@ class _OptionsScreenState extends State<OptionsScreen> {
     // Errors per-photo are caught + logged so a single bad asset (e.g.
     // a missing file) can't break the rest of the load.
     int photosAdded = 0;
+    int landmarkOverridesApplied = 0;
     final headshotPaths = TestDataService.getTestHeadshotAssetPaths();
+    // Pre-load the bundled override map once. Empty by default; populated
+    // via the Export action and committed to assets/common/.
+    final overrides =
+        await TestHeadshotLandmarksService.loadOverrides();
     for (var i = 0;
         i < testPlayers.length && i < headshotPaths.length;
         i++) {
@@ -1252,6 +1356,20 @@ class _OptionsScreenState extends State<OptionsScreen> {
         final fileName = assetPath.split('/').last;
         await apiClient.uploadPlayerPhoto(player.id, base64Data, fileName);
         photosAdded++;
+
+        // If the user has saved a manual correction for this headshot,
+        // PATCH it now so it overwrites whatever mediapipe produced in
+        // the background.
+        final override = overrides[fileName];
+        if (override != null) {
+          try {
+            await playerProvider.updateFaceLandmarks(player.id, override);
+            landmarkOverridesApplied++;
+          } catch (e) {
+            debugPrint(
+                'Error applying landmark override for ${player.name}: $e');
+          }
+        }
       } catch (e) {
         debugPrint(
             'Error uploading test headshot $assetPath for ${player.name}: $e');
@@ -1298,7 +1416,9 @@ class _OptionsScreenState extends State<OptionsScreen> {
         SnackBar(
           content: Text(
               '✅ Loaded ${testPlayers.length} players, '
-              '$photosAdded headshots, and $filesAdded music files'),
+              '$photosAdded headshots'
+              '${landmarkOverridesApplied > 0 ? " ($landmarkOverridesApplied with saved landmark overrides)" : ""}'
+              ', and $filesAdded music files'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
         ),
@@ -2040,6 +2160,22 @@ class _OptionsScreenState extends State<OptionsScreen> {
                             subtitle: const Text('Add 20 sample players and 2 victory music files for testing'),
                             trailing: const Icon(Icons.add_circle_outline, color: Colors.blue),
                             onTap: _loadTestData,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.file_download,
+                                color: Colors.indigo),
+                            title: const Text(
+                                'Export test-data landmark overrides'),
+                            subtitle: const Text(
+                                'Saves your manual face-mapping corrections '
+                                'for the test players. Drop the JSON into '
+                                'assets/common/test_headshot_landmarks.json '
+                                'and commit to bake them in.'),
+                            trailing: const Icon(Icons.arrow_forward_ios),
+                            onTap: _exportTestHeadshotLandmarkOverrides,
                           ),
                         ),
                         const SizedBox(height: 8),

@@ -123,6 +123,11 @@ flutter:
     # mediapipe face-landmarks pipeline as a fire-and-forget side
     # effect — useful for exercising the landmark mapping end-to-end.
     - assets/common/test_headshots/
+    # Manual landmark corrections for the test headshots — empty by default;
+    # populated via System Settings → "Export test-data landmark overrides".
+    # When non-empty, Load Test Data PATCHes these on top of mediapipe's
+    # detection so saved corrections persist across rebuilds.
+    - assets/common/test_headshot_landmarks.json
 
     # Carnival Derby game assets
     - assets/games/carnival_derby/icons/
