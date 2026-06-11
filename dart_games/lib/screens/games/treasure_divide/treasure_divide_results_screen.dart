@@ -516,14 +516,46 @@ class _TreasureDivideResultsScreenState
         ),
         const SizedBox(height: 12),
 
-        // Side-by-side tied crew crests + members
+        // Side-by-side tied crew crests + members. Two-way ties get a
+        // decorative "&" between the crests (matches the wireframe's
+        // `.crew-tie-ampersand`). Three-plus-way ties skip the
+        // ampersand and fall back to a comma-style separation, since
+        // an "&" between every pair gets visually noisy.
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            for (final teamId in winnerTeamIds) ...[
+            for (int i = 0; i < winnerTeamIds.length; i++) ...[
               _buildTiedCrewColumn(
-                  game, playerProvider, teamId, teamIds),
-              const SizedBox(width: 24),
+                  game, playerProvider, winnerTeamIds[i], teamIds),
+              if (i < winnerTeamIds.length - 1) ...[
+                const SizedBox(width: 16),
+                if (winnerTeamIds.length == 2)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 24),
+                    child: Text(
+                      '&',
+                      style: GoogleFonts.pirataOne(
+                        fontSize: 48,
+                        color: _treasureGold,
+                        shadows: const [
+                          Shadow(
+                              color: Color(0xFF8B6914),
+                              offset: Offset(-1.5, -1.5)),
+                          Shadow(
+                              color: Color(0xFF8B6914),
+                              offset: Offset(1.5, -1.5)),
+                          Shadow(
+                              color: Color(0xFF8B6914),
+                              offset: Offset(-1.5, 1.5)),
+                          Shadow(
+                              color: Color(0xFF8B6914),
+                              offset: Offset(1.5, 1.5)),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 16),
+              ],
             ],
           ],
         ),
