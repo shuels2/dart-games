@@ -638,7 +638,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           child: Text(
             'SET SAIL!',
             style: GoogleFonts.pirataOne(
-              fontSize: 30,
+              fontSize: 34,
               color: canStart ? _oceanTeal : _oceanTeal.withOpacity(0.5),
               letterSpacing: 1.5,
             ),
