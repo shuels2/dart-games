@@ -378,7 +378,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
               child: Text(
                 "CAPTAIN'S LOG",
                 style: GoogleFonts.pirataOne(
-                  fontSize: 30,
+                  fontSize: 34,
                   color: _treasureGold,
                   letterSpacing: 1,
                 ),
@@ -498,7 +498,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
     return Text(
       text,
       style: GoogleFonts.pirataOne(
-        fontSize: 22,
+        fontSize: 26,
         color: _treasureGold,
       ),
     );
@@ -520,7 +520,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           Text(
             '$number ',
             style: GoogleFonts.merriweather(
-              fontSize: 19,
+              fontSize: 17,
               color: _treasureGold,
               fontWeight: FontWeight.w700,
             ),
@@ -529,7 +529,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
             child: Text(
               text,
               style: GoogleFonts.merriweather(
-                fontSize: 19,
+                fontSize: 17,
                 color: _sailWhite,
                 height: 1.5,
               ),
@@ -549,7 +549,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           Text(
             '• ',
             style: GoogleFonts.merriweather(
-                fontSize: 19, color: _sailWhite),
+                fontSize: 17, color: _sailWhite),
           ),
           Expanded(
             child: RichText(
@@ -558,7 +558,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                   TextSpan(
                     text: boldPart,
                     style: GoogleFonts.merriweather(
-                      fontSize: 19,
+                      fontSize: 17,
                       color: _treasureGold,
                       fontWeight: FontWeight.w700,
                     ),
@@ -566,7 +566,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                   TextSpan(
                     text: rest,
                     style: GoogleFonts.merriweather(
-                      fontSize: 19,
+                      fontSize: 17,
                       color: _sailWhite,
                       height: 1.4,
                     ),
