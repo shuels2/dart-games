@@ -542,6 +542,23 @@ class PlayToTieButtonConfig {
     );
   }
 
+  // Factory for Treasure Divide — Treasure Gold bg on Ocean Teal,
+  // PirataOne, "Divide the Treasure" label (matches the in-game tie
+  // copy "Divided treasure!" used on the results screen).
+  factory PlayToTieButtonConfig.treasureDivide() {
+    return PlayToTieButtonConfig(
+      backgroundColor: const Color(0xFFFFD700), // Treasure Gold
+      foregroundColor: const Color(0xFF008B8B), // Ocean Teal
+      borderColor: const Color(0xFF8B6914), // Plank Brown
+      textStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 1.0,
+        color: const Color(0xFF008B8B),
+      ),
+      buttonText: 'Divide the Treasure',
+    );
+  }
+
   // Factory for Pirate's Grid — Treasure Gold bg, "Stalemate" label.
   factory PlayToTieButtonConfig.piratesGrid() {
     return PlayToTieButtonConfig(

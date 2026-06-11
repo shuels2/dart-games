@@ -22,6 +22,8 @@ import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../widgets/treasure_divide/pirate_avatar_widget.dart';
 import '../../../widgets/treasure_divide/treasure_map_widget.dart';
 import '../../../services/play_to_complete/treasure_divide_strategy.dart';
+import '../../../services/play_to_tie/treasure_divide_strategy.dart';
+import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import 'treasure_divide_results_screen.dart';
 
 // ─── Color palette ────────────────────────────────────────────────────────────
@@ -46,6 +48,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   final DartboardEmulatorController _dartboardEmulatorController =
       DartboardEmulatorController();
   PlayToCompleteRunner? _playToCompleteRunner;
+  PlayToTieRunner? _playToTieRunner;
   bool _showSaveModal = false;
   bool _gameCompleted = false;
 
@@ -127,6 +130,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   void dispose() {
     _audioQueue?.dispose();
     _playToCompleteRunner?.dispose();
+    _playToTieRunner?.dispose();
     _dartboardSubscription?.cancel();
     _dartboardEmulatorController.dispose();
     super.dispose();
@@ -150,8 +154,31 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     _playToCompleteRunner!.run();
   }
 
+  /// Drives the game to a tie via [TreasureDivideTieStrategy]. Same shape
+  /// as `_onPlayToComplete`; only one of the two runners is active at any
+  /// given moment (the emulator section disables both buttons while
+  /// `isAutoPlaying` is true).
+  void _onPlayToTie() {
+    if (_mockApi == null) return;
+    _dartboardEmulatorController.setAutoPlaying(true);
+    _dartboardEmulatorController.hide();
+
+    _playToTieRunner = PlayToTieRunner(
+      strategy: TreasureDivideTieStrategy(),
+      mockApi: _mockApi!,
+      context: context,
+      onComplete: () {
+        if (mounted) {
+          _dartboardEmulatorController.setAutoPlaying(false);
+        }
+      },
+    );
+    _playToTieRunner!.run();
+  }
+
   void _onCancelAutoPlay() {
     _playToCompleteRunner?.cancel();
+    _playToTieRunner?.cancel();
     _dartboardEmulatorController.setAutoPlaying(false);
     _dartboardEmulatorController.show();
   }
@@ -614,6 +641,16 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               playToCompleteConfig: _mockApi != null
                   ? PlayToCompleteButtonConfig.treasureDivide()
                   : null,
+              // Play-to-Tie. Same `_mockApi != null` gate as PlayToComplete
+              // so the button only renders in emulator mode. TD ties are
+              // reachable from any settings combination — the strategy's
+              // `canProduceTie` is always true, so we set the enabled
+              // flag here statically too.
+              onPlayToTie: _mockApi != null ? _onPlayToTie : null,
+              playToTieConfig: _mockApi != null
+                  ? PlayToTieButtonConfig.treasureDivide()
+                  : null,
+              playToTieEnabled: true,
             ),
           ),
 
