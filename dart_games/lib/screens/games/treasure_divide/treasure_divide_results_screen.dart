@@ -158,7 +158,20 @@ class _TreasureDivideResultsScreenState
             automaticallyImplyLeading: false,
             title: Text(
               'TREASURE DIVIDE RESULTS',
-              style: GoogleFonts.pirataOne(fontSize: 34, color: _treasureGold),
+              style: GoogleFonts.pirataOne(
+                fontSize: 38,
+                color: _treasureGold,
+                shadows: const [
+                  Shadow(
+                      color: Color(0xCC000000),
+                      offset: Offset(2, 2),
+                      blurRadius: 4),
+                  Shadow(
+                      color: Color(0xAA008B8B),
+                      offset: Offset(0, 0),
+                      blurRadius: 10),
+                ],
+              ),
             ),
             centerTitle: false,
             backgroundColor: _oceanTeal,
@@ -179,7 +192,7 @@ class _TreasureDivideResultsScreenState
                 ),
               ),
               Positioned.fill(
-                child: Container(color: _oceanTeal.withOpacity(0.65)),
+                child: Container(color: _oceanTeal.withOpacity(0.10)),
               ),
               SingleChildScrollView(
                 child:

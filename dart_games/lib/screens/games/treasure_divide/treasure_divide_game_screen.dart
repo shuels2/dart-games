@@ -528,6 +528,16 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 style: GoogleFonts.pirataOne(
                   fontSize: 38,
                   color: _treasureGold,
+                  shadows: const [
+                    Shadow(
+                        color: Color(0xCC000000),
+                        offset: Offset(2, 2),
+                        blurRadius: 4),
+                    Shadow(
+                        color: Color(0xAA008B8B),
+                        offset: Offset(0, 0),
+                        blurRadius: 10),
+                  ],
                 ),
               ),
               backgroundColor: _oceanTeal,
@@ -549,10 +559,11 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                         Container(color: _oceanTeal),
                   ),
                 ),
-                // 65% Ocean Teal overlay (mandatory)
+                // 10% Ocean Teal overlay — keeps a hint of the brand wash
+                // while letting the background art show through.
                 Positioned.fill(
                   child: Container(
-                    color: _oceanTeal.withOpacity(0.65),
+                    color: _oceanTeal.withOpacity(0.10),
                   ),
                 ),
                 // Main content — Positioned.fill so the Column has a

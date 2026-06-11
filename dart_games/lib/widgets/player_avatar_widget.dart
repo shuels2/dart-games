@@ -20,11 +20,17 @@ class PlayerAvatarWidget extends StatelessWidget {
   ImageProvider? _getImageProvider() {
     if (player.photoPath == null) return null;
 
-    if (kIsWeb) {
-      return NetworkImage(player.photoPath!);
-    } else {
-      return FileImage(File(player.photoPath!));
-    }
+    final ImageProvider raw = kIsWeb
+        ? NetworkImage(player.photoPath!)
+        : FileImage(File(player.photoPath!));
+
+    // Cap the decoded bitmap dimensions. Without this, an uploaded 2250x1500
+    // headshot decodes to ~13MB of pixel data and can exhaust the CanvasKit
+    // wasm heap when several avatars render together — the symptom is a
+    // RuntimeError: Aborted() inside PictureRecorder on every frame.
+    // 256px is roughly 3x our largest on-screen avatar (80px) — plenty of
+    // headroom for hi-DPI while keeping memory bounded.
+    return ResizeImage(raw, width: 256, height: 256);
   }
 
   @override

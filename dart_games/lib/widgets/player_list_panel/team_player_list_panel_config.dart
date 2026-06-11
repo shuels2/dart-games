@@ -309,13 +309,23 @@ class TeamPlayerListPanelConfig {
       containerBorderColorWhenReady: const Color(0xFFFFD700), // Treasure Gold
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.pirataOne(
-        fontSize: 20,
+        fontSize: 22,
         color: const Color(0xFFFFF8E7), // Sail White
         letterSpacing: 0.5,
+        shadows: const [
+          // Hard black drop shadow for legibility against any background
+          Shadow(color: Color(0xCC000000), offset: Offset(2, 2), blurRadius: 4),
+          // Soft Ocean Teal halo to anchor it to the brand
+          Shadow(color: Color(0xAA008B8B), offset: Offset(0, 0), blurRadius: 10),
+        ],
       ),
       headerCountStyle: GoogleFonts.merriweather(
-        fontSize: 14,
-        color: const Color(0xFFFFF8E7).withOpacity(0.7),
+        fontSize: 16,
+        color: const Color(0xFFFFF8E7),
+        shadows: const [
+          Shadow(color: Color(0xCC000000), offset: Offset(1, 1), blurRadius: 3),
+          Shadow(color: Color(0xAA008B8B), offset: Offset(0, 0), blurRadius: 6),
+        ],
       ),
       headerCountColorWhenReady: const Color(0xFFFFD700), // Treasure Gold
       emptyStateTextStyle: GoogleFonts.merriweather(

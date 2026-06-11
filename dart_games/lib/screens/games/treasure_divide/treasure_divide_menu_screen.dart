@@ -249,10 +249,11 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                           Container(color: _oceanTeal),
                     ),
                   ),
-                  // b. 65% Ocean Teal overlay (AR-1 h — mandatory)
+                  // b. 10% Ocean Teal overlay — keeps a hint of the brand
+                  // wash while letting the background art show through.
                   Positioned.fill(
                     child: Container(
-                        color: _oceanTeal.withOpacity(0.65)),
+                        color: _oceanTeal.withOpacity(0.10)),
                   ),
                   // c. Foreground content
                   Positioned.fill(
@@ -338,7 +339,20 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
       ),
       title: Text(
         'TREASURE DIVIDE SETUP',
-        style: GoogleFonts.pirataOne(fontSize: 38, color: _treasureGold),
+        style: GoogleFonts.pirataOne(
+          fontSize: 38,
+          color: _treasureGold,
+          shadows: const [
+            Shadow(
+                color: Color(0xCC000000),
+                offset: Offset(2, 2),
+                blurRadius: 4),
+            Shadow(
+                color: Color(0xAA008B8B),
+                offset: Offset(0, 0),
+                blurRadius: 10),
+          ],
+        ),
       ),
       centerTitle: false,
       backgroundColor: _oceanTeal,
@@ -381,6 +395,16 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                   fontSize: 38,
                   color: _treasureGold,
                   letterSpacing: 1,
+                  shadows: const [
+                    Shadow(
+                        color: Color(0xCC000000),
+                        offset: Offset(2, 2),
+                        blurRadius: 4),
+                    Shadow(
+                        color: Color(0xAA008B8B),
+                        offset: Offset(0, 0),
+                        blurRadius: 10),
+                  ],
                 ),
               ),
             ),
@@ -392,6 +416,16 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                   fontSize: 20,
                   color: _treasureGold.withOpacity(0.7),
                   letterSpacing: 2,
+                  shadows: const [
+                    Shadow(
+                        color: Color(0xCC000000),
+                        offset: Offset(2, 2),
+                        blurRadius: 4),
+                    Shadow(
+                        color: Color(0xAA008B8B),
+                        offset: Offset(0, 0),
+                        blurRadius: 10),
+                  ],
                 ),
               ),
             ),
@@ -500,6 +534,12 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
       style: GoogleFonts.pirataOne(
         fontSize: 30,
         color: _treasureGold,
+        shadows: const [
+          Shadow(
+              color: Color(0xCC000000), offset: Offset(2, 2), blurRadius: 4),
+          Shadow(
+              color: Color(0xAA008B8B), offset: Offset(0, 0), blurRadius: 10),
+        ],
       ),
     );
   }
@@ -523,6 +563,16 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
               fontSize: 17,
               color: _treasureGold,
               fontWeight: FontWeight.w700,
+              shadows: const [
+                Shadow(
+                    color: Color(0xCC000000),
+                    offset: Offset(1, 1),
+                    blurRadius: 3),
+                Shadow(
+                    color: Color(0xAA008B8B),
+                    offset: Offset(0, 0),
+                    blurRadius: 6),
+              ],
             ),
           ),
           Expanded(
@@ -561,6 +611,16 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                       fontSize: 17,
                       color: _treasureGold,
                       fontWeight: FontWeight.w700,
+                      shadows: const [
+                        Shadow(
+                            color: Color(0xCC000000),
+                            offset: Offset(1, 1),
+                            blurRadius: 3),
+                        Shadow(
+                            color: Color(0xAA008B8B),
+                            offset: Offset(0, 0),
+                            blurRadius: 6),
+                      ],
                     ),
                   ),
                   TextSpan(
@@ -638,9 +698,24 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           child: Text(
             'SET SAIL!',
             style: GoogleFonts.pirataOne(
-              fontSize: 34,
+              fontSize: 36,
               color: canStart ? _oceanTeal : _oceanTeal.withOpacity(0.5),
               letterSpacing: 1.5,
+              shadows: canStart
+                  ? const [
+                      // Letterpress: bright highlight up-top, dark drop below
+                      // Sail-White top edge gives a chiseled look on gold
+                      Shadow(
+                          color: Color(0x99FFF8E7),
+                          offset: Offset(0, -1),
+                          blurRadius: 0),
+                      // Plank-Brown drop shadow for depth on the gold button
+                      Shadow(
+                          color: Color(0xCC4A3A1F),
+                          offset: Offset(0, 2),
+                          blurRadius: 3),
+                    ]
+                  : null,
             ),
           ),
         ),
