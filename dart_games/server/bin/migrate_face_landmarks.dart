@@ -1,17 +1,24 @@
-/// CLI migrator: detect face landmarks for all existing player avatars.
+/// CLI migrator: detect face landmarks for player avatars.
 ///
 /// Usage:
-///   dart run bin/migrate_face_landmarks.dart [--data-dir <path>]
+///   dart run bin/migrate_face_landmarks.dart [--data-dir <path>] [--all]
 ///
 /// Default data-dir is `data` (relative to CWD), matching server.dart.
 ///
 /// Behaviour:
 ///   1. Opens the SQLite database and runs migrations to ensure V5 is applied.
 ///   2. Checks that Python + mediapipe are available; exits 1 if not.
-///   3. Queries players WHERE face_landmarks IS NULL AND photo_path IS NOT NULL.
+///   3. Queries players that need processing:
+///      - Default (incremental): WHERE face_landmarks IS NULL AND
+///        photo_path IS NOT NULL — only processes avatars that don't
+///        already have landmarks. Idempotent and cheap to re-run.
+///      - With `--all` (or `-a`, or `--force`): WHERE photo_path IS NOT NULL
+///        — reprocesses EVERY player with a custom avatar, overwriting
+///        existing landmarks. Use when a better landmarker model has been
+///        dropped in and you want to regenerate the whole dataset.
 ///   4. For each, runs the MediaPipe sidecar and updates face_landmarks.
-///   5. Idempotent — re-running only processes still-null rows.
-///   6. Exits 0 even if individual detections failed (those rows stay null).
+///   5. Exits 0 even if individual detections failed (those rows stay
+///      unchanged in `--all` mode, or stay null in default mode).
 ///
 /// Sample output:
 ///   [1/3] player=abc-123  photo=alice.jpg  ... OK
@@ -32,10 +39,22 @@ import 'dart:convert';
 
 void main(List<String> args) async {
   final parser = ArgParser()
-    ..addOption('data-dir', abbr: 'd', defaultsTo: 'data');
+    ..addOption('data-dir', abbr: 'd', defaultsTo: 'data')
+    ..addFlag(
+      'all',
+      abbr: 'a',
+      negatable: false,
+      help:
+          'Reprocess EVERY player with a custom avatar, overwriting existing '
+          'landmarks. Use when a better landmarker model has been dropped in.',
+    )
+    // Alias so `--force` works the same as `--all` (matches common CLI
+    // conventions; users may reach for either name).
+    ..addFlag('force', negatable: false, hide: true);
 
   final results = parser.parse(args);
   final dataDir = results['data-dir'] as String;
+  final reprocessAll = (results['all'] as bool) || (results['force'] as bool);
   final dbPath = p.join(dataDir, 'dart_games.db');
 
   // Ensure data dir exists.
@@ -64,19 +83,32 @@ void main(List<String> args) async {
   // Query players that need processing.
   // photo_path IS NOT NULL means a custom avatar was uploaded
   // (the V1 baseline leaves photo_path NULL for players with no avatar).
+  // With --all/--force, also reprocesses rows that already have landmarks
+  // (e.g. when a better landmarker model has been dropped in).
+  final whereClause = reprocessAll
+      ? 'WHERE photo_path IS NOT NULL'
+      : 'WHERE face_landmarks IS NULL AND photo_path IS NOT NULL';
   final rows = db.select(
-    'SELECT id, photo_path FROM players '
-    "WHERE face_landmarks IS NULL AND photo_path IS NOT NULL;",
+    'SELECT id, photo_path FROM players $whereClause;',
   );
 
   final total = rows.length;
   if (total == 0) {
-    print('No players need face-landmark detection. Nothing to do.');
+    if (reprocessAll) {
+      print('No players have an uploaded avatar. Nothing to do.');
+    } else {
+      print('No players need face-landmark detection. Nothing to do.');
+    }
     database.close();
     exit(0);
   }
 
-  print('Found $total player(s) to process.\n');
+  if (reprocessAll) {
+    print('Reprocess mode (--all): re-running detection on $total player(s) '
+        'with custom avatars, overwriting existing landmarks.\n');
+  } else {
+    print('Found $total player(s) to process.\n');
+  }
 
   var updated = 0;
   var noFace = 0;
