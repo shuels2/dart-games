@@ -160,6 +160,28 @@ class ApiClient {
     await _delete('/api/v1/players/$id/photo');
   }
 
+  /// PATCH /api/v1/players/<id>/face-landmarks - Overwrite stored landmarks
+  /// with a manually-corrected payload. Returns the persisted landmarks.
+  Future<Map<String, dynamic>> updatePlayerFaceLandmarks(
+    String id,
+    Map<String, dynamic> landmarks,
+  ) async {
+    final response =
+        await _patch('/api/v1/players/$id/face-landmarks', landmarks);
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return (body['faceLandmarks'] as Map).cast<String, dynamic>();
+  }
+
+  /// POST /api/v1/players/<id>/face-landmarks/redetect - Re-run mediapipe on
+  /// the player's current photo and overwrite stored landmarks. Returns the
+  /// freshly-detected landmarks on success.
+  Future<Map<String, dynamic>> redetectPlayerFaceLandmarks(String id) async {
+    final response =
+        await _post('/api/v1/players/$id/face-landmarks/redetect', const {});
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return (body['faceLandmarks'] as Map).cast<String, dynamic>();
+  }
+
   /// POST /api/v1/players/<id>/history - Add game history entry.
   Future<Map<String, dynamic>> addPlayerHistory(
     String id,
@@ -383,6 +405,16 @@ class ApiClient {
 
   Future<http.Response> _put(String path, Map<String, dynamic> body) async {
     final response = await _client.put(
+      Uri.parse(ApiConfig.url(path)),
+      headers: _jsonHeaders(),
+      body: jsonEncode(body),
+    );
+    _checkResponse(response);
+    return response;
+  }
+
+  Future<http.Response> _patch(String path, Map<String, dynamic> body) async {
+    final response = await _client.patch(
       Uri.parse(ApiConfig.url(path)),
       headers: _jsonHeaders(),
       body: jsonEncode(body),

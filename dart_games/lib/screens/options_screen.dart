@@ -20,6 +20,8 @@ import 'api_logger_screen.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../widgets/player_avatar_widget.dart';
+import '../widgets/face_landmark_inspector/face_landmark_inspector.dart';
+import '../services/api/api_config.dart';
 import '../providers/dartboard_provider.dart';
 import '../build_info.dart';
 
@@ -665,6 +667,31 @@ class _OptionsScreenState extends State<OptionsScreen> {
     );
   }
 
+  /// Resolve the player's photo to an absolute URL the inspector's
+  /// Image.network can load. The server stores `photoPath` as the relative
+  /// API endpoint `/api/v1/players/<id>/photo`; ApiConfig knows the host.
+  String _photoUrlForInspector(Player player) {
+    final path = player.photoPath ?? '';
+    if (path.startsWith('http')) return path;
+    return ApiConfig.url(path);
+  }
+
+  void _showFaceLandmarkInspector(BuildContext context, Player player) {
+    final playerProvider = context.read<PlayerProvider>();
+    showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => FaceLandmarkInspector(
+        player: player,
+        photoUrl: _photoUrlForInspector(player),
+        onSave: (landmarks) =>
+            playerProvider.updateFaceLandmarks(player.id, landmarks),
+        onRedetect: () =>
+            playerProvider.redetectFaceLandmarks(player.id),
+      ),
+    );
+  }
+
   Future<void> _deletePlayer(BuildContext context, Player player) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -828,6 +855,12 @@ class _OptionsScreenState extends State<OptionsScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (player.photoPath != null)
+            IconButton(
+              icon: const Icon(Icons.face_retouching_natural, size: 20),
+              tooltip: 'Inspect / edit face mapping',
+              onPressed: () => _showFaceLandmarkInspector(context, player),
+            ),
           IconButton(
             icon: const Icon(Icons.edit, size: 20),
             tooltip: 'Edit player',

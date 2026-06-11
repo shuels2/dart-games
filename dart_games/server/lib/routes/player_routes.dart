@@ -63,6 +63,14 @@ class PlayerRoutes {
     // PUT /api/v1/players/<id>/stats - Update player stats
     router.put('/<id>/stats', _updateStats);
 
+    // PATCH /api/v1/players/<id>/face-landmarks - Overwrite stored landmarks
+    // with a manually-corrected payload from the inspector UI.
+    router.patch('/<id>/face-landmarks', _updateFaceLandmarks);
+
+    // POST /api/v1/players/<id>/face-landmarks/redetect - Re-run mediapipe
+    // on the player's current photo and overwrite the stored landmarks.
+    router.post('/<id>/face-landmarks/redetect', _redetectFaceLandmarks);
+
     return router;
   }
 
@@ -450,6 +458,136 @@ class PlayerRoutes {
     );
 
     return Response(204);
+  }
+
+  /// PATCH /<id>/face-landmarks — overwrite stored landmarks with a
+  /// manually-corrected payload. Body must be the full landmarks Map
+  /// (same shape mediapipe emits): boundingBox{x,y,width,height} +
+  /// leftEye/rightEye/noseTip/mouthCenter as {x,y} points. All numeric
+  /// values must be in 0..1; boundingBox width/height must be > 0.
+  ///
+  /// Returns 200 with the persisted landmarks on success.
+  Future<Response> _updateFaceLandmarks(Request request, String id) async {
+    if (!rowExists(_db, 'players', 'id = ?', [id])) {
+      return Response.notFound(
+        jsonEncode({'error': 'Player not found'}),
+        headers: _jsonHeaders,
+      );
+    }
+
+    final dynamic raw;
+    try {
+      raw = jsonDecode(await request.readAsString());
+    } catch (_) {
+      return Response(400,
+          body: jsonEncode({'error': 'Invalid JSON body'}),
+          headers: _jsonHeaders);
+    }
+    if (raw is! Map) {
+      return Response(400,
+          body: jsonEncode({'error': 'Body must be a JSON object'}),
+          headers: _jsonHeaders);
+    }
+    final body = Map<String, dynamic>.from(raw);
+
+    final error = _validateLandmarks(body);
+    if (error != null) {
+      return Response(400,
+          body: jsonEncode({'error': error}), headers: _jsonHeaders);
+    }
+
+    executeUpdate(
+      _db,
+      'UPDATE players SET face_landmarks = ? WHERE id = ?;',
+      [jsonEncode(body), id],
+    );
+
+    return Response.ok(
+      jsonEncode({'faceLandmarks': body}),
+      headers: _jsonHeaders,
+    );
+  }
+
+  /// POST /<id>/face-landmarks/redetect — re-run mediapipe on the player's
+  /// current `photo_path` and overwrite stored landmarks with the fresh
+  /// result. Synchronous (caller waits for detection).
+  ///
+  /// Returns 200 with the new landmarks on success, 404 if the player has
+  /// no photo, 503 if detection fails (no python, no face found, timeout).
+  Future<Response> _redetectFaceLandmarks(Request request, String id) async {
+    final rows = _db.select(
+      'SELECT photo_path FROM players WHERE id = ?;',
+      [id],
+    );
+    if (rows.isEmpty) {
+      return Response.notFound(
+        jsonEncode({'error': 'Player not found'}),
+        headers: _jsonHeaders,
+      );
+    }
+    final photoPath = rows.first['photo_path'] as String?;
+    if (photoPath == null || !File(photoPath).existsSync()) {
+      return Response.notFound(
+        jsonEncode({'error': 'Player has no photo to re-detect'}),
+        headers: _jsonHeaders,
+      );
+    }
+
+    final landmarks =
+        await FaceLandmarksService.instance.detectForImagePath(photoPath);
+    if (landmarks == null) {
+      return Response(503,
+          body: jsonEncode({
+            'error':
+                'Face landmarks detection failed (python unavailable, no face found, or timeout).'
+          }),
+          headers: _jsonHeaders);
+    }
+
+    executeUpdate(
+      _db,
+      'UPDATE players SET face_landmarks = ? WHERE id = ?;',
+      [jsonEncode(landmarks), id],
+    );
+
+    return Response.ok(
+      jsonEncode({'faceLandmarks': landmarks}),
+      headers: _jsonHeaders,
+    );
+  }
+
+  /// Returns an error message if the landmark payload is malformed, or
+  /// null if it's valid. The contract matches the mediapipe sidecar output
+  /// shape and the client-side `resolveAnchorPosition` consumer.
+  String? _validateLandmarks(Map<String, dynamic> m) {
+    String? checkPoint(String key) {
+      final v = m[key];
+      if (v is! Map) return '$key must be an object {x, y}';
+      final x = v['x'];
+      final y = v['y'];
+      if (x is! num || y is! num) return '$key.x and $key.y must be numbers';
+      if (x < 0 || x > 1 || y < 0 || y > 1) {
+        return '$key.x and $key.y must be in 0..1';
+      }
+      return null;
+    }
+
+    final bb = m['boundingBox'];
+    if (bb is! Map) return 'boundingBox must be an object';
+    for (final k in const ['x', 'y', 'width', 'height']) {
+      final v = bb[k];
+      if (v is! num) return 'boundingBox.$k must be a number';
+      if (v < 0 || v > 1) return 'boundingBox.$k must be in 0..1';
+    }
+    if ((bb['width'] as num) <= 0 || (bb['height'] as num) <= 0) {
+      return 'boundingBox width and height must be > 0';
+    }
+
+    for (final k in const ['leftEye', 'rightEye', 'noseTip', 'mouthCenter']) {
+      final err = checkPoint(k);
+      if (err != null) return err;
+    }
+    return null;
   }
 
   /// POST /<id>/history - Add a game history entry for a player.

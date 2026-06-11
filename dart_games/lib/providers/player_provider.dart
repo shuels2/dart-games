@@ -197,6 +197,39 @@ class PlayerProvider extends ChangeNotifier {
     _allPlayers = [...oldPlayers, ...newPlayers];
   }
 
+  /// Overwrite a player's face_landmarks (used by the face-mapping
+  /// inspector in System Settings). Writes through to the server, then
+  /// updates the in-memory Player and notifies listeners.
+  ///
+  /// On server failure the local state is left unchanged.
+  Future<void> updateFaceLandmarks(
+    String playerId,
+    Map<String, dynamic> landmarks,
+  ) async {
+    final persisted =
+        await _api.updatePlayerFaceLandmarks(playerId, landmarks);
+    final index = _allPlayers.indexWhere((p) => p.id == playerId);
+    if (index >= 0) {
+      _allPlayers[index] =
+          _allPlayers[index].copyWith(faceLandmarks: persisted);
+      notifyListeners();
+    }
+  }
+
+  /// Re-run mediapipe on the player's photo, replace stored landmarks
+  /// with the fresh result, and update local state. Returns the new
+  /// landmarks so the caller (e.g. the inspector) can refresh its UI.
+  Future<Map<String, dynamic>> redetectFaceLandmarks(String playerId) async {
+    final fresh = await _api.redetectPlayerFaceLandmarks(playerId);
+    final index = _allPlayers.indexWhere((p) => p.id == playerId);
+    if (index >= 0) {
+      _allPlayers[index] =
+          _allPlayers[index].copyWith(faceLandmarks: fresh);
+      notifyListeners();
+    }
+    return fresh;
+  }
+
   // Add or update a player
   Future<void> savePlayer(Player player) async {
     try {

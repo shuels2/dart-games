@@ -242,6 +242,37 @@ class MockApiServer {
       }
     }
 
+    // Face-landmarks routes (manual edit + redetect).
+    final landmarksMatch = RegExp(r'^/api/v1/players/([^/]+)/face-landmarks$')
+        .firstMatch(path);
+    if (landmarksMatch != null && method == 'PATCH') {
+      final id = landmarksMatch.group(1)!;
+      final idx = players.indexWhere((p) => p['id'] == id);
+      if (idx < 0) return http.Response('', 404);
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      players[idx]['faceLandmarks'] = body;
+      return _jsonResponse({'faceLandmarks': body});
+    }
+    final redetectMatch = RegExp(
+            r'^/api/v1/players/([^/]+)/face-landmarks/redetect$')
+        .firstMatch(path);
+    if (redetectMatch != null && method == 'POST') {
+      final id = redetectMatch.group(1)!;
+      final idx = players.indexWhere((p) => p['id'] == id);
+      if (idx < 0) return http.Response('', 404);
+      // Pretend mediapipe returned a canned set of landmarks.
+      const fresh = {
+        'boundingBox': {'x': 0.10, 'y': 0.10, 'width': 0.80, 'height': 0.80},
+        'leftEye': {'x': 0.30, 'y': 0.38},
+        'rightEye': {'x': 0.70, 'y': 0.38},
+        'noseTip': {'x': 0.50, 'y': 0.55},
+        'mouthCenter': {'x': 0.50, 'y': 0.70},
+        'confidence': 0.99,
+      };
+      players[idx]['faceLandmarks'] = fresh;
+      return _jsonResponse({'faceLandmarks': fresh});
+    }
+
     final playerMatch = RegExp(r'^/api/v1/players/([^/]+)$').firstMatch(path);
     if (playerMatch != null) {
       final id = playerMatch.group(1)!;
