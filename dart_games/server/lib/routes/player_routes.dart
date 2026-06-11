@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:image/image.dart' as img;
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
@@ -341,11 +343,12 @@ class PlayerRoutes {
 
     final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     final photoData = body['photoData'] as String;
-    final fileName = body['fileName'] as String;
-    final ext = p.extension(fileName).isNotEmpty ? p.extension(fileName) : '.jpg';
-
+    // We canonicalize EVERY upload to a 512x512 JPEG regardless of the
+    // client-suggested file name's extension, so the stored extension is
+    // always .jpg. This keeps every photo in the same shape for the
+    // circular avatar + for mediapipe's normalized coordinate space.
     final photosDir = _photosDir();
-    final filePath = p.join(photosDir, '$id$ext');
+    final filePath = p.join(photosDir, '$id.jpg');
 
     // Normalize and decode base64 (pad if needed, strip whitespace).
     var normalized = photoData.replaceAll(RegExp(r'\s+'), '');
@@ -354,7 +357,13 @@ class PlayerRoutes {
       normalized = normalized.padRight(normalized.length + (4 - remainder), '=');
     }
     final bytes = base64Decode(normalized);
-    File(filePath).writeAsBytesSync(bytes);
+
+    // Canonicalize: center-crop to 1:1, resize to 512x512, re-encode as JPEG.
+    // Decoding can return null for unsupported formats (e.g. HEIC); in that
+    // case we fall through to writing the raw bytes so the caller at least
+    // gets a usable file, mirroring pre-canonicalization behavior.
+    final canonicalBytes = _canonicalizePhoto(bytes);
+    File(filePath).writeAsBytesSync(canonicalBytes);
 
     // Update the player's photo_path in the database.
     executeUpdate(
@@ -554,6 +563,38 @@ class PlayerRoutes {
       jsonEncode({'faceLandmarks': landmarks}),
       headers: _jsonHeaders,
     );
+  }
+
+  /// Canonical avatar dimensions. Every stored photo lives at this size so
+  /// every circular avatar crops the same way and mediapipe's normalized
+  /// 0..1 coordinates mean the same thing across players.
+  static const int _kCanonicalAvatarSize = 512;
+  static const int _kCanonicalJpegQuality = 90;
+
+  /// Center-crop the image to 1:1 and resize to [_kCanonicalAvatarSize].
+  /// Returns the re-encoded JPEG bytes. If decoding fails (unsupported
+  /// format, corrupt bytes) the original bytes are returned unchanged so
+  /// the upload still produces a viewable file.
+  static List<int> _canonicalizePhoto(List<int> raw) {
+    final decoded = img.decodeImage(Uint8List.fromList(raw));
+    if (decoded == null) return raw;
+    final side = decoded.width < decoded.height ? decoded.width : decoded.height;
+    final cropX = (decoded.width - side) ~/ 2;
+    final cropY = (decoded.height - side) ~/ 2;
+    final cropped = img.copyCrop(
+      decoded,
+      x: cropX,
+      y: cropY,
+      width: side,
+      height: side,
+    );
+    final resized = img.copyResize(
+      cropped,
+      width: _kCanonicalAvatarSize,
+      height: _kCanonicalAvatarSize,
+      interpolation: img.Interpolation.cubic,
+    );
+    return img.encodeJpg(resized, quality: _kCanonicalJpegQuality);
   }
 
   /// Returns an error message if the landmark payload is malformed, or

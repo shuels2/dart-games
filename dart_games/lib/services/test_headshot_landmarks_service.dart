@@ -48,6 +48,66 @@ class TestHeadshotLandmarksService {
     return 'headshot-${(i + 1).toString().padLeft(2, '0')}.png';
   }
 
+  /// Transform a normalized (x, y) point that was measured against an
+  /// image of dimensions [oldW]x[oldH] into the coordinate space of that
+  /// same image AFTER a center-crop to 1:1 (followed by an arbitrary
+  /// uniform resize — normalization makes the resize a no-op).
+  ///
+  /// Coordinates that fall outside the cropped square clamp to [0, 1].
+  /// Used to migrate inspector-saved overrides when we re-canonicalize the
+  /// shipped test headshots.
+  static ({double x, double y}) cropToSquare(
+    double normX,
+    double normY, {
+    required int oldW,
+    required int oldH,
+  }) {
+    final side = oldW < oldH ? oldW : oldH;
+    final cropX = (oldW - side) / 2.0;
+    final cropY = (oldH - side) / 2.0;
+    final px = normX * oldW - cropX;
+    final py = normY * oldH - cropY;
+    final nx = (px / side).clamp(0.0, 1.0);
+    final ny = (py / side).clamp(0.0, 1.0);
+    return (x: nx, y: ny);
+  }
+
+  /// Apply [cropToSquare] to every landmark inside a single override entry.
+  /// Bounding box width/height are recomputed from the transformed corners.
+  static Map<String, dynamic> transformOverrideForCanonicalCrop(
+    Map<String, dynamic> override, {
+    required int oldW,
+    required int oldH,
+  }) {
+    final out = <String, dynamic>{};
+    override.forEach((key, value) {
+      if (key == 'boundingBox' && value is Map) {
+        final ox = (value['x'] as num).toDouble();
+        final oy = (value['y'] as num).toDouble();
+        final ow = (value['width'] as num).toDouble();
+        final oh = (value['height'] as num).toDouble();
+        final tl = cropToSquare(ox, oy, oldW: oldW, oldH: oldH);
+        final br = cropToSquare(ox + ow, oy + oh, oldW: oldW, oldH: oldH);
+        final newX = tl.x;
+        final newY = tl.y;
+        final newW = (br.x - tl.x).clamp(0.0, 1.0);
+        final newH = (br.y - tl.y).clamp(0.0, 1.0);
+        out[key] = {'x': newX, 'y': newY, 'width': newW, 'height': newH};
+      } else if (value is Map &&
+          value.containsKey('x') &&
+          value.containsKey('y')) {
+        final ox = (value['x'] as num).toDouble();
+        final oy = (value['y'] as num).toDouble();
+        final t = cropToSquare(ox, oy, oldW: oldW, oldH: oldH);
+        out[key] = {'x': t.x, 'y': t.y};
+      } else {
+        // Pass through scalar fields like `confidence`.
+        out[key] = value;
+      }
+    });
+    return out;
+  }
+
   /// Walks the canonical test-data player list and returns a JSON map
   /// of `headshot-NN.png → landmarks` for every player that
   ///   (a) currently exists in [allPlayers] (matched by name), and
