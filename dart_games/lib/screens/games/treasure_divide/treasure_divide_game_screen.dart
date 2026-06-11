@@ -511,7 +511,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             appBar: AppBar(
               leading: IconButton(
                 key: TreasureDivideGameKeys.backButton,
-                icon: const Icon(Icons.arrow_back, color: _sailWhite, size: 32),
+                icon: const Icon(Icons.arrow_back, color: _treasureGold, size: 32),
                 onPressed: () {
                   if (hasDartsThrown) {
                     setState(() => _showSaveModal = true);
@@ -526,7 +526,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               title: Text(
                 'TREASURE DIVIDE',
                 style: GoogleFonts.pirataOne(
-                  fontSize: 28,
+                  fontSize: 38,
                   color: _treasureGold,
                 ),
               ),

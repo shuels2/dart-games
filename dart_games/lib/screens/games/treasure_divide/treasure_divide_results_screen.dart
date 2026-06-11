@@ -158,7 +158,7 @@ class _TreasureDivideResultsScreenState
             automaticallyImplyLeading: false,
             title: Text(
               'TREASURE DIVIDE RESULTS',
-              style: GoogleFonts.pirataOne(fontSize: 24, color: _treasureGold),
+              style: GoogleFonts.pirataOne(fontSize: 34, color: _treasureGold),
             ),
             centerTitle: false,
             backgroundColor: _oceanTeal,

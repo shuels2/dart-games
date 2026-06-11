@@ -330,7 +330,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
     return AppBar(
       leading: IconButton(
         key: TreasureDivideMenuKeys.backButton,
-        icon: const Icon(Icons.arrow_back, color: _sailWhite, size: 32),
+        icon: const Icon(Icons.arrow_back, color: _treasureGold, size: 32),
         onPressed: () => Navigator.of(context).pop(),
         hoverColor: Colors.transparent,
         highlightColor: Colors.transparent,
@@ -338,7 +338,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
       ),
       title: Text(
         'TREASURE DIVIDE SETUP',
-        style: GoogleFonts.pirataOne(fontSize: 28, color: _treasureGold),
+        style: GoogleFonts.pirataOne(fontSize: 38, color: _treasureGold),
       ),
       centerTitle: false,
       backgroundColor: _oceanTeal,
@@ -378,7 +378,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
               child: Text(
                 "CAPTAIN'S LOG",
                 style: GoogleFonts.pirataOne(
-                  fontSize: 24,
+                  fontSize: 30,
                   color: _treasureGold,
                   letterSpacing: 1,
                 ),
@@ -389,7 +389,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
               child: Text(
                 '⚓ ════════════════ ⚓',
                 style: GoogleFonts.pirataOne(
-                  fontSize: 14,
+                  fontSize: 20,
                   color: _treasureGold.withOpacity(0.7),
                   letterSpacing: 2,
                 ),
@@ -498,7 +498,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
     return Text(
       text,
       style: GoogleFonts.pirataOne(
-        fontSize: 16,
+        fontSize: 22,
         color: _treasureGold,
       ),
     );
@@ -520,7 +520,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           Text(
             '$number ',
             style: GoogleFonts.merriweather(
-              fontSize: 13,
+              fontSize: 19,
               color: _treasureGold,
               fontWeight: FontWeight.w700,
             ),
@@ -529,7 +529,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
             child: Text(
               text,
               style: GoogleFonts.merriweather(
-                fontSize: 13,
+                fontSize: 19,
                 color: _sailWhite,
                 height: 1.5,
               ),
@@ -549,7 +549,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           Text(
             '• ',
             style: GoogleFonts.merriweather(
-                fontSize: 13, color: _sailWhite),
+                fontSize: 19, color: _sailWhite),
           ),
           Expanded(
             child: RichText(
@@ -558,7 +558,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                   TextSpan(
                     text: boldPart,
                     style: GoogleFonts.merriweather(
-                      fontSize: 13,
+                      fontSize: 19,
                       color: _treasureGold,
                       fontWeight: FontWeight.w700,
                     ),
@@ -566,7 +566,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                   TextSpan(
                     text: rest,
                     style: GoogleFonts.merriweather(
-                      fontSize: 13,
+                      fontSize: 19,
                       color: _sailWhite,
                       height: 1.4,
                     ),
@@ -638,7 +638,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           child: Text(
             'SET SAIL!',
             style: GoogleFonts.pirataOne(
-              fontSize: 22,
+              fontSize: 30,
               color: canStart ? _oceanTeal : _oceanTeal.withOpacity(0.5),
               letterSpacing: 1.5,
             ),
@@ -714,7 +714,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                   'Game Mode',
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.merriweather(
-                    fontSize: 13,
+                    fontSize: 19,
                     color: _sailWhite,
                   ),
                 ),
@@ -729,7 +729,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                     child: Text(
                       'SOLO',
                       style: GoogleFonts.merriweather(
-                        fontSize: 11,
+                        fontSize: 19,
                         fontWeight: FontWeight.w700,
                         color: !isTeam
                             ? _treasureGold
@@ -756,7 +756,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                     child: Text(
                       'TEAM',
                       style: GoogleFonts.merriweather(
-                        fontSize: 11,
+                        fontSize: 19,
                         fontWeight: FontWeight.w700,
                         color: isTeam
                             ? _treasureGold
@@ -778,7 +778,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                 Text(
                   'Crews',
                   style: GoogleFonts.merriweather(
-                    fontSize: 13,
+                    fontSize: 19,
                     color: _sailWhite.withOpacity(0.85),
                   ),
                 ),
@@ -787,7 +787,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                   value: _teamCount,
                   dropdownColor: const Color(0xFF005F5F),
                   style: GoogleFonts.merriweather(
-                    fontSize: 13,
+                    fontSize: 19,
                     color: _treasureGold,
                     fontWeight: FontWeight.w700,
                   ),
@@ -831,7 +831,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                   'Team Assignment',
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.merriweather(
-                    fontSize: 13,
+                    fontSize: 19,
                     color: _sailWhite,
                   ),
                 ),
@@ -848,7 +848,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                     child: Text(
                       'RANDOM',
                       style: GoogleFonts.merriweather(
-                        fontSize: 11,
+                        fontSize: 19,
                         fontWeight: FontWeight.w700,
                         color: !isManual
                             ? _treasureGold
@@ -879,7 +879,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
                     child: Text(
                       'MANUAL',
                       style: GoogleFonts.merriweather(
-                        fontSize: 11,
+                        fontSize: 19,
                         fontWeight: FontWeight.w700,
                         color: isManual
                             ? _treasureGold
@@ -907,7 +907,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           Text(
             'Rounds',
             style: GoogleFonts.merriweather(
-              fontSize: 14,
+              fontSize: 20,
               color: _sailWhite,
             ),
           ),
@@ -916,7 +916,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
             value: _numberOfRounds,
             dropdownColor: const Color(0xFF005F5F),
             style: GoogleFonts.merriweather(
-              fontSize: 15,
+              fontSize: 20,
               color: _treasureGold,
               fontWeight: FontWeight.w700,
             ),
@@ -948,7 +948,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
             child: Text(
               'Quarter It',
               style: GoogleFonts.merriweather(
-                fontSize: 14,
+                fontSize: 20,
                 color: _sailWhite,
               ),
               overflow: TextOverflow.ellipsis,
@@ -969,7 +969,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
               Text(
                 _quarterIt ? 'ON' : 'OFF',
                 style: GoogleFonts.merriweather(
-                  fontSize: 12,
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: _quarterIt
                       ? _treasureGold
@@ -995,7 +995,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
             child: Text(
               'Custom Targets',
               style: GoogleFonts.merriweather(
-                fontSize: 13,
+                fontSize: 19,
                 color: _sailWhite,
               ),
               overflow: TextOverflow.ellipsis,
@@ -1016,7 +1016,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
               Text(
                 _customTargets ? 'ON' : 'OFF',
                 style: GoogleFonts.merriweather(
-                  fontSize: 12,
+                  fontSize: 19,
                   fontWeight: FontWeight.w700,
                   color: _customTargets
                       ? _treasureGold
