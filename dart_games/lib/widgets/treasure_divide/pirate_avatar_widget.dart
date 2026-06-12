@@ -25,6 +25,16 @@ enum ThemeAccessoryAnchor {
   topRightCorner,
   bottomLeftCorner,
   bottomRightCorner,
+  // Upper-cheek placement under the left eye: x aligned to the left
+  // eye column, y at the midpoint between the left eye and nose tip.
+  // Used for sprites like the bosun scar that should sit directly
+  // below the eye rather than between the eye and nose horizontally.
+  leftEyeNoseMidpoint,
+  // 4 o'clock position on the inscribed circle of the avatar box —
+  // (0.5 + 0.5·sin120°, 0.5 − 0.5·cos120°) ≈ (0.933, 0.75). Useful
+  // for sprites that should perch on the lower-right edge of the
+  // avatar circle (e.g. bosun crab).
+  circleFourOClock,
 }
 
 // ─── Heuristic fallback positions (normalized 0..1) ─────────────────────────
@@ -40,6 +50,12 @@ const Map<ThemeAccessoryAnchor, Offset> _kHeuristicPositions = {
   ThemeAccessoryAnchor.topRightCorner: Offset(1.0, 0.0),
   ThemeAccessoryAnchor.bottomLeftCorner: Offset(0.0, 1.0),
   ThemeAccessoryAnchor.bottomRightCorner: Offset(1.0, 1.0),
+  // x = heuristic leftEye.x (0.40); y = midpoint of heuristic leftEye.y
+  // (0.40) and noseTip.y (0.55).
+  ThemeAccessoryAnchor.leftEyeNoseMidpoint: Offset(0.40, 0.475),
+  // (0.5 + 0.5·sin120°, 0.5 − 0.5·cos120°) — point on the inscribed
+  // circle at the 4 o'clock mark.
+  ThemeAccessoryAnchor.circleFourOClock: Offset(0.933, 0.75),
 };
 
 // ─── Per-theme accessory anchor map ─────────────────────────────────────────
@@ -53,12 +69,10 @@ const Map<ThemeAccessoryAnchor, Offset> _kHeuristicPositions = {
 ///                 parrot=topRightCorner (macaw peeking in from shoulder)
 /// - 1 First Mate: bandana=headTop (wraps forehead), monkey=topLeftCorner
 ///                 (spider monkey peeking in from upper-left)
-/// - 2 Bosun:      tricorn=headTop, crab=bottomLeftCorner (crab at lower frame
-///                 — spec says "perched on tricorn above headTop" but that would
-///                 require a derived anchor; bottomLeftCorner is used as a
-///                 simpler frame-corner so the crab is always visible without
-///                 needing a dynamic offset above headTop), scar=leftEye
-///                 (near-cheek scar; leftEye puts it in the right facial zone)
+/// - 2 Bosun:      tricorn=headTop, crab=circleFourOClock (perched on the
+///                 lower-right edge of the avatar circle at the 4 o'clock
+///                 mark), scar=leftEyeNoseMidpoint (sits on the upper cheek
+///                 directly below the left eye)
 /// - 3 Navigator:  sailor_cap=headTop, monocle=rightEye, compass=bottomRightCorner
 /// - 4 Lookout:    bandana=headTop, telescope=topRightCorner (scope extends
 ///                 toward upper-right — matches spec "upper-right frame edge")
@@ -81,8 +95,8 @@ const Map<int, List<ThemeAccessoryAnchor>> kThemeAccessoryAnchors = {
   ],
   2: [
     ThemeAccessoryAnchor.headTop,
-    ThemeAccessoryAnchor.bottomLeftCorner,
-    ThemeAccessoryAnchor.leftEye,
+    ThemeAccessoryAnchor.circleFourOClock,
+    ThemeAccessoryAnchor.leftEyeNoseMidpoint,
   ],
   3: [
     ThemeAccessoryAnchor.headTop,
@@ -111,11 +125,16 @@ const Map<int, List<ThemeAccessoryAnchor>> kThemeAccessoryAnchors = {
 
 // ─── Corner anchors set (used to decide accessory sizing) ────────────────────
 
+// "Corner" here means "always heuristic + uses the corner sizing
+// rule (size × 0.30 instead of 0.35)" — the geometric notion is
+// looser; circleFourOClock isn't a box corner but it's frame-relative
+// (independent of face landmarks) so it goes in this set.
 const _kCornerAnchors = {
   ThemeAccessoryAnchor.topLeftCorner,
   ThemeAccessoryAnchor.topRightCorner,
   ThemeAccessoryAnchor.bottomLeftCorner,
   ThemeAccessoryAnchor.bottomRightCorner,
+  ThemeAccessoryAnchor.circleFourOClock,
 };
 
 // ─── Per-accessory size overrides ────────────────────────────────────────────
@@ -136,6 +155,11 @@ const Map<int, Map<int, double>> kThemeAccessorySizeMultipliers = {
   // Eyepatch reduced 30% — the source art renders larger than the
   // surrounding eye area at the default 0.35 ratio.
   0: {1: 0.70},
+  // Bosun (theme 2):
+  //   crab (1) — 1.5× the corner-anchor base (0.30 × avatarSize) so
+  //              the critter perched at the 4 o'clock mark reads
+  //              clearly at the avatar circle's edge.
+  2: {1: 1.5},
 };
 
 /// Per-(theme, accessory) position nudge, in units of the accessory's
@@ -159,6 +183,21 @@ const Map<int, Map<int, Offset>> kThemeAccessoryOffsetMultipliers = {
   0: {
     0: Offset(0.08, -0.10),
     2: Offset(-0.30, 0.30),
+  },
+  // Bosun (theme 2):
+  //   tricorn (0) — right 5%, up 5% of its own size — tuned closer to
+  //                 the head than the captain hat since the tricorn's
+  //                 wider profile and asymmetric peak read better when
+  //                 it sits nearer the forehead.
+  //   crab (1)    — pulled left 20% (into the circle from the 4 o'clock
+  //                 edge) and down 10% of its own size.
+  //   scar (2)    — right 20%, down 15% of its own size — slid off the
+  //                 eye column toward the cheekbone so it doesn't sit
+  //                 directly under the iris.
+  2: {
+    0: Offset(0.05, -0.05),
+    1: Offset(-0.20, 0.10),
+    2: Offset(0.20, 0.15),
   },
 };
 
@@ -200,6 +239,16 @@ const Map<int, Map<int, double>> kThemeAccessoryFaceWidthScale = {
   // overhangs ~30% past each side of the face). Tracks head width
   // automatically — wide-faced players get a proportionally wider hat.
   0: {0: 1.6},
+  // Bosun (theme 2):
+  //   tricorn (0) — 1.36× face-width (15% smaller than the captain
+  //                 hat at 1.6) since the tricorn art has more vertical
+  //                 mass and looked oversized at the captain's scale.
+  //   scar (2)    — 0.25× face-width so the scar's box spans 25% of
+  //                 the player's actual face bbox width.
+  2: {
+    0: 1.36,
+    2: 0.25,
+  },
 };
 
 // ─── Anchor position resolver ────────────────────────────────────────────────
@@ -289,11 +338,28 @@ Offset resolveAnchorPosition(
         }
         return _kHeuristicPositions[anchor]!;
 
-      // Corner anchors handled above; listed here so the switch is exhaustive.
+      case ThemeAccessoryAnchor.leftEyeNoseMidpoint:
+        // Upper-cheek under the left eye: x = leftEye.x (so the
+        // sprite is column-aligned with the eye), y = midpoint between
+        // leftEye.y and noseTip.y. Used for the bosun scar. Falls
+        // back to the heuristic when either landmark is missing.
+        final eye = landmarks['leftEye'] as Map<String, dynamic>?;
+        final nose = landmarks['noseTip'] as Map<String, dynamic>?;
+        if (eye != null && nose != null) {
+          final ex = (eye['x'] as num).toDouble();
+          final ey = (eye['y'] as num).toDouble();
+          final ny = (nose['y'] as num).toDouble();
+          return Offset(ex, (ey + ny) / 2);
+        }
+        return _kHeuristicPositions[anchor]!;
+
+      // Frame-relative anchors handled by the early-return above;
+      // listed here so the switch is exhaustive.
       case ThemeAccessoryAnchor.topLeftCorner:
       case ThemeAccessoryAnchor.topRightCorner:
       case ThemeAccessoryAnchor.bottomLeftCorner:
       case ThemeAccessoryAnchor.bottomRightCorner:
+      case ThemeAccessoryAnchor.circleFourOClock:
         return _kHeuristicPositions[anchor]!;
     }
   } catch (_) {
