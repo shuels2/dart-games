@@ -312,9 +312,23 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
               clipBehavior: Clip.none,
               children: [
                 // ── Layer 1: Background map image ─────────────────────────
+                // ResizeImage caps the decoded raster. The source is
+                // 1245×702 (~3.5 MB RGBA decoded) and on hi-DPI displays
+                // Flutter can hold an even larger upscaled bitmap. The
+                // map fills at most ~1200×680 logical pixels, so 1024×576
+                // (matching the source aspect) gives the engine just
+                // enough resolution while keeping each map raster bounded
+                // to ~2.4 MB. Provider is `const` so it's stable across
+                // every parent rebuild (every dart throw fires setState).
                 Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/treasure_divide/pieces/TreasureMap.png',
+                  child: Image(
+                    image: const ResizeImage(
+                      AssetImage(
+                          'assets/games/treasure_divide/pieces/TreasureMap.png'),
+                      width: 1024,
+                      height: 576,
+                      policy: ResizeImagePolicy.fit,
+                    ),
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => Container(
                       decoration: BoxDecoration(

@@ -354,6 +354,35 @@ class PirateAvatarWidget extends StatelessWidget {
     this.isActive = false,
   });
 
+  // ─── Accessory ImageProvider cache ──────────────────────────────────────────
+  //
+  // Each accessory PNG is wrapped in
+  //   ResizeImage(AssetImage(path), width: 256, height: 256, policy: fit)
+  // The wrapped provider is keyed by asset path and memoized for the
+  // lifetime of the process. Without this, every PirateAvatarWidget.build()
+  // — and the gameplay screen rebuilds via setState on every dart throw,
+  // touching every visible avatar — allocates fresh AssetImage + ResizeImage
+  // instances. While ImageProvider.== is defined on both classes (so the
+  // image cache would still hit), the per-frame allocation churn of up to
+  // 8 players × 2-3 accessories = ~24 throwaway provider chains per setState
+  // contributed to CanvasKit wasm-heap pressure that surfaces as
+  // RuntimeError: Aborted() inside PictureRecorder. Memoizing keeps a
+  // single canonical instance per asset path so Image widgets reuse the
+  // exact same key and stream listener registration across rebuilds.
+  static final Map<String, ImageProvider> _accessoryProviderCache = {};
+
+  static ImageProvider _accessoryProvider(String assetPath) {
+    return _accessoryProviderCache.putIfAbsent(
+      assetPath,
+      () => ResizeImage(
+        AssetImage(assetPath),
+        width: 256,
+        height: 256,
+        policy: ResizeImagePolicy.fit,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final paths = kThemeAccessoryPaths[themeIndex] ?? [];
@@ -486,12 +515,13 @@ class PirateAvatarWidget extends StatelessWidget {
         // accessories (e.g. captain hat 922×567) would otherwise decode
         // as a squished 256×256 bitmap and BoxFit.contain can't recover
         // the original aspect from a pre-distorted source.
-        image: ResizeImage(
-          AssetImage(assetPath),
-          width: 256,
-          height: 256,
-          policy: ResizeImagePolicy.fit,
-        ),
+        //
+        // The provider itself is fetched from a static memoization cache
+        // (see [_accessoryProvider]) so up to ~24 accessory layers across
+        // 8 player tiles don't allocate fresh provider chains on every
+        // parent setState (each dart throw rebuilds the whole gameplay
+        // screen).
+        image: _accessoryProvider(assetPath),
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => const SizedBox.shrink(),
       ),

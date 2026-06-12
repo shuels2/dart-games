@@ -17,12 +17,33 @@ class PlayerAvatarWidget extends StatelessWidget {
     this.isHighlighted = false,
   });
 
+  // ─── Photo ImageProvider cache ──────────────────────────────────────────────
+  //
+  // Memoize the ResizeImage(NetworkImage|FileImage(photoPath)) wrapper by
+  // photoPath. Without this, every PlayerAvatarWidget.build() — and the
+  // gameplay screens rebuild via setState on every dart throw, touching
+  // every visible avatar (up to 8 in Treasure Divide) — allocates fresh
+  // NetworkImage + ResizeImage instances. While ImageProvider equality is
+  // defined for both classes (so the image cache would still hit on key
+  // lookup), repeated provider chain allocation + repeated Image-widget
+  // stream-listener registration churn under heavy avatar density was
+  // contributing to CanvasKit wasm-heap pressure that surfaces as
+  // RuntimeError: Aborted() inside PictureRecorder. Memoization keeps one
+  // canonical provider per (platform, photoPath) so Image widgets share
+  // the same listener registration across rebuilds.
+  static final Map<String, ImageProvider> _photoProviderCache = {};
+
+  static ImageProvider _resolvePhotoProvider(String photoPath) {
+    return _photoProviderCache.putIfAbsent(photoPath, () {
+      final ImageProvider raw = kIsWeb
+          ? NetworkImage(photoPath)
+          : FileImage(File(photoPath));
+      return ResizeImage(raw, width: 512, height: 512);
+    });
+  }
+
   ImageProvider? _getImageProvider() {
     if (player.photoPath == null) return null;
-
-    final ImageProvider raw = kIsWeb
-        ? NetworkImage(player.photoPath!)
-        : FileImage(File(player.photoPath!));
 
     // Cap the decoded bitmap dimensions. Without this, an uploaded 2250x1500
     // headshot decodes to ~13MB of pixel data and can exhaust the CanvasKit
@@ -36,7 +57,7 @@ class PlayerAvatarWidget extends StatelessWidget {
     // smaller than the new 300px Treasure Divide active avatar, which
     // forced upscaling and lost crispness even though it didn't cause the
     // abort by itself.
-    return ResizeImage(raw, width: 512, height: 512);
+    return _resolvePhotoProvider(player.photoPath!);
   }
 
   @override

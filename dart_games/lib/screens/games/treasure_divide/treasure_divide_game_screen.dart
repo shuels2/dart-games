@@ -596,10 +596,24 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             ),
             body: Stack(
               children: [
-                // Background image
+                // Background image — capped at 1280×512 to bound the
+                // decoded raster. The source ships at 1584×588 (~3.7 MB
+                // RGBA decoded) and on hi-DPI displays Flutter can keep
+                // an even larger upscaled bitmap resident. Capping keeps
+                // this single full-screen layer under ~2.6 MB.
+                // Provider is `const` so the same instance is reused
+                // across every Scaffold rebuild (every dart throw fires
+                // setState) — no allocation churn through the image
+                // cache.
                 Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/treasure_divide/images/TreasureDivide-Background.png',
+                  child: Image(
+                    image: const ResizeImage(
+                      AssetImage(
+                          'assets/games/treasure_divide/images/TreasureDivide-Background.png'),
+                      width: 1280,
+                      height: 512,
+                      policy: ResizeImagePolicy.fit,
+                    ),
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
                         Container(color: _oceanTeal),
