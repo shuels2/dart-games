@@ -118,6 +118,84 @@ const _kCornerAnchors = {
   ThemeAccessoryAnchor.bottomRightCorner,
 };
 
+// ─── Per-accessory size overrides ────────────────────────────────────────────
+
+/// Multiplier applied to the default accessory size, keyed by theme
+/// index then accessory index (matching the order in
+/// [kThemeAccessoryPaths] / [kThemeAccessoryAnchors]).
+///
+/// Default base size: `size * 0.35` (face-anchored) or `size * 0.30`
+/// (corner-anchored). Each entry below scales that base by the listed
+/// factor. Missing entries use 1.0 (no change).
+///
+/// Use this when a specific sprite needs to be tuned smaller/larger
+/// without changing the global formula — keeps the rest of the themes
+/// untouched. Add one row per (theme, accessory) you've tuned.
+const Map<int, Map<int, double>> kThemeAccessorySizeMultipliers = {
+  // Captain (theme 0): hat, eyepatch, parrot.
+  // Eyepatch reduced 30% — the source art renders larger than the
+  // surrounding eye area at the default 0.35 ratio.
+  0: {1: 0.70},
+};
+
+/// Per-(theme, accessory) position nudge, in units of the accessory's
+/// own size. `Offset(-0.5, 0.5)` means shift left by 50% of the
+/// sprite's width and down by 50% of its height.
+///
+/// Applied AFTER the standard anchor-based positioning (which centers
+/// the sprite on its resolved anchor point). Use it for finishing
+/// touches — e.g. pulling a corner-anchored sprite inward so part of
+/// it overlaps the avatar circle.
+///
+/// Missing entries default to `Offset.zero` (no nudge).
+const Map<int, Map<int, Offset>> kThemeAccessoryOffsetMultipliers = {
+  // Captain parrot — pulled inward toward the upper-right of the
+  // avatar circle so it peeks out from behind. Originally -0.5/+0.5
+  // (full half-step inward) which hid too much of the bird; bumped
+  // 20% back toward the corner (up + right) to expose more.
+  0: {2: Offset(-0.30, 0.30)},
+};
+
+/// Set of accessories rendered BEHIND the base avatar (between the
+/// optional glow ring and the avatar's ClipOval), keyed by theme
+/// index. Accessories listed here paint first; the round avatar then
+/// paints on top of them, hiding the portion that falls inside the
+/// circle — so the sprite looks like it's emerging from behind the
+/// avatar.
+///
+/// Missing entries (or themes not listed) render in front of the
+/// avatar as usual.
+const Map<int, Set<int>> kAccessoriesBehindAvatar = {
+  // Captain parrot — sits behind the avatar so the bird looks like
+  // it's poking out from the upper-right of the circle.
+  0: {2},
+};
+
+/// Per-(theme, accessory) face-width scaling. When an entry exists
+/// AND the player has a face bounding box, the accessory's base size
+/// is `faceWidth * avatarSize * scale` — so it tracks the player's
+/// actual head width instead of the fixed 0.30 / 0.35 avatar-relative
+/// ratio. Useful for hats, bandanas, hoods, etc. that need to match
+/// the head, not the avatar frame.
+///
+/// Scale semantics:
+///   1.0 → sprite width equals the face bounding-box width exactly
+///   1.1 → sprite extends 5% beyond the face on each side (brim)
+///   0.9 → sprite is 90% of face width
+///
+/// Falls back to the standard `baseSize` formula when no entry is
+/// configured or no bounding box is available. The
+/// [kThemeAccessorySizeMultipliers] value is still applied on top,
+/// so you can dial a face-width-scaled sprite a touch larger/smaller
+/// without changing the head-width baseline.
+const Map<int, Map<int, double>> kThemeAccessoryFaceWidthScale = {
+  // Captain hat — scaled to the player's actual head width so wide
+  // faces get a wider hat and narrow faces get a narrower one.
+  // Starting at 1.0 (hat brim matches face width); tune up for more
+  // brim overhang or down for a cap that sits inside the head outline.
+  0: {0: 1.0},
+};
+
 // ─── Anchor position resolver ────────────────────────────────────────────────
 
 /// Returns a normalized [Offset] (x, y in 0..1) for [anchor].
@@ -278,6 +356,8 @@ class PirateAvatarWidget extends StatelessWidget {
 
     // Clamp to the shorter list in case of mismatch (defensive).
     final count = paths.length < anchors.length ? paths.length : anchors.length;
+    final behindSet =
+        kAccessoriesBehindAvatar[themeIndex] ?? const <int>{};
 
     return RepaintBoundary(
       child: SizedBox.square(
@@ -302,6 +382,14 @@ class PirateAvatarWidget extends StatelessWidget {
                 ),
               ),
 
+            // ── Accessories that render BEHIND the avatar ─────────────────────
+            // Painted before the ClipOval so the portion overlapping the
+            // circle is covered, making the sprite look like it's emerging
+            // from behind the avatar.
+            for (int i = 0; i < count; i++)
+              if (behindSet.contains(i))
+                _buildAccessoryLayer(i, paths[i], anchors[i], landmarks),
+
             // ── Base avatar ───────────────────────────────────────────────────
             Positioned.fill(
               child: ClipOval(
@@ -313,9 +401,10 @@ class PirateAvatarWidget extends StatelessWidget {
               ),
             ),
 
-            // ── Accessory layers ──────────────────────────────────────────────
+            // ── Accessories that render IN FRONT of the avatar ────────────────
             for (int i = 0; i < count; i++)
-              _buildAccessoryLayer(paths[i], anchors[i], landmarks),
+              if (!behindSet.contains(i))
+                _buildAccessoryLayer(i, paths[i], anchors[i], landmarks),
           ],
         ),
       ),
@@ -323,24 +412,74 @@ class PirateAvatarWidget extends StatelessWidget {
   }
 
   Widget _buildAccessoryLayer(
+    int accessoryIndex,
     String assetPath,
     ThemeAccessoryAnchor anchor,
     Map<String, dynamic>? landmarks,
   ) {
     final isCorner = _kCornerAnchors.contains(anchor);
-    final accSize = isCorner ? size * 0.30 : size * 0.35;
+    // Pull the face bounding-box width if we have landmarks — used by
+    // face-width-scaled accessories (hats, bandanas) so the sprite
+    // matches the actual head, not the avatar frame.
+    double? faceWidth;
+    if (landmarks != null) {
+      try {
+        final bb = landmarks['boundingBox'] as Map<String, dynamic>?;
+        faceWidth = (bb?['width'] as num?)?.toDouble();
+      } catch (_) {
+        faceWidth = null;
+      }
+    }
+    final faceWidthScale =
+        kThemeAccessoryFaceWidthScale[themeIndex]?[accessoryIndex];
+    final double baseSize;
+    if (faceWidthScale != null && faceWidth != null && faceWidth > 0) {
+      // Head-width scaling — sprite tracks the player's actual face
+      // width regardless of avatar pixel size.
+      baseSize = faceWidth * size * faceWidthScale;
+    } else {
+      baseSize = isCorner ? size * 0.30 : size * 0.35;
+    }
+    // Per-(theme, accessory) size override — defaults to 1.0 (no change).
+    // Applied as a fine-tune on top of whichever base sizing strategy
+    // ran above.
+    final multiplier =
+        kThemeAccessorySizeMultipliers[themeIndex]?[accessoryIndex] ?? 1.0;
+    final accSize = baseSize * multiplier;
     final normalizedPos = resolveAnchorPosition(anchor, landmarks);
+    // Per-(theme, accessory) position nudge, in units of the sprite's
+    // own size — applied AFTER centering on the anchor.
+    final offsetMultiplier =
+        kThemeAccessoryOffsetMultipliers[themeIndex]?[accessoryIndex] ??
+            Offset.zero;
 
-    final left = normalizedPos.dx * size - accSize / 2;
-    final top = normalizedPos.dy * size - accSize / 2;
+    final left = normalizedPos.dx * size -
+        accSize / 2 +
+        offsetMultiplier.dx * accSize;
+    final top = normalizedPos.dy * size -
+        accSize / 2 +
+        offsetMultiplier.dy * accSize;
 
     return Positioned(
       left: left,
       top: top,
       width: accSize,
       height: accSize,
-      child: Image.asset(
-        assetPath,
+      child: Image(
+        // Cap the decoded bitmap dimensions of accessory PNGs. The source
+        // art ships at 600–950 px on the long edge (parrot is 897×935 →
+        // ~3.4 MB of pixel data decoded as RGBA). With up to 8 players
+        // rendering 2–3 accessories each, the uncapped decode pool can
+        // exhaust the CanvasKit wasm heap and trigger RuntimeError:
+        // Aborted() inside PictureRecorder. The on-screen accessory is
+        // 30–35% of the avatar size (≤ 110px logical for the 300px active
+        // avatar), so 256px gives ~2× headroom for hi-DPI without keeping
+        // multi-MB rasters resident.
+        image: ResizeImage(
+          AssetImage(assetPath),
+          width: 256,
+          height: 256,
+        ),
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => const SizedBox.shrink(),
       ),

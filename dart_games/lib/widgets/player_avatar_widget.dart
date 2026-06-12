@@ -28,9 +28,15 @@ class PlayerAvatarWidget extends StatelessWidget {
     // headshot decodes to ~13MB of pixel data and can exhaust the CanvasKit
     // wasm heap when several avatars render together — the symptom is a
     // RuntimeError: Aborted() inside PictureRecorder on every frame.
-    // 256px is roughly 3x our largest on-screen avatar (80px) — plenty of
-    // headroom for hi-DPI while keeping memory bounded.
-    return ResizeImage(raw, width: 256, height: 256);
+    //
+    // 512px is ~2x the largest on-screen avatar (Treasure Divide active
+    // player is 300px logical) — enough headroom for hi-DPI rendering while
+    // keeping a single decoded headshot bounded to ~1MB of pixel data.
+    // The previous cap was 256 (sized for an 80px max display) and became
+    // smaller than the new 300px Treasure Divide active avatar, which
+    // forced upscaling and lost crispness even though it didn't cause the
+    // abort by itself.
+    return ResizeImage(raw, width: 512, height: 512);
   }
 
   @override

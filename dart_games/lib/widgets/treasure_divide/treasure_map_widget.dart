@@ -267,31 +267,45 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
         _islandCoordsByRoundCount[9]!;
   }
 
-  /// 4-corner Plank Brown outline shadow — matches other games' style.
-  List<Shadow> _outlineShadow(Color color) => [
-        Shadow(color: color, offset: const Offset(1, 1), blurRadius: 0),
-        Shadow(color: color, offset: const Offset(-1, -1), blurRadius: 0),
-        Shadow(color: color, offset: const Offset(1, -1), blurRadius: 0),
-        Shadow(color: color, offset: const Offset(-1, 1), blurRadius: 0),
-      ];
+  // Native pixel dimensions of TreasureMap.png. The Stack is sized to match
+  // this aspect ratio so the BoxFit.contain image fills the Stack edge to
+  // edge with no letterboxing — that's what keeps target markers and the
+  // rope path on the visible map at any screen size.
+  static const double _kMapImageWidth = 1245.0;
+  static const double _kMapImageHeight = 702.0;
+  static const double _kMapAspect = _kMapImageWidth / _kMapImageHeight;
 
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Cap the upper bound only — clamping a LOWER bound here makes the
-          // SizedBox claim more space than the parent provides, which fires a
-          // RenderFlex-overflow assertion every frame inside the game-screen
-          // Row (caught while authoring the gameplay UI test pack).
-          final w = constraints.maxWidth > 1200.0 ? 1200.0 : constraints.maxWidth;
-          final h = constraints.maxHeight > 900.0 ? 900.0 : constraints.maxHeight;
+          // Cap available area at 1200x900 (matches prior behavior — keeps
+          // the map from ballooning on very large screens).
+          final maxW =
+              constraints.maxWidth > 1200.0 ? 1200.0 : constraints.maxWidth;
+          final maxH =
+              constraints.maxHeight > 900.0 ? 900.0 : constraints.maxHeight;
+          // Largest size that fits within (maxW, maxH) and matches the
+          // map's native aspect ratio. With the Stack aspect-locked to the
+          // image, the image fills the Stack without letterboxing, so the
+          // percentage-based coords for islands and rope land where they
+          // should on the actual map graphic.
+          double w, h;
+          if (maxW / maxH > _kMapAspect) {
+            h = maxH;
+            w = h * _kMapAspect;
+          } else {
+            w = maxW;
+            h = w / _kMapAspect;
+          }
 
           final coords = _getCoords();
           final safeIndex =
               widget.currentRoundIndex.clamp(0, widget.numberOfRounds - 1);
 
-          return SizedBox(
+          return Center(
+            child: SizedBox(
             width: w,
             height: h,
             child: Stack(
@@ -519,7 +533,21 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                         style: GoogleFonts.pirataOne(
                           fontSize: (w * 0.045).clamp(16.0, 48.0),
                           color: widget.treasureGold,
-                          shadows: _outlineShadow(widget.plankBrown),
+                          // Matches the signature Treasure Divide title
+                          // effect used on the setup / menu screens: dark
+                          // drop shadow + ocean-teal glow.
+                          shadows: const [
+                            Shadow(
+                              color: Color(0xCC000000),
+                              offset: Offset(2, 2),
+                              blurRadius: 4,
+                            ),
+                            Shadow(
+                              color: Color(0xAA008B8B),
+                              offset: Offset(0, 0),
+                              blurRadius: 10,
+                            ),
+                          ],
                         ),
                       );
                     }(),
@@ -527,19 +555,30 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                 ),
 
                 // ── Layer 7: Optional chest image (lower-right) ───────────
+                // ResizeImage caps the decoded bitmap. The chest PNGs ship
+                // at ~957×927 (≈3.5 MB RGBA decoded each) and three
+                // variants (Empty/Halved/Full) can sit in the image cache.
+                // The display is `w * 0.22` (≈ 264 px for a 1200 px map),
+                // so 512 px gives 2× hi-DPI headroom while keeping each
+                // chest bounded to ~1 MB of pixel data.
                 if (widget.chestImagePath != null)
                   Positioned(
                     right: w * 0.02,
                     bottom: h * 0.02,
                     width: w * 0.22,
                     height: h * 0.30,
-                    child: Image.asset(
-                      widget.chestImagePath!,
+                    child: Image(
+                      image: ResizeImage(
+                        AssetImage(widget.chestImagePath!),
+                        width: 512,
+                        height: 512,
+                      ),
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
                   ),
               ],
+            ),
             ),
           );
         },

@@ -770,4 +770,31 @@ class BuffToggleButtonConfig {
       ),
     );
   }
+
+  /// Treasure Divide theme-preview toggle styling. Used by the emulator-only
+  /// theme picker that overrides every player's pirate theme for sprite
+  /// placement debugging — game logic is unaffected.
+  factory BuffToggleButtonConfig.treasureDivide() {
+    const treasureGold = Color(0xFFFFD700);
+    const oceanTeal = Color(0xFF008B8B);
+    const plankBrown = Color(0xFF8B6914);
+    const sailWhite = Color(0xFFFFF8E7);
+    return BuffToggleButtonConfig(
+      activeBackgroundColor: treasureGold,
+      inactiveBackgroundColor: oceanTeal.withOpacity(0.35),
+      borderColor: plankBrown,
+      activeTextStyle: GoogleFonts.pirataOne(
+        fontSize: 11,
+        letterSpacing: 0.5,
+        height: 1.1,
+        color: oceanTeal,
+      ),
+      inactiveTextStyle: GoogleFonts.pirataOne(
+        fontSize: 11,
+        letterSpacing: 0.5,
+        height: 1.1,
+        color: sailWhite,
+      ),
+    );
+  }
 }
