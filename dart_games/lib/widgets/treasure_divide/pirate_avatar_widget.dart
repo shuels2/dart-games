@@ -35,6 +35,12 @@ enum ThemeAccessoryAnchor {
   // for sprites that should perch on the lower-right edge of the
   // avatar circle (e.g. bosun crab).
   circleFourOClock,
+  // 5 o'clock position on the inscribed circle — (0.5 + 0.5·sin150°,
+  // 0.5 − 0.5·cos150°) ≈ (0.75, 0.933). Lower-right of the circle,
+  // closer to 6 o'clock than the 4 o'clock anchor. Used for sprites
+  // that should sit near the bottom-right curve of the avatar (e.g.
+  // gunner cannonball).
+  circleFiveOClock,
 }
 
 // ─── Heuristic fallback positions (normalized 0..1) ─────────────────────────
@@ -56,6 +62,9 @@ const Map<ThemeAccessoryAnchor, Offset> _kHeuristicPositions = {
   // (0.5 + 0.5·sin120°, 0.5 − 0.5·cos120°) — point on the inscribed
   // circle at the 4 o'clock mark.
   ThemeAccessoryAnchor.circleFourOClock: Offset(0.933, 0.75),
+  // (0.5 + 0.5·sin150°, 0.5 − 0.5·cos150°) — point on the inscribed
+  // circle at the 5 o'clock mark.
+  ThemeAccessoryAnchor.circleFiveOClock: Offset(0.75, 0.933),
 };
 
 // ─── Per-theme accessory anchor map ─────────────────────────────────────────
@@ -80,7 +89,9 @@ const Map<ThemeAccessoryAnchor, Offset> _kHeuristicPositions = {
 ///                 raised to the eye)
 /// - 5 Cook:       chef_hat=headTop, neckerchief=chinBottom (under jaw),
 ///                 spoon=bottomLeftCorner (peeking from lower-left)
-/// - 6 Gunner:     floppy_hat=headTop, cannonball=bottomRightCorner
+/// - 6 Gunner:     floppy_hat=headTop, cannonball=circleFiveOClock (centered
+///                 on the lower-right curve of the avatar circle, between the
+///                 4 o'clock and 6 o'clock marks)
 /// - 7 Cabin Boy:  tiny_cap=headTop, seahorse=bottomLeftCorner (spec says
 ///                 lower-right but bottomLeftCorner avoids collision with
 ///                 freckles centered on noseTip), freckles=noseTip (between
@@ -116,7 +127,7 @@ const Map<int, List<ThemeAccessoryAnchor>> kThemeAccessoryAnchors = {
   ],
   6: [
     ThemeAccessoryAnchor.headTop,
-    ThemeAccessoryAnchor.bottomRightCorner,
+    ThemeAccessoryAnchor.circleFiveOClock,
   ],
   7: [
     ThemeAccessoryAnchor.headTop,
@@ -137,6 +148,7 @@ const _kCornerAnchors = {
   ThemeAccessoryAnchor.bottomLeftCorner,
   ThemeAccessoryAnchor.bottomRightCorner,
   ThemeAccessoryAnchor.circleFourOClock,
+  ThemeAccessoryAnchor.circleFiveOClock,
 };
 
 // ─── Per-accessory size overrides ────────────────────────────────────────────
@@ -166,6 +178,11 @@ const Map<int, Map<int, double>> kThemeAccessorySizeMultipliers = {
   //   telescope (1) — 1.375× the face-anchored base (0.35 × avatarSize)
   //                   for a longer, more visible scope held to the eye.
   4: {1: 1.375},
+  // Gunner (theme 6):
+  //   cannonball (1) — 1.30× the corner-anchor base (0.30 × avatarSize),
+  //                    so the iron ball perched at the 5 o'clock mark
+  //                    reads as a clear, heavy projectile.
+  6: {1: 1.30},
 };
 
 /// Per-(theme, accessory) position nudge, in units of the accessory's
@@ -218,6 +235,18 @@ const Map<int, Map<int, Offset>> kThemeAccessoryOffsetMultipliers = {
   4: {
     0: Offset(-0.13, 0.25),
     1: Offset(0.43, -0.4),
+  },
+  // Gunner (theme 6):
+  //   floppy_hat (0) — right 6%, up 15% of its own size — the floppy
+  //                    hat art has tall negative space below the brim,
+  //                    so the box needs to slide up so the visible
+  //                    crown lands on the forehead.
+  //   cannonball (1) — up 30% of its own size from the circleFiveOClock
+  //                    anchor so the ball sits inset from the lower-right
+  //                    curve of the circle rather than dangling off it.
+  6: {
+    0: Offset(0.06, -0.15),
+    1: Offset(0, -0.30),
   },
 };
 
@@ -275,6 +304,11 @@ const Map<int, Map<int, double>> kThemeAccessoryFaceWidthScale = {
   //                 reads better with a touch more overhang on
   //                 each side.
   4: {0: 1.541},
+  // Gunner (theme 6):
+  //   floppy_hat (0) — 2.101× face-width — wider than the lookout
+  //                    bandana since the floppy crown extends further
+  //                    past the head than a bandana wrap.
+  6: {0: 2.101},
 };
 
 // ─── Anchor position resolver ────────────────────────────────────────────────
@@ -386,6 +420,7 @@ Offset resolveAnchorPosition(
       case ThemeAccessoryAnchor.bottomLeftCorner:
       case ThemeAccessoryAnchor.bottomRightCorner:
       case ThemeAccessoryAnchor.circleFourOClock:
+      case ThemeAccessoryAnchor.circleFiveOClock:
         return _kHeuristicPositions[anchor]!;
     }
   } catch (_) {
