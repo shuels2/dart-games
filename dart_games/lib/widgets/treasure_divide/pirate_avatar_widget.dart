@@ -149,11 +149,17 @@ const Map<int, Map<int, double>> kThemeAccessorySizeMultipliers = {
 ///
 /// Missing entries default to `Offset.zero` (no nudge).
 const Map<int, Map<int, Offset>> kThemeAccessoryOffsetMultipliers = {
-  // Captain parrot — pulled inward toward the upper-right of the
-  // avatar circle so it peeks out from behind. Originally -0.5/+0.5
-  // (full half-step inward) which hid too much of the bird; bumped
-  // 20% back toward the corner (up + right) to expose more.
-  0: {2: Offset(-0.30, 0.30)},
+  // Captain (theme 0):
+  //   hat (0) — shifted right 8% and up 10% of its own size so the
+  //             brim aligns with the head and sits a touch above it.
+  //   parrot (2) — pulled inward toward the upper-right of the avatar
+  //                circle so it peeks out from behind. Originally
+  //                -0.5/+0.5 (full half-step inward) hid too much of
+  //                the bird; bumped 20% back toward the corner.
+  0: {
+    0: Offset(0.08, -0.10),
+    2: Offset(-0.30, 0.30),
+  },
 };
 
 /// Set of accessories rendered BEHIND the base avatar (between the
@@ -189,11 +195,11 @@ const Map<int, Set<int>> kAccessoriesBehindAvatar = {
 /// so you can dial a face-width-scaled sprite a touch larger/smaller
 /// without changing the head-width baseline.
 const Map<int, Map<int, double>> kThemeAccessoryFaceWidthScale = {
-  // Captain hat — scaled to the player's actual head width so wide
-  // faces get a wider hat and narrow faces get a narrower one.
-  // Starting at 1.0 (hat brim matches face width); tune up for more
-  // brim overhang or down for a cap that sits inside the head outline.
-  0: {0: 1.0},
+  // Captain hat — accSize = faceBoundingBoxWidth × avatarSize × 1.6, so
+  // the hat box spans 1.6× the player's actual face bbox width (brim
+  // overhangs ~30% past each side of the face). Tracks head width
+  // automatically — wide-faced players get a proportionally wider hat.
+  0: {0: 1.6},
 };
 
 // ─── Anchor position resolver ────────────────────────────────────────────────
@@ -475,10 +481,16 @@ class PirateAvatarWidget extends StatelessWidget {
         // 30–35% of the avatar size (≤ 110px logical for the 300px active
         // avatar), so 256px gives ~2× headroom for hi-DPI without keeping
         // multi-MB rasters resident.
+        //
+        // Policy MUST be `fit` (not the default `exact`) — non-square
+        // accessories (e.g. captain hat 922×567) would otherwise decode
+        // as a squished 256×256 bitmap and BoxFit.contain can't recover
+        // the original aspect from a pre-distorted source.
         image: ResizeImage(
           AssetImage(assetPath),
           width: 256,
           height: 256,
+          policy: ResizeImagePolicy.fit,
         ),
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => const SizedBox.shrink(),
