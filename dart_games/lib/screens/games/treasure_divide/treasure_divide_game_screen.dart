@@ -576,21 +576,61 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                     children: [
                       _buildBadgeRow(provider, game),
                       Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildLeftColumn(
-                                provider, game, playerProvider, opponents),
-                            Expanded(
-                              child:
-                                  _buildTreasureMapArea(provider, game),
-                            ),
-                          ],
+                        child: LayoutBuilder(
+                          builder: (context, mainConstraints) {
+                            final isTeam =
+                                game.gameMode == TreasureDivideGameMode.team;
+                            // In Solo mode "opponents" are player IDs; in
+                            // Team mode the column shows crew tiles (one
+                            // per opponent team), so we work off the team
+                            // list instead.
+                            final baseList = isTeam
+                                ? game.teamPlayers.keys
+                                    .where((id) => id != game.activeTeamId)
+                                    .toList()
+                                : opponents;
+                            final visibleCount = _computeVisibleOpponentCount(
+                              opponentCount: baseList.length,
+                              isTeam: isTeam,
+                              availableHeight: mainConstraints.maxHeight,
+                            );
+                            final visible = baseList.take(visibleCount).toList();
+                            final overflow = baseList.skip(visibleCount).toList();
+                            return Column(
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildLeftColumn(
+                                          provider,
+                                          game,
+                                          playerProvider,
+                                          visible),
+                                      Expanded(
+                                        child: _buildTreasureMapArea(
+                                            provider, game),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Bottom-strip overflow is only Solo today —
+                                // team tiles can't render via the player-id
+                                // compact builder. Team overflow (rare;
+                                // requires 5 crews on a short viewport)
+                                // stays inside the column's scroll view.
+                                if (!isTeam && overflow.isNotEmpty)
+                                  _buildOpponentsBottomStrip(
+                                      provider,
+                                      game,
+                                      playerProvider,
+                                      overflow),
+                              ],
+                            );
+                          },
                         ),
                       ),
-                      if (_shouldShowOverflowStrip(opponents.length))
-                        _buildOpponentsBottomStrip(
-                            provider, game, playerProvider, opponents),
                     ],
                   ),
                 ),
@@ -787,34 +827,67 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     TreasureDivideProvider provider,
     TreasureDivideGame game,
     PlayerProvider playerProvider,
-    List<String> opponents,
+    List<String> visibleOpponents,
   ) {
     final isTeam = game.gameMode == TreasureDivideGameMode.team;
-    final maxVisibleOpponents = isTeam ? 5 : 4;
-    final visibleOpponents = opponents.take(maxVisibleOpponents).toList();
-
+    final tiles = isTeam
+        ? _buildTeamOpponentTiles(
+            provider, game, playerProvider, visibleOpponents)
+        : [
+            for (final id in visibleOpponents)
+              _buildSoloOpponentTile(provider, game, playerProvider, id),
+          ];
     return SizedBox(
-      width: 200,
+      // Width = tile (252) + tile margin (6 each side) + breathing room.
+      // Matches the dimensions used by the bottom-strip tiles so the two
+      // layouts feel like one widget rendered in two orientations.
+      width: 280,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _buildActivePlayerPanel(provider, game, playerProvider),
+          // Tiles use their intrinsic height (same as bottom-strip tiles)
+          // and the gaps between them grow to fill the remaining column
+          // space — keeps vertical distribution visually balanced no
+          // matter how many tiles fit.
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: isTeam
-                    ? _buildTeamOpponentTiles(provider, game, playerProvider)
-                    : [
-                        for (final id in visibleOpponents)
-                          _buildSoloOpponentTile(
-                              provider, game, playerProvider, id),
-                      ],
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: tiles,
             ),
           ),
         ],
       ),
     );
+  }
+
+  // Intrinsic height a single opponent tile renders at — same value for
+  // the vertical column and the horizontal bottom strip, since both use
+  // the exact same tile builder. Used to decide how many fit in the
+  // column before spilling to the strip.
+  static const double _kSoloTileMinHeight = 320.0;
+  static const double _kTeamTileMinHeight = 280.0;
+  static const double _kActivePanelMaxHeight = 540.0;
+  static const double _kBottomStripHeight = 320.0;
+
+  /// How many opponents to render inside the vertical column at the
+  /// current tile size. The remainder spill into the bottom strip; the
+  /// strip is only rendered when overflow exists.
+  int _computeVisibleOpponentCount({
+    required int opponentCount,
+    required bool isTeam,
+    required double availableHeight,
+  }) {
+    if (opponentCount == 0) return 0;
+    final tileH = isTeam ? _kTeamTileMinHeight : _kSoloTileMinHeight;
+    final columnHeight = availableHeight - _kActivePanelMaxHeight;
+    final fitNoStrip = (columnHeight / tileH).floor().clamp(0, opponentCount);
+    if (fitNoStrip >= opponentCount) return opponentCount;
+    // Strip will appear — it eats into the column. Recompute, leaving at
+    // least one tile visible so the column never goes empty.
+    return ((columnHeight - _kBottomStripHeight) / tileH)
+        .floor()
+        .clamp(1, opponentCount);
   }
 
   Widget _buildActivePlayerPanel(
@@ -861,13 +934,14 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     }
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 258, maxHeight: 300),
-      padding: const EdgeInsets.all(8),
+      constraints: const BoxConstraints(minHeight: 500, maxHeight: 540),
+      margin: const EdgeInsets.fromLTRB(6, 12, 6, 6),
+      padding: const EdgeInsets.fromLTRB(10, 28, 10, 10),
       decoration: BoxDecoration(
         color: _oceanTeal.withOpacity(0.4),
-        border: Border(
-          bottom: BorderSide(color: _treasureGold.withOpacity(0.4), width: 1),
-        ),
+        borderRadius: BorderRadius.circular(12),
+        border:
+            Border.all(color: _treasureGold.withOpacity(0.5), width: 2),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -879,27 +953,29 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             const SizedBox(height: 4),
           ],
 
-          // Player avatar with pirate theme overlay
+          // Player avatar with pirate theme overlay — sized much larger
+          // than opponent tiles (96) so the current player visually stands
+          // out and fills the taller active panel.
           SizedBox(
             key: TreasureDivideGameKeys.playerAvatar,
-            width: 80,
-            height: 80,
+            width: 200,
+            height: 200,
             child: currentPlayer != null
                 ? PirateAvatarWidget(
                     player: currentPlayer,
                     themeIndex:
                         game.playerPirateThemes[currentPlayer.id] ?? 0,
-                    size: 80,
+                    size: 200,
                     isActive: true,
                   )
                 : const SizedBox.shrink(),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
 
           // Player name
           Text(
             currentPlayer?.name ?? '',
-            style: GoogleFonts.pirataOne(fontSize: 16, color: _treasureGold),
+            style: GoogleFonts.pirataOne(fontSize: 26, color: _treasureGold),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -909,7 +985,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           Text(
             key: TreasureDivideGameKeys.treasureScore,
             '$displayScore gold',
-            style: GoogleFonts.pirataOne(fontSize: 18, color: _treasureGold),
+            style: GoogleFonts.pirataOne(fontSize: 34, color: _treasureGold),
             textAlign: TextAlign.center,
           ),
 
@@ -918,17 +994,17 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             key: TreasureDivideGameKeys.roundScore,
             '+$roundScore this round',
             style: GoogleFonts.merriweather(
-              fontSize: 12,
+              fontSize: 20,
               color: roundScore > 0 ? _islandGreen : _bloodRed,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
 
           // Dart indicators
           _buildDartIndicators(
               dartsThisTurn, dartsThrown, segments, game),
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
 
           // Skip Turn button
           SizedBox(
@@ -968,15 +1044,15 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                       }
                     },
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: _treasureGold, width: 1.5),
+                side: const BorderSide(color: _treasureGold, width: 2),
                 foregroundColor: _treasureGold,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               ),
               child: Text(
                 'Skip Turn',
                 style: GoogleFonts.pirataOne(
-                    fontSize: 13, color: _treasureGold),
+                    fontSize: 20, color: _treasureGold),
               ),
             ),
           ),
@@ -1050,9 +1126,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
         for (int i = 0; i < dartsThisTurn; i++)
           Container(
             key: TreasureDivideGameKeys.dartIndicator(i),
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: 26,
-            height: 26,
+            margin: const EdgeInsets.symmetric(horizontal: 5),
+            width: 44,
+            height: 44,
             decoration: _dartIndicatorDecoration(i, dartsThrown, segments),
             child: _dartIndicatorChild(i, dartsThrown, segments, game),
           ),
@@ -1066,7 +1142,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       // Empty — outlined circle
       return BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: _treasureGold, width: 1.5),
+        border: Border.all(color: _treasureGold, width: 2.5),
       );
     }
     final seg = index < segments.length ? segments[index] : '';
@@ -1076,7 +1152,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       color: isMiss ? _bloodRed.withOpacity(0.2) : _islandGreen.withOpacity(0.2),
       border: Border.all(
         color: isMiss ? _bloodRed : _treasureGold,
-        width: 1.5,
+        width: 2.5,
       ),
     );
   }
@@ -1091,7 +1167,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
         child: Text(
           'X',
           style: GoogleFonts.merriweather(
-            fontSize: 10,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: _bloodRed,
           ),
@@ -1108,7 +1184,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       child: Text(
         scoreText,
         style: GoogleFonts.merriweather(
-          fontSize: 9,
+          fontSize: 16,
           fontWeight: FontWeight.bold,
           color: _islandGreen,
         ),
@@ -1160,24 +1236,25 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     return 'assets/games/treasure_divide/pieces/TreasureChestFull.png';
   }
 
-  // ─── Overflow strip (Solo 5+ opponents) ──────────────────────────────────────
+  // ─── Overflow strip (Solo/Team — only when the vertical column is full) ─────
 
-  bool _shouldShowOverflowStrip(int opponentCount) {
-    return opponentCount > 4;
-  }
-
+  /// Renders the opponents that didn't fit in the vertical left column.
+  /// The caller is responsible for the slicing — this widget renders
+  /// every id passed in.
   Widget _buildOpponentsBottomStrip(
     TreasureDivideProvider provider,
     TreasureDivideGame game,
     PlayerProvider playerProvider,
-    List<String> opponents,
+    List<String> overflowOpponents,
   ) {
-    final overflowOpponents = opponents.skip(4).toList();
-    return Container(
-      height: 64,
-      color: _oceanTeal.withOpacity(0.5),
+    return SizedBox(
+      height: _kBottomStripHeight,
       child: ListView(
         scrollDirection: Axis.horizontal,
+        // Left indent so the first tile here lines up horizontally with
+        // the tiles in the vertical column above (which sit ~14px in from
+        // the column's left edge thanks to CrossAxisAlignment.center).
+        padding: const EdgeInsets.only(left: 8),
         children: [
           for (final id in overflowOpponents)
             _buildSoloOpponentTile(provider, game, playerProvider, id,
@@ -1206,35 +1283,33 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
 
     return Container(
       key: TreasureDivideGameKeys.playerTile(playerId),
-      margin: const EdgeInsets.all(3),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      // BoxConstraints.expand() inside a SingleChildScrollView (the
-      // opponents list in _buildLeftColumn) claims infinite height and
-      // fires a RenderFlex overflow on every pump. The Column below sizes
-      // itself via mainAxisSize.min, so we only need a minWidth hint for
-      // the compact (bottom-strip) layout.
-      constraints: compact ? const BoxConstraints(minWidth: 80) : null,
+      margin: const EdgeInsets.all(6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      alignment: Alignment.center,
+      // Identical dimensions whether rendered vertically in the column or
+      // horizontally in the bottom strip. Pinning both min and max width
+      // ensures the column tile doesn't stretch with CrossAxisAlignment.
+      constraints: const BoxConstraints(minWidth: 252, maxWidth: 252),
       decoration: BoxDecoration(
         color: _oceanTeal.withOpacity(0.35),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border:
-            Border.all(color: _plankBrown.withOpacity(0.5), width: 1),
+            Border.all(color: _plankBrown.withOpacity(0.5), width: 2),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Avatar with pirate theme
           PirateAvatarWidget(
             player: player,
             themeIndex: game.playerPirateThemes[playerId] ?? 0,
-            size: compact ? 36 : 48,
+            size: 140,
             isActive: playerId == game.currentPlayerId,
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 10),
           Text(
             player.name,
-            style: GoogleFonts.pirataOne(fontSize: 12, color: _sailWhite),
+            style: GoogleFonts.pirataOne(fontSize: 30, color: _sailWhite),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1243,7 +1318,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             '$treasure gold',
             key: TreasureDivideGameKeys.roundStatus(playerId),
             style: GoogleFonts.merriweather(
-              fontSize: 11,
+              fontSize: 28,
               color: _treasureGold,
               fontWeight: FontWeight.bold,
             ),
@@ -1253,7 +1328,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             Text(
               '÷${game.quarterItEnabled ? 4 : 2}×$timesHalved',
               style: GoogleFonts.merriweather(
-                fontSize: 10,
+                fontSize: 22,
                 color: _bloodRed,
               ),
               textAlign: TextAlign.center,
@@ -1262,7 +1337,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             Text(
               roundScore > 0 ? '+$roundScore' : '–',
               style: GoogleFonts.merriweather(
-                fontSize: 10,
+                fontSize: 22,
                 color: roundScore > 0 ? _islandGreen : _bloodRed,
               ),
               textAlign: TextAlign.center,
@@ -1278,16 +1353,13 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     TreasureDivideProvider provider,
     TreasureDivideGame game,
     PlayerProvider playerProvider,
+    List<String> visibleTeamIds,
   ) {
-    final teamIds = game.teamPlayers.keys.toList();
-    final activeTeamId = game.activeTeamId;
-    final opponentTeams =
-        teamIds.where((tid) => tid != activeTeamId).toList();
     final crests = game.teamCrestPaths;
-    final teamIdList = teamIds;
+    final teamIdList = game.teamPlayers.keys.toList();
 
     return [
-      for (final teamId in opponentTeams)
+      for (final teamId in visibleTeamIds)
         _buildTeamOpponentTile(
             provider, game, playerProvider, teamId, crests, teamIdList),
     ];
@@ -1310,13 +1382,15 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
 
     return Container(
       key: TreasureDivideGameKeys.crewTile(teamId),
-      margin: const EdgeInsets.all(3),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      margin: const EdgeInsets.all(6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      alignment: Alignment.center,
+      constraints: const BoxConstraints(minWidth: 252, maxWidth: 252),
       decoration: BoxDecoration(
         color: _oceanTeal.withOpacity(0.35),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border:
-            Border.all(color: _plankBrown.withOpacity(0.5), width: 1),
+            Border.all(color: _plankBrown.withOpacity(0.5), width: 2),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1325,21 +1399,22 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           if (crestPath != null)
             Container(
               key: TreasureDivideGameKeys.crewCrest(teamId),
-              width: 28,
-              height: 28,
+              width: 96,
+              height: 96,
               child: Image.asset(
                 crestPath,
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) =>
-                    Icon(Icons.shield, color: _treasureGold, size: 22),
+                    Icon(Icons.shield, color: _treasureGold, size: 72),
               ),
             ),
+          const SizedBox(height: 8),
           // Crew treasure
           Text(
             '$treasure gold',
             key: TreasureDivideGameKeys.crewTreasureScore(teamId),
             style: GoogleFonts.merriweather(
-              fontSize: 11,
+              fontSize: 28,
               color: _treasureGold,
               fontWeight: FontWeight.bold,
             ),
@@ -1350,7 +1425,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               key: TreasureDivideGameKeys.crewRoundStatus(teamId),
               '÷${game.quarterItEnabled ? 4 : 2}×$timesHalved',
               style: GoogleFonts.merriweather(
-                fontSize: 10,
+                fontSize: 22,
                 color: _bloodRed,
               ),
               textAlign: TextAlign.center,
@@ -1360,7 +1435,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             Text(
               playerProvider.getPlayerById(pid)?.name ?? pid,
               style: GoogleFonts.merriweather(
-                fontSize: 10,
+                fontSize: 22,
                 color: _sailWhite.withOpacity(0.8),
               ),
               maxLines: 1,

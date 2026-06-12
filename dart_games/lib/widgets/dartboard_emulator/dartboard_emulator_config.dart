@@ -494,12 +494,12 @@ class PlayToCompleteButtonConfig {
       backgroundColor: const Color(0xFFFFD700), // Treasure Gold
       foregroundColor: const Color(0xFF008B8B), // Ocean Teal
       borderColor: const Color(0xFF8B6914), // Plank Brown
-      textStyle: GoogleFonts.merriweather(
+      textStyle: GoogleFonts.pirataOne(
         fontSize: 16,
-        fontWeight: FontWeight.bold,
+        letterSpacing: 1.0,
         color: const Color(0xFF008B8B), // Ocean Teal
       ),
-      buttonText: 'SAIL TO VICTORY',
+      buttonText: 'Sail to Victory',
     );
   }
 }
