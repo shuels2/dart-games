@@ -74,8 +74,10 @@ const Map<ThemeAccessoryAnchor, Offset> _kHeuristicPositions = {
 ///                 mark), scar=leftEyeNoseMidpoint (sits on the upper cheek
 ///                 directly below the left eye)
 /// - 3 Navigator:  sailor_cap=headTop, monocle=rightEye, compass=bottomRightCorner
-/// - 4 Lookout:    bandana=headTop, telescope=topRightCorner (scope extends
-///                 toward upper-right — matches spec "upper-right frame edge")
+/// - 4 Lookout:    bandana=headTop, telescope=leftEye with a half-step
+///                 right/up nudge so the scope's bottom-left corner pins
+///                 exactly on the left-eye landmark (telescope appears
+///                 raised to the eye)
 /// - 5 Cook:       chef_hat=headTop, neckerchief=chinBottom (under jaw),
 ///                 spoon=bottomLeftCorner (peeking from lower-left)
 /// - 6 Gunner:     floppy_hat=headTop, cannonball=bottomRightCorner
@@ -105,7 +107,7 @@ const Map<int, List<ThemeAccessoryAnchor>> kThemeAccessoryAnchors = {
   ],
   4: [
     ThemeAccessoryAnchor.headTop,
-    ThemeAccessoryAnchor.topRightCorner,
+    ThemeAccessoryAnchor.leftEye,
   ],
   5: [
     ThemeAccessoryAnchor.headTop,
@@ -160,6 +162,10 @@ const Map<int, Map<int, double>> kThemeAccessorySizeMultipliers = {
   //              the critter perched at the 4 o'clock mark reads
   //              clearly at the avatar circle's edge.
   2: {1: 1.5},
+  // Lookout (theme 4):
+  //   telescope (1) — 1.375× the face-anchored base (0.35 × avatarSize)
+  //                   for a longer, more visible scope held to the eye.
+  4: {1: 1.375},
 };
 
 /// Per-(theme, accessory) position nudge, in units of the accessory's
@@ -198,6 +204,20 @@ const Map<int, Map<int, Offset>> kThemeAccessoryOffsetMultipliers = {
     0: Offset(0.05, -0.05),
     1: Offset(-0.20, 0.10),
     2: Offset(0.20, 0.15),
+  },
+  // Lookout (theme 4):
+  //   bandana (0)   — left 13%, down 25% of its own size — the bandana
+  //                   art has a lot of negative space above the cloth
+  //                   itself, so the box needs to slide down so the
+  //                   visible bandana lands on the forehead.
+  //   telescope (1) — right 43%, up 40% from the leftEye anchor —
+  //                   started at +0.5/-0.5 (bottom-left corner exactly
+  //                   on the eye), slid 10% left + 10% down so the
+  //                   eyepiece overlaps the eye, then nudged 3% back
+  //                   to the right.
+  4: {
+    0: Offset(-0.13, 0.25),
+    1: Offset(0.43, -0.4),
   },
 };
 
@@ -249,6 +269,12 @@ const Map<int, Map<int, double>> kThemeAccessoryFaceWidthScale = {
     0: 1.36,
     2: 0.25,
   },
+  // Lookout (theme 4):
+  //   bandana (0) — 1.541× face-width — the bandana wraps further
+  //                 around the head than the tricorn brim so it
+  //                 reads better with a touch more overhang on
+  //                 each side.
+  4: {0: 1.541},
 };
 
 // ─── Anchor position resolver ────────────────────────────────────────────────

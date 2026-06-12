@@ -89,7 +89,16 @@ class _RopePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Build one path per segment and dash it manually using PathMetrics.
+    // Build ONE combined dashed path across all segments and issue a
+    // single canvas.drawPath. The original code did ~200 separate
+    // canvas.drawPath calls per paint (one per dash, 25-ish dashes per
+    // segment × 8 segments) which flooded CanvasKit's wasm Skia
+    // bindings — each call round-trips through the Dart/wasm bridge
+    // and allocates Skia objects that aren't deterministically released
+    // in wasm. Cumulative heap pressure surfaced as
+    // `RuntimeError: Aborted()` inside PictureRecorder. Consolidating
+    // into one drawPath drops that pressure dramatically.
+    final dashedPath = Path();
     for (int i = 0; i < coords.length - 1; i++) {
       final p1 = Offset(
         coords[i].x / 100 * size.width,
@@ -125,20 +134,21 @@ class _RopePainter extends CustomPainter {
         ..moveTo(p1.dx, p1.dy)
         ..quadraticBezierTo(ctrl.dx, ctrl.dy, p2.dx, p2.dy);
 
-      // Draw dashed version via PathMetrics
-      _drawDashedPath(canvas, segPath, paint, dashLen: 3, gapLen: 5);
+      _addDashesTo(dashedPath, segPath, dashLen: 3, gapLen: 5);
     }
+    canvas.drawPath(dashedPath, paint);
   }
 
-  void _drawDashedPath(
-    Canvas canvas,
-    Path path,
-    Paint paint, {
+  /// Walk [source]'s contour and append every dash-length sub-segment
+  /// into [target]. Caller is then responsible for a single drawPath
+  /// on the accumulated target — instead of one drawPath per dash.
+  void _addDashesTo(
+    Path target,
+    Path source, {
     required double dashLen,
     required double gapLen,
   }) {
-    final metrics = path.computeMetrics();
-    for (final metric in metrics) {
+    for (final metric in source.computeMetrics()) {
       double distance = 0;
       bool drawing = true;
       while (distance < metric.length) {
@@ -147,9 +157,9 @@ class _RopePainter extends CustomPainter {
           metric.length,
         );
         if (drawing) {
-          canvas.drawPath(
+          target.addPath(
             metric.extractPath(distance, segEnd),
-            paint,
+            Offset.zero,
           );
         }
         distance = segEnd;
