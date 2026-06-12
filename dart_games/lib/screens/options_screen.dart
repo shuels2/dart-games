@@ -1324,92 +1324,206 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     if (confirmed != true) return;
 
-    // Generate and save test players
+    // Generate inputs upfront so the progress dialog can show accurate
+    // totals from the very first frame.
     final testPlayers = TestDataService.generateTestPlayers();
-    for (final player in testPlayers) {
-      await playerProvider.savePlayer(player);
+    final headshotPaths = TestDataService.getTestHeadshotAssetPaths();
+    final testMusicDataUrls = TestDataService.getTestVictoryMusicDataUrls();
+    final musicService = VictoryMusicService();
+
+    // ── Progress tracker ────────────────────────────────────────────────
+    // Drives the modal status indicator below. Each phase pushes a new
+    // record with phase metadata + within-phase counters so the user sees
+    // both the current step's label and "X of Y" progress.
+    const int totalPhases = 5;
+    final progress = ValueNotifier<({
+      int phase,
+      String phaseLabel,
+      int done,
+      int total,
+    })>((
+      phase: 1,
+      phaseLabel: 'Saving players',
+      done: 0,
+      total: testPlayers.length,
+    ));
+    void setProgress(int phase, String label, int done, int total) {
+      progress.value =
+          (phase: phase, phaseLabel: label, done: done, total: total);
     }
 
-    // Upload one embedded headshot per player (1:1 mapping by index).
-    // Each upload hits the standard POST /api/v1/players/<id>/photo
-    // endpoint, which fires the mediapipe face-landmarks detector as a
-    // fire-and-forget background job — useful for exercising the
-    // landmark mapping pipeline end-to-end with real photo data.
-    // Errors per-photo are caught + logged so a single bad asset (e.g.
-    // a missing file) can't break the rest of the load.
+    // Non-dismissible status dialog. Not awaited — we pop it manually
+    // once all phases finish (in the finally block so errors don't
+    // leave a stuck modal on screen).
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('Loading Test Data'),
+          content: ValueListenableBuilder<({
+            int phase,
+            String phaseLabel,
+            int done,
+            int total,
+          })>(
+            valueListenable: progress,
+            builder: (_, p, __) {
+              final pct = p.total > 0 ? p.done / p.total : 0.0;
+              return SizedBox(
+                width: 320,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Step ${p.phase} of $totalPhases',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      p.phaseLabel,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    LinearProgressIndicator(value: pct),
+                    const SizedBox(height: 6),
+                    Text('${p.done} of ${p.total}'),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
     int photosAdded = 0;
     int landmarkOverridesApplied = 0;
-    final headshotPaths = TestDataService.getTestHeadshotAssetPaths();
-    // Pre-load the bundled override map once. Empty by default; populated
-    // via the Export action and committed to assets/common/.
-    final overrides =
-        await TestHeadshotLandmarksService.loadOverrides();
-    for (var i = 0;
-        i < testPlayers.length && i < headshotPaths.length;
-        i++) {
-      final player = testPlayers[i];
-      final assetPath = headshotPaths[i];
-      try {
-        final bytes =
-            (await rootBundle.load(assetPath)).buffer.asUint8List();
-        final base64Data = base64Encode(bytes);
-        final fileName = assetPath.split('/').last;
-        await apiClient.uploadPlayerPhoto(player.id, base64Data, fileName);
-        photosAdded++;
-
-        // If the user has saved a manual correction for this headshot,
-        // PATCH it now so it overwrites whatever mediapipe produced in
-        // the background.
-        final override = overrides[fileName];
-        if (override != null) {
-          try {
-            await playerProvider.updateFaceLandmarks(player.id, override);
-            landmarkOverridesApplied++;
-          } catch (e) {
-            debugPrint(
-                'Error applying landmark override for ${player.name}: $e');
-          }
-        }
-      } catch (e) {
-        debugPrint(
-            'Error uploading test headshot $assetPath for ${player.name}: $e');
-      }
-    }
-
-    // Persist each player's pre-populated gameHistory to the server so
-    // games_played and games_won accumulate correctly. Without this, the
-    // stats only live in PlayerProvider's local cache until any subsequent
-    // loadPlayers() (e.g., navigating to a game menu) wipes them.
-    for (final player in testPlayers) {
-      await playerProvider.seedPlayerHistory(player.id, player.gameHistory);
-    }
-
-    // Refresh local cache from the server so optimistic local stats match
-    // the persisted state.
-    await playerProvider.loadPlayers();
-
-    // Generate and save test victory music files (embedded as data URLs)
-    final musicService = VictoryMusicService();
-    final testMusicDataUrls = TestDataService.getTestVictoryMusicDataUrls();
-
     int filesAdded = 0;
-    for (final musicData in testMusicDataUrls) {
-      try {
-        await musicService.addMusicFile(
-          fileName: musicData['name']!,
-          dataUrl: musicData['dataUrl']!,
-        );
-        filesAdded++;
-      } catch (e) {
-        debugPrint('Error loading test music file ${musicData['name']}: $e');
+
+    try {
+      // ── Phase 1: Save players ────────────────────────────────────────
+      for (var i = 0; i < testPlayers.length; i++) {
+        await playerProvider.savePlayer(testPlayers[i]);
+        setProgress(1, 'Saving players', i + 1, testPlayers.length);
+      }
+
+      // ── Phase 2: Upload headshots ────────────────────────────────────
+      // Each upload hits POST /api/v1/players/<id>/photo, which fires
+      // the mediapipe face-landmarks detector as a fire-and-forget
+      // background job. The user-facing slowness is this phase — the
+      // per-headshot counter shows the actual culprit.
+      // Errors per-photo are caught + logged so a single bad asset
+      // (e.g. a missing file) can't break the rest of the load.
+      setProgress(
+          2, 'Uploading headshots', 0, testPlayers.length);
+      // Pre-load the bundled override map once. Empty by default;
+      // populated via the Export action and committed to assets/common/.
+      final overrides =
+          await TestHeadshotLandmarksService.loadOverrides();
+      for (var i = 0;
+          i < testPlayers.length && i < headshotPaths.length;
+          i++) {
+        final player = testPlayers[i];
+        final assetPath = headshotPaths[i];
+        try {
+          final bytes =
+              (await rootBundle.load(assetPath)).buffer.asUint8List();
+          final base64Data = base64Encode(bytes);
+          final fileName = assetPath.split('/').last;
+          // If we have a saved override for this headshot, skip the
+          // server-side mediapipe job entirely — otherwise it races the
+          // PATCH below and can overwrite the override after the fact,
+          // which is what made the reimported landmarks "shift" from
+          // the JSON values.
+          final override = overrides[fileName];
+          final hasOverride = override != null;
+          await apiClient.uploadPlayerPhoto(
+            player.id,
+            base64Data,
+            fileName,
+            detectLandmarks: !hasOverride,
+          );
+          photosAdded++;
+
+          // Apply the manual correction now. With mediapipe suppressed
+          // above, this is the authoritative write — nothing else will
+          // touch face_landmarks for this player.
+          if (hasOverride) {
+            try {
+              await playerProvider.updateFaceLandmarks(
+                  player.id, override);
+              landmarkOverridesApplied++;
+            } catch (e) {
+              debugPrint(
+                  'Error applying landmark override for ${player.name}: $e');
+            }
+          }
+        } catch (e) {
+          debugPrint(
+              'Error uploading test headshot $assetPath for ${player.name}: $e');
+        }
+        setProgress(
+            2, 'Uploading headshots', i + 1, testPlayers.length);
+      }
+
+      // ── Phase 3: Seed game history ───────────────────────────────────
+      // Persist each player's pre-populated gameHistory to the server so
+      // games_played and games_won accumulate correctly. Without this,
+      // the stats only live in PlayerProvider's local cache until any
+      // subsequent loadPlayers() (e.g., navigating to a game menu)
+      // wipes them.
+      setProgress(
+          3, 'Seeding game history', 0, testPlayers.length);
+      for (var i = 0; i < testPlayers.length; i++) {
+        await playerProvider.seedPlayerHistory(
+            testPlayers[i].id, testPlayers[i].gameHistory);
+        setProgress(
+            3, 'Seeding game history', i + 1, testPlayers.length);
+      }
+
+      // ── Phase 4: Add victory music files ─────────────────────────────
+      setProgress(
+          4, 'Adding music files', 0, testMusicDataUrls.length);
+      for (var i = 0; i < testMusicDataUrls.length; i++) {
+        final musicData = testMusicDataUrls[i];
+        try {
+          await musicService.addMusicFile(
+            fileName: musicData['name']!,
+            dataUrl: musicData['dataUrl']!,
+          );
+          filesAdded++;
+        } catch (e) {
+          debugPrint(
+              'Error loading test music file ${musicData['name']}: $e');
+        }
+        setProgress(
+            4, 'Adding music files', i + 1, testMusicDataUrls.length);
+      }
+
+      // ── Phase 5: Refresh local caches ────────────────────────────────
+      // Refresh local cache from the server so optimistic local stats
+      // match the persisted state, then refresh victory music list.
+      setProgress(5, 'Refreshing data', 0, 2);
+      await playerProvider.loadPlayers();
+      setProgress(5, 'Refreshing data', 1, 2);
+      final files = await musicService.getMusicFiles();
+      if (mounted) {
+        setState(() {
+          _victoryMusicFiles = files;
+        });
+      }
+      setProgress(5, 'Refreshing data', 2, 2);
+    } finally {
+      // Always close the progress dialog, even if a phase threw, so the
+      // user can never be left looking at a stuck modal.
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
       }
     }
-
-    // Reload victory music in UI
-    final files = await musicService.getMusicFiles();
-    setState(() {
-      _victoryMusicFiles = files;
-    });
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

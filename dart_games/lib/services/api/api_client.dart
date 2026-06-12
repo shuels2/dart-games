@@ -135,10 +135,21 @@ class ApiClient {
   }
 
   /// POST /api/v1/players/<id>/photo - Upload a player photo.
-  Future<String> uploadPlayerPhoto(String id, String base64Data, String fileName) async {
+  ///
+  /// When [detectLandmarks] is false the server skips the fire-and-forget
+  /// mediapipe job — useful when the caller is about to PATCH a known
+  /// landmark override and doesn't want the background detection racing
+  /// past it. Defaults to true (current behavior).
+  Future<String> uploadPlayerPhoto(
+    String id,
+    String base64Data,
+    String fileName, {
+    bool detectLandmarks = true,
+  }) async {
     final response = await _post('/api/v1/players/$id/photo', {
       'photoData': base64Data,
       'fileName': fileName,
+      'detectLandmarks': detectLandmarks,
     });
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     return body['photoPath'] as String;

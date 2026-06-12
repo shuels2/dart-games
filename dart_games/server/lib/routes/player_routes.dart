@@ -343,6 +343,14 @@ class PlayerRoutes {
 
     final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     final photoData = body['photoData'] as String;
+    // Opt-out switch for the background mediapipe job. Defaults to true
+    // so all existing callers (regular uploads from System Settings, the
+    // Add Player flow, etc.) keep auto-detecting. The test-data loader
+    // sets this to `false` when it's about to PATCH a known-good landmark
+    // override — otherwise mediapipe finishes after the PATCH and
+    // overwrites the override (the source of the "landmarks shift on
+    // reimport" bug).
+    final detectLandmarks = body['detectLandmarks'] as bool? ?? true;
     // We canonicalize EVERY upload to a 512x512 JPEG regardless of the
     // client-suggested file name's extension, so the stored extension is
     // always .jpg. This keeps every photo in the same shape for the
@@ -375,19 +383,24 @@ class PlayerRoutes {
     // Fire-and-forget face-landmark detection. The endpoint returns
     // immediately; detection runs in the background and updates the DB row
     // when complete. Errors are swallowed (logged to stderr by the service).
-    unawaited(
-      FaceLandmarksService.instance
-          .detectForImagePath(filePath)
-          .then((landmarks) {
-        if (landmarks != null) {
-          executeUpdate(
-            _db,
-            'UPDATE players SET face_landmarks = ? WHERE id = ?;',
-            [jsonEncode(landmarks), id],
-          );
-        }
-      }),
-    );
+    // Skipped entirely when the caller opts out via `detectLandmarks:false`
+    // — typically because they're about to PATCH a manual override and
+    // don't want the background job racing past it.
+    if (detectLandmarks) {
+      unawaited(
+        FaceLandmarksService.instance
+            .detectForImagePath(filePath)
+            .then((landmarks) {
+          if (landmarks != null) {
+            executeUpdate(
+              _db,
+              'UPDATE players SET face_landmarks = ? WHERE id = ?;',
+              [jsonEncode(landmarks), id],
+            );
+          }
+        }),
+      );
+    }
 
     // Return the API URL (not the server-side filesystem path) so the
     // client's saved value matches what subsequent GET /players responses
