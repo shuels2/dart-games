@@ -76,26 +76,34 @@ const Map<ThemeAccessoryAnchor, Offset> _kHeuristicPositions = {
 /// Anchor rationale per theme:
 /// - 0 Captain:    hat=headTop (crown of head), eyepatch=leftEye (over L eye),
 ///                 parrot=topRightCorner (macaw peeking in from shoulder)
-/// - 1 First Mate: bandana=headTop (wraps forehead), monkey=topLeftCorner
-///                 (spider monkey peeking in from upper-left)
+/// - 1 First Mate: bandana=headTop (wraps forehead — sized like the lookout
+///                 bandana), monkey=topRightCorner (spider monkey peeking
+///                 in from upper-right — pulled inward + rendered behind
+///                 the avatar like the captain parrot)
 /// - 2 Bosun:      tricorn=headTop, crab=circleFourOClock (perched on the
 ///                 lower-right edge of the avatar circle at the 4 o'clock
 ///                 mark), scar=leftEyeNoseMidpoint (sits on the upper cheek
 ///                 directly below the left eye)
-/// - 3 Navigator:  sailor_cap=headTop, monocle=rightEye, compass=bottomRightCorner
+/// - 3 Navigator:  sailor_cap=headTop, monocle=rightEye, compass=circleFour-
+///                 OClock (perched on the lower-right edge of the avatar
+///                 circle at the 4 o'clock mark)
 /// - 4 Lookout:    bandana=headTop, telescope=leftEye with a half-step
 ///                 right/up nudge so the scope's bottom-left corner pins
 ///                 exactly on the left-eye landmark (telescope appears
 ///                 raised to the eye)
 /// - 5 Cook:       chef_hat=headTop, neckerchief=chinBottom (under jaw),
-///                 spoon=bottomLeftCorner (peeking from lower-left)
+///                 spoon=circleFiveOClock (perched on the lower-right edge
+///                 of the avatar circle at the 5 o'clock mark — renders
+///                 above the neckerchief since accessory index 2 paints
+///                 on top of index 1)
 /// - 6 Gunner:     floppy_hat=headTop, cannonball=circleFiveOClock (centered
 ///                 on the lower-right curve of the avatar circle, between the
 ///                 4 o'clock and 6 o'clock marks)
-/// - 7 Cabin Boy:  tiny_cap=headTop, seahorse=bottomLeftCorner (spec says
-///                 lower-right but bottomLeftCorner avoids collision with
-///                 freckles centered on noseTip), freckles=noseTip (between
-///                 nose and cheeks — noseTip is the closest single-point anchor)
+/// - 7 Cabin Boy:  tiny_cap=headTop, seahorse=circleFourOClock (perched on
+///                 the lower-right edge of the avatar circle at the 4 o'clock
+///                 mark — matches the spec's "lower-right" placement),
+///                 freckles=noseTip (between nose and cheeks — noseTip is the
+///                 closest single-point anchor)
 const Map<int, List<ThemeAccessoryAnchor>> kThemeAccessoryAnchors = {
   0: [
     ThemeAccessoryAnchor.headTop,
@@ -104,7 +112,7 @@ const Map<int, List<ThemeAccessoryAnchor>> kThemeAccessoryAnchors = {
   ],
   1: [
     ThemeAccessoryAnchor.headTop,
-    ThemeAccessoryAnchor.topLeftCorner,
+    ThemeAccessoryAnchor.topRightCorner,
   ],
   2: [
     ThemeAccessoryAnchor.headTop,
@@ -114,7 +122,7 @@ const Map<int, List<ThemeAccessoryAnchor>> kThemeAccessoryAnchors = {
   3: [
     ThemeAccessoryAnchor.headTop,
     ThemeAccessoryAnchor.rightEye,
-    ThemeAccessoryAnchor.bottomRightCorner,
+    ThemeAccessoryAnchor.circleFourOClock,
   ],
   4: [
     ThemeAccessoryAnchor.headTop,
@@ -123,7 +131,7 @@ const Map<int, List<ThemeAccessoryAnchor>> kThemeAccessoryAnchors = {
   5: [
     ThemeAccessoryAnchor.headTop,
     ThemeAccessoryAnchor.chinBottom,
-    ThemeAccessoryAnchor.bottomLeftCorner,
+    ThemeAccessoryAnchor.circleFiveOClock,
   ],
   6: [
     ThemeAccessoryAnchor.headTop,
@@ -131,7 +139,7 @@ const Map<int, List<ThemeAccessoryAnchor>> kThemeAccessoryAnchors = {
   ],
   7: [
     ThemeAccessoryAnchor.headTop,
-    ThemeAccessoryAnchor.bottomLeftCorner,
+    ThemeAccessoryAnchor.circleFourOClock,
     ThemeAccessoryAnchor.noseTip,
   ],
 };
@@ -169,6 +177,24 @@ const Map<int, Map<int, double>> kThemeAccessorySizeMultipliers = {
   // Eyepatch reduced 30% — the source art renders larger than the
   // surrounding eye area at the default 0.35 ratio.
   0: {1: 0.70},
+  // Navigator (theme 3):
+  //   sailor_cap (0) — multiplier removed; sailor cap now sizes purely
+  //                    off face-bbox scaling (see
+  //                    kThemeAccessoryFaceWidthScale[3][0]).
+  //   monocle (1)    — 0.70× fine-tune on top of face-width scaling
+  //                    below (mirrors the captain eyepatch).
+  //   compass (2)    — 1.38× corner-anchor base (0.30 × avatarSize)
+  //                    so the instrument reads clearly at the 4
+  //                    o'clock edge of the circle.
+  3: {
+    1: 0.70,
+    2: 1.38,
+  },
+  // Cook (theme 5):
+  //   spoon (2) — 1.265× corner-anchor base (0.30 × avatarSize) so the
+  //               utensil reads clearly at the 5 o'clock edge of the
+  //               avatar circle.
+  5: {2: 1.265},
   // Bosun (theme 2):
   //   crab (1) — 1.5× the corner-anchor base (0.30 × avatarSize) so
   //              the critter perched at the 4 o'clock mark reads
@@ -183,6 +209,11 @@ const Map<int, Map<int, double>> kThemeAccessorySizeMultipliers = {
   //                    so the iron ball perched at the 5 o'clock mark
   //                    reads as a clear, heavy projectile.
   6: {1: 1.30},
+  // Cabin Boy (theme 7):
+  //   seahorse (1) — 1.20× the corner-anchor base so the critter reads
+  //                  clearly when floating in the lower-left of the
+  //                  avatar circle.
+  7: {1: 1.20},
 };
 
 /// Per-(theme, accessory) position nudge, in units of the accessory's
@@ -199,13 +230,26 @@ const Map<int, Map<int, Offset>> kThemeAccessoryOffsetMultipliers = {
   // Captain (theme 0):
   //   hat (0) — shifted right 8% and up 10% of its own size so the
   //             brim aligns with the head and sits a touch above it.
+  //   eyepatch (1) — right 3%, up 3% of its own size to settle the
+  //                  patch over the eye proper.
   //   parrot (2) — pulled inward toward the upper-right of the avatar
   //                circle so it peeks out from behind. Originally
   //                -0.5/+0.5 (full half-step inward) hid too much of
   //                the bird; bumped 20% back toward the corner.
   0: {
     0: Offset(0.08, -0.10),
+    1: Offset(0.03, -0.03),
     2: Offset(-0.30, 0.30),
+  },
+  // First Mate (theme 1):
+  //   bandana (0) — right 7%, down 20% of its own size.
+  //   monkey (1)  — pulled inward from the topRightCorner anchor —
+  //                 left 5%, down 60% of its own size (less inward
+  //                 than the captain parrot, so more of the monkey
+  //                 sticks out past the avatar circle).
+  1: {
+    0: Offset(0.07, 0.20),
+    1: Offset(-0.05, 0.60),
   },
   // Bosun (theme 2):
   //   tricorn (0) — right 5%, up 5% of its own size — tuned closer to
@@ -221,6 +265,33 @@ const Map<int, Map<int, Offset>> kThemeAccessoryOffsetMultipliers = {
     0: Offset(0.05, -0.05),
     1: Offset(-0.20, 0.10),
     2: Offset(0.20, 0.15),
+  },
+  // Navigator (theme 3):
+  //   sailor_cap (0) — up 5% of its own size — sits just above the head
+  //                    crown without floating off it.
+  //   monocle (1)    — left 10% of its own size — sits centered on
+  //                    the rightEye y level, just inboard horizontally.
+  //   compass (2)    — left 20%, down 20% of its own size — pulls the
+  //                    instrument inward from the 4 o'clock edge so it
+  //                    overlaps the avatar circle.
+  3: {
+    0: Offset(0, -0.05),
+    1: Offset(-0.10, 0.00),
+    2: Offset(-0.20, 0.20),
+  },
+  // Cook (theme 5):
+  //   chef_hat (0)    — up 30% of its own size (25% further up than the
+  //                     navigator sailor cap's -0.05) so the toque rises
+  //                     well above the head.
+  //   neckerchief (1) — down 45% of its own size from the chinBottom
+  //                     anchor so the cloth drapes well below the jaw.
+  //   spoon (2)       — right 50%, up 50% of its own size from the
+  //                     circleFiveOClock anchor — slides the utensil
+  //                     out past the avatar circle's edge to the right.
+  5: {
+    0: Offset(0, -0.30),
+    1: Offset(0, 0.45),
+    2: Offset(0.50, -0.50),
   },
   // Lookout (theme 4):
   //   bandana (0)   — left 13%, down 25% of its own size — the bandana
@@ -248,6 +319,17 @@ const Map<int, Map<int, Offset>> kThemeAccessoryOffsetMultipliers = {
     0: Offset(0.06, -0.15),
     1: Offset(0, -0.30),
   },
+  // Cabin Boy (theme 7):
+  //   tiny_cap (0) — left 35%, up 10% of its own size — slides the
+  //                  cap off the centered headTop position toward the
+  //                  side of the head so it reads as a worn-jaunty cap.
+  //   seahorse (1) — left 15%, down 15% of its own size from the
+  //                  circleFourOClock anchor so the critter pulls in
+  //                  toward the avatar circle from the 4 o'clock edge.
+  7: {
+    0: Offset(-0.35, -0.10),
+    1: Offset(-0.15, 0.15),
+  },
 };
 
 /// Set of accessories rendered BEHIND the base avatar (between the
@@ -263,6 +345,9 @@ const Map<int, Set<int>> kAccessoriesBehindAvatar = {
   // Captain parrot — sits behind the avatar so the bird looks like
   // it's poking out from the upper-right of the circle.
   0: {2},
+  // First Mate monkey — same effect as the captain parrot, mirrored
+  // to the upper-left of the avatar.
+  1: {1},
 };
 
 /// Per-(theme, accessory) face-width scaling. When an entry exists
@@ -283,11 +368,16 @@ const Map<int, Set<int>> kAccessoriesBehindAvatar = {
 /// so you can dial a face-width-scaled sprite a touch larger/smaller
 /// without changing the head-width baseline.
 const Map<int, Map<int, double>> kThemeAccessoryFaceWidthScale = {
-  // Captain hat — accSize = faceBoundingBoxWidth × avatarSize × 1.6, so
-  // the hat box spans 1.6× the player's actual face bbox width (brim
-  // overhangs ~30% past each side of the face). Tracks head width
-  // automatically — wide-faced players get a proportionally wider hat.
-  0: {0: 1.6},
+  // Captain (theme 0):
+  //   hat (0)      — accSize = faceBoundingBoxWidth × avatarSize × 1.6,
+  //                  so the hat box spans 1.6× the player's actual face
+  //                  bbox width (brim overhangs ~30% past each side of
+  //                  the face). Tracks head width automatically.
+  //   eyepatch (1) — face-width scaled at 0.575 so the patch box is
+  //                  57.5% of the face bbox width. The 0.70 size
+  //                  multiplier still applies on top → effective patch
+  //                  size is faceWidth × avatarSize × 0.575 × 0.70.
+  0: {0: 1.6, 1: 0.575},
   // Bosun (theme 2):
   //   tricorn (0) — 1.36× face-width (15% smaller than the captain
   //                 hat at 1.6) since the tricorn art has more vertical
@@ -304,6 +394,40 @@ const Map<int, Map<int, double>> kThemeAccessoryFaceWidthScale = {
   //                 reads better with a touch more overhang on
   //                 each side.
   4: {0: 1.541},
+  // First Mate (theme 1):
+  //   bandana (0) — 1.156× face-width — 25% smaller than the lookout
+  //                 bandana's 1.541; sits tighter to the head.
+  1: {0: 1.156},
+  // Navigator (theme 3):
+  //   sailor_cap (0) — 1.02× face-width — a snug round cap that just
+  //                    matches the head width with almost no overhang.
+  //   monocle (1)    — face-width scaled at 0.575, same as the captain
+  //                    eyepatch. The 0.70 size multiplier applies on
+  //                    top → effective dimension faceWidth × avatarSize
+  //                    × 0.575 × 0.70.
+  3: {
+    0: 1.02,
+    1: 0.575,
+  },
+  // Cook (theme 5):
+  //   chef_hat (0)    — 1.02× face-width, sized the same as the
+  //                     navigator sailor cap.
+  //   neckerchief (1) — 1.202× face-width so the cloth drapes a touch
+  //                     past the head width across the chin / neck.
+  5: {
+    0: 1.02,
+    1: 1.202,
+  },
+  // Cabin Boy (theme 7):
+  //   tiny_cap (0) — 0.591× face-width — a small cap that sits well
+  //                  inside the head outline, true to the "tiny" name.
+  //   freckles (2) — 0.715× face-width so the freckles patch spans
+  //                  roughly the cheekbones, across the nose bridge
+  //                  from cheek to cheek.
+  7: {
+    0: 0.591,
+    2: 0.715,
+  },
   // Gunner (theme 6):
   //   floppy_hat (0) — 2.101× face-width — wider than the lookout
   //                    bandana since the floppy crown extends further
