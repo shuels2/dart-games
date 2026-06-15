@@ -204,11 +204,21 @@ class TreasureMapWidget extends StatefulWidget {
   /// When true, future islands show "???" instead of their target number.
   final bool customTargetsEnabled;
 
+  /// When true, render a "QUARTER IT" pill next to the Island counter
+  /// in the top-left corner of the map. The badge sits inline on the
+  /// same row so the two read as one HUD strip.
+  final bool quarterItEnabled;
+
+  /// Optional widget key for the QUARTER IT pill. Used by tests that
+  /// previously found the badge in the game screen's top badge row.
+  final Key? quarterItBadgeKey;
+
   // ── Color params (all have sensible defaults) ─────────────────────────────
   final Color treasureGold;
   final Color plankBrown;
   final Color sailWhite;
   final Color islandGreen;
+  final Color bloodRed;
 
   const TreasureMapWidget({
     super.key,
@@ -217,11 +227,14 @@ class TreasureMapWidget extends StatefulWidget {
     required this.numberOfRounds,
     this.chestImagePath,
     this.floaterText,
+    this.quarterItEnabled = false,
+    this.quarterItBadgeKey,
     this.customTargetsEnabled = false,
     this.treasureGold = const Color(0xFFFFD700),
     this.plankBrown = const Color(0xFF8B6914),
     this.sailWhite = const Color(0xFFFFF8E7),
     this.islandGreen = const Color(0xFF228B22),
+    this.bloodRed = const Color(0xFFC41E3A),
   });
 
   // ─── Static public helpers ─────────────────────────────────────────────────
@@ -514,26 +527,61 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                   ),
                 ],
 
-                // ── Layer 5: Round counter pill (top-left) ────────────────
+                // ── Layer 5: Round counter pill + QUARTER IT badge ────────
+                // Both elements sit on the same row in the top-left of
+                // the map. Sized 75% larger than the prior standalone
+                // counter pill (font 14 → 25, padding scaled to match).
                 Positioned(
                   top: 8,
                   left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: widget.plankBrown,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                          color: widget.treasureGold, width: 1.5),
-                    ),
-                    child: Text(
-                      'Island ${(safeIndex + 1)}/${widget.numberOfRounds}',
-                      style: GoogleFonts.pirataOne(
-                        fontSize: 14,
-                        color: widget.treasureGold,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: widget.plankBrown,
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(
+                              color: widget.treasureGold, width: 2.5),
+                        ),
+                        child: Text(
+                          'Island ${(safeIndex + 1)}/${widget.numberOfRounds}',
+                          style: GoogleFonts.pirataOne(
+                            fontSize: 25,
+                            color: widget.treasureGold,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (widget.quarterItEnabled) ...[
+                        const SizedBox(width: 12),
+                        Container(
+                          key: widget.quarterItBadgeKey,
+                          // Padding, border radius, font size and border
+                          // width all match the Island counter pill so
+                          // the two read as a single HUD strip. Border
+                          // color uses sail white to match the badge's
+                          // text color (mirrors the Island pill, where
+                          // the border color matches its text color).
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: widget.bloodRed,
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                                color: widget.sailWhite, width: 2.5),
+                          ),
+                          child: Text(
+                            'QUARTER IT',
+                            style: GoogleFonts.pirataOne(
+                              fontSize: 25,
+                              color: widget.sailWhite,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
 

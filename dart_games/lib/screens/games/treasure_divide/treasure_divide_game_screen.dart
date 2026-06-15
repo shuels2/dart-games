@@ -811,14 +811,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     final isSoloCrew = isTeam && activeMembers.length == 1;
 
     final badges = <Widget>[];
-    if (game.quarterItEnabled) {
-      badges.add(_buildBadge(
-        key: TreasureDivideGameKeys.quarterItBadge,
-        label: 'QUARTER IT',
-        backgroundColor: _bloodRed,
-        textColor: _sailWhite,
-      ));
-    }
+    // QUARTER IT is rendered inline with the Island counter on the
+    // treasure map widget (see TreasureMapWidget.quarterItEnabled) so
+    // it isn't added to this top badge row anymore.
     if (game.customTargetsEnabled) {
       badges.add(_buildBadge(
         key: TreasureDivideGameKeys.customBadge,
@@ -1249,6 +1244,8 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       chestImagePath: _getChestImagePath(game),
       floaterText: null, // Phase 5 will wire up "+XX" floater text
       customTargetsEnabled: game.customTargetsEnabled,
+      quarterItEnabled: game.quarterItEnabled,
+      quarterItBadgeKey: TreasureDivideGameKeys.quarterItBadge,
     );
   }
 
