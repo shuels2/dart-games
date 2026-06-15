@@ -303,12 +303,15 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
     return RepaintBoundary(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Cap available area at 1200x900 (matches prior behavior — keeps
-          // the map from ballooning on very large screens).
+          // Cap raised from 1200x900 → 2400x1600. The HUD layout was
+          // updated so the map row gets the bulk of the screen's
+          // vertical space; the prior 1200×900 cap was preventing the
+          // aspect-locked map from filling that newly-recovered area
+          // on typical desktop / tablet viewports.
           final maxW =
-              constraints.maxWidth > 1200.0 ? 1200.0 : constraints.maxWidth;
+              constraints.maxWidth > 2400.0 ? 2400.0 : constraints.maxWidth;
           final maxH =
-              constraints.maxHeight > 900.0 ? 900.0 : constraints.maxHeight;
+              constraints.maxHeight > 1600.0 ? 1600.0 : constraints.maxHeight;
           // Largest size that fits within (maxW, maxH) and matches the
           // map's native aspect ratio. With the Stack aspect-locked to the
           // image, the image fills the Stack without letterboxing, so the

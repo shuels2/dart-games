@@ -890,7 +890,14 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   }
 
   // Height of the bottom strip containing opponent tiles.
-  static const double _kBottomStripHeight = 360.0;
+  // Shrunk from 360 → 220 so the map row gains ~140 px vertical space,
+  // letting the aspect-locked treasure map become width-bound instead
+  // of height-bound — the map now fills the full row width on a
+  // typical 16:9 viewport. The active player tile (Expanded in the
+  // left column) automatically picks up the extra height; its content
+  // remains centered. Opponent tiles within the strip get aggressively
+  // trimmed padding / smaller avatars to fit the new height.
+  static const double _kBottomStripHeight = 220.0;
   // Sizing baseline for opponent tiles — 8-player Solo is the maximum so
   // 7 opponent tiles fill the strip edge-to-edge. With fewer opponents,
   // each tile keeps this same width and the strip leaves empty space on
@@ -964,15 +971,15 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           // out and fills the taller active panel.
           SizedBox(
             key: TreasureDivideGameKeys.playerAvatar,
-            width: 300,
-            height: 300,
+            width: 360,
+            height: 360,
             child: currentPlayer != null
                 ? PirateAvatarWidget(
                     player: currentPlayer,
                     themeIndex: _themePreviewOverride ??
                         game.playerPirateThemes[currentPlayer.id] ??
                         0,
-                    size: 300,
+                    size: 360,
                     isActive: true,
                   )
                 : const SizedBox.shrink(),
@@ -983,7 +990,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           Text(
             currentPlayer?.name ?? '',
             style: GoogleFonts.pirataOne(
-              fontSize: 34,
+              fontSize: 38,
               color: _sailWhite,
               shadows: _treasureTextShadows,
             ),
@@ -997,7 +1004,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             key: TreasureDivideGameKeys.treasureScore,
             '$displayScore gold',
             style: GoogleFonts.pirataOne(
-              fontSize: 34,
+              fontSize: 38,
               color: _treasureGold,
               shadows: _treasureTextShadows,
             ),
@@ -1009,7 +1016,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             key: TreasureDivideGameKeys.roundScore,
             '+$roundScore this round',
             style: GoogleFonts.merriweather(
-              fontSize: 24,
+              fontSize: 28,
               color: roundScore > 0 ? _islandGreen : _bloodRed,
               shadows: _treasureTextShadows,
             ),
@@ -1279,12 +1286,12 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           // Footprint per tile slot = stripWidth / 7. Each tile carries
-          // an EdgeInsets.all(6) margin (12px total horizontal), so the
-          // container width = footprint − 12. With 7 opponents the row
+          // an EdgeInsets.all(3) margin (6px total horizontal), so the
+          // container width = footprint − 6. With 7 opponents the row
           // fills the strip exactly; with fewer it leaves the remainder
           // empty on the right.
           final tileWidth =
-              (constraints.maxWidth / _kOpponentTileBaseline) - 12;
+              (constraints.maxWidth / _kOpponentTileBaseline) - 6;
           final teamCrests = isTeam ? game.teamCrestPaths : const <String>[];
           final teamIdList =
               isTeam ? game.teamPlayers.keys.toList() : const <String>[];
@@ -1334,8 +1341,10 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
 
     return Container(
       key: TreasureDivideGameKeys.playerTile(playerId),
-      margin: const EdgeInsets.all(6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      // Margin + padding aggressively trimmed (vs 6 / (12,10) previously)
+      // so the bulk of the strip height goes to the visible content.
+      margin: const EdgeInsets.all(3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       alignment: Alignment.center,
       constraints: BoxConstraints(minWidth: tileWidth, maxWidth: tileWidth),
       decoration: BoxDecoration(
@@ -1353,14 +1362,19 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             themeIndex: _themePreviewOverride ??
                 game.playerPirateThemes[playerId] ??
                 0,
-            size: 210,
+            // Avatar reduced 210 → 120 to fit the shorter strip while
+            // leaving headroom for the optional round score / halved
+            // rows that can show during gameplay. Hat / accessory
+            // overflow still paints outside the box (PirateAvatarWidget
+            // uses Clip.none internally).
+            size: 120,
             isActive: playerId == game.currentPlayerId,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
           Text(
             player.name,
             style: GoogleFonts.pirataOne(
-              fontSize: 24,
+              fontSize: 22,
               color: _sailWhite,
               shadows: _treasureTextShadows,
             ),
@@ -1372,7 +1386,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             '$treasure gold',
             key: TreasureDivideGameKeys.roundStatus(playerId),
             style: GoogleFonts.pirataOne(
-              fontSize: 24,
+              fontSize: 22,
               color: _treasureGold,
               fontWeight: FontWeight.bold,
               shadows: _treasureTextShadows,
@@ -1383,7 +1397,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             Text(
               '÷${game.quarterItEnabled ? 4 : 2}×$timesHalved',
               style: GoogleFonts.merriweather(
-                fontSize: 22,
+                fontSize: 18,
                 color: _bloodRed,
               ),
               textAlign: TextAlign.center,
@@ -1392,7 +1406,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             Text(
               roundScore > 0 ? '+$roundScore' : '–',
               style: GoogleFonts.merriweather(
-                fontSize: 22,
+                fontSize: 18,
                 color: roundScore > 0 ? _islandGreen : _bloodRed,
               ),
               textAlign: TextAlign.center,
@@ -1422,8 +1436,10 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
 
     return Container(
       key: TreasureDivideGameKeys.crewTile(teamId),
-      margin: const EdgeInsets.all(6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      // Margin + padding aggressively trimmed (was 6 / (12,12)) to
+      // recover vertical space in the shorter strip.
+      margin: const EdgeInsets.all(3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       alignment: Alignment.center,
       constraints: BoxConstraints(minWidth: tileWidth, maxWidth: tileWidth),
       decoration: BoxDecoration(
@@ -1437,14 +1453,14 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
         children: [
           // Crew crest — ResizeImage cap keeps the 670×680-to-954×945
           // source PNGs (Kraken is ~3.6 MB decoded) from holding multi-MB
-          // rasters for a 96px display across every opponent tile, which
+          // rasters for a small display across every opponent tile, which
           // adds up fast in Team mode (up to 5 crests on screen) and
           // contributes to CanvasKit wasm heap pressure.
           if (crestPath != null)
             Container(
               key: TreasureDivideGameKeys.crewCrest(teamId),
-              width: 96,
-              height: 96,
+              width: 70,
+              height: 70,
               child: Image(
                 image: ResizeImage(
                   AssetImage(crestPath),
@@ -1453,10 +1469,10 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 ),
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) =>
-                    Icon(Icons.shield, color: _treasureGold, size: 72),
+                    Icon(Icons.shield, color: _treasureGold, size: 56),
               ),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           // Crew treasure
           Text(
             '$treasure gold',
