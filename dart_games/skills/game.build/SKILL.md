@@ -1059,6 +1059,20 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 >   - Auto-play guards on announcement and takeout chains (skip when runner is active)
 >   - Dispose the runner in `dispose()`
 > - RemoveDartsModal overlay (with Edit Score button inside — do NOT add a custom remove-darts button outside the modal, and do NOT add an Edit Score button anywhere outside this modal — see "Edit Score button placement and flow" rule above)
+> - **`DartboardEmulatorSection` MUST be passed `dartboardKey: _dartboardKey`** (CRITICAL — silent breakage if omitted). The takeout-prompt overlay's "Remove Darts" button calls `dartboardKey?.currentState?.removeDarts()` to clear the local dart positions and fire the `onRemoveDarts` callback. Without the key the tap is a silent no-op and the turn never advances — the user is stuck on a "Remove Your Darts" overlay that won't dismiss. Required wiring in the game-screen `State` class:
+>   ```dart
+>   import '../../../widgets/interactive_dartboard.dart';
+>   // ...
+>   final GlobalKey<InteractiveDartboardState> _dartboardKey =
+>       GlobalKey<InteractiveDartboardState>();
+>   // ...
+>   DartboardEmulatorSection(
+>     dartboardKey: _dartboardKey,            // ← MANDATORY
+>     onRemoveDarts: () { _mockApi?.simulateTakeoutFinished(); },
+>     // ... other params
+>   )
+>   ```
+>   Verified by AR-4 row (h2). Reference: any other game's screen (Pirate's Grid, Tiki Golf, Monster Mash) for the canonical wiring.
 > - DartboardPausedModal overlay — show only when `!dartboardProvider.isEmulator && status != connected && status != emulator`
 > - SaveGameModal (back button + PopScope pattern)
 > - Skip turn button
@@ -1314,6 +1328,12 @@ After the sub-agent returns:
 > (g2) **Results screen has NO back arrow** — read the results-screen AppBar and verify `automaticallyImplyLeading: false` is set AND no `leading:` widget is supplied. Confirm the 3 action buttons (Play Again, Change Settings, Back to Menu) are the only navigation off the results screen.
 > (h) **No custom 'remove darts' button exists outside RemoveDartsModal** — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for any button labeled "Remove" outside the modal
 > (h1) **No Edit Score button exists outside RemoveDartsModal** — grep the game screen for any `key: ...editScoreButton` or `'Edit Score'` button outside RemoveDartsModal. The button must ONLY be wired via `RemoveDartsModal(editScoreButtonKey: ..., onEditScore: () => showEditScoreDialog(...))`. No standalone Edit Score button on the game screen, in the AppBar, or anywhere else.
+> (h2) **`DartboardEmulatorSection` MUST receive `dartboardKey: _dartboardKey`** — verify the game-screen `State` class declares `final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();` AND the `DartboardEmulatorSection(...)` invocation passes `dartboardKey: _dartboardKey` (alongside `onRemoveDarts: () { _mockApi?.simulateTakeoutFinished(); }`). The "Remove Darts" button inside the takeout-prompt overlay (`dartboard_emulator_section.dart` `_buildDisabledOverlay`) is wired as `onPressed: () => dartboardKey?.currentState?.removeDarts()` — if the key is null, the tap is a silent no-op and the turn never advances. The user sees a "Remove Your Darts" overlay that won't dismiss. **Mandatory grep audit:**
+>    ```
+>    grep -nE "GlobalKey<InteractiveDartboardState>" lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart
+>    grep -nE "dartboardKey:\s*_dartboardKey" lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart
+>    ```
+>    Both greps must return at least one hit. Confirm the same file also `import`s `'../../../widgets/interactive_dartboard.dart';` so `InteractiveDartboardState` resolves. **Recurring miss:** Treasure Divide shipped without this key and the takeout overlay's "Remove Darts" button silently no-op'd until reported in production — the screen-construction template + AR-4 row both grew out of that fix. Reference: any other game's screen for the canonical wiring (Pirate's Grid, Tiki Golf, Monster Mash all follow the pattern).
 > (i) Correct PlayerListPanel pattern (Dual vs Team) — and the Team config lives in `team_player_list_panel_config.dart`, not `dual_player_list_panel_config.dart`
 > (j) SaveGameModal uses PopScope + outer Stack on game screen (sibling of Scaffold, not body-Stack child)
 > (k) **Menu screen outer-Stack modal pattern**: build() returns `Stack`, NOT Scaffold. Outer-Stack siblings (back → front): Scaffold → `if (_showResumeModal) ResumeGameModal(...)` → conditional `DartboardPausedModal(...)` (last child, same paused condition as game screen). AddPlayerDialog is NOT a Stack child — it's a routed dialog launched from inside `DualPlayerListPanel` via `showAddPlayerDialog()` (the panel handles it; menu screen passes `addPlayerButtonKey` only).

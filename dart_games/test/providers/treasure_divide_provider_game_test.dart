@@ -549,7 +549,46 @@ void main() {
       expect(game.timesHalvedPerPlayer[pid], 0);
     });
 
-    test('37. Edit updates round score from hit to miss (new halving)', () {
+    test(
+        '37. Edit updates round score from hit to miss (new halving — '
+        'when there was treasure to halve)', () {
+      // Set up a 2-round history: round 0 = scored, round 1 = scored,
+      // and we then edit round 1 to all-miss. Because the player had
+      // a positive treasure walking into round 1, the all-miss edit
+      // counts as a real halving event and bumps timesHalvedPerPlayer.
+      final p = _makeSolo(random: Random(1));
+      final game = p.currentGame!;
+      final pid = game.playerIds.first;
+      final target0 = game.targetSequence[0];
+      final target1 = game.targetSequence[1];
+      if (target0 <= 0 ||
+          target0 == 25 ||
+          target1 <= 0 ||
+          target1 == 25) {
+        return;
+      }
+      game.playerRoundScores[pid]![0] = target0;
+      game.playerRoundScores[pid]![1] = target1;
+      game.timesHalvedPerPlayer[pid] = 0;
+      p.editPlayerScore(
+        playerId: pid,
+        roundIndex: 1,
+        newSegments: ['Miss', 'Miss', 'Miss'],
+      );
+      expect(game.playerRoundScores[pid]![1], 0);
+      expect(game.timesHalvedPerPlayer[pid], 1);
+    });
+
+    test(
+        '37b. Edit hit→miss on round 0 does NOT count as halving '
+        '(no prior treasure)', () {
+      // Player has zero treasure walking into round 0 (it's the first
+      // round). Editing the round-0 score from a hit to all-miss
+      // brings the total to (0 / divisor).floor() = 0 — no actual
+      // halving event happened, so the display counter must stay 0.
+      // Regression for the bug where opponent tiles showed
+      // "Quartered 1 time" after a first-round all-miss even though
+      // the player's gold never dropped.
       final p = _makeSolo(random: Random(1));
       final game = p.currentGame!;
       final pid = game.playerIds.first;
@@ -563,7 +602,12 @@ void main() {
         newSegments: ['Miss', 'Miss', 'Miss'],
       );
       expect(game.playerRoundScores[pid]![0], 0);
-      expect(game.timesHalvedPerPlayer[pid], 1);
+      expect(
+        game.timesHalvedPerPlayer[pid],
+        0,
+        reason: 'No treasure walking into round 0 → halving 0 is a '
+            'no-op → counter must stay 0',
+      );
     });
 
     test('38. Edit on finished game re-runs finalization (Rule §20)', () {
@@ -613,6 +657,128 @@ void main() {
       );
       // timesHalvedPerTeam should be recomputed to 0
       expect(game.timesHalvedPerTeam['team_1'], 0);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Halving counter — "nothing to halve" guard (multi-round)
+  // ═══════════════════════════════════════════════════════════════════
+  //
+  // Regression group for the bug where opponent tiles showed
+  // "Quartered N times" or "Halved N times" even though the player's
+  // gold balance never actually dropped. The model's totalForPlayer
+  // applies `(0 / divisor).floor() = 0` as a no-op when the running
+  // treasure is 0, so the display counter must agree and only count
+  // halving events that genuinely lowered the balance.
+  group('Halving counter no-op guard', () {
+    test('39b. Round 0 all-miss with no prior treasure → counter NOT bumped',
+        () {
+      // Both p1 and p2 throw all misses in round 0. Round transitions
+      // (both players done with round 0 → _applyRoundResultsSolo).
+      // Neither had treasure walking in, so counter stays 0 for both.
+      final p = _makeSolo(random: Random(0));
+      final game = p.currentGame!;
+      _finishMiss(p); // p1 round 0
+      _finishMiss(p); // p2 round 0 → round advances
+      expect(game.currentRoundIndex, 1,
+          reason: 'Round 0 finished, should be on round 1');
+      expect(game.timesHalvedPerPlayer['p1'], 0,
+          reason: 'p1 had 0 treasure walking into round 0 → no halving');
+      expect(game.timesHalvedPerPlayer['p2'], 0,
+          reason: 'p2 had 0 treasure walking into round 0 → no halving');
+      expect(game.totalForPlayer('p1'), 0);
+      expect(game.totalForPlayer('p2'), 0);
+    });
+
+    test(
+        '39c. p1 scores round 0, all-miss round 1 → counter bumped, '
+        'and treasure drops', () {
+      // p1 hits in round 0 (positive treasure), then misses every dart
+      // in round 1. After round 1 finalizes, the halving counter must
+      // increment AND the total treasure must drop per the divisor.
+      final p = _makeSolo(random: Random(0));
+      final game = p.currentGame!;
+      _finishHit(p); // p1 round 0 hits something
+      _finishMiss(p); // p2 round 0 miss → round advances to 1
+      final treasureBefore = game.totalForPlayer('p1');
+      expect(treasureBefore, greaterThan(0),
+          reason: 'p1 must have non-zero treasure after a round-0 hit');
+      _finishMiss(p); // p1 round 1 all-miss
+      _finishMiss(p); // p2 round 1 all-miss → round advances to 2
+      expect(game.timesHalvedPerPlayer['p1'], 1,
+          reason:
+              'p1 had treasure walking into round 1; all-miss halves it');
+      expect(game.totalForPlayer('p1'), treasureBefore ~/ 2,
+          reason: 'Treasure should be halved');
+      expect(game.timesHalvedPerPlayer['p2'], 0,
+          reason: 'p2 had 0 treasure walking into round 1 → not counted');
+      expect(game.totalForPlayer('p2'), 0);
+    });
+
+    test(
+        '39d. Quarter It variant — counter only bumped when treasure '
+        'actually quartered', () {
+      // Same scenario but with Quarter It enabled (divisor = 4).
+      // p1 misses round 0 (no treasure) — counter must NOT increment.
+      // p1 hits round 1 — has treasure. p1 misses round 2 — counter
+      // increments to 1 and total drops to floor(prev / 4).
+      final p = _makeSolo(quarterItEnabled: true, random: Random(0));
+      final game = p.currentGame!;
+      _finishMiss(p); // p1 round 0 miss (no treasure → no halve)
+      _finishMiss(p); // p2 round 0 miss → round advances
+      expect(game.timesHalvedPerPlayer['p1'], 0,
+          reason: 'Round 0 miss with 0 balance → no quartering counted');
+
+      _finishHit(p); // p1 round 1 hits
+      _finishMiss(p); // p2 round 1 → round advances
+      final treasureBefore = game.totalForPlayer('p1');
+      expect(treasureBefore, greaterThan(0));
+
+      _finishMiss(p); // p1 round 2 all-miss → real quartering
+      _finishMiss(p); // p2 round 2 → round advances
+      expect(game.timesHalvedPerPlayer['p1'], 1,
+          reason: 'Round 2 miss with positive treasure → quartered');
+      expect(game.totalForPlayer('p1'), treasureBefore ~/ 4);
+    });
+
+    test(
+        '39e. Team mode — crew with 0 treasure missing whole round '
+        'does NOT bump timesHalvedPerTeam', () {
+      // Both members of team_1 miss round 0. _applyCrewRoundResult
+      // detects the all-crew miss, but team had 0 treasure → no count.
+      // team_2 hits in round 0 → has treasure. team_2 then misses
+      // round 1 → counter increments to 1.
+      final p = _makeTeam(
+        teamPlayers: {
+          'team_1': ['p1', 'p2'],
+          'team_2': ['p3', 'p4'],
+        },
+        random: Random(0),
+      );
+      final game = p.currentGame!;
+
+      // Round 0: team_1 all miss, team_2 one hit.
+      _finishMiss(p); // p1 (team_1)
+      _finishMiss(p); // p2 (team_1) → crew_1 result applies
+      _finishHit(p); // p3 (team_2)
+      _finishMiss(p); // p4 (team_2) → crew_2 result + round advances
+
+      expect(game.timesHalvedPerTeam['team_1'], 0,
+          reason: 'team_1 had 0 treasure walking into round 0 → no halving');
+      expect(game.timesHalvedPerTeam['team_2'], 0,
+          reason: 'team_2 had a hit → not an all-miss round');
+
+      // Round 1: team_1 still 0 treasure (don't count their miss).
+      // team_2 has treasure, all-miss → counts as halving.
+      _finishMiss(p);
+      _finishMiss(p); // team_1 round 1 all-miss again
+      _finishMiss(p);
+      _finishMiss(p); // team_2 round 1 all-miss → round advances
+
+      expect(game.timesHalvedPerTeam['team_1'], 0,
+          reason: 'team_1 still has 0 treasure → still no halving');
+      expect(game.timesHalvedPerTeam['team_2'], 1,
+          reason: 'team_2 had treasure → halving counted on round-1 miss');
     });
   });
 

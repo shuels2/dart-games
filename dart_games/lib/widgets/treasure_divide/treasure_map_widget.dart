@@ -536,10 +536,18 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
 
                   // Font multipliers bumped from 0.45 / 0.6 → 0.515 /
                   // 0.686. Combined with the 40% radius bump, the
-                  // labels render ~60% larger than before.
-                  final fontSize = (label.length > 3)
-                      ? math.max(6.0, radius * 0.515)
-                      : math.max(7.0, radius * 0.686);
+                  // labels render ~60% larger than before. The flat
+                  // +6 px is follow-up tuning for legibility at the
+                  // new marker size.
+                  //
+                  // Threshold is `length > 4` so 'Bull' (4 chars) joins
+                  // the standard branch and renders at the same size
+                  // as the number labels — only true overflow labels
+                  // (5+ chars, not currently used) would fall back to
+                  // the smaller formula.
+                  final fontSize = (label.length > 4)
+                      ? math.max(6.0, radius * 0.515 + 6.0)
+                      : math.max(7.0, radius * 0.686 + 6.0);
 
                   // The final island lands ON the chest sprite, so it
                   // gets a sail-white halo to keep it legible against
@@ -790,7 +798,11 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                         'Target: $targetStr',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.pirataOne(
-                          fontSize: (w * 0.045).clamp(16.0, 48.0),
+                          // Banner sizing is map-width-relative (~4.5%
+                          // of map width), clamped at 24 / 56 — bumped
+                          // 8 pt across the board for legibility at the
+                          // current HUD scale.
+                          fontSize: (w * 0.045 + 8.0).clamp(24.0, 56.0),
                           color: widget.treasureGold,
                           // Matches the signature Treasure Divide title
                           // effect used on the setup / menu screens: dark

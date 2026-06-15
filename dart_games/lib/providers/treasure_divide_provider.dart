@@ -112,6 +112,12 @@ class TreasureDivideProvider extends ChangeNotifier {
   /// Used by the screen to decide whether to announce Halved / Quartered.
   int get scoreBeforeCurrentTurn => _scoreBeforeCurrentTurn;
 
+  /// The amount of gold accumulated by the current player on the turn
+  /// in progress. Cleared on takeout. Used by the game screen so the
+  /// active player's gold total updates after every dart instead of
+  /// waiting for the end of the turn.
+  int get currentTurnHaul => _currentTurnHaul;
+
   /// Whether the current player has hit at least one dart so far this turn.
   bool get currentTurnHadAtLeastOneHit => _currentTurnHaul > 0;
 
@@ -450,9 +456,14 @@ class TreasureDivideProvider extends ChangeNotifier {
         _recomputeTeamHalveCount(teamId);
       }
     } else if (!wasZero && oldHaul != null && isNowZero) {
-      // Was a hit, now is a miss (new halving)
-      game.timesHalvedPerPlayer[playerId] =
-          (game.timesHalvedPerPlayer[playerId] ?? 0) + 1;
+      // Was a hit, now is a miss (new halving) — but only count it
+      // if there was actually treasure to halve coming into this
+      // round. Editing a 0-treasure turn from a hit to a miss
+      // should keep the gold at 0 and not claim a halving event.
+      if (_totalBeforeRound(playerId, roundIndex) > 0) {
+        game.timesHalvedPerPlayer[playerId] =
+            (game.timesHalvedPerPlayer[playerId] ?? 0) + 1;
+      }
       final teamId = game.playerTeamAssignments[playerId];
       if (teamId != null &&
           game.gameMode == TreasureDivideGameMode.team) {
@@ -487,18 +498,34 @@ class TreasureDivideProvider extends ChangeNotifier {
     final game = _currentGame!;
     final members = game.teamPlayers[teamId] ?? [];
     int count = 0;
+    // Replay the crew's treasure round-by-round so we can skip
+    // counting halving events that fired when the crew had 0
+    // treasure (no-op math; counting them shows a misleading
+    // "Quartered N times" in the UI even though gold never dropped).
+    int crewTotal = 0;
+    final divisor = game.quarterItEnabled ? 4 : 2;
     for (int r = 0; r < game.numberOfRounds; r++) {
       bool allMissed = true;
       bool allThrown = true;
+      int crewHaul = 0;
       for (final pid in members) {
         final haul = game.playerRoundScores[pid]?[r];
         if (haul == null) {
           allThrown = false;
           break;
         }
+        crewHaul += haul;
         if (haul > 0) allMissed = false;
       }
-      if (allThrown && allMissed) count++;
+      if (!allThrown) continue;
+      if (allMissed) {
+        if (crewTotal > 0) {
+          count++;
+          crewTotal = (crewTotal / divisor).floor();
+        }
+      } else {
+        crewTotal += crewHaul;
+      }
     }
     game.timesHalvedPerTeam[teamId] = count;
   }
@@ -524,16 +551,48 @@ class TreasureDivideProvider extends ChangeNotifier {
     final game = _currentGame!;
     final roundIndex = game.currentRoundIndex;
 
-    // For each player: if their haul was 0 (all missed), apply halving
+    // For each player: if their haul was 0 AND they had treasure to
+    // halve coming into this round, increment the halving counter.
+    // A player who misses with a 0 balance has nothing to lose
+    // (totalForPlayer's `total = (0 / divisor).floor() = 0` is a
+    // no-op), so counting it as a halving event misleads the UI
+    // ("Quartered 1 time" appearing on a player whose gold never
+    // dropped). The player-tile counter is display-only; the actual
+    // treasure math is reconstructed in `totalForPlayer` from the
+    // round haul list and is unaffected by this guard.
     for (final pid in game.playerIds) {
       final haul = game.playerRoundScores[pid]?[roundIndex] ?? 0;
-      if (haul == 0) {
+      if (haul == 0 && _totalBeforeRound(pid, roundIndex) > 0) {
         game.timesHalvedPerPlayer[pid] =
             (game.timesHalvedPerPlayer[pid] ?? 0) + 1;
       }
     }
 
     _advanceToNextRound();
+  }
+
+  /// Replays [playerId]'s round hauls from round 0 up to (but not
+  /// including) [roundIndex] to compute the treasure they had walking
+  /// INTO that round — same formula as
+  /// `TreasureDivideGame.totalForPlayer` but stopping early. Used to
+  /// decide whether an all-miss turn should bump the display-only
+  /// halving counter (no-op on 0 → don't count).
+  int _totalBeforeRound(String playerId, int roundIndex) {
+    final game = _currentGame!;
+    final scores =
+        game.playerRoundScores[playerId] ?? const <int?>[];
+    int total = 0;
+    final divisor = game.quarterItEnabled ? 4 : 2;
+    for (int i = 0; i < roundIndex && i < scores.length; i++) {
+      final h = scores[i];
+      if (h == null) continue;
+      if (h > 0) {
+        total += h;
+      } else {
+        total = (total / divisor).floor();
+      }
+    }
+    return total;
   }
 
   // ─── _advanceTeamPlayer ──────────────────────────────────────────────────────
@@ -600,10 +659,50 @@ class TreasureDivideProvider extends ChangeNotifier {
     }
 
     if (!anyHit) {
-      // Whole crew came up empty — increment crew halve counter
-      game.timesHalvedPerTeam[teamId] =
-          (game.timesHalvedPerTeam[teamId] ?? 0) + 1;
+      // Whole crew came up empty — increment crew halve counter,
+      // but only if the crew had treasure to halve coming into this
+      // round. Same rationale as the solo guard above: halving 0 is a
+      // no-op, so the display counter shouldn't claim "Quartered 1
+      // time" against a crew whose treasure never actually dropped.
+      if (game.totalForTeam(teamId) > 0 ||
+          _crewTreasureBefore(teamId, roundIndex) > 0) {
+        game.timesHalvedPerTeam[teamId] =
+            (game.timesHalvedPerTeam[teamId] ?? 0) + 1;
+      }
     }
+  }
+
+  /// Returns the crew treasure for [teamId] computed across rounds
+  /// 0..roundIndex-1 (i.e. BEFORE the just-finished round). Used by
+  /// `_applyCrewRoundResult` to skip incrementing the halve counter
+  /// when there was nothing to halve. Replays the same `anyHit`-based
+  /// halving rule that `totalForTeam` uses internally.
+  int _crewTreasureBefore(String teamId, int roundIndex) {
+    final game = _currentGame!;
+    final members = game.teamPlayers[teamId] ?? [];
+    int total = 0;
+    final divisor = game.quarterItEnabled ? 4 : 2;
+    for (int round = 0; round < roundIndex; round++) {
+      bool allThrown = members.every((pid) {
+        final scores = game.playerRoundScores[pid];
+        if (scores == null || round >= scores.length) return false;
+        return scores[round] != null;
+      });
+      if (!allThrown) continue;
+      int crewHaul = 0;
+      bool anyHit = false;
+      for (final pid in members) {
+        final h = game.playerRoundScores[pid]?[round] ?? 0;
+        crewHaul += h;
+        if (h > 0) anyHit = true;
+      }
+      if (anyHit) {
+        total += crewHaul;
+      } else {
+        total = (total / divisor).floor();
+      }
+    }
+    return total;
   }
 
   // ─── _advanceToNextRound ─────────────────────────────────────────────────────

@@ -15,6 +15,7 @@ import '../../../services/treasure_divide_announcement_helper.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
+import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../widgets/edit_score/edit_score_dialog.dart';
 import '../../../widgets/edit_score/edit_score_dialog_config.dart';
@@ -53,6 +54,13 @@ class TreasureDivideGameScreen extends StatefulWidget {
 class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   StreamSubscription? _dartboardSubscription;
   MockScoliaApiService? _mockApi;
+  // Key for the InteractiveDartboard inside DartboardEmulatorSection.
+  // Required so the emulator's takeout-prompt overlay can dispatch the
+  // "Remove Darts" tap via dartboardKey.currentState?.removeDarts().
+  // Without it the button silently no-ops on Treasure Divide — every
+  // other game passes this through; we just hadn't.
+  final GlobalKey<InteractiveDartboardState> _dartboardKey =
+      GlobalKey<InteractiveDartboardState>();
   final DartboardEmulatorController _dartboardEmulatorController =
       DartboardEmulatorController();
   PlayToCompleteRunner? _playToCompleteRunner;
@@ -849,6 +857,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             child: DartboardEmulatorSection(
               config: DartboardSectionConfig.treasureDivide(),
               controller: _dartboardEmulatorController,
+              dartboardKey: _dartboardKey,
               isConnected: !dartboardProvider.isEmulator,
               shouldPromptTakeout: shouldPromptTakeout,
               onDartThrow: (score, multiplier, baseScore, position) {
@@ -1033,14 +1042,15 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   }
 
   // Height of the bottom strip containing opponent tiles.
-  // Shrunk from 360 → 220 so the map row gains ~140 px vertical space,
-  // letting the aspect-locked treasure map become width-bound instead
-  // of height-bound — the map now fills the full row width on a
-  // typical 16:9 viewport. The active player tile (Expanded in the
-  // left column) automatically picks up the extra height; its content
-  // remains centered. Opponent tiles within the strip get aggressively
-  // trimmed padding / smaller avatars to fit the new height.
-  static const double _kBottomStripHeight = 220.0;
+  // Originally 360, shrunk to 220 so the aspect-locked treasure map
+  // could fill the row width. Bumped 220 → 235 to give the opponent
+  // column ~15 px more headroom — the previous setting overflowed by
+  // ~9 px when both conditional rows (round score + halved) were
+  // visible on a tile, and shrinking the opponent avatar to fit had
+  // been rejected. The 15 px reclaim costs only ~13 px of letterbox
+  // on a typical 16:9 viewport (map row 774 → 759; map aspect 1.773
+  // wants ~1346 wide vs row width 1372).
+  static const double _kBottomStripHeight = 235.0;
   // Sizing baseline for opponent tiles — 8-player Solo is the maximum so
   // 7 opponent tiles fill the strip edge-to-edge. With fewer opponents,
   // each tile keeps this same width and the strip leaves empty space on
@@ -1060,19 +1070,31 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     // Compute display score
     int displayScore;
     int roundScore;
+    // Live in-progress haul for the player throwing right now — added
+    // to the committed totals so the gold/round numbers tick up after
+    // every dart hit instead of jumping at end of turn. Halving on
+    // an all-miss turn is still applied at takeout, so the
+    // optimistic add can never go negative.
+    final liveHaul = provider.currentTurnHaul;
+    int timesHalved;
     if (isTeam && activeTeamId != null) {
-      displayScore = game.totalForTeam(activeTeamId);
-      // Sum of hauls for current round from all team members
+      displayScore = game.totalForTeam(activeTeamId) + liveHaul;
+      // Sum of hauls for current round from all team members,
+      // plus the in-progress turn's accumulating haul.
       int crewRound = 0;
       final members = game.teamPlayers[activeTeamId] ?? [];
       for (final pid in members) {
         crewRound += game.playerRoundScores[pid]?[game.currentRoundIndex] ?? 0;
       }
-      roundScore = crewRound;
+      roundScore = crewRound + liveHaul;
+      timesHalved = game.timesHalvedPerTeam[activeTeamId] ?? 0;
     } else {
-      displayScore = game.totalForPlayer(currentPlayerId);
+      displayScore = game.totalForPlayer(currentPlayerId) + liveHaul;
       roundScore =
-          game.playerRoundScores[currentPlayerId]?[game.currentRoundIndex] ?? 0;
+          (game.playerRoundScores[currentPlayerId]?[game.currentRoundIndex] ??
+                  0) +
+              liveHaul;
+      timesHalved = game.timesHalvedPerPlayer[currentPlayerId] ?? 0;
     }
 
     // Compute dart indicators
@@ -1091,8 +1113,15 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(6, 12, 6, 6),
-      padding: const EdgeInsets.fromLTRB(10, 28, 10, 10),
+      // Top/bottom padding + margin trimmed further to absorb the
+      // new "Halved / Quartered N times" line under the gold total
+      // without shrinking the opponent strip. Original was 12/28 top,
+      // 6/10 bottom; previous pass took it to 4/8 top, 2/4 bottom;
+      // this pass reduces top to 2/2 to recover ~8 px for the new
+      // row. Content is still centered vertically so the visible
+      // cluster doesn't drift to the top of the column.
+      margin: const EdgeInsets.fromLTRB(6, 2, 6, 2),
+      padding: const EdgeInsets.fromLTRB(10, 2, 10, 2),
       decoration: BoxDecoration(
         color: _oceanTeal.withOpacity(0.4),
         borderRadius: BorderRadius.circular(12),
@@ -1133,7 +1162,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           Text(
             currentPlayer?.name ?? '',
             style: GoogleFonts.pirataOne(
-              fontSize: 38,
+              fontSize: 44,
               color: _sailWhite,
               shadows: _treasureTextShadows,
             ),
@@ -1147,20 +1176,43 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             key: TreasureDivideGameKeys.treasureScore,
             '$displayScore gold',
             style: GoogleFonts.pirataOne(
-              fontSize: 38,
+              fontSize: 44,
               color: _treasureGold,
               shadows: _treasureTextShadows,
             ),
             textAlign: TextAlign.center,
           ),
 
-          // Round score
+          // Halving / quartering history — surfaced beneath the gold
+          // total so the active player can see how many times their
+          // treasure (or their crew's, in team mode) has been
+          // halved/quartered this game. Matches the opponent-tile
+          // pill in copy and warning-amber color so the two read as
+          // the same stat. Only renders when timesHalved > 0.
+          if (timesHalved > 0)
+            Text(
+              '${game.quarterItEnabled ? "Quartered" : "Halved"} '
+              '$timesHalved ${timesHalved == 1 ? "time" : "times"}',
+              style: GoogleFonts.merriweather(
+                fontSize: 20,
+                color: const Color(0xFFFF8C42), // warm coral / amber
+                shadows: _treasureTextShadows,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+          // Round score — always sail white regardless of value.
+          // Showing the number in red on an all-miss turn was misread
+          // as the score being deducted; the +N prefix is enough to
+          // signal "added this round", and the round-end halving (when
+          // it fires) is conveyed by the times-halved row on opponent
+          // tiles anyway.
           Text(
             key: TreasureDivideGameKeys.roundScore,
             '+$roundScore this round',
             style: GoogleFonts.merriweather(
-              fontSize: 28,
-              color: roundScore > 0 ? _islandGreen : _bloodRed,
+              fontSize: 32,
+              color: _sailWhite,
               shadows: _treasureTextShadows,
             ),
             textAlign: TextAlign.center,
@@ -1218,7 +1270,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               child: Text(
                 'Skip Turn',
                 style: GoogleFonts.pirataOne(
-                    fontSize: 20, color: _treasureGold),
+                    fontSize: 23, color: _treasureGold),
               ),
             ),
           ),
@@ -1269,7 +1321,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
         Text(
           'Crew Treasure: $crewTreasure gold',
           style: GoogleFonts.merriweather(
-            fontSize: 11,
+            fontSize: 13,
             color: _sailWhite,
           ),
           textAlign: TextAlign.center,
@@ -1278,7 +1330,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           Text(
             'Next: ${nextPlayer.name}',
             style: GoogleFonts.merriweather(
-              fontSize: 10,
+              fontSize: 12,
               color: _sailWhite.withOpacity(0.75),
             ),
             textAlign: TextAlign.center,
@@ -1299,32 +1351,75 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
         for (int i = 0; i < dartsThisTurn; i++)
           Container(
             key: TreasureDivideGameKeys.dartIndicator(i),
-            margin: const EdgeInsets.symmetric(horizontal: 5),
-            width: 44,
-            height: 44,
-            decoration: _dartIndicatorDecoration(i, dartsThrown, segments),
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            width: 55,
+            height: 55,
+            decoration:
+                _dartIndicatorDecoration(i, dartsThrown, segments, game),
             child: _dartIndicatorChild(i, dartsThrown, segments, game),
           ),
       ],
     );
   }
 
-  BoxDecoration _dartIndicatorDecoration(
-      int index, int dartsThrown, List<String> segments) {
+  /// Returns true when the dart [seg] actually contributed gold given
+  /// the current round's [target]. A hit that doesn't match the target
+  /// (e.g. S5 on a target=20 round) counts as a non-scoring dart —
+  /// visually the same as a miss for indicator-color purposes.
+  bool _dartScoredGold(String seg, int target) {
+    if (seg == 'Miss' || seg == 'None' || seg.isEmpty) return false;
+    // -1 = AnyDouble sentinel from kTargetAnyDouble.
+    if (target == -1) {
+      return seg.toUpperCase().startsWith('D');
+    }
+    // -2 = AnyTriple sentinel from kTargetAnyTriple.
+    if (target == -2) {
+      return seg.toUpperCase().startsWith('T');
+    }
+    // 25 = Bull round — Bull (50) or outer bull (25) counts.
+    if (target == 25) {
+      return seg == 'Bull' || seg == '25';
+    }
+    // Numeric target — any S/D/T multiplier of the same base number.
+    final match = RegExp(r'^([SDTsdt])(\d+)$').firstMatch(seg);
+    if (match != null) {
+      final base = int.tryParse(match.group(2)!) ?? 0;
+      return base == target;
+    }
+    return false;
+  }
+
+  BoxDecoration _dartIndicatorDecoration(int index, int dartsThrown,
+      List<String> segments, TreasureDivideGame game) {
     if (index >= dartsThrown) {
-      // Empty — outlined circle
+      // Not yet thrown — sail-white ring. Reads as pending against
+      // the teal active-panel background; the prior plank-brown was
+      // too low-contrast to spot. Bright treasure-gold is reserved
+      // for hits below so the gold ring carries meaning.
       return BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: _treasureGold, width: 2.5),
+        border: Border.all(color: _sailWhite, width: 2.5),
       );
     }
     final seg = index < segments.length ? segments[index] : '';
-    final isMiss = seg == 'Miss' || seg == 'None' || seg.isEmpty;
+    final roundIndex = game.currentRoundIndex;
+    final target = roundIndex < game.targetSequence.length
+        ? game.targetSequence[roundIndex]
+        : 0;
+    // Background uses TREASURE GOLD when the dart added gold, RED
+    // otherwise — including missed darts AND non-target hits like
+    // landing on S5 during a target=20 round. The bright gold ring is
+    // distinct from the pending plank-brown ring above so a scoring
+    // dart pops visually. The label still distinguishes true misses
+    // ('X') from non-scoring hits (renders the dart's actual score).
+    final scored = _dartScoredGold(seg, target);
     return BoxDecoration(
       shape: BoxShape.circle,
-      color: isMiss ? _bloodRed.withOpacity(0.2) : _islandGreen.withOpacity(0.2),
+      color: scored
+          ? _treasureGold.withOpacity(0.35)
+          : _bloodRed.withOpacity(0.2),
       border: Border.all(
-        color: isMiss ? _bloodRed : _treasureGold,
+        color: scored ? _treasureGold : _bloodRed,
         width: 2.5,
       ),
     );
@@ -1335,19 +1430,24 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     if (index >= dartsThrown) return null;
     final seg = index < segments.length ? segments[index] : '';
     final isMiss = seg == 'Miss' || seg == 'None' || seg.isEmpty;
+    // Both miss and hit labels render in sail white — the per-state
+    // background tint (blood-red wash for misses, island-green wash
+    // for hits) already conveys the outcome, and the previous dark
+    // colored text on a dark colored tint had poor contrast against
+    // the per-state ring color. Fonts bumped 18 → 22 / 16 → 20 (~25%)
+    // to match the larger 55 px circles.
     if (isMiss) {
       return Center(
         child: Text(
           'X',
           style: GoogleFonts.merriweather(
-            fontSize: 18,
+            fontSize: 25,
             fontWeight: FontWeight.bold,
-            color: _bloodRed,
+            color: _sailWhite,
           ),
         ),
       );
     }
-    // Compute hit score for display
     final roundIndex = game.currentRoundIndex;
     final target = roundIndex < game.targetSequence.length
         ? game.targetSequence[roundIndex]
@@ -1357,9 +1457,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       child: Text(
         scoreText,
         style: GoogleFonts.merriweather(
-          fontSize: 16,
+          fontSize: 23,
           fontWeight: FontWeight.bold,
-          color: _islandGreen,
+          color: _sailWhite,
         ),
       ),
     );
@@ -1486,8 +1586,23 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
 
     final treasure = game.totalForPlayer(playerId);
     final timesHalved = game.timesHalvedPerPlayer[playerId] ?? 0;
-    final roundScore =
-        game.playerRoundScores[playerId]?[game.currentRoundIndex];
+    // Show the opponent's most recent COMMITTED round score, not just
+    // the current round's. After a round transitions, the player who
+    // just finished has playerRoundScores[id][currentRoundIndex] = null
+    // (they haven't thrown the new round yet); falling back to the
+    // last non-null score keeps the "+N" pill visible until they
+    // throw their next dart of the new round. Active player display
+    // uses the live in-progress haul, handled separately.
+    int? roundScore;
+    final scores = game.playerRoundScores[playerId];
+    if (scores != null) {
+      for (int i = game.currentRoundIndex; i >= 0; i--) {
+        if (i < scores.length && scores[i] != null) {
+          roundScore = scores[i];
+          break;
+        }
+      }
+    }
 
     return Container(
       key: TreasureDivideGameKeys.playerTile(playerId),
@@ -1512,11 +1627,14 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             themeIndex: _themePreviewOverride ??
                 game.playerPirateThemes[playerId] ??
                 0,
-            // Avatar reduced 210 → 120 to fit the shorter strip while
-            // leaving headroom for the optional round score / halved
-            // rows that can show during gameplay. Hat / accessory
-            // overflow still paints outside the box (PirateAvatarWidget
-            // uses Clip.none internally).
+            // Avatar at 120 to keep opponent tiles at the size set
+            // when the strip was shrunk to 220 — the larger active-
+            // player tile fonts/dart indicators must not bleed
+            // downward into the opponent strip; that's handled by
+            // trimming active-panel padding, not by shrinking these
+            // tiles further. Hat / accessory overflow still paints
+            // outside the box (PirateAvatarWidget uses Clip.none
+            // internally).
             size: 120,
             isActive: playerId == game.currentPlayerId,
           ),
@@ -1532,32 +1650,60 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          Text(
-            '$treasure gold',
+          // Gold total + most-recent round contribution on a single
+          // line — "200 gold (+78)" or "200 gold (–)". Collapsing the
+          // standalone "+N" row into this line eliminates the bottom-
+          // overflow case when both halved and round-score conditional
+          // rows wanted to render at once. The round-score span is
+          // omitted entirely when the player hasn't committed a round
+          // yet so the very first turn renders as just "0 gold".
+          Text.rich(
             key: TreasureDivideGameKeys.roundStatus(playerId),
-            style: GoogleFonts.pirataOne(
-              fontSize: 22,
-              color: _treasureGold,
-              fontWeight: FontWeight.bold,
-              shadows: _treasureTextShadows,
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '$treasure gold',
+                  style: GoogleFonts.pirataOne(
+                    fontSize: 22,
+                    color: _treasureGold,
+                    fontWeight: FontWeight.bold,
+                    shadows: _treasureTextShadows,
+                  ),
+                ),
+                if (roundScore != null)
+                  TextSpan(
+                    text:
+                        roundScore > 0 ? '  (+$roundScore)' : '  (–)',
+                    style: GoogleFonts.pirataOne(
+                      fontSize: 22,
+                      // Always white + signature shadow effect — even
+                      // on the all-miss "(–)" state. The previous
+                      // blood-red zero had poor contrast against the
+                      // ocean-teal tile background; the dash glyph
+                      // alone is enough to signal "nothing scored".
+                      color: _sailWhite,
+                      shadows: _treasureTextShadows,
+                    ),
+                  ),
+              ],
             ),
             textAlign: TextAlign.center,
           ),
+          // Halving indicator — surfaces the historical penalty (each
+          // all-miss turn halves or quarters the player's gold).
+          // Rendered as "Halved N times" / "Quartered N times" instead
+          // of the prior cramped "÷N×M" shorthand. Coral-orange
+          // (warm warning hue) stands out against the ocean-teal tile
+          // background without competing with the treasure-gold total
+          // above or the blood-red used on the dart indicators.
           if (timesHalved > 0)
             Text(
-              '÷${game.quarterItEnabled ? 4 : 2}×$timesHalved',
+              '${game.quarterItEnabled ? "Quartered" : "Halved"} '
+              '$timesHalved ${timesHalved == 1 ? "time" : "times"}',
               style: GoogleFonts.merriweather(
-                fontSize: 18,
-                color: _bloodRed,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          if (roundScore != null)
-            Text(
-              roundScore > 0 ? '+$roundScore' : '–',
-              style: GoogleFonts.merriweather(
-                fontSize: 18,
-                color: roundScore > 0 ? _islandGreen : _bloodRed,
+                fontSize: 16,
+                color: const Color(0xFFFF8C42), // warm coral / amber
+                shadows: _treasureTextShadows,
               ),
               textAlign: TextAlign.center,
             ),
