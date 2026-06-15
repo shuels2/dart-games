@@ -86,6 +86,18 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
   bool _busy = false;
   String? _error;
 
+  // Drag tracking — see the matching pattern in TreasureMapWidget.
+  // The key is attached to the Stack that hosts the markers so we
+  // can convert global touch positions into canvas-local coords on
+  // every drag event. Absolute positioning means the marker tracks
+  // the mouse pointer 1:1 even when multiple gesture events fire
+  // between rebuilds (the previous delta-based code only moved by
+  // the LAST frame's delta when events batched).
+  final GlobalKey _canvasKey = GlobalKey();
+  // Offset from the touch to the marker center, captured at drag
+  // start so the marker keeps its relative position under the cursor.
+  Offset _dragStartOffset = Offset.zero;
+
   @override
   void initState() {
     super.initState();
@@ -287,7 +299,13 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           // Stack: image fills, markers positioned in stack pixels.
+          // The GlobalKey lets the drag handlers convert global touch
+          // positions into stack-local coords (so the marker tracks
+          // the mouse pointer 1:1 instead of moving by per-event
+          // deltas, which lose ground when events batch between
+          // rebuilds).
           return Stack(
+            key: _canvasKey,
             alignment: Alignment.center,
             children: [
               Positioned.fill(
@@ -399,9 +417,21 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
       child: GestureDetector(
         key: Key('face-landmark-dot-$key'),
         behavior: HitTestBehavior.opaque,
+        onPanStart: (details) {
+          final box = _canvasKey.currentContext?.findRenderObject()
+              as RenderBox?;
+          if (box == null) return;
+          final localTouch = box.globalToLocal(details.globalPosition);
+          _dragStartOffset = center - localTouch;
+        },
         onPanUpdate: (details) {
-          final nx = (center.dx + details.delta.dx) / canvas.width;
-          final ny = (center.dy + details.delta.dy) / canvas.height;
+          final box = _canvasKey.currentContext?.findRenderObject()
+              as RenderBox?;
+          if (box == null) return;
+          final localTouch = box.globalToLocal(details.globalPosition);
+          final newCenter = localTouch + _dragStartOffset;
+          final nx = (newCenter.dx / canvas.width).clamp(0.0, 1.0);
+          final ny = (newCenter.dy / canvas.height).clamp(0.0, 1.0);
           onMoved(nx, ny);
         },
         child: Tooltip(
@@ -448,9 +478,21 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
       child: GestureDetector(
         key: Key('face-landmark-bbox-${corner.name}'),
         behavior: HitTestBehavior.opaque,
+        onPanStart: (details) {
+          final box = _canvasKey.currentContext?.findRenderObject()
+              as RenderBox?;
+          if (box == null) return;
+          final localTouch = box.globalToLocal(details.globalPosition);
+          _dragStartOffset = center - localTouch;
+        },
         onPanUpdate: (details) {
-          final nx = (center.dx + details.delta.dx) / canvas.width;
-          final ny = (center.dy + details.delta.dy) / canvas.height;
+          final box = _canvasKey.currentContext?.findRenderObject()
+              as RenderBox?;
+          if (box == null) return;
+          final localTouch = box.globalToLocal(details.globalPosition);
+          final newCenter = localTouch + _dragStartOffset;
+          final nx = (newCenter.dx / canvas.width).clamp(0.0, 1.0);
+          final ny = (newCenter.dy / canvas.height).clamp(0.0, 1.0);
           _setBoundingBoxCorner(corner, nx, ny);
         },
         child: DecoratedBox(

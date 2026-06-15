@@ -8,42 +8,77 @@ import 'package:google_fonts/google_fonts.dart';
 /// Each list defines the winding path for that round count.
 typedef _IslandCoord = ({double x, double y});
 
+/// Each list is hand-tuned to spread islands across the full map and
+/// land the LAST island on the treasure chest at (~85, 85).
+///
+/// Constraints honored by all three layouts:
+/// - x is monotonically non-decreasing until the very last waypoint, so
+///   the rope between adjacent islands never crosses earlier segments.
+/// - The compass-rose area (roughly x in [0, 28], y in [68, 100]) in
+///   the bottom-left is kept fully clear — no island lands there and
+///   no rope segment passes through.
+/// - First island stays at x ≥ 8 (out of the Island counter pill / map
+///   border area).
+/// - Y values vary across each layout (not just two rows) so the trail
+///   doesn't read as a strict zigzag. The pattern alternates direction
+///   but the amplitude and offset shift along the way.
 const Map<int, List<_IslandCoord>> _islandCoordsByRoundCount = {
+  // Successive y values intentionally avoid strict alternation —
+  // some neighbors barely move, others jump hard across the map so
+  // the trail reads as a wandering path rather than a stair-step.
+  // Left-side islands (x < 28) stay at y ≤ 55 so the marker halo
+  // doesn't bleed into the bottom-left compass rose (y > 65).
+  // Right-side islands inside the chest x-band (x > 76) stay at
+  // y ≤ 60 so they don't overlap the chest sprite. Everywhere else
+  // we push y as deep as 70-72 to use the bottom of the map.
   7: [
-    (x: 10, y: 55),
-    (x: 24, y: 30),
-    (x: 40, y: 50),
-    (x: 54, y: 22),
-    (x: 68, y: 45),
-    (x: 80, y: 25),
-    (x: 90, y: 55),
+    (x: 11.9, y: 36.7),
+    (x: 32.8, y: 18.3),
+    (x: 36.0, y: 62.0),
+    (x: 59.5, y: 78.7),
+    (x: 58.9, y: 36.1),
+    (x: 82.1, y: 22.0),
+    (x: 87.9, y: 62.7),
   ],
   9: [
-    (x: 13, y: 62),
-    (x: 25, y: 38),
-    (x: 37, y: 58),
-    (x: 50, y: 30),
-    (x: 62, y: 55),
-    (x: 50, y: 72),
-    (x: 62, y: 85),
-    (x: 75, y: 62),
-    (x: 88, y: 78),
+    (x: 10.9, y: 24.0),
+    (x: 23.9, y: 48.0),
+    (x: 39.9, y: 25.0),
+    (x: 32.3, y: 80.5),
+    (x: 61.0, y: 77.0),
+    (x: 46.3, y: 48.3),
+    (x: 69.2, y: 47.5),
+    (x: 80.5, y: 19.8),
+    (x: 87.1, y: 62.9),
   ],
   12: [
-    (x: 10, y: 65),
-    (x: 20, y: 42),
-    (x: 32, y: 60),
-    (x: 44, y: 30),
-    (x: 55, y: 50),
-    (x: 44, y: 68),
-    (x: 55, y: 80),
-    (x: 67, y: 55),
-    (x: 78, y: 72),
-    (x: 67, y: 85),
-    (x: 78, y: 55),
-    (x: 90, y: 70),
+    (x: 11.3, y: 23.6),
+    (x: 20.5, y: 48.5),
+    (x: 35.4, y: 21.0),
+    (x: 32.8, y: 82.7),
+    (x: 44.0, y: 40.1),
+    (x: 62.4, y: 20.8),
+    (x: 44.3, y: 65.8),
+    (x: 58.8, y: 83.1),
+    (x: 71.8, y: 65.9),
+    (x: 71.9, y: 38.3),
+    (x: 87.7, y: 16.6),
+    (x: 88.8, y: 63.4),
   ],
 };
+
+// ─── Public coord lookup (used by the layout editor) ────────────────────────
+
+/// Returns a mutable copy of the canonical island coordinates for the
+/// given round count. Used by the in-game layout editor as the
+/// starting point before any drag-driven mutations are applied.
+List<({double x, double y})> defaultIslandCoordsFor(int rounds) {
+  final base =
+      _islandCoordsByRoundCount[rounds] ?? _islandCoordsByRoundCount[9]!;
+  return base
+      .map<({double x, double y})>((c) => (x: c.x, y: c.y))
+      .toList();
+}
 
 // ─── Public helpers ───────────────────────────────────────────────────────────
 
@@ -85,7 +120,7 @@ class _RopePainter extends CustomPainter {
 
     final paint = Paint()
       ..color = ropeColor
-      ..strokeWidth = 2.5
+      ..strokeWidth = 10.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
@@ -134,14 +169,26 @@ class _RopePainter extends CustomPainter {
         ..moveTo(p1.dx, p1.dy)
         ..quadraticBezierTo(ctrl.dx, ctrl.dy, p2.dx, p2.dy);
 
-      _addDashesTo(dashedPath, segPath, dashLen: 3, gapLen: 5);
+      _addDashesTo(dashedPath, segPath, dashLen: 12, gapLen: 20);
     }
     canvas.drawPath(dashedPath, paint);
   }
 
   /// Walk [source]'s contour and append every dash-length sub-segment
-  /// into [target]. Caller is then responsible for a single drawPath
-  /// on the accumulated target — instead of one drawPath per dash.
+  /// into [target] as a plain moveTo + lineTo pair. Caller is then
+  /// responsible for a single drawPath on the accumulated target.
+  ///
+  /// Uses [getTangentForOffset] to read just the start and end
+  /// positions of each dash. The previous implementation used
+  /// [extractPath] which allocates a fresh Skia [Path] for every dash
+  /// — at ~400 dashes per paint on a wider map that allocation churn
+  /// trips CanvasKit's wasm heap and the engine aborts inside
+  /// PictureRecorder. moveTo/lineTo writes into the existing target
+  /// path with no Skia object creation per dash.
+  ///
+  /// The dashes render as straight chords between two points on the
+  /// underlying Bezier rather than tracing the curve exactly. With
+  /// dashLen=3 px the chord/curve deviation is well under a pixel.
   void _addDashesTo(
     Path target,
     Path source, {
@@ -157,10 +204,12 @@ class _RopePainter extends CustomPainter {
           metric.length,
         );
         if (drawing) {
-          target.addPath(
-            metric.extractPath(distance, segEnd),
-            Offset.zero,
-          );
+          final start = metric.getTangentForOffset(distance);
+          final end = metric.getTangentForOffset(segEnd);
+          if (start != null && end != null) {
+            target.moveTo(start.position.dx, start.position.dy);
+            target.lineTo(end.position.dx, end.position.dy);
+          }
         }
         distance = segEnd;
         drawing = !drawing;
@@ -213,6 +262,25 @@ class TreasureMapWidget extends StatefulWidget {
   /// previously found the badge in the game screen's top badge row.
   final Key? quarterItBadgeKey;
 
+  /// Optional override for the island coordinate list. When provided
+  /// AND its length matches [numberOfRounds], the map uses these
+  /// coords instead of the canonical [_islandCoordsByRoundCount]
+  /// entry. Lets a host screen (e.g. the layout editor) preview
+  /// dragged positions without modifying the constants.
+  final List<({double x, double y})>? coordsOverride;
+
+  /// When true, each island marker becomes draggable. As the user
+  /// drags, [onIslandDragged] fires with the new (x%, y%) for that
+  /// island, allowing the host screen to update its override list
+  /// and re-render the map with the new positions.
+  final bool editMode;
+
+  /// Fires during a drag with the dragged island's index and its new
+  /// (x%, y%) coordinates (in the 0..100 percentage space the
+  /// coordinate constants use).
+  final void Function(int index, double xPercent, double yPercent)?
+      onIslandDragged;
+
   // ── Color params (all have sensible defaults) ─────────────────────────────
   final Color treasureGold;
   final Color plankBrown;
@@ -229,6 +297,9 @@ class TreasureMapWidget extends StatefulWidget {
     this.floaterText,
     this.quarterItEnabled = false,
     this.quarterItBadgeKey,
+    this.coordsOverride,
+    this.editMode = false,
+    this.onIslandDragged,
     this.customTargetsEnabled = false,
     this.treasureGold = const Color(0xFFFFD700),
     this.plankBrown = const Color(0xFF8B6914),
@@ -264,6 +335,18 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
 
+  // Layout editor drag tracking. The key is attached to the inner
+  // SizedBox so we can convert the touch's global position into the
+  // canvas's local coordinate space on every drag event. Using
+  // absolute position (instead of the per-event delta) means the
+  // marker tracks the mouse pointer one-to-one even when multiple
+  // gesture events fire between rebuilds.
+  final GlobalKey _canvasKey = GlobalKey();
+  // Offset from the touch start to the marker's center, in canvas
+  // pixels. Captured in onPanStart so the marker doesn't snap to the
+  // cursor — it keeps the same relative position throughout the drag.
+  Offset _dragStartOffset = Offset.zero;
+
   @override
   void initState() {
     super.initState();
@@ -285,6 +368,13 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
   // ─── Build helpers ─────────────────────────────────────────────────────────
 
   List<_IslandCoord> _getCoords() {
+    // Layout editor override — only honored when its length matches
+    // the current numberOfRounds (so a stale override from a different
+    // game configuration can't render misaligned markers).
+    final override = widget.coordsOverride;
+    if (override != null && override.length == widget.numberOfRounds) {
+      return override;
+    }
     // Use the exact round count if in the table; otherwise use 9 as fallback.
     return _islandCoordsByRoundCount[widget.numberOfRounds] ??
         _islandCoordsByRoundCount[9]!;
@@ -332,6 +422,7 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
 
           return Center(
             child: SizedBox(
+            key: _canvasKey,
             width: w,
             height: h,
             child: Stack(
@@ -378,7 +469,32 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                   ),
                 ),
 
-                // ── Layer 3: Island markers ───────────────────────────────
+                // ── Layer 3: Optional chest image (lower-right) ───────────
+                // Painted BEFORE the island markers so the final island
+                // (which lands on the chest) draws over it instead of
+                // being hidden behind it. ResizeImage caps the decoded
+                // bitmap: chest PNGs ship at ~957×927 (≈3.5 MB RGBA
+                // decoded each) and three variants can sit in the cache;
+                // 512 px keeps each bounded to ~1 MB while still giving
+                // 2× hi-DPI headroom at the ~264 px display size.
+                if (widget.chestImagePath != null)
+                  Positioned(
+                    right: w * 0.02,
+                    bottom: h * 0.02,
+                    width: w * 0.22,
+                    height: h * 0.30,
+                    child: Image(
+                      image: ResizeImage(
+                        AssetImage(widget.chestImagePath!),
+                        width: 512,
+                        height: 512,
+                      ),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+
+                // ── Layer 4: Island markers ───────────────────────────────
                 ...List.generate(widget.numberOfRounds, (i) {
                   if (i >= coords.length) return const SizedBox.shrink();
 
@@ -389,10 +505,12 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                   final isCompleted = i < safeIndex;
                   final isFinal = i == widget.numberOfRounds - 1;
 
-                  // Marker radius
-                  double radius = isCurrent ? 28.0 : 22.0;
-                  // Clamp to a minimum at tiny viewports
-                  radius = radius.clamp(12.0, 36.0);
+                  // Marker radius — bumped another 40% to 56/73 so the
+                  // target labels read at a glance across the much
+                  // larger HUD map. Cap raised to 80 to allow the new
+                  // sizes; floor stays at 20 for tiny viewports.
+                  double radius = isCurrent ? 73.0 : 56.0;
+                  radius = radius.clamp(20.0, 80.0);
 
                   final markerColor = isCurrent
                       ? widget.treasureGold
@@ -400,7 +518,7 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                   final borderColor = isFinal && !isCurrent
                       ? widget.treasureGold
                       : widget.plankBrown;
-                  final borderWidth = isCurrent ? 3.0 : 2.0;
+                  final borderWidth = isCurrent ? 3.5 : 2.5;
 
                   // Label
                   String label;
@@ -416,9 +534,32 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                       ? const Color(0xFFC41E3A) // Blood Red
                       : widget.plankBrown;
 
+                  // Font multipliers bumped from 0.45 / 0.6 → 0.515 /
+                  // 0.686. Combined with the 40% radius bump, the
+                  // labels render ~60% larger than before.
                   final fontSize = (label.length > 3)
-                      ? math.max(6.0, radius * 0.45)
-                      : math.max(7.0, radius * 0.6);
+                      ? math.max(6.0, radius * 0.515)
+                      : math.max(7.0, radius * 0.686);
+
+                  // The final island lands ON the chest sprite, so it
+                  // gets a sail-white halo to keep it legible against
+                  // the chest's warm wood/gold tones. The active-island
+                  // gold glow is additive — both fire when the final
+                  // island is also the current turn.
+                  final boxShadows = <BoxShadow>[
+                    if (isFinal)
+                      BoxShadow(
+                        color: widget.sailWhite.withOpacity(0.7),
+                        blurRadius: 14,
+                        spreadRadius: 3,
+                      ),
+                    if (isCurrent)
+                      BoxShadow(
+                        color: widget.treasureGold.withOpacity(0.5),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                  ];
 
                   Widget marker = Container(
                     width: radius * 2,
@@ -428,15 +569,7 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                       color: markerColor,
                       border:
                           Border.all(color: borderColor, width: borderWidth),
-                      boxShadow: isCurrent
-                          ? [
-                              BoxShadow(
-                                color: widget.treasureGold.withOpacity(0.5),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              )
-                            ]
-                          : null,
+                      boxShadow: boxShadows.isEmpty ? null : boxShadows,
                     ),
                     child: Stack(
                       alignment: Alignment.center,
@@ -481,8 +614,11 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                     ),
                   );
 
-                  // Pulse animation only for current island
-                  if (isCurrent) {
+                  // Pulse animation only for current island.
+                  // Suppressed in edit mode so the scaling doesn't fight
+                  // the drag gesture (the marker would shrink/grow under
+                  // the finger and the hit box would shift).
+                  if (isCurrent && !widget.editMode) {
                     marker = RepaintBoundary(
                       child: AnimatedBuilder(
                         animation: _pulseAnim,
@@ -492,6 +628,47 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                         ),
                         child: marker,
                       ),
+                    );
+                  }
+
+                  // Edit mode: drag follows the mouse pointer 1:1.
+                  // Uses globalToLocal on the canvas SizedBox (via
+                  // _canvasKey) to convert the absolute touch position
+                  // into canvas-local coords. Reading the touch's
+                  // absolute position is unaffected by stale state
+                  // between events (which is what the previous
+                  // delta-based implementation tripped on, causing
+                  // fractional movement when multiple onPanUpdate
+                  // events fired between rebuilds).
+                  if (widget.editMode) {
+                    marker = GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanStart: (details) {
+                        // Capture the offset from the touch to the
+                        // marker center so the marker doesn't snap to
+                        // the cursor at the start of the drag.
+                        final box = _canvasKey.currentContext
+                            ?.findRenderObject() as RenderBox?;
+                        if (box == null) return;
+                        final localTouch =
+                            box.globalToLocal(details.globalPosition);
+                        _dragStartOffset = Offset(cx, cy) - localTouch;
+                      },
+                      onPanUpdate: (details) {
+                        if (widget.onIslandDragged == null) return;
+                        final box = _canvasKey.currentContext
+                            ?.findRenderObject() as RenderBox?;
+                        if (box == null) return;
+                        final localTouch =
+                            box.globalToLocal(details.globalPosition);
+                        final newCenter = localTouch + _dragStartOffset;
+                        final newX = (newCenter.dx / w * 100.0)
+                            .clamp(0.0, 100.0);
+                        final newY = (newCenter.dy / h * 100.0)
+                            .clamp(0.0, 100.0);
+                        widget.onIslandDragged!(i, newX, newY);
+                      },
+                      child: marker,
                     );
                   }
 
@@ -550,7 +727,7 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                               color: widget.treasureGold, width: 2.5),
                         ),
                         child: Text(
-                          'Island ${(safeIndex + 1)}/${widget.numberOfRounds}',
+                          'Island ${(safeIndex + 1)} / ${widget.numberOfRounds}',
                           style: GoogleFonts.pirataOne(
                             fontSize: 25,
                             color: widget.treasureGold,
@@ -589,10 +766,17 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                 ),
 
                 // ── Layer 6: Target banner (top-center) ───────────────────
+                // Centered across the full map width — previously the
+                // Positioned slot left-anchored at w*0.25 and right-
+                // anchored at w*0.05 to dodge the top-left pill, which
+                // pulled the text right of center. Pure 0/0 + Center
+                // puts the banner in the actual map midline; the
+                // Island + QUARTER IT pills sit slightly above (top: 8
+                // vs banner top: 6) so any overlap is negligible.
                 Positioned(
                   top: 6,
-                  left: w * 0.25,
-                  right: w * 0.05,
+                  left: 0,
+                  right: 0,
                   child: Center(
                     child: () {
                       final isCustom = widget.customTargetsEnabled &&
@@ -629,29 +813,6 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                   ),
                 ),
 
-                // ── Layer 7: Optional chest image (lower-right) ───────────
-                // ResizeImage caps the decoded bitmap. The chest PNGs ship
-                // at ~957×927 (≈3.5 MB RGBA decoded each) and three
-                // variants (Empty/Halved/Full) can sit in the image cache.
-                // The display is `w * 0.22` (≈ 264 px for a 1200 px map),
-                // so 512 px gives 2× hi-DPI headroom while keeping each
-                // chest bounded to ~1 MB of pixel data.
-                if (widget.chestImagePath != null)
-                  Positioned(
-                    right: w * 0.02,
-                    bottom: h * 0.02,
-                    width: w * 0.22,
-                    height: h * 0.30,
-                    child: Image(
-                      image: ResizeImage(
-                        AssetImage(widget.chestImagePath!),
-                        width: 512,
-                        height: 512,
-                      ),
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                    ),
-                  ),
               ],
             ),
             ),

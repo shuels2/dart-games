@@ -784,13 +784,13 @@ class BuffToggleButtonConfig {
       inactiveBackgroundColor: oceanTeal.withOpacity(0.35),
       borderColor: plankBrown,
       activeTextStyle: GoogleFonts.pirataOne(
-        fontSize: 11,
+        fontSize: 18,
         letterSpacing: 0.5,
         height: 1.1,
         color: oceanTeal,
       ),
       inactiveTextStyle: GoogleFonts.pirataOne(
-        fontSize: 11,
+        fontSize: 18,
         letterSpacing: 0.5,
         height: 1.1,
         color: sailWhite,

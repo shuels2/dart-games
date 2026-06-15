@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/test_keys.dart';
@@ -65,6 +66,15 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   // (model, scoring, persistence) is unaffected. Null means each
   // player keeps their natural theme.
   int? _themePreviewOverride;
+
+  // Emulator-only island-layout editor. When `_layoutEditMode` is
+  // true, each island marker on the treasure map becomes draggable.
+  // Dragged positions accumulate into `_islandCoordsOverride` as a
+  // list of (x%, y%) records (length = numberOfRounds). The map
+  // widget falls through to the canonical constants whenever the
+  // override is null or its length doesn't match the round count.
+  bool _layoutEditMode = false;
+  List<({double x, double y})>? _islandCoordsOverride;
 
   // ─── Announcement system (Phase 5) ───────────────────────────────────────────
   TreasureDivideAnnouncementHelper? _audioQueue;
@@ -505,6 +515,128 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     });
   }
 
+  // ─── Island-layout editor (emulator-only) ──────────────────────────────────
+
+  /// Returns the current set of island coords — the live override when
+  /// one exists, otherwise a fresh copy of the canonical constants for
+  /// the active round count. Always returns a mutable list of records.
+  List<({double x, double y})> _currentIslandCoords() {
+    final override = _islandCoordsOverride;
+    final game = context.read<TreasureDivideProvider>().currentGame;
+    final rounds = game?.numberOfRounds ?? 9;
+    if (override != null && override.length == rounds) {
+      return List<({double x, double y})>.from(override);
+    }
+    return defaultIslandCoordsFor(rounds);
+  }
+
+  void _onIslandDragged(int index, double xPercent, double yPercent) {
+    final coords = _currentIslandCoords();
+    if (index < 0 || index >= coords.length) return;
+    coords[index] = (x: xPercent, y: yPercent);
+    setState(() {
+      _islandCoordsOverride = coords;
+    });
+  }
+
+  void _toggleLayoutEditMode() {
+    setState(() {
+      _layoutEditMode = !_layoutEditMode;
+    });
+  }
+
+  void _resetLayoutEditor() {
+    setState(() {
+      _islandCoordsOverride = null;
+    });
+  }
+
+  /// Stacked emulator-only buttons: Edit Targets toggle + (when
+  /// active) Copy Coords and Reset. The controls render in the outer
+  /// Stack at the right edge above the dartboard FAB.
+  Widget _buildLayoutEditorControls() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (_layoutEditMode) ...[
+          _editorButton(
+            label: 'Reset',
+            icon: Icons.refresh,
+            background: _plankBrown,
+            onPressed: _resetLayoutEditor,
+          ),
+          const SizedBox(height: 8),
+          _editorButton(
+            label: 'Copy Coords',
+            icon: Icons.copy,
+            background: _treasureGold,
+            foreground: _oceanTeal,
+            onPressed: _copyIslandCoordsToClipboard,
+          ),
+          const SizedBox(height: 8),
+        ],
+        _editorButton(
+          label: _layoutEditMode ? 'Done Editing' : 'Edit Targets',
+          icon: _layoutEditMode ? Icons.check : Icons.edit_location_alt,
+          background: _layoutEditMode ? _islandGreen : _oceanTeal,
+          onPressed: _toggleLayoutEditMode,
+        ),
+      ],
+    );
+  }
+
+  Widget _editorButton({
+    required String label,
+    required IconData icon,
+    required Color background,
+    Color foreground = _sailWhite,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, color: foreground, size: 18),
+      label: Text(
+        label,
+        style: GoogleFonts.pirataOne(
+          fontSize: 18,
+          color: foreground,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: background,
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        side: BorderSide(color: _treasureGold.withOpacity(0.6), width: 1),
+      ),
+    );
+  }
+
+  /// Format the current coords as a Dart literal matching the
+  /// `_islandCoordsByRoundCount` map entry, copy it to the clipboard,
+  /// and pop a SnackBar so the user knows it's done.
+  Future<void> _copyIslandCoordsToClipboard() async {
+    final game = context.read<TreasureDivideProvider>().currentGame;
+    if (game == null) return;
+    final coords = _currentIslandCoords();
+    final buffer = StringBuffer();
+    buffer.writeln('${game.numberOfRounds}: [');
+    for (final c in coords) {
+      final x = c.x.toStringAsFixed(1);
+      final y = c.y.toStringAsFixed(1);
+      buffer.writeln('    (x: $x, y: $y),');
+    }
+    buffer.write('  ],');
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Island coords copied to clipboard'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   // ─── Build ────────────────────────────────────────────────────────────────────
 
   @override
@@ -769,6 +901,17 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               onCancelAutoPlay: _onCancelAutoPlay,
             ),
           ),
+
+          // ─── 4b. Layout editor controls (emulator-only) ────────────────────
+          // Stacked above the FAB at the right edge. The Edit toggle
+          // shows whenever the emulator is on; Copy + Reset appear only
+          // while edit mode is engaged.
+          if (_mockApi != null)
+            Positioned(
+              right: 16,
+              bottom: 96,
+              child: _buildLayoutEditorControls(),
+            ),
 
           // ─── 5. SaveGameModal ──────────────────────────────────────────────
           if (_showSaveModal)
@@ -1253,6 +1396,13 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       customTargetsEnabled: game.customTargetsEnabled,
       quarterItEnabled: game.quarterItEnabled,
       quarterItBadgeKey: TreasureDivideGameKeys.quarterItBadge,
+      // Layout-editor wiring — only effective when the emulator is on
+      // and the user has tapped the Edit Targets toggle. The widget
+      // falls back to the canonical constants when the override is
+      // null or its length doesn't match the round count.
+      coordsOverride: _islandCoordsOverride,
+      editMode: _layoutEditMode,
+      onIslandDragged: _onIslandDragged,
     );
   }
 
