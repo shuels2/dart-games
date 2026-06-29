@@ -140,7 +140,7 @@ if !errorlevel! neq 0 (
     echo  Python was found but pip is missing. Try:
     echo    !_PY_CMD! -m ensurepip --upgrade
     echo  or reinstall Python from https://www.python.org/downloads/
-    echo  (make sure "pip" is selected in the optional features list).
+    echo  ^(make sure "pip" is selected in the optional features list^).
     echo.
     endlocal
     exit /b 1
@@ -150,7 +150,7 @@ if !errorlevel! neq 0 (
 if !errorlevel! neq 0 (
     echo.
     echo ============================================================
-    echo  ERROR: pip install failed (see output above).
+    echo  ERROR: pip install failed ^(see output above^).
     echo ============================================================
     echo.
     echo  Things to try:
@@ -178,7 +178,7 @@ if !errorlevel! neq 0 (
     echo  Things to try:
     echo    !_PY_CMD! -m pip install --upgrade pip
     echo    !_PY_CMD! -m pip install mediapipe opencv-python pillow numpy
-    echo    (try without --user if the above fails)
+    echo    ^(try without --user if the above fails^)
     echo.
     endlocal
     exit /b 1
