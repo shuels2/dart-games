@@ -30,7 +30,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final DartAnnouncerService _announcer = DartAnnouncerService();
+  // App-wide shared instance — same instance used by every game's
+  // GameAnnouncementQueueService and by the app-root pause/reconnect
+  // announcer, so voice changes saved from Options are what games
+  // speak with. See [DartAnnouncerService.shared].
+  final DartAnnouncerService _announcer = DartAnnouncerService.shared;
 
   /// Active filter selections, keyed by criterion. Empty / missing entries
   /// mean "no filter applied" for that criterion. See game_metadata.dart for
@@ -39,7 +43,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _announcer.dispose();
+    // No _announcer.dispose() — the app-wide shared instance is kept
+    // alive intentionally. `dispose()` on the shared instance is a
+    // no-op anyway (see DartAnnouncerService.dispose), but skipping
+    // the call here makes the intent explicit.
     super.dispose();
   }
 

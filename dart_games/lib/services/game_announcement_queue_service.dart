@@ -37,7 +37,16 @@ class GameAnnouncementQueueService {
   GameAnnouncementQueueService({int sfxPoolSize = 3})
       : _sfxPool = SoundEffectPlayerPool(size: sfxPoolSize);
 
-  final DartAnnouncerService _announcer = DartAnnouncerService();
+  // App-wide shared instance so voice settings applied via the Options
+  // screen (which uses the home screen's announcer) are also what games
+  // and the app-root pause/reconnect announcer speak with. Previously
+  // each queue created its own DartAnnouncerService, and a fresh
+  // instance querying Chrome's speechSynthesis.getVoices() before the
+  // browser fired `voiceschanged` got an empty voice list — flutter_tts
+  // then never called SpeechSynthesisUtterance.voice = ..., so speech
+  // fell through to the OS default (German on a de-DE Windows kiosk).
+  // See [DartAnnouncerService.shared].
+  final DartAnnouncerService _announcer = DartAnnouncerService.shared;
   final Queue<QueuedAnnouncement> _queue = Queue<QueuedAnnouncement>();
 
   // Pool of AudioPlayer instances. Each SFX runs on the next player in
@@ -55,6 +64,27 @@ class GameAnnouncementQueueService {
 
   // Load announcer settings from API via AppSettings
   Future<void> loadSettings() async {
+    // Wait for the announcer's TTS init to finish populating its
+    // available-voices list. Without this, a freshly-constructed
+    // DartAnnouncerService (each game screen makes one) hits
+    // setSystemVoice() before flutter_tts has enumerated voices;
+    // the internal firstWhere() throws, the catch swallows it, and
+    // the browser silently keeps its OS-default voice — which on a
+    // German-locale Windows kiosk means the game speaks German
+    // even though the user saved an English voice.
+    //
+    // Kept OUTSIDE the outer try/catch and swallowed independently:
+    // if TTS init genuinely failed, the ResponsiveVoice branch below
+    // still needs to configure itself, and rate/enabled still need
+    // to be applied. Only the browser-voice path depends on the
+    // available-voices list.
+    try {
+      await _announcer.ready;
+    } catch (_) {
+      // Init failed — proceed anyway; browser-voice setup will just
+      // be a no-op if _availableVoices is empty.
+    }
+
     try {
       // Check if voice is enabled
       final voiceEnabled = await AppSettings.getVoiceEnabled();

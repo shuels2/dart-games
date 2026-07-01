@@ -31,6 +31,29 @@ enum AnnouncerVoice {
 
 /// Service for announcing dart throws with different voices and phrases
 class DartAnnouncerService {
+  /// App-wide shared instance. Created on first access, kept alive for
+  /// the lifetime of the app.
+  ///
+  /// Why a singleton: `FlutterTts()` on web wraps `SpeechSynthesisUtterance`,
+  /// and Chrome's `speechSynthesis.getVoices()` returns `[]` until the
+  /// browser fires `voiceschanged` (which can happen well after page
+  /// load). A `DartAnnouncerService` constructed mid-game (each game
+  /// screen used to create its own via `GameAnnouncementQueueService`)
+  /// therefore hits `_initializeTts()` before voices have loaded and
+  /// falls back to the OS-default voice — which on a de-DE Windows
+  /// kiosk is a German voice, so games spoke German even though the
+  /// Options screen (which used the home-screen's much-older instance)
+  /// correctly used the saved English voice.
+  ///
+  /// Sharing a single instance means voices only need to load once, and
+  /// whatever the Options screen configures via `setSystemVoice` /
+  /// `useResponsiveVoice` is the exact same state that games speak with.
+  ///
+  /// [dispose] is a no-op on the shared instance — see the note there.
+  static DartAnnouncerService? _shared;
+  static DartAnnouncerService get shared =>
+      _shared ??= DartAnnouncerService();
+
   final FlutterTts _tts = FlutterTts();
   final ResponsiveVoiceService _responsiveVoice = ResponsiveVoiceService();
   VoiceEngine _engine = VoiceEngine.browser;
@@ -52,8 +75,22 @@ class DartAnnouncerService {
   // event-driven instead of estimated.
   Completer<void>? _ttsCompleter;
 
+  // Future completed when _initializeTts() finishes populating
+  // _availableVoices. Callers that need to set a specific system voice
+  // must `await ready` first; otherwise setSystemVoice() runs against an
+  // empty _availableVoices list, silently fails to call _tts.setVoice,
+  // and the browser falls back to the OS default (which on non-English
+  // Windows locales is not an English voice).
+  late final Future<void> _initFuture;
+
+  /// Resolves when the async init started in the constructor is done —
+  /// specifically once [_availableVoices] has been populated from
+  /// `flutter_tts.getVoices`. Await this before calling [setSystemVoice]
+  /// on a freshly-constructed instance.
+  Future<void> get ready => _initFuture;
+
   DartAnnouncerService() {
-    _initializeTts();
+    _initFuture = _initializeTts();
   }
 
   /// Set the user-configurable playback rate. 1.0 = normal speed.
@@ -91,8 +128,24 @@ class DartAnnouncerService {
       if (c != null && !c.isCompleted) c.complete();
     });
 
-    // Get available voices
-    _availableVoices = await _tts.getVoices ?? [];
+    // Get available voices. Chrome's speechSynthesis.getVoices() returns
+    // [] until the browser fires its `voiceschanged` event, and the
+    // flutter_tts_web wrapper does NOT wait for that event — it calls
+    // synth.getVoices() synchronously and returns whatever it sees.
+    // A DartAnnouncerService constructed shortly after page load (as
+    // each game screen does) therefore gets an empty list, no voice
+    // is ever set on the underlying SpeechSynthesisUtterance, and
+    // Chrome falls back to the OS default (German on a de-DE Windows
+    // kiosk). Poll a handful of times to give the browser a chance
+    // to populate voices before we bail.
+    for (var attempt = 0; attempt < 20; attempt++) {
+      final voices = await _tts.getVoices ?? [];
+      if (voices.isNotEmpty) {
+        _availableVoices = voices;
+        break;
+      }
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
 
     // Try to select Australian voice as default
     if (_availableVoices.isNotEmpty) {
@@ -513,8 +566,16 @@ class DartAnnouncerService {
     }
   }
 
-  /// Dispose of TTS resources
+  /// Dispose of TTS resources.
+  ///
+  /// No-op on the shared singleton — the app-wide instance is kept alive
+  /// intentionally so voice-list state, saved voice selection, and the
+  /// browser-TTS `SpeechSynthesisUtterance.voice` binding survive across
+  /// screen transitions (see the doc on [shared]). Only stops speech
+  /// and cancels ResponsiveVoice for non-shared instances, which today
+  /// means nothing — every consumer routes through [shared].
   void dispose() {
+    if (identical(this, _shared)) return;
     _tts.stop();
     _responsiveVoice.cancel();
   }
