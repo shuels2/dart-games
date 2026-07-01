@@ -61,3 +61,9 @@ integration_test_output/
 ui_test_data/
 server/build/
 gladiator_cycle2_results.txt
+
+# Kiosk service (per-machine, contains plaintext password)
+dart-games-service.exe
+dart-games-service.xml
+logs/service/
+server/bin/server.exe
