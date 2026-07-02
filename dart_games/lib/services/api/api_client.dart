@@ -28,6 +28,19 @@ class ApiClient {
   }
 
   /// GET /api/v1/settings/<key> - Returns a single setting.
+  ///
+  /// Returns `null` if the setting is missing (404) OR if the response body
+  /// isn't a well-formed `{"key": ..., "value": ...}` map. The second case
+  /// defends against a misrouted server response — e.g. an SPA fallback
+  /// catching a missing-key 404 and returning `index.html` with a 200
+  /// status. A single unparseable response would otherwise throw out of
+  /// `getSetting`, propagate up to `game_announcement_queue_service.dart`'s
+  /// `loadSettings` catch, and abort the entire voice-settings load
+  /// before ANY subsequent preference (engine, voice, rate) is applied —
+  /// which is exactly how the "always defaults to browser TTS + OS voice"
+  /// regression manifested. Treating a malformed body as "no value stored"
+  /// lets the rest of `loadSettings` proceed with the caller-provided
+  /// defaults, matching the missing-key semantics.
   Future<String?> getSetting(String key) async {
     final response = await _client.get(
       _bustCache('/api/v1/settings/$key'),
@@ -35,8 +48,12 @@ class ApiClient {
     );
     if (response.statusCode == 404) return null;
     _checkResponse(response);
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return body['value'] as String;
+    try {
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return body['value'] as String?;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// PUT /api/v1/settings/<key> - Create/update a setting.

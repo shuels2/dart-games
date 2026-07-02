@@ -93,6 +93,20 @@ void main(List<String> args) async {
         return Response.notFound('Not found');
       }
       final segments = req.url.pathSegments;
+      // NEVER rewrite API paths. A missing setting (`GET /api/v1/settings/
+      // voice_enabled` when the row doesn't exist) is a real 404 the
+      // router intentionally returns, and clients rely on that status to
+      // treat "no value stored" as null. If we fall through to
+      // index.html here, `api_client.dart:getSetting` gets 200 with an
+      // HTML body, `jsonDecode` throws, and the queue's `loadSettings`
+      // try/catch swallows the error before it applies ANY subsequent
+      // voice preference — so on every restart the app defaults to
+      // browser TTS + OS-default voice (German on a de-DE Windows
+      // kiosk) even though `voice_engine`, `system_voice`, etc. are
+      // persisted correctly server-side.
+      if (segments.isNotEmpty && segments.first == 'api') {
+        return Response.notFound('Not found');
+      }
       if (segments.isNotEmpty && segments.last.contains('.')) {
         return Response.notFound('Not found');
       }
