@@ -126,9 +126,31 @@ void main() {
 
     // ── 13. Victory ───────────────────────────────────────────────────────────
 
-    test('announceVictory fires correct text', () {
-      queue.announceVictory('Iris');
+    test('announceVictory: single winner uses "wins" phrasing', () {
+      queue.announceVictory(['Iris']);
       expect(queue.announcements, equals(['Iris wins the Golden Tiki!']));
+    });
+
+    test('announceVictory: two-way tie uses "and … tie" phrasing', () {
+      queue.announceVictory(['Iris', 'Jack']);
+      expect(
+        queue.announcements,
+        equals(['Iris and Jack tie for the Golden Tiki!']),
+      );
+    });
+
+    test('announceVictory: 3+ tie uses Oxford-comma "…, …, and … tie" phrasing',
+        () {
+      queue.announceVictory(['Iris', 'Jack', 'Kim']);
+      expect(
+        queue.announcements,
+        equals(['Iris, Jack, and Kim tie for the Golden Tiki!']),
+      );
+    });
+
+    test('announceVictory: empty list is a no-op (defensive)', () {
+      queue.announceVictory(const []);
+      expect(queue.announcements, isEmpty);
     });
 
     // ── 14. Hole Complete ─────────────────────────────────────────────────────
@@ -160,7 +182,7 @@ void main() {
     test('Victory (rank 1) wins over Hole Complete, Birdie, Miss', () {
       queue.pickAndAnnounceMoment(
         victory: true,
-        victoryWinnerName: 'Alice',
+        victoryWinnerNames: const ['Alice'],
         holeComplete: true,
         holeCompleteNextHole: 2,
         score: 'birdie',
@@ -175,7 +197,7 @@ void main() {
       // This test verifies only the moment-winner (Victory) fires.
       queue.pickAndAnnounceMoment(
         victory: true,
-        victoryWinnerName: 'Alice',
+        victoryWinnerNames: const ['Alice'],
         holeComplete: true,
         holeCompleteNextHole: 10, // would be "On to hole 10" but suppressed
         score: 'birdie',
@@ -371,7 +393,7 @@ void main() {
       // Game screen then calls announceRemoveDarts unconditionally.
       queue.pickAndAnnounceMoment(
         victory: true,
-        victoryWinnerName: 'Alice',
+        victoryWinnerNames: const ['Alice'],
         holeComplete: true,
         holeCompleteNextHole: 10,
         score: 'birdie',

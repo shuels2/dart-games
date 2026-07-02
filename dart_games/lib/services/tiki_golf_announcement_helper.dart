@@ -133,12 +133,40 @@ class TikiGolfAnnouncementHelper {
     );
   }
 
-  void announceVictory(String winnerName) {
+  /// Victory announcement — accepts a list of winner names so ties are
+  /// announced with EVERY name spoken. Works for both solo player names
+  /// and team display names (game screen resolves the ids upstream).
+  ///
+  /// - 1 winner:  "{name} wins the Golden Tiki!"
+  /// - 2 winners: "{a} and {b} tie for the Golden Tiki!"
+  /// - 3+ winners: "{a}, {b}, and {c} tie for the Golden Tiki!"
+  void announceVictory(List<String> winnerNames) {
+    if (winnerNames.isEmpty) return;
+    if (winnerNames.length == 1) {
+      _queueService.announce(
+        '${winnerNames.first} wins the Golden Tiki!',
+        AudioPriority.victory,
+        soundEffect: TikiGolfSoundEffects.victoryFanfare,
+      );
+      return;
+    }
+    final names = _joinWithAnd(winnerNames);
     _queueService.announce(
-      '$winnerName wins the Golden Tiki!',
+      '$names tie for the Golden Tiki!',
       AudioPriority.victory,
       soundEffect: TikiGolfSoundEffects.victoryFanfare,
     );
+  }
+
+  /// Joins a list of strings with commas + "and" at the end:
+  /// ['A']            => 'A'
+  /// ['A', 'B']       => 'A and B'
+  /// ['A', 'B', 'C']  => 'A, B, and C' (Oxford comma)
+  String _joinWithAnd(List<String> parts) {
+    if (parts.length == 1) return parts.single;
+    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
+    final head = parts.sublist(0, parts.length - 1).join(', ');
+    return '$head, and ${parts.last}';
   }
 
   void announceHoleComplete(int nextHoleNumber) {
@@ -183,7 +211,7 @@ class TikiGolfAnnouncementHelper {
   void pickAndAnnounceMoment({
     // Rank 1
     bool victory = false,
-    String? victoryWinnerName,
+    List<String>? victoryWinnerNames,
     // Rank 2
     bool holeComplete = false,
     int? holeCompleteNextHole,
@@ -215,8 +243,10 @@ class TikiGolfAnnouncementHelper {
     int? nearWinLeadBy,
   }) {
     // ── Rank 1: Victory ────────────────────────────────────────────────────────
-    if (victory && victoryWinnerName != null) {
-      announceVictory(victoryWinnerName);
+    if (victory &&
+        victoryWinnerNames != null &&
+        victoryWinnerNames.isNotEmpty) {
+      announceVictory(victoryWinnerNames);
     }
     // ── Rank 2: Hole Complete ──────────────────────────────────────────────────
     else if (holeComplete && holeCompleteNextHole != null) {
