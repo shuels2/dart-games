@@ -200,14 +200,43 @@ class ApiClient {
     return (body['faceLandmarks'] as Map).cast<String, dynamic>();
   }
 
+  /// GET /api/v1/players/face-landmarks/diagnostics - Kiosk-friendly
+  /// probe of the mediapipe sidecar plumbing. Returns a Map with
+  /// pythonCommand / sidecarPath / mediapipeOk / mediapipeError /
+  /// workingDirectory / scriptPath / platform so the operator can see
+  /// exactly why Re-detect is (or would be) failing.
+  Future<Map<String, dynamic>> faceLandmarksDiagnostics() async {
+    final response = await _get('/api/v1/players/face-landmarks/diagnostics');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   /// POST /api/v1/players/<id>/face-landmarks/redetect - Re-run mediapipe on
   /// the player's current photo and overwrite stored landmarks. Returns the
   /// freshly-detected landmarks on success.
+  ///
+  /// On a 503 (detection failed), the server returns a JSON body of the
+  /// shape `{"error": "<reason>: <human message>"}` — see
+  /// `FaceLandmarksResult` in the server. We unwrap that here so the
+  /// caller sees `FaceLandmarksException` with just the operator-facing
+  /// message instead of the raw `ApiException(503): {"error":"..."}`.
   Future<Map<String, dynamic>> redetectPlayerFaceLandmarks(String id) async {
-    final response =
-        await _post('/api/v1/players/$id/face-landmarks/redetect', const {});
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return (body['faceLandmarks'] as Map).cast<String, dynamic>();
+    try {
+      final response =
+          await _post('/api/v1/players/$id/face-landmarks/redetect', const {});
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return (body['faceLandmarks'] as Map).cast<String, dynamic>();
+    } on ApiException catch (e) {
+      String message = e.body;
+      try {
+        final parsed = jsonDecode(e.body);
+        if (parsed is Map<String, dynamic> && parsed['error'] is String) {
+          message = parsed['error'] as String;
+        }
+      } catch (_) {
+        // Fall back to the raw body if it isn't JSON.
+      }
+      throw FaceLandmarksException(e.statusCode, message);
+    }
   }
 
   /// POST /api/v1/players/<id>/history - Add game history entry.
@@ -476,4 +505,17 @@ class ApiException implements Exception {
 
   @override
   String toString() => 'ApiException($statusCode): $body';
+}
+
+/// Thrown by [ApiClient.redetectPlayerFaceLandmarks] on a 503 so the
+/// UI can render just the human-facing failure reason (e.g. "python
+/// not found", "no face detected in photo") instead of the raw JSON.
+class FaceLandmarksException implements Exception {
+  final int statusCode;
+  final String reason;
+
+  FaceLandmarksException(this.statusCode, this.reason);
+
+  @override
+  String toString() => reason;
 }

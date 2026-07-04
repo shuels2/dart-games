@@ -13,6 +13,27 @@ class FaceLandmarksUnavailableException implements Exception {
   String toString() => 'FaceLandmarksUnavailableException: $message';
 }
 
+/// Result of a landmark-detection attempt.
+///
+/// Exactly one of [landmarks] or [errorReason] is non-null.
+/// [errorReason] is a short, user-facing string that names the specific
+/// failure mode (e.g. `python-not-found`, `sidecar-not-found`,
+/// `no-face-detected`, `mediapipe-import-failed`, `timeout`) — it's the
+/// hook the redetect route uses to give the kiosk operator an
+/// actionable message instead of a generic 503.
+class FaceLandmarksResult {
+  final Map<String, dynamic>? landmarks;
+  final String? errorReason;
+  const FaceLandmarksResult._({this.landmarks, this.errorReason});
+
+  factory FaceLandmarksResult.success(Map<String, dynamic> landmarks) =>
+      FaceLandmarksResult._(landmarks: landmarks);
+  factory FaceLandmarksResult.failure(String reason) =>
+      FaceLandmarksResult._(errorReason: reason);
+
+  bool get success => landmarks != null;
+}
+
 /// Detects MediaPipe face landmarks by spawning a Python sidecar process.
 ///
 /// The sidecar script (`server/python/mediapipe_sidecar.py`) receives a
@@ -58,15 +79,37 @@ class FaceLandmarksService {
     String absoluteImagePath, {
     Duration timeout = const Duration(seconds: 10),
   }) async {
+    final result = await detectDetailed(absoluteImagePath, timeout: timeout);
+    return result.landmarks;
+  }
+
+  /// Same as [detectForImagePath] but returns a structured [FaceLandmarksResult]
+  /// so callers (e.g. the redetect HTTP route) can distinguish
+  /// python-not-found from mediapipe-failed from no-face-detected and
+  /// surface that reason back to the user instead of a generic error.
+  Future<FaceLandmarksResult> detectDetailed(
+    String absoluteImagePath, {
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
     final python = await _resolvePython();
-    if (python == null) return null;
+    if (python == null) {
+      return FaceLandmarksResult.failure(
+        'python-not-found: No Python 3 interpreter found on the service '
+        "account's PATH. Install Python 3.9+ (add to PATH) or set the "
+        'DART_GAMES_PYTHON environment variable to the interpreter path.',
+      );
+    }
 
     final sidecar = _resolveSidecarPath();
     if (sidecar == null) {
       stderr.writeln(
         '[FaceLandmarksService] sidecar not found; skipping detection',
       );
-      return null;
+      return FaceLandmarksResult.failure(
+        'sidecar-not-found: Could not locate python/mediapipe_sidecar.py. '
+        'Expected next to the server exe (server/python/) or in the '
+        "server's working directory.",
+      );
     }
 
     Process? process;
@@ -113,13 +156,19 @@ class FaceLandmarksService {
           '[FaceLandmarksService] sidecar exited $exitCode; '
           'output: ${output.trim()}',
         );
-        return null;
+        return FaceLandmarksResult.failure(
+          'sidecar-exit-$exitCode: Python sidecar exited with code $exitCode. '
+          '${_summarizeStderr(errOut)}',
+        );
       }
 
       final trimmed = output.trim();
       if (trimmed.isEmpty) {
         stderr.writeln('[FaceLandmarksService] sidecar produced no output');
-        return null;
+        return FaceLandmarksResult.failure(
+          'sidecar-empty-output: Python sidecar exited 0 but produced no '
+          'JSON on stdout. ${_summarizeStderr(errOut)}',
+        );
       }
 
       final decoded = jsonDecode(trimmed) as Map<String, dynamic>;
@@ -128,28 +177,59 @@ class FaceLandmarksService {
         stderr.writeln(
           '[FaceLandmarksService] sidecar error: ${decoded['error']}',
         );
-        return null;
+        return FaceLandmarksResult.failure(
+          'sidecar-error: ${decoded['error']}',
+        );
       }
 
       if (decoded['detected'] == false) {
         // No face in image — not an error, just null landmarks.
-        return null;
+        return FaceLandmarksResult.failure(
+          'no-face-detected: MediaPipe ran successfully but did not find '
+          'a face in the current photo. Try a photo with a clearer, '
+          'front-facing view.',
+        );
       }
 
       // Strip the 'detected' control field before returning.
       final landmarks = Map<String, dynamic>.from(decoded)..remove('detected');
-      return landmarks;
+      return FaceLandmarksResult.success(landmarks);
     } on TimeoutException {
       stderr.writeln(
         '[FaceLandmarksService] sidecar timed out after ${timeout.inSeconds}s '
         'for $absoluteImagePath',
       );
       process?.kill();
-      return null;
+      return FaceLandmarksResult.failure(
+        'timeout: Python sidecar did not respond within '
+        '${timeout.inSeconds}s. MediaPipe may still be initializing '
+        '(first run) or the interpreter is stalled.',
+      );
     } catch (e) {
       stderr.writeln('[FaceLandmarksService] unexpected error: $e');
-      return null;
+      return FaceLandmarksResult.failure('unexpected-error: $e');
     }
+  }
+
+  /// Condense sidecar stderr down to the first non-noise line for the
+  /// user-facing error message — TFLite/mediapipe emit dozens of
+  /// warning lines even on a healthy run, and pasting all of them into
+  /// an alert dialog buries the actual failure.
+  String _summarizeStderr(String errOut) {
+    if (errOut.isEmpty) return '';
+    final firstReal = errOut.split('\n').firstWhere(
+          (l) =>
+              l.isNotEmpty &&
+              !l.contains('WARNING') &&
+              !l.contains('I tensorflow') &&
+              !l.contains('W tensorflow'),
+          orElse: () => '',
+        );
+    if (firstReal.isEmpty) return '';
+    // Truncate loudly rather than silently — the operator needs to know
+    // there's more where this came from.
+    if (firstReal.length > 240) return '${firstReal.substring(0, 240)}…';
+    return firstReal;
   }
 
   /// Returns `true` if a Python interpreter with mediapipe is available.
@@ -272,6 +352,53 @@ class FaceLandmarksService {
     }
 
     return null;
+  }
+
+  /// Snapshot of the sidecar plumbing — what interpreter is being
+  /// used, where the script lives, and whether mediapipe imports —
+  /// so the kiosk operator can diagnose "Re-detect failed" without
+  /// spelunking service logs. Runs a live `import mediapipe` test.
+  Future<Map<String, dynamic>> diagnostics() async {
+    final python = await _resolvePython();
+    final sidecar = _resolveSidecarPath();
+
+    String? mediapipeVersion;
+    String? mediapipeError;
+    bool mediapipeOk = false;
+    if (python != null) {
+      try {
+        final result = await Process.run(
+          python,
+          ['-c', 'import mediapipe; print(mediapipe.__version__)'],
+        ).timeout(const Duration(seconds: 15));
+        if (result.exitCode == 0) {
+          mediapipeOk = true;
+          mediapipeVersion = result.stdout.toString().trim();
+        } else {
+          mediapipeError = (result.stderr.toString().trim().isEmpty
+                  ? result.stdout.toString().trim()
+                  : result.stderr.toString().trim());
+        }
+      } on TimeoutException {
+        mediapipeError = 'timed out after 15s';
+      } catch (e) {
+        mediapipeError = e.toString();
+      }
+    }
+
+    return {
+      'pythonCommand': python,
+      'pythonFound': python != null,
+      'sidecarPath': sidecar,
+      'sidecarFound': sidecar != null,
+      'mediapipeOk': mediapipeOk,
+      'mediapipeVersion': mediapipeVersion,
+      'mediapipeError': mediapipeError,
+      'workingDirectory': Directory.current.path,
+      'scriptPath': Platform.script.toFilePath(),
+      'envOverride': Platform.environment['DART_GAMES_PYTHON'],
+      'platform': '${Platform.operatingSystem} ${Platform.operatingSystemVersion}',
+    };
   }
 
   /// Resets all cached state (for testing only).

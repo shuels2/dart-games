@@ -20,6 +20,7 @@ import 'services/storage_service.dart';
 import 'services/victory_music_service.dart';
 import 'services/global_connection_announcer.dart';
 import 'widgets/dartboard_paused_modal/dartboard_status_announcer.dart';
+import 'widgets/virtual_keyboard/virtual_keyboard_scaffold.dart';
 import 'screens/splash_screen.dart';
 import 'screens/dartboard_setup_screen.dart';
 import 'screens/home_screen.dart';
@@ -425,6 +426,14 @@ class DartGamesApp extends StatelessWidget {
           ),
         ),
         themeMode: ThemeMode.light, // Default to light mode for carnival feel
+        // On-screen keyboard: wraps the whole app tree so any TextField
+        // gaining focus while the user is on a touchscreen (e.g. the
+        // Windows all-in-one kiosk) auto-summons an in-app QWERTY. When
+        // a physical keyboard + mouse are in use, the scaffold stays
+        // invisible and out of the way.
+        builder: (context, child) => VirtualKeyboardScaffold(
+          child: child ?? const SizedBox.shrink(),
+        ),
         initialRoute: '/',
         routes: {
           '/': (context) => const SplashScreen(),

@@ -41,8 +41,152 @@ void main() {
       expect(provider.savedProfiles, isEmpty);
     });
 
-    test('dartboardEventStream is null when disconnected', () {
-      expect(provider.dartboardEventStream, isNull);
+    test('dartboardEventStream is a stable broadcast bus (never null)', () {
+      // The stream is provider-owned so game screens can subscribe once
+      // in initState and stay attached across WebSocket reconnects. When
+      // no source is wired, the bus is simply idle — no events flow.
+      final stream = provider.dartboardEventStream;
+      expect(stream, isNotNull);
+      expect(stream!.isBroadcast, isTrue);
+    });
+  });
+
+  group('DartboardProvider - event bus (reconnect resilience)', () {
+    // Regression guard for the bug where a WebSocket reconnect (or any
+    // source swap) silently killed the dart-throw stream because game
+    // screens held a subscription to the OLD source. The provider now
+    // owns a stable bus and rewires the underlying source into it, so a
+    // single subscription placed in a game screen's initState keeps
+    // delivering events across arbitrarily many reconnects. Simulated
+    // here with two `useEmulator` calls; each call swaps the mock
+    // service under the subscriber.
+    test('bus keeps delivering events after the source is swapped',
+        () async {
+      provider.useEmulator(name: 'Board A', serialNumber: 'SN-A');
+      await _waitForAsyncUseEmulator();
+
+      // Single, stable subscription — mirrors game screen's initState
+      // listen(). NEVER re-subscribed for the rest of this test.
+      final throws = <Map<String, dynamic>>[];
+      final sub = provider.dartboardEventStream!.listen((event) {
+        if (event['type'] == 'throw_detected') throws.add(event);
+      });
+
+      // First source fires a throw.
+      provider.apiService!.simulateDartThrow(
+        score: 20,
+        multiplier: 'single',
+        playerName: 'P1',
+        baseScore: 20,
+        widgetX: 100,
+        widgetY: 100,
+        widgetSize: 200,
+      );
+      await Future.delayed(Duration.zero);
+      expect(throws, hasLength(1));
+
+      // Source swap — this is what a real reconnect looks like from the
+      // bus's perspective.
+      provider.useEmulator(name: 'Board B', serialNumber: 'SN-B');
+      await _waitForAsyncUseEmulator();
+
+      // The NEW source fires a throw. The subscription from before the
+      // swap must still receive it.
+      provider.apiService!.simulateDartThrow(
+        score: 10,
+        multiplier: 'single',
+        playerName: 'P1',
+        baseScore: 10,
+        widgetX: 100,
+        widgetY: 100,
+        widgetSize: 200,
+      );
+      await Future.delayed(Duration.zero);
+      expect(throws, hasLength(2),
+          reason: 'bus should forward events from the new source into '
+              'the pre-existing subscription');
+
+      await sub.cancel();
+    });
+
+    // In a real app the bus has more than one subscriber at a time:
+    // the game screen listens for dart throws AND the app-root pause
+    // announcer listens for status blips off the same stream. Both
+    // must survive a source swap.
+    test('multiple concurrent subscribers all survive a source swap',
+        () async {
+      provider.useEmulator(name: 'Board A', serialNumber: 'SN-A');
+      await _waitForAsyncUseEmulator();
+
+      final receivedA = <Map<String, dynamic>>[];
+      final receivedB = <Map<String, dynamic>>[];
+      final subA = provider.dartboardEventStream!.listen((e) {
+        if (e['type'] == 'throw_detected') receivedA.add(e);
+      });
+      final subB = provider.dartboardEventStream!.listen((e) {
+        if (e['type'] == 'throw_detected') receivedB.add(e);
+      });
+
+      // Source swap.
+      provider.useEmulator(name: 'Board B', serialNumber: 'SN-B');
+      await _waitForAsyncUseEmulator();
+
+      // NEW source fires a throw. Both subscriptions receive it.
+      provider.apiService!.simulateDartThrow(
+        score: 5,
+        multiplier: 'single',
+        playerName: 'P1',
+        baseScore: 5,
+        widgetX: 100,
+        widgetY: 100,
+        widgetSize: 200,
+      );
+      await Future.delayed(Duration.zero);
+
+      expect(receivedA, hasLength(1));
+      expect(receivedB, hasLength(1));
+
+      await subA.cancel();
+      await subB.cancel();
+    });
+
+    // Guards against the old-source subscription leaking events after
+    // a swap. When we rewire the bus, the prior _sourceSubscription
+    // must be cancelled so events from a disposed/stale source can't
+    // still bleed into the bus.
+    test('after a swap, the OLD source no longer delivers to the bus',
+        () async {
+      provider.useEmulator(name: 'Board A', serialNumber: 'SN-A');
+      await _waitForAsyncUseEmulator();
+      final oldSource = provider.apiService!;
+
+      final throws = <Map<String, dynamic>>[];
+      final sub = provider.dartboardEventStream!.listen((e) {
+        if (e['type'] == 'throw_detected') throws.add(e);
+      });
+
+      provider.useEmulator(name: 'Board B', serialNumber: 'SN-B');
+      await _waitForAsyncUseEmulator();
+      final newSource = provider.apiService!;
+      expect(identical(oldSource, newSource), isFalse,
+          reason: 'each useEmulator call must instantiate a fresh mock');
+
+      // Fire on the OLD source. Must NOT reach the bus.
+      oldSource.simulateDartThrow(
+        score: 99,
+        multiplier: 'single',
+        playerName: 'ghost',
+        baseScore: 20,
+        widgetX: 100,
+        widgetY: 100,
+        widgetSize: 200,
+      );
+      await Future.delayed(Duration.zero);
+      expect(throws, isEmpty,
+          reason: 'stale source subscription should have been cancelled '
+              'when the bus rewired to the new source');
+
+      await sub.cancel();
     });
   });
 

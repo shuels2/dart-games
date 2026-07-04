@@ -668,6 +668,134 @@ class _OptionsScreenState extends State<OptionsScreen> {
     );
   }
 
+  /// Kiosk-friendly diagnostic for the mediapipe sidecar. Hits the
+  /// server's `/api/v1/players/face-landmarks/diagnostics` route and
+  /// renders the report in a dialog so the operator can see why
+  /// Re-detect is failing (python missing, sidecar not on disk, or
+  /// mediapipe not importable for the service account) without
+  /// spelunking the WinSW service log.
+  Future<void> _runFaceLandmarksDiagnostics() async {
+    if (!mounted) return;
+    // Loading dialog while the server probes python + imports mediapipe
+    // (can take a few seconds cold).
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        title: Text('Diagnosing face landmarks…'),
+        content: SizedBox(
+          height: 60,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+    );
+
+    Map<String, dynamic>? report;
+    String? fetchError;
+    try {
+      report = await apiClient.faceLandmarksDiagnostics();
+    } catch (e) {
+      fetchError = e.toString();
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // close loader
+
+    final buffer = StringBuffer();
+    Widget statusIcon;
+    String headline;
+
+    if (fetchError != null) {
+      headline = 'Could not reach server';
+      statusIcon = const Icon(Icons.error, color: Colors.red, size: 32);
+      buffer.writeln(fetchError);
+    } else if (report == null) {
+      headline = 'No report returned';
+      statusIcon = const Icon(Icons.error, color: Colors.red, size: 32);
+    } else {
+      final pythonFound = report['pythonFound'] == true;
+      final sidecarFound = report['sidecarFound'] == true;
+      final mediapipeOk = report['mediapipeOk'] == true;
+
+      if (pythonFound && sidecarFound && mediapipeOk) {
+        headline = 'Face landmarks pipeline OK';
+        statusIcon = const Icon(Icons.check_circle,
+            color: Colors.green, size: 32);
+      } else {
+        headline = 'Face landmarks NOT ready';
+        statusIcon = const Icon(Icons.warning, color: Colors.orange, size: 32);
+      }
+
+      String yn(bool b) => b ? '✓' : '✗';
+      buffer.writeln('${yn(pythonFound)} Python interpreter');
+      buffer.writeln(
+          '    ${report['pythonCommand'] ?? "not found"}');
+      final envOverride = report['envOverride'];
+      if (envOverride != null && envOverride.toString().isNotEmpty) {
+        buffer.writeln('    (from DART_GAMES_PYTHON env var)');
+      }
+      buffer.writeln('');
+      buffer.writeln('${yn(sidecarFound)} Sidecar script');
+      buffer.writeln(
+          '    ${report['sidecarPath'] ?? "not found"}');
+      buffer.writeln('');
+      buffer.writeln('${yn(mediapipeOk)} mediapipe importable');
+      if (mediapipeOk) {
+        buffer.writeln(
+            '    version ${report['mediapipeVersion'] ?? "unknown"}');
+      } else if (report['mediapipeError'] != null) {
+        buffer.writeln('    ${report['mediapipeError']}');
+      }
+      buffer.writeln('');
+      buffer.writeln('Server working dir:');
+      buffer.writeln('    ${report['workingDirectory']}');
+      buffer.writeln('Server script:');
+      buffer.writeln('    ${report['scriptPath']}');
+      buffer.writeln('Platform:');
+      buffer.writeln('    ${report['platform']}');
+    }
+
+    final text = buffer.toString();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Row(
+          children: [
+            statusIcon,
+            const SizedBox(width: 12),
+            Expanded(child: Text(headline)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: SelectableText(
+            text,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.copy),
+            label: const Text('Copy'),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: text));
+              if (!dialogCtx.mounted) return;
+              ScaffoldMessenger.of(dialogCtx).showSnackBar(
+                const SnackBar(
+                  content: Text('Report copied to clipboard'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Collect every loaded test-player's current face landmarks into the
   /// `headshot-NN.png → landmarks` JSON shape, then show a copyable dialog
   /// the user can paste into `assets/common/test_headshot_landmarks.json`.
@@ -2290,6 +2418,21 @@ class _OptionsScreenState extends State<OptionsScreen> {
                                 'and commit to bake them in.'),
                             trailing: const Icon(Icons.arrow_forward_ios),
                             onTap: _exportTestHeadshotLandmarkOverrides,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.health_and_safety,
+                                color: Colors.deepPurple),
+                            title: const Text('Diagnose face landmarks'),
+                            subtitle: const Text(
+                                'Checks whether the mediapipe sidecar is '
+                                'reachable from the server: python found, '
+                                'sidecar script located, mediapipe importable. '
+                                'Use this when "Re-detect" fails on a kiosk.'),
+                            trailing: const Icon(Icons.arrow_forward_ios),
+                            onTap: _runFaceLandmarksDiagnostics,
                           ),
                         ),
                         const SizedBox(height: 8),

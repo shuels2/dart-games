@@ -73,6 +73,13 @@ class PlayerRoutes {
     // on the player's current photo and overwrite the stored landmarks.
     router.post('/<id>/face-landmarks/redetect', _redetectFaceLandmarks);
 
+    // GET /api/v1/players/face-landmarks/diagnostics - Kiosk-friendly
+    // health check for the mediapipe sidecar plumbing. Returns which
+    // python is resolved, where the sidecar script lives, and whether
+    // `import mediapipe` works — driven by the "Diagnose face
+    // landmarks" button in System Settings → Admin Options.
+    router.get('/face-landmarks/diagnostics', _faceLandmarksDiagnostics);
+
     return router;
   }
 
@@ -555,13 +562,13 @@ class PlayerRoutes {
       );
     }
 
-    final landmarks =
-        await FaceLandmarksService.instance.detectForImagePath(photoPath);
-    if (landmarks == null) {
+    final result =
+        await FaceLandmarksService.instance.detectDetailed(photoPath);
+    if (!result.success) {
       return Response(503,
           body: jsonEncode({
-            'error':
-                'Face landmarks detection failed (python unavailable, no face found, or timeout).'
+            'error': result.errorReason ??
+                'Face landmarks detection failed for an unknown reason.',
           }),
           headers: _jsonHeaders);
     }
@@ -569,13 +576,23 @@ class PlayerRoutes {
     executeUpdate(
       _db,
       'UPDATE players SET face_landmarks = ? WHERE id = ?;',
-      [jsonEncode(landmarks), id],
+      [jsonEncode(result.landmarks), id],
     );
 
     return Response.ok(
-      jsonEncode({'faceLandmarks': landmarks}),
+      jsonEncode({'faceLandmarks': result.landmarks}),
       headers: _jsonHeaders,
     );
+  }
+
+  /// GET /face-landmarks/diagnostics — kiosk-friendly probe of the
+  /// mediapipe sidecar plumbing. Answers "why is Re-detect failing":
+  /// which python is on PATH, where the sidecar lives, whether
+  /// mediapipe imports for the running account. Never touches player
+  /// state.
+  Future<Response> _faceLandmarksDiagnostics(Request request) async {
+    final report = await FaceLandmarksService.instance.diagnostics();
+    return Response.ok(jsonEncode(report), headers: _jsonHeaders);
   }
 
   /// Canonical avatar dimensions. Every stored photo lives at this size so

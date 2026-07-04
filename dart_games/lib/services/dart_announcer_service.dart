@@ -249,30 +249,58 @@ class DartAnnouncerService {
     _enabled = enabled;
   }
 
-  /// Update TTS settings based on selected voice
-  Future<void> _updateVoiceSettings() async {
+  /// Personality base rate for browser TTS. The values are tuned for
+  /// `SpeechSynthesisUtterance.rate` where 0.5 is a slow announcer
+  /// cadence and 1.0 is natural conversation speed. Multiplied by the
+  /// user's [_playbackRate] to produce the effective rate.
+  double _browserBaseRate() {
     switch (_currentVoice) {
       case AnnouncerVoice.professional:
-        await _tts.setSpeechRate(0.5);
-        await _tts.setPitch(1.0);
-        break;
+        return 0.5;
       case AnnouncerVoice.excited:
-        await _tts.setSpeechRate(0.6);
-        await _tts.setPitch(1.3);
-        break;
+        return 0.6;
       case AnnouncerVoice.calm:
-        await _tts.setSpeechRate(0.4);
-        await _tts.setPitch(0.8);
-        break;
+        return 0.4;
       case AnnouncerVoice.funny:
-        await _tts.setSpeechRate(0.55);
-        await _tts.setPitch(1.1);
-        break;
+        return 0.55;
       case AnnouncerVoice.drill:
-        await _tts.setSpeechRate(0.65);
-        await _tts.setPitch(0.9);
-        break;
+        return 0.65;
     }
+  }
+
+  /// Personality pitch for browser TTS.
+  double _browserPitch() {
+    switch (_currentVoice) {
+      case AnnouncerVoice.professional:
+        return 1.0;
+      case AnnouncerVoice.excited:
+        return 1.3;
+      case AnnouncerVoice.calm:
+        return 0.8;
+      case AnnouncerVoice.funny:
+        return 1.1;
+      case AnnouncerVoice.drill:
+        return 0.9;
+    }
+  }
+
+  /// Update TTS settings based on selected voice. Pitch stays fixed
+  /// per personality; the effective SPEECH rate is set right before
+  /// each speak call in [_setBrowserSpeechRate] so the user's live
+  /// [_playbackRate] is always folded in as a multiplier.
+  Future<void> _updateVoiceSettings() async {
+    await _setBrowserSpeechRate();
+    await _tts.setPitch(_browserPitch());
+  }
+
+  /// Compute and apply the effective browser-TTS speech rate:
+  /// `personality-base-rate * playbackRate`, clamped to a safe range.
+  /// Called before every browser-TTS speak so the slider is honored.
+  Future<void> _setBrowserSpeechRate() async {
+    final effective = _browserBaseRate() * _playbackRate;
+    // SpeechSynthesisUtterance.rate accepts 0.1 - 10, but past ~1.5
+    // most engines sound clipped and past 2.0 they refuse to speak.
+    await _tts.setSpeechRate(effective.clamp(0.1, 2.0));
   }
 
   /// Announce a dart throw
@@ -317,8 +345,10 @@ class DartAnnouncerService {
         pitch: pitch,
       );
     } else {
-      // Use browser TTS
-      await _tts.setSpeechRate(_playbackRate.clamp(0.0, 2.0));
+      // Browser TTS: multiply the personality base rate by the user's
+      // playback-rate slider so the slider is honored consistently
+      // with the ResponsiveVoice path above.
+      await _setBrowserSpeechRate();
       await _tts.speak(phrase);
     }
   }
@@ -530,7 +560,7 @@ class DartAnnouncerService {
         rate: _playbackRate,
       );
     } else {
-      await _tts.setSpeechRate(_playbackRate.clamp(0.0, 2.0));
+      await _setBrowserSpeechRate();
       await _tts.speak(phrase);
     }
   }
@@ -559,8 +589,10 @@ class DartAnnouncerService {
       // the utterance STARTS, so we use the completer as the actual
       // "speech finished" signal.
       _ttsCompleter = Completer<void>();
-      // Browser-TTS rate range tends to be 0.0-2.0. Use the same multiplier.
-      await _tts.setSpeechRate(_playbackRate.clamp(0.0, 2.0));
+      // Effective rate = personality base rate × user slider. Slider
+      // at 1.0 keeps the personality's intended announcer cadence;
+      // 0.7 slows it 30%, 1.5 speeds it 50%. See _setBrowserSpeechRate.
+      await _setBrowserSpeechRate();
       await _tts.speak(text);
       await _ttsCompleter!.future;
     }
