@@ -109,17 +109,30 @@ class TikiGolfAnnouncementHelper {
     );
   }
 
+  /// Fires the moment the player taps "Use Mulligan" on the splash
+  /// modal. Includes the remove-your-darts instruction so it lands
+  /// AFTER the player has committed to the mulligan path — the
+  /// standalone remove-darts cue is intentionally suppressed while
+  /// the splash+mulligan modal is up (see
+  /// [announceMulliganReminder]).
   void announceMulliganUsed(String playerName) {
     _queueService.announce(
-      'Mulligan! $playerName gets a do-over!',
+      'Mulligan! Remove your darts and try again, $playerName!',
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.mulligan,
     );
   }
 
-  void announceMulliganReminder() {
+  /// Fires when a player splashes and still has a mulligan available.
+  /// Names the two on-screen buttons so the operator knows a choice
+  /// is required — previously read "Splash! Use your mulligan?"
+  /// followed 1.5s later by the generic "remove your darts" line,
+  /// which sounded like a two-step recipe and steered players away
+  /// from the mulligan without noticing.
+  void announceMulliganReminder(String playerName) {
     _queueService.announce(
-      'Splash! Use your mulligan?',
+      'Splash! $playerName missed every dart. '
+      "Tap Use Mulligan for a do-over, or Next Player to lock it in.",
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.tikiChime,
     );
@@ -217,6 +230,7 @@ class TikiGolfAnnouncementHelper {
     int? holeCompleteNextHole,
     // Rank 3
     bool mulliganReminder = false,
+    String? mulliganReminderPlayerName,
     // Rank 4
     bool mulliganUsed = false,
     String? mulliganUsedPlayerName,
@@ -253,8 +267,8 @@ class TikiGolfAnnouncementHelper {
       announceHoleComplete(holeCompleteNextHole);
     }
     // ── Rank 3: Mulligan Reminder ──────────────────────────────────────────────
-    else if (mulliganReminder) {
-      announceMulliganReminder();
+    else if (mulliganReminder && mulliganReminderPlayerName != null) {
+      announceMulliganReminder(mulliganReminderPlayerName);
     }
     // ── Rank 4: Mulligan Used ──────────────────────────────────────────────────
     else if (mulliganUsed && mulliganUsedPlayerName != null) {

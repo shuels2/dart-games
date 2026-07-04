@@ -367,6 +367,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       holeComplete: holeComplete,
       holeCompleteNextHole: holeComplete ? game.currentHole + 1 : null,
       mulliganReminder: mulliganReminder,
+      mulliganReminderPlayerName: mulliganReminder ? playerName : null,
       score: scoreLabel,
       scorePlayerName: scoreLabel != null ? playerName : null,
       almostThere: almostThere,
@@ -374,8 +375,13 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       miss: miss,
     );
 
-    // ── Remove Darts: UNCONDITIONAL on turn-end, NOT inside precedence chain ─
-    if (currentTurnEnded) { // unconditional remove-darts line
+    // ── Remove Darts: on turn-end, EXCEPT when the splash+mulligan modal is
+    //    about to appear. In that case the player must first pick Use
+    //    Mulligan (→ "Mulligan! Remove your darts and try again") or Next
+    //    Player (→ standard remove-darts fired from the button handler).
+    //    Firing the generic remove-darts line here would race with the
+    //    modal and confuse the player into skipping the mulligan choice.
+    if (currentTurnEnded && !mulliganReminder) {
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _audioQueue?.announceRemoveDarts(playerName);
       });
@@ -1925,6 +1931,11 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
+                      // Fire the deferred remove-darts cue that the
+                      // dispatch loop skipped while the modal was open —
+                      // the player has now chosen "lock in the splash",
+                      // so the standard end-of-turn instruction applies.
+                      _audioQueue?.announceRemoveDarts(currentPlayerName);
                       // Record the Splash as final and advance
                       _handleTakeoutFinished();
                     },
