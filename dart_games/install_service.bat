@@ -232,6 +232,82 @@ set "ESC_PASS=!ESC_PASS:&=&amp;!"
 set "ESC_PASS=!ESC_PASS:<=&lt;!"
 set "ESC_PASS=!ESC_PASS:>=&gt;!"
 
+REM ------------------------------------------------------------
+REM Resolve an absolute Python interpreter path so the service
+REM finds it even when the sidecar-time PATH is missing the user
+REM PATH entries where python was installed. Written into the
+REM WinSW XML as DART_GAMES_PYTHON. The Dart FaceLandmarksService
+REM checks this env var first before probing py/python/python3.
+REM ------------------------------------------------------------
+set "PY_ABS_PATH="
+where py >nul 2>&1
+if !errorlevel! equ 0 (
+    for /f "usebackq tokens=*" %%P in (`py -c "import sys; print(sys.executable)" 2^>nul`) do (
+        set "PY_ABS_PATH=%%P"
+    )
+)
+if "!PY_ABS_PATH!"=="" (
+    where python >nul 2>&1
+    if !errorlevel! equ 0 (
+        for /f "usebackq tokens=*" %%P in (`python -c "import sys; print(sys.executable)" 2^>nul`) do (
+            set "PY_ABS_PATH=%%P"
+        )
+    )
+)
+if "!PY_ABS_PATH!"=="" (
+    where python3 >nul 2>&1
+    if !errorlevel! equ 0 (
+        for /f "usebackq tokens=*" %%P in (`python3 -c "import sys; print(sys.executable)" 2^>nul`) do (
+            set "PY_ABS_PATH=%%P"
+        )
+    )
+)
+
+REM Reject Windows Store shim paths - services can't reach WindowsApps.
+if not "!PY_ABS_PATH!"=="" (
+    echo !PY_ABS_PATH! | findstr /i "WindowsApps" >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo   Skipping Store-shim Python at !PY_ABS_PATH!
+        set "PY_ABS_PATH="
+    )
+)
+
+REM ------------------------------------------------------------
+REM Also detect the interpreter's user-site-packages dir so we
+REM can pin PYTHONPATH into the service env. Windows services
+REM don't load the user profile by default, so %APPDATA% in the
+REM service token isn't the interactive user's roaming dir -
+REM which means site.getusersitepackages() resolves to an empty
+REM path even when 'pip install --user' put mediapipe/cv2 in
+REM the operator's real user-site. Pinning PYTHONPATH bypasses
+REM that entirely.
+REM ------------------------------------------------------------
+set "PY_USER_SITE="
+if not "!PY_ABS_PATH!"=="" (
+    for /f "usebackq tokens=*" %%S in (`"!PY_ABS_PATH!" -c "import site; print(site.getusersitepackages())" 2^>nul`) do (
+        set "PY_USER_SITE=%%S"
+    )
+    if not "!PY_USER_SITE!"=="" (
+        if not exist "!PY_USER_SITE!\cv2" if not exist "!PY_USER_SITE!\mediapipe" (
+            echo   User-site !PY_USER_SITE! has no cv2/mediapipe - skipping PYTHONPATH.
+            set "PY_USER_SITE="
+        )
+    )
+)
+
+if "!PY_ABS_PATH!"=="" (
+    echo   WARNING: Could not resolve a Python interpreter path.
+    echo   The Treasure Divide face-landmarks feature will report
+    echo   'python-not-found' until Python 3.9+ is installed and
+    echo   this installer is re-run. Everything else will still work.
+) else (
+    echo   Sidecar Python: !PY_ABS_PATH!
+    if not "!PY_USER_SITE!"=="" echo   Pinning PYTHONPATH: !PY_USER_SITE!
+    echo   ^(if the service runs as a different account, that account
+    echo    must also be able to execute this interpreter and read
+    echo    the packages dir^)
+)
+
 REM Generate the WinSW config (overwrites)
 > "%WINSW_XML%" (
   echo ^<?xml version="1.0" encoding="UTF-8"?^>
@@ -239,6 +315,8 @@ REM Generate the WinSW config (overwrites)
   echo   ^<id^>%SERVICE_ID%^</id^>
   echo   ^<name^>Dart Games Server^</name^>
   echo   ^<description^>Dart Games backend + Flutter web app on port %SERVICE_PORT%.^</description^>
+  if not "!PY_ABS_PATH!"=="" echo   ^<env name="DART_GAMES_PYTHON" value="!PY_ABS_PATH!" /^>
+  if not "!PY_USER_SITE!"=="" echo   ^<env name="PYTHONPATH" value="!PY_USER_SITE!" /^>
   echo   ^<executable^>%SERVER_EXE%^</executable^>
   echo   ^<arguments^>--port %SERVICE_PORT% --web-root "%WEB_ROOT%" --data-dir "%DATA_DIR%" --db-path "%DATA_DIR%\dart_games.db"^</arguments^>
   echo   ^<workingdirectory^>%SERVER_DIR%^</workingdirectory^>
