@@ -324,22 +324,42 @@ class _OptionsScreenState extends State<OptionsScreen> {
           throw Exception('Could not read file bytes. Please try again.');
         }
 
-        // Use the VictoryMusicService to add the music file
-        debugPrint('Adding music file...');
-        final musicService = VictoryMusicService();
-        await musicService.addMusicFile(
+        // Live phase label for the progress dialog. addMusicFile runs
+        // base64Encode synchronously and then POSTs the whole payload
+        // — the two phases can't be observed granularly without
+        // refactoring the service, so we swap labels around the
+        // await boundary to at least signal "still working".
+        final phaseLabel = ValueNotifier<String>('Preparing file…');
+        _showMusicUploadProgress(
           fileName: fileName,
-          filePath: kIsWeb ? null : file.path, // path not available on web
-          fileBytes: file.bytes,
+          fileSizeBytes: fileSize,
+          phaseLabel: phaseLabel,
         );
 
-        debugPrint('Music file added, reloading list...');
-        // Reload the files list
-        final files = await musicService.getMusicFiles();
+        try {
+          phaseLabel.value = 'Uploading to server…';
+          debugPrint('Adding music file...');
+          final musicService = VictoryMusicService();
+          await musicService.addMusicFile(
+            fileName: fileName,
+            filePath: kIsWeb ? null : file.path, // path not available on web
+            fileBytes: file.bytes,
+          );
 
-        setState(() {
-          _victoryMusicFiles = files;
-        });
+          debugPrint('Music file added, reloading list...');
+          phaseLabel.value = 'Refreshing library…';
+          // Reload the files list
+          final files = await musicService.getMusicFiles();
+
+          setState(() {
+            _victoryMusicFiles = files;
+          });
+        } finally {
+          if (mounted && Navigator.of(context, rootNavigator: true).canPop()) {
+            Navigator.of(context, rootNavigator: true).pop();
+          }
+          phaseLabel.dispose();
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -364,6 +384,74 @@ class _OptionsScreenState extends State<OptionsScreen> {
         );
       }
     }
+  }
+
+  /// Shows a non-dismissible progress modal while a music file is
+  /// uploading. The API doesn't expose byte-level progress (single
+  /// POST with a base64 payload), so the dialog uses an indeterminate
+  /// linear progress bar plus a live phase label to signal "still
+  /// working" — important on the kiosk where WAV files can take
+  /// 10-30s to encode + upload on port 80 with no feedback otherwise.
+  void _showMusicUploadProgress({
+    required String fileName,
+    required int fileSizeBytes,
+    required ValueNotifier<String> phaseLabel,
+  }) {
+    final sizeMb = fileSizeBytes / (1024 * 1024);
+    final sizeText = sizeMb >= 1
+        ? '${sizeMb.toStringAsFixed(1)} MB'
+        : '${(fileSizeBytes / 1024).toStringAsFixed(0)} KB';
+
+    // Not awaited — the caller pops it explicitly in a finally so
+    // errors don't leave a stuck modal on screen. Uses the root
+    // navigator so subsequent pushDialog calls (e.g. error dialogs)
+    // don't stack under a still-mounted SnackBar.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('Uploading Music'),
+          content: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  sizeText,
+                  style: const TextStyle(color: Colors.black54),
+                ),
+                const SizedBox(height: 16),
+                const LinearProgressIndicator(),
+                const SizedBox(height: 12),
+                ValueListenableBuilder<String>(
+                  valueListenable: phaseLabel,
+                  builder: (_, label, __) => Text(
+                    label,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Large files can take a few seconds. Please wait.',
+                  style: TextStyle(fontSize: 12, color: Colors.black45),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _removeMusicFile(String id) async {
