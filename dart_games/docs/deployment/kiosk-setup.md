@@ -13,17 +13,62 @@ works.
 
 - A Windows service called **DartGamesServer**, run by [WinSW](https://github.com/winsw/winsw)
 - Binds **port 80** (so URLs are just `http://<machine>/`)
-- Runs as a **local Windows account you choose at install time** so the
-  Python sidecar can find that account's `pip install --user` packages
-  (mediapipe for Treasure Divide face landmarks). The installer defaults
-  to the currently logged-in user; you can override it at the prompt.
+- Runs as a **local Windows account you choose at install time**. The
+  service token is used mainly for filesystem permissions; the Python
+  sidecar itself is invoked via an **absolute interpreter path** and
+  an explicit **`PYTHONPATH`** pinned into the WinSW XML at install
+  time (see below), so it doesn't rely on the service account's
+  `%APPDATA%` resolving to any particular location.
 - Auto-starts on boot, restarts on failure, rotates logs at 10 MB
+
+## Python sidecar env vars (baked in at install time)
+
+The Treasure Divide face-landmarks feature spawns a Python sidecar to
+call MediaPipe. Because Windows services don't load the interactive
+user profile by default, neither `py`/`python` on PATH nor
+`pip install --user` locations are reliably visible from the service
+token. To sidestep that, `install_service.bat` resolves both at
+install time and writes them into `dart-games-service.xml` as
+`<env>` entries:
+
+- **`DART_GAMES_PYTHON`** — absolute path to the interpreter the
+  interactive shell resolved via `py` / `python` / `python3` (Store
+  shims are explicitly rejected). The Dart `FaceLandmarksService`
+  checks this env var first before probing PATH, so the service uses
+  the same interpreter you tested with.
+- **`PYTHONPATH`** — the resolved interpreter's user-site-packages
+  directory (from `python -c "import site; print(site.getusersitepackages())"`),
+  but only pinned if `cv2/` or `mediapipe/` is actually present
+  there. Pins the site where `pip install --user` put MediaPipe/cv2
+  so the sidecar can import them from a service context.
+
+**Implication:** the shell you run `install_service.bat` from **must
+have a working Python + MediaPipe** — that's what gets pinned. If you
+later change Python versions or reinstall packages under a different
+account, re-run `install_service.bat` so the XML picks up the new
+paths.
+
+If the installer can't resolve a real Python (only Store shim, or no
+interpreter at all), it prints a warning and skips both env vars.
+Everything else still works; Treasure Divide face-landmark features
+report `python-not-found` until you install Python 3.9+ and re-run
+the installer.
 
 ## One-time setup
 
 1. **Install Flutter SDK** (provides `dart` + `flutter` on PATH).
-2. **Run `check_python_deps.bat` once** to verify mediapipe etc. are
-   installed for the Windows account the service will run as.
+2. **Install Python 3.9+ and MediaPipe** for the account you will run
+   `install_service.bat` from:
+   - Download from https://www.python.org/downloads/ and check
+     "Add python.exe to PATH" during install. Disable the Windows
+     Store `python`/`python3` execution aliases
+     (**Settings → Apps → Advanced app settings → App execution
+     aliases**) — Store shims are rejected by the installer.
+   - Run **`check_python_deps.bat`** — it locates a real (non-shim)
+     Python, runs `pip install --user mediapipe opencv-python pillow
+     numpy` if needed, and writes `.python_deps_verified` as a
+     sentinel. This is the shell state `install_service.bat` will
+     read from in step 4.
 3. **Download WinSW**:
    - Get `WinSW-x64.exe` from
      https://github.com/winsw/winsw/releases
@@ -40,6 +85,10 @@ works.
      to accept, or type a different account.
    - Prompt for that account's **Windows password** (stored in
      `dart-games-service.xml`, which is ACL-restricted to admins)
+   - Resolve the current shell's Python + user-site and pin them into
+     the WinSW XML as `DART_GAMES_PYTHON` / `PYTHONPATH` `<env>`
+     entries (see "Python sidecar env vars" above). If either can't
+     be resolved, it prints a warning and continues.
    - Install and start the **DartGamesServer** service
 
 When it finishes, browse `http://localhost/` on the kiosk, or
@@ -49,6 +98,12 @@ When it finishes, browse `http://localhost/` on the kiosk, or
 
 Run **`update_service.bat` as Administrator**. It pulls, recompiles
 the server, rebuilds the web app, and restarts the service.
+
+`update_service.bat` **does not touch** the pinned Python `<env>`
+vars in the WinSW XML — it reuses whatever `install_service.bat`
+last wrote. If you change Python versions or move MediaPipe to a
+different site-packages location, re-run **`install_service.bat`**
+(not the updater) so the XML picks up the new absolute paths.
 
 ## Managing the service
 
@@ -63,6 +118,27 @@ dart-games-service.exe start
 ## Logs
 
 `logs/service/` — rotated by size (10 MB, 5 files kept).
+
+## Troubleshooting face landmarks
+
+If "Re-detect" fails on the kiosk (or you want to verify the sidecar
+before opening a game), use **Options → Admin Options → Diagnose face
+landmarks**. It hits `GET /api/v1/players/face-landmarks/diagnostics`
+and reports, for the running service:
+
+- Which `pythonCommand` was resolved (or "not found") and whether it
+  came from `DART_GAMES_PYTHON` or from the fallback PATH probe.
+- `sidecarPath` — the resolved `python/mediapipe_sidecar.py`.
+- Whether `import mediapipe` works, and its version.
+- The service's `workingDirectory`, `scriptPath`, and `platform`.
+
+Common failure modes and fixes:
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| ✗ Python interpreter — not found | `DART_GAMES_PYTHON` not pinned AND no `py`/`python` on the service's PATH | Install Python 3.9+ (add to PATH), then re-run `install_service.bat` so the absolute path gets pinned |
+| ✓ Python + ✗ mediapipe importable | Interpreter can't find MediaPipe — usually `pip install --user` put it under a different account's `%APPDATA%` | Re-run `check_python_deps.bat` **from the account whose shell you'll use to run install_service.bat**, then re-run `install_service.bat` so `PYTHONPATH` gets pinned |
+| ✓ Python + ✓ mediapipe + still fails on Re-detect | Photo has no face MediaPipe can find | Retake with a clearer, front-facing photo |
 
 ## Removing the service
 
