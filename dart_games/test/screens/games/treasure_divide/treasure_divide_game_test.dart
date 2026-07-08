@@ -761,16 +761,26 @@ void main() {
     });
 
     test('44. Edit causes halving when all darts become misses', () {
+      // Edit-score must bump timesHalvedPerPlayer when a hit turn is
+      // rewritten to an all-miss AND the player had treasure walking
+      // into that round. Round 0 has no prior treasure (guard blocks
+      // the increment — see test 37b), so this test edits round 1
+      // after seeding a round-0 hit.
       final p = _makeSoloProvider(random: Random(1));
       final game = p.currentGame!;
       final pid = game.playerIds.first;
-      final target = game.targetSequence[0];
-      if (target <= 0 || target == 25) return;
-      game.playerRoundScores[pid]![0] = target;
+      final r0Target = game.targetSequence[0];
+      final r1Target = game.targetSequence[1];
+      if (r0Target <= 0 || r0Target == 25) return;
+      if (r1Target <= 0 || r1Target == 25) return;
+      // Round 0 hit → player has treasure walking into round 1.
+      game.playerRoundScores[pid]![0] = r0Target;
+      // Round 1 originally a hit; edit it to all-miss.
+      game.playerRoundScores[pid]![1] = r1Target;
       game.timesHalvedPerPlayer[pid] = 0;
       p.editPlayerScore(
         playerId: pid,
-        roundIndex: 0,
+        roundIndex: 1,
         newSegments: ['Miss', 'Miss', 'Miss'],
       );
       expect(game.timesHalvedPerPlayer[pid], 1);

@@ -742,6 +742,49 @@ void main() {
     });
 
     test(
+        '39d2. Solo — halve counter bumps IMMEDIATELY on the player\'s '
+        'own turn, not at end of round', () {
+      // Regression: previously the counter increment ran inside
+      // _applyRoundResultsSolo (end-of-round), so p1's "Halved 1
+      // times" only appeared AFTER p2 also finished their round.
+      // The active/opponent tile UI reads timesHalvedPerPlayer, so
+      // this delay meant p1's tile misreported the halving status
+      // for a full opponent turn.
+      //
+      // Scenario mirrors the manual repro:
+      //   Round 0: p1 hits, p2 hits — everyone has treasure.
+      //   Round 1: p1 misses everything — counter must be 1 BEFORE
+      //            p2 has thrown their round-1 turn.
+      final p = _makeSolo(random: Random(0));
+      final game = p.currentGame!;
+
+      _finishHit(p); // p1 round 0 hit
+      _finishHit(p); // p2 round 0 hit → round advances to 1
+      expect(game.currentRoundIndex, 1);
+      expect(game.totalForPlayer('p1'), greaterThan(0));
+      expect(game.totalForPlayer('p2'), greaterThan(0));
+
+      // p1 misses round 1. p2 has NOT yet thrown round 1.
+      _finishMiss(p);
+
+      // Round has NOT advanced yet — p2 is now the current player.
+      expect(game.currentRoundIndex, 1,
+          reason: 'Round should not advance until p2 finishes round 1');
+      expect(game.currentPlayerId, 'p2',
+          reason: 'p2 should be the active player after p1 finishes');
+
+      // BUG WAS HERE: this was 0 before the fix because the loop
+      // ran end-of-round, not per-turn.
+      expect(game.timesHalvedPerPlayer['p1'], 1,
+          reason: 'p1 all-miss with prior treasure must bump counter '
+              'immediately, without waiting for p2\'s turn');
+
+      // Sanity: p2 hasn't missed yet, so their counter is still 0.
+      expect(game.timesHalvedPerPlayer['p2'], 0,
+          reason: 'p2 has not thrown round 1 yet');
+    });
+
+    test(
         '39e. Team mode — crew with 0 treasure missing whole round '
         'does NOT bump timesHalvedPerTeam', () {
       // Both members of team_1 miss round 0. _applyCrewRoundResult

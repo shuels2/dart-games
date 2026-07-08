@@ -14,6 +14,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dar
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../widgets/treasure_divide/pirate_avatar_widget.dart';
+import 'treasure_divide_game_screen.dart';
 import 'treasure_divide_menu_screen.dart';
 
 // ─── Color palette ────────────────────────────────────────────────────────────
@@ -23,6 +24,31 @@ const Color _plankBrown = Color(0xFF8B6914);
 const Color _sailWhite = Color(0xFFFFF8E7);
 const Color _bloodRed = Color(0xFFC41E3A);
 const Color _islandGreen = Color(0xFF228B22);
+// Warm coral / amber — matches the "Halved N times" / "Quartered N times"
+// pill on the game play screen (treasure_divide_game_screen.dart uses the
+// same 0xFFFF8C42) so the stat reads as the same thing across screens.
+const Color _halveCoral = Color(0xFFFF8C42);
+
+// Text shadow stack — mirrors treasure_divide_game_screen.dart so every
+// piece of copy on the results screen carries the same 2/2 drop-shadow
+// plus teal glow the game screen uses. Without these, gold/coral text
+// disappears against the wooden background image; with them it pops
+// cleanly on both dark and light patches of the artwork.
+const List<Shadow> _treasureTextShadows = [
+  Shadow(color: Color(0xCC000000), offset: Offset(2, 2), blurRadius: 4),
+  Shadow(color: Color(0xAA008B8B), offset: Offset(0, 0), blurRadius: 10),
+];
+
+// Shadow stack for text sitting on the GOLD button background (e.g.
+// CHANGE COURSE — ocean-teal letters over a treasure-gold fill). The
+// full _treasureTextShadows adds a teal glow, which blends into
+// ocean-teal glyphs and mushes the edges. This variant uses a sail-
+// white halo instead so the teal reads clearly against gold, then the
+// same dark drop-shadow underneath for depth.
+const List<Shadow> _treasureButtonGoldShadows = [
+  Shadow(color: Color(0xCC000000), offset: Offset(2, 2), blurRadius: 4),
+  Shadow(color: Color(0xFFFFF8E7), offset: Offset(0, 0), blurRadius: 3),
+];
 
 class TreasureDivideResultsScreen extends StatefulWidget {
   const TreasureDivideResultsScreen({Key? key}) : super(key: key);
@@ -194,9 +220,18 @@ class _TreasureDivideResultsScreenState
               Positioned.fill(
                 child: Container(color: _oceanTeal.withOpacity(0.10)),
               ),
-              SingleChildScrollView(
-                child:
-                    _buildResultsBody(context, provider, playerProvider, game),
+              // SafeArea + Positioned.fill so the body Column uses the
+              // full available height (below AppBar, above system chrome)
+              // instead of collapsing to intrinsic height. The winner
+              // section pins to the top, the rankings expand into all
+              // remaining space (scroll internally if too tall), and
+              // the action buttons pin to the bottom — no more empty
+              // dead-zone under the content.
+              Positioned.fill(
+                child: SafeArea(
+                  child: _buildResultsBody(
+                      context, provider, playerProvider, game),
+                ),
               ),
             ],
           ),
@@ -218,22 +253,32 @@ class _TreasureDivideResultsScreenState
     PlayerProvider playerProvider,
     TreasureDivideGame game,
   ) {
+    // Column pattern (borrowed from Tiki Golf results): winner at top,
+    // Expanded(SingleChildScrollView(rankings)) in the middle, buttons
+    // pinned at the bottom. This uses the full body height instead of
+    // the old outer SingleChildScrollView which let the Column collapse
+    // to intrinsic height and cluster everything in the top 50% of the
+    // screen.
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Winner section
+          // Winner section — hero content, fixed height.
           _buildWinnerSection(context, provider, playerProvider, game),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          // Rankings
-          _buildRankings(context, provider, playerProvider, game),
-          const SizedBox(height: 24),
+          // Rankings — expand into remaining vertical space; scroll
+          // internally when the ranked list is taller than fits.
+          Expanded(
+            child: SingleChildScrollView(
+              child: _buildRankings(context, provider, playerProvider, game),
+            ),
+          ),
+          const SizedBox(height: 20),
 
-          // Action buttons
+          // Action buttons — pinned at the bottom.
           _buildActionButtons(context, provider, playerProvider, game),
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -277,31 +322,63 @@ class _TreasureDivideResultsScreenState
         game.quarterItEnabled ? 'Times Quartered' : 'Times Halved';
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Title with Plank Brown outline effect
-        _buildTitleWithOutline('PIRATE CAPTAIN!'),
-        const SizedBox(height: 12),
-
-        // Winner avatar with pirate theme overlay
-        if (winner != null)
-          PirateAvatarWidget(
-            player: winner,
-            themeIndex: game.playerPirateThemes[winner.id] ?? 0,
-            size: 120,
-            isActive: true,
-          ),
-        const SizedBox(height: 10),
+        // Title + avatar in a Stack so the title paints IN FRONT of
+        // the avatar's out-of-bounds accessories (pirate hats often
+        // extend well above the avatar's 300×300 box because
+        // PirateAvatarWidget's Stack uses Clip.none for accessory
+        // overhang). Column paint order would put the avatar layer
+        // on top and hide the title text behind the hat sprite; the
+        // Stack pattern below preserves the same vertical layout
+        // (invisible placeholder title reserves space) but repaints
+        // the visible title last so it stays legible.
+        Stack(
+          alignment: Alignment.topCenter,
+          clipBehavior: Clip.none,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Visibility(
+                  visible: false,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: _buildTitleWithOutline('PIRATE CAPTAIN!'),
+                ),
+                const SizedBox(height: 40),
+                if (winner != null)
+                  PirateAvatarWidget(
+                    player: winner,
+                    themeIndex: game.playerPirateThemes[winner.id] ?? 0,
+                    size: 300,
+                    isActive: true,
+                  ),
+              ],
+            ),
+            // Visible title — last child paints on top.
+            _buildTitleWithOutline('PIRATE CAPTAIN!'),
+          ],
+        ),
+        const SizedBox(height: 16),
 
         // Winner name
         Text(
           winner?.name ?? '',
           key: TreasureDivideResultsKeys.winnerName,
-          style: GoogleFonts.pirataOne(fontSize: 28, color: _sailWhite),
+          style: GoogleFonts.pirataOne(
+              fontSize: 40,
+              color: _sailWhite,
+              shadows: _treasureTextShadows),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
 
-        // Stats line
+        // Stats line — treasure in gold, halve/quarter tally in the
+        // same warm coral used by the game play screen tile so both
+        // screens read the stat identically. Shadows match the game
+        // screen so the labels stay legible over the wooden BG.
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -309,26 +386,35 @@ class _TreasureDivideResultsScreenState
               'Treasure: ',
               key: TreasureDivideResultsKeys.treasureScore,
               style: GoogleFonts.merriweather(
-                  fontSize: 16, color: _treasureGold),
+                  fontSize: 20,
+                  color: _treasureGold,
+                  shadows: _treasureTextShadows),
             ),
             Text(
               '$treasure gold',
               style: GoogleFonts.merriweather(
-                  fontSize: 16,
+                  fontSize: 20,
                   color: _treasureGold,
-                  fontWeight: FontWeight.bold),
+                  fontWeight: FontWeight.bold,
+                  shadows: _treasureTextShadows),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Text(
               '($halvedLabel: ',
               key: TreasureDivideResultsKeys.timesHalved,
               style: GoogleFonts.merriweather(
-                  fontSize: 14, color: _sailWhite.withOpacity(0.7)),
+                  fontSize: 18,
+                  color: _halveCoral,
+                  fontWeight: FontWeight.w600,
+                  shadows: _treasureTextShadows),
             ),
             Text(
               '$timesHalved)',
               style: GoogleFonts.merriweather(
-                  fontSize: 14, color: _sailWhite.withOpacity(0.7)),
+                  fontSize: 18,
+                  color: _halveCoral,
+                  fontWeight: FontWeight.w600,
+                  shadows: _treasureTextShadows),
             ),
           ],
         ),
@@ -345,62 +431,163 @@ class _TreasureDivideResultsScreenState
     final winnerIds = game.winnerIds;
     final treasure =
         winnerIds.isNotEmpty ? game.totalForPlayer(winnerIds.first) : 0;
-    final timesHalved = winnerIds.isNotEmpty
-        ? (game.timesHalvedPerPlayer[winnerIds.first] ?? 0)
-        : 0;
-    final halvedLabel =
-        game.quarterItEnabled ? 'Times Quartered' : 'Times Halved';
-    final names = winnerIds
-        .map((id) => playerProvider.getPlayerById(id)?.name ?? id)
-        .toList();
-    final nameStr = names.join(' & ');
+    // Halve/quarter count intentionally NOT surfaced on the solo-tie
+    // top section: tied players share the same treasure total but
+    // often reach it via different halve/quarter histories, so a
+    // single number would be misleading. Per-player counts still
+    // appear on each scorecard row below.
 
-    return Column(
-      children: [
-        _buildTitleWithOutline('DIVIDED TREASURE!'),
-        const SizedBox(height: 6),
-        Text(
-          'A TIE BETWEEN CAPTAINS',
-          style: GoogleFonts.pirataOne(fontSize: 18, color: _sailWhite),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
+    // Tier the avatar + name sizing on the number of tied players
+    // (mirrors Reef Royale's _buildWinnerNamesAndAvatars) so a 2-way
+    // tie shows big hero portraits and an 8-way tie still fits on a
+    // single row without overlap. Horizontal padding scales with size
+    // so the space BETWEEN portraits reads consistent across tiers.
+    //
+    // Calibrated for the kiosk display (1920px wide → 1872px body
+    // after the 24px outer screen padding). The 8-way row consumes
+    // ~92% of the available body width (8×180 + 16×18 = 1728);
+    // smaller tiers are proportionally larger since they don't need
+    // to pack as many portraits.
+    final tieCount = winnerIds.length;
+    final double avatarSize;
+    final double horizontalPad;
+    final double nameFontSize;
+    if (tieCount <= 2) {
+      avatarSize = 300;
+      horizontalPad = 36;
+      nameFontSize = 34;
+    } else if (tieCount <= 4) {
+      avatarSize = 230;
+      horizontalPad = 26;
+      nameFontSize = 28;
+    } else if (tieCount <= 6) {
+      avatarSize = 190;
+      horizontalPad = 20;
+      nameFontSize = 24;
+    } else {
+      avatarSize = 180;
+      horizontalPad = 18;
+      nameFontSize = 22;
+    }
 
-        // Row of tied-player avatars
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    // Local builder for the title + subtitle stack (used both as the
+    // invisible spatial placeholder and the visible top-layer overlay).
+    // Internal spacing tightened to 2px so "DIVIDED TREASURE!" and
+    // "A TIE BETWEEN CAPTAINS" read as one unit — the outer 40→70
+    // avatar gap below now provides the breathing room instead.
+    Widget buildTitleGroup() => Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            for (final id in winnerIds) ...[
-              Builder(builder: (context) {
-                final tiedPlayer = playerProvider.getPlayerById(id);
-                if (tiedPlayer == null) {
-                  return _buildAvatarCircle(id, size: 80);
-                }
-                return PirateAvatarWidget(
-                  player: tiedPlayer,
-                  themeIndex: game.playerPirateThemes[id] ?? 0,
-                  size: 80,
-                  isActive: true,
-                );
-              }),
-              const SizedBox(width: 12),
-            ],
+            _buildTitleWithOutline('DIVIDED TREASURE!'),
+            const SizedBox(height: 2),
+            Text(
+              'A TIE BETWEEN CAPTAINS',
+              style: GoogleFonts.pirataOne(
+                  fontSize: 24,
+                  color: _sailWhite,
+                  shadows: _treasureTextShadows),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        );
+
+    // One (avatar + name) column per tied captain, tier-sized.
+    Widget buildTiedCaptain(String id) {
+      final tiedPlayer = playerProvider.getPlayerById(id);
+      final name = tiedPlayer?.name ?? id;
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPad),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            tiedPlayer == null
+                ? _buildAvatarCircle(id, size: avatarSize)
+                : PirateAvatarWidget(
+                    player: tiedPlayer,
+                    themeIndex: game.playerPirateThemes[id] ?? 0,
+                    size: avatarSize,
+                    isActive: true,
+                  ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: avatarSize,
+              child: Text(
+                name,
+                style: GoogleFonts.pirataOne(
+                    fontSize: nameFontSize,
+                    color: _sailWhite,
+                    shadows: _treasureTextShadows),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 8),
+      );
+    }
 
-        Text(
-          nameStr,
-          key: TreasureDivideResultsKeys.winnerName,
-          style: GoogleFonts.pirataOne(fontSize: 22, color: _sailWhite),
-          textAlign: TextAlign.center,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Title + subtitle repainted on top of tied avatars so pirate
+        // hat overhang doesn't hide the copy. See _buildSoloSingleWinner
+        // for the pattern rationale.
+        Stack(
+          alignment: Alignment.topCenter,
+          clipBehavior: Clip.none,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Visibility(
+                  visible: false,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: buildTitleGroup(),
+                ),
+                // Extra breathing room here (was 40) so tall pirate
+                // hats on the tied avatars don't crash into the
+                // "A TIE BETWEEN CAPTAINS" subtitle above.
+                const SizedBox(height: 70),
+                // Row of (avatar + name) columns, tier-sized so all
+                // eight possible tied captains fit on one line. Row
+                // (not Wrap) keeps the group visually cohesive; the
+                // sizing ladder above guarantees width fits within
+                // the outer 24px screen padding on a kiosk display.
+                // Key: TreasureDivideResultsKeys.winnerName is kept
+                // on this Row so tests that look up the winner name
+                // anchor still resolve to something on the tie
+                // variant.
+                Row(
+                  key: TreasureDivideResultsKeys.winnerName,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final id in winnerIds) buildTiedCaptain(id),
+                  ],
+                ),
+              ],
+            ),
+            buildTitleGroup(),
+          ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 18),
 
+        // Treasure only — halved/quartered tally intentionally omitted
+        // (see comment at top of _buildSoloTieWinner). Per-player
+        // halve counts appear on each scorecard row below.
+        // The former "Name & Name" joined listing above the stats was
+        // dropped now that each avatar shows its own name inline.
         Text(
-          'Treasure: $treasure gold each ($halvedLabel: $timesHalved each)',
+          'Treasure: $treasure gold each',
           key: TreasureDivideResultsKeys.treasureScore,
-          style: GoogleFonts.merriweather(fontSize: 14, color: _treasureGold),
+          style: GoogleFonts.merriweather(
+              fontSize: 18,
+              color: _treasureGold,
+              fontWeight: FontWeight.bold,
+              shadows: _treasureTextShadows),
           textAlign: TextAlign.center,
         ),
       ],
@@ -427,18 +614,19 @@ class _TreasureDivideResultsScreenState
     final members = game.teamPlayers[winnerTeamId] ?? [];
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildTitleWithOutline("CAPTAIN'S CREW!"),
-        const SizedBox(height: 12),
+        const SizedBox(height: 40),
 
-        // Winning crew crest
+        // Winning crew crest — hero-sized.
         Container(
           key: TreasureDivideResultsKeys.winnerCrewCrest,
-          width: 120,
-          height: 120,
+          width: 285,
+          height: 285,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: _treasureGold, width: 3),
+            border: Border.all(color: _treasureGold, width: 5),
             color: _oceanTeal.withOpacity(0.4),
           ),
           child: crestPath != null
@@ -447,17 +635,18 @@ class _TreasureDivideResultsScreenState
                     crestPath,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) =>
-                        Icon(Icons.shield, color: _treasureGold, size: 64),
+                        Icon(Icons.shield, color: _treasureGold, size: 150),
                   ),
                 )
-              : Icon(Icons.shield, color: _treasureGold, size: 64),
+              : Icon(Icons.shield, color: _treasureGold, size: 150),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
 
-        // Row of winning crew members
+        // Row of winning crew members — 2x prior.
         Wrap(
           alignment: WrapAlignment.center,
-          spacing: 12,
+          spacing: 24,
+          runSpacing: 12,
           children: [
             for (final pid in members)
               Container(
@@ -468,34 +657,54 @@ class _TreasureDivideResultsScreenState
                     Builder(builder: (context) {
                       final memberPlayer = playerProvider.getPlayerById(pid);
                       if (memberPlayer == null) {
-                        return _buildAvatarCircle(pid, size: 48);
+                        return _buildAvatarCircle(pid, size: 108);
                       }
                       return PirateAvatarWidget(
                         player: memberPlayer,
                         themeIndex: game.playerPirateThemes[pid] ?? 0,
-                        size: 48,
+                        size: 108,
                         isActive: true,
                       );
                     }),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Text(
                       playerProvider.getPlayerById(pid)?.name ?? pid,
                       style: GoogleFonts.merriweather(
-                          fontSize: 12, color: _sailWhite),
+                          fontSize: 16,
+                          color: _sailWhite,
+                          shadows: _treasureTextShadows),
                     ),
                   ],
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
 
-        // Stats
-        Text(
-          'Crew Treasure: $treasure gold ($halvedLabel: $timesHalved)',
+        // Stats — treasure in gold, halve/quarter tally in coral to
+        // match the game play screen.
+        Text.rich(
           key: TreasureDivideResultsKeys.treasureScore,
-          style: GoogleFonts.merriweather(
-              fontSize: 16, color: _treasureGold, fontWeight: FontWeight.bold),
+          TextSpan(
+            children: [
+              TextSpan(
+                text: 'Crew Treasure: $treasure gold ',
+                style: GoogleFonts.merriweather(
+                    fontSize: 22,
+                    color: _treasureGold,
+                    fontWeight: FontWeight.bold,
+                    shadows: _treasureTextShadows),
+              ),
+              TextSpan(
+                text: '($halvedLabel: $timesHalved)',
+                style: GoogleFonts.merriweather(
+                    fontSize: 22,
+                    color: _halveCoral,
+                    fontWeight: FontWeight.bold,
+                    shadows: _treasureTextShadows),
+              ),
+            ],
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -519,15 +728,19 @@ class _TreasureDivideResultsScreenState
         game.quarterItEnabled ? 'Times Quartered' : 'Times Halved';
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildTitleWithOutline('DIVIDED TREASURE!'),
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
         Text(
           'A TIE BETWEEN CREWS',
-          style: GoogleFonts.pirataOne(fontSize: 18, color: _sailWhite),
+          style: GoogleFonts.pirataOne(
+              fontSize: 24,
+              color: _sailWhite,
+              shadows: _treasureTextShadows),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 40),
 
         // Side-by-side tied crew crests + members. Two-way ties get a
         // decorative "&" between the crests (matches the wireframe's
@@ -541,44 +754,61 @@ class _TreasureDivideResultsScreenState
               _buildTiedCrewColumn(
                   game, playerProvider, winnerTeamIds[i], teamIds),
               if (i < winnerTeamIds.length - 1) ...[
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
                 if (winnerTeamIds.length == 2)
                   Padding(
-                    padding: const EdgeInsets.only(top: 24),
+                    padding: const EdgeInsets.only(top: 40),
                     child: Text(
                       '&',
                       style: GoogleFonts.pirataOne(
-                        fontSize: 48,
+                        fontSize: 68,
                         color: _treasureGold,
                         shadows: const [
                           Shadow(
                               color: Color(0xFF8B6914),
-                              offset: Offset(-1.5, -1.5)),
+                              offset: Offset(-2, -2)),
                           Shadow(
                               color: Color(0xFF8B6914),
-                              offset: Offset(1.5, -1.5)),
+                              offset: Offset(2, -2)),
                           Shadow(
                               color: Color(0xFF8B6914),
-                              offset: Offset(-1.5, 1.5)),
+                              offset: Offset(-2, 2)),
                           Shadow(
                               color: Color(0xFF8B6914),
-                              offset: Offset(1.5, 1.5)),
+                              offset: Offset(2, 2)),
                         ],
                       ),
                     ),
                   ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
               ],
             ],
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
 
-        Text(
-          'Crew Treasure: $treasure gold each ($halvedLabel: $timesHalved each)',
+        Text.rich(
           key: TreasureDivideResultsKeys.treasureScore,
-          style: GoogleFonts.merriweather(
-              fontSize: 14, color: _treasureGold, fontWeight: FontWeight.bold),
+          TextSpan(
+            children: [
+              TextSpan(
+                text: 'Crew Treasure: $treasure gold each ',
+                style: GoogleFonts.merriweather(
+                    fontSize: 18,
+                    color: _treasureGold,
+                    fontWeight: FontWeight.bold,
+                    shadows: _treasureTextShadows),
+              ),
+              TextSpan(
+                text: '($halvedLabel: $timesHalved each)',
+                style: GoogleFonts.merriweather(
+                    fontSize: 18,
+                    color: _halveCoral,
+                    fontWeight: FontWeight.bold,
+                    shadows: _treasureTextShadows),
+              ),
+            ],
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -600,14 +830,14 @@ class _TreasureDivideResultsScreenState
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Crest
+        // Crest — 25% smaller than the prior 2x pass.
         Container(
           key: TreasureDivideResultsKeys.winnerCrewCrest,
-          width: 80,
-          height: 80,
+          width: 195,
+          height: 195,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: _treasureGold, width: 2),
+            border: Border.all(color: _treasureGold, width: 4),
             color: _oceanTeal.withOpacity(0.4),
           ),
           child: crestPath != null
@@ -616,18 +846,20 @@ class _TreasureDivideResultsScreenState
                     crestPath,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) =>
-                        Icon(Icons.shield, color: _treasureGold, size: 40),
+                        Icon(Icons.shield, color: _treasureGold, size: 102),
                   ),
                 )
-              : Icon(Icons.shield, color: _treasureGold, size: 40),
+              : Icon(Icons.shield, color: _treasureGold, size: 102),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 14),
         // Members
         for (final pid in members)
           Text(
             playerProvider.getPlayerById(pid)?.name ?? pid,
             style: GoogleFonts.merriweather(
-                fontSize: 12, color: _sailWhite),
+                fontSize: 18,
+                color: _sailWhite,
+                shadows: _treasureTextShadows),
             textAlign: TextAlign.center,
           ),
       ],
@@ -690,17 +922,13 @@ class _TreasureDivideResultsScreenState
     final halvedLabel =
         game.quarterItEnabled ? 'Times Quartered' : 'Times Halved';
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: _oceanTeal.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: _plankBrown.withOpacity(0.4), width: 2),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(playerIds.length, (index) {
+    // No outer container — each ranking row provides its own
+    // background; wrapping them in a padded, bordered box was just
+    // stealing vertical space and making the rankings feel penned
+    // in against the winner section.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(playerIds.length, (index) {
           final playerId = playerIds[index];
           final player = playerProvider.getPlayerById(playerId);
           if (player == null) return const SizedBox();
@@ -713,8 +941,8 @@ class _TreasureDivideResultsScreenState
           return Container(
             key: TreasureDivideResultsKeys.playerRanking(globalIndex),
             padding:
-                const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            margin: const EdgeInsets.only(bottom: 4),
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            margin: const EdgeInsets.only(bottom: 6),
             decoration: BoxDecoration(
               color: globalIndex % 2 == 0
                   ? _oceanTeal.withOpacity(0.2)
@@ -728,29 +956,35 @@ class _TreasureDivideResultsScreenState
               children: [
                 // Rank number
                 SizedBox(
-                  width: 36,
+                  width: 44,
                   child: Text(
                     '${globalIndex + 1}.',
                     style: GoogleFonts.pirataOne(
-                        fontSize: 18, color: _treasureGold),
+                        fontSize: 24,
+                        color: _treasureGold,
+                        shadows: _treasureTextShadows),
                   ),
                 ),
-                // Avatar with pirate theme
+                // Avatar with pirate theme — sized down 20% from the
+                // prior 80 pass to give the ranking rows more air
+                // and let the pinned rankings fit more players on
+                // screen without scrolling.
                 PirateAvatarWidget(
                   player: player,
                   themeIndex: game.playerPirateThemes[playerId] ?? 0,
-                  size: 40,
+                  size: 64,
                   isActive: false,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 // Name
                 Expanded(
                   child: Text(
                     player.name,
                     style: GoogleFonts.merriweather(
-                        fontSize: 14,
+                        fontSize: 18,
                         color: _sailWhite,
-                        fontWeight: FontWeight.w600),
+                        fontWeight: FontWeight.w600,
+                        shadows: _treasureTextShadows),
                   ),
                 ),
                 // Score
@@ -761,23 +995,26 @@ class _TreasureDivideResultsScreenState
                     Text(
                       '$treasure gold',
                       style: GoogleFonts.merriweather(
-                          fontSize: 13,
+                          fontSize: 17,
                           color: _treasureGold,
-                          fontWeight: FontWeight.bold),
+                          fontWeight: FontWeight.bold,
+                          shadows: _treasureTextShadows),
                     ),
                     Text(
                       '$halvedLabel: $timesHalved',
                       style: GoogleFonts.merriweather(
-                          fontSize: 11,
-                          color: _sailWhite.withOpacity(0.6)),
+                          fontSize: 14,
+                          color: _halveCoral,
+                          fontWeight: FontWeight.w600,
+                          shadows: _treasureTextShadows),
                     ),
                   ],
                 ),
                 if (isWinner) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: _islandGreen,
                       borderRadius: BorderRadius.circular(12),
@@ -785,7 +1022,9 @@ class _TreasureDivideResultsScreenState
                     child: Text(
                       'WIN',
                       style: GoogleFonts.pirataOne(
-                          fontSize: 10, color: _sailWhite),
+                          fontSize: 14,
+                          color: _sailWhite,
+                          shadows: _treasureTextShadows),
                     ),
                   ),
                 ],
@@ -793,7 +1032,6 @@ class _TreasureDivideResultsScreenState
             ),
           );
         }),
-      ),
     );
   }
 
@@ -808,16 +1046,10 @@ class _TreasureDivideResultsScreenState
         game.quarterItEnabled ? 'Times Quartered' : 'Times Halved';
     final teamIdList = game.teamPlayers.keys.toList();
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: _oceanTeal.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _plankBrown.withOpacity(0.4), width: 2),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(ranked.length, (index) {
+    // No outer container — see _buildSoloRankingColumn for rationale.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(ranked.length, (index) {
           final teamId = ranked[index];
           final treasure = game.totalForTeam(teamId);
           final timesHalved = game.timesHalvedPerTeam[teamId] ?? 0;
@@ -832,8 +1064,8 @@ class _TreasureDivideResultsScreenState
           return Container(
             key: TreasureDivideResultsKeys.crewRanking(index),
             padding:
-                const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            margin: const EdgeInsets.only(bottom: 4),
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            margin: const EdgeInsets.only(bottom: 6),
             decoration: BoxDecoration(
               color: index % 2 == 0
                   ? _oceanTeal.withOpacity(0.2)
@@ -847,25 +1079,28 @@ class _TreasureDivideResultsScreenState
               children: [
                 // Rank number
                 SizedBox(
-                  width: 36,
+                  width: 44,
                   child: Text(
                     '${index + 1}.',
                     style: GoogleFonts.pirataOne(
-                        fontSize: 18, color: _treasureGold),
+                        fontSize: 24,
+                        color: _treasureGold,
+                        shadows: _treasureTextShadows),
                   ),
                 ),
-                // Crest
+                // Crest — matched to the solo ranking avatar size
+                // (both dropped 20% for scorecard breathing room).
                 SizedBox(
-                  width: 36,
-                  height: 36,
+                  width: 54,
+                  height: 54,
                   child: crestPath != null
                       ? Image.asset(crestPath,
                           fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) =>
-                              Icon(Icons.shield, color: _treasureGold))
-                      : Icon(Icons.shield, color: _treasureGold),
+                              Icon(Icons.shield, color: _treasureGold, size: 38))
+                      : Icon(Icons.shield, color: _treasureGold, size: 38),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 // Team members column
                 Expanded(
                   child: Column(
@@ -876,9 +1111,10 @@ class _TreasureDivideResultsScreenState
                         Text(
                           playerProvider.getPlayerById(pid)?.name ?? pid,
                           style: GoogleFonts.merriweather(
-                              fontSize: 13,
+                              fontSize: 17,
                               color: _sailWhite,
-                              fontWeight: FontWeight.w500),
+                              fontWeight: FontWeight.w500,
+                              shadows: _treasureTextShadows),
                         ),
                     ],
                   ),
@@ -891,23 +1127,26 @@ class _TreasureDivideResultsScreenState
                     Text(
                       '$treasure gold',
                       style: GoogleFonts.merriweather(
-                          fontSize: 13,
+                          fontSize: 17,
                           color: _treasureGold,
-                          fontWeight: FontWeight.bold),
+                          fontWeight: FontWeight.bold,
+                          shadows: _treasureTextShadows),
                     ),
                     Text(
                       '$halvedLabel: $timesHalved',
                       style: GoogleFonts.merriweather(
-                          fontSize: 11,
-                          color: _sailWhite.withOpacity(0.6)),
+                          fontSize: 14,
+                          color: _halveCoral,
+                          fontWeight: FontWeight.w600,
+                          shadows: _treasureTextShadows),
                     ),
                   ],
                 ),
                 if (isWinner) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: _islandGreen,
                       borderRadius: BorderRadius.circular(12),
@@ -915,7 +1154,9 @@ class _TreasureDivideResultsScreenState
                     child: Text(
                       'WIN',
                       style: GoogleFonts.pirataOne(
-                          fontSize: 10, color: _sailWhite),
+                          fontSize: 14,
+                          color: _sailWhite,
+                          shadows: _treasureTextShadows),
                     ),
                   ),
                 ],
@@ -923,7 +1164,6 @@ class _TreasureDivideResultsScreenState
             ),
           );
         }),
-      ),
     );
   }
 
@@ -942,8 +1182,8 @@ class _TreasureDivideResultsScreenState
       children: [
         // SAIL AGAIN
         SizedBox(
-          width: 200,
-          height: 52,
+          width: 300,
+          height: 60,
           child: ElevatedButton(
             key: TreasureDivideResultsKeys.playAgainButton,
             onPressed: () => _playAgain(context, provider, playerProvider, game),
@@ -956,15 +1196,17 @@ class _TreasureDivideResultsScreenState
             child: Text(
               'SAIL AGAIN',
               style: GoogleFonts.pirataOne(
-                  fontSize: 16, color: _sailWhite),
+                  fontSize: 32,
+                  color: _sailWhite,
+                  shadows: _treasureTextShadows),
             ),
           ),
         ),
 
         // CHANGE COURSE
         SizedBox(
-          width: 200,
-          height: 52,
+          width: 300,
+          height: 60,
           child: ElevatedButton(
             key: TreasureDivideResultsKeys.changeSettingsButton,
             onPressed: () =>
@@ -978,15 +1220,17 @@ class _TreasureDivideResultsScreenState
             child: Text(
               'CHANGE COURSE',
               style: GoogleFonts.pirataOne(
-                  fontSize: 16, color: _oceanTeal),
+                  fontSize: 32,
+                  color: _oceanTeal,
+                  shadows: _treasureButtonGoldShadows),
             ),
           ),
         ),
 
         // DOCK HOME
         SizedBox(
-          width: 200,
-          height: 52,
+          width: 300,
+          height: 60,
           child: ElevatedButton(
             key: TreasureDivideResultsKeys.backToMenuButton,
             onPressed: () => _backToMenu(context, provider),
@@ -999,7 +1243,9 @@ class _TreasureDivideResultsScreenState
             child: Text(
               'DOCK HOME',
               style: GoogleFonts.pirataOne(
-                  fontSize: 16, color: _sailWhite),
+                  fontSize: 32,
+                  color: _sailWhite,
+                  shadows: _treasureTextShadows),
             ),
           ),
         ),
@@ -1015,25 +1261,32 @@ class _TreasureDivideResultsScreenState
     PlayerProvider playerProvider,
     TreasureDivideGame game,
   ) {
-    // Navigate to menu then clear, preserving same settings
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TreasureDivideMenuScreen(
-          initialGameMode: game.gameMode,
-          initialTeamAssignment: game.teamAssignment,
-          initialTeamCount: game.teamCount,
-          initialNumberOfRounds: game.numberOfRounds,
-          initialQuarterIt: game.quarterItEnabled,
-          initialCustomTargets: game.customTargetsEnabled,
-          initialSelectedPlayerIds: List<String>.from(game.playerIds),
-          initialPlayerTeamAssignments:
-              Map<String, String>.from(game.playerTeamAssignments),
-        ),
-      ),
-      (route) => route.isFirst,
+    // SAIL AGAIN: launch a fresh game with the SAME settings, players,
+    // and (for manual team mode) team assignments. Skip the setup
+    // screen entirely — that's what CHANGE COURSE is for. Random team
+    // mode reshuffles crews on each launch (menu behavior).
+    //
+    // Order matters: startGame BEFORE the navigation so the fresh game
+    // is already on the provider when the game screen mounts. Pattern
+    // mirrors Tiki Golf's results screen.
+    provider.startGame(
+      playerIds: List<String>.from(game.playerIds),
+      numberOfRounds: game.numberOfRounds,
+      quarterItEnabled: game.quarterItEnabled,
+      customTargetsEnabled: game.customTargetsEnabled,
+      gameMode: game.gameMode,
+      teamAssignment: game.teamAssignment,
+      teamCount: game.teamCount,
+      manualTeamAssignments:
+          game.teamAssignment == TreasureDivideTeamAssignment.manual
+              ? Map<String, String>.from(game.playerTeamAssignments)
+              : null,
     );
-    provider.clearGame();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const TreasureDivideGameScreen()),
+    );
   }
 
   void _changeSettings(
@@ -1073,25 +1326,31 @@ class _TreasureDivideResultsScreenState
   Widget _buildTitleWithOutline(String text) {
     return Stack(
       children: [
-        // Outline layer (rendered behind with slight offsets)
+        // Outline layer (rendered behind with slight offsets) — kept
+        // for the plank-brown edge; the top gold layer carries the
+        // same drop-shadow + teal glow the game screen uses so the
+        // headline pops off the wooden background.
         for (final offset in [
-          const Offset(-2, -2),
-          const Offset(2, -2),
-          const Offset(-2, 2),
-          const Offset(2, 2),
+          const Offset(-2.5, -2.5),
+          const Offset(2.5, -2.5),
+          const Offset(-2.5, 2.5),
+          const Offset(2.5, 2.5),
         ])
           Transform.translate(
             offset: offset,
             child: Text(
               text,
               style: GoogleFonts.pirataOne(
-                  fontSize: 36, color: _plankBrown),
+                  fontSize: 54, color: _plankBrown),
               textAlign: TextAlign.center,
             ),
           ),
         Text(
           text,
-          style: GoogleFonts.pirataOne(fontSize: 36, color: _treasureGold),
+          style: GoogleFonts.pirataOne(
+              fontSize: 54,
+              color: _treasureGold,
+              shadows: _treasureTextShadows),
           textAlign: TextAlign.center,
         ),
       ],

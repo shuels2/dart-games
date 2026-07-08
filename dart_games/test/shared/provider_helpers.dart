@@ -895,6 +895,16 @@ class ProviderHelpers {
     return provider.currentGame?.totalForPlayer(playerId) ?? 0;
   }
 
+  /// Treasure Divide: How many times [playerId]'s gold has been
+  /// halved (or quartered under Quarter It). Reads the same field
+  /// the opponent / active player tiles read, so callers can assert
+  /// the counter is right the moment it should tick.
+  static int getTreasureDivideTimesHalvedPerPlayer(
+      WidgetTester tester, String playerId) {
+    final provider = getTreasureDivideProvider(tester);
+    return provider.currentGame?.timesHalvedPerPlayer[playerId] ?? 0;
+  }
+
   /// Treasure Divide: Get winner player IDs (solo mode). Empty until game finished.
   static List<String> getTreasureDivideWinnerIds(WidgetTester tester) {
     final provider = getTreasureDivideProvider(tester);

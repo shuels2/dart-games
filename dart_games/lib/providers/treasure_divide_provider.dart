@@ -358,6 +358,19 @@ class TreasureDivideProvider extends ChangeNotifier {
         List.filled(game.numberOfRounds, null);
     game.playerRoundScores[playerId]![roundIndex] = _currentTurnHaul;
 
+    // ── Solo: bump this player's halve counter NOW, not at end of round.
+    // Otherwise P1's tile still says "Halved 0 times" after their
+    // all-miss turn — it only ticks when the LAST player of the
+    // round finishes, which is a full opponent turn away.
+    // Skipped for team mode: the crew-wide counter is applied in
+    // _applyCrewRoundResult after every crew member has thrown.
+    if (game.gameMode == TreasureDivideGameMode.solo &&
+        _currentTurnHaul == 0 &&
+        _totalBeforeRound(playerId, roundIndex) > 0) {
+      game.timesHalvedPerPlayer[playerId] =
+          (game.timesHalvedPerPlayer[playerId] ?? 0) + 1;
+    }
+
     // ── Reset turn-level state ──
     game.dartsThrown = 0;
     game.currentTurnDartSegments[playerId] = [];
@@ -548,26 +561,9 @@ class TreasureDivideProvider extends ChangeNotifier {
   // ─── _applyRoundResultsSolo ──────────────────────────────────────────────────
 
   void _applyRoundResultsSolo() {
-    final game = _currentGame!;
-    final roundIndex = game.currentRoundIndex;
-
-    // For each player: if their haul was 0 AND they had treasure to
-    // halve coming into this round, increment the halving counter.
-    // A player who misses with a 0 balance has nothing to lose
-    // (totalForPlayer's `total = (0 / divisor).floor() = 0` is a
-    // no-op), so counting it as a halving event misleads the UI
-    // ("Quartered 1 time" appearing on a player whose gold never
-    // dropped). The player-tile counter is display-only; the actual
-    // treasure math is reconstructed in `totalForPlayer` from the
-    // round haul list and is unaffected by this guard.
-    for (final pid in game.playerIds) {
-      final haul = game.playerRoundScores[pid]?[roundIndex] ?? 0;
-      if (haul == 0 && _totalBeforeRound(pid, roundIndex) > 0) {
-        game.timesHalvedPerPlayer[pid] =
-            (game.timesHalvedPerPlayer[pid] ?? 0) + 1;
-      }
-    }
-
+    // Per-player halve counters are bumped in handleTakeoutFinished
+    // the moment each player commits their turn, so there's nothing
+    // left to do at end-of-round beyond advancing.
     _advanceToNextRound();
   }
 

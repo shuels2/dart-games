@@ -62,45 +62,55 @@ class PlayerAvatarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final avatar = Container(
+      decoration: isHighlighted
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.amber,
+                width: 3.0,
+              ),
+            )
+          : null,
+      child: CircleAvatar(
+        radius: size,
+        backgroundColor: Colors.grey[300],
+        backgroundImage: _getImageProvider(),
+        child: player.photoPath == null
+            ? Icon(
+                Icons.person,
+                size: size * 1.2,
+                color: Colors.grey[600],
+              )
+            : null,
+      ),
+    );
+
+    // When the caller only wants the avatar, skip the Column entirely.
+    // Wrapping the avatar in a Column(mainAxisSize.min) inside a strict
+    // parent constraint (e.g. PirateAvatarWidget's Positioned.fill →
+    // ClipOval → PlayerAvatarWidget) tripped a vertical overflow at
+    // large sizes because Column layout + CircleAvatar's minDiameter
+    // don't play well together when the child exactly matches the
+    // parent height. Removing the Column when there's nothing to
+    // stack lets the ClipOval size the avatar directly.
+    if (!showName) return avatar;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          decoration: isHighlighted
-              ? BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.amber,
-                    width: 3.0,
-                  ),
-                )
-              : null,
-          child: CircleAvatar(
-            radius: size,
-            backgroundColor: Colors.grey[300],
-            backgroundImage: _getImageProvider(),
-            child: player.photoPath == null
-                ? Icon(
-                    Icons.person,
-                    size: size * 1.2,
-                    color: Colors.grey[600],
-                  )
-                : null,
+        avatar,
+        const SizedBox(height: 4),
+        Text(
+          player.name,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
           ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        if (showName) ...[
-          const SizedBox(height: 4),
-          Text(
-            player.name,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ],
     );
   }
