@@ -481,6 +481,80 @@ void main() {
     });
 
     // =========================================================================
+    // Test 8b: Three-way tie announcement (documents current phrasing)
+    // Covers: announceWinners with 3 tied players
+    //
+    // Documents the current 3+ tie phrasing so any future change is
+    // deliberate. The helper's implementation is `.join(' and ')` — so
+    // a 3-way tie reads "shared by Alice and Bob and Charlie" (repeated
+    // "and", NOT an Oxford-comma list). Compare with Treasure Divide
+    // and Tiki Golf, which use a `_joinWithAnd` helper that produces
+    // "Alice, Bob, and Charlie". If we want that style here, update
+    // MonsterMashAnnouncementHelper.announceWinners + the matching
+    // mock and this expectation.
+    // =========================================================================
+    test('Test 8b: Three-way tie announces every winner with '
+        'current "A and B and C" phrasing', () {
+      players = createPlayers(3);
+      provider = createTestProvider(
+        players: players,
+        healthMax: 20,
+        speedPlayEnabled: true,
+        roundLimit: 1,
+      );
+      audioQueue = MockMonsterMashAudioQueueService();
+      helper = MonsterMashTestHelper(
+        provider: provider,
+        audioQueue: audioQueue,
+        players: players,
+      );
+
+      // Everyone equal on damage → any surviving tie by health also
+      // ties by damage tiebreaker → three-way tie.
+      provider.currentGame!.totalDamageDealt['p1'] = 5;
+      provider.currentGame!.totalDamageDealt['p2'] = 5;
+      provider.currentGame!.totalDamageDealt['p3'] = 5;
+
+      // Round 1: all three players miss every dart (health stays
+      // equal). Round ends after Charlie's takeout → game hits
+      // roundLimit → tie announcement fires.
+      // Alice
+      helper.processDartThrowWithAnnouncements('None');
+      helper.clearAnnouncements();
+      helper.processDartThrowWithAnnouncements('None');
+      helper.clearAnnouncements();
+      helper.processDartThrowWithAnnouncements('None');
+      helper.clearAnnouncements();
+      helper.handleTakeoutFinished();
+      helper.clearAnnouncements();
+
+      // Bob
+      helper.processDartThrowWithAnnouncements('None');
+      helper.clearAnnouncements();
+      helper.processDartThrowWithAnnouncements('None');
+      helper.clearAnnouncements();
+      helper.processDartThrowWithAnnouncements('None');
+      helper.clearAnnouncements();
+      helper.handleTakeoutFinished();
+      helper.clearAnnouncements();
+
+      // Charlie
+      helper.processDartThrowWithAnnouncements('None');
+      helper.clearAnnouncements();
+      helper.processDartThrowWithAnnouncements('None');
+      helper.clearAnnouncements();
+      helper.processDartThrowWithAnnouncements('None');
+      helper.clearAnnouncements();
+
+      // Takeout triggers game end → 3-way tie announcement
+      helper.handleTakeoutFinished();
+      helper.verifyAnnouncements([
+        'GAME OVER! The night is shared by Alice and Bob and Charlie!',
+      ]);
+      helper.clearAnnouncements();
+    });
+
+    // =========================================================================
     // Test 9: Single elimination on 1st dart (no hat trick)
     // Covers: elimination fires without hat trick, hit suppressed
     // Precedence: Elimination supersedes attack

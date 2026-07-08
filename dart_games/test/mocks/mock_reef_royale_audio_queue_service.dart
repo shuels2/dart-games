@@ -117,8 +117,24 @@ class MockReefRoyaleAudioQueueService {
     announce("Time's up! The tides decide the winner!");
   }
 
-  void announceVictory(String playerName) {
-    announce('All hail $playerName, Crown of the Reef!');
+  /// Mirrors the real ReefRoyaleAnnouncementHelper.announceVictory
+  /// signature and phrasing so tests can assert on both the single
+  /// winner and the tied-winners cases.
+  void announceVictory(List<String> winnerNames) {
+    if (winnerNames.isEmpty) return;
+    if (winnerNames.length == 1) {
+      announce('All hail ${winnerNames.first}, Crown of the Reef!');
+      return;
+    }
+    final names = _joinWithAnd(winnerNames);
+    announce('The reef is shared! $names tie for the Crown of the Reef!');
+  }
+
+  String _joinWithAnd(List<String> parts) {
+    if (parts.length == 1) return parts.single;
+    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
+    final head = parts.sublist(0, parts.length - 1).join(', ');
+    return '$head, and ${parts.last}';
   }
 
   void announceGamePaused() {

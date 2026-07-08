@@ -182,12 +182,42 @@ class ReefRoyaleAnnouncementHelper {
     );
   }
 
-  void announceVictory(String playerName) {
+  /// Victory announcement. Accepts a list of winner names so ties are
+  /// announced with EVERY name spoken (matches Treasure Divide / Tiki
+  /// Golf ties). Reef Royale's model computes winnerIds explicitly for
+  /// ties (multiple players hitting the required-corals target on the
+  /// same turn), so the announcer must be tie-aware or ties go silent.
+  ///
+  /// - 1 winner:  "All hail {name}, Crown of the Reef!"
+  /// - 2 winners: "The reef is shared! {a} and {b} tie for the Crown of the Reef!"
+  /// - 3+ winners: "The reef is shared! {a}, {b}, and {c} tie for the Crown of the Reef!"
+  void announceVictory(List<String> winnerNames) {
+    if (winnerNames.isEmpty) return;
+    if (winnerNames.length == 1) {
+      _queue.announce(
+        'All hail ${winnerNames.first}, Crown of the Reef!',
+        AudioPriority.victory,
+        soundEffect: ReefRoyaleSoundEffects.victoryFanfare,
+      );
+      return;
+    }
+    final names = _joinWithAnd(winnerNames);
     _queue.announce(
-      'All hail $playerName, Crown of the Reef!',
+      'The reef is shared! $names tie for the Crown of the Reef!',
       AudioPriority.victory,
       soundEffect: ReefRoyaleSoundEffects.victoryFanfare,
     );
+  }
+
+  /// Joins a list of strings with commas + "and" at the end:
+  /// ['A']            => 'A'
+  /// ['A', 'B']       => 'A and B'
+  /// ['A', 'B', 'C']  => 'A, B, and C' (Oxford comma)
+  String _joinWithAnd(List<String> parts) {
+    if (parts.length == 1) return parts.single;
+    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
+    final head = parts.sublist(0, parts.length - 1).join(', ');
+    return '$head, and ${parts.last}';
   }
 
   void announceLockedOnTarget(int target) {

@@ -264,11 +264,19 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     } else {
       final reefProvider = context.read<ReefRoyaleProvider>();
       final playerProvider = context.read<PlayerProvider>();
-      final winnerId = reefProvider.currentGame?.winnerId;
-      if (winnerId != null) {
-        final winner =
-            playerProvider.allPlayers.firstWhere((p) => p.id == winnerId);
-        _audioQueue?.announceVictory(winner.name);
+      // Read winnerIds (list), not winnerId (single). The model
+      // explicitly computes a multi-winner list when two or more
+      // players hit the required-corals target on the same turn —
+      // reading only winnerId in that case silences all-but-one
+      // tied winner in the announcement (same bug that was fixed
+      // in Tiki Golf). Falls back to the id if a name lookup misses.
+      final winnerIds = reefProvider.currentGame?.winnerIds ?? const [];
+      if (winnerIds.isNotEmpty) {
+        final winnerNames = winnerIds
+            .map((id) =>
+                playerProvider.getPlayerById(id)?.name ?? id)
+            .toList();
+        _audioQueue?.announceVictory(winnerNames);
       }
       _audioQueue?.whenIdle().then((_) {
         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
