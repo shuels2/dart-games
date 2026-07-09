@@ -778,13 +778,59 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                       Expanded(
                         child: LayoutBuilder(
                           builder: (context, contentConstraints) {
-                            // Active player tile spans 2 of the 7 bottom
-                            // strip slots so it visually covers the first
-                            // two opponent tiles below it.
-                            final leftColumnWidth =
+                            // Active player panel takes 2 of the 7
+                            // baseline slots wide — same slice used
+                            // for the active tile in the classic
+                            // bottom-strip solo layout.
+                            final activePanelWidth =
                                 contentConstraints.maxWidth *
                                     2 /
                                     _kOpponentTileBaseline;
+
+                            // Team mode: active panel spans the FULL
+                            // available height on the left; the right
+                            // side is a Column with the treasure map
+                            // on top and the opponent bottom strip
+                            // pinned to the bottom. The strip only
+                            // spans the right area (5/7 of screen)
+                            // instead of stretching under the active
+                            // panel — so 4 opponent tiles fill just
+                            // that portion.
+                            if (isTeam) {
+                              return Row(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.stretch,
+                                children: [
+                                  _buildLeftColumn(
+                                      provider,
+                                      game,
+                                      playerProvider,
+                                      activePanelWidth),
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Expanded(
+                                          child: _buildTreasureMapArea(
+                                              provider, game),
+                                        ),
+                                        if (opponentIds.isNotEmpty)
+                                          _buildOpponentsBottomStrip(
+                                            provider,
+                                            game,
+                                            playerProvider,
+                                            opponentIds,
+                                            isTeam,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+
+                            // Solo mode: classic layout — active +
+                            // map on top, opponent strip along the
+                            // bottom.
                             return Column(
                               children: [
                                 Expanded(
@@ -796,7 +842,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                                           provider,
                                           game,
                                           playerProvider,
-                                          leftColumnWidth),
+                                          activePanelWidth),
                                       Expanded(
                                         child: _buildTreasureMapArea(
                                             provider, game),
@@ -1056,6 +1102,10 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   // each tile keeps this same width and the strip leaves empty space on
   // the right.
   static const int _kOpponentTileBaseline = 7;
+  // Team-mode baseline — with at most 4 opponent crews we fill the
+  // strip edge-to-edge instead of falling back to the solo 7-slot
+  // baseline (which left the right side empty).
+  static const int _kTeamOpponentTileBaseline = 4;
 
   Widget _buildActivePlayerPanel(
     TreasureDivideProvider provider,
@@ -1078,7 +1128,14 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     final liveHaul = provider.currentTurnHaul;
     int timesHalved;
     if (isTeam && activeTeamId != null) {
-      displayScore = game.totalForTeam(activeTeamId) + liveHaul;
+      // Team mode: the big "N gold" number below the active player
+      // shows THIS PLAYER'S THIS-TURN earnings only, not the whole
+      // crew total. The cumulative crew treasure is surfaced by the
+      // crew header at the top of the tile (see _buildActiveCrewHeader
+      // which reads totalForTeam + provider.currentTurnHaul). Prior
+      // to this split, both the header and the main number showed
+      // the same running crew total.
+      displayScore = liveHaul;
       // Sum of hauls for current round from all team members,
       // plus the in-progress turn's accumulating haul.
       int crewRound = 0;
@@ -1113,168 +1170,316 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     }
 
     return Container(
-      // Top/bottom padding + margin trimmed further to absorb the
-      // new "Halved / Quartered N times" line under the gold total
-      // without shrinking the opponent strip. Original was 12/28 top,
-      // 6/10 bottom; previous pass took it to 4/8 top, 2/4 bottom;
-      // this pass reduces top to 2/2 to recover ~8 px for the new
-      // row. Content is still centered vertically so the visible
-      // cluster doesn't drift to the top of the column.
+      // Team mode: symmetric 24px top/bottom padding so the crew
+      // badge floats near the top and the "Up next" row mirrors it at
+      // the bottom. Solo mode keeps its tight 2px so the centered
+      // content isn't pushed downward on a shorter tile.
       margin: const EdgeInsets.fromLTRB(6, 2, 6, 2),
-      padding: const EdgeInsets.fromLTRB(10, 2, 10, 2),
+      padding: isTeam
+          ? const EdgeInsets.fromLTRB(10, 24, 10, 24)
+          : const EdgeInsets.fromLTRB(10, 2, 10, 2),
       decoration: BoxDecoration(
         color: _oceanTeal.withOpacity(0.4),
         borderRadius: BorderRadius.circular(12),
         border:
             Border.all(color: _treasureGold.withOpacity(0.5), width: 2),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      // Stack so the crew header can paint IN FRONT of the active
+      // player's avatar + theme decorations (pirate hats extend
+      // upward outside the 360px avatar box via Clip.none and would
+      // otherwise cover the crest / "Crew Treasure" label). The
+      // base Column carries an invisible placeholder for the header
+      // to reserve its spatial position; the same header is then
+      // rendered again as a Stack overlay (last child) so it paints
+      // on top of everything below. Solo mode skips the overlay
+      // since there's no crew header to protect.
+      child: Stack(
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.none,
         children: [
-          // Team mode: crest + crew info
-          if (isTeam && activeTeamId != null) ...[
+          Column(
+        // Team mode gets spaceBetween — crew header pinned to the top
+        // edge, on-deck row pinned to the bottom edge, middle content
+        // in between. Solo mode falls back to center so the single
+        // middle group sits vertically centered as before.
+        mainAxisAlignment: isTeam
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.center,
+        children: [
+          // ── Top: invisible placeholder for the crew header. Real
+          //         header is painted from the Stack overlay below so
+          //         pirate-hat overflow can't cover it.
+          if (isTeam && activeTeamId != null)
+            Visibility(
+              visible: false,
+              maintainSize: true,
+              maintainAnimation: true,
+              maintainState: true,
+              child: _buildActiveCrewHeader(provider, game,
+                  playerProvider, activeTeamId, nextTeammateId),
+            ),
+
+          // ── Middle: avatar + player stats + Skip button ──
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Player avatar — kept at 360 in both modes.
+              SizedBox(
+                key: TreasureDivideGameKeys.playerAvatar,
+                width: 360,
+                height: 360,
+                child: currentPlayer != null
+                    ? PirateAvatarWidget(
+                        player: currentPlayer,
+                        themeIndex: _themePreviewOverride ??
+                            game.playerPirateThemes[currentPlayer.id] ??
+                            0,
+                        size: 360,
+                        isActive: true,
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 8),
+
+              // Player name.
+              Text(
+                currentPlayer?.name ?? '',
+                style: GoogleFonts.pirataOne(
+                  fontSize: 44,
+                  color: _sailWhite,
+                  shadows: _treasureTextShadows,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              // Treasure score.
+              Text(
+                key: TreasureDivideGameKeys.treasureScore,
+                '$displayScore gold',
+                style: GoogleFonts.pirataOne(
+                  fontSize: 44,
+                  color: _treasureGold,
+                  shadows: _treasureTextShadows,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              // Halving / quartering history.
+              if (timesHalved > 0)
+                Text(
+                  '${game.quarterItEnabled ? "Quartered" : "Halved"} '
+                  '$timesHalved ${timesHalved == 1 ? "time" : "times"}',
+                  style: GoogleFonts.merriweather(
+                    fontSize: 20,
+                    color: const Color(0xFFFF8C42),
+                    shadows: _treasureTextShadows,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+              // Round score.
+              Text(
+                key: TreasureDivideGameKeys.roundScore,
+                '+$roundScore this round',
+                style: GoogleFonts.merriweather(
+                  fontSize: 32,
+                  color: _sailWhite,
+                  shadows: _treasureTextShadows,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+
+              // Dart indicators.
+              _buildDartIndicators(
+                  dartsThisTurn, dartsThrown, segments, game),
+              const SizedBox(height: 10),
+
+              // Skip Turn button — +4pt on the label (23 → 27).
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  key: TreasureDivideGameKeys.skipTurnButton,
+                  onPressed: provider.shouldPromptTakeout
+                      ? null
+                      : () {
+                          final dt = game.dartsThrown;
+                          provider.skipTurn();
+                          if (dt > 0) {
+                            // Darts on board — wait for physical takeout.
+                            // Remove Darts is called unconditionally at 1500ms.
+                            if (!_dartboardEmulatorController.isAutoPlaying) {
+                              Future.delayed(
+                                  const Duration(milliseconds: 1500), () {
+                                if (mounted) {
+                                  _audioQueue?.announceRemoveDarts();
+                                }
+                              });
+                            }
+                            Future.delayed(
+                                const Duration(milliseconds: 3500), () {
+                              if (mounted) _mockApi?.simulateTakeoutStarted();
+                            });
+                          } else {
+                            // No darts — auto-finish immediately
+                            Future.delayed(
+                                const Duration(milliseconds: 500), () {
+                              if (mounted) {
+                                if (_mockApi != null) {
+                                  _mockApi!.simulateTakeoutFinished();
+                                } else {
+                                  _handleTakeoutFinished();
+                                }
+                              }
+                            });
+                          }
+                        },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: _treasureGold, width: 2),
+                    foregroundColor: _treasureGold,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                  ),
+                  child: Text(
+                    'Skip Turn',
+                    style: GoogleFonts.pirataOne(
+                        fontSize: 23, color: _treasureGold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // ── Bottom: on-deck teammate row (team-mode doubles only) ──
+          // Only rendered when in team mode with a doubles crew AND
+          // there's another crew member to call out. Sits pinned to
+          // the bottom edge of the tile via the outer Column's
+          // spaceBetween alignment.
+          if (isTeam && activeTeamId != null)
+            _buildOnDeckTeammateRow(
+              provider,
+              game,
+              playerProvider,
+              activeTeamId,
+            )
+          else
+            // Placeholder to keep spaceBetween anchoring middle group
+            // centered in solo mode / solo crews. Zero-height widget
+            // simply satisfies the third-child requirement.
+            const SizedBox.shrink(),
+        ],
+          ),
+          // Overlay — real crew header painted LAST so pirate hats
+          // and theme decorations from the 360px active-player
+          // avatar (which paint outside the avatar box via
+          // Clip.none) can't cover the crest or "Crew Treasure"
+          // label. Only rendered in team mode; matches the
+          // placeholder position via alignment: topCenter.
+          if (isTeam && activeTeamId != null)
             _buildActiveCrewHeader(provider, game, playerProvider,
                 activeTeamId, nextTeammateId),
-            const SizedBox(height: 4),
-          ],
+        ],
+      ),
+    );
+  }
 
-          // Player avatar with pirate theme overlay — sized much larger
-          // than opponent tiles (96) so the current player visually stands
-          // out and fills the taller active panel.
+  // ─── On-deck teammate row (bottom of active tile, team mode only) ───────────
+
+  Widget _buildOnDeckTeammateRow(
+    TreasureDivideProvider provider,
+    TreasureDivideGame game,
+    PlayerProvider playerProvider,
+    String activeTeamId,
+  ) {
+    final members = game.teamPlayers[activeTeamId] ?? const [];
+    if (members.length < 2) return const SizedBox.shrink();
+
+    final currentId = game.currentPlayerId;
+    final teammateId = members.firstWhere(
+      (id) => id != currentId,
+      orElse: () => '',
+    );
+    if (teammateId.isEmpty) return const SizedBox.shrink();
+    final teammate = playerProvider.getPlayerById(teammateId);
+    if (teammate == null) return const SizedBox.shrink();
+
+    final roundIdx = game.currentRoundIndex;
+    final teammateHaul = game.playerRoundScores[teammateId]?[roundIdx];
+    final hasPlayed = teammateHaul != null;
+
+    // Wrapped in Transform.translate so we can nudge the on-deck row
+    // 10px DOWN visually without touching layout. Padding around it
+    // would grow the widget's height — and because the outer active
+    // Column uses mainAxisAlignment.spaceBetween, a taller on-deck
+    // widget squeezes the middle content up. Transform-translate
+    // shifts paint only, leaving every other child of the panel
+    // exactly where it was.
+    return Transform.translate(
+      offset: const Offset(0, 10),
+      child: Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Themed avatar off to the LEFT of the name — was 73 (30%
+          // larger than the original 56); +20% again → 88, matching
+          // the extra visual weight the enlarged badge / gold up
+          // top now carry.
           SizedBox(
-            key: TreasureDivideGameKeys.playerAvatar,
-            width: 360,
-            height: 360,
-            child: currentPlayer != null
-                ? PirateAvatarWidget(
-                    player: currentPlayer,
-                    themeIndex: _themePreviewOverride ??
-                        game.playerPirateThemes[currentPlayer.id] ??
-                        0,
-                    size: 360,
-                    isActive: true,
-                  )
-                : const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 8),
-
-          // Player name — matched to treasure-score size, sail-white color.
-          Text(
-            currentPlayer?.name ?? '',
-            style: GoogleFonts.pirataOne(
-              fontSize: 44,
-              color: _sailWhite,
-              shadows: _treasureTextShadows,
+            width: 88,
+            height: 88,
+            child: PirateAvatarWidget(
+              player: teammate,
+              themeIndex: _themePreviewOverride ??
+                  game.playerPirateThemes[teammate.id] ??
+                  0,
+              size: 88,
+              isActive: false,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
-
-          // Treasure score
-          Text(
-            key: TreasureDivideGameKeys.treasureScore,
-            '$displayScore gold',
-            style: GoogleFonts.pirataOne(
-              fontSize: 44,
-              color: _treasureGold,
-              shadows: _treasureTextShadows,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          // Halving / quartering history — surfaced beneath the gold
-          // total so the active player can see how many times their
-          // treasure (or their crew's, in team mode) has been
-          // halved/quartered this game. Matches the opponent-tile
-          // pill in copy and warning-amber color so the two read as
-          // the same stat. Only renders when timesHalved > 0.
-          if (timesHalved > 0)
-            Text(
-              '${game.quarterItEnabled ? "Quartered" : "Halved"} '
-              '$timesHalved ${timesHalved == 1 ? "time" : "times"}',
-              style: GoogleFonts.merriweather(
-                fontSize: 20,
-                color: const Color(0xFFFF8C42), // warm coral / amber
-                shadows: _treasureTextShadows,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-          // Round score — always sail white regardless of value.
-          // Showing the number in red on an all-miss turn was misread
-          // as the score being deducted; the +N prefix is enough to
-          // signal "added this round", and the round-end halving (when
-          // it fires) is conveyed by the times-halved row on opponent
-          // tiles anyway.
-          Text(
-            key: TreasureDivideGameKeys.roundScore,
-            '+$roundScore this round',
-            style: GoogleFonts.merriweather(
-              fontSize: 32,
-              color: _sailWhite,
-              shadows: _treasureTextShadows,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-
-          // Dart indicators
-          _buildDartIndicators(
-              dartsThisTurn, dartsThrown, segments, game),
-          const SizedBox(height: 10),
-
-          // Skip Turn button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              key: TreasureDivideGameKeys.skipTurnButton,
-              onPressed: provider.shouldPromptTakeout
-                  ? null
-                  : () {
-                      final dt = game.dartsThrown;
-                      provider.skipTurn();
-                      if (dt > 0) {
-                        // Darts on board — wait for physical takeout.
-                        // Remove Darts is called unconditionally at 1500ms.
-                        if (!_dartboardEmulatorController.isAutoPlaying) {
-                          Future.delayed(
-                              const Duration(milliseconds: 1500), () {
-                            if (mounted) _audioQueue?.announceRemoveDarts();
-                          });
-                        }
-                        Future.delayed(
-                            const Duration(milliseconds: 3500), () {
-                          if (mounted) _mockApi?.simulateTakeoutStarted();
-                        });
-                      } else {
-                        // No darts — auto-finish immediately
-                        Future.delayed(
-                            const Duration(milliseconds: 500), () {
-                          if (mounted) {
-                            if (_mockApi != null) {
-                              _mockApi!.simulateTakeoutFinished();
-                            } else {
-                              _handleTakeoutFinished();
-                            }
-                          }
-                        });
-                      }
-                    },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: _treasureGold, width: 2),
-                foregroundColor: _treasureGold,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              ),
-              child: Text(
-                'Skip Turn',
-                style: GoogleFonts.pirataOne(
-                    fontSize: 23, color: _treasureGold),
-              ),
+          // Extra breathing room between the on-deck avatar and the
+          // text block so the two feel like separate elements rather
+          // than crowding each other.
+          const SizedBox(width: 28),
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasPlayed ? teammate.name : 'Up next: ${teammate.name}',
+                  // +6pt (22 → 28) to match the larger avatar.
+                  style: GoogleFonts.pirataOne(
+                    fontSize: 28,
+                    color: _sailWhite,
+                    shadows: _treasureTextShadows,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (hasPlayed)
+                  Text(
+                    teammateHaul > 0
+                        ? '+$teammateHaul gold this round'
+                        : 'No gold this round',
+                    // +4pt (14 → 18).
+                    style: GoogleFonts.merriweather(
+                      fontSize: 18,
+                      color: teammateHaul > 0
+                          ? _treasureGold
+                          : _sailWhite.withOpacity(0.7),
+                      shadows: _treasureTextShadows,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -1286,55 +1491,96 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     String teamId,
     String? nextTeammateId,
   ) {
+    // nextTeammateId retained for signature compatibility but the
+    // teammate is now surfaced by the bottom on-deck bar; the crew
+    // header no longer needs the resolved Player.
     final crestPath = provider.currentTeamCrestPath;
-    final crewTreasure = game.totalForTeam(teamId);
-    final nextPlayer = nextTeammateId != null
-        ? playerProvider.getPlayerById(nextTeammateId)
-        : null;
+    // Real-time cumulative crew treasure. Three pieces:
+    //   • game.totalForTeam(teamId) — completed rounds only; the
+    //     model deliberately skips a round until every crew member
+    //     has thrown so the halving-on-all-miss rule can fire, so
+    //     this alone does NOT include the current in-flight round.
+    //   • roundInFlight — the sum of round scores from crew members
+    //     who have ALREADY finished their turn in the current round
+    //     (e.g. teammate went first, current player still throwing).
+    //     Reading playerRoundScores directly is safe because those
+    //     entries only exist for players who have completed the turn.
+    //   • provider.currentTurnHaul — live haul of the player currently
+    //     throwing. Because this helper is only called for the ACTIVE
+    //     team (teamId == game.activeTeamId at all call sites), this
+    //     is always the right team.
+    // Without the roundInFlight piece the header appeared to "reset"
+    // to the current player's live haul once the round had rolled
+    // over to the second teammate (bug reported by user).
+    final activeMembers = game.teamPlayers[teamId] ?? const [];
+    int roundInFlight = 0;
+    for (final pid in activeMembers) {
+      final rs = game.playerRoundScores[pid]?[game.currentRoundIndex];
+      if (rs != null) roundInFlight += rs;
+    }
+    final crewTreasure = game.totalForTeam(teamId) +
+        roundInFlight +
+        provider.currentTurnHaul;
 
-    return Column(
+    // Crew crest (135) + "Crew Treasure: N gold" now sit side by side
+    // in a Row: badge on the LEFT, label on the RIGHT. The "$N gold"
+    // portion takes the same treasure-gold color as the main gold
+    // total in the active panel below so the two read as the same
+    // stat. Full text shadows applied for BG legibility.
+    return Row(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Crew crest — ResizeImage cap keeps the 670×680-to-954×945
-        // source PNGs (Kraken is ~3.6 MB decoded) from holding multi-MB
-        // rasters for a 40px display, contributing to CanvasKit wasm
-        // heap pressure / PictureRecorder aborts.
-        if (crestPath != null)
+        if (crestPath != null) ...[
           Container(
             key: TreasureDivideGameKeys.activeCrewCrest,
-            width: 40,
-            height: 40,
+            width: 135,
+            height: 135,
             child: Image(
               image: ResizeImage(
                 AssetImage(crestPath),
-                width: 128,
-                height: 128,
+                width: 384,
+                height: 384,
               ),
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => Icon(
                 Icons.shield,
                 color: _treasureGold,
-                size: 32,
+                size: 108,
               ),
             ),
           ),
-        Text(
-          'Crew Treasure: $crewTreasure gold',
-          style: GoogleFonts.merriweather(
-            fontSize: 13,
-            color: _sailWhite,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        if (nextPlayer != null)
-          Text(
-            'Next: ${nextPlayer.name}',
-            style: GoogleFonts.merriweather(
-              fontSize: 12,
-              color: _sailWhite.withOpacity(0.75),
+          const SizedBox(width: 14),
+        ],
+        Flexible(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Crew Treasure:\n',
+                  style: GoogleFonts.merriweather(
+                    fontSize: 30,
+                    color: _sailWhite,
+                    shadows: _treasureTextShadows,
+                  ),
+                ),
+                TextSpan(
+                  text: '$crewTreasure gold',
+                  style: GoogleFonts.merriweather(
+                    fontSize: 30,
+                    color: _treasureGold,
+                    fontWeight: FontWeight.bold,
+                    shadows: _treasureTextShadows,
+                  ),
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
+            textAlign: TextAlign.left,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
+        ),
       ],
     );
   }
@@ -1535,13 +1781,16 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       height: _kBottomStripHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Footprint per tile slot = stripWidth / 7. Each tile carries
-          // an EdgeInsets.all(3) margin (6px total horizontal), so the
-          // container width = footprint − 6. With 7 opponents the row
-          // fills the strip exactly; with fewer it leaves the remainder
-          // empty on the right.
+          // Solo: footprint per tile slot = stripWidth / 7 (max 7
+          // opponents in 8-player solo). Team: stripWidth / 4 so the
+          // ≤4 opponent crews fill the strip edge-to-edge. Each tile
+          // carries an EdgeInsets.all(3) margin (6px total horizontal),
+          // so the container width = footprint − 6.
+          final baseline = isTeam
+              ? _kTeamOpponentTileBaseline
+              : _kOpponentTileBaseline;
           final tileWidth =
-              (constraints.maxWidth / _kOpponentTileBaseline) - 6;
+              (constraints.maxWidth / baseline) - 6;
           final teamCrests = isTeam ? game.teamCrestPaths : const <String>[];
           final teamIdList =
               isTeam ? game.teamPlayers.keys.toList() : const <String>[];
@@ -1730,13 +1979,87 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
         (crestIdx >= 0 && crestIdx < crests.length) ? crests[crestIdx] : null;
     final members = game.teamPlayers[teamId] ?? [];
 
+    // Text overlay column — used twice: once as an invisible size
+    // placeholder in the base layer (so the avatar row sits below
+    // it) and once as the visible top layer (so pirate hats from
+    // the avatar row that extend upward can't hide the crest/gold).
+    //
+    // Layout: [crest][gold + halved stacked in a Column]. Putting the
+    // Halved/Quartered tally directly UNDER the gold count (instead
+    // of on its own row spanning the full width beneath the crest)
+    // keeps the whole text block roughly the crest's height and
+    // stops the tile from overflowing the 235px strip when the
+    // halved indicator is visible.
+    Widget textColumn() => Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (crestPath != null) ...[
+              SizedBox(
+                key: TreasureDivideGameKeys.crewCrest(teamId),
+                width: 75,
+                height: 75,
+                child: Image(
+                  image: ResizeImage(
+                    AssetImage(crestPath),
+                    width: 256,
+                    height: 256,
+                  ),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(Icons.shield, color: _treasureGold, size: 56),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$treasure gold',
+                    key: TreasureDivideGameKeys.crewTreasureScore(teamId),
+                    style: GoogleFonts.merriweather(
+                      fontSize: 30,
+                      color: _treasureGold,
+                      fontWeight: FontWeight.bold,
+                      shadows: _treasureTextShadows,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (timesHalved > 0)
+                    Text(
+                      key: TreasureDivideGameKeys.crewRoundStatus(teamId),
+                      '${game.quarterItEnabled ? "Quartered" : "Halved"} '
+                      '$timesHalved ${timesHalved == 1 ? "time" : "times"}',
+                      style: GoogleFonts.merriweather(
+                        fontSize: 14,
+                        color: const Color(0xFFFF8C42),
+                        shadows: _treasureTextShadows,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        );
+
     return Container(
       key: TreasureDivideGameKeys.crewTile(teamId),
-      // Margin + padding aggressively trimmed (was 6 / (12,12)) to
-      // recover vertical space in the shorter strip.
       margin: const EdgeInsets.all(3),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      alignment: Alignment.center,
+      // Vertical padding trimmed 6 → 2 so the reclaimed space can go
+      // into the enlarged 104px avatars. Container alignment moved
+      // from `center` to `topCenter` so the tile content anchors to
+      // the top edge — this is what pulls the badge + gold count up
+      // (previously the auto-centering wrapped ~23px of empty space
+      // above them).
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      alignment: Alignment.topCenter,
       constraints: BoxConstraints(minWidth: tileWidth, maxWidth: tileWidth),
       decoration: BoxDecoration(
         color: _oceanTeal.withOpacity(0.35),
@@ -1744,66 +2067,78 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
         border:
             Border.all(color: _plankBrown.withOpacity(0.5), width: 2),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      // Stack ensures the crest+gold+halved text always paints in
+      // front of the pirate-hat / accessory overhang from the
+      // avatars below. The base layer uses a Visibility placeholder
+      // to reserve the exact vertical footprint of the text block,
+      // then paints the real avatar row underneath; the overlay
+      // paints the text a second time, this time visibly, on top.
+      child: Stack(
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.none,
         children: [
-          // Crew crest — ResizeImage cap keeps the 670×680-to-954×945
-          // source PNGs (Kraken is ~3.6 MB decoded) from holding multi-MB
-          // rasters for a small display across every opponent tile, which
-          // adds up fast in Team mode (up to 5 crests on screen) and
-          // contributes to CanvasKit wasm heap pressure.
-          if (crestPath != null)
-            Container(
-              key: TreasureDivideGameKeys.crewCrest(teamId),
-              width: 70,
-              height: 70,
-              child: Image(
-                image: ResizeImage(
-                  AssetImage(crestPath),
-                  width: 256,
-                  height: 256,
-                ),
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) =>
-                    Icon(Icons.shield, color: _treasureGold, size: 56),
+          // Base layer.
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Visibility(
+                visible: false,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: textColumn(),
               ),
-            ),
-          const SizedBox(height: 4),
-          // Crew treasure
-          Text(
-            '$treasure gold',
-            key: TreasureDivideGameKeys.crewTreasureScore(teamId),
-            style: GoogleFonts.merriweather(
-              fontSize: 28,
-              color: _treasureGold,
-              fontWeight: FontWeight.bold,
-              shadows: _treasureTextShadows,
-            ),
-            textAlign: TextAlign.center,
+              // Spacer between the text block and the avatar row —
+              // bumped 6 → 26 so the avatars sit ~20% of the avatar
+              // size lower down the tile without touching the crest
+              // + gold overlay above.
+              const SizedBox(height: 26),
+              // Themed avatars — names removed, avatars +15% (90 → 104).
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  for (final pid in members)
+                    Expanded(
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 4),
+                        child: Builder(builder: (context) {
+                          final memberPlayer =
+                              playerProvider.getPlayerById(pid);
+                          if (memberPlayer == null) {
+                            return const SizedBox(width: 104, height: 104);
+                          }
+                          return Center(
+                            child: SizedBox(
+                              width: 104,
+                              height: 104,
+                              child: PirateAvatarWidget(
+                                player: memberPlayer,
+                                themeIndex: _themePreviewOverride ??
+                                    game.playerPirateThemes[pid] ??
+                                    0,
+                                size: 104,
+                                isActive: false,
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
-          if (timesHalved > 0)
-            Text(
-              key: TreasureDivideGameKeys.crewRoundStatus(teamId),
-              '÷${game.quarterItEnabled ? 4 : 2}×$timesHalved',
-              style: GoogleFonts.merriweather(
-                fontSize: 22,
-                color: _bloodRed,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          // Member names
-          for (final pid in members)
-            Text(
-              playerProvider.getPlayerById(pid)?.name ?? pid,
-              style: GoogleFonts.merriweather(
-                fontSize: 22,
-                color: _sailWhite.withOpacity(0.8),
-                shadows: _treasureTextShadows,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
+          // Overlay — visible text painted last so hats/theme layers
+          // from the avatars can't cover the crest or gold count.
+          // Padded 10px from the tile top so the badge + gold sit a
+          // bit lower without moving the avatars below (the base
+          // column's Visibility placeholder + SizedBox stay the same
+          // size, so the avatar row keeps its position).
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: textColumn(),
+          ),
         ],
       ),
     );

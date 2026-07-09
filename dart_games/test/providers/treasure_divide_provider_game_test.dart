@@ -823,6 +823,114 @@ void main() {
       expect(game.timesHalvedPerTeam['team_2'], 1,
           reason: 'team_2 had treasure → halving counted on round-1 miss');
     });
+
+    test(
+        '39f. Team mode — crew treasure stays steady while p1 all-misses; '
+        'p2 hit cancels the pending halving', () {
+      // Round 0: team_1 hits so they have treasure to halve later.
+      // Round 1: p1 all-misses. Crew treasure MUST NOT change yet —
+      // the halving-on-all-miss rule can't fire until every crew
+      // member has thrown, and if p2 subsequently hits, the halving
+      // is cancelled entirely. This locks in the "treasure holds
+      // steady between p1's takeout and p2's throws, and never
+      // halves once p2 scores" behavior the crew-treasure header
+      // relies on.
+      final p = _makeTeam(
+        teamPlayers: {
+          'team_1': ['p1', 'p2'],
+          'team_2': ['p3', 'p4'],
+        },
+        random: Random(1),
+      );
+      final game = p.currentGame!;
+
+      // ── Round 0: give team_1 some treasure ───────────────────────────
+      _finishHit(p); // p1
+      _finishHit(p); // p2 → crew_1 completes
+      _finishMiss(p); // p3
+      _finishMiss(p); // p4 → round advances to 1
+
+      final treasureAfterRound0 = game.totalForTeam('team_1');
+      final halvedBefore = game.timesHalvedPerTeam['team_1'] ?? 0;
+      expect(treasureAfterRound0, greaterThan(0),
+          reason: 'Setup: team_1 should have treasure after round 0');
+
+      // ── Round 1: p1 all-miss ─────────────────────────────────────────
+      _finishMiss(p);
+
+      // Crew treasure UNCHANGED — halving decision is deferred until
+      // p2 also throws. This is the exact state the crew-treasure
+      // header on the active player tile relies on: no reset, no
+      // halving, no change on turn-change from p1 → p2.
+      expect(game.totalForTeam('team_1'), treasureAfterRound0,
+          reason:
+              'Crew treasure must NOT change between p1\'s all-miss takeout '
+              'and p2\'s throws — the halving event is still pending');
+      expect(game.timesHalvedPerTeam['team_1'] ?? 0, halvedBefore,
+          reason: 'Halve counter must not tick mid-round');
+
+      // ── p2 hits — cancels the would-be halving ───────────────────────
+      _finishHit(p);
+
+      // Team_2 finishes round 1 so we can inspect the post-round total.
+      _finishMiss(p); // p3
+      _finishMiss(p); // p4 → round advances to 2
+
+      final round1Haul = (game.playerRoundScores['p1']?[1] ?? 0) +
+          (game.playerRoundScores['p2']?[1] ?? 0);
+      expect(round1Haul, greaterThan(0),
+          reason: 'p2 hit should yield a positive round-1 haul');
+      expect(game.totalForTeam('team_1'),
+          treasureAfterRound0 + round1Haul,
+          reason:
+              'Round-1 haul (0 from p1 + p2\'s hit) is added — no halving '
+              'because the crew was not all-miss');
+      expect(game.timesHalvedPerTeam['team_1'] ?? 0, halvedBefore,
+          reason: 'p2\'s hit prevented the halving from ever firing');
+    });
+
+    test(
+        '39g. Team mode — crew treasure halves ONLY after BOTH members '
+        'miss (companion to 39f)', () {
+      // Companion case to 39f: same setup, but p2 also misses. NOW
+      // the crew was all-miss for the round, so halving fires. Locks
+      // in the "halving only applies on a full crew miss" rule.
+      final p = _makeTeam(
+        teamPlayers: {
+          'team_1': ['p1', 'p2'],
+          'team_2': ['p3', 'p4'],
+        },
+        random: Random(1),
+      );
+      final game = p.currentGame!;
+
+      _finishHit(p); // p1 round 0
+      _finishHit(p); // p2 round 0 → crew_1 completes
+      _finishMiss(p); // p3
+      _finishMiss(p); // p4 → round advances to 1
+
+      final treasureAfterRound0 = game.totalForTeam('team_1');
+      expect(treasureAfterRound0, greaterThan(0));
+
+      // p1 all-miss round 1.
+      _finishMiss(p);
+      // Treasure still unchanged — same guarantee as 39f.
+      expect(game.totalForTeam('team_1'), treasureAfterRound0,
+          reason: 'Unchanged after p1 all-miss (halving pending)');
+
+      // p2 also all-miss — crew is all-miss for round 1 → halving fires.
+      _finishMiss(p);
+      // team_2 finishes round 1.
+      _finishMiss(p);
+      _finishMiss(p);
+
+      final divisor = game.quarterItEnabled ? 4 : 2;
+      expect(game.totalForTeam('team_1'), treasureAfterRound0 ~/ divisor,
+          reason:
+              'All-crew miss with prior treasure → totalForTeam is halved');
+      expect(game.timesHalvedPerTeam['team_1'], 1,
+          reason: 'Halving counter incremented once');
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════

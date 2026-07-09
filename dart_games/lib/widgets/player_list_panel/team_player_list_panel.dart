@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/player.dart';
 import '../../providers/player_provider.dart';
@@ -310,7 +309,7 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
     String? assignedTeamId,
     PlayerProvider playerProvider,
   ) {
-    // Get team icon index if player is assigned to a team
+    // Resolve the team-icon index if the player is already assigned.
     int? teamIconIndex;
     if (assignedTeamId != null) {
       final teamNumber = int.tryParse(assignedTeamId.replaceAll('team', ''));
@@ -319,33 +318,29 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
       }
     }
 
-    // Build trailing widget for team mode
+    // Build the trailing widget: team icon (if assigned), "Assign team"
+    // button (if selected without a team), or null (unselected, no
+    // trailing — matches the plain PlayerSelectionCard behavior).
     Widget? trailingWidget;
-    if (teamIconIndex != null) {
-      trailingWidget = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: isSelected ? () => _showTeamSelectionDialog(player) : null,
-            child: Container(
-              width: config.teamIconSize,
-              height: config.teamIconSize,
-              decoration: BoxDecoration(
-                color: config.teamIconBackgroundColor,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: config.teamIconBorderColor,
-                  width: 2,
-                ),
-              ),
-              child: Image.asset(
-                widget.teamIconPaths[teamIconIndex],
-                fit: BoxFit.contain,
-              ),
+    if (teamIconIndex != null && teamIconIndex < widget.teamIconPaths.length) {
+      trailingWidget = GestureDetector(
+        onTap: isSelected ? () => _showTeamSelectionDialog(player) : null,
+        child: Container(
+          width: config.teamIconSize,
+          height: config.teamIconSize,
+          decoration: BoxDecoration(
+            color: config.teamIconBackgroundColor,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: config.teamIconBorderColor,
+              width: 2,
             ),
           ),
-          const SizedBox(width: 8),
-        ],
+          child: Image.asset(
+            widget.teamIconPaths[teamIconIndex],
+            fit: BoxFit.contain,
+          ),
+        ),
       );
     } else if (isSelected) {
       trailingWidget = ElevatedButton(
@@ -364,85 +359,37 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
       );
     }
 
-    // For non-selected with no team: show nothing (no trailing needed)
-    // For selected with no team: show "Assign team" button via trailing
-    // For selected with team icon: show icon via trailing
-    // We also need the check icon for selected solo/random mode, but in
-    // manual team mode the trailing replaces the check icon entirely.
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? config.teamAccentColor.withOpacity(0.2)
-            : const Color(0xFF2A2A3E),
-        border: Border.all(
-          color: isSelected ? config.teamAccentColor : Colors.white24,
-          width: isSelected ? 3 : 2,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            if (isSelected) {
-              playerProvider.deselectPlayer(player.id);
-              // Remove team assignment when deselecting
-              setState(() {
-                _playerTeamAssignments.remove(player.id);
-              });
-              _notifyTeamAssignmentsChanged();
-            } else {
-              final effectiveMax = widget.isTeamMode
-                  ? config.maxPlayers
-                  : (config.maxPlayersSoloMode ?? config.maxPlayers);
-              playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
-            }
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-            child: Row(
-              children: [
-                PlayerAvatarWidget(
-                  player: player,
-                  size: 22.0,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        player.name,
-                        style: GoogleFonts.fredoka(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Games: ${player.gamesPlayed} | Wins: ${player.gamesWon}',
-                        style: GoogleFonts.fredoka(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (trailingWidget != null)
-                  trailingWidget
-                else if (isSelected)
-                  Icon(Icons.check_circle, color: config.teamAccentColor, size: 24),
-              ],
-            ),
-          ),
-        ),
-      ),
+    // Delegate to PlayerSelectionCard — same widget used in solo mode
+    // — so the tile's fonts, colors, avatar size, padding, and margin
+    // are IDENTICAL across solo and manual-team modes. Only the
+    // trailing element changes (team icon or Assign button instead of
+    // the check icon).
+    return PlayerSelectionCard(
+      key: widget.playerTileKey?.call(player.id),
+      player: player,
+      isSelected: isSelected,
+      selectedColor: config.selectedColor,
+      selectedBorderColor: config.selectedBorderColor,
+      unselectedBackgroundColor: config.unselectedBackgroundColor,
+      unselectedBorderColor: config.unselectedBorderColor,
+      nameStyle: config.cardNameStyle,
+      statsStyle: config.cardStatsStyle,
+      checkIconColor: config.checkIconColor,
+      trailing: trailingWidget,
+      onTap: () {
+        if (isSelected) {
+          playerProvider.deselectPlayer(player.id);
+          setState(() {
+            _playerTeamAssignments.remove(player.id);
+          });
+          _notifyTeamAssignmentsChanged();
+        } else {
+          final effectiveMax = widget.isTeamMode
+              ? config.maxPlayers
+              : (config.maxPlayersSoloMode ?? config.maxPlayers);
+          playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
+        }
+      },
     );
   }
 

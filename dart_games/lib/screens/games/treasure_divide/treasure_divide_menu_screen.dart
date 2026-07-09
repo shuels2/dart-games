@@ -176,8 +176,10 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
             .length;
         if (count > 2) return false;
       }
-      // At least teamCount distinct crews represented
-      if (usedTeams.length < _teamCount) return false;
+      // (The old "usedTeams.length >= _teamCount" gate was tied to the
+      // Crews dropdown, which was removed. Assignments now dictate the
+      // crew count directly — >=2 distinct crews is the sole
+      // minimum-crews invariant.)
     }
     return true;
   }
@@ -843,44 +845,12 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
               ),
             ],
           ),
-          // Inline Crews dropdown — only visible when Team + Manual
-          if (isTeam &&
-              _teamAssignment == TreasureDivideTeamAssignment.manual) ...[
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Crews',
-                  style: GoogleFonts.merriweather(
-                    fontSize: 17,
-                    color: _sailWhite.withOpacity(0.85),
-                  ),
-                ),
-                DropdownButton<int>(
-                  key: TreasureDivideMenuKeys.teamCountDropdown,
-                  value: _teamCount,
-                  dropdownColor: const Color(0xFF005F5F),
-                  style: GoogleFonts.merriweather(
-                    fontSize: 17,
-                    color: _treasureGold,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  underline: Container(
-                      height: 1, color: _plankBrown),
-                  items: [2, 3, 4, 5]
-                      .map((v) => DropdownMenuItem(
-                            value: v,
-                            child: Text('$v'),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setState(() => _teamCount = v);
-                  },
-                ),
-              ],
-            ),
-          ],
+          // Crews dropdown removed per user — the manual assignment
+          // popup IS the source of truth for how many crews are in
+          // play (users pick crests directly). `_teamCount` state is
+          // kept for random mode (auto-computed via
+          // TreasureDivideProvider.randomDistribution) and for the
+          // `initialTeamCount` round-trip from the results screen.
         ],
       ),
     );

@@ -357,19 +357,35 @@ class TeamPlayerListPanelConfig {
       teamIconBorderColor: Colors.transparent,
       teamIconBackgroundColor: Colors.transparent,
       teamIconSize: 40.0,
-      teamBoxSize: 64.0,
+      // Setup-screen crest boxes doubled from 64 so the shields feel
+      // like real ship crests instead of postage-stamps.
+      teamBoxSize: 128.0,
       teamBoxBackgroundColor: Colors.transparent, // no box around the crest
       teamBoxBorderColor: Colors.transparent,
       teamBoxActiveBorderColor: Colors.transparent,
-      teamBoxCountStyle: GoogleFonts.merriweather(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8E7).withOpacity(0.5),
+      // Player-count text — PirataOne + the SAME hard-black drop +
+      // teal-glow stack that headerTextStyle ("Available Players")
+      // uses so the number reads with equal weight against the wood
+      // BG. Merriweather-with-lighter-shadows didn't pop; the pirate
+      // font + full-strength shadows do. Bumped 18→22 (headerText's
+      // size) so the count physically matches the header rhythm.
+      teamBoxCountStyle: GoogleFonts.pirataOne(
+        fontSize: 22,
+        color: const Color(0xFFFFF8E7).withOpacity(0.85),
+        letterSpacing: 0.5,
+        shadows: const [
+          Shadow(color: Color(0xCC000000), offset: Offset(2, 2), blurRadius: 4),
+          Shadow(color: Color(0xAA008B8B), offset: Offset(0, 0), blurRadius: 10),
+        ],
       ),
-      teamBoxActiveCountStyle: GoogleFonts.merriweather(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
+      teamBoxActiveCountStyle: GoogleFonts.pirataOne(
+        fontSize: 22,
         color: const Color(0xFFFFD700), // Treasure Gold
+        letterSpacing: 0.5,
+        shadows: const [
+          Shadow(color: Color(0xCC000000), offset: Offset(2, 2), blurRadius: 4),
+          Shadow(color: Color(0xAA008B8B), offset: Offset(0, 0), blurRadius: 10),
+        ],
       ),
       dialogBackgroundColor: const Color(0xFF008B8B).withOpacity(0.97), // Ocean Teal
       dialogTitleTextStyle: GoogleFonts.pirataOne(
@@ -377,7 +393,13 @@ class TeamPlayerListPanelConfig {
         color: const Color(0xFFFFF8E7), // Sail White
         letterSpacing: 0.5,
       ),
-      dialogTeamButtonSize: 64.0,
+      // Manual-team dialog shields doubled from 64. Width tuned so the
+      // 5 max crests wrap 3 + 2 (top row 3, bottom row 2) — reads more
+      // balanced than 4+1. Math:
+      //   3 badges: 3×128 + 2×16 = 416 (fits in 480)
+      //   4 badges: 4×128 + 3×16 = 560 (does NOT fit in 480 → wraps)
+      dialogTeamButtonSize: 128.0,
+      dialogContentWidth: 480.0,
       dialogTeamButtonColor: Colors.transparent,
       dialogTeamButtonBorderColor: Colors.transparent,
       dialogTeamButtonSelectedColor: const Color(0xFFFFD700), // Treasure Gold

@@ -619,14 +619,16 @@ class _TreasureDivideResultsScreenState
         _buildTitleWithOutline("CAPTAIN'S CREW!"),
         const SizedBox(height: 40),
 
-        // Winning crew crest — hero-sized.
+        // Winning crew crest — 50% smaller again (143 → 72). The two
+        // crew members' 300px portraits carry all the visual weight;
+        // the crest is now a compact "team identity" mark.
         Container(
           key: TreasureDivideResultsKeys.winnerCrewCrest,
-          width: 285,
-          height: 285,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: _treasureGold, width: 5),
+            border: Border.all(color: _treasureGold, width: 3),
             color: _oceanTeal.withOpacity(0.4),
           ),
           child: crestPath != null
@@ -635,18 +637,22 @@ class _TreasureDivideResultsScreenState
                     crestPath,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) =>
-                        Icon(Icons.shield, color: _treasureGold, size: 150),
+                        Icon(Icons.shield, color: _treasureGold, size: 40),
                   ),
                 )
-              : Icon(Icons.shield, color: _treasureGold, size: 150),
+              : Icon(Icons.shield, color: _treasureGold, size: 40),
         ),
         const SizedBox(height: 16),
 
-        // Row of winning crew members — 2x prior.
+        // Row of winning crew members — avatars sized to MATCH the
+        // solo single winner (300) and names in the same 40pt
+        // pirataOne face solo single uses. Extra horizontal spacing
+        // (24 → 48) keeps the two 300px portraits from crowding
+        // each other.
         Wrap(
           alignment: WrapAlignment.center,
-          spacing: 24,
-          runSpacing: 12,
+          spacing: 48,
+          runSpacing: 16,
           children: [
             for (final pid in members)
               Container(
@@ -657,22 +663,23 @@ class _TreasureDivideResultsScreenState
                     Builder(builder: (context) {
                       final memberPlayer = playerProvider.getPlayerById(pid);
                       if (memberPlayer == null) {
-                        return _buildAvatarCircle(pid, size: 108);
+                        return _buildAvatarCircle(pid, size: 300);
                       }
                       return PirateAvatarWidget(
                         player: memberPlayer,
                         themeIndex: game.playerPirateThemes[pid] ?? 0,
-                        size: 108,
+                        size: 300,
                         isActive: true,
                       );
                     }),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
                       playerProvider.getPlayerById(pid)?.name ?? pid,
-                      style: GoogleFonts.merriweather(
-                          fontSize: 16,
+                      style: GoogleFonts.pirataOne(
+                          fontSize: 40,
                           color: _sailWhite,
                           shadows: _treasureTextShadows),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -830,14 +837,14 @@ class _TreasureDivideResultsScreenState
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Crest — 25% smaller than the prior 2x pass.
+        // Crest — 50% smaller than the prior 195 pass.
         Container(
           key: TreasureDivideResultsKeys.winnerCrewCrest,
-          width: 195,
-          height: 195,
+          width: 98,
+          height: 98,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: _treasureGold, width: 4),
+            border: Border.all(color: _treasureGold, width: 3),
             color: _oceanTeal.withOpacity(0.4),
           ),
           child: crestPath != null
@@ -846,10 +853,10 @@ class _TreasureDivideResultsScreenState
                     crestPath,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) =>
-                        Icon(Icons.shield, color: _treasureGold, size: 102),
+                        Icon(Icons.shield, color: _treasureGold, size: 52),
                   ),
                 )
-              : Icon(Icons.shield, color: _treasureGold, size: 102),
+              : Icon(Icons.shield, color: _treasureGold, size: 52),
         ),
         const SizedBox(height: 14),
         // Members
@@ -1101,22 +1108,56 @@ class _TreasureDivideResultsScreenState
                       : Icon(Icons.shield, color: _treasureGold, size: 38),
                 ),
                 const SizedBox(width: 12),
-                // Team members column
+                // Team members — themed pirate avatar to the LEFT of
+                // the name. Names use Flexible (loose) so they take
+                // only their intrinsic width, which pulls the SECOND
+                // member's avatar LEFT to a fixed 20px gap after the
+                // first name — instead of anchoring each member to
+                // an equal half-share of the row (which parked the
+                // second member's avatar much further right on
+                // short-name pairs).
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final pid in members)
-                        Text(
-                          playerProvider.getPlayerById(pid)?.name ?? pid,
-                          style: GoogleFonts.merriweather(
-                              fontSize: 17,
-                              color: _sailWhite,
-                              fontWeight: FontWeight.w500,
-                              shadows: _treasureTextShadows),
-                        ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        for (int i = 0; i < members.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 20),
+                          Builder(builder: (context) {
+                            final pid = members[i];
+                            final memberPlayer =
+                                playerProvider.getPlayerById(pid);
+                            if (memberPlayer == null) {
+                              return const SizedBox(width: 48, height: 48);
+                            }
+                            return PirateAvatarWidget(
+                              player: memberPlayer,
+                              themeIndex:
+                                  game.playerPirateThemes[pid] ?? 0,
+                              size: 48,
+                              isActive: false,
+                            );
+                          }),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              playerProvider
+                                      .getPlayerById(members[i])
+                                      ?.name ??
+                                  members[i],
+                              style: GoogleFonts.merriweather(
+                                  fontSize: 17,
+                                  color: _sailWhite,
+                                  fontWeight: FontWeight.w500,
+                                  shadows: _treasureTextShadows),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
                 // Score
