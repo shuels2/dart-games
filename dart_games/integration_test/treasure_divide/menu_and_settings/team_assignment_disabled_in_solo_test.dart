@@ -51,12 +51,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    // Team Count dropdown should still NOT appear (IgnorePointer blocked the tap)
-    final teamCountDropdown =
-        ElementFinders.getTreasureDivideTeamCountDropdown();
-    expect(teamCountDropdown, findsNothing,
+    // The Crews / Team Count dropdown has been removed from the menu;
+    // "did the tap work?" is now measured by whether an "Assign team"
+    // trailing button appears next to any selected player. In Solo
+    // mode nothing is selected and the IgnorePointer swallows the
+    // tap anyway, so we don't expect any "Assign team" widget.
+    expect(find.text('Assign team'), findsNothing,
         reason:
-            '[DIAG team_assign_disabled] Team Count dropdown should NOT appear — IgnorePointer should block taps in Solo mode');
+            '[DIAG team_assign_disabled] "Assign team" trailing button should NOT '
+            'appear in Solo mode — IgnorePointer must block the MANUAL tap');
 
     // ── Switch to TEAM mode — verify toggle activates ─────────────────────
     await SettingsHelpers.setTreasureDivideGameModeTeam(tester);
@@ -65,12 +68,19 @@ void main() {
         reason:
             '[DIAG team_assign_disabled] Opacity(0.5) should be gone in Team mode');
 
-    // Now tapping MANUAL should work (Team Count dropdown appears)
+    // Now tapping MANUAL should work. We can't verify via a dropdown
+    // (removed), so add a player then confirm the "Assign team"
+    // trailing button appears — that widget only renders in
+    // Team + Manual mode when a player is selected.
     await SettingsHelpers.setTreasureDivideAssignmentManual(tester);
+    await UITestHelpers.addPlayer(tester, 'TeamAssignP1', config);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
-    expect(teamCountDropdown, findsOneWidget,
+    expect(find.text('Assign team'), findsWidgets,
         reason:
-            '[DIAG team_assign_disabled] Team Count dropdown should appear after switching to Team + Manual');
+            '[DIAG team_assign_disabled] "Assign team" trailing button should '
+            'appear once we\'re in Team + Manual with a selected player');
 
     // ── Switch back to SOLO — verify disabled again ───────────────────────
     await SettingsHelpers.setTreasureDivideGameModeSolo(tester);

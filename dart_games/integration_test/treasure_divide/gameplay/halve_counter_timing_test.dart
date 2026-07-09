@@ -134,12 +134,16 @@ void main() {
         reason: '[DIAG halve_timing] P2 has no halving label yet');
 
     // P1's gold visibly dropped from 60 → 30 in the tile too.
+    // Opponent tile renders `Text.rich` with a "N gold" span PLUS a
+    // "(+N)" / "(–)" round-score span, so the plain text is longer
+    // than "30 gold". textContaining works against Text.rich's
+    // concatenated plaintext.
     expect(
         find.descendant(
           of: find.byKey(TreasureDivideGameKeys.playerTile(p1.id)),
-          matching: find.text('30 gold'),
+          matching: find.textContaining('30 gold'),
         ),
-        findsOneWidget,
+        findsWidgets,
         reason:
             '[DIAG halve_timing] P1 opponent tile gold must read "30 gold" after halve');
 
@@ -242,12 +246,14 @@ void main() {
             '[DIAG halve_timing/qtr] Under Quarter It, label must read "Quartered", not "Halved"');
 
     // P1's gold visibly dropped from 60 → floor(60/4) = 15.
+    // textContaining because the opponent tile renders Text.rich
+    // with "N gold" + a "(+N)" / "(–)" round-score span appended.
     expect(
         find.descendant(
           of: find.byKey(TreasureDivideGameKeys.playerTile(p1.id)),
-          matching: find.text('15 gold'),
+          matching: find.textContaining('15 gold'),
         ),
-        findsOneWidget,
+        findsWidgets,
         reason:
             '[DIAG halve_timing/qtr] P1 opponent tile gold must read "15 gold" after quartering');
 

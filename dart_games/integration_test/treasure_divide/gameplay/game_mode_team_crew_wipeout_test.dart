@@ -1,14 +1,18 @@
 // integration_test/treasure_divide/gameplay/game_mode_team_crew_wipeout_test.dart
 //
 // Group B – Test 7: Team mode (Random), 4 players → 2 crews × 2.
-// Crew A: both members miss all darts in round 0.
-// → timesHalvedPerTeam[crewA] increments to 1; totalForTeam = 0 (half of 0 = 0).
 //
-// NOTE: In team mode with random assignment, game.currentPlayerId is initialized
-// to playerIds[0] (first added player) which may NOT be in game.activeTeamId.
-// We use game.activeTeamId as the authoritative active team identifier and play
-// TWO consecutive turns (both crew members), relying on _advanceTeamPlayer to
-// manage the within-crew pointer correctly.
+// Round 0: EVERY player scores (all 4 hit the round target on all
+// darts) so both crews walk into round 1 with positive treasure.
+// Round 1: crew A misses everything → halving fires because the crew
+// has real treasure to halve. timesHalvedPerTeam[crewA] becomes 1
+// and totalForTeam(crewA) drops to floor(pre / 2).
+//
+// The earlier version of this test had crew A miss round 0 with 0
+// prior treasure. The provider's no-op guard (see 39e in the
+// provider tests) correctly declines to bump the halve counter when
+// there's nothing to halve, so that spec was wrong; this version
+// seeds real treasure before triggering the halving event.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -35,9 +39,7 @@ void main() {
     expect(teamIds.length, equals(2),
         reason: '[DIAG team_wipeout] Should have 2 crews for 4 players');
 
-    // Use activeTeamId as the authoritative active crew (not currentPlayerId).
-    // game.create() sets currentPlayerId = playerIds[0] which can differ from
-    // activeTeamId's first member when random assignment shuffles players.
+    // Use activeTeamId as the authoritative active crew.
     final crewAId = game.activeTeamId!;
     final crewAMembers = game.teamPlayers[crewAId]!;
     expect(crewAMembers.length, equals(2),
@@ -47,8 +49,37 @@ void main() {
     expect(game.timesHalvedPerTeam[crewAId] ?? 0, equals(0),
         reason: '[DIAG team_wipeout] Crew A halve counter should start at 0');
 
-    // ── Crew A: play both turns as misses ─────────────────────────────────
-    // Turn 1: current player (whoever game says) misses 3 darts + takeout
+    // ── Round 0: every player hits the target on all 3 darts ─────────────
+    // Crew A gets treasure; crew B gets treasure; round 1 begins. Now
+    // both crews have positive treasure that a wipeout would halve.
+    Future<void> hitFullTurn() async {
+      final target = getCurrentRoundTarget(tester);
+      await throwDartDirect(tester, target);
+      await throwDartDirect(tester, target);
+      await throwDartDirect(tester, target);
+      await simulateTakeout(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      drainExceptions(tester);
+    }
+
+    // 4 turns in round 0: crew A P1, crew A P2, crew B P1, crew B P2.
+    await hitFullTurn();
+    await hitFullTurn();
+    await hitFullTurn();
+    await hitFullTurn();
+
+    // Round 0 committed → crew A has real treasure.
+    expect(game.currentRoundIndex, equals(1),
+        reason: '[DIAG team_wipeout] Round should have advanced to 1');
+    final crewATreasureBefore = game.totalForTeam(crewAId);
+    expect(crewATreasureBefore, greaterThan(0),
+        reason:
+            '[DIAG team_wipeout] Setup: crew A must have positive treasure '
+            'walking into round 1 so the halving event has something to halve');
+
+    // ── Round 1: crew A both members miss all darts ──────────────────────
+    // Turn 1: current crew A player misses 3 darts + takeout
     await throwMissDirect(tester);
     await throwMissDirect(tester);
     await throwMissDirect(tester);
@@ -66,15 +97,19 @@ void main() {
     await tester.pump();
     drainExceptions(tester);
 
-    // ── After crew A wipeout ──────────────────────────────────────────────
+    // ── After crew A round-1 wipeout ─────────────────────────────────────
     // timesHalvedPerTeam[crewA] should be 1
     expect(game.timesHalvedPerTeam[crewAId] ?? 0, equals(1),
-        reason: '[DIAG team_wipeout] Crew A halve counter should be 1 after round wipeout');
+        reason:
+            '[DIAG team_wipeout] Crew A halve counter should be 1 after '
+            'round-1 wipeout with prior treasure');
 
-    // totalForTeam = 0 (halving 0 = 0)
-    final crewATreasure = game.totalForTeam(crewAId);
-    expect(crewATreasure, equals(0),
-        reason: '[DIAG team_wipeout] Crew A treasure should still be 0 after halving 0');
+    // totalForTeam should be floor(prior / 2) (Halve It divisor is 2).
+    final crewATreasureAfter = game.totalForTeam(crewAId);
+    expect(crewATreasureAfter, equals(crewATreasureBefore ~/ 2),
+        reason:
+            '[DIAG team_wipeout] Crew A treasure should be halved '
+            '(was $crewATreasureBefore, now $crewATreasureAfter)');
 
     // Suppress layout exceptions during cleanup pump (TD game screen layout bug).
     suppressLayoutExceptionsForCleanup();

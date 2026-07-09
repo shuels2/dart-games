@@ -170,7 +170,7 @@ flutter test test/screens/games/treasure_divide/
   - Pirate's Grid: 69 tests (~90 minutes) [55 functional + 4 navigation + 6 play-to-complete]
   - Gladiator Arena: 99 tests (~131 minutes) [85 functional + 4 navigation + 5 play-to-complete + 5 pause modal + 7 visual validation]
   - Tiki Golf: 111 files (93 categorized + 2 screenshot + 16 save/resume) [randomization/4 + team_setup/10 + team_mode_gameplay/10 + gameplay/13 + 4 navigation + 5 play-to-complete + 3 pause modal + 2 visual validation (screenshot split into menu/solo + results files to fit 600s parallel-runner budget)]
-  - Treasure Divide: 98 testWidgets (~145 minutes) [83 test files: add_player/3 + edit_score/5 + gameplay/12 + menu_and_settings/11 + navigation/4 + pause_modal/3 + play_to_complete/5 + results_screen/7 + save_resume/16 + team_setup/7 + team_mode_gameplay/4 + visual_validation/6]
+  - Treasure Divide: 105 testWidgets (~155 minutes) [87 test files: add_player/3 + edit_score/5 + gameplay/13 + menu_and_settings/10 + navigation/4 + pause_modal/3 + play_to_complete/7 + results_screen/9 + save_resume/16 + team_setup/7 + team_mode_gameplay/4 + visual_validation/6]
   - **Sequential (`run_ui_tests.bat`): ~988+ minutes — interactive Chrome sessions**
   - **Parallel (`run_ui_tests_parallel.bat`): ~356+ minutes — fully headless, no visible Chrome**
 

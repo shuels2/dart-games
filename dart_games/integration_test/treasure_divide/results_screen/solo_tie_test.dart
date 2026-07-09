@@ -101,7 +101,12 @@ void main() {
     // Results screen shows the tie heading and label
     expect(find.text('DIVIDED TREASURE!'), findsWidgets,
         reason: 'Tied solo game should show "DIVIDED TREASURE!" heading');
-    expect(find.text('A TIE BETWEEN CAPTAINS'), findsOneWidget,
+    // The subtitle is rendered TWICE by the Stack overlay pattern in
+    // _buildSoloTieWinner: once as a Visibility(maintainSize) layout
+    // placeholder and once as the visible overlay painted on top so
+    // pirate-hat overhang can't cover it. Both instances stay in the
+    // widget tree, so accept ≥1 rather than exactly 1.
+    expect(find.text('A TIE BETWEEN CAPTAINS'), findsWidgets,
         reason: 'Tied solo game should display "A TIE BETWEEN CAPTAINS" label');
 
     // EVERY tied player gets a `gamesWon = 1` recorded.

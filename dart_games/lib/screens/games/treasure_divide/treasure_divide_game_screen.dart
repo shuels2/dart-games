@@ -1232,7 +1232,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                       )
                     : const SizedBox.shrink(),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
 
               // Player name.
               Text(
@@ -1283,12 +1283,12 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
 
               // Dart indicators.
               _buildDartIndicators(
                   dartsThisTurn, dartsThrown, segments, game),
-              const SizedBox(height: 10),
+              const SizedBox(height: 4),
 
               // Skip Turn button — +4pt on the label (23 → 27).
               SizedBox(
@@ -1332,8 +1332,13 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: _treasureGold, width: 2),
                     foregroundColor: _treasureGold,
+                    // Vertical padding trimmed 10 → 6 to reclaim ~8px
+                    // of vertical space so the active-panel Column
+                    // content fits inside the panel constraint in
+                    // solo mode without the RenderFlex overflow that
+                    // was breaking the parallel UI test runner.
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                        horizontal: 12, vertical: 6),
                   ),
                   child: Text(
                     'Skip Turn',
