@@ -675,6 +675,13 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
           teamDialogDropdownKey: (id) =>
               TreasureDivideMenuKeys.teamDialogDropdown(id),
           teamDialogCancelKey: TreasureDivideMenuKeys.teamDialogCancel,
+          // Seed the widget's team-assignment map from the round-tripped
+          // state (SAIL AGAIN / CHANGE COURSE from results). Without
+          // this the widget always mounted empty and team icons next
+          // to each player were "lost" on menu re-entry.
+          initialTeamAssignments: _playerTeamAssignments.isEmpty
+              ? null
+              : Map<String, String>.from(_playerTeamAssignments),
           onTeamAssignmentsChanged: (assignments) {
             setState(() {
               _playerTeamAssignments = Map.from(assignments);

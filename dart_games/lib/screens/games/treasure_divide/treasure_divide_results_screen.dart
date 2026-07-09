@@ -728,17 +728,54 @@ class _TreasureDivideResultsScreenState
     final teamIds = game.teamPlayers.keys.toList();
     final treasure =
         winnerTeamIds.isNotEmpty ? game.totalForTeam(winnerTeamIds.first) : 0;
-    final timesHalved = winnerTeamIds.isNotEmpty
-        ? (game.timesHalvedPerTeam[winnerTeamIds.first] ?? 0)
-        : 0;
-    final halvedLabel =
-        game.quarterItEnabled ? 'Times Quartered' : 'Times Halved';
+
+    // Tier the crest + avatar + name sizing on the number of tied
+    // crews. Sizes are unchanged from the previous pass (user was
+    // happy with them at 5-way); only the INTER-CREW spacing was
+    // bumped tier-by-tier to fill more of the ~1872px kiosk body
+    // width — the 3/4/5-way rows sit around 95% now, and the 2-way
+    // row spreads the two crews further apart without touching
+    // portrait sizes.
+    //
+    // Verified widths per tier (approx):
+    //   2 crews × (2×220 + 20) + 1×200 = 1120  (60%)
+    //   3 crews × (2×255 + 20) + 2×100 = 1790  (96%)
+    //   4 crews × (2×182 + 20) + 3× 80 = 1776  (95%)
+    //   5 crews × (2×140 + 20) + 4× 70 = 1780  (95%)
+    final int tieCount = winnerTeamIds.length;
+    final double crestSize;
+    final double avatarSize;
+    final double nameFontSize;
+    final double interCrewSpacing;
+    if (tieCount <= 2) {
+      crestSize = 80;
+      avatarSize = 220;
+      nameFontSize = 26;
+      interCrewSpacing = 200;
+    } else if (tieCount <= 3) {
+      crestSize = 90;
+      avatarSize = 255;
+      nameFontSize = 28;
+      interCrewSpacing = 100;
+    } else if (tieCount <= 4) {
+      crestSize = 70;
+      avatarSize = 182;
+      nameFontSize = 22;
+      interCrewSpacing = 80;
+    } else {
+      crestSize = 55;
+      avatarSize = 140;
+      nameFontSize = 18;
+      interCrewSpacing = 70;
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildTitleWithOutline('DIVIDED TREASURE!'),
-        const SizedBox(height: 12),
+        // Title / subtitle spacing tightened to 2 (was 12) so the two
+        // lines read as one unit — matches the solo tie title group.
+        const SizedBox(height: 2),
         Text(
           'A TIE BETWEEN CREWS',
           style: GoogleFonts.pirataOne(
@@ -747,75 +784,54 @@ class _TreasureDivideResultsScreenState
               shadows: _treasureTextShadows),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 40),
+        // Subtitle → crew group gap tightened (40 → 0). The tied
+        // crew group starts with a crest (80px at 2-way tie), which
+        // already adds visual bulk between the subtitle and the
+        // avatars — leaving a 40px SizedBox on top of that made the
+        // team tie feel much more spacious than the solo tie's
+        // 70px subtitle→avatar gap. Dropping the SizedBox brings
+        // the subtitle-to-avatar-top distance from ~132 down to ~92,
+        // as close as we can get to the solo tie's 70 without
+        // shrinking the crest.
+        const SizedBox(height: 0),
 
-        // Side-by-side tied crew crests + members. Two-way ties get a
-        // decorative "&" between the crests (matches the wireframe's
-        // `.crew-tie-ampersand`). Three-plus-way ties skip the
-        // ampersand and fall back to a comma-style separation, since
-        // an "&" between every pair gets visually noisy.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Tied crew groups — each crew renders as a "team badge above
+        // the middle of its 2 member avatars" pattern (mirrors the
+        // team single winner layout). The decorative "&" separator
+        // between crests was dropped per user; crews now sit in a
+        // Wrap with generous inter-crew spacing.
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: interCrewSpacing,
+          runSpacing: 20,
           children: [
-            for (int i = 0; i < winnerTeamIds.length; i++) ...[
+            for (final teamId in winnerTeamIds)
               _buildTiedCrewColumn(
-                  game, playerProvider, winnerTeamIds[i], teamIds),
-              if (i < winnerTeamIds.length - 1) ...[
-                const SizedBox(width: 20),
-                if (winnerTeamIds.length == 2)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 40),
-                    child: Text(
-                      '&',
-                      style: GoogleFonts.pirataOne(
-                        fontSize: 68,
-                        color: _treasureGold,
-                        shadows: const [
-                          Shadow(
-                              color: Color(0xFF8B6914),
-                              offset: Offset(-2, -2)),
-                          Shadow(
-                              color: Color(0xFF8B6914),
-                              offset: Offset(2, -2)),
-                          Shadow(
-                              color: Color(0xFF8B6914),
-                              offset: Offset(-2, 2)),
-                          Shadow(
-                              color: Color(0xFF8B6914),
-                              offset: Offset(2, 2)),
-                        ],
-                      ),
-                    ),
-                  ),
-                const SizedBox(width: 20),
-              ],
-            ],
+                game,
+                playerProvider,
+                teamId,
+                teamIds,
+                crestSize: crestSize,
+                avatarSize: avatarSize,
+                nameFontSize: nameFontSize,
+              ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
 
-        Text.rich(
+        // Treasure only — halved/quartered tally intentionally omitted
+        // (same rationale as the solo tie): tied crews share the
+        // treasure total but often reach it via different halve
+        // histories, so a single number would be misleading. Per-crew
+        // halve counts still appear on each scorecard row below.
+        Text(
+          'Crew Treasure: $treasure gold each',
           key: TreasureDivideResultsKeys.treasureScore,
-          TextSpan(
-            children: [
-              TextSpan(
-                text: 'Crew Treasure: $treasure gold each ',
-                style: GoogleFonts.merriweather(
-                    fontSize: 18,
-                    color: _treasureGold,
-                    fontWeight: FontWeight.bold,
-                    shadows: _treasureTextShadows),
-              ),
-              TextSpan(
-                text: '($halvedLabel: $timesHalved each)',
-                style: GoogleFonts.merriweather(
-                    fontSize: 18,
-                    color: _halveCoral,
-                    fontWeight: FontWeight.bold,
-                    shadows: _treasureTextShadows),
-              ),
-            ],
-          ),
+          style: GoogleFonts.merriweather(
+              fontSize: 18,
+              color: _treasureGold,
+              fontWeight: FontWeight.bold,
+              shadows: _treasureTextShadows),
           textAlign: TextAlign.center,
         ),
       ],
@@ -826,22 +842,31 @@ class _TreasureDivideResultsScreenState
     TreasureDivideGame game,
     PlayerProvider playerProvider,
     String teamId,
-    List<String> teamIdList,
-  ) {
+    List<String> teamIdList, {
+    required double crestSize,
+    required double avatarSize,
+    required double nameFontSize,
+  }) {
     final crestIdx = teamIdList.indexOf(teamId);
     final crestPath = (crestIdx >= 0 && crestIdx < game.teamCrestPaths.length)
         ? game.teamCrestPaths[crestIdx]
         : null;
     final members = game.teamPlayers[teamId] ?? [];
 
+    // Column-centered layout puts the crest above the middle of the
+    // crew's avatar row automatically (Row's mainAxisSize.min +
+    // Column's crossAxisAlignment.center align the crest to the
+    // horizontal center of the avatar row below).
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Crest — 50% smaller than the prior 195 pass.
+        // Crest — the team badge sits above the middle of the two
+        // member avatars, matching the team single winner treatment.
         Container(
           key: TreasureDivideResultsKeys.winnerCrewCrest,
-          width: 98,
-          height: 98,
+          width: crestSize,
+          height: crestSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: _treasureGold, width: 3),
@@ -852,23 +877,60 @@ class _TreasureDivideResultsScreenState
                   child: Image.asset(
                     crestPath,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) =>
-                        Icon(Icons.shield, color: _treasureGold, size: 52),
+                    errorBuilder: (_, __, ___) => Icon(Icons.shield,
+                        color: _treasureGold, size: crestSize * 0.55),
                   ),
                 )
-              : Icon(Icons.shield, color: _treasureGold, size: 52),
+              : Icon(Icons.shield,
+                  color: _treasureGold, size: crestSize * 0.55),
         ),
-        const SizedBox(height: 14),
-        // Members
-        for (final pid in members)
-          Text(
-            playerProvider.getPlayerById(pid)?.name ?? pid,
-            style: GoogleFonts.merriweather(
-                fontSize: 18,
-                color: _sailWhite,
-                shadows: _treasureTextShadows),
-            textAlign: TextAlign.center,
-          ),
+        const SizedBox(height: 12),
+        // Two crew-member portraits side by side with names below —
+        // same pattern as the team single winner, tier-sized so the
+        // group fits alongside up to 4 other tied crews.
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (int i = 0; i < members.length; i++) ...[
+              if (i > 0) const SizedBox(width: 20),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Builder(builder: (context) {
+                    final pid = members[i];
+                    final memberPlayer =
+                        playerProvider.getPlayerById(pid);
+                    if (memberPlayer == null) {
+                      return _buildAvatarCircle(pid, size: avatarSize);
+                    }
+                    return PirateAvatarWidget(
+                      player: memberPlayer,
+                      themeIndex: game.playerPirateThemes[pid] ?? 0,
+                      size: avatarSize,
+                      isActive: true,
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: avatarSize,
+                    child: Text(
+                      playerProvider.getPlayerById(members[i])?.name ??
+                          members[i],
+                      style: GoogleFonts.pirataOne(
+                          fontSize: nameFontSize,
+                          color: _sailWhite,
+                          shadows: _treasureTextShadows),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }
@@ -1111,7 +1173,7 @@ class _TreasureDivideResultsScreenState
                 // Team members — themed pirate avatar to the LEFT of
                 // the name. Names use Flexible (loose) so they take
                 // only their intrinsic width, which pulls the SECOND
-                // member's avatar LEFT to a fixed 20px gap after the
+                // member's avatar LEFT to a fixed 40px gap after the
                 // first name — instead of anchoring each member to
                 // an equal half-share of the row (which parked the
                 // second member's avatar much further right on
@@ -1123,7 +1185,7 @@ class _TreasureDivideResultsScreenState
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         for (int i = 0; i < members.length; i++) ...[
-                          if (i > 0) const SizedBox(width: 20),
+                          if (i > 0) const SizedBox(width: 40),
                           Builder(builder: (context) {
                             final pid = members[i];
                             final memberPlayer =

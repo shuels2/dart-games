@@ -40,6 +40,12 @@ class TeamPlayerListPanel extends StatefulWidget {
   final Key Function(String id)? teamDialogDropdownKey;
   final Key? teamDialogCancelKey;
 
+  // Initial team assignments — seeds the internal team-assignment map
+  // when the widget mounts. Without this, a menu re-entry via SAIL
+  // AGAIN / CHANGE COURSE would drop the assignments coming from a
+  // finished team game (the parent's map wouldn't propagate here).
+  final Map<String, String>? initialTeamAssignments;
+
   const TeamPlayerListPanel({
     super.key,
     required this.config,
@@ -56,6 +62,7 @@ class TeamPlayerListPanel extends StatefulWidget {
     this.teamDialogContainerKey,
     this.teamDialogDropdownKey,
     this.teamDialogCancelKey,
+    this.initialTeamAssignments,
   });
 
   @override
@@ -69,6 +76,19 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
   TeamPlayerListPanelConfig get config => widget.config;
 
   bool get _isManualTeamMode => widget.isTeamMode && widget.isManualTeamAssignment;
+
+  @override
+  void initState() {
+    super.initState();
+    // Seed the internal team-assignment map from the widget parameter
+    // so a CHANGE COURSE round-trip (menu → game → results → menu)
+    // preserves the crew assignments the player picked. Without this
+    // the widget always mounted with an empty map and the team icons
+    // next to each player disappeared on menu re-entry.
+    if (widget.initialTeamAssignments != null) {
+      _playerTeamAssignments.addAll(widget.initialTeamAssignments!);
+    }
+  }
 
   @override
   void dispose() {

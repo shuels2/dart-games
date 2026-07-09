@@ -1002,30 +1002,23 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   // ─── Badge row ────────────────────────────────────────────────────────────────
 
   Widget _buildBadgeRow(TreasureDivideProvider provider, TreasureDivideGame game) {
-    final isTeam = game.gameMode == TreasureDivideGameMode.team;
-    final activeTeamId = game.activeTeamId;
-    final activeMembers =
-        (isTeam && activeTeamId != null) ? (game.teamPlayers[activeTeamId] ?? []) : <String>[];
-    final isSoloCrew = isTeam && activeMembers.length == 1;
-
     final badges = <Widget>[];
     // QUARTER IT is rendered inline with the Island counter on the
     // treasure map widget (see TreasureMapWidget.quarterItEnabled) so
     // it isn't added to this top badge row anymore.
+    //
+    // "Solo Crew: 6 darts" pill is also no longer rendered here — it
+    // moved to the on-deck slot at the bottom of the active player
+    // panel (see _buildOnDeckTeammateRow — solo crew branch). Sized
+    // like the treasure map's Island counter pill, it fills the
+    // vertical space the "Up next" row would occupy for a doubles
+    // crew.
     if (game.customTargetsEnabled) {
       badges.add(_buildBadge(
         key: TreasureDivideGameKeys.customBadge,
         label: 'CUSTOM',
         backgroundColor: _treasureGold,
         textColor: _oceanTeal,
-      ));
-    }
-    if (isSoloCrew) {
-      badges.add(_buildBadge(
-        key: TreasureDivideGameKeys.soloCrewBadge,
-        label: 'Solo Crew: 6 darts',
-        backgroundColor: _plankBrown,
-        textColor: _sailWhite,
       ));
     }
 
@@ -1394,7 +1387,36 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     String activeTeamId,
   ) {
     final members = game.teamPlayers[activeTeamId] ?? const [];
-    if (members.length < 2) return const SizedBox.shrink();
+    // Solo crew (1 player) → no teammate to surface, so drop the
+    // "Solo Crew: 6 darts" pill in the on-deck slot. Sized to match
+    // the treasure map's "Island X / Y" pill (25pt PirataOne, 18h/7v
+    // padding, plank-brown bg, treasure-gold border). The compact
+    // version of this pill in _buildBadgeRow is skipped when the
+    // active crew is solo so we don't render it twice.
+    if (members.length < 2) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Center(
+          child: Container(
+            key: TreasureDivideGameKeys.soloCrewBadge,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+            decoration: BoxDecoration(
+              color: _plankBrown,
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: _treasureGold, width: 2.5),
+            ),
+            child: Text(
+              'Solo Crew: 6 darts',
+              style: GoogleFonts.pirataOne(
+                fontSize: 25,
+                color: _sailWhite,
+                shadows: _treasureTextShadows,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     final currentId = game.currentPlayerId;
     final teammateId = members.firstWhere(
