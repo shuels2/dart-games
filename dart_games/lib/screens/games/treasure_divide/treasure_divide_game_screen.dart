@@ -1232,7 +1232,11 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                       )
                     : const SizedBox.shrink(),
               ),
-              const SizedBox(height: 4),
+              // No spacer here — the trim from 8 → 4 → 0 was needed
+              // to keep the active-panel Column from overflowing the
+              // 622px constraint in solo mode. Avatar sits directly
+              // above the player name; the avatar's own bottom edge
+              // is the visual gap.
 
               // Player name.
               Text(
@@ -1288,7 +1292,10 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               // Dart indicators.
               _buildDartIndicators(
                   dartsThisTurn, dartsThrown, segments, game),
-              const SizedBox(height: 4),
+              // No spacer here — same rationale as after the avatar
+              // (see comment above). Skip Turn sits directly under
+              // the dart indicators; the button's own OutlinedButton
+              // padding is the visual gap.
 
               // Skip Turn button — +4pt on the label (23 → 27).
               SizedBox(

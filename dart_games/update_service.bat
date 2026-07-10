@@ -1,11 +1,12 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 REM ============================================================
 REM Dart Games - Update Running Service
 REM ============================================================
-REM Pulls the latest code, recompiles the server, rebuilds the
-REM Flutter web app, and restarts the DartGamesServer service.
+REM Prompts you to pick a branch from origin, checks it out,
+REM pulls, recompiles the server, rebuilds the Flutter web app,
+REM and restarts the DartGamesServer service.
 REM
 REM Run as Administrator. Assumes install_service.bat has been
 REM run successfully at least once.
@@ -32,9 +33,105 @@ if not exist "%WINSW_EXE%" (
 )
 
 echo.
-echo [1/5] Pulling latest code...
+echo [1/5] Choosing branch and pulling latest code...
 pushd "%REPO_DIR%\.."
-git pull
+
+REM ---- Fetch every ref from origin so the branch menu is current ----
+echo   Fetching remote refs...
+git fetch --all --prune
+if errorlevel 1 ( echo ERROR: git fetch failed. & popd & pause & exit /b 1 )
+
+REM ---- Record the currently-checked-out branch to use as default ----
+set "CURRENT_BRANCH="
+for /f "usebackq tokens=*" %%B in (`git branch --show-current 2^>nul`) do set "CURRENT_BRANCH=%%B"
+
+REM ---- Build a numbered list of branches available on origin ----
+REM     Skips the 'origin/HEAD' symbolic ref; each remaining branch
+REM     is offered as an option. The current branch (if it matches
+REM     an origin/ ref) is flagged and becomes the default when the
+REM     operator just hits Enter.
+set /a _BRANCH_COUNT=0
+set "_DEFAULT_CHOICE="
+echo.
+echo Available branches on origin:
+for /f "usebackq tokens=*" %%B in (`git for-each-ref --format^="%%^(refname:short^)" refs/remotes/origin`) do (
+    set "_REMOTE=%%B"
+    REM Strip the leading "origin/" so "origin/main" becomes "main".
+    set "_LOCAL=!_REMOTE:origin/=!"
+    if not "!_LOCAL!"=="HEAD" (
+        set /a _BRANCH_COUNT+=1
+        set "_BRANCH_!_BRANCH_COUNT!=!_LOCAL!"
+        if /i "!_LOCAL!"=="!CURRENT_BRANCH!" (
+            echo   [!_BRANCH_COUNT!] !_LOCAL!  ^(current^)
+            set "_DEFAULT_CHOICE=!_BRANCH_COUNT!"
+        ) else (
+            echo   [!_BRANCH_COUNT!] !_LOCAL!
+        )
+    )
+)
+
+if !_BRANCH_COUNT! equ 0 (
+    echo ERROR: No branches found on origin. Is the remote configured?
+    popd
+    pause
+    exit /b 1
+)
+
+echo.
+if defined _DEFAULT_CHOICE (
+    set "_CHOICE="
+    set /p "_CHOICE=Choose a branch number [!_DEFAULT_CHOICE!]: "
+    if "!_CHOICE!"=="" set "_CHOICE=!_DEFAULT_CHOICE!"
+) else (
+    set "_CHOICE="
+    set /p "_CHOICE=Choose a branch number: "
+    if "!_CHOICE!"=="" (
+        echo ERROR: No branch chosen.
+        popd
+        pause
+        exit /b 1
+    )
+)
+
+REM ---- Look up the chosen number in _BRANCH_<N> ----
+set "_TARGET_BRANCH=!_BRANCH_%_CHOICE%!"
+if "!_TARGET_BRANCH!"=="" (
+    REM Delayed-expansion form for the array index lookup.
+    call set "_TARGET_BRANCH=%%_BRANCH_!_CHOICE!%%"
+)
+if "!_TARGET_BRANCH!"=="" (
+    echo ERROR: Invalid choice '!_CHOICE!'.
+    popd
+    pause
+    exit /b 1
+)
+
+echo   Selected: !_TARGET_BRANCH!
+
+REM ---- Switch branches if needed ----
+REM     `git checkout <branch>` creates a local tracking branch on
+REM     first use when a matching remote-only ref exists (default git
+REM     2.x behaviour). If the working tree has local edits that
+REM     would conflict, this fails loudly and we bail — the operator
+REM     needs to resolve manually rather than have us discard work.
+if /i not "!_TARGET_BRANCH!"=="!CURRENT_BRANCH!" (
+    echo   Switching from !CURRENT_BRANCH! to !_TARGET_BRANCH!...
+    git checkout !_TARGET_BRANCH!
+    if errorlevel 1 (
+        echo ERROR: git checkout failed.
+        echo Local changes may prevent switching. Resolve with:
+        echo   git status
+        popd
+        pause
+        exit /b 1
+    )
+)
+
+REM ---- Pull. --ff-only refuses to merge divergent history, which
+REM     surfaces a real problem instead of silently making a merge
+REM     commit on the kiosk.
+echo   Pulling !_TARGET_BRANCH!...
+git pull --ff-only
 if errorlevel 1 ( echo ERROR: git pull failed. & popd & pause & exit /b 1 )
 popd
 
