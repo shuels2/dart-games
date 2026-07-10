@@ -1253,7 +1253,8 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               maintainAnimation: true,
               maintainState: true,
               child: _buildActiveCrewHeader(provider, game,
-                  playerProvider, activeTeamId, nextTeammateId, scale),
+                  playerProvider, activeTeamId, nextTeammateId, scale,
+                  isPlaceholder: true),
             ),
 
           // ── Middle: avatar + player stats + Skip button ──
@@ -1560,8 +1561,14 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     PlayerProvider playerProvider,
     String teamId,
     String? nextTeammateId,
-    double scale,
-  ) {
+    double scale, {
+    // When true, this header is being rendered as the invisible
+    // spatial placeholder inside the Column base of the active-tile
+    // Stack. Widget keys are stripped on the placeholder so the
+    // visible overlay copy (rendered with isPlaceholder:false) is
+    // the sole match for `find.byKey(activeCrewCrest)`.
+    bool isPlaceholder = false,
+  }) {
     // nextTeammateId retained for signature compatibility but the
     // teammate is now surfaced by the bottom on-deck bar; the crew
     // header no longer needs the resolved Player.
@@ -1605,7 +1612,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       children: [
         if (crestPath != null) ...[
           SizedBox(
-            key: TreasureDivideGameKeys.activeCrewCrest,
+            key: isPlaceholder
+                ? null
+                : TreasureDivideGameKeys.activeCrewCrest,
             width: 135 * scale,
             height: 135 * scale,
             child: Image(
@@ -2062,14 +2071,21 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     // keeps the whole text block roughly the crest's height and
     // stops the tile from overflowing the 235px strip when the
     // halved indicator is visible.
-    Widget textColumn() => Row(
+    // isPlaceholder:true strips widget keys so the invisible spatial
+    // placeholder (rendered inside the base Column of the Stack) does
+    // not collide with the visible overlay copy. Tests looking up
+    // crewCrest/crewTreasureScore/crewRoundStatus by teamId must
+    // return exactly ONE match — the visible one on top.
+    Widget textColumn({bool isPlaceholder = false}) => Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (crestPath != null) ...[
               SizedBox(
-                key: TreasureDivideGameKeys.crewCrest(teamId),
+                key: isPlaceholder
+                    ? null
+                    : TreasureDivideGameKeys.crewCrest(teamId),
                 width: 75,
                 height: 75,
                 child: Image(
@@ -2092,7 +2108,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 children: [
                   Text(
                     '$treasure gold',
-                    key: TreasureDivideGameKeys.crewTreasureScore(teamId),
+                    key: isPlaceholder
+                        ? null
+                        : TreasureDivideGameKeys.crewTreasureScore(teamId),
                     style: GoogleFonts.merriweather(
                       fontSize: 30,
                       color: _treasureGold,
@@ -2104,7 +2122,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                   ),
                   if (timesHalved > 0)
                     Text(
-                      key: TreasureDivideGameKeys.crewRoundStatus(teamId),
+                      key: isPlaceholder
+                          ? null
+                          : TreasureDivideGameKeys.crewRoundStatus(teamId),
                       '${game.quarterItEnabled ? "Quartered" : "Halved"} '
                       '$timesHalved ${timesHalved == 1 ? "time" : "times"}',
                       style: GoogleFonts.merriweather(
@@ -2158,7 +2178,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 maintainSize: true,
                 maintainAnimation: true,
                 maintainState: true,
-                child: textColumn(),
+                child: textColumn(isPlaceholder: true),
               ),
               // Spacer between the text block and the avatar row —
               // bumped 6 → 26 so the avatars sit ~20% of the avatar

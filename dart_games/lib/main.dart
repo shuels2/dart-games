@@ -50,13 +50,21 @@ import 'screens/games/treasure_divide/treasure_divide_results_screen.dart';
 ApiClient? _previousApiClient;
 late ApiClient apiClient;
 
-/// Overflow trap — captures every `RenderFlex overflowed …` / assertion
-/// error routed through `FlutterError.onError` while running under
-/// `--dart-define=OVERFLOW_TRAP=1`. Tests can read
+/// Overflow trap — captures every FlutterError routed through
+/// [FlutterError.onError] while running under
+/// `--dart-define=OVERFLOW_TRAP=true`. Tests can read
 /// [overflowTrapMessages] at end-of-test and throw with the contents so
-/// the per-test log's `failureDetails` field shows exactly which widget
-/// overflowed. Empty (and the trap does nothing) when the flag is off,
-/// so production behavior is untouched.
+/// the per-test log's `failureDetails` field shows exactly which
+/// widget failed (overflow, duplicate GlobalKey, layout assertion,
+/// pump errors, etc.). Empty (and the trap does nothing) when the
+/// flag is off, so production behavior is untouched.
+///
+/// Each entry is tagged with an exception category so a failing test
+/// can be triaged without inspecting the browser console:
+///   [overflow] — RenderFlex overflow / RenderBox not laid out
+///   [key]     — duplicate GlobalKey / conflicting keys
+///   [assert]  — generic assertion failure
+///   [other]   — anything else
 final List<String> overflowTrapMessages = <String>[];
 
 /// Wraps whatever was previously set on [FlutterError.onError] so the
@@ -69,12 +77,24 @@ void _installOverflowTrap() {
   final previousHandler = FlutterError.onError;
   FlutterError.onError = (FlutterErrorDetails details) {
     final msg = details.exceptionAsString();
+    String tag;
     if (msg.contains('overflow') ||
         msg.contains('RenderFlex') ||
         msg.contains('RenderBox was not laid out')) {
-      final ctx = details.context?.toDescription() ?? '';
-      overflowTrapMessages.add(ctx.isEmpty ? msg : '$msg [context: $ctx]');
+      tag = 'overflow';
+    } else if (msg.contains('GlobalKey') ||
+        msg.contains('Multiple widgets used the same GlobalKey') ||
+        msg.contains('Duplicate GlobalKey')) {
+      tag = 'key';
+    } else if (msg.contains('Failed assertion') || msg.contains('assert')) {
+      tag = 'assert';
+    } else {
+      tag = 'other';
     }
+    final ctx = details.context?.toDescription() ?? '';
+    overflowTrapMessages.add(
+      ctx.isEmpty ? '[$tag] $msg' : '[$tag] $msg [context: $ctx]',
+    );
     previousHandler?.call(details);
   };
 }
