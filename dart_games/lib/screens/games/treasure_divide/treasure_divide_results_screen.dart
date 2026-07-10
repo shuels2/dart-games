@@ -259,27 +259,49 @@ class _TreasureDivideResultsScreenState
     // the old outer SingleChildScrollView which let the Column collapse
     // to intrinsic height and cluster everything in the top 50% of the
     // screen.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Winner section — hero content, fixed height.
-          _buildWinnerSection(context, provider, playerProvider, game),
-          const SizedBox(height: 20),
+    //
+    // Responsive scaling: rather than plumb a scale factor through
+    // every _build* helper (this screen has 4 winner variants + 4
+    // ranking variants + action buttons + title, each with dozens of
+    // hardcoded font sizes and dimensions), we render the whole body
+    // at a fixed 1600×900 design baseline and let a FittedBox scale
+    // the entire subtree to fit the actual viewport. BoxFit.contain
+    // preserves aspect ratio (letterboxing when the viewport aspect
+    // differs), so proportions and readability stay intact at every
+    // window size — no widget-level RenderFlex overflow possible
+    // because the Column always sees its full 900 px design height.
+    // The internal SingleChildScrollView still scrolls inside its
+    // scaled area if the rankings list is unusually tall.
+    return FittedBox(
+      fit: BoxFit.contain,
+      alignment: Alignment.topCenter,
+      child: SizedBox(
+        width: 1600,
+        height: 900,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Winner section — hero content, fixed height.
+              _buildWinnerSection(context, provider, playerProvider, game),
+              const SizedBox(height: 20),
 
-          // Rankings — expand into remaining vertical space; scroll
-          // internally when the ranked list is taller than fits.
-          Expanded(
-            child: SingleChildScrollView(
-              child: _buildRankings(context, provider, playerProvider, game),
-            ),
+              // Rankings — expand into remaining vertical space; scroll
+              // internally when the ranked list is taller than fits.
+              Expanded(
+                child: SingleChildScrollView(
+                  child:
+                      _buildRankings(context, provider, playerProvider, game),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Action buttons — pinned at the bottom.
+              _buildActionButtons(context, provider, playerProvider, game),
+            ],
           ),
-          const SizedBox(height: 20),
-
-          // Action buttons — pinned at the bottom.
-          _buildActionButtons(context, provider, playerProvider, game),
-        ],
+        ),
       ),
     );
   }
@@ -1034,26 +1056,39 @@ class _TreasureDivideResultsScreenState
                         shadows: _treasureTextShadows),
                   ),
                 ),
-                // Avatar with pirate theme — sized down 20% from the
-                // prior 80 pass to give the ranking rows more air
-                // and let the pinned rankings fit more players on
-                // screen without scrolling.
-                PirateAvatarWidget(
-                  player: player,
-                  themeIndex: game.playerPirateThemes[playerId] ?? 0,
-                  size: 64,
-                  isActive: false,
-                ),
-                const SizedBox(width: 12),
-                // Name
+                // Avatar + name on one row — matches the team
+                // scorecard structure (avatar 48 + Flexible name)
+                // so the two ranking layouts read as siblings and
+                // the row height shrinks in step with team's.
+                // Solo drops the crest slot (no crew badge) and
+                // renders just the single player instead of
+                // iterating members.
                 Expanded(
-                  child: Text(
-                    player.name,
-                    style: GoogleFonts.merriweather(
-                        fontSize: 18,
-                        color: _sailWhite,
-                        fontWeight: FontWeight.w600,
-                        shadows: _treasureTextShadows),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        PirateAvatarWidget(
+                          player: player,
+                          themeIndex: game.playerPirateThemes[playerId] ?? 0,
+                          size: 48,
+                          isActive: false,
+                        ),
+                        const SizedBox(width: 16),
+                        Flexible(
+                          child: Text(
+                            player.name,
+                            style: GoogleFonts.pirataOne(
+                                fontSize: 22,
+                                color: _sailWhite,
+                                shadows: _treasureTextShadows),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 // Score
@@ -1201,17 +1236,16 @@ class _TreasureDivideResultsScreenState
                               isActive: false,
                             );
                           }),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 16),
                           Flexible(
                             child: Text(
                               playerProvider
                                       .getPlayerById(members[i])
                                       ?.name ??
                                   members[i],
-                              style: GoogleFonts.merriweather(
-                                  fontSize: 17,
+                              style: GoogleFonts.pirataOne(
+                                  fontSize: 22,
                                   color: _sailWhite,
-                                  fontWeight: FontWeight.w500,
                                   shadows: _treasureTextShadows),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

@@ -1198,8 +1198,17 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           // adds the crew header at the top and the on-deck teammate
           // row at the bottom.
           const baselineWidth = 400.0;
+          // Solo baseline bumped 680 → 750 and team 940 → 1000 to
+          // account for PirataOne / Merriweather line-height at
+          // ~1.35× font size (my earlier estimate of ~1.15 was
+          // optimistic). Worst-case solo content — avatar 360 +
+          // 2×44pt (name+score) + 20pt Halved + 32pt round + spacers
+          // + 55px dart row + skip button — renders at ~700 px at
+          // scale 1.0, not the ~660 I first calculated. Same
+          // adjustment applied to team (adds crew header + on-deck
+          // row on top of the solo baseline).
           final baselineHeight =
-              (isTeam ? 940.0 : 680.0) + topPadBaseline + bottomPadBaseline;
+              (isTeam ? 1000.0 : 750.0) + topPadBaseline + bottomPadBaseline;
           final scale = math
               .min(
                 constraints.maxWidth / baselineWidth,
