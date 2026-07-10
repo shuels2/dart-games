@@ -1243,19 +1243,20 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             ? MainAxisAlignment.spaceBetween
             : MainAxisAlignment.end,
         children: [
-          // ── Top: invisible placeholder for the crew header. Real
+          // ── Top: spatial placeholder for the crew header. Real
           //         header is painted from the Stack overlay below so
-          //         pirate-hat overflow can't cover it.
+          //         pirate-hat overflow can't cover it. We used to
+          //         render an invisible Visibility(...) copy of
+          //         _buildActiveCrewHeader here to reserve space,
+          //         but that copy contained a "Crew Treasure:" Text
+          //         widget that find.textContaining picks up in
+          //         addition to the visible overlay — breaking
+          //         findsOneWidget assertions. A plain SizedBox
+          //         reserves the same vertical footprint (135 * scale
+          //         is the crest's height, which is the taller Row
+          //         child) with zero findable widgets in the tree.
           if (isTeam && activeTeamId != null)
-            Visibility(
-              visible: false,
-              maintainSize: true,
-              maintainAnimation: true,
-              maintainState: true,
-              child: _buildActiveCrewHeader(provider, game,
-                  playerProvider, activeTeamId, nextTeammateId, scale,
-                  isPlaceholder: true),
-            ),
+            SizedBox(height: 135 * scale),
 
           // ── Middle: avatar + player stats + Skip button ──
           Column(
@@ -1561,14 +1562,8 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     PlayerProvider playerProvider,
     String teamId,
     String? nextTeammateId,
-    double scale, {
-    // When true, this header is being rendered as the invisible
-    // spatial placeholder inside the Column base of the active-tile
-    // Stack. Widget keys are stripped on the placeholder so the
-    // visible overlay copy (rendered with isPlaceholder:false) is
-    // the sole match for `find.byKey(activeCrewCrest)`.
-    bool isPlaceholder = false,
-  }) {
+    double scale,
+  ) {
     // nextTeammateId retained for signature compatibility but the
     // teammate is now surfaced by the bottom on-deck bar; the crew
     // header no longer needs the resolved Player.
@@ -1612,9 +1607,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       children: [
         if (crestPath != null) ...[
           SizedBox(
-            key: isPlaceholder
-                ? null
-                : TreasureDivideGameKeys.activeCrewCrest,
+            key: TreasureDivideGameKeys.activeCrewCrest,
             width: 135 * scale,
             height: 135 * scale,
             child: Image(
@@ -2071,21 +2064,14 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     // keeps the whole text block roughly the crest's height and
     // stops the tile from overflowing the 235px strip when the
     // halved indicator is visible.
-    // isPlaceholder:true strips widget keys so the invisible spatial
-    // placeholder (rendered inside the base Column of the Stack) does
-    // not collide with the visible overlay copy. Tests looking up
-    // crewCrest/crewTreasureScore/crewRoundStatus by teamId must
-    // return exactly ONE match — the visible one on top.
-    Widget textColumn({bool isPlaceholder = false}) => Row(
+    Widget textColumn() => Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (crestPath != null) ...[
               SizedBox(
-                key: isPlaceholder
-                    ? null
-                    : TreasureDivideGameKeys.crewCrest(teamId),
+                key: TreasureDivideGameKeys.crewCrest(teamId),
                 width: 75,
                 height: 75,
                 child: Image(
@@ -2108,9 +2094,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 children: [
                   Text(
                     '$treasure gold',
-                    key: isPlaceholder
-                        ? null
-                        : TreasureDivideGameKeys.crewTreasureScore(teamId),
+                    key: TreasureDivideGameKeys.crewTreasureScore(teamId),
                     style: GoogleFonts.merriweather(
                       fontSize: 30,
                       color: _treasureGold,
@@ -2122,9 +2106,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                   ),
                   if (timesHalved > 0)
                     Text(
-                      key: isPlaceholder
-                          ? null
-                          : TreasureDivideGameKeys.crewRoundStatus(teamId),
+                      key: TreasureDivideGameKeys.crewRoundStatus(teamId),
                       '${game.quarterItEnabled ? "Quartered" : "Halved"} '
                       '$timesHalved ${timesHalved == 1 ? "time" : "times"}',
                       style: GoogleFonts.merriweather(
@@ -2173,13 +2155,14 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Visibility(
-                visible: false,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: textColumn(isPlaceholder: true),
-              ),
+              // Spatial placeholder for the text column overlay above.
+              // Used to render an invisible copy of textColumn() to
+              // reserve the exact height, but that copy's "N gold" /
+              // "Halved N times" Text widgets were still findable via
+              // find.textContaining. A plain SizedBox reserves the
+              // same vertical footprint (75 = crest height, the taller
+              // Row child in textColumn) with zero findable widgets.
+              const SizedBox(height: 75),
               // Spacer between the text block and the avatar row —
               // bumped 6 → 26 so the avatars sit ~20% of the avatar
               // size lower down the tile without touching the crest

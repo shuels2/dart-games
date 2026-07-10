@@ -514,9 +514,12 @@ void main() {
       print('SCREENSHOT: File 2 complete.');
 
       // Overflow trap — see treasure_divide_screenshot_test.dart for the
-      // rationale. Surfaces every layout error via the log's
-      // failureDetails field so we can pinpoint the overflowing widget.
+      // rationale. Drains the framework's exception queue so the
+      // aggregate "Multiple exceptions (N)" report doesn't shadow the
+      // consolidated dump — the errors are already captured in
+      // overflowTrapMessages verbatim.
       if (overflowTrapMessages.isNotEmpty) {
+        while (tester.binding.takeException() != null) {}
         final dump = overflowTrapMessages
             .asMap()
             .entries

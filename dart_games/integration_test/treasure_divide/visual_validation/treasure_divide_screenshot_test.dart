@@ -392,13 +392,18 @@ void main() {
       print('SCREENSHOT: === PART 4 COMPLETE ===');
       print('SCREENSHOT: File 1 complete.');
 
-      // Overflow trap — dump every layout-error captured by main.dart's
+      // Overflow trap — dump every FlutterError captured by main.dart's
       // FlutterError.onError wrapper (enabled via
-      // --dart-define=OVERFLOW_TRAP=1). Throwing surfaces the list in
-      // the parallel worker log's `failureDetails` field so we can
-      // pinpoint the exact overflowing widget instead of just seeing
-      // "Multiple exceptions (N)".
+      // --dart-define=OVERFLOW_TRAP=true). Drain the framework's own
+      // exception queue FIRST so its "Multiple exceptions (N)"
+      // aggregate at tearDown doesn't shadow our consolidated dump —
+      // every error we're draining has ALREADY been captured verbatim
+      // into overflowTrapMessages (with a [overflow]/[key]/[assert]/
+      // [other] category tag), so no signal is lost. Then throw
+      // once with the full list, which becomes the sole entry in the
+      // per-test log's `failureDetails` field.
       if (overflowTrapMessages.isNotEmpty) {
+        while (tester.binding.takeException() != null) {}
         final dump = overflowTrapMessages
             .asMap()
             .entries
