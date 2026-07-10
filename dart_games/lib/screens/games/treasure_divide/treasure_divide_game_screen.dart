@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
@@ -1162,21 +1163,49 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       }
     }
 
+    // Vertical padding baselines — top/bottom pad the CONTENT away
+    // from the tile edges. Applied INSIDE the LayoutBuilder (as
+    // scaled `Padding`) so the pad shrinks with the responsive scale
+    // factor and the outer container doesn't grow. The horizontal
+    // 10 px pad stays on the Container itself because it never
+    // participates in the scale calc (width baseline is already
+    // wide relative to horizontal content).
+    final topPadBaseline = isTeam ? 16.0 : 2.0;
+    final bottomPadBaseline = isTeam ? 16.0 : 24.0;
     return Container(
-      // Team mode: symmetric 24px top/bottom padding so the crew
-      // badge floats near the top and the "Up next" row mirrors it at
-      // the bottom. Solo mode keeps its tight 2px so the centered
-      // content isn't pushed downward on a shorter tile.
       margin: const EdgeInsets.fromLTRB(6, 2, 6, 2),
-      padding: isTeam
-          ? const EdgeInsets.fromLTRB(10, 16, 10, 16)
-          : const EdgeInsets.fromLTRB(10, 2, 10, 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: _oceanTeal.withOpacity(0.4),
         borderRadius: BorderRadius.circular(12),
         border:
             Border.all(color: _treasureGold.withOpacity(0.5), width: 2),
       ),
+      // Responsive scaling: the tile's fixed-size children
+      // (avatar 360, name 44pt, dart indicators 55, crew crest 135,
+      // on-deck avatar 88, …) are all sized for the max viewport
+      // (~1920×1080). When the browser window / screen shrinks the
+      // tile's constraints shrink with it, so we compute a uniform
+      // scale factor from the actual constraints against a baseline
+      // and multiply every fixed dimension by it — including the
+      // vertical padding below.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Baseline dimensions the tile is designed for at scale=1.0.
+          // Height includes worst-case content + the top/bottom pad
+          // baselines above; multiplying baseline by scale gives us
+          // the total vertical footprint at that scale. Team baseline
+          // adds the crew header at the top and the on-deck teammate
+          // row at the bottom.
+          const baselineWidth = 400.0;
+          final baselineHeight =
+              (isTeam ? 940.0 : 680.0) + topPadBaseline + bottomPadBaseline;
+          final scale = math
+              .min(
+                constraints.maxWidth / baselineWidth,
+                constraints.maxHeight / baselineHeight,
+              )
+              .clamp(0.5, 1.0);
       // Stack so the crew header can paint IN FRONT of the active
       // player's avatar + theme decorations (pirate hats extend
       // upward outside the 360px avatar box via Clip.none and would
@@ -1186,18 +1215,24 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       // rendered again as a Stack overlay (last child) so it paints
       // on top of everything below. Solo mode skips the overlay
       // since there's no crew header to protect.
-      child: Stack(
+      return Padding(
+        padding: EdgeInsets.only(
+          top: topPadBaseline * scale,
+          bottom: bottomPadBaseline * scale,
+        ),
+        child: Stack(
         alignment: Alignment.topCenter,
         clipBehavior: Clip.none,
         children: [
           Column(
         // Team mode gets spaceBetween — crew header pinned to the top
         // edge, on-deck row pinned to the bottom edge, middle content
-        // in between. Solo mode falls back to center so the single
-        // middle group sits vertically centered as before.
+        // in between. Solo mode uses end so the middle group hugs the
+        // bottom of the tile (no on-deck row underneath it) — reduces
+        // the empty gap at the bottom that centering was leaving.
         mainAxisAlignment: isTeam
             ? MainAxisAlignment.spaceBetween
-            : MainAxisAlignment.center,
+            : MainAxisAlignment.end,
         children: [
           // ── Top: invisible placeholder for the crew header. Real
           //         header is painted from the Stack overlay below so
@@ -1209,40 +1244,35 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               maintainAnimation: true,
               maintainState: true,
               child: _buildActiveCrewHeader(provider, game,
-                  playerProvider, activeTeamId, nextTeammateId),
+                  playerProvider, activeTeamId, nextTeammateId, scale),
             ),
 
           // ── Middle: avatar + player stats + Skip button ──
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Player avatar — kept at 360 in both modes.
+              // Player avatar — 360 baseline, scaled by responsive factor.
               SizedBox(
                 key: TreasureDivideGameKeys.playerAvatar,
-                width: 360,
-                height: 360,
+                width: 360 * scale,
+                height: 360 * scale,
                 child: currentPlayer != null
                     ? PirateAvatarWidget(
                         player: currentPlayer,
                         themeIndex: _themePreviewOverride ??
                             game.playerPirateThemes[currentPlayer.id] ??
                             0,
-                        size: 360,
+                        size: 360 * scale,
                         isActive: true,
                       )
                     : const SizedBox.shrink(),
               ),
-              // No spacer here — the trim from 8 → 4 → 0 was needed
-              // to keep the active-panel Column from overflowing the
-              // 622px constraint in solo mode. Avatar sits directly
-              // above the player name; the avatar's own bottom edge
-              // is the visual gap.
 
               // Player name.
               Text(
                 currentPlayer?.name ?? '',
                 style: GoogleFonts.pirataOne(
-                  fontSize: 44,
+                  fontSize: 44 * scale,
                   color: _sailWhite,
                   shadows: _treasureTextShadows,
                 ),
@@ -1256,7 +1286,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 key: TreasureDivideGameKeys.treasureScore,
                 '$displayScore gold',
                 style: GoogleFonts.pirataOne(
-                  fontSize: 44,
+                  fontSize: 44 * scale,
                   color: _treasureGold,
                   shadows: _treasureTextShadows,
                 ),
@@ -1269,7 +1299,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                   '${game.quarterItEnabled ? "Quartered" : "Halved"} '
                   '$timesHalved ${timesHalved == 1 ? "time" : "times"}',
                   style: GoogleFonts.merriweather(
-                    fontSize: 20,
+                    fontSize: 20 * scale,
                     color: const Color(0xFFFF8C42),
                     shadows: _treasureTextShadows,
                   ),
@@ -1281,23 +1311,23 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 key: TreasureDivideGameKeys.roundScore,
                 '+$roundScore this round',
                 style: GoogleFonts.merriweather(
-                  fontSize: 32,
+                  fontSize: 32 * scale,
                   color: _sailWhite,
                   shadows: _treasureTextShadows,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 12 * scale),
 
               // Dart indicators.
               _buildDartIndicators(
-                  dartsThisTurn, dartsThrown, segments, game),
-              // No spacer here — same rationale as after the avatar
-              // (see comment above). Skip Turn sits directly under
-              // the dart indicators; the button's own OutlinedButton
-              // padding is the visual gap.
+                  dartsThisTurn, dartsThrown, segments, game, scale),
+              // Same 12 * scale gap below the dart indicators as
+              // above so the indicator row is symmetrically spaced
+              // between the round score and the Skip Turn button.
+              SizedBox(height: 12 * scale),
 
-              // Skip Turn button — +4pt on the label (23 → 27).
+              // Skip Turn button.
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
@@ -1339,18 +1369,13 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: _treasureGold, width: 2),
                     foregroundColor: _treasureGold,
-                    // Vertical padding trimmed 10 → 6 to reclaim ~8px
-                    // of vertical space so the active-panel Column
-                    // content fits inside the panel constraint in
-                    // solo mode without the RenderFlex overflow that
-                    // was breaking the parallel UI test runner.
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: 12 * scale, vertical: 6 * scale),
                   ),
                   child: Text(
                     'Skip Turn',
                     style: GoogleFonts.pirataOne(
-                        fontSize: 23, color: _treasureGold),
+                        fontSize: 23 * scale, color: _treasureGold),
                   ),
                 ),
               ),
@@ -1368,6 +1393,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               game,
               playerProvider,
               activeTeamId,
+              scale,
             )
           else
             // Placeholder to keep spaceBetween anchoring middle group
@@ -1384,8 +1410,11 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           // placeholder position via alignment: topCenter.
           if (isTeam && activeTeamId != null)
             _buildActiveCrewHeader(provider, game, playerProvider,
-                activeTeamId, nextTeammateId),
+                activeTeamId, nextTeammateId, scale),
         ],
+      ),
+      );
+        },
       ),
     );
   }
@@ -1397,6 +1426,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     TreasureDivideGame game,
     PlayerProvider playerProvider,
     String activeTeamId,
+    double scale,
   ) {
     final members = game.teamPlayers[activeTeamId] ?? const [];
     // Solo crew (1 player) → no teammate to surface, so drop the
@@ -1407,11 +1437,12 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     // active crew is solo so we don't render it twice.
     if (members.length < 2) {
       return Padding(
-        padding: const EdgeInsets.only(top: 10),
+        padding: EdgeInsets.only(top: 10 * scale),
         child: Center(
           child: Container(
             key: TreasureDivideGameKeys.soloCrewBadge,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+            padding: EdgeInsets.symmetric(
+                horizontal: 18 * scale, vertical: 7 * scale),
             decoration: BoxDecoration(
               color: _plankBrown,
               borderRadius: BorderRadius.circular(25),
@@ -1420,7 +1451,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             child: Text(
               'Solo Crew: 6 darts',
               style: GoogleFonts.pirataOne(
-                fontSize: 25,
+                fontSize: 25 * scale,
                 color: _sailWhite,
                 shadows: _treasureTextShadows,
               ),
@@ -1451,32 +1482,30 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     // shifts paint only, leaving every other child of the panel
     // exactly where it was.
     return Transform.translate(
-      offset: const Offset(0, 10),
+      offset: Offset(0, 10 * scale),
       child: Padding(
-      padding: const EdgeInsets.only(top: 10),
+      padding: EdgeInsets.only(top: 10 * scale),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Themed avatar off to the LEFT of the name — was 73 (30%
-          // larger than the original 56); +20% again → 88, matching
-          // the extra visual weight the enlarged badge / gold up
-          // top now carry.
+          // Themed avatar off to the LEFT of the name — 88 baseline,
+          // scaled with the tile.
           SizedBox(
-            width: 88,
-            height: 88,
+            width: 88 * scale,
+            height: 88 * scale,
             child: PirateAvatarWidget(
               player: teammate,
               themeIndex: _themePreviewOverride ??
                   game.playerPirateThemes[teammate.id] ??
                   0,
-              size: 88,
+              size: 88 * scale,
               isActive: false,
             ),
           ),
           // Extra breathing room between the on-deck avatar and the
           // text block so the two feel like separate elements rather
           // than crowding each other.
-          const SizedBox(width: 28),
+          SizedBox(width: 28 * scale),
           Flexible(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1484,9 +1513,8 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               children: [
                 Text(
                   hasPlayed ? teammate.name : 'Up next: ${teammate.name}',
-                  // +6pt (22 → 28) to match the larger avatar.
                   style: GoogleFonts.pirataOne(
-                    fontSize: 28,
+                    fontSize: 28 * scale,
                     color: _sailWhite,
                     shadows: _treasureTextShadows,
                   ),
@@ -1498,9 +1526,8 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                     teammateHaul > 0
                         ? '+$teammateHaul gold this round'
                         : 'No gold this round',
-                    // +4pt (14 → 18).
                     style: GoogleFonts.merriweather(
-                      fontSize: 18,
+                      fontSize: 18 * scale,
                       color: teammateHaul > 0
                           ? _treasureGold
                           : _sailWhite.withOpacity(0.7),
@@ -1524,6 +1551,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     PlayerProvider playerProvider,
     String teamId,
     String? nextTeammateId,
+    double scale,
   ) {
     // nextTeammateId retained for signature compatibility but the
     // teammate is now surfaced by the bottom on-deck bar; the crew
@@ -1567,10 +1595,10 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (crestPath != null) ...[
-          Container(
+          SizedBox(
             key: TreasureDivideGameKeys.activeCrewCrest,
-            width: 135,
-            height: 135,
+            width: 135 * scale,
+            height: 135 * scale,
             child: Image(
               image: ResizeImage(
                 AssetImage(crestPath),
@@ -1581,11 +1609,11 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               errorBuilder: (_, __, ___) => Icon(
                 Icons.shield,
                 color: _treasureGold,
-                size: 108,
+                size: 108 * scale,
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14 * scale),
         ],
         Flexible(
           child: Text.rich(
@@ -1594,7 +1622,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 TextSpan(
                   text: 'Crew Treasure:\n',
                   style: GoogleFonts.merriweather(
-                    fontSize: 30,
+                    fontSize: 30 * scale,
                     color: _sailWhite,
                     shadows: _treasureTextShadows,
                   ),
@@ -1602,7 +1630,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 TextSpan(
                   text: '$crewTreasure gold',
                   style: GoogleFonts.merriweather(
-                    fontSize: 30,
+                    fontSize: 30 * scale,
                     color: _treasureGold,
                     fontWeight: FontWeight.bold,
                     shadows: _treasureTextShadows,
@@ -1624,6 +1652,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     int dartsThrown,
     List<String> segments,
     TreasureDivideGame game,
+    double scale,
   ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1631,12 +1660,13 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
         for (int i = 0; i < dartsThisTurn; i++)
           Container(
             key: TreasureDivideGameKeys.dartIndicator(i),
-            margin: const EdgeInsets.symmetric(horizontal: 6),
-            width: 55,
-            height: 55,
+            margin: EdgeInsets.symmetric(horizontal: 6 * scale),
+            width: 55 * scale,
+            height: 55 * scale,
             decoration:
                 _dartIndicatorDecoration(i, dartsThrown, segments, game),
-            child: _dartIndicatorChild(i, dartsThrown, segments, game),
+            child:
+                _dartIndicatorChild(i, dartsThrown, segments, game, scale),
           ),
       ],
     );
@@ -1705,8 +1735,8 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     );
   }
 
-  Widget? _dartIndicatorChild(
-      int index, int dartsThrown, List<String> segments, TreasureDivideGame game) {
+  Widget? _dartIndicatorChild(int index, int dartsThrown,
+      List<String> segments, TreasureDivideGame game, double scale) {
     if (index >= dartsThrown) return null;
     final seg = index < segments.length ? segments[index] : '';
     final isMiss = seg == 'Miss' || seg == 'None' || seg.isEmpty;
@@ -1714,14 +1744,13 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     // background tint (blood-red wash for misses, island-green wash
     // for hits) already conveys the outcome, and the previous dark
     // colored text on a dark colored tint had poor contrast against
-    // the per-state ring color. Fonts bumped 18 → 22 / 16 → 20 (~25%)
-    // to match the larger 55 px circles.
+    // the per-state ring color.
     if (isMiss) {
       return Center(
         child: Text(
           'X',
           style: GoogleFonts.merriweather(
-            fontSize: 25,
+            fontSize: 25 * scale,
             fontWeight: FontWeight.bold,
             color: _sailWhite,
           ),
@@ -1737,7 +1766,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       child: Text(
         scoreText,
         style: GoogleFonts.merriweather(
-          fontSize: 23,
+          fontSize: 23 * scale,
           fontWeight: FontWeight.bold,
           color: _sailWhite,
         ),

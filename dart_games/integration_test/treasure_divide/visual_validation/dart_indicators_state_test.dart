@@ -7,9 +7,9 @@
 //   - After dart 3 (hit): indicator 2 shows hit style (green border)
 //
 // Uses _dartIndicatorDecoration logic:
-//   - index >= dartsThrown → empty (outlined circle, Key = td_game_dart_indicator_N)
+//   - index >= dartsThrown → empty (sailWhite outlined circle, Key = td_game_dart_indicator_N)
 //   - miss → bloodRed border + opacity background
-//   - hit → treasureGold border + islandGreen opacity background
+//   - hit → treasureGold border + treasureGold opacity background
 //
 // Asserts via BoxDecoration.border color inspection.
 import 'package:flutter/material.dart';
@@ -21,13 +21,16 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/game_ui_config.dart';
-import '../../shared/dart_throw_helpers.dart';
 
 final config = GameUIConfig.treasureDivide();
 
 const Color _bloodRed = Color(0xFFC41E3A);
 const Color _treasureGold = Color(0xFFFFD700);
-const Color _islandGreen = Color(0xFF228B22);
+// Empty (unthrown) dart-indicator ring color — kept distinct from the
+// treasure-gold "you hit the target" ring so the hit ring carries
+// meaning. Reserved-gold-for-hits was a deliberate visual choice; see
+// _dartIndicatorDecoration in treasure_divide_game_screen.dart.
+const Color _sailWhite = Color(0xFFFFF8E7);
 
 /// Get the border color from the Container widget at [key].
 Color? _getBorderColor(WidgetTester tester, Key key) {
@@ -54,16 +57,18 @@ void main() {
     await UITestHelpers.resetServerState();
     await GameSetupHelpers.setupAndStartTreasureDivide(tester, config);
 
-    // ── Before any dart: all 3 indicators should show empty (gold border) ──
+    // ── Before any dart: all 3 indicators should show empty (sail-white border) ──
+    // Empty ring is sail-white so treasure-gold can carry the "hit" meaning
+    // exclusively.
     for (int i = 0; i < 3; i++) {
       expect(
           find.byKey(TreasureDivideGameKeys.dartIndicator(i)), findsOneWidget,
           reason: 'Dart indicator $i should be visible at game start');
       final borderColor =
           _getBorderColor(tester, TreasureDivideGameKeys.dartIndicator(i));
-      expect(borderColor, equals(_treasureGold),
+      expect(borderColor, equals(_sailWhite),
           reason:
-              'Dart indicator $i should have gold border (empty/unthrown state) '
+              'Dart indicator $i should have sail-white border (empty/unthrown state) '
               'at game start, got $borderColor');
     }
 
@@ -93,13 +98,13 @@ void main() {
             'Dart indicator 0 should have gold border after a hit, '
             'got $borderAfterHit');
 
-    // Indicators 1 and 2 should still be empty (gold border, not yet thrown)
+    // Indicators 1 and 2 should still be empty (sail-white border, not yet thrown)
     for (int i = 1; i < 3; i++) {
       final bc =
           _getBorderColor(tester, TreasureDivideGameKeys.dartIndicator(i));
-      expect(bc, equals(_treasureGold),
+      expect(bc, equals(_sailWhite),
           reason:
-              'Dart indicator $i should still be empty (gold border) '
+              'Dart indicator $i should still be empty (sail-white border) '
               'after only 1 dart thrown, got $bc');
     }
 

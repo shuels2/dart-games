@@ -419,6 +419,14 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
           final coords = _getCoords();
           final safeIndex =
               widget.currentRoundIndex.clamp(0, widget.numberOfRounds - 1);
+          // HUD elements (Island pill, QUARTER IT pill, target circles,
+          // target labels) are sized against a 1200 px map baseline.
+          // When the map fits into a smaller viewport we shrink them
+          // proportionally so they don't dominate the map graphic on
+          // tablets / small windows. Clamp keeps the HUD legible on
+          // very small viewports and prevents oversizing on very
+          // large ones.
+          final mapScale = (w / 1200.0).clamp(0.5, 1.2);
 
           return Center(
             child: SizedBox(
@@ -505,11 +513,12 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                   final isCompleted = i < safeIndex;
                   final isFinal = i == widget.numberOfRounds - 1;
 
-                  // Marker radius — bumped another 40% to 56/73 so the
-                  // target labels read at a glance across the much
-                  // larger HUD map. Cap raised to 80 to allow the new
-                  // sizes; floor stays at 20 for tiny viewports.
-                  double radius = isCurrent ? 73.0 : 56.0;
+                  // Marker radius — 73 (current) / 56 (other) baseline,
+                  // scaled with the map so circles shrink proportionally
+                  // when the viewport shrinks. Floor 20 keeps them
+                  // legible on very small screens; ceiling 80 keeps
+                  // them from swamping the map on large ones.
+                  double radius = (isCurrent ? 73.0 : 56.0) * mapScale;
                   radius = radius.clamp(20.0, 80.0);
 
                   final markerColor = isCurrent
@@ -717,17 +726,19 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
 
                 // ── Layer 5: Round counter pill + QUARTER IT badge ────────
                 // Both elements sit on the same row in the top-left of
-                // the map. Sized 75% larger than the prior standalone
-                // counter pill (font 14 → 25, padding scaled to match).
+                // the map. Baseline sizes (18h/7v padding, 25pt font)
+                // are multiplied by [mapScale] so the pills shrink with
+                // the map on smaller viewports.
                 Positioned(
-                  top: 8,
-                  left: 8,
+                  top: 8 * mapScale,
+                  left: 8 * mapScale,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 7),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 18 * mapScale,
+                            vertical: 7 * mapScale),
                         decoration: BoxDecoration(
                           color: widget.plankBrown,
                           borderRadius: BorderRadius.circular(25),
@@ -737,13 +748,13 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                         child: Text(
                           'Island ${(safeIndex + 1)} / ${widget.numberOfRounds}',
                           style: GoogleFonts.pirataOne(
-                            fontSize: 25,
+                            fontSize: 25 * mapScale,
                             color: widget.treasureGold,
                           ),
                         ),
                       ),
                       if (widget.quarterItEnabled) ...[
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12 * mapScale),
                         Container(
                           key: widget.quarterItBadgeKey,
                           // Padding, border radius, font size and border
@@ -752,8 +763,9 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                           // color uses sail white to match the badge's
                           // text color (mirrors the Island pill, where
                           // the border color matches its text color).
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 7),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 18 * mapScale,
+                              vertical: 7 * mapScale),
                           decoration: BoxDecoration(
                             color: widget.bloodRed,
                             borderRadius: BorderRadius.circular(25),
@@ -763,7 +775,7 @@ class _TreasureMapWidgetState extends State<TreasureMapWidget>
                           child: Text(
                             'QUARTER IT',
                             style: GoogleFonts.pirataOne(
-                              fontSize: 25,
+                              fontSize: 25 * mapScale,
                               color: widget.sailWhite,
                             ),
                           ),
