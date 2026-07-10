@@ -32,11 +32,28 @@ class VirtualKeyboardScaffold extends StatefulWidget {
 class _VirtualKeyboardScaffoldState extends State<VirtualKeyboardScaffold> {
   bool _manualDismiss = false;
 
+  // Cached MediaQuery captured on inherited-widget changes so build()
+  // never has to call MediaQuery.of(context) directly. The
+  // FocusManager / InputModeService listeners can fire a setState()
+  // right before this widget is unmounted (e.g. during a route pop
+  // that also clears the focus), and the framework may still process
+  // the rebuild against the now-deactivated element. Reading
+  // MediaQuery via .of() on a deactivated context throws
+  // "Looking up a deactivated widget's ancestor is unsafe" —
+  // caching here avoids that entirely.
+  MediaQueryData? _media;
+
   @override
   void initState() {
     super.initState();
     FocusManager.instance.addListener(_onFocusChanged);
     InputModeService.instance.addListener(_onModeChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _media = MediaQuery.maybeOf(context);
   }
 
   @override
@@ -72,7 +89,11 @@ class _VirtualKeyboardScaffoldState extends State<VirtualKeyboardScaffold> {
   @override
   Widget build(BuildContext context) {
     final show = _shouldShow;
-    final media = MediaQuery.of(context);
+    // Prefer the cached MediaQuery so we don't touch inherited widgets
+    // via the (possibly deactivated) context. Falls back to .of() on
+    // the extremely unlikely path where didChangeDependencies hasn't
+    // fired yet (e.g. the very first build after mount).
+    final media = _media ?? MediaQuery.of(context);
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: InputModeService.instance.observePointer,

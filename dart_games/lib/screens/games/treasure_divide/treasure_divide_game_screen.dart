@@ -1523,7 +1523,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasPlayed ? teammate.name : 'Up next: ${teammate.name}',
+                  hasPlayed ? teammate.name : 'Up Next: ${teammate.name}',
                   style: GoogleFonts.pirataOne(
                     fontSize: 28 * scale,
                     color: _sailWhite,
