@@ -69,7 +69,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
     expect(ProviderHelpers.getTreasureDividePlayerTotal(tester, p1.id),
         equals(60),
         reason: '[DIAG halve_timing] P1 = 60 after 3× S20');
@@ -83,7 +82,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
     expect(ProviderHelpers.getTreasureDivideCurrentRoundIndex(tester),
         equals(1),
         reason: '[DIAG halve_timing] round should have advanced to 1');
@@ -101,7 +99,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // Provider-level checks: round NOT yet advanced, P2 now active, P1's
     // halve counter already 1.
@@ -154,7 +151,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     expect(ProviderHelpers.getTreasureDivideCurrentRoundIndex(tester),
         equals(2),
@@ -173,7 +169,6 @@ void main() {
             '[DIAG halve_timing] P2 opponent tile must display "Halved 1 time" '
             'after P2 all-miss turn');
 
-    suppressLayoutExceptionsForCleanup();
   });
 
   testWidgets(
@@ -204,7 +199,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     expect(ProviderHelpers.getTreasureDivideCurrentRoundIndex(tester),
         equals(1));
@@ -216,7 +210,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // Provider: counter = 1 immediately, round has NOT advanced.
     expect(ProviderHelpers.getTreasureDivideCurrentRoundIndex(tester),
@@ -257,6 +250,5 @@ void main() {
         reason:
             '[DIAG halve_timing/qtr] P1 opponent tile gold must read "15 gold" after quartering');
 
-    suppressLayoutExceptionsForCleanup();
   });
 }

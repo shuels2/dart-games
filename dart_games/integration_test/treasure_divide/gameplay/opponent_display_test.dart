@@ -41,7 +41,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     final p1ScoreAfterTurn = ProviderHelpers.getTreasureDividePlayerTotal(tester, p1.id);
     expect(p1ScoreAfterTurn, greaterThan(0),
@@ -56,7 +55,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // P2 started at 0 so halving = 0
     final p2ScoreAfterTurn = ProviderHelpers.getTreasureDividePlayerTotal(tester, p2.id);
@@ -79,7 +77,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     final p3ScoreAfterTurn =
         ProviderHelpers.getTreasureDividePlayerTotal(tester, p3.id);
@@ -94,7 +91,5 @@ void main() {
         equals(0),
         reason: '[DIAG opp_display] P2 score not overwritten by P3 turn');
 
-    // Suppress layout exceptions during cleanup pump (TD game screen layout bug).
-    suppressLayoutExceptionsForCleanup();
   });
 }

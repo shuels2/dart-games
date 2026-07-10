@@ -62,8 +62,5 @@ void main() {
             'Every selected player should show an "Assign team" trailing '
             'button after switching to Team+Manual');
 
-    // Drain accumulated RenderFlex overflow exceptions from TD menu layout.
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

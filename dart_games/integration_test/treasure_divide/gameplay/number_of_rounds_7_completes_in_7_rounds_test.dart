@@ -31,14 +31,12 @@ void main() {
     for (int i = 0; i < 300; i++) {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      drainExceptions(tester);
       if (find.byKey(TreasureDivideResultsKeys.playAgainButton).evaluate().isNotEmpty) {
         break;
       }
     }
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
-    drainExceptions(tester);
 
     expect(find.byKey(TreasureDivideResultsKeys.playAgainButton), findsOneWidget,
         reason: '[DIAG 7rounds] Results screen (SAIL AGAIN button) should be visible');

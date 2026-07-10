@@ -33,7 +33,6 @@ void main() {
     await tester.pump();
     expect(find.byKey(TreasureDivideGameKeys.quarterItBadge), findsWidgets,
         reason: '[DIAG quarter_it] QUARTER IT badge should be visible when option is ON');
-    drainExceptions(tester);
 
     // ── Round 0: P1 hits S20×3 = 60 gold ─────────────────────────────────
     // Default 7-round sequence[0] = 20
@@ -48,7 +47,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // P1 score = 60
     final p1ScoreAfterRound0 =
@@ -63,7 +61,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // ── Round 1: P1 misses all (quarter wipeout) ──────────────────────────
     expect(ProviderHelpers.getTreasureDivideCurrentRoundIndex(tester), equals(1),
@@ -74,7 +71,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // P1 score = floor(60 / 4) = 15
     final p1ScoreAfterRound1 =
@@ -82,7 +78,5 @@ void main() {
     expect(p1ScoreAfterRound1, equals(15),
         reason: '[DIAG quarter_it] P1 score should be floor(60/4)=15 after quarter wipeout');
 
-    // Suppress layout exceptions during cleanup pump (TD game screen layout bug).
-    suppressLayoutExceptionsForCleanup();
   });
 }

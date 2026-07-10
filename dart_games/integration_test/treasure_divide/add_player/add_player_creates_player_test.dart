@@ -58,8 +58,5 @@ void main() {
         reason:
             '[DIAG td_ap_creates] "Test Pirate Alpha" not found in player panel after add');
 
-    // Clear any accumulated layout exceptions from the known TD overflow
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

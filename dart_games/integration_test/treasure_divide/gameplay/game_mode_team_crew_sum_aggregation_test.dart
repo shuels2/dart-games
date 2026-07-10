@@ -52,7 +52,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // Crew A turn 2 (all misses)
     await throwMissDirect(tester);
@@ -61,7 +60,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // ── Now crew B is active ───────────────────────────────────────────────
     // After _advanceTeamPlayer advances past crew A, activeTeamId = 'team_2'
@@ -87,7 +85,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // ── Crew B's P2 throws 3 misses ───────────────────────────────────────
     expect(provider.currentPlayerId, equals(crewBMembers[1]),
@@ -99,7 +96,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // ── After crew B completes round 0: crew haul = P1's hits + P2's 0 ────
     // totalForTeam includes committed round scores (after takeout).
@@ -108,7 +104,5 @@ void main() {
     expect(crewBTreasure, equals(target * 3),
         reason: '[DIAG team_sum] Crew B treasure should be sum=${target * 3} (P1 hit + P2 miss = no wipeout)');
 
-    // Suppress layout exceptions during cleanup pump (TD game screen layout bug).
-    suppressLayoutExceptionsForCleanup();
   });
 }

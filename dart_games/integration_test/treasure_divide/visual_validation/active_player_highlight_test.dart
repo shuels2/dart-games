@@ -43,7 +43,6 @@ void main() {
     // Using takeException() is safe here: it only drains what the Flutter
     // binding has queued; it does NOT suppress errors the way
     // FlutterError.onError=no-op does (which can cause Chrome to crash).
-    tester.binding.takeException();
 
     final provider = ProviderHelpers.getTreasureDivideProvider(tester);
     final game = provider.currentGame!;
@@ -94,7 +93,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pump();
-      tester.binding.takeException();
     }
 
     // Simulate takeout finished to advance to P2.
@@ -105,7 +103,6 @@ void main() {
     DartThrowHelpers.getMockApi(tester)?.simulateTakeoutFinished();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
-    tester.binding.takeException();
 
     // ── After takeout: P2 is now active ───────────────────────────────────
     final newGame = provider.currentGame!;

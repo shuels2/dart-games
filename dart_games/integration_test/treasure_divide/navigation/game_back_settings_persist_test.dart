@@ -113,8 +113,5 @@ void main() {
         reason:
             '[DIAG td_nav_game_back_persist] NavPirate2 not found after back — players not preserved');
 
-    // Clear accumulated layout exceptions from known TD overflow
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

@@ -67,7 +67,6 @@ Future<void> _simulateTakeout(WidgetTester tester) async {
     await tester.pump();
     await tester.pump();
   }
-  tester.binding.takeException();
 }
 
 void main() {
@@ -98,7 +97,6 @@ void main() {
       await _simulateTakeout(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      tester.binding.takeException();
 
       await _throwMissViaMock(tester);
       await _throwMissViaMock(tester);
@@ -106,7 +104,6 @@ void main() {
       await _simulateTakeout(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      tester.binding.takeException();
     }
 
     // Round 6 (Bull): P1 throws Bull×3 → haul=150 pre-edit
@@ -191,7 +188,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
-    tester.binding.takeException();
 
     // Game continues — results screen should NOT be showing yet
     expect(find.byKey(TreasureDivideResultsKeys.playAgainButton), findsNothing,
@@ -206,7 +202,6 @@ void main() {
     await _simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    tester.binding.takeException();
 
     // Game should now be finalized
     expect(provider.hasWinner, isTrue,

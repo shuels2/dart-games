@@ -37,8 +37,6 @@ void main() {
     expect(ProviderHelpers.isTreasureDivideGameActive(tester), isTrue,
         reason: '[DIAG max_player] Game should be active after start');
 
-    // ── Drain any known overflow exceptions from initial render ────────────
-    drainExceptions(tester);
 
     // ── P1 throws 1 dart successfully at 8-player count ───────────────────
     final target = getCurrentRoundTarget(tester);
@@ -46,15 +44,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    // ── Drain overflow exceptions (known TD game header overflow) ─────────
-    drainExceptions(tester);
 
     // ── Still active ──────────────────────────────────────────────────────
     expect(ProviderHelpers.isTreasureDivideGameActive(tester), isTrue,
         reason: '[DIAG max_player] Game should remain active after single dart');
 
-    // Suppress layout exceptions during cleanup pump (TD game screen layout bug).
-    drainExceptions(tester);
-    suppressLayoutExceptionsForCleanup();
   });
 }

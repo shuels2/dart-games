@@ -29,8 +29,6 @@ void main() {
     );
 
     // Drain any initial layout overflow from the game screen render.
-    // Using takeException() is safe: it only drains the binding queue.
-    tester.binding.takeException();
 
     await PlayToCompleteHelpers.tapPlayToComplete(tester);
 

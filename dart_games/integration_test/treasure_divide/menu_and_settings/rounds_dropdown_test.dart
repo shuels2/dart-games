@@ -52,9 +52,5 @@ void main() {
         reason:
             '[DIAG rounds_dropdown] Value 9 not visible after re-selecting default');
 
-    // Clear accumulated RenderFlex overflow exceptions from TD menu layout bug.
-    // FLAG: Known overflow in td_menu_game_mode_toggle and td_menu_assignment_mode_toggle rows.
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

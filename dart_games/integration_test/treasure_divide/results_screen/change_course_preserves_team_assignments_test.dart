@@ -109,12 +109,9 @@ Future<void> _playTeamGameToResults(WidgetTester tester) async {
     }
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    tester.binding.takeException();
   }
 
   await ResultsHelpers.pumpUntilResults(tester, _config);
-  tester.binding.takeException();
-  tester.binding.takeException();
 }
 
 void main() {
@@ -186,7 +183,5 @@ void main() {
             'must have been dropped in the CHANGE COURSE round-trip. '
             'Original: $originalAssignments');
 
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

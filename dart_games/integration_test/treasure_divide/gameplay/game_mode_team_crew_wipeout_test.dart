@@ -60,7 +60,6 @@ void main() {
       await simulateTakeout(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      drainExceptions(tester);
     }
 
     // 4 turns in round 0: crew A P1, crew A P2, crew B P1, crew B P2.
@@ -86,7 +85,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // Turn 2: next player in crew A misses 3 darts + takeout
     await throwMissDirect(tester);
@@ -95,7 +93,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // ── After crew A round-1 wipeout ─────────────────────────────────────
     // timesHalvedPerTeam[crewA] should be 1
@@ -111,7 +108,5 @@ void main() {
             '[DIAG team_wipeout] Crew A treasure should be halved '
             '(was $crewATreasureBefore, now $crewATreasureAfter)');
 
-    // Suppress layout exceptions during cleanup pump (TD game screen layout bug).
-    suppressLayoutExceptionsForCleanup();
   });
 }

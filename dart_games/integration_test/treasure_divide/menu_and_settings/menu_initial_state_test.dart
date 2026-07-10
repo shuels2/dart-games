@@ -154,7 +154,5 @@ void main() {
     // result reflects the assertions above (all of which passed), not the
     // overflow layout errors. Pattern from tiki_golf/team_setup/
     // random_post_shuffle_varies_test.dart line 114.
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

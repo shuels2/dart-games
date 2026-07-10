@@ -138,8 +138,6 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
     await _simulateTakeoutViaMock(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    // Drain any RenderFlex overflow assertions from TD game screen header.
-    tester.binding.takeException();
   }
 
   // Wait for results screen navigation (Play Again button mounts).

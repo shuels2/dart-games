@@ -111,9 +111,5 @@ void main() {
         reason:
             '[DIAG start_btn_manual] SET SAIL! should be ENABLED once all players assigned across ≥2 crews');
 
-    // Clear accumulated RenderFlex overflow exceptions from TD menu layout bug.
-    // FLAG: Known overflow in td_menu_game_mode_toggle and td_menu_assignment_mode_toggle rows.
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

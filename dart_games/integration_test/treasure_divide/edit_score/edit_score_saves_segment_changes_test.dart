@@ -98,7 +98,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump();
     }
-    tester.binding.takeException();
 
     // After takeout: total should still be 180 (committed to round 0)
     final totalAfterTakeout =

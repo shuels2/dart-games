@@ -5,7 +5,6 @@
 //         TreasureDivideGameKeys.crewTile(teamId) for each opponent crew.
 //         Also verify each opponent crew tile shows the crew crest
 //         (TreasureDivideGameKeys.crewCrest) and gold text.
-import 'package:flutter/foundation.dart' show FlutterError, FlutterErrorDetails;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
@@ -20,8 +19,6 @@ void main() {
   testWidgets(
       'Team Mode Gameplay: per-crew tiles show crest and gold for opponent crews',
       (WidgetTester tester) async {
-    // Suppress TD game screen layout overflow exceptions for this test.
-    FlutterError.onError = (FlutterErrorDetails details) {};
 
     await UITestHelpers.resetServerState();
     // N=4 → 2 crews of 2; active crew's tile is NOT in opponent list
@@ -64,7 +61,5 @@ void main() {
               'inside the crew tile (shows "0 gold" at game start)');
     }
 
-    // Drain layout exceptions.
-    tester.binding.takeException();
   });
 }

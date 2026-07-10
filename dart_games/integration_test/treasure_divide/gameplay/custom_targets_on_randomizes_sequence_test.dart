@@ -64,7 +64,6 @@ void main() {
     await tester.pump();
     expect(find.byKey(TreasureDivideGameKeys.customBadge), findsWidgets,
         reason: '[DIAG custom_targets] CUSTOM badge should be visible when Custom Targets ON');
-    drainExceptions(tester);
 
     // ── Second game: reset server + start again, check sequence differs ────
     await UITestHelpers.resetServerState();
@@ -75,7 +74,6 @@ void main() {
       await tester.tap(backFinder.first);
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump();
-      drainExceptions(tester);
     }
 
     // Re-start the game menu from home
@@ -86,7 +84,6 @@ void main() {
     // Re-enable Custom Targets
     await UITestHelpers.addPlayer(tester, 'CustP1', config);
     await UITestHelpers.addPlayer(tester, 'CustP2', config);
-    drainExceptions(tester);
 
     // Enable custom targets switch
     {
@@ -104,7 +101,6 @@ void main() {
     await UITestHelpers.startGame(tester, config);
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
-    drainExceptions(tester);
 
     final game2 = provider.currentGame!;
     final seq2 = List<int>.from(game2.targetSequence);
@@ -125,7 +121,5 @@ void main() {
           reason: '[DIAG custom_targets] Game 2 non-sentinel at index $i should be 1-20');
     }
 
-    // Suppress layout exceptions during cleanup pump (TD game screen layout bug).
-    suppressLayoutExceptionsForCleanup();
   });
 }

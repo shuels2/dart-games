@@ -87,7 +87,5 @@ void main() {
     expect(actualSizes4, equals([2, 2]),
         reason: 'N=4: crews should be [2,2] per spec distribution table');
 
-    // Drain any pending layout exceptions from TD game screen.
-    tester.binding.takeException();
   });
 }

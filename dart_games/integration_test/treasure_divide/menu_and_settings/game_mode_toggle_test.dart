@@ -88,9 +88,5 @@ void main() {
         reason:
             '[DIAG game_mode_toggle] Add player button should still be mounted in Solo mode');
 
-    // Clear accumulated RenderFlex overflow exceptions from TD menu layout bug.
-    // FLAG: Known overflow in td_menu_game_mode_toggle and td_menu_assignment_mode_toggle rows.
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

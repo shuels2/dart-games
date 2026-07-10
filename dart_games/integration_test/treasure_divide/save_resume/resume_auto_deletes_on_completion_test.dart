@@ -88,8 +88,6 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pump();
       }
-      // Drain any persistent overflow exceptions from the TD header
-      tester.binding.takeException();
 
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
@@ -98,8 +96,6 @@ void main() {
     }
 
     await ResultsHelpers.pumpUntilResults(tester, config);
-    tester.binding.takeException();
-    tester.binding.takeException();
 
     // Verify results screen
     expect(config.getPlayAgainButton(), findsOneWidget);

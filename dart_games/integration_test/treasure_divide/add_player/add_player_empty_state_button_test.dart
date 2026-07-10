@@ -57,8 +57,5 @@ void main() {
         reason:
             '[DIAG td_ap_empty_state] Dialog did not close after Cancel tap');
 
-    // Clear any accumulated layout exceptions from the known TD overflow
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

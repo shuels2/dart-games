@@ -102,8 +102,6 @@ Future<void> _playGameToCompletion(WidgetTester tester) async {
     await tester.pump();
     // Drain RenderFlex overflow assertions from the TD game screen (known
     // overflow bug in the header Row — flagged but not fixed per project rules).
-    // Without draining, 763+ accumulated assertions cause the test to fail.
-    tester.binding.takeException();
     turnCount++;
   }
   // Poll for results screen (up to 90s)
@@ -119,9 +117,6 @@ Future<void> _playGameToCompletion(WidgetTester tester) async {
   }
   await tester.pump(const Duration(seconds: 1));
   await tester.pump();
-  // Final drain of any remaining overflow assertions
-  tester.binding.takeException();
-  tester.binding.takeException();
 }
 
 // ==========================================================================

@@ -41,7 +41,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // P1 score = 3 × target
     final p1Score = ProviderHelpers.getTreasureDividePlayerTotal(tester, p1Id);
@@ -58,7 +57,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // P2 score: halving of 0 = 0
     final p2Score = ProviderHelpers.getTreasureDividePlayerTotal(tester, p2Id);
@@ -75,7 +73,5 @@ void main() {
     expect(p1ScoreAfterRound, greaterThan(p2Score),
         reason: '[DIAG solo_scoring] P1 and P2 must have different independent scores');
 
-    // Suppress layout exceptions during cleanup pump (TD game screen layout bug).
-    suppressLayoutExceptionsForCleanup();
   });
 }

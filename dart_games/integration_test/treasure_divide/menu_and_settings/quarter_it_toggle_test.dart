@@ -59,9 +59,5 @@ void main() {
         reason:
             '[DIAG quarter_it_toggle] OFF label not visible after disabling Quarter It');
 
-    // Clear accumulated RenderFlex overflow exceptions from TD menu layout bug.
-    // FLAG: Known overflow in td_menu_game_mode_toggle and td_menu_assignment_mode_toggle rows.
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

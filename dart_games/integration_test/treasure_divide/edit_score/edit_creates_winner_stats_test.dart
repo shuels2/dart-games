@@ -86,7 +86,6 @@ Future<void> _simulateTakeout(WidgetTester tester) async {
     await tester.pump();
     await tester.pump();
   }
-  tester.binding.takeException();
 }
 
 void main() {
@@ -119,7 +118,6 @@ void main() {
       await _simulateTakeout(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      tester.binding.takeException();
 
       // P2 misses
       await _throwMissViaMock(tester);
@@ -128,7 +126,6 @@ void main() {
       await _simulateTakeout(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      tester.binding.takeException();
     }
 
     // Round 6 (Bull): P1 should be active now
@@ -189,7 +186,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
-    tester.binding.takeException();
 
     // P2 round 6: throw 3 misses
     await _throwMissViaMock(tester);
@@ -202,7 +198,6 @@ void main() {
     await _simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
-    tester.binding.takeException();
 
     expect(provider.hasWinner, isTrue,
         reason:

@@ -55,7 +55,6 @@ void main() {
       await simulateTakeout(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      drainExceptions(tester);
 
       // P2 turn
       await throwMissViaMock(tester);
@@ -64,7 +63,6 @@ void main() {
       await simulateTakeout(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      drainExceptions(tester);
     }
 
     // ── Round 6 = Bull (final) ─────────────────────────────────────────────
@@ -84,7 +82,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // P2 final round
     await throwMissViaMock(tester);
@@ -93,7 +90,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // ── After all 7 rounds complete: hasWinner = true ─────────────────────
     expect(ProviderHelpers.treasureDivideHasWinner(tester), isTrue,
@@ -103,14 +99,12 @@ void main() {
     for (int i = 0; i < 300; i++) {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      drainExceptions(tester);
       if (find.byKey(TreasureDivideResultsKeys.playAgainButton).evaluate().isNotEmpty) {
         break;
       }
     }
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
-    drainExceptions(tester);
 
     expect(find.byKey(TreasureDivideResultsKeys.playAgainButton), findsOneWidget,
         reason: '[DIAG win_early] Results screen (SAIL AGAIN) should be visible');

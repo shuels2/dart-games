@@ -1169,7 +1169,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       // content isn't pushed downward on a shorter tile.
       margin: const EdgeInsets.fromLTRB(6, 2, 6, 2),
       padding: isTeam
-          ? const EdgeInsets.fromLTRB(10, 24, 10, 24)
+          ? const EdgeInsets.fromLTRB(10, 16, 10, 16)
           : const EdgeInsets.fromLTRB(10, 2, 10, 2),
       decoration: BoxDecoration(
         color: _oceanTeal.withOpacity(0.4),

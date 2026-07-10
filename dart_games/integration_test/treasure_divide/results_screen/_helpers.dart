@@ -84,13 +84,6 @@ Future<void> _throwHitForTarget(WidgetTester tester, int target) async {
   }
 }
 
-/// Drain pending RenderFlex overflow exceptions from the TD game screen.
-/// The TD header Row has a known persistent overflow; this prevents the
-/// test framework from failing on accumulated exception records.
-void drainExceptions(WidgetTester tester) {
-  tester.binding.takeException();
-}
-
 /// Simulate takeout via direct mock API call (matches gameplay/_helpers.dart
 /// simulateTakeout pattern). Uses mockApi.simulateTakeoutFinished() directly
 /// rather than tapping the UI button, which is the proven integration test
@@ -108,7 +101,6 @@ Future<void> simulateTakeout(WidgetTester tester) async {
     await tester.pump();
     await tester.pump();
   }
-  drainExceptions(tester);
 }
 
 /// Drive a 2-player solo game to completion, then pump until results screen.
@@ -148,14 +140,10 @@ Future<void> playGameToResultsScreen(WidgetTester tester) async {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
     turnCount++;
     // Safety: prevent infinite loop (max 2 players × 12 rounds × some buffer)
     if (turnCount > 40) break;
   }
 
   await ResultsHelpers.pumpUntilResults(tester, config);
-  // Final drain — game screen may still be briefly mounted during transition.
-  drainExceptions(tester);
-  drainExceptions(tester);
 }

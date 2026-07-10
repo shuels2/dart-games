@@ -13,6 +13,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:dart_games/main.dart' show overflowTrapMessages;
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 
 import '../../shared/ui_test_helpers.dart';
@@ -390,6 +391,22 @@ void main() {
 
       print('SCREENSHOT: === PART 4 COMPLETE ===');
       print('SCREENSHOT: File 1 complete.');
+
+      // Overflow trap — dump every layout-error captured by main.dart's
+      // FlutterError.onError wrapper (enabled via
+      // --dart-define=OVERFLOW_TRAP=1). Throwing surfaces the list in
+      // the parallel worker log's `failureDetails` field so we can
+      // pinpoint the exact overflowing widget instead of just seeing
+      // "Multiple exceptions (N)".
+      if (overflowTrapMessages.isNotEmpty) {
+        final dump = overflowTrapMessages
+            .asMap()
+            .entries
+            .map((e) => '[${e.key}] ${e.value}')
+            .join('\n---\n');
+        throw Exception(
+            'OVERFLOW_TRAP ${overflowTrapMessages.length} errors:\n$dump');
+      }
     });
   });
 }

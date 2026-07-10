@@ -12,7 +12,6 @@
 // visually asserted when the solo player is active. We verify the model
 // property unconditionally; UI key presence is only asserted if the solo
 // player happens to be active at game start.
-import 'package:flutter/foundation.dart' show FlutterError, FlutterErrorDetails;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
@@ -27,8 +26,6 @@ void main() {
   testWidgets(
       'Team Mode Gameplay: solo crew configured with 6 darts per turn',
       (WidgetTester tester) async {
-    // Suppress TD game screen layout overflow exceptions for this test.
-    FlutterError.onError = (FlutterErrorDetails details) {};
 
     await UITestHelpers.resetServerState();
 
@@ -116,6 +113,5 @@ void main() {
           reason: 'Should be exactly 3 dart indicators for 2-person crew player');
     }
 
-    tester.binding.takeException();
   });
 }

@@ -52,12 +52,10 @@ void main() {
     await SettingsHelpers.setTreasureDivideAssignmentRandom(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     await UITestHelpers.startGame(tester, config);
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
-    drainExceptions(tester);
 
     final provider = ProviderHelpers.getTreasureDivideProvider(tester);
     final game = provider.currentGame!;
@@ -100,7 +98,6 @@ void main() {
       await simulateTakeout(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      drainExceptions(tester);
     }
 
     // ── Now it's the solo crew's turn ─────────────────────────────────────
@@ -116,14 +113,12 @@ void main() {
     // soloCrewBadge should be visible
     expect(find.byKey(TreasureDivideGameKeys.soloCrewBadge), findsWidgets,
         reason: '[DIAG solo_6darts] Solo crew badge should be visible');
-    drainExceptions(tester);
 
     // ── Throw darts 1-5: turn should NOT end ──────────────────────────────
     for (int d = 1; d <= 5; d++) {
       await throwMissViaMock(tester);
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pump();
-      drainExceptions(tester);
       if (d < 6) {
         expect(provider.shouldPromptTakeout, isFalse,
             reason: '[DIAG solo_6darts] shouldPromptTakeout should be false after dart $d of 6');
@@ -134,13 +129,9 @@ void main() {
     await throwMissViaMock(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     expect(provider.shouldPromptTakeout, isTrue,
         reason: '[DIAG solo_6darts] shouldPromptTakeout should be true after dart 6');
 
-    // Suppress layout exceptions during cleanup pump (TD game screen layout bug).
-    drainExceptions(tester);
-    suppressLayoutExceptionsForCleanup();
   });
 }

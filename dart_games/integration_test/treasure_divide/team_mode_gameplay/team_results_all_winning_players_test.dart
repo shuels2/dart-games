@@ -102,8 +102,6 @@ void main() {
       }
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      // Drain known RenderFlex overflow noise from TD game screen
-      tester.binding.takeException();
     }
 
     await ResultsHelpers.pumpUntilResults(tester, _config);

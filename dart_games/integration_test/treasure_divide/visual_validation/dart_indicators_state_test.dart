@@ -12,7 +12,6 @@
 //   - hit → treasureGold border + islandGreen opacity background
 //
 // Asserts via BoxDecoration.border color inspection.
-import 'package:flutter/foundation.dart' show FlutterError, FlutterErrorDetails;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -51,8 +50,6 @@ void main() {
   testWidgets(
       'Visual Validation: Dart indicator states (empty → hit → miss → hit)',
       (WidgetTester tester) async {
-    // Suppress TD game screen layout overflow exceptions for this test.
-    FlutterError.onError = (FlutterErrorDetails details) {};
 
     await UITestHelpers.resetServerState();
     await GameSetupHelpers.setupAndStartTreasureDivide(tester, config);
@@ -87,7 +84,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    tester.binding.takeException();
 
     // Indicator 0 should now show hit style (gold border)
     final borderAfterHit =
@@ -117,7 +113,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    tester.binding.takeException();
 
     // Indicator 1 should show miss style (red border)
     final borderAfterMiss =
@@ -137,7 +132,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    tester.binding.takeException();
 
     // Indicator 2 should show hit style (gold border)
     final borderAfterHit3 =
@@ -151,7 +145,5 @@ void main() {
     expect(provider.shouldPromptTakeout, isTrue,
         reason: 'shouldPromptTakeout should be true after 3 darts thrown');
 
-    // Drain layout exceptions.
-    tester.binding.takeException();
   });
 }

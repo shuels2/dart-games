@@ -78,7 +78,6 @@ Future<void> _simulateTakeout(WidgetTester tester) async {
     await tester.pump();
     await tester.pump();
   }
-  tester.binding.takeException();
 }
 
 void main() {
@@ -135,7 +134,6 @@ void main() {
       await _simulateTakeout(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      tester.binding.takeException();
       turnCount++;
     }
 
@@ -143,7 +141,6 @@ void main() {
     for (int i = 0; i < 300; i++) {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
-      tester.binding.takeException();
       if (find
           .byKey(TreasureDivideResultsKeys.playAgainButton)
           .evaluate()
@@ -153,8 +150,6 @@ void main() {
     }
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
-    tester.binding.takeException();
-    tester.binding.takeException();
 
     // Verify results screen is showing
     expect(find.byKey(TreasureDivideResultsKeys.playAgainButton),

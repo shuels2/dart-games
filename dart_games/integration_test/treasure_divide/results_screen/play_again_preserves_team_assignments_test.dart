@@ -106,12 +106,9 @@ Future<void> _playTeamGameToResults(WidgetTester tester) async {
     }
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    tester.binding.takeException();
   }
 
   await ResultsHelpers.pumpUntilResults(tester, _config);
-  tester.binding.takeException();
-  tester.binding.takeException();
 }
 
 void main() {
@@ -189,7 +186,5 @@ void main() {
         reason:
             '[DIAG td_sa_pta] New game must still have exactly 2 crews');
 
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

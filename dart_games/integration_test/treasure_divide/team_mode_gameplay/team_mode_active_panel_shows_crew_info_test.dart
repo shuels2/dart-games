@@ -4,7 +4,6 @@
 // Assert: active player panel shows the crew crest (activeCrewCrest key)
 //         AND "Crew Treasure:" text (crew name label)
 //         AND "Next:" caption when the active crew has a teammate.
-import 'package:flutter/foundation.dart' show FlutterError, FlutterErrorDetails;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:dart_games/constants/test_keys.dart';
@@ -19,8 +18,6 @@ void main() {
   testWidgets(
       'Team Mode Gameplay: active player panel shows crew crest, crew treasure, and Next caption',
       (WidgetTester tester) async {
-    // Suppress TD game screen layout overflow exceptions for this test.
-    FlutterError.onError = (FlutterErrorDetails details) {};
 
     await UITestHelpers.resetServerState();
     // N=4 → 2 crews of 2; first crew has 2 members so "Next:" should appear
@@ -56,7 +53,5 @@ void main() {
               'Active team: $activeTeamId, members: $members');
     }
 
-    // Drain accumulated layout exceptions from TD game screen.
-    tester.binding.takeException();
   });
 }

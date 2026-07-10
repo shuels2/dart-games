@@ -89,9 +89,5 @@ void main() {
         reason:
             '[DIAG team_assign_disabled] Opacity(0.5) should return when back in Solo mode');
 
-    // Clear accumulated RenderFlex overflow exceptions from TD menu layout bug.
-    // FLAG: Known overflow in td_menu_game_mode_toggle and td_menu_assignment_mode_toggle rows.
-    tester.binding.takeException();
-    tester.binding.takeException();
   });
 }

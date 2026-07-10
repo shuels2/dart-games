@@ -51,7 +51,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // P1 score should be 3×target (= 60 for default round-0 target of 20)
     final p1Score = ProviderHelpers.getTreasureDividePlayerTotal(tester, p1Id);
@@ -70,7 +69,6 @@ void main() {
     await simulateTakeout(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    drainExceptions(tester);
 
     // After P2 wipeout in round 1, P2 score = 0 / 2 = 0 (half of 0 is still 0)
     final p2Score = ProviderHelpers.getTreasureDividePlayerTotal(tester, p2Id);
@@ -90,8 +88,5 @@ void main() {
     expect(ProviderHelpers.isTreasureDivideGameActive(tester), isTrue,
         reason: '[DIAG min_player] Game should still be active after 1 round');
 
-    // Drain pending exception, then suppress layout errors during cleanup pump.
-    drainExceptions(tester);
-    suppressLayoutExceptionsForCleanup();
   });
 }

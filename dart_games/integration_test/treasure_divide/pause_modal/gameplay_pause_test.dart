@@ -2,7 +2,6 @@
 //
 // Pause-modal tests for the Treasure Divide game screen.
 // 8 testWidgets — canonical 1-for-1 mirror of monster_mash/pause_modal/gameplay_pause_test.dart.
-import 'package:flutter/foundation.dart' show FlutterError, FlutterErrorDetails;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -23,7 +22,6 @@ void main() {
     expect(config.getGameBackButton(), findsOneWidget);
 
     await PauseModalHelpers.simulateReconnectAndVerify(tester);
-    suppressLayoutExceptionsForCleanup();
   });
 
   testWidgets('Test 2: Pause modal blocks AppBar back button during TD gameplay',
@@ -42,7 +40,6 @@ void main() {
     expect(config.getGameBackButton(), findsOneWidget);
 
     await PauseModalHelpers.simulateReconnectAndVerify(tester);
-    suppressLayoutExceptionsForCleanup();
   });
 
   testWidgets('Test 3: Pause modal blocks dartboard emulator during TD gameplay',
@@ -56,7 +53,6 @@ void main() {
     PauseModalHelpers.verifyPauseModalVisible(tester);
 
     await PauseModalHelpers.simulateReconnectAndVerify(tester);
-    suppressLayoutExceptionsForCleanup();
   });
 
   testWidgets('Test 4: Pause modal paints over RemoveDartsModal during TD gameplay',
@@ -80,7 +76,6 @@ void main() {
     // emulator section re-renders without that button, so the visual pause
     // blocker is the meaningful assertion.)
     await PauseModalHelpers.simulateDisconnectAndVerify(tester);
-    suppressLayoutExceptionsForCleanup();
   });
 
   testWidgets('Test 5: Pause modal blocks SaveGameModal save button during TD gameplay',
@@ -134,7 +129,6 @@ void main() {
     await throwMissViaMock(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
-    tester.binding.takeException();
 
     // Verify the edit score button is present
     final editButton = config.getEditScoreButton();
@@ -149,7 +143,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
-    tester.binding.takeException();
 
     // Disconnect — pause modal should appear, covering any open dialogs
     simulateDartboardDisconnection(tester);
@@ -163,7 +156,6 @@ void main() {
     PauseModalHelpers.verifyPauseModalVisible(tester);
 
     await PauseModalHelpers.simulateReconnectAndVerify(tester);
-    suppressLayoutExceptionsForCleanup();
   });
 
   testWidgets('Test 7: Pause modal dismisses on reconnect during TD gameplay',
@@ -182,7 +174,6 @@ void main() {
 
     // Verify game is still on the game screen
     expect(config.getGameBackButton(), findsOneWidget);
-    suppressLayoutExceptionsForCleanup();
   });
 
   testWidgets('Test 8: RemoveDartsModal still visible after reconnect during TD gameplay',
@@ -209,17 +200,5 @@ void main() {
 
     // Click it to continue the game
     await clickDartsRemoved(tester);
-    suppressLayoutExceptionsForCleanup();
   });
-}
-
-/// Suppress TD game screen layout exceptions during the Flutter test
-/// framework's post-testBody cleanup pump. Mirrors the pattern from
-/// gameplay/_helpers.dart — call as the very last statement in tests that
-/// end while the TD game screen is still mounted.
-void suppressLayoutExceptionsForCleanup() {
-  FlutterError.onError = (FlutterErrorDetails details) {
-    // Intentionally swallow — the TD game screen has a layout bug that fires
-    // during the framework's widget-tree cleanup pump.
-  };
 }

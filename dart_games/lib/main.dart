@@ -50,8 +50,38 @@ import 'screens/games/treasure_divide/treasure_divide_results_screen.dart';
 ApiClient? _previousApiClient;
 late ApiClient apiClient;
 
+/// Overflow trap — captures every `RenderFlex overflowed …` / assertion
+/// error routed through `FlutterError.onError` while running under
+/// `--dart-define=OVERFLOW_TRAP=1`. Tests can read
+/// [overflowTrapMessages] at end-of-test and throw with the contents so
+/// the per-test log's `failureDetails` field shows exactly which widget
+/// overflowed. Empty (and the trap does nothing) when the flag is off,
+/// so production behavior is untouched.
+final List<String> overflowTrapMessages = <String>[];
+
+/// Wraps whatever was previously set on [FlutterError.onError] so the
+/// default handler still fires (framework console reporting, exception
+/// queue etc.) and only ADDs the trap on top. Idempotent — safe to call
+/// on hot restart.
+void _installOverflowTrap() {
+  const enabled = bool.fromEnvironment('OVERFLOW_TRAP', defaultValue: false);
+  if (!enabled) return;
+  final previousHandler = FlutterError.onError;
+  FlutterError.onError = (FlutterErrorDetails details) {
+    final msg = details.exceptionAsString();
+    if (msg.contains('overflow') ||
+        msg.contains('RenderFlex') ||
+        msg.contains('RenderBox was not laid out')) {
+      final ctx = details.context?.toDescription() ?? '';
+      overflowTrapMessages.add(ctx.isEmpty ? msg : '$msg [context: $ctx]');
+    }
+    previousHandler?.call(details);
+  };
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _installOverflowTrap();
 
   // Dispose previous ApiClient to cancel any in-flight HTTP requests
   // from a prior integration-test run or hot restart.
