@@ -53,7 +53,18 @@ class _VirtualKeyboardScaffoldState extends State<VirtualKeyboardScaffold> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _media = MediaQuery.maybeOf(context);
+    // Guarded because MaterialApp.builder recreates this scaffold on
+    // every navigation and its FocusManager / InputModeService
+    // listeners can schedule a rebuild during the tear-down window,
+    // triggering the framework's "Looking up a deactivated widget's
+    // ancestor is unsafe" error even here. Keeping the last-known
+    // cached value on failure is safe — build() will fall back to
+    // pass-through if the cache is null anyway.
+    try {
+      _media = MediaQuery.maybeOf(context);
+    } catch (_) {
+      // Context is deactivated; keep whatever we cached last time.
+    }
   }
 
   @override
@@ -88,12 +99,22 @@ class _VirtualKeyboardScaffoldState extends State<VirtualKeyboardScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final show = _shouldShow;
     // Prefer the cached MediaQuery so we don't touch inherited widgets
-    // via the (possibly deactivated) context. Falls back to .of() on
-    // the extremely unlikely path where didChangeDependencies hasn't
-    // fired yet (e.g. the very first build after mount).
-    final media = _media ?? MediaQuery.of(context);
+    // via the (possibly deactivated) context. If the cache is empty
+    // AND MediaQuery.of() fails on the ancestor lookup, the scaffold
+    // is being torn down mid-rebuild by MaterialApp.builder — just
+    // pass the child through unwrapped so the framework can finish
+    // its unmount cleanly. Steady-state (production) never hits the
+    // catch path because the widget isn't deactivated during rebuild.
+    MediaQueryData? media = _media;
+    if (media == null) {
+      try {
+        media = MediaQuery.of(context);
+      } catch (_) {
+        return widget.child;
+      }
+    }
+    final show = _shouldShow;
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: InputModeService.instance.observePointer,
