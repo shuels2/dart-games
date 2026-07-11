@@ -6,15 +6,18 @@ A collection of family-friendly dart games for the **Scolia 2** smart dartboard.
 
 ## The games
 
-| Game | Players | Theme |
-|---|---|---|
-| Carnival Derby | 2–8 | Horse racing — first horse past the finish wins |
-| Target Tag | 2–10 | Shield duel — tag opponents with their target number |
-| Monster Mash | 2–8 | Monster battle — heal your monster, smash the others |
-| Reef Royale | 2–8 | Coral claiming — race to claim reefs around the board |
-| Clockwork Quest | 2–8 | Steampunk gear progression around the board |
-| Lunar Lander | 2–8 | Retro NASA countdown |
-| Pirate's Grid | 2 | Treasure-map tic-tac-toe |
+| Game | Players | Modes | Theme |
+|---|---|---|---|
+| Carnival Derby | 2–8 | Solo | Horse racing — first horse past the finish wins |
+| Target Tag | 2–10 | Solo + Team | Shield duel — tag opponents with their target number |
+| Monster Mash | 2–8 | Solo | Monster battle — heal your monster, smash the others |
+| Reef Royale | 2–8 | Solo | Coral claiming — race to claim reefs around the board |
+| Clockwork Quest | 2–8 | Solo | Steampunk gear progression around the board |
+| Lunar Lander | 2–8 | Solo | Retro NASA countdown |
+| Pirate's Grid | 2 | Solo | Treasure-map tic-tac-toe |
+| Gladiator Arena | 2–8 | Solo | Eliminator — race to a target score, ancient-arena theme |
+| Tiki Golf | 2–16 | Solo + Team | Lilo & Stitch–styled mini-golf dart game across 9 or 18 holes |
+| Treasure Divide | 2–8 Solo / 3–10 Team | Solo + Team | Halve It pirate adventure — plunder gold across treasure islands, miss all 3 darts and HALF spills overboard |
 
 ## Screenshots
 
@@ -29,11 +32,14 @@ Every game is wired into a shared toolkit so adding a new one is mostly theming 
 - **Dartboard connection** (real Scolia 2 or local emulator) with reactive throw events
 - **Global player roster, stats, and game history**
 - **Add Player, Edit Score, Resume Game, Save Game** modals — themed per game via config factories
+- **Solo and team modes** — shared player-list panel handles both flavors; games opt in per spec and inherit random/manual crew assignment, solo-crew fallbacks, per-crew rankings, and team-tied results screens
 - **Save & resume** mid-game state, persisted via the embedded Dart Shelf + SQLite backend
 - **Priority-based announcement queue** (voice + sound effects, multi-personality TTS)
 - **Per-game victory music** with random selection from a user-managed library
+- **Play-to-complete auto-play** — per-game strategies drive a shared runner that walks a game to a finish for demos, tests, and screenshots
 - **Skip-turn helper, remove-darts modal, dartboard paused modal** with consistent rules across games
 - **Home-screen game filter bar** with auto-registered metadata for each new game
+- **Touch-screen QWERTY keyboard** slides up whenever a text field gains focus in touch mode — no per-game wiring needed
 
 ## Adding a new game
 
