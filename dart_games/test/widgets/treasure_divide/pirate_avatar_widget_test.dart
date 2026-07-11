@@ -79,6 +79,62 @@ void main() {
       expect(pos.dy, closeTo(0.045, 0.001));
     });
 
+    // ── 4a. Persisted headTop wins over derived heuristic ─────────────────────
+    // When the operator has fine-tuned the hat anchor in the
+    // FaceLandmarkInspector, the persisted point must beat the
+    // bounding-box heuristic — otherwise the tuning would silently
+    // no-op on the game screen.
+    test(
+        'resolveAnchorPosition prefers persisted headTop over the bounding-box '
+        'heuristic when the field is present', () {
+      final landmarks = {
+        'boundingBox': {'x': 0.20, 'y': 0.15, 'width': 0.60, 'height': 0.70},
+        // Deliberately far from the heuristic (0.50, 0.045) so a bug
+        // that falls through to bbox math produces a very different
+        // number than what we expect.
+        'headTop': {'x': 0.42, 'y': 0.02},
+      };
+      final pos =
+          resolveAnchorPosition(ThemeAccessoryAnchor.headTop, landmarks);
+      expect(pos.dx, closeTo(0.42, 0.001));
+      expect(pos.dy, closeTo(0.02, 0.001));
+    });
+
+    test(
+        'resolveAnchorPosition prefers persisted chinBottom over the '
+        'bounding-box heuristic when the field is present', () {
+      final landmarks = {
+        'boundingBox': {'x': 0.20, 'y': 0.15, 'width': 0.60, 'height': 0.70},
+        // Heuristic would give chinBottom.y = 0.15 + 0.70 = 0.85.
+        // Persisted value is deliberately different.
+        'chinBottom': {'x': 0.55, 'y': 0.92},
+      };
+      final pos =
+          resolveAnchorPosition(ThemeAccessoryAnchor.chinBottom, landmarks);
+      expect(pos.dx, closeTo(0.55, 0.001));
+      expect(pos.dy, closeTo(0.92, 0.001));
+    });
+
+    test(
+        'resolveAnchorPosition falls back to the bounding-box heuristic '
+        'when headTop / chinBottom are absent (legacy records)', () {
+      // No headTop / chinBottom keys — matches every player record
+      // stored before this feature landed.
+      final landmarks = {
+        'boundingBox': {'x': 0.10, 'y': 0.10, 'width': 0.80, 'height': 0.80},
+      };
+      final headPos =
+          resolveAnchorPosition(ThemeAccessoryAnchor.headTop, landmarks);
+      final chinPos =
+          resolveAnchorPosition(ThemeAccessoryAnchor.chinBottom, landmarks);
+      // Heuristic: head = (bbX + bbW/2, bbY - 0.15*bbH) = (0.50, -0.02)
+      //            chin = (bbX + bbW/2, bbY + bbH)      = (0.50, 0.90)
+      expect(headPos.dx, closeTo(0.50, 0.001));
+      expect(headPos.dy, closeTo(-0.02, 0.001));
+      expect(chinPos.dx, closeTo(0.50, 0.001));
+      expect(chinPos.dy, closeTo(0.90, 0.001));
+    });
+
     // ── 5. Corners always use heuristic regardless of landmarks ───────────────
     test('corner anchors always return heuristic positions', () {
       final landmarks = {

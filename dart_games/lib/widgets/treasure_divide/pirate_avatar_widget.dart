@@ -470,13 +470,35 @@ Offset resolveAnchorPosition(
 
     switch (anchor) {
       case ThemeAccessoryAnchor.headTop:
+        // Prefer a persisted headTop (set by the operator in the
+        // FaceLandmarkInspector) so hats / bandanas / tricorns line
+        // up with the actual hairline instead of a fixed 15% headroom
+        // heuristic. Falls back to the derived value for legacy
+        // records that pre-date the persisted field, then to the
+        // hard-coded face-frame heuristic if the bounding box itself
+        // is missing.
+        final head = landmarks['headTop'] as Map<String, dynamic>?;
+        if (head != null) {
+          return Offset(
+            (head['x'] as num).toDouble(),
+            (head['y'] as num).toDouble(),
+          );
+        }
         if (bbX != null && bbY != null && bbW != null && bbH != null) {
-          // Sit ~15% of face height above the top of the bounding box.
           return Offset(bbX + bbW / 2, bbY - bbH * 0.15);
         }
         return _kHeuristicPositions[anchor]!;
 
       case ThemeAccessoryAnchor.chinBottom:
+        // Prefer a persisted chinBottom; fall back to the bounding
+        // box bottom heuristic for legacy records.
+        final chin = landmarks['chinBottom'] as Map<String, dynamic>?;
+        if (chin != null) {
+          return Offset(
+            (chin['x'] as num).toDouble(),
+            (chin['y'] as num).toDouble(),
+          );
+        }
         if (bbX != null && bbY != null && bbW != null && bbH != null) {
           return Offset(bbX + bbW / 2, bbY + bbH);
         }

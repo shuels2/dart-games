@@ -103,6 +103,41 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
     super.initState();
     _original = _deepCopy(widget.player.faceLandmarks ?? _kDefaultLandmarks);
     _working = _deepCopy(_original);
+    _ensureHeadTopChinBottomSeeded(_working);
+    _ensureHeadTopChinBottomSeeded(_original);
+  }
+
+  /// Seed `headTop` and `chinBottom` from the bounding box heuristic if
+  /// they aren't already present on the landmark map. Legacy players
+  /// (detected before these fields became persisted) get derived
+  /// defaults on first open — matching what the renderer's fallback
+  /// path was already showing them, so no visible change until the
+  /// operator drags either dot to a new spot.
+  ///
+  /// Heuristic matches `resolveAnchorPosition` in pirate_avatar_widget:
+  ///   headTop.y   = bb.y - 0.15 * bb.height  (15% headroom for hair)
+  ///   chinBottom.y = bb.y + bb.height        (at box bottom)
+  ///   both.x       = bb.x + bb.width / 2      (horizontally centered)
+  void _ensureHeadTopChinBottomSeeded(Map<String, dynamic> map) {
+    final bb = map['boundingBox'];
+    if (bb is! Map) return;
+    final bbX = (bb['x'] as num?)?.toDouble();
+    final bbY = (bb['y'] as num?)?.toDouble();
+    final bbW = (bb['width'] as num?)?.toDouble();
+    final bbH = (bb['height'] as num?)?.toDouble();
+    if (bbX == null || bbY == null || bbW == null || bbH == null) return;
+    if (map['headTop'] is! Map) {
+      map['headTop'] = {
+        'x': (bbX + bbW / 2).clamp(0.0, 1.0),
+        'y': (bbY - bbH * 0.15).clamp(0.0, 1.0),
+      };
+    }
+    if (map['chinBottom'] is! Map) {
+      map['chinBottom'] = {
+        'x': (bbX + bbW / 2).clamp(0.0, 1.0),
+        'y': (bbY + bbH).clamp(0.0, 1.0),
+      };
+    }
   }
 
   Map<String, dynamic> _deepCopy(Map<String, dynamic> src) {
@@ -176,6 +211,11 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
       setState(() {
         _working = _deepCopy(fresh);
         _original = _deepCopy(fresh);
+        // Sidecar doesn't emit headTop/chinBottom — seed the heuristic
+        // defaults so the operator can drag them to fine-tune without
+        // losing the initial-detection result.
+        _ensureHeadTopChinBottomSeeded(_working);
+        _ensureHeadTopChinBottomSeeded(_original);
         _busy = false;
       });
     } catch (e) {
@@ -196,6 +236,49 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
         'x': nx.clamp(0.0, 1.0),
         'y': ny.clamp(0.0, 1.0),
       };
+    });
+  }
+
+  /// Translate the whole bounding box (and, as a group move, `headTop`
+  /// / `chinBottom`) so that the given [newCenter] normalized position
+  /// becomes the box's new center. Resize handles do NOT call this
+  /// — corner resizing only mutates `boundingBox`. That split is the
+  /// point of Task 99: "moving the face on the photo" naturally
+  /// implies its accessory anchors move with it, but "resizing the
+  /// detected face region" doesn't imply anything about hats or hair.
+  void _translateBoundingBoxTo(Offset newCenter) {
+    setState(() {
+      final bb = _working['boundingBox'] as Map;
+      final w = (bb['width'] as num).toDouble();
+      final h = (bb['height'] as num).toDouble();
+      final oldCx = (bb['x'] as num).toDouble() + w / 2;
+      final oldCy = (bb['y'] as num).toDouble() + h / 2;
+      // Clamp the new center so the whole box stays within [0,1]^2.
+      final cxClamped = newCenter.dx.clamp(w / 2, 1.0 - w / 2);
+      final cyClamped = newCenter.dy.clamp(h / 2, 1.0 - h / 2);
+      final dx = cxClamped - oldCx;
+      final dy = cyClamped - oldCy;
+      _working['boundingBox'] = {
+        'x': (cxClamped - w / 2).clamp(0.0, 1.0),
+        'y': (cyClamped - h / 2).clamp(0.0, 1.0),
+        'width': w,
+        'height': h,
+      };
+      // Group-move headTop and chinBottom by the SAME delta so their
+      // relative position to the face stays stable. Users who moved
+      // them off-center to fine-tune a hat should not lose that
+      // offset just because the operator repositioned the whole face.
+      for (final key in const ['headTop', 'chinBottom']) {
+        final pt = _working[key];
+        if (pt is Map) {
+          final px = (pt['x'] as num).toDouble();
+          final py = (pt['y'] as num).toDouble();
+          _working[key] = {
+            'x': (px + dx).clamp(0.0, 1.0),
+            'y': (py + dy).clamp(0.0, 1.0),
+          };
+        }
+      }
     });
   }
 
@@ -338,7 +421,16 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
   Widget _buildMarkerOverlay(Size size) {
     final children = <Widget>[];
 
-    // Bounding box outline (only when visible).
+    // Bounding box outline + translate gesture. Corner handles are
+    // added AFTER this so they visually and hit-test-priority sit on
+    // top for resize. The interior gesture uses HitTestBehavior.opaque
+    // so an unclaimed drag inside the box moves the whole face — and,
+    // via `_translateBoundingBoxTo`, group-moves headTop / chinBottom
+    // by the same delta. Dots inside the box (eyes / nose / mouth /
+    // head / chin) are added LATER in the children list, so Stack
+    // hit-testing (top→bottom = last→first) prefers them for their
+    // exact pixel area, and only empty interior falls through to
+    // this translate handler.
     if (_visible['boundingBox'] == true) {
       final bb = _working['boundingBox'] as Map;
       final left = (bb['x'] as num).toDouble() * size.width;
@@ -350,7 +442,34 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
         top: top,
         width: width,
         height: height,
-        child: IgnorePointer(
+        child: GestureDetector(
+          key: const Key('face-landmark-bbox-translate'),
+          behavior: HitTestBehavior.opaque,
+          onPanStart: (details) {
+            final box = _canvasKey.currentContext?.findRenderObject()
+                as RenderBox?;
+            if (box == null) return;
+            final localTouch = box.globalToLocal(details.globalPosition);
+            final bb2 = _working['boundingBox'] as Map;
+            final w = (bb2['width'] as num).toDouble() * size.width;
+            final h = (bb2['height'] as num).toDouble() * size.height;
+            final centerPx = Offset(
+              (bb2['x'] as num).toDouble() * size.width + w / 2,
+              (bb2['y'] as num).toDouble() * size.height + h / 2,
+            );
+            _dragStartOffset = centerPx - localTouch;
+          },
+          onPanUpdate: (details) {
+            final box = _canvasKey.currentContext?.findRenderObject()
+                as RenderBox?;
+            if (box == null) return;
+            final localTouch = box.globalToLocal(details.globalPosition);
+            final newCenterPx = localTouch + _dragStartOffset;
+            _translateBoundingBoxTo(Offset(
+              newCenterPx.dx / size.width,
+              newCenterPx.dy / size.height,
+            ));
+          },
           child: DecoratedBox(
             decoration: BoxDecoration(
               border: Border.all(color: _kBoundingBoxColor, width: 2),
@@ -380,21 +499,41 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
       ));
     }
 
-    // Derived markers (read-only).
+    // Head top and Chin bottom — draggable, seeded from the bounding
+    // box heuristic in `initState`. See doc on
+    // `_ensureHeadTopChinBottomSeeded`. Legacy player records that
+    // lacked these fields render identically to before (via the
+    // renderer's fallback in `resolveAnchorPosition`); the operator's
+    // first drag persists an override.
     if (_visible['headTop'] == true) {
-      final bb = _working['boundingBox'] as Map;
-      final cx = ((bb['x'] as num) + (bb['width'] as num) / 2) * size.width;
-      final cy =
-          ((bb['y'] as num) - (bb['height'] as num) * 0.15) * size.height;
-      children.add(_buildIndicator(
-          'Head top', Offset(cx, cy), _kDerivedColor, size));
+      final v = _working['headTop'] as Map?;
+      if (v != null) {
+        final px = (v['x'] as num).toDouble() * size.width;
+        final py = (v['y'] as num).toDouble() * size.height;
+        children.add(_buildDraggableDot(
+          key: 'headTop',
+          label: 'Head top',
+          color: _kDerivedColor,
+          center: Offset(px, py),
+          canvas: size,
+          onMoved: (nx, ny) => _setPoint('headTop', nx, ny),
+        ));
+      }
     }
     if (_visible['chinBottom'] == true) {
-      final bb = _working['boundingBox'] as Map;
-      final cx = ((bb['x'] as num) + (bb['width'] as num) / 2) * size.width;
-      final cy = ((bb['y'] as num) + (bb['height'] as num)) * size.height;
-      children.add(_buildIndicator(
-          'Chin bottom', Offset(cx, cy), _kDerivedColor, size));
+      final v = _working['chinBottom'] as Map?;
+      if (v != null) {
+        final px = (v['x'] as num).toDouble() * size.width;
+        final py = (v['y'] as num).toDouble() * size.height;
+        children.add(_buildDraggableDot(
+          key: 'chinBottom',
+          label: 'Chin bottom',
+          color: _kDerivedColor,
+          center: Offset(px, py),
+          canvas: size,
+          onMoved: (nx, ny) => _setPoint('chinBottom', nx, ny),
+        ));
+      }
     }
 
     return Positioned.fill(child: Stack(children: children));
@@ -534,13 +673,22 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
 
   Widget _buildToggleSidebar() {
     final items = <Widget>[
-      _toggleRow('boundingBox', 'Bounding box', _kBoundingBoxColor),
+      _toggleRow(
+        'boundingBox',
+        'Bounding box',
+        _kBoundingBoxColor,
+        hint: 'Face contour extent — sides of the face (temple to '
+            'temple), top of the forehead, bottom of the chin. NOT '
+            'the whole head silhouette (no hair).',
+      ),
       ..._kPointLandmarks.map((lm) => _toggleRow(lm.key, lm.label, lm.color)),
       const Divider(),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Text(
-          'Derived (from bounding box)',
+          'Head top / Chin bottom — auto-set from the bounding box '
+          'on first detection; drag to fine-tune where accessories '
+          '(hats, mustaches, beards) anchor.',
           style: Theme.of(context).textTheme.labelSmall,
         ),
       ),
@@ -584,7 +732,7 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
     );
   }
 
-  Widget _toggleRow(String key, String label, Color color) {
+  Widget _toggleRow(String key, String label, Color color, {String? hint}) {
     return InkWell(
       onTap: _busy
           ? null
@@ -594,6 +742,7 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Checkbox(
               key: Key('face-landmark-toggle-$key'),
@@ -605,7 +754,23 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
                       }),
             ),
             const SizedBox(width: 4),
-            Expanded(child: Text(label)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(label),
+                  if (hint != null)
+                    Text(
+                      hint,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
+                          ),
+                    ),
+                ],
+              ),
+            ),
             Container(
               width: 14,
               height: 14,
