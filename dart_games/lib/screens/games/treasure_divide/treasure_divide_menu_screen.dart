@@ -340,7 +340,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
         splashColor: Colors.transparent,
       ),
       title: Text(
-        'TREASURE DIVIDE SETUP',
+        'TREASURE DIVIDE GAME SETUP',
         style: GoogleFonts.pirataOne(
           fontSize: 34,
           color: _treasureGold,

@@ -1,7 +1,7 @@
 // integration_test/treasure_divide/menu_and_settings/menu_initial_state_test.dart
 //
 // Verifies the TD menu screen renders all settings boxes with correct defaults:
-//   - Title "TREASURE DIVIDE SETUP" visible
+//   - Title "TREASURE DIVIDE GAME SETUP" visible
 //   - Back button visible
 //   - Captain's Log panel visible (with at least one rule item)
 //   - Game Mode box visible (SOLO default)
@@ -29,7 +29,7 @@ void main() {
     await UITestHelpers.navigateToGameMenu(tester, config);
 
     // ── Title present ─────────────────────────────────────────────────────
-    expect(find.text('TREASURE DIVIDE SETUP'), findsOneWidget,
+    expect(find.text('TREASURE DIVIDE GAME SETUP'), findsOneWidget,
         reason: '[DIAG menu_initial_state] Title not found');
 
     // ── Back button present ────────────────────────────────────────────────

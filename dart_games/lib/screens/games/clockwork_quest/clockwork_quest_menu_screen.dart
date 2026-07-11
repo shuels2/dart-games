@@ -119,7 +119,7 @@ class _ClockworkQuestMenuScreenState extends State<ClockworkQuestMenuScreen> {
               splashColor: Colors.transparent,
             ),
             title: Text(
-              'CLOCKWORK QUEST SETUP',
+              'CLOCKWORK QUEST GAME SETUP',
               style: GoogleFonts.cinzelDecorative(
                 fontSize: 29,
                 fontWeight: FontWeight.bold,
