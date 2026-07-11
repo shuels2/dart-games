@@ -33,7 +33,7 @@ void main() {
 
     // Verify results screen is visible before clicking
     expect(find.textContaining('WINNER'), findsOneWidget);
-    expect(find.text('Target Tag Game Over'), findsOneWidget);
+    expect(find.text('Target Tag Results'), findsOneWidget);
 
     // Click Play Again
     final playAgainButton = config.getPlayAgainButton();

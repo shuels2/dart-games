@@ -103,6 +103,27 @@ cd server && dart test
 ./run_ui_tests_parallel.bat reef_royale/gameplay     # Game + subfolder
 ```
 
+### Run Font Measurement Tests (Utility)
+
+Two visual-ribbon tests compare every game's title fonts against
+Target Tag as the baseline. NOT part of `run_ui_tests.bat` — invoke
+directly, screenshots land in `temp_screenshots/`.
+
+```bash
+# 1. Start chromedriver
+./chromedriver/chromedriver-win64/chromedriver.exe --port=4444 &
+
+# 2a. AppBar titles (56 px strip, baseline = LuckiestGuy @ fs 36)
+flutter drive --driver=test_driver/screenshot_test.dart \
+  --target=integration_test/appbar_title_measurement_test.dart -d chrome
+
+# 2b. Home-card labels (44 px strip, baseline = LuckiestGuy @ fs 22)
+flutter drive --driver=test_driver/screenshot_test.dart \
+  --target=integration_test/home_screen_font_measurement_test.dart -d chrome
+```
+
+See [UI Automation → Font Measurement Tests](docs/testing/ui-automation.md#font-measurement-tests-utility-not-part-of-the-standard-suite) for the full workflow.
+
 ### Run Game-Specific Tests
 ```bash
 flutter test test/screens/games/target_tag/

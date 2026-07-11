@@ -3,6 +3,10 @@
 ## Theme Philosophy
 Target Tag embraces a neon tech/cyberpunk aesthetic with bold, vibrant colors against dark backgrounds. The design evokes a futuristic combat arena where shields and elimination create a high-stakes survival experience. Hot Pink and Neon Green create high contrast against deep navy backgrounds for maximum visual impact.
 
+## AppBar Cap-Height Baseline
+
+**Target Tag is the visual BASELINE for AppBar cap-height parity across every game in Dart Games.** All three Target Tag AppBar titles render at `GoogleFonts.luckiestGuy(fontSize: 36, letterSpacing: 1.5)`, and every other game's AppBar `fontSize` is tuned — via the ribbon measurement test — so that its cap height visually matches Target Tag's cap height at fs 36. Future changes to the Target Tag AppBar title font, size, or letter spacing must preserve this role: either keep the current values, or update every other game's tuned `fontSize` in the same change to maintain visual parity.
+
 ## Color Palette
 
 ### Primary Colors
@@ -80,6 +84,8 @@ GoogleFonts.fredoka(
 ### Menu Screen
 - **Background:** Solid Dark Navy (#0A1929)
 - **AppBar:** Gradient (Deep Purple → Hot Pink) with Neon Green glow
+  - **Title:** `'TARGET TAG GAME SETUP'`
+  - **Font:** `GoogleFonts.luckiestGuy`, `letterSpacing: 1.5`, `fontSize: 36`
 - **Buttons:** Hot Pink background, white text, Neon Green border
 - **Player Tiles:** Dark Slate background, Hot Pink when selected, player photo and name
 - **Settings Panels:** Dark Slate cards with Neon Green accents
@@ -87,6 +93,8 @@ GoogleFonts.fredoka(
 ### Game Screen
 - **Background:** Solid Dark Navy (#0A1929)
 - **AppBar:** Same gradient as menu screen
+  - **Title:** `'Target Tag Game On!'`
+  - **Font:** `GoogleFonts.luckiestGuy`, `letterSpacing: 1.5`, `fontSize: 36`
 - **Active Player Panel:** Large centered display with shield bar, target number, Hero Bonus
 - **Opponent Grid:** Grid of opponent tiles with shield counts and Tagged In indicators
 - **Player Tiles:** Compact tiles with photo, name, shields, target number
@@ -100,6 +108,8 @@ GoogleFonts.fredoka(
 ### Results Screen
 - **Background:** Solid Dark Navy (#0A1929)
 - **AppBar:** Same gradient
+  - **Title:** `'Target Tag Results'`
+  - **Font:** `GoogleFonts.luckiestGuy`, `letterSpacing: 1.5`, `fontSize: 36`
 - **Winner Display:** Large trophy icon, winner photo, confetti effect
 - **Winner Name:** Fredoka ExtraBold font, Neon Green color with glow
 - **Statistics:** Clean layout with Neon Green labels, white values

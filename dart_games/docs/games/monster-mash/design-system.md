@@ -45,7 +45,7 @@ backgroundColor: const Color(0xFF4B0082),
 - **Montserrat:** Body text, descriptions - Clean readable font
 
 ### Text Styles
-- **Screen Title:** Creepster, Bold, 28-32pt, Ecto-Green (#7FFF00)
+- **Screen Title:** Creepster, Bold, 35pt, Ecto-Green (#7FFF00)
 - **Section Header:** Creepster, Bold, 20-24pt, Ecto-Green (#7FFF00)
 - **Body Text:** Montserrat, Regular, 14-16pt, Aged Parchment (#F5F5DC)
 - **Button Text:** PirataOne, Bold, 16-24pt, Aged Parchment (#F5F5DC)
@@ -56,7 +56,7 @@ backgroundColor: const Color(0xFF4B0082),
 ```dart
 // Screen titles
 GoogleFonts.creepster(
-  fontSize: 32,
+  fontSize: 35,
   fontWeight: FontWeight.bold,
   color: const Color(0xFF7FFF00),
 )

@@ -141,6 +141,53 @@ ARs are independent critiques of the implementer's work. Run them on the orchest
 >
 > **Auto-revert rule:** at the end of each phase, the orchestrator runs `git diff master...HEAD --name-only` and verifies all changed files are within the allowed zones. Any unexpected modification triggers `git checkout -- <file>` and a corrective sub-agent dispatch with a tightened prompt.
 
+### Universal Rule: AppBar Title Naming Convention
+
+**This rule MUST be embedded in every sub-agent prompt that authors game screen files.**
+
+Every game's three screen AppBar titles follow a fixed naming pattern.
+Preserve the game's chosen case (ALL CAPS vs. Title Case) — don't
+change how a game presents its own name — but the trailing phrase
+IS standardized:
+
+- **Menu screen** → `[Game Name] Game Setup`
+  - ALL CAPS: `TIKI GOLF GAME SETUP`, `TREASURE DIVIDE GAME SETUP`, `CLOCKWORK QUEST GAME SETUP`
+  - Title Case: `Carnival Derby Game Setup`, `Reef Royale Game Setup`, `Monster Mash Game Setup`
+
+- **Gameplay screen** → `[Game Name]` OR a themed phrase
+  - The gameplay title is game-flavored; it may be just the game name
+    (`CLOCKWORK QUEST`, `PIRATE'S GRID`, `LUNAR LANDER`) OR add a
+    themed phrase (`Carnival Derby Race`, `Target Tag Game On!`,
+    `It's Monster Mashin' Time!`). Either is allowed; the spec
+    dictates.
+
+- **Results screen** → `[Game Name] Results`
+  - ALL CAPS: `GLADIATOR ARENA RESULTS`, `TIKI GOLF RESULTS`, `TREASURE DIVIDE RESULTS`
+  - Title Case: `Monster Mash Results`, `Reef Royale Results`, `Target Tag Results`
+  - **NOT** `[Name] Game Over`, `[Name] Race Results`, or any other
+    variant — those existed historically and were normalized to
+    `[Name] Results` on 2026-07-11.
+
+**All three titles must use IDENTICAL font family, fontSize, font
+weight, letterSpacing, color, and shadow spec** — the ONLY diff
+between menu / gameplay / results title `Text(...)` widgets is the
+title string itself. Per-game visual details (Transform.translate
+nudges for optical centering, shadow color) MUST also be applied
+consistently across all three screens.
+
+**Casing rule:** whatever case the game uses for its home-card label
+(from `home_screen.dart`), it MUST use the SAME case in all three
+AppBar titles. E.g. Monster Mash's home card says "Monster Mash" so
+its AppBar titles are `Monster Mash Game Setup` / `Monster Mash
+Results` (Title Case), NOT `MONSTER MASH GAME SETUP`.
+
+**Test-string sync:** if the new game's UI tests reference the
+AppBar title in any `find.text(...)` or `find.textContaining(...)`
+assertion, those strings must exactly match the conventions above.
+Any pre-existing test that hardcodes an older format is a bug to
+fix as part of the naming pass — not an excuse to keep the old
+title.
+
 ### YOLO Mode Pre-Flight
 
 If the user is running this skill in YOLO mode (no permission prompts) — risks include sub-agents pushing to remote, committing to master, or modifying shared code without challenge. The skill mitigates these via:
@@ -1332,6 +1379,31 @@ After the sub-agent returns:
 > (g) All 3 AppBars have: back button + title + DartboardConnectionInfo
 > (g1) **Back arrow consistency** — read the `leading: IconButton(...)` block on the MENU and GAME screens and verify ALL of: (1) `Icon` size is `32`, (2) all three of `hoverColor`, `highlightColor`, `splashColor` are `Colors.transparent`, (3) each screen's IconButton uses its OWN keys class (`MenuKeys.backButton`, `GameKeys.backButton` — never another game's class). Menu and game MUST be identical in size, color treatment, and hover suppression. Reference: Monster Mash, Carnival Derby for the canonical pattern.
 > (g2) **Results screen has NO back arrow** — read the results-screen AppBar and verify `automaticallyImplyLeading: false` is set AND no `leading:` widget is supplied. Confirm the 3 action buttons (Play Again, Change Settings, Back to Menu) are the only navigation off the results screen.
+> (g3) **AppBar title strings match the naming convention** — see the "Universal Rule: AppBar Title Naming Convention" section at the top of this skill. Read the actual `title: Text('...')` string on all THREE screens and verify:
+>    - Menu screen title matches the pattern `[Game Name] Game Setup` (case per game's own home-card casing).
+>    - Results screen title matches the pattern `[Game Name] Results` (same case rule).
+>    - Gameplay screen title is either `[Game Name]` or a spec-declared themed phrase.
+>    - **NO screen uses** `[Name] SETUP` (missing "Game"), `[Name] Game Over`, `[Name] — Game Over`, `[Name] Race Results`, or any other historical variant.
+>    - Cite the exact string + file:line from each screen. Grep sanity:
+>    ```bash
+>    grep -nE "title: (Transform\.translate|Text)" \
+>      lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart \
+>      lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart \
+>      lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_results_screen.dart
+>    ```
+>    Then read the matching Text() literal on each line.
+> (g4) **All 3 AppBar titles use IDENTICAL font style** — read the `GoogleFonts.<family>(...)` call on all three screens and diff them ignoring the title string. `fontFamily`, `fontSize`, `fontWeight`, `letterSpacing`, `color`, `shadows` MUST be pixel-for-pixel identical across menu / gameplay / results. If any screen wraps its title in `Transform.translate(offset: Offset(x, y))`, the SAME offset MUST wrap the title on the other two screens (per-screen visual nudges are not allowed). Mandatory grep:
+>    ```bash
+>    grep -nA 10 "title: (Transform\.translate|Text)" \
+>      lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_{menu,game,results}_screen.dart
+>    ```
+>    Compare the three blocks — every arg except the title string itself MUST match. Recurring miss: earlier builds shipped different `fontSize` values on menu vs. gameplay vs. results, resulting in inconsistent AppBar heights.
+> (g5) **UI-test string assertions match the new naming convention** — grep every UI test file that references the game's setup/results screens for old title strings that would have been valid pre-normalization:
+>    ```bash
+>    grep -nE "find\.text\('[A-Z][A-Za-z ']+ (SETUP|Game Over|Race Results)'\)" \
+>      integration_test/[GAME_NAME_SNAKE]/
+>    ```
+>    Any match is a stale test hardcoding an old title format — update the string to match the current app title (`[Name] Game Setup` / `[Name] Results`).
 > (h) **No custom 'remove darts' button exists outside RemoveDartsModal** — grep `lib/screens/games/[GAME_NAME_SNAKE]/` for any button labeled "Remove" outside the modal
 > (h1) **No Edit Score button exists outside RemoveDartsModal** — grep the game screen for any `key: ...editScoreButton` or `'Edit Score'` button outside RemoveDartsModal. The button must ONLY be wired via `RemoveDartsModal(editScoreButtonKey: ..., onEditScore: () => showEditScoreDialog(...))`. No standalone Edit Score button on the game screen, in the AppBar, or anywhere else.
 > (h2) **`DartboardEmulatorSection` MUST receive `dartboardKey: _dartboardKey`** — verify the game-screen `State` class declares `final GlobalKey<InteractiveDartboardState> _dartboardKey = GlobalKey<InteractiveDartboardState>();` AND the `DartboardEmulatorSection(...)` invocation passes `dartboardKey: _dartboardKey` (alongside `onRemoveDarts: () { _mockApi?.simulateTakeoutFinished(); }`). The "Remove Darts" button inside the takeout-prompt overlay (`dartboard_emulator_section.dart` `_buildDisabledOverlay`) is wired as `onPressed: () => dartboardKey?.currentState?.removeDarts()` — if the key is null, the tap is a silent no-op and the turn never advances. The user sees a "Remove Your Darts" overlay that won't dismiss. **Mandatory grep audit:**

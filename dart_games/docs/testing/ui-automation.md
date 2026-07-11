@@ -588,6 +588,48 @@ Key shared helpers:
 
 When adding a new game, extend the shared helpers and create game-specific `_helpers.dart` files using the delegate pattern. See [Shared Helpers Reference](shared-helpers-reference.md) for templates and the full helper list.
 
+## Font Measurement Tests (Utility, NOT part of the standard suite)
+
+Two visual-ribbon integration tests live at the TOP level of
+`integration_test/` (NOT inside a per-game folder — the runner
+`run_ui_tests.bat` does NOT auto-discover them). They compare every
+game's title fonts against **Target Tag as the visual baseline** and
+report pixel-precise cap-height diffs.
+
+- **`integration_test/appbar_title_measurement_test.dart`** — 3-column
+  ribbon (current fs / recommended fs / baseline-aligned red-on-white
+  overlay) sized for the **56 px AppBar** strip. Target = LuckiestGuy
+  @ `fontSize: 36`. Applies to the three per-game screen files
+  (`<game>_menu_screen.dart` / `<game>_game_screen.dart` /
+  `<game>_results_screen.dart`).
+
+- **`integration_test/home_screen_font_measurement_test.dart`** — same
+  layout sized for the **44 px home-card label** strip
+  (`SizedBox(height: 44)` in `home_screen.dart`). Target = LuckiestGuy
+  @ `fontSize: 22`. Applies to a single per-game `+N` offset in the
+  ternary inside `_buildGameCard(...)` in `lib/screens/home_screen.dart`.
+
+**Run manually** (start chromedriver first; the tests are NOT in the
+standard runner):
+
+```bash
+./chromedriver/chromedriver-win64/chromedriver.exe --port=4444 &
+flutter drive --driver=test_driver/screenshot_test.dart \
+  --target=integration_test/appbar_title_measurement_test.dart \
+  -d chrome --web-browser-flag=--start-maximized \
+  --browser-dimension=1920x1080
+# ... then repeat for home_screen_font_measurement_test.dart
+```
+
+Screenshots land in `temp_screenshots/appbar_title_ribbon.png` and
+`temp_screenshots/home_screen_font_ribbon.png`.
+
+Use these when adding a new game (see the "Optional post-build font
+audit" section in the game.build skill for the full workflow — add
+the new game's `_Entry(...)` to both test files, run each, apply the
+winning `fontSize` values, iterate until cap heights are within
+±2 px of Target Tag's baseline in the pixel-precise Python analysis).
+
 ## Related Documentation
 
 - [Test Overview](test-overview.md)

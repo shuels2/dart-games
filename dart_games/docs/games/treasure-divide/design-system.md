@@ -44,7 +44,7 @@ Treasure Divide captures the spirit of Treasure Planet meets Sea of Thieves cart
 
 ### Text Styles
 
-- **Screen titles (AppBar):** PirataOne, Regular, 20pt, Treasure Gold
+- **Screen titles (AppBar):** PirataOne, Regular, 34pt, Treasure Gold
 - **Score display (Active Player Panel):** PirataOne, Regular, 24–32pt, Treasure Gold
 - **Round target display (beside current island):** PirataOne, Regular, 28–36pt, Sail White
 - **Section headers:** PirataOne, Regular, 24pt, Treasure Gold
@@ -61,7 +61,7 @@ Treasure Divide captures the spirit of Treasure Planet meets Sea of Thieves cart
 ### Menu Screen
 
 - **Background:** Game background image (tropical ocean panorama) with a translucent Ocean Teal wash overlay so UI elements read clearly
-- **AppBar:** Ocean Teal (`#008B8B`) background; title "TREASURE DIVIDE SETUP" in PirataOne 20pt Treasure Gold; back button (left); DartboardConnectionInfo (right)
+- **AppBar:** Ocean Teal (`#008B8B`) background; title "TREASURE DIVIDE GAME SETUP" in PirataOne 34pt Treasure Gold; back button (left); DartboardConnectionInfo (right)
 - **Left Panel (Captain's Log):** scrollable column, Ocean Teal at 0.8 opacity with Plank Brown 2px border; "CAPTAIN'S LOG" header PirataOne 24pt Treasure Gold; body Merriweather 16pt Sail White; ~40% screen width
 - **Settings boxes:** Plank Brown 2px border, Ocean Teal at 0.9 opacity background, 12px internal padding; label Merriweather 16pt Sail White on left, control on right
 - **TeamPlayerListPanel:** uses `TeamPlayerListPanelConfig.treasureDivide()`
@@ -70,7 +70,7 @@ Treasure Divide captures the spirit of Treasure Planet meets Sea of Thieves cart
 ### Game Screen
 
 - **Background:** same tropical ocean image with darker overlay (Ocean Teal at 0.6 opacity)
-- **AppBar:** Ocean Teal background; title "TREASURE DIVIDE" PirataOne 20pt Treasure Gold
+- **AppBar:** Ocean Teal background; title "TREASURE DIVIDE" PirataOne 34pt Treasure Gold
 - **Badge row (below AppBar):**
   - Quarter It badge: Blood Red pill, "QUARTER IT" PirataOne 12pt Sail White
   - Custom badge: Treasure Gold pill, "CUSTOM" PirataOne 12pt Ocean Teal
@@ -83,7 +83,7 @@ Treasure Divide captures the spirit of Treasure Planet meets Sea of Thieves cart
 ### Results Screen
 
 - **Background:** tropical ocean background with dark overlay (Ocean Teal at 0.7 opacity)
-- **AppBar:** Ocean Teal background; title "TREASURE DIVIDE RESULTS" PirataOne 20pt Treasure Gold
+- **AppBar:** Ocean Teal background; title "TREASURE DIVIDE RESULTS" PirataOne 34pt Treasure Gold
 - **Winner card:** centered card; "PIRATE CAPTAIN!" PirataOne 36pt Treasure Gold; 120×120 circular PirateAvatarWidget with 3px Treasure Gold border; winner name PirataOne 28pt Sail White; stats PirataOne 20pt Treasure Gold
 - **Rankings:** alternating Ocean Teal / Plank Brown rows; Merriweather 16pt Sail White; winner row Treasure Gold border
 - **Buttons (3):**

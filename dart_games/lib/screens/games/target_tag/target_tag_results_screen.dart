@@ -210,7 +210,7 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
             title: Padding(
               padding: const EdgeInsets.only(top: 10),
               child: Text(
-                'Target Tag Game Over',
+                'Target Tag Results',
                 style: GoogleFonts.luckiestGuy(
                   fontSize: 36,
                   letterSpacing: 1.5,

@@ -29,6 +29,6 @@ void main() {
     expect(find.text('Play Again'), findsOneWidget);
     expect(find.text('Change Settings'), findsOneWidget);
     expect(find.text('Select Different Game'), findsOneWidget);
-    expect(find.text('Target Tag Game Over'), findsOneWidget);
+    expect(find.text('Target Tag Results'), findsOneWidget);
   });
 }
