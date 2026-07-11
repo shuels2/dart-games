@@ -200,17 +200,22 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
               highlightColor: Colors.transparent,
               splashColor: Colors.transparent,
             ),
-            title: Text(
-              'GLADIATOR ARENA GAME SETUP',
-              style: GoogleFonts.cinzel(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: _kMarbleWhite,
-                letterSpacing: 1.5,
-                shadows: const [
-                  Shadow(color: Colors.black54, blurRadius: 4,
-                      offset: Offset(1, 1)),
-                ],
+            title: Transform.translate(
+              // Cinzel's ascender pushes the visual baseline high in
+              // the AppBar strip; nudge down 2 px so caps sit centered.
+              offset: const Offset(0, 2),
+              child: Text(
+                'GLADIATOR ARENA GAME SETUP',
+                style: GoogleFonts.cinzel(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: _kMarbleWhite,
+                  letterSpacing: 1.5,
+                  shadows: const [
+                    Shadow(color: Colors.black54, blurRadius: 4,
+                        offset: Offset(1, 1)),
+                  ],
+                ),
               ),
             ),
             backgroundColor: const Color(0xFF4A3520),

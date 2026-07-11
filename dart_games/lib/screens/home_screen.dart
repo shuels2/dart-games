@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   title,
                   style: title == 'Carnival Derby'
                       ? GoogleFonts.rye(
-                          fontSize: theme.textTheme.titleMedium?.fontSize,
+                          fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 2,
                           color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         )
@@ -170,20 +170,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             )
                           : title == 'Monster Mash'
                               ? GoogleFonts.creepster(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 7,
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.0,
                                 )
                           : title == 'Reef Royale'
                               ? GoogleFonts.fredoka(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 5,
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                 )
                           : title == 'Clockwork Quest'
                               ? GoogleFonts.cinzelDecorative(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 3,
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.2,
@@ -197,14 +197,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 )
                           : title == "Pirate's Grid"
                               ? GoogleFonts.pirataOne(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 8,
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.0,
                                 )
                           : title == 'Gladiator Arena'
                               ? GoogleFonts.cinzel(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 3,
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   letterSpacing: 1.0,
@@ -213,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               // Boogaloo's descender pushes the baseline visually low.
                               // Translate up 5px to align with peer-game baselines.
                               ? GoogleFonts.boogaloo(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 7,
+                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
                                   fontWeight: FontWeight.bold,
                                   color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
                                   height: 0.6, // tightens line-box so the text sits 5px higher
