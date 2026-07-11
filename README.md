@@ -21,9 +21,21 @@ A collection of family-friendly dart games for the **Scolia 2** smart dartboard.
 
 ## Screenshots
 
-| Monster Mash | Pirate's Grid | Clockwork Quest |
+| Carnival Derby | Target Tag | Monster Mash |
 |---|---|---|
-| ![Monster Mash gameplay](dart_games/docs/screenshots/monster_mash.png) | ![Pirate's Grid gameplay](dart_games/docs/screenshots/pirates_grid.png) | ![Clockwork Quest gameplay](dart_games/docs/screenshots/clockwork_quest.png) |
+| ![Carnival Derby gameplay](dart_games/docs/screenshots/carnival_derby.png) | ![Target Tag gameplay](dart_games/docs/screenshots/target_tag.png) | ![Monster Mash gameplay](dart_games/docs/screenshots/monster_mash.png) |
+
+| Reef Royale | Clockwork Quest | Lunar Lander |
+|---|---|---|
+| ![Reef Royale gameplay](dart_games/docs/screenshots/reef_royale.png) | ![Clockwork Quest gameplay](dart_games/docs/screenshots/clockwork_quest.png) | ![Lunar Lander gameplay](dart_games/docs/screenshots/lunar_lander.png) |
+
+| Pirate's Grid | Gladiator Arena | Tiki Golf |
+|---|---|---|
+| ![Pirate's Grid gameplay](dart_games/docs/screenshots/pirates_grid.png) | ![Gladiator Arena gameplay](dart_games/docs/screenshots/gladiator_arena.png) | ![Tiki Golf gameplay](dart_games/docs/screenshots/tiki_golf.png) |
+
+| Treasure Divide | | |
+|---|---|---|
+| ![Treasure Divide gameplay](dart_games/docs/screenshots/treasure_divide.png) | | |
 
 ## Reusable components
 
