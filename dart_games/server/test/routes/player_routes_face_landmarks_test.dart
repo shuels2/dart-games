@@ -126,11 +126,13 @@ void main() {
       await _createPlayer();
 
       // Fake sidecar returns a known landmarks payload.
+      // Eye coords use MediaPipe convention: leftEye = SUBJECT's own
+      // left eye → higher x (image right); rightEye → lower x.
       final landmarks = {
         'detected': true,
         'boundingBox': {'x': 0.20, 'y': 0.15, 'width': 0.60, 'height': 0.70},
-        'leftEye': {'x': 0.35, 'y': 0.42},
-        'rightEye': {'x': 0.65, 'y': 0.42},
+        'leftEye': {'x': 0.65, 'y': 0.42},
+        'rightEye': {'x': 0.35, 'y': 0.42},
         'noseTip': {'x': 0.50, 'y': 0.57},
         'mouthCenter': {'x': 0.50, 'y': 0.73},
         'confidence': 1.0,
@@ -156,7 +158,7 @@ void main() {
       final echoed = body['faceLandmarks'] as Map<String, dynamic>;
       // 'detected' is a control field and should have been stripped.
       expect(echoed.containsKey('detected'), isFalse);
-      expect((echoed['leftEye'] as Map)['x'], 0.35);
+      expect((echoed['leftEye'] as Map)['x'], 0.65);
       expect(echoed['confidence'], 1.0);
 
       // DB row was also updated with the same landmarks.
@@ -168,7 +170,7 @@ void main() {
       expect(storedJson, isNotNull,
           reason: 'face_landmarks column must be written synchronously');
       final storedMap = jsonDecode(storedJson!) as Map<String, dynamic>;
-      expect((storedMap['leftEye'] as Map)['x'], 0.35);
+      expect((storedMap['leftEye'] as Map)['x'], 0.65);
       expect(storedMap['confidence'], 1.0);
     });
   });
@@ -339,10 +341,12 @@ void main() {
       await _createPlayer();
 
       // Simulate what a successful sidecar run stores.
+      // MediaPipe convention: leftEye = subject's own left eye
+      // → higher x (image right); rightEye → lower x.
       const landmarksMap = {
         'boundingBox': {'x': 0.18, 'y': 0.12, 'width': 0.64, 'height': 0.72},
-        'leftEye': {'x': 0.34, 'y': 0.40},
-        'rightEye': {'x': 0.66, 'y': 0.40},
+        'leftEye': {'x': 0.66, 'y': 0.40},
+        'rightEye': {'x': 0.34, 'y': 0.40},
         'noseTip': {'x': 0.50, 'y': 0.55},
         'mouthCenter': {'x': 0.50, 'y': 0.72},
         'confidence': 0.97,
@@ -363,7 +367,7 @@ void main() {
       expect(body['faceLandmarks'], isA<Map>());
       final lm = body['faceLandmarks'] as Map<String, dynamic>;
       expect(lm['confidence'], 0.97);
-      expect((lm['leftEye'] as Map)['x'], 0.34);
+      expect((lm['leftEye'] as Map)['x'], 0.66);
       expect((lm['boundingBox'] as Map)['width'], 0.64);
     });
   });
@@ -457,8 +461,9 @@ void main() {
 
       const landmarksMap = {
         'boundingBox': {'x': 0.10, 'y': 0.10, 'width': 0.80, 'height': 0.80},
-        'leftEye': {'x': 0.30, 'y': 0.38},
-        'rightEye': {'x': 0.70, 'y': 0.38},
+        // Subject-perspective eyes (see fixture note above).
+        'leftEye': {'x': 0.70, 'y': 0.38},
+        'rightEye': {'x': 0.30, 'y': 0.38},
         'noseTip': {'x': 0.50, 'y': 0.55},
         'mouthCenter': {'x': 0.50, 'y': 0.70},
         'confidence': 0.95,

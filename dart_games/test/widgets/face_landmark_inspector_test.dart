@@ -19,10 +19,13 @@ Player _testPlayer({Map<String, dynamic>? landmarks}) {
   );
 }
 
+// Fixture landmarks in MediaPipe convention: `leftEye` = SUBJECT's own
+// left eye, which for a front-facing photo lands on the RIGHT half of
+// the image (x > 0.5). `rightEye` mirrors it on the LEFT half.
 const _knownLandmarks = {
   'boundingBox': {'x': 0.20, 'y': 0.15, 'width': 0.60, 'height': 0.70},
-  'leftEye': {'x': 0.38, 'y': 0.40},
-  'rightEye': {'x': 0.62, 'y': 0.40},
+  'leftEye': {'x': 0.62, 'y': 0.40},
+  'rightEye': {'x': 0.38, 'y': 0.40},
   'noseTip': {'x': 0.50, 'y': 0.55},
   'mouthCenter': {'x': 0.50, 'y': 0.70},
 };

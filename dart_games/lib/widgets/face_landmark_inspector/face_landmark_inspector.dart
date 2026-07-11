@@ -48,12 +48,29 @@ class _PointLandmark {
   final String key;
   final String label;
   final Color color;
-  const _PointLandmark(this.key, this.label, this.color);
+  final String? hint;
+  const _PointLandmark(this.key, this.label, this.color, {this.hint});
 }
 
 const List<_PointLandmark> _kPointLandmarks = [
-  _PointLandmark('leftEye', 'Left eye', Color(0xFF2196F3)),
-  _PointLandmark('rightEye', 'Right eye', Color(0xFF03A9F4)),
+  // MediaPipe / photography convention: "Left" and "Right" are from
+  // the SUBJECT's perspective, not the viewer's. Downstream code
+  // (pirate hat placement, eyepatch, etc.) matches — the Captain's
+  // eyepatch at `leftEye` covers the person's own left eye.
+  _PointLandmark(
+    'leftEye',
+    'Left eye',
+    Color(0xFF2196F3),
+    hint: "The person's own left eye — appears on the RIGHT side of "
+        'the photo when they face the camera.',
+  ),
+  _PointLandmark(
+    'rightEye',
+    'Right eye',
+    Color(0xFF03A9F4),
+    hint: "The person's own right eye — appears on the LEFT side of "
+        'the photo when they face the camera.',
+  ),
   _PointLandmark('noseTip', 'Nose tip', Color(0xFF4CAF50)),
   _PointLandmark('mouthCenter', 'Mouth center', Color(0xFFE91E63)),
 ];
@@ -63,10 +80,21 @@ const Color _kDerivedColor = Color(0xFFFF9800);
 
 // Default landmarks used when the player has none stored — gives the user
 // something to drag instead of an empty image.
+//
+// Eye labels follow the MediaPipe convention: `leftEye` is the SUBJECT's
+// own left eye, which appears on the RIGHT side of a front-facing
+// photo (viewer's right = subject's left). Both mediapipe sidecar
+// strategies emit coords in that convention, and the pirate-avatar
+// renderer places accessories accordingly (e.g. the Captain's
+// eyepatch over the subject's actual left eye). Keeping this seed
+// on the subject-perspective side means a first-drag inherits the
+// correct side even when no photo has been detected yet.
 const Map<String, dynamic> _kDefaultLandmarks = {
   'boundingBox': {'x': 0.20, 'y': 0.15, 'width': 0.60, 'height': 0.70},
-  'leftEye': {'x': 0.38, 'y': 0.40},
-  'rightEye': {'x': 0.62, 'y': 0.40},
+  // leftEye = subject's own left eye → higher x (image right).
+  'leftEye': {'x': 0.62, 'y': 0.40},
+  // rightEye = subject's own right eye → lower x (image left).
+  'rightEye': {'x': 0.38, 'y': 0.40},
   'noseTip': {'x': 0.50, 'y': 0.55},
   'mouthCenter': {'x': 0.50, 'y': 0.70},
 };
@@ -681,7 +709,9 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
             'temple), top of the forehead, bottom of the chin. NOT '
             'the whole head silhouette (no hair).',
       ),
-      ..._kPointLandmarks.map((lm) => _toggleRow(lm.key, lm.label, lm.color)),
+      ..._kPointLandmarks.map(
+        (lm) => _toggleRow(lm.key, lm.label, lm.color, hint: lm.hint),
+      ),
       const Divider(),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

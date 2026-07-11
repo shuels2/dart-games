@@ -39,10 +39,12 @@ void main() {
 
   group('PlayerProvider.updateFaceLandmarks', () {
     test('writes through and updates the local Player', () async {
+      // MediaPipe convention: leftEye = subject's own left eye
+      // → higher x (image right); rightEye → lower x.
       final landmarks = {
         'boundingBox': {'x': 0.18, 'y': 0.12, 'width': 0.64, 'height': 0.72},
-        'leftEye': {'x': 0.34, 'y': 0.40},
-        'rightEye': {'x': 0.66, 'y': 0.40},
+        'leftEye': {'x': 0.66, 'y': 0.40},
+        'rightEye': {'x': 0.34, 'y': 0.40},
         'noseTip': {'x': 0.50, 'y': 0.55},
         'mouthCenter': {'x': 0.50, 'y': 0.72},
       };
@@ -55,7 +57,7 @@ void main() {
       final p = provider.byId('face-prov-1');
       expect(p, isNotNull);
       expect(p!.faceLandmarks, isNotNull);
-      expect((p.faceLandmarks!['leftEye'] as Map)['x'], 0.34);
+      expect((p.faceLandmarks!['leftEye'] as Map)['x'], 0.66);
       expect(notified, greaterThanOrEqualTo(1),
           reason: 'listeners should be notified on successful update');
     });
@@ -104,10 +106,12 @@ void main() {
     test(
         'detection success — provider caches the returned landmarks on the '
         'local Player record without a follow-up GET', () async {
+      // MediaPipe convention: leftEye = subject's own left eye
+      // → higher x (image right); rightEye → lower x.
       final freshLandmarks = {
         'boundingBox': {'x': 0.20, 'y': 0.15, 'width': 0.60, 'height': 0.70},
-        'leftEye': {'x': 0.35, 'y': 0.42},
-        'rightEye': {'x': 0.65, 'y': 0.42},
+        'leftEye': {'x': 0.65, 'y': 0.42},
+        'rightEye': {'x': 0.35, 'y': 0.42},
         'noseTip': {'x': 0.50, 'y': 0.57},
         'mouthCenter': {'x': 0.50, 'y': 0.73},
         'confidence': 1.0,
@@ -123,7 +127,7 @@ void main() {
       final p = provider.byId('face-prov-1');
       expect(p, isNotNull);
       expect(p!.faceLandmarks, isNotNull);
-      expect((p.faceLandmarks!['leftEye'] as Map)['x'], 0.35);
+      expect((p.faceLandmarks!['leftEye'] as Map)['x'], 0.65);
       expect(p.faceLandmarks!['confidence'], 1.0);
       // No detection error surfaced.
       expect(provider.lastPhotoUploadFaceLandmarksError, isNull);

@@ -319,10 +319,12 @@ void main() {
         return http.Response(
             jsonEncode({
               'photoPath': '/photos/p1.jpg',
+              // MediaPipe convention in the fixture: leftEye = subject's
+              // own left eye → higher x; rightEye → lower x.
               'faceLandmarks': {
                 'boundingBox': {'x': 0.2, 'y': 0.15, 'width': 0.6, 'height': 0.7},
-                'leftEye': {'x': 0.35, 'y': 0.42},
-                'rightEye': {'x': 0.65, 'y': 0.42},
+                'leftEye': {'x': 0.65, 'y': 0.42},
+                'rightEye': {'x': 0.35, 'y': 0.42},
                 'noseTip': {'x': 0.50, 'y': 0.57},
                 'mouthCenter': {'x': 0.50, 'y': 0.73},
                 'confidence': 1.0,
@@ -339,7 +341,7 @@ void main() {
       expect(result.faceLandmarksError, isNull);
       expect(result.faceLandmarks, isNotNull);
       expect(result.faceLandmarks!['confidence'], 1.0);
-      expect((result.faceLandmarks!['leftEye'] as Map)['x'], 0.35);
+      expect((result.faceLandmarks!['leftEye'] as Map)['x'], 0.65);
       client.dispose();
     });
 
