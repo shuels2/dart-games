@@ -4,12 +4,14 @@ Face-landmark sidecar for Dart Games server.
 Reads a single JSON line from stdin:
     {"image_path": "/absolute/path/to/avatar.jpg"}
 
-Writes a single JSON line to stdout:
+Writes a single JSON line to stdout. Eye coordinates use the
+SUBJECT's-perspective convention: `leftEye` is the person's own left
+eye — on the RIGHT half of a front-facing unmirrored photo.
     {
         "detected": true,
         "boundingBox": {"x": 0.18, "y": 0.12, "width": 0.64, "height": 0.72},
-        "leftEye":     {"x": 0.34, "y": 0.40},
-        "rightEye":    {"x": 0.66, "y": 0.40},
+        "leftEye":     {"x": 0.66, "y": 0.40},
+        "rightEye":    {"x": 0.34, "y": 0.40},
         "noseTip":     {"x": 0.50, "y": 0.55},
         "mouthCenter": {"x": 0.50, "y": 0.72},
         "confidence":  0.97
@@ -104,12 +106,29 @@ def _detect_with_mediapipe_tasks(img_bgr) -> dict | None:
 
         lm = result.face_landmarks[0]  # list of NormalizedLandmark
 
-        # Key landmark indices (same as mediapipe legacy FaceMesh):
-        #   33: left eye outer corner (user's left)
-        #  263: right eye outer corner (user's right)
-        #    1: nose tip
-        #   13: upper lip center
-        #   14: lower lip center
+        # Key landmark indices in the MediaPipe canonical face mesh.
+        # Empirically verified against a raised-hand test on unmirrored
+        # camera captures:
+        #    33: eye outer corner on IMAGE-LEFT half of a canonical
+        #        front-facing face  →  the SUBJECT's own RIGHT eye
+        #   263: eye outer corner on IMAGE-RIGHT half              →
+        #        the SUBJECT's own LEFT eye
+        #     1: nose tip
+        #    13: upper lip center
+        #    14: lower lip center
+        #
+        # Downstream code (`leftEye` / `rightEye` keys, avatar overlay
+        # placement in `pirate_avatar_widget.dart`) follows the
+        # SUBJECT's-perspective convention: `leftEye` is the person's
+        # own left eye. Previous versions of this sidecar assigned
+        # `leftEye = lm[33]`, which put the person's right eye under
+        # the `leftEye` key — the labels rendered inverted in the
+        # face-landmark inspector. Reported: user raised their left
+        # hand while taking a selfie; the eye on the same side of the
+        # image as the raised hand was labeled "Right eye" (it was
+        # actually their left eye — MediaPipe's landmark 33 is on
+        # the image-left half of the face, which for an unmirrored
+        # photo is the person's own RIGHT eye).
         xs = [l.x for l in lm]
         ys = [l.y for l in lm]
         bb_x = round(min(xs), 4)
@@ -123,8 +142,9 @@ def _detect_with_mediapipe_tasks(img_bgr) -> dict | None:
         return {
             'detected': True,
             'boundingBox': {'x': bb_x, 'y': bb_y, 'width': bb_w, 'height': bb_h},
-            'leftEye':     {'x': round(lm[33].x, 4),  'y': round(lm[33].y, 4)},
-            'rightEye':    {'x': round(lm[263].x, 4), 'y': round(lm[263].y, 4)},
+            # SUBJECT-perspective labels — see block comment above.
+            'leftEye':     {'x': round(lm[263].x, 4), 'y': round(lm[263].y, 4)},
+            'rightEye':    {'x': round(lm[33].x, 4),  'y': round(lm[33].y, 4)},
             'noseTip':     {'x': round(lm[1].x, 4),   'y': round(lm[1].y, 4)},
             'mouthCenter': {'x': mouth_x, 'y': mouth_y},
             'confidence':  1.0,
