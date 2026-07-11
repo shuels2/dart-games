@@ -446,7 +446,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     'Carnival Derby Race',
                     style: GoogleFonts.rye(
                       fontWeight: FontWeight.bold,
-                      fontSize: 24,
+                      fontSize: 33,
                       color: const Color(0xFFF1FAEE), // Cloud Dancer
                       shadows: [
                         const Shadow(

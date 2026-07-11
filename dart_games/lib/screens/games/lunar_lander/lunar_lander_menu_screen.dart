@@ -162,7 +162,7 @@ class _LunarLanderMenuScreenState extends State<LunarLanderMenuScreen> {
             title: Text(
               'LUNAR LANDER GAME SETUP',
               style: GoogleFonts.orbitron(
-                fontSize: 24,
+                fontSize: 35,
                 fontWeight: FontWeight.bold,
                 color: _starWhite,
                 letterSpacing: 1.5,

@@ -159,7 +159,7 @@ class _MonsterMashMenuScreenState extends State<MonsterMashMenuScreen>
               child: Text(
                 'Monster Mash Game Setup',
                 style: GoogleFonts.creepster(
-                  fontSize: 39,
+                  fontSize: 35,
                   letterSpacing: 1.5,
                   color: const Color(0xFFF5F5DC),
                   shadows: [

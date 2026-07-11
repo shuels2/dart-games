@@ -459,7 +459,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                 child: Text(
                   'Reef Royale',
                   style: GoogleFonts.fredoka(
-                    fontSize: 32,
+                    fontSize: 35,
                     fontWeight: FontWeight.bold,
                     color: _pearlWhite,
                     letterSpacing: 2,

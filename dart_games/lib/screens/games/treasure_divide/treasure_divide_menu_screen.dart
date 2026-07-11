@@ -342,7 +342,7 @@ class _TreasureDivideMenuScreenState extends State<TreasureDivideMenuScreen> {
       title: Text(
         'TREASURE DIVIDE SETUP',
         style: GoogleFonts.pirataOne(
-          fontSize: 38,
+          fontSize: 34,
           color: _treasureGold,
           shadows: const [
             Shadow(

@@ -234,7 +234,7 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
               child: Text(
                 'Monster Mash Game Over',
                 style: GoogleFonts.creepster(
-                  fontSize: 39,
+                  fontSize: 35,
                   letterSpacing: 1.5,
                   shadows: [
                     Shadow(

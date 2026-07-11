@@ -203,7 +203,7 @@ class _GladiatorArenaMenuScreenState extends State<GladiatorArenaMenuScreen> {
             title: Text(
               'GLADIATOR ARENA GAME SETUP',
               style: GoogleFonts.cinzel(
-                fontSize: 28,
+                fontSize: 36,
                 fontWeight: FontWeight.bold,
                 color: _kMarbleWhite,
                 letterSpacing: 1.5,

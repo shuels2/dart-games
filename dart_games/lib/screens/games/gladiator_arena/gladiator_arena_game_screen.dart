@@ -550,7 +550,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               title: Text(
                 'GLADIATOR ARENA',
                 style: GoogleFonts.cinzel(
-                  fontSize: 28,
+                  fontSize: 36,
                   fontWeight: FontWeight.bold,
                   color: _kMarbleWhite,
                   letterSpacing: 1.5,

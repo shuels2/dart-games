@@ -713,7 +713,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               title: Text(
                 'TREASURE DIVIDE',
                 style: GoogleFonts.pirataOne(
-                  fontSize: 38,
+                  fontSize: 34,
                   color: _treasureGold,
                   shadows: const [
                     Shadow(

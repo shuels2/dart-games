@@ -185,7 +185,7 @@ class _TreasureDivideResultsScreenState
             title: Text(
               'TREASURE DIVIDE RESULTS',
               style: GoogleFonts.pirataOne(
-                fontSize: 38,
+                fontSize: 34,
                 color: _treasureGold,
                 shadows: const [
                   Shadow(

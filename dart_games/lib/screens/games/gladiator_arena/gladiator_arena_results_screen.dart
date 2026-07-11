@@ -201,7 +201,7 @@ class _GladiatorArenaResultsScreenState
             title: Text(
               'GLADIATOR ARENA RESULTS',
               style: GoogleFonts.cinzel(
-                fontSize: 28,
+                fontSize: 36,
                 fontWeight: FontWeight.bold,
                 color: _kMarbleWhite,
                 letterSpacing: 1.5,

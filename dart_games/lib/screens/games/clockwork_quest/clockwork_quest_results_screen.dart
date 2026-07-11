@@ -159,7 +159,7 @@ class _ClockworkQuestResultsScreenState
             title: Text(
               'CLOCKWORK QUEST',
               style: GoogleFonts.cinzelDecorative(
-                fontSize: 26,
+                fontSize: 29,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFFF5F0E8),
                 letterSpacing: 1.5,
