@@ -60,23 +60,28 @@ const List<_PointLandmark> _kPointLandmarks = [
   _PointLandmark(
     'leftEye',
     'Left eye',
-    Color(0xFF2196F3),
-    hint: "The person's own left eye — appears on the RIGHT side of "
-        'the photo when they face the camera.',
+    Color(0xFF2196F3), // Blue
+    hint: "Align with the pupil of the person's own left eye (the side "
+        'where their left hand would be). This would appear on the '
+        'RIGHT side of the photo when they face the camera.',
   ),
   _PointLandmark(
     'rightEye',
     'Right eye',
-    Color(0xFF03A9F4),
-    hint: "The person's own right eye — appears on the LEFT side of "
-        'the photo when they face the camera.',
+    Color(0xFF9C27B0), // Purple — distinct from the left eye's blue
+    hint: "Align with the pupil of the person's own right eye (the side "
+        'where their right hand would be). This would appear on the '
+        'LEFT side of the photo when they face the camera.',
   ),
-  _PointLandmark('noseTip', 'Nose tip', Color(0xFF4CAF50)),
-  _PointLandmark('mouthCenter', 'Mouth center', Color(0xFFE91E63)),
+  _PointLandmark('noseTip', 'Nose tip', Color(0xFF4CAF50)), // Green
+  _PointLandmark('mouthCenter', 'Mouth center', Color(0xFFE91E63)), // Pink
 ];
 
-const Color _kBoundingBoxColor = Color(0xFFFFC107);
-const Color _kDerivedColor = Color(0xFFFF9800);
+const Color _kBoundingBoxColor = Color(0xFFFFC107); // Amber
+// Head top and chin bottom get distinct colors from each other AND from
+// the bounding-box amber they were previously derived from.
+const Color _kHeadTopColor = Color(0xFFF44336); // Red
+const Color _kChinBottomColor = Color(0xFF00BCD4); // Cyan
 
 // Default landmarks used when the player has none stored — gives the user
 // something to drag instead of an empty image.
@@ -354,10 +359,18 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
 
   @override
   Widget build(BuildContext context) {
+    // Grow the dialog to fill the viewport (minus 24px inset padding on
+    // every side) with generous ceilings, so the sidebar can render all
+    // seven landmark toggles + hints + the two footer buttons without
+    // ever needing to scroll on a normal 1024×768+ display. The
+    // insetPadding subtracts 48px total from each axis.
+    final size = MediaQuery.sizeOf(context);
+    final maxWidth = (size.width - 48).clamp(600.0, 1400.0);
+    final maxHeight = (size.height - 48).clamp(600.0, 1100.0);
     return Dialog(
       insetPadding: const EdgeInsets.all(24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 900, maxHeight: 720),
+        constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -541,7 +554,7 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
         children.add(_buildDraggableDot(
           key: 'headTop',
           label: 'Head top',
-          color: _kDerivedColor,
+          color: _kHeadTopColor,
           center: Offset(px, py),
           canvas: size,
           onMoved: (nx, ny) => _setPoint('headTop', nx, ny),
@@ -556,7 +569,7 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
         children.add(_buildDraggableDot(
           key: 'chinBottom',
           label: 'Chin bottom',
-          color: _kDerivedColor,
+          color: _kChinBottomColor,
           center: Offset(px, py),
           canvas: size,
           onMoved: (nx, ny) => _setPoint('chinBottom', nx, ny),
@@ -705,9 +718,10 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
         'boundingBox',
         'Bounding box',
         _kBoundingBoxColor,
-        hint: 'Face contour extent — sides of the face (temple to '
-            'temple), top of the forehead, bottom of the chin. NOT '
-            'the whole head silhouette (no hair).',
+        hint: "Outline of the person's face from side to side (temple to "
+            'temple) and the top of the visible forehead to the bottom '
+            'of the chin. Do NOT outline the entire head silhouette '
+            '(no hair and no ears).',
       ),
       ..._kPointLandmarks.map(
         (lm) => _toggleRow(lm.key, lm.label, lm.color, hint: lm.hint),
@@ -716,14 +730,15 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Text(
-          'Head top / Chin bottom — auto-set from the bounding box '
-          'on first detection; drag to fine-tune where accessories '
-          '(hats, mustaches, beards) anchor.',
+          'Head top and Chin bottom are initially set based on the '
+          'bounding box. You can fine tune the locations where '
+          'accessories like hats and beards appear by dragging the '
+          'points to a different location.',
           style: Theme.of(context).textTheme.labelSmall,
         ),
       ),
-      _toggleRow('headTop', 'Head top', _kDerivedColor),
-      _toggleRow('chinBottom', 'Chin bottom', _kDerivedColor),
+      _toggleRow('headTop', 'Head top', _kHeadTopColor),
+      _toggleRow('chinBottom', 'Chin bottom', _kChinBottomColor),
     ];
 
     return ListView(
@@ -771,45 +786,52 @@ class _FaceLandmarkInspectorState extends State<FaceLandmarkInspector> {
               }),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Checkbox(
-              key: Key('face-landmark-toggle-$key'),
-              value: _visible[key] ?? true,
-              onChanged: _busy
-                  ? null
-                  : (v) => setState(() {
-                        _visible[key] = v ?? true;
-                      }),
+            // Checkbox, label, and legend dot all share the top row so
+            // they read as one unit — no vertical drift over the
+            // multi-line hint block.
+            Row(
+              children: [
+                Checkbox(
+                  key: Key('face-landmark-toggle-$key'),
+                  value: _visible[key] ?? true,
+                  onChanged: _busy
+                      ? null
+                      : (v) => setState(() {
+                            _visible[key] = v ?? true;
+                          }),
+                ),
+                const SizedBox(width: 4),
+                Expanded(child: Text(label)),
+                const SizedBox(width: 8),
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                    border: Border.all(color: Colors.black26),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(label),
-                  if (hint != null)
-                    Text(
-                      hint,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Colors.grey.shade600,
-                            fontStyle: FontStyle.italic,
-                          ),
-                    ),
-                ],
+            if (hint != null)
+              Padding(
+                // Indent the hint under the label text (past the
+                // checkbox's tap-target width) so it visually belongs
+                // to the same item.
+                padding: const EdgeInsets.only(left: 52, bottom: 4),
+                child: Text(
+                  hint,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
               ),
-            ),
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color,
-                border: Border.all(color: Colors.black26),
-              ),
-            ),
           ],
         ),
       ),

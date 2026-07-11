@@ -581,6 +581,8 @@ class AddPlayerDialogKeys {
   static const removePhotoButton = Key('add_player_remove_photo_button');
   static const addButton = Key('add_player_add_button');
   static const cancelButton = Key('add_player_cancel_button');
+  static const progressOverlay = Key('add_player_progress_overlay');
+  static const progressLabel = Key('add_player_progress_label');
 }
 
 class TeamAssignmentDialogKeys {

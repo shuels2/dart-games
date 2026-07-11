@@ -570,18 +570,17 @@ class _OptionsScreenState extends State<OptionsScreen> {
   }
 
   void _handleAddPlayer() async {
+    // The dialog handles savePlayer inside onSubmit, showing its own
+    // progress indicator while the roundtrip is in flight. We only get
+    // the returned Player back after it has already been persisted.
+    final playerProvider = context.read<PlayerProvider>();
     final player = await showAddPlayerDialog(
       context: context,
       config: AddPlayerDialogConfig.optionsScreen(context),
+      onSubmit: playerProvider.savePlayer,
     );
 
     if (player != null && mounted) {
-      final playerProvider = context.read<PlayerProvider>();
-      await playerProvider.savePlayer(player);
-      // savePlayer is an HTTP roundtrip; the screen may unmount during the
-      // gap. Early-return to avoid touching disposed state below (snackbar
-      // ScaffoldMessenger, ScrollController in _scrollToNewPlayer).
-      if (!mounted) return;
       // Non-blocking hint if the server-side face-landmark detection
       // couldn't find a face in the just-uploaded photo. Photo is still
       // saved; hint tells the operator to retake or re-detect.
