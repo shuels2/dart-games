@@ -153,11 +153,20 @@ class ApiClient {
 
   /// POST /api/v1/players/<id>/photo - Upload a player photo.
   ///
-  /// When [detectLandmarks] is false the server skips the fire-and-forget
-  /// mediapipe job — useful when the caller is about to PATCH a known
-  /// landmark override and doesn't want the background detection racing
-  /// past it. Defaults to true (current behavior).
-  Future<String> uploadPlayerPhoto(
+  /// The server now waits for the mediapipe sidecar (or the OpenCV Haar
+  /// fallback) to finish detecting face landmarks BEFORE responding, so
+  /// the response either includes the fresh landmarks (on success) or
+  /// an [UploadPlayerPhotoResult.faceLandmarksError] naming the failure
+  /// mode (`no-face-detected`, `python-not-found`, `timeout`, etc.).
+  /// Callers should surface the error field non-fatally — the photo is
+  /// saved either way.
+  ///
+  /// When [detectLandmarks] is false the server skips detection entirely
+  /// — useful when the caller is about to PATCH a known landmark
+  /// override and doesn't want the sidecar racing past it. In that case
+  /// both `faceLandmarks` and `faceLandmarksError` will be null on the
+  /// returned record.
+  Future<UploadPlayerPhotoResult> uploadPlayerPhoto(
     String id,
     String base64Data,
     String fileName, {
@@ -169,7 +178,14 @@ class ApiClient {
       'detectLandmarks': detectLandmarks,
     });
     final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return body['photoPath'] as String;
+    final rawLandmarks = body['faceLandmarks'];
+    return UploadPlayerPhotoResult(
+      photoPath: body['photoPath'] as String,
+      faceLandmarks: rawLandmarks is Map
+          ? Map<String, dynamic>.from(rawLandmarks as Map)
+          : null,
+      faceLandmarksError: body['faceLandmarksError'] as String?,
+    );
   }
 
   /// GET /api/v1/players/<id>/photo - Get player photo bytes.
@@ -518,4 +534,26 @@ class FaceLandmarksException implements Exception {
 
   @override
   String toString() => reason;
+}
+
+/// Result of [ApiClient.uploadPlayerPhoto]. The upload always yields a
+/// photo path; the face-landmark fields are populated based on what
+/// the server-side synchronous detection produced:
+///   - `faceLandmarks` set, `faceLandmarksError` null → detection ran
+///     and found a face; the map is the mediapipe/OpenCV landmark shape.
+///   - `faceLandmarks` null, `faceLandmarksError` set → detection ran
+///     but failed; the string is the sidecar's `errorReason` (e.g.
+///     `no-face-detected`, `python-not-found`, `timeout`). Callers
+///     should surface it non-fatally; the photo is still saved.
+///   - Both null → the caller opted out via `detectLandmarks: false`.
+class UploadPlayerPhotoResult {
+  final String photoPath;
+  final Map<String, dynamic>? faceLandmarks;
+  final String? faceLandmarksError;
+
+  const UploadPlayerPhotoResult({
+    required this.photoPath,
+    this.faceLandmarks,
+    this.faceLandmarksError,
+  });
 }

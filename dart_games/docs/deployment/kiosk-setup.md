@@ -54,6 +54,26 @@ Everything else still works; Treasure Divide face-landmark features
 report `python-not-found` until you install Python 3.9+ and re-run
 the installer.
 
+## MediaPipe FaceLandmarker task model
+
+The sidecar prefers the **MediaPipe Tasks FaceLandmarker** path
+(468 real landmark points — actual nose tip, mouth corners, jawline,
+etc.) and falls back to an OpenCV Haar cascade heuristic only when
+its task-model file is missing. The Haar fallback produces heuristic
+(hardcoded) nose and mouth positions relative to the face bounding
+box — visibly less accurate for character-avatar overlays like the
+Treasure Divide pirate hats and glasses.
+
+- **File:** `server/python/face_landmarker.task` (~3.8 MB, Apache 2.0)
+- **Provenance:** Google's public MediaPipe models bucket,
+  `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`
+- **Committed to the repo** alongside the sidecar so a fresh checkout
+  gets it automatically.
+- **`check_python_deps.bat` verifies it and re-downloads if missing**
+  (shallow clone, LFS misconfig, manual delete). A failed download
+  is a WARN, not an ERROR — the app still runs, it just falls back
+  to Haar until the file is restored.
+
 ## One-time setup
 
 1. **Install Flutter SDK** (provides `dart` + `flutter` on PATH).
@@ -139,6 +159,7 @@ Common failure modes and fixes:
 | ✗ Python interpreter — not found | `DART_GAMES_PYTHON` not pinned AND no `py`/`python` on the service's PATH | Install Python 3.9+ (add to PATH), then re-run `install_service.bat` so the absolute path gets pinned |
 | ✓ Python + ✗ mediapipe importable | Interpreter can't find MediaPipe — usually `pip install --user` put it under a different account's `%APPDATA%` | Re-run `check_python_deps.bat` **from the account whose shell you'll use to run install_service.bat**, then re-run `install_service.bat` so `PYTHONPATH` gets pinned |
 | ✓ Python + ✓ mediapipe + still fails on Re-detect | Photo has no face MediaPipe can find | Retake with a clearer, front-facing photo |
+| Detection succeeds but eyebrows/mustache/beard overlays sit wrong on themed avatars | `server/python/face_landmarker.task` missing — sidecar fell back to Haar, which hardcodes nose and mouth positions | Re-run `check_python_deps.bat` — it verifies the task file exists and re-downloads it from Google's models bucket if not. If the download itself fails, manually save the file from `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task` to `server/python/face_landmarker.task`, then Re-detect each affected player |
 
 ## Removing the service
 

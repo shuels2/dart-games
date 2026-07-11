@@ -187,6 +187,36 @@ if !errorlevel! neq 0 (
 :imports_ok
 
 REM ============================================================
+REM Verify the MediaPipe FaceLandmarker task model is present next
+REM to the sidecar. Without it, the sidecar silently falls back to
+REM its Haar cascade branch — which produces heuristic (fake) nose
+REM and mouth positions and is measurably less accurate than the
+REM real 468-landmark MediaPipe path. The file is committed to the
+REM repo alongside the sidecar; if it went missing (shallow clone,
+REM LFS misconfig, manual delete), try to fetch it from Google's
+REM public models bucket so first-boot detection is still real.
+REM ============================================================
+set "_TASK_FILE=%~dp0server\python\face_landmarker.task"
+if not exist "!_TASK_FILE!" (
+    echo   WARN - MediaPipe task model missing at:
+    echo          !_TASK_FILE!
+    echo          Attempting to download from Google's public models bucket...
+    powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task' -OutFile '!_TASK_FILE!' -UseBasicParsing -TimeoutSec 60; exit 0 } catch { exit 1 }" >nul 2>&1
+    if not exist "!_TASK_FILE!" (
+        echo   WARN - Download failed. Face-landmark detection will use the
+        echo          OpenCV Haar cascade fallback until the task file is
+        echo          restored. To fix manually, download:
+        echo            https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+        echo          and save it to:
+        echo            !_TASK_FILE!
+    ) else (
+        echo   OK - Downloaded MediaPipe task model.
+    )
+) else (
+    echo   OK - MediaPipe task model present.
+)
+
+REM ============================================================
 REM Write sentinel: timestamp + resolved command + mediapipe version
 REM ============================================================
 for /f "usebackq tokens=*" %%V in (`!_PY_CMD! -c "import mediapipe; print(mediapipe.__version__)" 2^>nul`) do set "_MP_VER=%%V"

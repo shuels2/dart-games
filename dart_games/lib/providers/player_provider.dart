@@ -14,6 +14,16 @@ class PlayerProvider extends ChangeNotifier {
   String? _error;
   DateTime? _lastSortedAt;
 
+  /// Populated after a photo upload when the server-side face-landmark
+  /// detection ran and failed. Set to the sidecar's `errorReason`
+  /// (`no-face-detected`, `python-not-found`, `timeout`, etc.) so the
+  /// caller (Add Player / Edit Player dialog) can show a non-blocking
+  /// hint. Cleared at the START of every `savePlayer` call so a
+  /// previous session's error never carries over.
+  String? _lastPhotoUploadFaceLandmarksError;
+  String? get lastPhotoUploadFaceLandmarksError =>
+      _lastPhotoUploadFaceLandmarksError;
+
   /// O(1) `id → Player` lookup, lazily built. Invalidated on every
   /// [notifyListeners] call (which we override to clear the cache).
   /// Beats `firstWhere` in build methods that do many lookups per render.
@@ -232,6 +242,9 @@ class PlayerProvider extends ChangeNotifier {
 
   // Add or update a player
   Future<void> savePlayer(Player player) async {
+    // Reset the photo upload detection-error hint so a stale message
+    // from a previous save can't leak into this call's UI treatment.
+    _lastPhotoUploadFaceLandmarksError = null;
     try {
       final index = _allPlayers.indexWhere((p) => p.id == player.id);
 
@@ -331,7 +344,14 @@ class PlayerProvider extends ChangeNotifier {
       if (commaIdx < 0) return; // malformed; bail silently
       final base64Data = newPhoto.substring(commaIdx + 1);
       try {
-        await _api.uploadPlayerPhoto(player.id, base64Data, 'photo.jpg');
+        final result = await _api.uploadPlayerPhoto(
+            player.id, base64Data, 'photo.jpg');
+        // Server now runs face-landmark detection synchronously before
+        // responding. On success it echoes the fresh landmarks so we
+        // can cache them locally instead of requiring a follow-up GET
+        // /players. On failure it echoes an error string so the Add /
+        // Edit Player dialog can show a non-blocking hint.
+        _lastPhotoUploadFaceLandmarksError = result.faceLandmarksError;
         // Store + apply a per-player cache-bust token. The upload
         // replaces the file behind the SAME endpoint `/api/v1/players/
         // <id>/photo`, and NetworkImage / the browser image cache key
@@ -349,6 +369,14 @@ class PlayerProvider extends ChangeNotifier {
           _allPlayers[idx] = _allPlayers[idx].copyWith(
             photoPath: ApiConfig.url(
                 '/api/v1/players/${player.id}/photo?v=$cacheBust'),
+            // Cache the freshly-detected landmarks locally so widgets
+            // that watch this provider render themed avatars correctly
+            // without waiting for a loadPlayers() cycle. Only overwrite
+            // when detection actually ran (result.faceLandmarks non-null)
+            // so a `detectLandmarks:false` opt-out upload doesn't blow
+            // away a manual override that landed via a previous PATCH.
+            faceLandmarks: result.faceLandmarks ??
+                _allPlayers[idx].faceLandmarks,
           );
           notifyListeners();
         }

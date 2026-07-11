@@ -386,6 +386,20 @@ class FaceLandmarksService {
       }
     }
 
+    // MediaPipe FaceLandmarker task model. When present next to the
+    // sidecar the Python script uses Strategy 1 (real 468-landmark
+    // detection); when absent it silently falls back to Strategy 2
+    // (OpenCV Haar cascade) which is measurably less accurate —
+    // heuristic nose / mouth positions relative to the face box.
+    // Surfacing this in diagnostics lets the client warn about a
+    // Haar-fallback state that would otherwise be invisible.
+    String? taskModelPath;
+    bool taskModelFound = false;
+    if (sidecar != null) {
+      taskModelPath = path.join(path.dirname(sidecar), 'face_landmarker.task');
+      taskModelFound = File(taskModelPath).existsSync();
+    }
+
     return {
       'pythonCommand': python,
       'pythonFound': python != null,
@@ -394,6 +408,8 @@ class FaceLandmarksService {
       'mediapipeOk': mediapipeOk,
       'mediapipeVersion': mediapipeVersion,
       'mediapipeError': mediapipeError,
+      'taskModelPath': taskModelPath,
+      'taskModelFound': taskModelFound,
       'workingDirectory': Directory.current.path,
       'scriptPath': Platform.script.toFilePath(),
       'envOverride': Platform.environment['DART_GAMES_PYTHON'],

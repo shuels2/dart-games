@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/player.dart';
 import '../../providers/player_provider.dart';
 import '../add_player/add_player.dart';
+import '../face_landmarks_hint.dart';
 import '../player_selection_card.dart';
 import 'dual_player_list_panel_config.dart';
 
@@ -331,6 +332,9 @@ class _DualPlayerListPanelState extends State<DualPlayerListPanel> {
       // Touching the provider after disposal triggers a "ChangeNotifier was
       // used after being disposed" assertion. Same guard as team_player_list_panel.
       if (!mounted) return;
+      // Non-blocking face-landmarks hint (only fires when server-side
+      // detection ran and failed on the just-uploaded photo).
+      showFaceLandmarksHintIfAny(context);
 
       // Auto-select the newly added player only if max not reached
       if (playerProvider.selectedPlayers.length < config.maxPlayers) {

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/player.dart';
 import '../../providers/player_provider.dart';
 import '../add_player/add_player.dart';
+import '../face_landmarks_hint.dart';
 import '../player_selection_card.dart';
 import '../player_avatar_widget.dart';
 import 'team_player_list_panel_config.dart';
@@ -667,6 +668,9 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
       // Touching the provider after disposal triggers a "ChangeNotifier was
       // used after being disposed" assertion.
       if (!mounted) return;
+      // Non-blocking face-landmarks hint (only fires when server-side
+      // detection ran and failed on the just-uploaded photo).
+      showFaceLandmarksHintIfAny(context);
 
       final effectiveMax = widget.isTeamMode
           ? config.maxPlayers

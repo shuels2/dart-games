@@ -22,6 +22,21 @@ class MockApiServer {
   };
   final List<Map<String, dynamic>> dartboardProfiles = [];
 
+  /// Optional simulator for what the server-side face-landmark detection
+  /// echoes back on the NEXT `POST /players/<id>/photo` call.
+  ///   - null (default): response has neither `faceLandmarks` nor
+  ///     `faceLandmarksError`, matching the `detectLandmarks:false`
+  ///     opt-out shape.
+  ///   - `landmarks` non-null, `error` null → detection success. The
+  ///     mock echoes the landmarks map back to the client AND stores
+  ///     them on the player record for subsequent GET calls.
+  ///   - `landmarks` null, `error` non-null → detection failure. The
+  ///     mock echoes the errorReason string back to the client; the
+  ///     player's `faceLandmarks` field stays null.
+  /// Consumed (cleared) after each `POST .../photo` call so a test's
+  /// simulator setup doesn't leak into the next call.
+  MockNextPhotoUploadDetection? nextPhotoUploadDetection;
+
   late final MockClient mockClient;
   late final ApiClient apiClient;
 
@@ -230,7 +245,25 @@ class MockApiServer {
         final idx = players.indexWhere((p) => p['id'] == id);
         if (idx < 0) return http.Response('', 404);
         players[idx]['photoPath'] = '/photos/$id.jpg';
-        return _jsonResponse({'photoPath': '/photos/$id.jpg'});
+        // If the test staged a detection outcome, echo it back on this
+        // call and consume the staging so it doesn't leak into later
+        // calls. Success also stores the landmarks on the player row
+        // so subsequent GETs see them.
+        final detection = nextPhotoUploadDetection;
+        nextPhotoUploadDetection = null;
+        final responseBody = <String, dynamic>{
+          'photoPath': '/photos/$id.jpg',
+        };
+        if (detection != null) {
+          if (detection.landmarks != null) {
+            responseBody['faceLandmarks'] = detection.landmarks;
+            players[idx]['faceLandmarks'] = detection.landmarks;
+          }
+          if (detection.error != null) {
+            responseBody['faceLandmarksError'] = detection.error;
+          }
+        }
+        return _jsonResponse(responseBody);
       }
       if (method == 'GET') {
         return http.Response('', 404);
@@ -411,3 +444,25 @@ class MockApiServer {
 /// });
 /// ```
 MockApiServer createMockApiServer() => MockApiServer();
+
+/// Configures the mock's next `POST /players/<id>/photo` response.
+/// Use via `mock.nextPhotoUploadDetection = MockNextPhotoUploadDetection.success(...)`
+/// or `.failure(errorReason)`. See `MockApiServer.nextPhotoUploadDetection`
+/// for consumption semantics.
+class MockNextPhotoUploadDetection {
+  final Map<String, dynamic>? landmarks;
+  final String? error;
+
+  const MockNextPhotoUploadDetection._({this.landmarks, this.error});
+
+  /// Simulates a successful detection — response includes the given
+  /// [landmarks] map, and the mock also stores it on the player record.
+  factory MockNextPhotoUploadDetection.success(
+          Map<String, dynamic> landmarks) =>
+      MockNextPhotoUploadDetection._(landmarks: landmarks);
+
+  /// Simulates a failed detection — response includes the given
+  /// [errorReason]; the player row is not touched.
+  factory MockNextPhotoUploadDetection.failure(String errorReason) =>
+      MockNextPhotoUploadDetection._(error: errorReason);
+}

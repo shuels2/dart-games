@@ -90,4 +90,87 @@ void main() {
       expect((p!.faceLandmarks!['leftEye'] as Map)['x'], 0.30);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Synchronous photo-upload detection surfaced through savePlayer
+  // ---------------------------------------------------------------------------
+
+  group('PlayerProvider.savePlayer photo-upload detection outcomes', () {
+    // Minimal base64 data URL — the mock server doesn't decode it; we
+    // just need the `data:image/...,...` prefix so PlayerProvider's
+    // "case 1" branch triggers an upload call.
+    const _dataUrl = 'data:image/jpeg;base64,AAAA';
+
+    test(
+        'detection success — provider caches the returned landmarks on the '
+        'local Player record without a follow-up GET', () async {
+      final freshLandmarks = {
+        'boundingBox': {'x': 0.20, 'y': 0.15, 'width': 0.60, 'height': 0.70},
+        'leftEye': {'x': 0.35, 'y': 0.42},
+        'rightEye': {'x': 0.65, 'y': 0.42},
+        'noseTip': {'x': 0.50, 'y': 0.57},
+        'mouthCenter': {'x': 0.50, 'y': 0.73},
+        'confidence': 1.0,
+      };
+      mock.nextPhotoUploadDetection =
+          MockNextPhotoUploadDetection.success(freshLandmarks);
+
+      final updated = _seededPlayer().copyWith(photoPath: _dataUrl);
+      await provider.savePlayer(updated);
+
+      // The upload flow cached the fresh landmarks on the local record
+      // — no need to loadPlayers() to see them.
+      final p = provider.byId('face-prov-1');
+      expect(p, isNotNull);
+      expect(p!.faceLandmarks, isNotNull);
+      expect((p.faceLandmarks!['leftEye'] as Map)['x'], 0.35);
+      expect(p.faceLandmarks!['confidence'], 1.0);
+      // No detection error surfaced.
+      expect(provider.lastPhotoUploadFaceLandmarksError, isNull);
+    });
+
+    test(
+        'detection failure — provider exposes the errorReason on '
+        'lastPhotoUploadFaceLandmarksError; photo path still updated',
+        () async {
+      mock.nextPhotoUploadDetection = MockNextPhotoUploadDetection.failure(
+          'no-face-detected: MediaPipe ran successfully but did not find '
+          'a face in the current photo.');
+
+      final updated = _seededPlayer().copyWith(photoPath: _dataUrl);
+      await provider.savePlayer(updated);
+
+      // Error is surfaced for the calling widget to render a hint.
+      expect(provider.lastPhotoUploadFaceLandmarksError,
+          startsWith('no-face-detected'));
+      // Player row still has a photo path (the upload succeeded even
+      // though detection failed).
+      final p = provider.byId('face-prov-1');
+      expect(p!.photoPath, isNotNull);
+      // Face landmarks stay null — mock did not stage a landmarks map.
+      expect(p.faceLandmarks, isNull);
+    });
+
+    test(
+        'the error field is cleared at the START of the NEXT savePlayer call '
+        'so a stale error from a prior save does not leak into a fresh upload',
+        () async {
+      // First save: fails detection.
+      mock.nextPhotoUploadDetection =
+          MockNextPhotoUploadDetection.failure('no-face-detected: …');
+      await provider.savePlayer(_seededPlayer().copyWith(photoPath: _dataUrl));
+      expect(provider.lastPhotoUploadFaceLandmarksError,
+          startsWith('no-face-detected'));
+
+      // Second save: succeeds. The mock does NOT stage a new detection
+      // outcome, so the mock returns the default "no faceLandmarks /
+      // no faceLandmarksError" shape — which is equivalent to a
+      // `detectLandmarks:false` opt-out. The error field must have been
+      // cleared at the start of savePlayer so the caller sees a clean
+      // slate, not a stale failure from the previous call.
+      await provider.savePlayer(_seededPlayer().copyWith(photoPath: _dataUrl));
+      expect(provider.lastPhotoUploadFaceLandmarksError, isNull,
+          reason: 'stale error must not carry over across savePlayer calls');
+    });
+  });
 }

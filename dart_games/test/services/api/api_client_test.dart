@@ -289,20 +289,101 @@ void main() {
       client.dispose();
     });
 
-    test('uploadPlayerPhoto sends base64 data', () async {
+    test('uploadPlayerPhoto sends base64 data and returns the photo path',
+        () async {
       final mockClient = MockClient((request) async {
         expect(request.method, 'POST');
         expect(request.url.path, '/api/v1/players/p1/photo');
         final body = jsonDecode(request.body) as Map<String, dynamic>;
         expect(body['photoData'], 'abc123');
         expect(body['fileName'], 'photo.jpg');
+        // Default request opts into synchronous detection.
+        expect(body['detectLandmarks'], isTrue);
         return http.Response(jsonEncode({'photoPath': '/photos/p1.jpg'}), 200);
       });
 
       final client = ApiClient(client: mockClient);
-      final path = await client.uploadPlayerPhoto('p1', 'abc123', 'photo.jpg');
+      final result =
+          await client.uploadPlayerPhoto('p1', 'abc123', 'photo.jpg');
 
-      expect(path, '/photos/p1.jpg');
+      expect(result.photoPath, '/photos/p1.jpg');
+      expect(result.faceLandmarks, isNull);
+      expect(result.faceLandmarksError, isNull);
+      client.dispose();
+    });
+
+    test(
+        'uploadPlayerPhoto: server-side detection success — result carries '
+        'the fresh landmarks and null error', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response(
+            jsonEncode({
+              'photoPath': '/photos/p1.jpg',
+              'faceLandmarks': {
+                'boundingBox': {'x': 0.2, 'y': 0.15, 'width': 0.6, 'height': 0.7},
+                'leftEye': {'x': 0.35, 'y': 0.42},
+                'rightEye': {'x': 0.65, 'y': 0.42},
+                'noseTip': {'x': 0.50, 'y': 0.57},
+                'mouthCenter': {'x': 0.50, 'y': 0.73},
+                'confidence': 1.0,
+              },
+            }),
+            200);
+      });
+
+      final client = ApiClient(client: mockClient);
+      final result =
+          await client.uploadPlayerPhoto('p1', 'abc123', 'photo.jpg');
+
+      expect(result.photoPath, '/photos/p1.jpg');
+      expect(result.faceLandmarksError, isNull);
+      expect(result.faceLandmarks, isNotNull);
+      expect(result.faceLandmarks!['confidence'], 1.0);
+      expect((result.faceLandmarks!['leftEye'] as Map)['x'], 0.35);
+      client.dispose();
+    });
+
+    test(
+        'uploadPlayerPhoto: server-side detection failure — result carries '
+        'the errorReason and null landmarks', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response(
+            jsonEncode({
+              'photoPath': '/photos/p1.jpg',
+              'faceLandmarksError':
+                  'no-face-detected: MediaPipe ran successfully but did not '
+                      'find a face in the current photo.',
+            }),
+            200);
+      });
+
+      final client = ApiClient(client: mockClient);
+      final result =
+          await client.uploadPlayerPhoto('p1', 'abc123', 'photo.jpg');
+
+      expect(result.photoPath, '/photos/p1.jpg');
+      expect(result.faceLandmarks, isNull);
+      expect(result.faceLandmarksError, startsWith('no-face-detected'));
+      client.dispose();
+    });
+
+    test('uploadPlayerPhoto: detectLandmarks:false is forwarded to the server',
+        () async {
+      final mockClient = MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['detectLandmarks'], isFalse);
+        // Server skips detection entirely — neither field appears.
+        return http.Response(jsonEncode({'photoPath': '/photos/p1.jpg'}), 200);
+      });
+
+      final client = ApiClient(client: mockClient);
+      final result = await client.uploadPlayerPhoto(
+          'p1', 'abc123', 'photo.jpg',
+          detectLandmarks: false);
+
+      expect(result.photoPath, '/photos/p1.jpg');
+      expect(result.faceLandmarks, isNull);
+      expect(result.faceLandmarksError, isNull);
       client.dispose();
     });
 

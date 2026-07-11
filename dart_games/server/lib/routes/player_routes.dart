@@ -387,33 +387,50 @@ class PlayerRoutes {
       [filePath, id],
     );
 
-    // Fire-and-forget face-landmark detection. The endpoint returns
-    // immediately; detection runs in the background and updates the DB row
-    // when complete. Errors are swallowed (logged to stderr by the service).
+    // Synchronous face-landmark detection. The endpoint waits for
+    // mediapipe (or the Haar fallback) before returning, so:
+    //   1. The response can include the fresh landmarks (client
+    //      caches them, no follow-up GET needed).
+    //   2. Detection failures surface immediately as a
+    //      `faceLandmarksError` field with the same error-reason
+    //      string the redetect endpoint returns — the client can show
+    //      "detection didn't find a face" instead of silently
+    //      rendering a heuristic avatar.
+    //   3. On success + failure the photo is still saved. Detection
+    //      is best-effort; failing to find a face doesn't roll the
+    //      upload back.
     // Skipped entirely when the caller opts out via `detectLandmarks:false`
-    // — typically because they're about to PATCH a manual override and
-    // don't want the background job racing past it.
+    // — used by the test-data loader before it PATCHes a known-good
+    // manual override.
+    Map<String, dynamic>? landmarks;
+    String? landmarksError;
     if (detectLandmarks) {
-      unawaited(
-        FaceLandmarksService.instance
-            .detectForImagePath(filePath)
-            .then((landmarks) {
-          if (landmarks != null) {
-            executeUpdate(
-              _db,
-              'UPDATE players SET face_landmarks = ? WHERE id = ?;',
-              [jsonEncode(landmarks), id],
-            );
-          }
-        }),
-      );
+      final result =
+          await FaceLandmarksService.instance.detectDetailed(filePath);
+      if (result.success) {
+        landmarks = result.landmarks;
+        executeUpdate(
+          _db,
+          'UPDATE players SET face_landmarks = ? WHERE id = ?;',
+          [jsonEncode(landmarks), id],
+        );
+      } else {
+        landmarksError = result.errorReason;
+      }
     }
 
     // Return the API URL (not the server-side filesystem path) so the
     // client's saved value matches what subsequent GET /players responses
-    // will return.
+    // will return. `faceLandmarks` is present only when detection ran and
+    // succeeded; `faceLandmarksError` is present only when detection ran
+    // and failed. When `detectLandmarks:false` was passed, neither field
+    // appears (opt-out).
     return Response.ok(
-      jsonEncode({'photoPath': '/api/v1/players/$id/photo'}),
+      jsonEncode({
+        'photoPath': '/api/v1/players/$id/photo',
+        if (landmarks != null) 'faceLandmarks': landmarks,
+        if (landmarksError != null) 'faceLandmarksError': landmarksError,
+      }),
       headers: _jsonHeaders,
     );
   }
