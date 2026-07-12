@@ -20,45 +20,136 @@ $ARGUMENTS
 
 ---
 
-# PIPELINE: 11 Phases (0–10), 7 Gates (5 Hard + 2 Approval), 9 Adversarial Reviews
+# PIPELINE: 11 Phases (0–10), 7 Gates (5 Hard + 2 Approval), 10 Adversarial Reviews
 
 You MUST execute phases in order. You MUST NOT skip phases. You MUST NOT proceed past a gate until it passes. You MUST execute every adversarial review checkpoint and report the findings before continuing.
 
 At the start of each phase, print:
 ```
 === Phase X of 11: [Phase Name] ===
-Gates passed: X/5 (+ X/2 approvals) | ARs completed: X/9
+Gates passed: X/5 (+ X/2 approvals) | ARs completed: X/10
 ```
 
 ---
 
-## Model Strategy (Two-Model Architecture)
+## Model Strategy (Multi-Tier Architecture)
 
-This skill runs as an **orchestrator** on the parent model (intended to be Opus) and **delegates implementation work to Sonnet sub-agents** via the Agent tool. The orchestrator handles all reasoning, judgment, critique, and gate decisions; sub-agents handle bulk coding and mechanical execution.
+This skill runs as an **orchestrator** on the parent model (intended
+to be Opus) and delegates work to a **tiered fleet** of sub-agents
+via the Agent tool, plus optional deterministic multi-agent
+pipelines via the Workflow tool. Choose the tier that fits the
+stage; do NOT burn Opus tokens on mechanical work, and do NOT put
+Sonnet on cross-cutting judgment.
 
-**Orchestrator (this thread — Opus) handles directly:**
-- All phase orchestration, gate decisions, and "fix code or update tests?" questions
-- Phase 0 spec analysis, section-map construction, and build plan
-- All 9 adversarial reviews (AR-1 through AR-9) plus AR-Coverage (Phase 10 self-check)
-- Phase 5 announcement stacking analysis (the *design* of precedence, before implementation)
-- Phase 6 data migration decision
-- Phase 7 spec coverage audit
-- Phase 8 Step 2 screenshot evaluation against the visual checklist
-- Phase 9 simultaneous-pass verification
-- Phase 10 cross-game test-coverage audit, gap synthesis, and remediation planning (the audit itself stays on the orchestrator; only test-writing in Step 8 is delegated)
-- Test failure root-cause analysis
+**See the "Expanded Capability Playbook" appendix at the end of this
+skill** for the concrete patterns (Workflow orchestration, adversarial
++ perspective-diverse verify, judge panel, prior-art briefing,
+worktree isolation, structured output schemas, background UI runs,
+corrective re-audit rule, Artifact dashboards, Python font tool,
+Definition-of-Done schema). Every reference to `[Playbook §N]` in
+this document points into that appendix.
 
-**Sonnet sub-agents (spawned via Agent tool) handle:**
-- Phase 1 asset verification + pubspec updates + branch creation
-- Phase 2 HTML/CSS wireframe authoring
-- Phase 3 game model + provider + core tests
-- Phase 4 screens + config factory methods + widget keys + Play-to-Complete strategy + main.dart wiring
-- Phase 5 sound effects service + announcement helper code (with stacking rules from orchestrator as input)
-- Phase 6 serialization + save/restore tests
-- Phase 7 UI test files (in subdirectories) + screenshot test + shared helper sync + batch file updates
-- Phase 8 Step 1 (chromedriver sync + server startup + screenshot test execution), Step 4 fixes, Steps 5/7 (running UI + non-UI tests)
-- Phase 10 Step 8 — writing the new tests that close approved coverage gaps (audit + planning stays on orchestrator)
-- Phase 11 documentation files + CLAUDE.md and testing docs updates
+### Tier reference
+
+- **Tier 0 — Orchestrator (this thread — Opus 4.7 / 4.8):** every
+  phase decision, every gate decision, "fix code or update tests?"
+  judgment, all AR synthesis, root-cause analysis. Never delegated.
+- **Tier 1 — Opus sub-agent (`{model: 'opus'}`):** independent AR
+  verification, adversarial-verify skeptics (3× parallel), Phase 8
+  Step 2 perspective-diverse visual-review lenses (3× parallel),
+  Phase 2 Stage A wireframe judge, cross-file semantic critique. Use
+  when INDEPENDENCE + judgment quality matter more than cost.
+- **Tier 2 — Sonnet sub-agent, `effort: 'high'` (`{model: 'sonnet',
+  effort: 'high'}`):** test-smell reviewer, prior-art briefing
+  synthesis, hard structural refactors. Reasoning that Sonnet CAN
+  do, but only at high effort.
+- **Tier 3 — Sonnet sub-agent, default effort:** most implementation
+  work (screens, providers, UI test files, wireframe HTML/CSS,
+  announcement helpers, save/restore serialization). The workhorse.
+- **Tier 4 — Sonnet sub-agent, `effort: 'low'`:** simple grep-audit
+  stages inside AR-4 Workflow pipelines, structured-data extraction
+  from prose reports, pubspec updates. Cheapest useful tier.
+- **Tier 5 — `Explore` agent type (`subagent_type: 'Explore'`):**
+  read-only surveys — prior-art discovery, spec section maps, "which
+  existing games use pattern X?", cross-game code recon. Ships with
+  its own optimized model choice; do NOT specify one.
+
+### Structural tools
+
+- **Workflow tool:** replace serial multi-item work (AR-4's 34 checks,
+  Phase 4's 3 screen files, Phase 7's UI-test subdirectories) with a
+  `pipeline([items], stage1, stage2)` that streams items through
+  stages without a barrier. Reserve `parallel(thunks)` for barriers
+  where dedupe / synthesis genuinely needs ALL results together.
+- **`isolation: 'worktree'`:** for parallel sub-agents that all
+  MUTATE files (Phase 2 judge-panel wireframe authors, Phase 4
+  parallel screen authors). Each agent gets its own worktree; the
+  orchestrator merges the winning branch back.
+- **Structured output schemas:** `agent(prompt, {schema: FINDINGS_SCHEMA})`
+  forces a typed return. Every AR sub-agent returns
+  `{items: [{row, status: 'PASS'|'FAIL', evidence, file, line}]}`
+  for deterministic aggregation.
+- **Artifact tool:** render an HTML dashboard for cross-game
+  AR-Coverage findings (Phase 10) so the user can visually verify
+  coverage in seconds.
+- **`run_in_background: true` + `ScheduleWakeup`:** for 3h+ UI test
+  runs. Fire the runner, sleep 20 min, poll. Frees context to keep
+  working.
+
+### Where each tier applies (per-phase quick reference)
+
+| Phase | Stage | Tier |
+|---|---|---|
+| 0 | Spec analysis, section map, build plan | Tier 0 |
+| 1 | Asset verification, pubspec, branch | Tier 3 |
+| 1 | Adversarial Review AR-1 (asset spot-check) | Tier 0 |
+| 2 | Wireframe Stage A (judge panel of 3 in worktrees) | Tier 3 × 3 parallel + Tier 1 judge |
+| 2 | Wireframes Stages B–D | Tier 3 |
+| 2 | AR-2 wireframe completeness | Tier 0 |
+| 3 | Models, provider, core tests | Tier 3 |
+| 3 | AR-3 options coverage | Tier 0 |
+| 4 | Prior-art briefing (before authoring) | Tier 5 (Explore) |
+| 4 | 3 screen files (parallel worktrees, one per file) | Tier 3 × 3 parallel |
+| 4 | AR-4 Integration Audit (Workflow pipeline over 34 rows) | Tier 4 grep + Tier 1 synthesis |
+| 5 | Announcement stacking design | Tier 0 |
+| 5 | Sound + announcement implementation | Tier 3 |
+| 5 | AR-5 stacking verification | Tier 0 |
+| 6 | Serialization + save/restore tests | Tier 3 |
+| 6 | Migration decision | Tier 0 |
+| 7 | UI test files + shared helper sync | Tier 3 |
+| 7 | Test-smell reviewer on new test files | Tier 2 |
+| 7 | Spec coverage audit (loop-until-dry) | Tier 0 |
+| 7 | AR-6 spec coverage matrix | Tier 0 |
+| 8 | Step 0 font parity ribbons + Python analysis | Tier 3 for `flutter drive`; Tier 0 for iteration |
+| 8 | Step 1 screenshot capture | Tier 3 |
+| 8 | Step 2 visual evaluation (3 lenses parallel) | Tier 1 × 3 parallel |
+| 8 | Step 4 fixes | Tier 3 |
+| 8 | Steps 5/7 test runs | Tier 3 (`run_in_background` for long ones) |
+| 8 | AR-7 visual sign-off | Tier 0 |
+| 8 | AR-10 font parity | Tier 0 |
+| 9 | Simultaneous pass verification | Tier 0 |
+| 10 | Cross-game coverage audit | Tier 0 |
+| 10 | Step 8 test authoring for gaps | Tier 3 |
+| 10 | AR-Coverage (self-check + Artifact dashboard render) | Tier 0 for synthesis; Tier 4 for HTML template fill |
+| 11 | Documentation, CLAUDE.md, testing docs | Tier 3 |
+
+### Cost discipline
+
+Every sub-agent call is billed. Rules of thumb:
+
+- Default to Tier 3 unless the stage explicitly asks for judgment or
+  independence.
+- Tier 4 is 40–60% cheaper on grep-heavy audits — use it for AR-4
+  pipeline stages where each stage does one `grep` + one boolean
+  check.
+- Tier 1 is ~4× the cost of Tier 3 per token. Reserve it for the
+  ARs, judge panels, and perspective-diverse visual review — never
+  for implementation.
+- If you're spawning >10 agents in a phase, use Workflow's
+  `pipeline()` not raw `Agent()` calls — deterministic execution and
+  concurrency capping.
+- Set `effort: 'low'` explicitly on obviously-simple stages; the
+  runtime will save money.
 
 ### Placeholder Convention
 
@@ -293,7 +384,7 @@ If any check fails, STOP and surface to the user. Do not proceed.
 
 **Goal:** Verify all game assets are in place (with correct naming convention), update pubspec.yaml, ensure the dev branch exists.
 
-**Model:** Sonnet sub-agent for verification + pubspec changes; orchestrator (Opus) for AR-1.
+**Model:** **Tier 3** (Sonnet) for verification + pubspec changes; **Tier 0** (orchestrator) for AR-1. See Model Strategy at top for tier reference.
 
 ### Delegate to Sonnet sub-agent
 
@@ -382,7 +473,7 @@ Report AR-1 findings. If discrepancies exist, dispatch a corrective Sonnet sub-a
 
 **Goal:** Create HTML/CSS wireframe mockups of all game screens so the user can review the visual design and layout BEFORE any game code is written. This catches layout problems, UX issues, and misunderstandings of the spec early — when changes are free.
 
-**Model:** Sonnet sub-agent for HTML/CSS authoring; orchestrator (Opus) for AR-2 + WIREFRAME APPROVAL GATEs.
+**Model:** **Tier 3** (Sonnet) for HTML/CSS authoring; **Tier 0** (orchestrator) for AR-2 + WIREFRAME APPROVAL GATEs. **Stage A specifically:** consider **[Playbook §4 — Judge panel]** (3× Tier-3 authors in `isolation: 'worktree'` + Tier-1 judge) when the brand direction is high-stakes. **Before Stage A authoring:** run **[Playbook §7 — Prior-art briefing]** (Tier 5 Explore agent) so authors start with the pack's existing patterns.
 
 ### Staged Approval Strategy
 
@@ -605,7 +696,7 @@ Do NOT proceed to Phase 3 until the user explicitly approves the full wireframe 
 
 **Goal:** Create the game model, provider, and core game logic with tests.
 
-**Model:** Sonnet sub-agent for model + provider + tests; orchestrator (Opus) for AR-3 + Gate 1 verification.
+**Model:** **Tier 3** (Sonnet) for model + provider + tests; **Tier 0** (orchestrator) for AR-3 + Gate 1 verification. **After test authoring:** run **[Playbook §10 — Test-smell reviewer]** (Tier 2, Sonnet + `effort: 'high'`) on the new test files to catch `pumpAndSettle`-and-pass patterns before they land.
 
 ### Delegate to Sonnet sub-agent
 
@@ -712,7 +803,12 @@ If FAIL: present failures to the user per `docs/critical-rules/test-failures.md`
 
 **Goal:** Create all three screens with full visual theming, shared component integration, and Play-to-Complete strategy + button + runner wiring.
 
-**Model:** Sonnet sub-agent for screens + config factories + key registration + Play-to-Complete strategy + main.dart wiring; orchestrator (Opus) for AR-4.
+**Model:**
+- **Screen authoring (Task 5):** consider **[Playbook §5 — Worktree-parallel screen authoring]** (3× Tier-3 Sonnet in `isolation: 'worktree'`, one per screen file, then orchestrator merges and edits cross-cutting files). Falls back to serial Tier-3 if worktree setup fails.
+- **Prior-art briefing (before Task 5):** **[Playbook §7]** — Tier 5 Explore survey of similar existing games.
+- **Config factories + key registration + Play-to-Complete strategy + main.dart wiring:** **Tier 3** (Sonnet), orchestrator-owned.
+- **AR-4 Integration Audit:** **[Playbook §1 — Workflow orchestration]** — pipeline over 34 rows with Tier-4 grep + Tier-1/Tier-2 verify + Tier-0 synthesis. For "Recurring miss" rows (RESPONSIVE `(yy)`, background image `(u)`, ChangeNotifier disposed `(oo)`, no-auto-navigate `(z)`, batch stats `(e)`), also run **[Playbook §2 — Adversarial verify]** (3× Tier-1 skeptics per finding).
+- **Any corrective dispatch:** apply **[Playbook §9 — Corrective re-audit rule]** — re-verify the specific row after every fix.
 
 ### Delegate to Sonnet sub-agent
 
@@ -1467,7 +1563,7 @@ After the sub-agent returns:
 > (vv) **`mounted` guard after every `PlayerProvider` await** (Rule 72) — grep `lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_menu_screen.dart`, `lib/screens/options_screen.dart`, and `lib/widgets/player_list_panel/*.dart` for `await playerProvider\.\|await _playerProvider!\.`. For each match, read 5–10 lines below; verify EITHER (a) the next provider/setState/context use is preceded by `if (!mounted) return;`, OR (b) no further provider/setState/context use occurs before the function returns. The results-screen `batchUpdatePlayerStats` pattern (inside `try`/`catch` with no mutation after the await) is the only allowed bare-await pattern.
 > (ww) **Real-time pumps around popup interactions** (Rule 73) — for every UI test under `integration_test/[GAME_NAME_SNAKE]/menu_and_settings/` (or any test that taps a `DropdownButton`, `PopupMenuButton`, or `tester.tapAt(const Offset(...))` overlay-dismiss), grep within 5 lines for either a follow-up `tester.pump(const Duration(milliseconds: [0-9]+))` (correct) OR a `PumpSequences.simpleUpdate` (violation). Flag every `simpleUpdate` between a popup-related tap and the next gesture.
 > (xx) **No intermediate-state stats assertions** (Rule 74) — grep every test file under `integration_test/[GAME_NAME_SNAKE]/` for the substring `results screen not yet loaded` (case-insensitive). Must return zero hits. Also grep for `expect\(.*\.gamesPlayed,\s*0` and `expect\(.*\.gamesWon,\s*0` in the same test body as `clickDartsRemoved\|completeGameToVictory`. Must return zero hits. Either match indicates the broken intermediate-state pattern.
-> (yy) **Responsive layout on GAME AND RESULTS screens (MANDATORY GATE — must pass to proceed).** For each screen, verify one of the two acceptable patterns is present:
+> (yy) **Responsive layout on GAME AND RESULTS screens (MANDATORY GATE — NEVER skip, NEVER defer, NEVER rationalize past — must pass to proceed).** No size thresholds. No "the avatars are only 180 px so it's fine" arguments. No "the Row has some Flexible children so it can't overflow" arguments. **Either pattern is present, or this row FAILS. Period.** For each screen verify one of the two acceptable patterns is present:
 >    ```
 >    grep -nE "LayoutBuilder\(|FittedBox\(fit: BoxFit\.contain|FittedBox\(BoxFit\.contain" \
 >      lib/screens/games/[GAME_NAME_SNAKE]/[GAME_NAME_SNAKE]_game_screen.dart \
@@ -1476,7 +1572,7 @@ After the sub-agent returns:
 >    - `[GAME_NAME_SNAKE]_game_screen.dart` must return at least one hit for `LayoutBuilder(` OR `FittedBox(...BoxFit.contain`.
 >    - `[GAME_NAME_SNAKE]_results_screen.dart` must return at least one hit for `LayoutBuilder(` OR `FittedBox(...BoxFit.contain`.
 >    Read the matched call site(s) and verify actual scaling: for `LayoutBuilder`, the `builder` closure must compute a `scale` from constraints against a fixed baseline (`min(maxW / baselineW, maxH / baselineH).clamp(0.5, 1.0)` or similar) AND every nearby fixed-size widget (avatar size, `fontSize`, padding, spacer heights, dart-indicator size) must be multiplied by that `scale`. For `FittedBox`, verify the child is a `SizedBox(width: X, height: Y, child: ...)` with fixed baseline dimensions — a bare `FittedBox` without a sized child does nothing useful.
->    **FAIL this row** if either screen uses only raw fixed pixel sizes for content that could plausibly exceed the viewport (avatars > 200px, `fontSize` > 30, non-`Flexible`/`Expanded` Rows/Columns with lots of children) without one of the two patterns. **Recurring miss:** Treasure Divide shipped both screens without responsiveness, causing hours of RenderFlex overflow debugging on smaller viewports before the retrofit landed. Reference patterns: `treasure_divide_game_screen.dart::_buildActivePlayerPanel` (LayoutBuilder + scale) and `treasure_divide_results_screen.dart::_buildResultsBody` (FittedBox + 1600×900 baseline).
+>    **FAIL this row unconditionally** if either screen contains ANY fixed-pixel size (an integer literal appearing as `fontSize:`, `size:`, `height:`, `width:`, `radius:`, `dartIndicatorSize`, `avatarSize`, an `EdgeInsets` const, or a `SizedBox` const) OUTSIDE one of the two responsive patterns. The presence of `Flexible` / `Expanded` children does NOT exempt the screen — those handle horizontal-slack distribution, not scale-to-viewport. This rule aligns with Task 5's absolute "NEVER ship fixed pixel sizes... unless it's already inside one of these two patterns" — if you see any wording elsewhere in this skill that could be read as an escape hatch (size thresholds, "plausibly exceed", "if avatars are large", etc.), treat that language as OBSOLETE and follow this row's absolute rule. **Recurring miss:** Treasure Divide shipped both screens without responsiveness, causing hours of RenderFlex overflow debugging on smaller viewports before the retrofit landed. Reference patterns: `treasure_divide_game_screen.dart::_buildActivePlayerPanel` (LayoutBuilder + scale) and `treasure_divide_results_screen.dart::_buildResultsBody` (FittedBox + 1600×900 baseline).
 >
 > (pp) **Accumulated Build Quality Rules compliance** — review the "## Accumulated Build Quality Rules" section at the end of this skill. For each of the 34 rules, note whether it applies to this game and verify compliance:
 > - Rule 1 (Character Randomization): applies if the game has more characters than players. Verify `_characterPaths` is shuffled in `initState`, not hardcoded by player index.
@@ -1518,7 +1614,7 @@ Report AR-4 findings. Dispatch a corrective Sonnet sub-agent for any gaps before
 
 **Goal:** Implement the full announcement system with stacking prevention.
 
-**Model:** Orchestrator (Opus) designs the stacking precedence; Sonnet sub-agent implements the helper, sounds, and tests; orchestrator (Opus) runs AR-5 to verify the implementation matches the design.
+**Model:** **Tier 0** (orchestrator) designs stacking precedence; **Tier 3** (Sonnet) implements helper + sounds + tests; **Tier 0** runs AR-5. **After test authoring:** run **[Playbook §10 — Test-smell reviewer]** on the new announcement tests.
 
 ### Step 5A: Orchestrator designs stacking precedence (BEFORE delegation)
 
@@ -1632,7 +1728,7 @@ Report AR-5 findings. Dispatch a corrective Sonnet sub-agent for any issues befo
 
 **Goal:** Verify save/resume is fully wired, decide on migration needs, write the remaining serialization tests.
 
-**Model:** Orchestrator (Opus) for migration decision and verification of existing wiring; Sonnet sub-agent for serialization + save/restore test authoring; orchestrator runs Gate 2.
+**Model:** **Tier 0** (orchestrator) for migration decision + wiring verification; **Tier 3** (Sonnet) for serialization + save/restore tests; **Tier 0** runs Gate 2. **After test authoring:** run **[Playbook §10 — Test-smell reviewer]** on the new save/restore tests.
 
 ### Step 6A: Orchestrator verifies wiring and decides on migration
 
@@ -1713,7 +1809,12 @@ If FAIL:
 
 **Goal:** Write all UI tests in the proper subdirectory layout (including mandatory navigation, results, and play-to-complete tests), synchronize the mirrored shared helpers, update all 4 batch files, run the spec coverage audit.
 
-**Model:** Sonnet sub-agent for shared helper sync + UI test files + screenshot test + batch file updates; orchestrator (Opus) for the spec coverage audit + AR-6 + Gate 3.
+**Model:**
+- **Shared helper sync + UI test files + screenshot test + batch file updates:** **Tier 3** (Sonnet).
+- **After test authoring:** **[Playbook §10 — Test-smell reviewer]** (Tier 2) on the new UI test files.
+- **Spec coverage audit:** **[Playbook §6 — Loop-until-dry]** — run coverage rounds on **Tier 0** (orchestrator) until K=2 consecutive dry rounds. Between rounds, delegate gap-close test authoring to Tier 3.
+- **AR-6 spec coverage matrix:** **Tier 0** (orchestrator).
+- **Gate 3:** **Tier 0** (orchestrator).
 
 ### Step 7A: Delegate UI test infrastructure to Sonnet sub-agent
 
@@ -2303,13 +2404,113 @@ If FAIL: dispatch sub-agents for missing tests / fixes, re-audit, re-run BOTH su
 
 ## Phase 8: Visual Validation
 
-**Goal:** Execute the FULL iterative validation cycle from `docs/critical-rules/visual-validation.md`. This phase contains the complete visual + UI + non-UI verification loop.
+**Goal:** Execute the FULL iterative validation cycle from `docs/critical-rules/visual-validation.md`. This phase contains the complete visual + UI + non-UI verification loop, PRECEDED by the mandatory font-parity audit (AR-10).
 
 **Model split:**
-- **Sonnet sub-agent:** Step 1 (chromedriver version sync + chromedriver lifecycle + backend server startup + screenshot test execution), Step 4 fixes, Step 5 (run UI tests), Step 7 (run flutter test + server test).
-- **Orchestrator (Opus):** Step 2 (read every screenshot + evaluate against checklist), Step 3 (report findings), Step 4 decision, Step 6 decision, Step 8 decision, AR-7. **Visual evaluation is the highest-value Opus work in this skill — never delegate it.**
+- **Step 0 (font parity — AR-10):** **Tier 3** (Sonnet) for chromedriver + `flutter drive` for both ribbons; **Tier 0** (orchestrator) drives Python analysis via **[Playbook §12 — Font ribbon Python tool]** and decides `overrideRecFs` iterations.
+- **Step 1 (screenshot capture):** **Tier 3** (Sonnet).
+- **Step 2 (visual evaluation):** **[Playbook §3 — Perspective-diverse review]** — 3× Tier-1 Opus lens reviewers (layout / typography / brand) in parallel. This does NOT violate "visual judgment stays on the orchestrator" — all 3 ARE Opus sub-agents. Any lens's flag counts.
+- **Step 3 (report findings):** **Tier 0** (orchestrator) synthesizes across lenses.
+- **Step 4 (fixes):** **Tier 3** (Sonnet), then **[Playbook §9 — Corrective re-audit]** re-runs Step 2 lens(es) that flagged the fixed issue.
+- **Step 5 (UI test runs):** **Tier 3** (Sonnet), and for 3h+ runs use **[Playbook §11 — Background UI runs]** with `run_in_background: true` + `ScheduleWakeup(delaySeconds: 1200)`.
+- **Step 7 (flutter test + server test):** **Tier 3** (Sonnet).
+- **Step 4/6/8 decisions, AR-7, AR-10:** **Tier 0** (orchestrator).
 
 **CRITICAL UNDERSTANDING:** "Screenshot test passed" does NOT mean "visual validation complete." A passing test only means screenshots were captured without runtime errors. The actual validation is reading and evaluating every screenshot against the checklist. These are two completely separate steps — NEVER conflate them.
+
+### STEP 0: Font Parity Audit (MANDATORY — runs BEFORE screenshots)
+
+The new game's AppBar title fontSize (all 3 screens) AND its
+home-card title offset in `home_screen.dart` MUST be tuned so their
+visible cap heights match Target Tag (the visual baseline) within
+±3 px, using the ribbon measurement tests and pixel-precise Python
+analysis. This step MUST complete before Step 1 (screenshot capture)
+because font sizing affects every AppBar in every screenshot — running
+screenshots against the wrong fontSize wastes a full visual-validation
+cycle.
+
+Follow the full procedure documented in the **"Font parity audit
+procedure (reference)"** section near the end of this skill file.
+Summary of what MUST happen:
+
+1. Add a `_Entry(...)` for the new game to BOTH ribbon test files
+   (`integration_test/appbar_title_measurement_test.dart` and
+   `integration_test/home_screen_font_measurement_test.dart`) — copy
+   the actual GoogleFonts family + fontSize + text from the game
+   screens and from `_buildGameCard(...)` in `home_screen.dart`.
+2. Update the `_styleFor` switch in each test to route the new game's
+   `fontFamily` to its `GoogleFonts.<family>(...)` call.
+3. Run each ribbon test via `flutter drive` (chromedriver +
+   `test_driver/screenshot_test.dart`); screenshots land at
+   `temp_screenshots/appbar_title_ribbon.png` and
+   `temp_screenshots/home_screen_font_ribbon.png`.
+4. Pixel-analyse each ribbon with the Python PIL script in the
+   procedure reference — report the new game's cap height vs. Target
+   Tag baseline for both ribbons.
+5. Iterate `overrideRecFs` (weight-parity bump for thin-stroke fonts
+   per the procedure) until BOTH ribbons show the new game within
+   ±3 px of Target Tag.
+6. Apply the winning `fontSize` to all three per-game screen files
+   (AppBar test) AND the winning `+ N` offset to the new game's
+   branch of the ternary inside `_buildGameCard(...)` in
+   `home_screen.dart` (home-screen test).
+7. Run **AR-10 Font Parity** on the orchestrator.
+
+### Adversarial Review AR-10: Font Parity
+
+> "I will now act as the Font Parity Agent. I will verify BOTH font
+> measurement ribbons ended within tolerance AND the winning sizes
+> were applied to the game's actual code:
+>
+> **AppBar parity (`integration_test/appbar_title_measurement_test.dart`):**
+> 1. The new game appears as a `_Entry(...)` in `_kEntries` with the
+>    correct `text` (matches the gameplay screen's actual AppBar
+>    title), `fontFamily` (matches the actual GoogleFonts family used
+>    in the code), and `currentFs` (matches the fontSize actually
+>    shipped by the game screens BEFORE this audit).
+> 2. The `_styleFor` switch has a `case '<Family>':` branch routing to
+>    `GoogleFonts.<family>(...)` with the same style args.
+> 3. The most recent `temp_screenshots/appbar_title_ribbon.png` was
+>    generated after the new game was added, and my Python pixel
+>    analysis shows the new game's RECOMMENDED strip cap height sits
+>    within +0..+3 px of Target Tag's cap height at fs 36. Cite the
+>    measured value.
+> 4. The winning `fontSize:` appears in ALL THREE per-game screen
+>    files (`<game>_menu_screen.dart`, `<game>_game_screen.dart`,
+>    `<game>_results_screen.dart`) at the AppBar title's
+>    `GoogleFonts.<family>(fontSize: N, ...)` — all three identical.
+>
+> **Home-card parity (`integration_test/home_screen_font_measurement_test.dart`):**
+> 5. The new game appears as a `_Entry(...)` with the correct `text`
+>    (matches the string passed to `_buildGameCard(title: '...')`),
+>    `fontFamily`, and `currentFs = 18 + N`.
+> 6. The `_styleFor` switch has the matching branch.
+> 7. The most recent `temp_screenshots/home_screen_font_ribbon.png`
+>    was generated after the new game was added, and pixel analysis
+>    shows the new game's RECOMMENDED strip cap height sits within
+>    +0..+3 px of Target Tag's cap height at fs 22. Cite the measured
+>    value.
+> 8. The winning `+ N` offset appears in the new game's branch of the
+>    nested ternary inside `_buildGameCard(...)` in
+>    `lib/screens/home_screen.dart`, formatted as
+>    `(theme.textTheme.titleMedium?.fontSize ?? 16) + N` (per the
+>    canonical pattern — Carnival Derby's bare-fontSize form is
+>    deprecated for new games).
+>
+> **Convention compliance (per the Universal Rule at the top):**
+> 9. Menu screen title = `[Game Name] Game Setup` (case per the game's
+>    own home-card casing).
+> 10. Results screen title = `[Game Name] Results` (same case rule).
+> 11. All three AppBar titles use IDENTICAL font style — verified by
+>    the `(g4)` check in AR-4; this AR restates it.
+>
+> **FAIL this AR** if any of (1)-(11) is missing or shows a cap-height
+> diff greater than +3 px above Target Tag OR any negative diff (game
+> caps shorter than baseline). Cite files + line numbers for every
+> finding."
+
+Report AR-10 findings. Dispatch a corrective Sonnet sub-agent for any
+gaps (apply fs / offset changes) before proceeding to Step 1.
 
 ### Phase 8 pre-flight verification (orchestrator runs BEFORE Step 1)
 
@@ -2669,7 +2870,7 @@ If the user requests changes:
 
 **Goal:** Confirm all five completion conditions are true at the same time, including the spec coverage audit and server tests.
 
-**Model:** Orchestrator (Opus) — verification only.
+**Model:** **Tier 0** (orchestrator) — verification only.
 
 ### Steps
 
@@ -2748,7 +2949,7 @@ The helper itself (`UITestHelpers.runWithFailureScreenshot`) STAYS in `integrati
 
 **Goal:** After all initial tests pass (Gate 4), audit the new game's test coverage against a strong-coverage peer game. Identify scenario gaps — particularly option × player-count combinations, miss paths, knockoff / bust / win edge cases, save/restore round-trips, edit-score replay scenarios, menu-level guards, and announcement precedence — that the peer covers but the new game doesn't. Get user approval, then close the gaps with new tests (and, if the audit surfaces dead code or unwired helpers in the announcement layer or elsewhere, wire or delete them per user decision).
 
-**Model:** Orchestrator (Opus) for the audit, gap synthesis, and remediation plan; Sonnet sub-agent for implementing the new tests once the user approves.
+**Model:** **Tier 0** (orchestrator) for audit + gap synthesis + remediation plan; **Tier 3** (Sonnet) for implementing new tests once user approves. **After test authoring:** **[Playbook §10 — Test-smell reviewer]**. **AR-Coverage output:** render an HTML matrix via **[Playbook §13 — Cross-game Artifact dashboard]** so the user sees "which games missed which check" visually.
 
 **Why this phase exists:** Spec coverage (Phase 7) verifies every option in the spec has at least one test. AR-9 (Phase 11) verifies the new game LOOKS like the others in code shape and visuals. Neither catches *combinatorial* test gaps — "the peer game has 5 tests around DF bust edges; this game has 2" — and neither catches scenarios that the spec doesn't enumerate but emerge from the implementation (e.g., bust on dart 2 vs dart 3 freeze, multi-victim knockoff undo through edit-score, milestone announcement re-fire after knockoff). Real bugs hide there.
 
@@ -2943,7 +3144,7 @@ Before declaring the audit complete, the orchestrator performs one more pass:
 
 **Goal:** Create all game documentation, update project files, verify Definition of Done.
 
-**Model:** Sonnet sub-agent for documentation file authoring + CLAUDE.md / testing docs updates; orchestrator (Opus) for AR-8 + Gate 5.
+**Model:** **Tier 3** (Sonnet) for documentation authoring + CLAUDE.md / testing docs updates; **Tier 0** (orchestrator) for AR-8 + Gate 5. **Definition of Done tracking:** use the DoD schema from **[Playbook §8]** so every DoD item has an evidence file+line reference before Gate 5.
 
 ### Delegate to Sonnet sub-agent
 
@@ -3228,7 +3429,7 @@ Screenshots:           Z (all evaluated, zero issues)
 Spec coverage:         100%
 Definition of Done:    X/X verified
 Gates passed:          5/5 (+ 2 approvals)
-ARs completed:         9/9
+ARs completed:         10/10
 ```
 
 Ask the user: "Would you like me to commit and create a PR?"
@@ -4525,6 +4726,32 @@ Per `docs/critical-rules/cross-platform.md`:
 - **Sub-agent's tests pass but the AR finds gaps:** the AR is more rigorous than the sub-agent's self-verification — trust the AR, dispatch corrective sub-agent.
 - **Sub-agent guesses wrong on hyphen vs underscore:** the prompt did not pass both `[GAME_NAME_SNAKE]` and `[GAME_NAME_HYPHEN]` clearly — fix the prompt and re-dispatch.
 
+### Universal corrective-dispatch rule (per [Playbook §9])
+
+**Every corrective sub-agent dispatch MUST be paired with a
+re-audit of the SPECIFIC row / AR item that failed** — do not
+trust the fix without re-verification. The re-audit runs at the
+SAME model tier as the original verify stage (Tier 1 for critical
+recurring-miss rows, Tier 2 or 4 for the rest). Pipeline shape:
+
+```
+[failing row] → [Tier 3 fix agent] → [re-verify at original tier]
+```
+
+If the re-verify still fails, ESCALATE to the orchestrator. Do NOT
+dispatch a third sub-agent silently — that's the pattern that hides
+partial-fix cascades. Two failed sub-agents on the same row means
+the prompt is wrong OR the fix requires cross-cutting reasoning
+only the orchestrator has.
+
+### Structured findings across every AR
+
+**Every AR sub-agent MUST return structured data via the
+`FINDING_SCHEMA` from [Playbook §8]** — no more prose reports that
+the orchestrator has to parse. Findings feed AR-Coverage directly
+and render into the [Playbook §13] Artifact dashboard without
+transformation.
+
 ### Per-Phase Auto-Revert Audit (mandatory, applies in YOLO mode)
 
 After EVERY phase completes (and before moving to the next), the orchestrator runs:
@@ -4558,42 +4785,42 @@ This catches sub-agents that drift out of scope before the divergence cascades i
 - NEVER use game characters as player avatars.
 - NEVER commit to master/main. NEVER push to remote without explicit user permission.
 
-## Optional post-build font audit (ASK the user)
+## Font parity audit procedure (reference — invoked by Phase 8 Step 0 / AR-10)
 
-After the game ships and every gate has passed, ASK the user (do NOT
-run automatically — each test opens Chrome and takes a real
-screenshot):
+**This procedure is MANDATORY, not optional.** It runs during Phase 8
+Step 0, BEFORE screenshots are captured, so the new game's AppBar and
+home-card fontSize match Target Tag's cap-height baseline. Do NOT
+frame this to the user as optional — the run happens automatically as
+part of the standard pipeline. **The user is informed, not asked.**
 
-> "Want me to run the font measurement tests so we can see how this
-> game's fonts compare to the rest of the pack? There are two visual
-> ribbon tests — same three-column layout (current fs / recommended
-> fs / baseline-aligned red-on-white overlay), same
-> above-baseline-cap-height metric, same Target Tag as the visual
-> ideal. They differ only in what they measure:
->
->   - `integration_test/appbar_title_measurement_test.dart` — sized
->     for AppBar titles (56 px strip, matches Material's default
->     `toolbarHeight`). Compares each game's AppBar title font against
->     Target Tag's LuckiestGuy @ fs 36. Applies to changes in the
->     game's three screen files
->     (`<game>_menu_screen.dart` / `<game>_game_screen.dart` /
->     `<game>_results_screen.dart`).
->
->   - `integration_test/home_screen_font_measurement_test.dart` —
->     sized for home-card labels (44 px strip, matches the
->     `SizedBox(height: 44)` around each label in home_screen.dart).
->     Compares each game's home-card title against Target Tag's
->     LuckiestGuy @ fs 22 (`titleMedium.fontSize` + 4 in the theme).
->     Applies to changes in `lib/screens/home_screen.dart` (a single
->     `theme.textTheme.titleMedium?.fontSize + N` offset per game).
->
-> Both render in Chrome via `test_driver/screenshot_test.dart` so the
-> real GoogleFonts load, and save a PNG to `temp_screenshots/` that I
-> can read back and analyse pixel-by-pixel."
+Both ribbon tests use the same three-column layout (current fs /
+recommended fs / baseline-aligned red-on-white overlay), the same
+above-baseline-cap-height metric, and Target Tag as the visual ideal.
+They differ only in what they measure:
 
-### If the user says yes
+  - `integration_test/appbar_title_measurement_test.dart` — sized
+    for AppBar titles (56 px strip, matches Material's default
+    `toolbarHeight`). Compares each game's AppBar title font against
+    Target Tag's LuckiestGuy @ fs 36. Applies to changes in the
+    game's three screen files
+    (`<game>_menu_screen.dart` / `<game>_game_screen.dart` /
+    `<game>_results_screen.dart`).
 
-Do the AppBar test first, apply if the user is happy, then the
+  - `integration_test/home_screen_font_measurement_test.dart` —
+    sized for home-card labels (44 px strip, matches the
+    `SizedBox(height: 44)` around each label in home_screen.dart).
+    Compares each game's home-card title against Target Tag's
+    LuckiestGuy @ fs 22 (`titleMedium.fontSize` + 4 in the theme).
+    Applies to changes in `lib/screens/home_screen.dart` (a single
+    `theme.textTheme.titleMedium?.fontSize + N` offset per game).
+
+Both render in Chrome via `test_driver/screenshot_test.dart` so the
+real GoogleFonts load, and save a PNG to `temp_screenshots/` that the
+orchestrator reads back and analyses pixel-by-pixel.
+
+### Procedure
+
+Run the AppBar test first, apply the winning fontSize, then run the
 home-screen test. They're independent — a game's AppBar fs and its
 home-card fs do NOT have to match; they just each independently need
 to match their respective Target Tag baseline.
@@ -4630,20 +4857,26 @@ Screenshots land at `temp_screenshots/appbar_title_ribbon.png` and
 `temp_screenshots/home_screen_font_ribbon.png`.
 
 **Step 3 — Measure pixel-precise cap heights.** Read each PNG with
-the Read tool for a visual look, but ALSO analyse pixel-by-pixel with
-Python (`PIL`) so you have hard numbers, not just "looks close":
+the Read tool for a visual look, but ALSO run the versioned Python
+analyzer (**[Playbook §12]**) so you have hard numbers:
 
-  - Detect strip Y ranges by scanning a column for pixels that
-    aren't the dark page background.
-  - Detect the CURRENT / RECOMMENDED horizontal boundaries by
-    scanning a row at the top of a strip (above any glyph ink) for
-    the light card background.
-  - For each strip, find the topmost dark-text pixel = cap top, and
-    the mode-of-per-column-bottoms = baseline. Cap height =
-    `baseline - top + 1`.
+```bash
+python tools/font_ribbon_analyze.py \
+  --ribbon temp_screenshots/appbar_title_ribbon.png \
+  --tolerance 3
 
-Report cap heights relative to Target Tag's cap. Anything more than
-±2 px off the baseline usually needs an override.
+python tools/font_ribbon_analyze.py \
+  --ribbon temp_screenshots/home_screen_font_ribbon.png \
+  --tolerance 3
+```
+
+The tool emits structured JSON: per-game `rec_cap_px`, `delta_px`
+(relative to Target Tag baseline), and `within_tolerance` boolean.
+It enforces the AR-10 rule: delta must be in `+0..+tolerance` — no
+negative deltas allowed (game caps SHORTER than baseline read as
+weak / underpowered vs. the LuckiestGuy baseline).
+
+Iterate on any game whose `within_tolerance` is `false`.
 
 **Step 4 — Iterate `overrideRecFs`.** The metric back-solves fontSize
 from above-baseline cap height. That gets each game's caps to the
@@ -4682,5 +4915,523 @@ strips shadows for pixel-accurate cap measurement, but the real
 game screens should keep them.
 
 **Do NOT commit the game screen fontSize changes automatically.**
-Show the user the changes and wait for them to eyeball the running
-app before committing.
+The changes are part of the standard Phase 8 → Phase 9 → Phase 11
+flow — they get committed alongside every other Phase 8 fix once
+Gate 4 (all-tests-passing) closes. AR-10 verifies the sizes were
+applied; the final commit is done in Phase 11 with the rest of the
+game.
+
+
+---
+
+# APPENDIX: Expanded Capability Playbook
+
+These 13 patterns are referenced by phase steps and AR blocks
+throughout this skill via `[Playbook §N]`. Each is self-contained
+and specifies the model tier + tool choice + expected impact.
+
+---
+
+## §1 — Workflow orchestration for AR-4 (and any multi-item AR)
+
+**Problem:** AR-4 has 34+ integration-audit rows. Running them
+sequentially on the orchestrator burns tokens and wall-clock time.
+
+**Pattern:** Use the Workflow tool to rewrite the whole AR as a
+`pipeline([rows], grepStage, verifyStage)` where each row streams
+through both stages independently.
+
+**Model tiers:**
+- `grepStage`: **Tier 4** (Sonnet + `effort: 'low'`). Each row's grep
+  + boolean check is mechanical — cheap fast agents are perfect.
+- `verifyStage`: **Tier 1** (Opus) OR **Tier 2** (Sonnet + `effort:
+  'high'`) depending on how much semantic reasoning the row needs.
+  E.g., `(v)` outer-Stack modal pattern check needs Opus; `(cc)`
+  sound file naming convention is Tier 4.
+- Synthesis (aggregating findings): **Tier 0** (orchestrator).
+
+**Skeleton:**
+```javascript
+export const meta = {
+  name: 'ar-4-integration-audit',
+  description: 'AR-4 Integration Audit for [GAME_NAME]',
+  phases: [{title: 'Grep'}, {title: 'Verify'}, {title: 'Synthesize'}],
+}
+const ROWS = [
+  {id: 'a', prompt: '...', tier: 'low'},
+  {id: 'b', prompt: '...', tier: 'low'},
+  // ... through (yy)
+]
+const findings = await pipeline(
+  ROWS,
+  row => agent(row.prompt + '\n\nGrep this row and report matches',
+                {label: `grep:${row.id}`, phase: 'Grep',
+                 effort: row.tier === 'low' ? 'low' : 'high',
+                 schema: GREP_RESULT_SCHEMA}),
+  (grep, row) => agent(row.verifyPrompt + '\n\nGrep found:\n' +
+                        JSON.stringify(grep) +
+                        '\n\nJudge PASS / FAIL with evidence.',
+                       {label: `verify:${row.id}`, phase: 'Verify',
+                        model: row.tier === 'high' ? 'opus' : undefined,
+                        effort: 'high',
+                        schema: FINDING_SCHEMA}),
+)
+return findings.filter(Boolean)
+```
+
+**Expected impact:** 5–10× wall-clock speedup on AR-4; structured
+findings feed AR-Coverage cleanly; per-row cost tightly controlled
+by tier.
+
+## §2 — Adversarial verify (3× skeptic panel) for "recurring miss" categories
+
+**Problem:** Rules labelled "Recurring miss" in AR-4 (RESPONSIVE
+layout, background image render, ChangeNotifier disposed, no
+auto-navigate on winner, batch stats update) have historically
+slipped past single-reviewer audits. Cost of a miss = hours of
+downstream debugging.
+
+**Pattern:** For each finding on a recurring-miss row, spawn 3
+INDEPENDENT skeptics whose default answer is REFUTED. Only pass if
+≥2 confirm.
+
+**Model tier:** **Tier 1** (Opus sub-agent, `{model: 'opus'}`) for
+each skeptic. Independence is what matters here; Opus judgment
+quality is the whole point.
+
+**Skeleton (inside Workflow):**
+```javascript
+const skeptics = await parallel(Array.from({length: 3}, (_, i) => () =>
+  agent(`Try to REFUTE this AR-4 finding: "${finding.summary}"
+         Default to refuted=true unless evidence is airtight.
+         Cite the file and line that PROVES it.
+         Lens ${i}: ${LENSES[i]}`,
+        {model: 'opus', schema: VERDICT_SCHEMA})))
+const confirms = skeptics.filter(Boolean).filter(s => !s.refuted).length
+if (confirms < 2) finding.status = 'REFUTED_BY_SKEPTIC_PANEL'
+```
+
+Where `LENSES = ['grep-evidence-only', 'read-the-actual-code',
+'trace-the-runtime-symptom']` — different framing yields different
+misses caught.
+
+**Expected impact:** Catches subtle regressions AR-4 currently lets
+slip. Especially valuable for the "Recurring miss:" categories the
+skill already documents.
+
+## §3 — Perspective-diverse Phase 8 Step 2 visual evaluation
+
+**Problem:** Phase 8 Step 2 (screenshot evaluation) currently has one
+orchestrator reading N screenshots against a checklist. Focus bias
+means one reviewer misses subtle issues.
+
+**Pattern:** Fan out 3 orchestrator-model reviewers with distinct
+lenses; any lens's flag counts. This does NOT violate the "visual
+judgment stays on the orchestrator" rule — all 3 lenses ARE the
+orchestrator model.
+
+**Model tier:** **Tier 1** (Opus, `{model: 'opus'}`) for each lens.
+
+**Lenses:**
+- Lens A — Layout: overflow, clipping, spacing consistency,
+  alignment, viewport fit.
+- Lens B — Typography: hierarchy, readability, cap-height parity
+  (per AR-10), color contrast, shadow legibility.
+- Lens C — Brand: color palette adherence, character usage,
+  spec-declared visual identity, consistency with existing pack.
+
+**Skeleton:**
+```javascript
+const LENSES = [
+  {name: 'layout', focus: 'overflow / clipping / spacing / alignment'},
+  {name: 'typography', focus: 'hierarchy / readability / cap-height'},
+  {name: 'brand', focus: 'palette / character usage / brand fit'},
+]
+const findings = await parallel(LENSES.map(lens => () =>
+  agent(`Read every PNG in temp_screenshots/. For each screenshot,
+         report any issue visible through the ${lens.name} lens:
+         ${lens.focus}. Report as {screenshot, issue, severity,
+         suggested_fix}. Empty array if no issues.`,
+        {model: 'opus', schema: LENS_FINDINGS_SCHEMA})))
+const all = findings.filter(Boolean).flat()
+```
+
+**Expected impact:** Catches issues one reviewer would overlook due
+to focus bias. Especially high value for games with dense UI
+(Clockwork Quest gears, Pirates Grid map, Treasure Divide islands).
+
+## §4 — Judge panel for Phase 2 Stage A (menu wireframe)
+
+**Problem:** Stage A is the biggest brand-direction decision. One
+wireframe attempt → user disapproves → author again → repeat. Slow.
+
+**Pattern:** Fan out 3 wireframe authors in worktrees (different
+color / font / layout takes). Orchestrator judges (or shows the
+user 3 options for a preference vote — user-facing judge).
+
+**Model tiers:**
+- Authors: **Tier 3** (Sonnet, 3× parallel, each in
+  `isolation: 'worktree'`).
+- Judge: **Tier 1** (Opus) OR the user directly if preference is
+  ambiguous.
+
+**Skeleton:**
+```javascript
+const takes = await parallel(TAKES.map(take => () =>
+  agent(`Author a Stage A menu wireframe with this take: ${take.brief}.
+         Follow the standard wireframe prompt otherwise.`,
+        {label: `wireframe:${take.name}`,
+         isolation: 'worktree'})))
+// Judge / show to user
+const winner = await agent(`Compare these 3 wireframe takes against
+                            the spec's Visual Style section. Return
+                            the take that best matches, and why.`,
+                           {model: 'opus', schema: JUDGE_SCHEMA})
+```
+
+**Expected impact:** Hit the brand vibe on the first user review
+instead of the second or third. Wall-clock cost of running 3
+parallel wireframers = same as 1 sequential (worktrees are cheap
+disk); user-time saved = 20–40 min per Stage A.
+
+## §5 — Worktree-parallel Phase 4 screen authoring
+
+**Problem:** Currently Sonnet authors menu + game + results screens
+sequentially (~30–40 min). The 3 files are largely independent.
+
+**Pattern:** Fan out 3 Sonnet sub-agents in parallel worktrees, one
+per screen file. Cross-cutting files (`test_keys.dart`, `main.dart`,
+`home_screen.dart`) stay on the orchestrator in a single sync stage
+after the parallel authors return.
+
+**Model tier:** **Tier 3** (Sonnet) × 3, `isolation: 'worktree'`.
+
+**Sync stage:** **Tier 0** (orchestrator) merges the 3 worktrees +
+manually edits the 3 cross-cutting files. No parallel mutation on
+these; the orchestrator owns them.
+
+**Skeleton:**
+```javascript
+await parallel([
+  () => agent(MENU_SCREEN_PROMPT, {isolation: 'worktree',
+                                    label: 'menu-screen'}),
+  () => agent(GAME_SCREEN_PROMPT, {isolation: 'worktree',
+                                    label: 'game-screen'}),
+  () => agent(RESULTS_SCREEN_PROMPT, {isolation: 'worktree',
+                                       label: 'results-screen'}),
+])
+// Orchestrator merges worktrees back, then edits test_keys.dart,
+// main.dart, and home_screen.dart directly.
+```
+
+**Expected impact:** 2–3× wall-clock speedup on Task 5.
+
+## §6 — Loop-until-dry for Phase 7 spec coverage
+
+**Problem:** Current spec coverage does one exhaustive pass. Compound
+gaps (options × player counts × modes) sometimes slip past.
+
+**Pattern:** Repeat spec-coverage finders until K=2 consecutive
+rounds return zero new gaps.
+
+**Model tier:** **Tier 0** (orchestrator) each round — synthesis
+work.
+
+**Skeleton:**
+```javascript
+const seen = new Set()
+let dry = 0
+while (dry < 2) {
+  const gaps = await agent(SPEC_COVERAGE_PROMPT,
+                            {model: 'opus', schema: GAPS_SCHEMA})
+  const fresh = gaps.filter(g => !seen.has(gapKey(g)))
+  if (!fresh.length) { dry++; continue }
+  dry = 0
+  fresh.forEach(g => seen.add(gapKey(g)))
+  // Author tests for each fresh gap (Tier 3)
+  await parallel(fresh.map(g => () => agent(closeGap(g))))
+}
+```
+
+**Expected impact:** Catches compound edge cases a single pass
+misses.
+
+## §7 — Prior-art briefing via Explore agent
+
+**Problem:** Sub-agents authoring wireframes / screens / tests
+sometimes reinvent patterns that other games already established
+cleanly.
+
+**Pattern:** Before Phase 2 wireframes and Phase 4 screens, dispatch
+an `Explore` agent to survey similar existing games and produce a
+briefing: "for a game with X characteristics, existing pack uses
+these patterns for colors/spacing/layout." Feed that briefing as
+context into the authoring sub-agent.
+
+**Model tier:** **Tier 5** (Explore) — ships with its own optimized
+read-only model.
+
+**Skeleton:**
+```javascript
+const priorArt = await agent(
+  `Survey the existing games in lib/screens/games/ for a game
+   with these traits: ${gameTraits}. Report per-topic:
+   1. Color palette conventions used by similar games
+   2. Menu screen layout patterns
+   3. Game screen layout patterns
+   4. Results screen layout patterns
+   5. Common pitfalls to avoid
+   Cite files/lines. Under 300 words.`,
+  {agentType: 'Explore', label: 'prior-art'})
+// Feed priorArt into the Phase 2/4 authoring prompt as context.
+```
+
+**Expected impact:** First-draft alignment with the pack. Fewer
+approval iterations in Stage B/C/D.
+
+## §8 — Structured output schemas
+
+**Problem:** Sub-agents return prose. Orchestrator parses. AR
+findings scatter across tool result bodies. AR-Coverage
+aggregation is manual.
+
+**Pattern:** Every AR sub-agent, every judge, every reviewer returns
+structured data via `{schema: X}`.
+
+**Schemas:**
+
+```javascript
+// Findings — used by every AR sub-agent
+const FINDING_SCHEMA = {
+  type: 'object',
+  properties: {
+    row: {type: 'string'},                        // e.g. 'yy'
+    status: {enum: ['PASS', 'FAIL', 'NEEDS_FIX']},
+    evidence: {type: 'string'},                   // grep output / cite
+    file: {type: 'string'},                       // 'lib/.../foo.dart'
+    line: {type: 'integer'},
+    remediation: {type: 'string'},                // one-line fix hint
+  },
+  required: ['row', 'status'],
+}
+
+// Skeptic verdict — used by adversarial verify
+const VERDICT_SCHEMA = {
+  type: 'object',
+  properties: {
+    refuted: {type: 'boolean'},
+    reasoning: {type: 'string'},
+    counter_evidence: {type: 'string'},
+  },
+  required: ['refuted'],
+}
+
+// Judge — used by wireframe judge panel
+const JUDGE_SCHEMA = {
+  type: 'object',
+  properties: {
+    winner: {enum: ['A', 'B', 'C', 'NONE']},
+    reasoning: {type: 'string'},
+    graft_from: {type: 'array', items: {enum: ['A','B','C']}},
+  },
+  required: ['winner', 'reasoning'],
+}
+
+// Lens findings — Phase 8 Step 2 perspective-diverse review
+const LENS_FINDINGS_SCHEMA = {
+  type: 'object',
+  properties: {
+    lens: {enum: ['layout', 'typography', 'brand']},
+    findings: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          screenshot: {type: 'string'},
+          issue: {type: 'string'},
+          severity: {enum: ['blocker', 'major', 'minor']},
+          suggested_fix: {type: 'string'},
+        },
+      },
+    },
+  },
+  required: ['lens', 'findings'],
+}
+
+// Definition-of-Done tracker — used by Phase 11 gate
+const DOD_SCHEMA = {
+  type: 'object',
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: {type: 'string'},                    // spec DoD item id
+          description: {type: 'string'},
+          status: {enum: ['DONE', 'PARTIAL', 'MISSING', 'N_A']},
+          evidence_file: {type: 'string'},
+          evidence_line: {type: 'integer'},
+        },
+        required: ['id', 'status'],
+      },
+    },
+  },
+  required: ['items'],
+}
+```
+
+**Expected impact:** Deterministic post-processing; AR-Coverage
+matrix is a `groupBy` away; Artifact dashboard renders directly
+from structured data; DoD tracker prevents "which items did we
+check?" moments at Phase 11.
+
+## §9 — Corrective re-audit rule (universal)
+
+**Problem:** When AR-N flags a gap and a corrective Sonnet
+sub-agent is dispatched to fix it, we currently trust the fix
+without re-verification. Sub-agents sometimes claim success on
+partial fixes.
+
+**Pattern:** After every corrective dispatch, re-run ONLY the
+specific AR row that failed (not the whole AR). Use a Workflow
+pipeline shape: `[finding] → [fix Sonnet] → [re-verify Opus sub-agent
+on that row]`.
+
+**Model tiers:**
+- Fix: **Tier 3** (Sonnet).
+- Re-verify: same tier as the original row's verify stage
+  (Tier 1 or Tier 2 depending on the row).
+
+**Rule:** If re-verify still fails, escalate to the orchestrator
+(the sub-agent has failed twice on the same row). Do NOT dispatch
+a third sub-agent silently.
+
+**Expected impact:** Eliminates "sub-agent claimed success but the
+AR still flags it" situations.
+
+## §10 — Test-smell reviewer
+
+**Problem:** Sonnet authors UI + non-UI tests; the AR checks that
+tests EXIST but not that they meaningfully ASSERT. Tests that
+`pumpAndSettle` and pass regardless of app state slip through.
+
+**Pattern:** After every new test file is authored (Phase 3 model
+tests, Phase 4 provider tests, Phase 7 UI tests), dispatch a
+test-smell reviewer that scores the file on:
+1. Every `testWidgets` has ≥1 `expect(...)` that would fail if the
+   app broke.
+2. No `expect(true, isTrue)` or `expect(1, 1)` no-op assertions.
+3. Any `find.text(...)` targets a string the app actually renders
+   (not a placeholder / error message the test itself set up).
+4. No `pumpAndSettle()` inside a continuous-animation subtree
+   (per project rule).
+5. Test description matches actual behavior verified.
+
+**Model tier:** **Tier 2** (Sonnet + `effort: 'high'`). Reasoning
+about test quality is Sonnet-capable but non-trivial.
+
+**Skeleton:**
+```javascript
+const testFiles = /* newly authored test files */
+const smells = await pipeline(
+  testFiles,
+  file => agent(
+    `Review this test file for smells: pumpAndSettle-and-pass,
+     no-op expects, error-string dependencies, continuous-animation
+     pumpAndSettle. Return {file, smells: [{lineno, type, severity}]}.
+     Under 100 words per file.
+     File: ${file}`,
+    {effort: 'high', schema: SMELL_SCHEMA}),
+  // Corrective stage: fix smells above severity threshold
+  (smells, file) => smells.smells.filter(s => s.severity !== 'minor').length
+    ? agent(`Fix these test smells in ${file}: ${JSON.stringify(smells)}`)
+    : null,
+)
+```
+
+**Expected impact:** Weak tests caught at build time, not weeks
+later during a real regression.
+
+## §11 — Background UI runs + ScheduleWakeup
+
+**Problem:** Phase 8 Step 5 UI-test runs take 3–5 hours per game
+category. The orchestrator idles waiting.
+
+**Pattern:** Fire `./run_ui_tests_parallel.bat <category>` in the
+background (Bash `run_in_background: true`). Immediately
+`ScheduleWakeup(delaySeconds: 1200, ...)` to check in every
+20 minutes. Between wakeups, the orchestrator can continue with
+other Phase 8 work (e.g., running the font-parity ribbons for the
+next game if we're in a multi-game batch, or writing docs).
+
+**Skeleton (in a Phase 8 Step 5 delegation):**
+```bash
+# Background the run
+./run_ui_tests_parallel.bat clockwork_quest > \
+  integration_test_output/clockwork_quest_run.log 2>&1 &
+```
+Then in the skill orchestrator:
+```
+ScheduleWakeup(delaySeconds: 1200,
+               reason: 'checking Clockwork Quest UI progress',
+               prompt: '<original /loop prompt>')
+```
+
+**Expected impact:** Better wall-clock utilization. On a 12-game
+batch this saves ~10 h of orchestrator idle time.
+
+## §12 — Font ribbon Python analysis as a versioned tool
+
+**Problem:** The Python pixel-analysis for the font ribbons is
+currently an ad-hoc heredoc in the skill body. Inconsistent
+between runs; not testable.
+
+**Pattern:** Extract to `tools/font_ribbon_analyze.py` returning
+JSON on stdout. Skill invokes via one Bash call.
+
+**Model tier:** N/A (script). Orchestrator processes returned JSON.
+
+**Skeleton:**
+```bash
+python tools/font_ribbon_analyze.py \
+  --ribbon temp_screenshots/appbar_title_ribbon.png \
+  --baseline "Target Tag" \
+  --tolerance 3 > /tmp/ribbon_findings.json
+
+# Orchestrator reads /tmp/ribbon_findings.json and iterates
+# `overrideRecFs` on any game outside tolerance.
+```
+
+**Expected impact:** Consistent, testable measurement. Fewer
+bespoke Bash edits per run.
+
+## §13 — Cross-game AR-Coverage Artifact dashboard
+
+**Problem:** Phase 10 AR-Coverage produces a text summary. Hard for
+the user to see the "which games missed which check" pattern.
+
+**Pattern:** Render an HTML matrix Artifact: rows = games,
+columns = AR-4 items (a through yy), cells = PASS (green) / FAIL
+(red) / N/A (grey). Uses the structured findings from §8.
+
+**Model tier:** **Tier 4** (Sonnet + `effort: 'low'`) for template
+fill; **Tier 0** (orchestrator) for the summary paragraph above the
+matrix.
+
+**Skeleton:**
+```javascript
+// 1. Orchestrator has arCoverageMatrix: {game: {row: status}}
+// 2. Delegate HTML template fill
+const html = await agent(
+  `Render this cross-game AR-Coverage matrix as an HTML table.
+   Green = PASS, red = FAIL, grey = N/A. Include a legend.
+   Data: ${JSON.stringify(matrix)}`,
+  {effort: 'low', schema: {type: 'string'}})
+// 3. Orchestrator publishes via Artifact
+```
+
+Then invoke the Artifact tool with the returned HTML.
+
+**Expected impact:** User sees coverage in seconds. Faster catch of
+skipped rows across the game corpus.
