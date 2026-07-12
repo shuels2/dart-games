@@ -115,6 +115,19 @@ flutter:
     # Shared/common assets used across all games
     - assets/common/icons/
     - assets/common/images/
+    # 20 sample player headshots used by Options → "Load Test Data".
+    # Embedded so the sample-data button always works without
+    # requiring the source files on the dev machine. Each headshot is
+    # paired 1:1 with one of the 20 generated test players and is
+    # uploaded via the standard avatar endpoint, which runs the
+    # mediapipe face-landmarks pipeline as a fire-and-forget side
+    # effect — useful for exercising the landmark mapping end-to-end.
+    - assets/common/test_headshots/
+    # Manual landmark corrections for the test headshots — empty by default;
+    # populated via System Settings → "Export test-data landmark overrides".
+    # When non-empty, Load Test Data PATCHes these on top of mediapipe's
+    # detection so saved corrections persist across rebuilds.
+    - assets/common/test_headshot_landmarks.json
 
     # Carnival Derby game assets
     - assets/games/carnival_derby/icons/
@@ -184,6 +197,21 @@ flutter:
     - assets/games/tiki_golf/pieces/
     - assets/games/tiki_golf/sounds/
     - assets/games/tiki_golf/teams/
+
+    # Treasure Divide game assets
+    - assets/games/treasure_divide/icons/
+    - assets/games/treasure_divide/images/
+    - assets/games/treasure_divide/pieces/
+    - assets/games/treasure_divide/sounds/
+    - assets/games/treasure_divide/teams/
+    - assets/games/treasure_divide/themes/captain/
+    - assets/games/treasure_divide/themes/first_mate/
+    - assets/games/treasure_divide/themes/bosun/
+    - assets/games/treasure_divide/themes/navigator/
+    - assets/games/treasure_divide/themes/lookout/
+    - assets/games/treasure_divide/themes/cook/
+    - assets/games/treasure_divide/themes/gunner/
+    - assets/games/treasure_divide/themes/cabin_boy/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

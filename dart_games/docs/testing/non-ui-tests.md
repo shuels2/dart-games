@@ -2,7 +2,7 @@
 
 ## Overview
 
-2250 non-UI tests (2060 Flutter + 190 server) validate models, providers, services, widgets, game logic, API client, and server routes.
+2653 non-UI tests (2428 Flutter + 225 server) validate models, providers, services, widgets, game logic, API client, and server routes.
 
 **Run with:** `flutter test` and `cd server && dart test`
 **Execution time:** Seconds
@@ -36,7 +36,7 @@
 - ApiLogEntry: 17 tests (creation, formatting, duration tracking)
 - SavedGameMetadata: 20 tests (creation, JSON serialization, progress info)
 
-### Model Serialization Tests (118 tests)
+### Model Serialization Tests (169 tests)
 
 **HorseRaceGame (10 tests)** - `test/models/horse_race_game_serialization_test.dart`
 **TargetTagGame (13 tests)** - `test/models/target_tag_game_serialization_test.dart`
@@ -52,6 +52,15 @@
 **PiratesGridGame (24 tests)** - `test/models/pirates_grid_serialization_test.dart`
 **GladiatorArenaGame (17 tests)** - `test/models/gladiator_arena_serialization_test.dart`
 **TikiGolfGame (15 tests)** - `test/models/tiki_golf_serialization_test.dart`
+**TreasureDivideGame (27 tests)** - `test/models/treasure_divide_game_serialization_test.dart`
+- toJson/fromJson roundtrip for all TreasureDivideGame fields
+- targetSequence List with sentinel constants (kTargetAnyDouble=-1, kTargetAnyTriple=-2, kTargetBull=-3) preserved
+- playerScores, playerHauls, playerDartResults maps preserved (including null hauls for missed turns)
+- Team fields: teamAssignments, teamCrests, playerPirateThemes maps preserved
+- Game options (roundCount, isQuarterIt, isTeamMode, isManualTeamAssignment, isCustomTargets) preserved
+- currentRound, currentPlayerIndex, currentTeamIndex preserved
+- winnerId / winnerTeamId (nullable) roundtrip
+- Backward compatibility: missing optional fields (pirate themes, face landmarks) default gracefully
 - toJson/fromJson roundtrip for all TikiGolfGame fields
 - holeTargets List (length 9, distinct ints) serialized and deserialized correctly
 - holeImagePaths List (length 9) serialized and deserialized correctly
@@ -95,7 +104,7 @@
 - Status checking, clear dartboard/error
 - Change notification verification
 
-### Provider Save/Restore Tests (57 tests)
+### Provider Save/Restore Tests (85 tests)
 
 **HorseRaceProvider (7 tests)** - `test/providers/horse_race_provider_save_restore_test.dart`
 **TargetTagProvider (7 tests)** - `test/providers/target_tag_provider_save_restore_test.dart`
@@ -106,6 +115,7 @@
 **PiratesGridProvider (12 tests)** - `test/providers/pirates_grid_save_restore_test.dart`
 **GladiatorArenaProvider (15 tests)** - `test/providers/gladiator_arena_save_restore_test.dart`
 **TikiGolfProvider (13 tests)** - `test/providers/tiki_golf_save_restore_test.dart`
+**TreasureDivideProvider (15 tests)** - `test/providers/treasure_divide_save_restore_test.dart`
 - Save game metadata creation and restoration
 - Full game state restore (scores, round, player index, knockoff history)
 - Options preserved across save/restore (targetScore, doubleFinish, shieldRound, speedPlay)
@@ -118,7 +128,7 @@
 - Gameplay continuation after restore
 - resumedSavedGameId lifecycle
 
-### Provider Game Mechanics Tests (314 tests)
+### Provider Game Mechanics Tests (436 tests)
 
 **HorseRaceProvider (50 tests)** - `test/providers/horse_race_provider_game_test.dart`
 - startGame validation (player count, target score range)
@@ -180,6 +190,23 @@
 - Win condition detection after hole 9 completion (Solo + Team)
 - editScore / updateAllDartScores: replay, re-evaluate win/mulligan eligibility
 - clearGame / endGame
+
+**TreasureDivideProvider (55 tests)** - `test/providers/treasure_divide_provider_game_test.dart`
+- startGame validation (Solo 2-8 players, Team 3-10 players), pirate theme shuffle (distinct for ≤8)
+- processDartThrow: hit/miss per target type (number, Any Double, Any Triple, Bull)
+- Halving / quartering at turn end: `floor(score / 2)`, `floor(score / 4)`, edge cases (0 gold, accumulation)
+- Quarter It variant: quartering fires in place of halving when option ON
+- Solo crew fairness: 1-member crew throws 6 darts; dartsThisTurn getter returns 6 not 3
+- advanceToNextPlayer(): Solo sequential; Team grouped-then-handoff rotation (pointer advances on `dartsThisTurn`)
+- Team SUM aggregation: crew round gain = sum of all members' hauls per dart
+- Crew-wide halving: fires only when ALL crew darts miss (every member has zero haul)
+- randomDistribution(N) for all N in 3..10: pairs = N÷2, hasOdd = (N%2==1), result = [2]*pairs + ([1] if hasOdd)
+- Special cases: N=3 → [2,1]; N=4 → [2,2]; N=6 → [2,2,2]; N=9 → [2,2,2,2,1]
+- Round progression: 7/9/12-round sequences; sentinel constants kTargetAnyDouble/kTargetAnyTriple/kTargetBull
+- Custom targets: when isCustomTargets=true, targetSequence rebuilt from customTargetList
+- Win condition detection (Solo + Team): last round completion; tiebreakers (total darts hit > fewer rounds played)
+- editScore / updateAllDartScores: replay, re-evaluate halving/win
+- clearGame / endGame; resumedSavedGameId auto-delete on results screen load
 - startGame (player count, character assignment, options initialization)
 - processDartThrow (scoring accumulation, turn total, shouldPromptTakeout)
 - Bust detection (overshoot, non-double at exact target, both are Double Finish ON only)
@@ -406,6 +433,32 @@
 - Victory fires on hole 9 completion, precedes all other simultaneous announcements
 - Remove Darts fires unconditionally alongside other announcements
 
+**Treasure Divide Game Logic (89 tests)** - `test/screens/games/treasure_divide/treasure_divide_game_test.dart`
+- Solo scoring: hit/miss per target type (number, Any Double, Any Triple, Bull), value accumulation
+- Halving logic with edge cases (floor, 0-score, accumulation across rounds)
+- Quarter It variant: floor(score/4) replaces halving when option ON
+- Round progression: 7/9/12-round sequences, custom targets, sentinel constants
+- Team SUM aggregation + crew-wide halving; solo crew 6-dart fairness rule
+- randomDistribution(N) for all N in 3..10; doubles invariant
+- Pirate theme assignment (shuffle, distinct indices for ≤8 players, persistence across serialization)
+- Win condition: last round completion; Solo tiebreaker (most darts hit > fewer rounds played); Team tiebreaker
+
+**Treasure Divide Announcements (60 tests)** - `test/screens/games/treasure_divide/treasure_divide_announcement_test.dart`
+- All 22 announcement events with correct text and sound effects
+- Per-dart precedence chain: Bull Hit > Big Hit > Hit Target > Miss
+- Solo turn-end precedence: Quartered > Halved > Safe
+- Team crew precedence: Crew Wipeout > Crew Plunder
+- Round-transition precedence: Last Round > Bull Round > Triple Round > Double Round > Custom Reveal > Standard New Round
+- Victory fires only from `_handleGameWon()` and takes precedence over all others
+- MAX 2 announcements per event; Remove Darts fires unconditionally outside budget
+
+**Treasure Divide Game With Announcements (89 tests)** - `test/screens/games/treasure_divide/treasure_divide_game_with_announcements_test.dart`
+- Full dart processing triggering correct announcement sequences end-to-end
+- Halved/Safe/Quartered combined with per-dart-level announcements
+- Crew wipeout and crew plunder mutual exclusion in combined flow
+- Victory fires on final round completion, precedes all other simultaneous announcements
+- Remove Darts fires unconditionally alongside other announcements
+
 ### Utility Tests (34 tests)
 
 **DartboardLayout (34 tests)** - `test/utils/dartboard_layout_test.dart`
@@ -424,7 +477,7 @@
 **PlayerTestUtils (10 tests)** - `test/shared/player_test_utils_test.dart`
 - Test player creation helpers
 
-### Widget Tests (44 tests)
+### Widget Tests (61 tests)
 
 **InteractiveDartboard (23 tests)** - `test/widgets/interactive_dartboard_test.dart`
 - Dartboard rendering
@@ -440,6 +493,17 @@
 - Saved game listing and selection
 - Game-specific theming
 
+**PirateAvatarWidget (17 tests)** - `test/widgets/treasure_divide/pirate_avatar_widget_test.dart`
+- Widget renders all 8 pirate themes without overflow
+- PirateAvatarWidget uses face landmarks when present (landmark-derived anchor points)
+- PirateAvatarWidget falls back to heuristic anchors when face_landmarks is null
+- Each accessory sprite renders at correct anchor and width factor per theme
+- Heuristic fallback values produce visually acceptable layout for all 8 themes
+- Widget does not throw when avatar image is null or missing
+- Theme 0 (Captain) renders hat + eyepatch + parrot at correct positions
+- Theme 3 (Navigator) monocle anchors to rightEye landmark
+- Solo Crew badge renders correctly in ActivePlayerPanel when crew has 1 member
+
 ### Save/Resume Integration Tests (20 tests)
 
 **Save/Resume Integration (20 tests)** - `test/integration/save_resume_integration_test.dart`
@@ -448,7 +512,7 @@
 - Resumed game save overwrites: 5 tests
 - Multiple saves independence: 3 tests
 
-### Server Tests (178 tests)
+### Server Tests (225 tests)
 
 **Database & Helpers (25 tests)** - `server/test/database_test.dart`
 - Table creation and schema validation
@@ -512,14 +576,24 @@
 - Idempotency (second reset returns zeros)
 - Combined reset of all tables simultaneously
 
+**Additional Routes — Pirate's Grid (12 tests)** - `server/test/routes/pirates_grid_routes_test.dart`
+- Pirate's Grid-specific server routes (added in Phase 6 for Pirate's Grid)
+
+**Face Landmarks Routes + V5 Migration + Service — Treasure Divide (35 tests)** - `server/test/routes/face_landmarks_routes_test.dart`, `server/test/migration_v5_test.dart`, `server/test/face_landmark_service_test.dart`
+- V5 migration (`add_face_landmarks`): adds nullable `face_landmarks TEXT` column to `players` table; idempotent re-run; backward compatible (existing players get null)
+- Face landmark model: `FaceLandmarksData` JSON roundtrip (boundingBox, leftEye, rightEye, noseTip, mouthCenter, confidence)
+- Face landmarks routes: GET `/players/:id/face-landmarks` (null before detection, data after), PUT (set), DELETE (clear)
+- FaceLandmarkService: Python sidecar invocation, JSON parse, null-on-failure path
+- Player routes: face_landmarks field preserved in player CRUD after V5 migration
+
 ## Running Tests
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests (2060 tests)
+# Flutter tests (2428 tests)
 flutter test
 
-# Server tests (190 tests)
+# Server tests (225 tests)
 cd server && dart test
 ```
 
@@ -547,6 +621,11 @@ flutter test test/screens/games/tiki_golf/
 flutter test test/providers/tiki_golf_provider_game_test.dart
 flutter test test/providers/tiki_golf_save_restore_test.dart
 flutter test test/models/tiki_golf_serialization_test.dart
+flutter test test/screens/games/treasure_divide/
+flutter test test/providers/treasure_divide_provider_game_test.dart
+flutter test test/providers/treasure_divide_save_restore_test.dart
+flutter test test/models/treasure_divide_game_serialization_test.dart
+flutter test test/widgets/treasure_divide/
 ```
 
 ## Test Patterns

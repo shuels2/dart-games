@@ -194,7 +194,7 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
             title: Text(
               'LUNAR LANDER RESULTS',
               style: GoogleFonts.orbitron(
-                fontSize: 24,
+                fontSize: 35,
                 fontWeight: FontWeight.bold,
                 color: _starWhite,
                 letterSpacing: 1.5,

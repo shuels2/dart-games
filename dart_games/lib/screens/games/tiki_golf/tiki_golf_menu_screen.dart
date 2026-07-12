@@ -321,7 +321,7 @@ class _TikiGolfMenuScreenState extends State<TikiGolfMenuScreen> {
         splashColor: Colors.transparent,
       ),
       title: Text(
-        'TIKI GOLF SETUP',
+        'TIKI GOLF GAME SETUP',
         style: GoogleFonts.boogaloo(
           fontSize: 36,
           color: _sandWhite,

@@ -15,6 +15,10 @@ dependencies:
   uuid: ^4.4.2
   mime: ^1.0.6
   args: ^2.5.0
+  # Used to canonicalize uploaded player photos to a 512x512 1:1 square so
+  # all avatars render consistently in the circular ClipOval and mediapipe
+  # sees a uniform coordinate space across players.
+  image: ^4.3.0
 
 dev_dependencies:
   test: ^1.25.8

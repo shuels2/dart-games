@@ -261,4 +261,28 @@ class DartboardPausedModalConfig {
       ),
     );
   }
+
+  /// Treasure Divide — Ocean Teal bg (0.85), Blood Red headline, Sail White sub-text,
+  /// PirataOne title font, Merriweather body font
+  factory DartboardPausedModalConfig.treasureDivide() {
+    return DartboardPausedModalConfig(
+      backgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      backgroundOpacity: 0.85,
+      borderColor: const Color(0xFFC41E3A), // Blood Red
+      boxShadowColor: const Color(0xFFC41E3A),
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFC41E3A), // Blood Red
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFFC41E3A), // Blood Red
+        fontSize: 24,
+        letterSpacing: 1.2,
+      ),
+      messageTextStyle: GoogleFonts.merriweather(
+        color: const Color(0xFFFFF8E7), // Sail White
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 }

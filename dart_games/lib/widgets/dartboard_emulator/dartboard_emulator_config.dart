@@ -189,6 +189,24 @@ class DartboardSectionConfig {
       ),
     );
   }
+
+  // Factory for Treasure Divide — Ocean Teal, Treasure Gold border, Merriweather/PirataOne font
+  factory DartboardSectionConfig.treasureDivide() {
+    return DartboardSectionConfig(
+      backgroundColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFFFD700), width: 2), // Treasure Gold
+      disabledOverlayBackgroundColor: const Color(0xFF008B8B).withOpacity(0.95), // Ocean Teal
+      disabledOverlayBorderColor: const Color(0xFF8B6914), // Plank Brown
+      removeButtonBackgroundColor: const Color(0xFFFFD700), // Treasure Gold
+      removeButtonBorderColor: const Color(0xFF8B6914), // Plank Brown
+      removeButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFF008B8B), // Ocean Teal
+      ),
+    );
+  }
 }
 
 class DartboardFABConfig {
@@ -307,6 +325,21 @@ class DartboardFABConfig {
       textStyle: GoogleFonts.boogaloo(
         fontSize: 16,
       ),
+    );
+  }
+
+  // Factory for Treasure Divide — Treasure Gold bg, Ocean Teal icon/text, PirataOne font
+  factory DartboardFABConfig.treasureDivide() {
+    return DartboardFABConfig(
+      backgroundColor: const Color(0xFFFFD700), // Treasure Gold
+      iconColor: const Color(0xFF008B8B), // Ocean Teal
+      textColor: const Color(0xFF008B8B), // Ocean Teal
+      textStyle: GoogleFonts.merriweather(
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.5,
+      ),
+      showText: 'Show Dartboard',
+      hideText: 'Hide Dartboard',
     );
   }
 }
@@ -454,6 +487,21 @@ class PlayToCompleteButtonConfig {
       ),
     );
   }
+
+  // Factory for Treasure Divide — Treasure Gold bg, Ocean Teal text, Plank Brown border
+  factory PlayToCompleteButtonConfig.treasureDivide() {
+    return PlayToCompleteButtonConfig(
+      backgroundColor: const Color(0xFFFFD700), // Treasure Gold
+      foregroundColor: const Color(0xFF008B8B), // Ocean Teal
+      borderColor: const Color(0xFF8B6914), // Plank Brown
+      textStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 1.0,
+        color: const Color(0xFF008B8B), // Ocean Teal
+      ),
+      buttonText: 'Sail to Victory',
+    );
+  }
 }
 
 /// Visual config for the Play to Tie / Draw button. Sits side-by-side
@@ -491,6 +539,23 @@ class PlayToTieButtonConfig {
         color: const Color(0xFFFFF5E1),
       ),
       buttonText: 'Play to Draw',
+    );
+  }
+
+  // Factory for Treasure Divide — Treasure Gold bg on Ocean Teal,
+  // PirataOne, "Divide the Treasure" label (matches the in-game tie
+  // copy "Divided treasure!" used on the results screen).
+  factory PlayToTieButtonConfig.treasureDivide() {
+    return PlayToTieButtonConfig(
+      backgroundColor: const Color(0xFFFFD700), // Treasure Gold
+      foregroundColor: const Color(0xFF008B8B), // Ocean Teal
+      borderColor: const Color(0xFF8B6914), // Plank Brown
+      textStyle: GoogleFonts.pirataOne(
+        fontSize: 16,
+        letterSpacing: 1.0,
+        color: const Color(0xFF008B8B),
+      ),
+      buttonText: 'Divide the Treasure',
     );
   }
 
@@ -702,6 +767,33 @@ class BuffToggleButtonConfig {
         fontWeight: FontWeight.bold,
         height: 1.1,
         color: parchment.withOpacity(0.55),
+      ),
+    );
+  }
+
+  /// Treasure Divide theme-preview toggle styling. Used by the emulator-only
+  /// theme picker that overrides every player's pirate theme for sprite
+  /// placement debugging — game logic is unaffected.
+  factory BuffToggleButtonConfig.treasureDivide() {
+    const treasureGold = Color(0xFFFFD700);
+    const oceanTeal = Color(0xFF008B8B);
+    const plankBrown = Color(0xFF8B6914);
+    const sailWhite = Color(0xFFFFF8E7);
+    return BuffToggleButtonConfig(
+      activeBackgroundColor: treasureGold,
+      inactiveBackgroundColor: oceanTeal.withOpacity(0.35),
+      borderColor: plankBrown,
+      activeTextStyle: GoogleFonts.pirataOne(
+        fontSize: 18,
+        letterSpacing: 0.5,
+        height: 1.1,
+        color: oceanTeal,
+      ),
+      inactiveTextStyle: GoogleFonts.pirataOne(
+        fontSize: 18,
+        letterSpacing: 0.5,
+        height: 1.1,
+        color: sailWhite,
       ),
     );
   }

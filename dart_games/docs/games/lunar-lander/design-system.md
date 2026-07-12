@@ -44,7 +44,7 @@ Lunar Lander draws inspiration from 1960s NASA propaganda posters combined with 
 
 | Element | Font | Weight | Size | Color |
 |---------|------|--------|------|-------|
-| AppBar Title | Orbitron | Bold | 32pt | Star White, letterSpacing: 1.5, orange glow shadow |
+| AppBar Title | Orbitron | Bold | 35pt | Star White, letterSpacing: 1.5, orange glow shadow |
 | Game Title (results) | Orbitron | Bold | 36pt | Rocket Flame |
 | Section Headers | Orbitron | Bold | 28-32pt | Star White |
 | Player Names (game) | Orbitron | Bold | 20pt | Rocket Flame |
@@ -54,14 +54,14 @@ Lunar Lander draws inspiration from 1960s NASA propaganda posters combined with 
 | Turn Summary Text | Exo2 | Regular | 14pt | Moon Dust Gray |
 | Descent Track Labels | Orbitron | Regular | 10pt | Star White |
 
-**CRITICAL:** All 3 AppBars (Menu, Game, Results) MUST use identical title styling: Orbitron Bold, 32pt, Star White, letterSpacing: 1.5, with orange glow shadow. Consistent font size is required across all screens.
+**CRITICAL:** All 3 AppBars (Menu, Game, Results) MUST use identical title styling: Orbitron Bold, 35pt, Star White, letterSpacing: 1.5, with orange glow shadow. Consistent font size is required across all screens. The AppBar title strings are: Menu = `LUNAR LANDER GAME SETUP`, Game = `LUNAR LANDER`, Results = `LUNAR LANDER RESULTS`.
 
 ## Screen-by-Screen Styling
 
 ### Menu Screen
 
 - **Background:** Space background image (`LunarLander-Background.png`) with dark overlay
-- **AppBar:** Earth Blue (`#1B4965`) background, Orbitron 32pt Bold Star White title with orange glow
+- **AppBar:** Earth Blue (`#1B4965`) background, Orbitron 35pt Bold Star White title (`LUNAR LANDER GAME SETUP`) with orange glow
 - **Left Panel:** Earth Blue at 0.8 opacity, scrollable game description
 - **Settings Boxes:** Earth Blue border (2px), Space Black background at 0.9 opacity, 12px internal padding
 - **Start Button (LAUNCH!):** Rocket Flame (`#F26430`) background, full width, Orbitron Bold 22pt
@@ -70,7 +70,7 @@ Lunar Lander draws inspiration from 1960s NASA propaganda posters combined with 
 ### Game Screen
 
 - **Background:** Space background image with dark overlay
-- **AppBar:** Earth Blue background, identical to Menu AppBar
+- **AppBar:** Earth Blue background, identical to Menu AppBar; title = `LUNAR LANDER`
 - **Active Player Panel:** Earth Blue at 0.85 opacity with 2px Rocket Flame border, 200px wide
 - **Descent Tracks:** Space Black at 0.6 opacity, 1px Rocket Silver border, 80px wide per player
 - **Altitude Readout (normal):** Star White, Orbitron 16pt
@@ -86,7 +86,7 @@ Lunar Lander draws inspiration from 1960s NASA propaganda posters combined with 
 ### Results Screen
 
 - **Background:** Space background with dark overlay
-- **AppBar:** Earth Blue background, identical to Menu/Game AppBars
+- **AppBar:** Earth Blue background, identical to Menu/Game AppBars; title = `LUNAR LANDER RESULTS`
 - **Winner Panel:** "MISSION ACCOMPLISHED!" in Orbitron 36pt Bold, Rocket Flame
 - **Winner Avatar:** 120x120, circular, 3px Rocket Flame border
 - **Rankings:** Alternating Earth Blue / Space Black rows, Exo2 16pt Star White

@@ -47,7 +47,7 @@ Clockwork Quest uses **Cinzel Decorative** for all display text and **Lato** for
 | Element | Font | Size | Weight | Color | Letter Spacing | Shadow |
 |---------|------|------|--------|-------|----------------|--------|
 | Game Title | Cinzel Decorative | 40-48pt | Bold | Brass Gold | 1.5 | Dark shadow |
-| AppBar Titles | Cinzel Decorative | 28pt | Bold | Steam White | 1.5 | Dark shadow |
+| AppBar Titles | Cinzel Decorative | 29pt | Bold | Steam White | 1.5 | Dark shadow |
 | Section Headers | Cinzel Decorative | 24-28pt | Bold | Steam White | 1.0 | None |
 | Player Names | Cinzel Decorative | 18-22pt | Bold | Player color | 0.5 | None |
 | Score Numbers | Cinzel Decorative | 32-40pt | Bold | Amber Glow | 1.0 | Glow effect |
@@ -65,10 +65,15 @@ Clockwork Quest uses **Cinzel Decorative** for all display text and **Lato** for
 **AppBar Consistency:**
 All 3 AppBars (Menu, Game, Results) use **identical title styling:**
 - Font: Cinzel Decorative Bold
-- Size: 28pt
+- Size: 29pt
 - Color: Steam White (`#F5F0E8`)
 - Letter Spacing: 1.5
 - Shadow: Dark shadow for depth
+
+**AppBar Title Strings:**
+- Menu: `CLOCKWORK QUEST GAME SETUP`
+- Gameplay: `CLOCKWORK QUEST`
+- Results: `CLOCKWORK QUEST RESULTS`
 
 ## Visual Elements
 

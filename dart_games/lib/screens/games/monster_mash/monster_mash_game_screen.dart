@@ -605,7 +605,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                 child: Text(
                   'It\'s Monster Mashin\' Time!',
                   style: GoogleFonts.creepster(
-                    fontSize: 39,
+                    fontSize: 35,
                     letterSpacing: 1.5,
                     shadows: [
                       Shadow(

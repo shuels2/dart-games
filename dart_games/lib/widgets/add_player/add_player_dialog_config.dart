@@ -601,6 +601,60 @@ class AddPlayerDialogConfig {
     );
   }
 
+  /// Treasure Divide theme — Ocean Teal bg, Treasure Gold/Plank Brown accents, PirataOne/Merriweather fonts
+  factory AddPlayerDialogConfig.treasureDivide() {
+    return AddPlayerDialogConfig(
+      backgroundColor: const Color(0xFF008B8B).withOpacity(0.97), // Ocean Teal
+      textColor: const Color(0xFFFFF8E7), // Sail White
+      titleStyle: GoogleFonts.pirataOne(
+        fontSize: 24,
+        color: const Color(0xFFFFD700), // Treasure Gold
+        letterSpacing: 1.2,
+        shadows: const [
+          Shadow(color: Color(0xFF1A1A1A), blurRadius: 4, offset: Offset(1, 1)),
+        ],
+      ),
+      inputLabelStyle: GoogleFonts.merriweather(
+        fontSize: 16,
+        color: const Color(0xFFFFF8E7), // Sail White
+      ),
+      inputBorderColor: const Color(0xFF8B6914), // Plank Brown
+      inputFocusedBorderColor: const Color(0xFFFFD700), // Treasure Gold
+      inputErrorBorderColor: const Color(0xFFC41E3A), // Blood Red
+      photoLabelStyle: GoogleFonts.merriweather(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFFFFF8E7), // Sail White
+      ),
+      photoButtonColor: const Color(0xFF008B8B), // Ocean Teal
+      photoButtonForegroundColor: const Color(0xFFFFF8E7),
+      photoButtonBorderColor: const Color(0xFF8B6914), // Plank Brown
+      photoButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8E7),
+      ),
+      photoButtonWidth: null,
+      addButtonColor: const Color(0xFFFFD700), // Treasure Gold
+      addButtonForegroundColor: const Color(0xFF008B8B), // Ocean Teal
+      addButtonBorderColor: const Color(0xFF8B6914), // Plank Brown
+      addButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 18,
+        letterSpacing: 1.0,
+        color: const Color(0xFF008B8B),
+      ),
+      cancelButtonColor: const Color(0xFF008B8B).withOpacity(0.85), // Ocean Teal
+      cancelButtonForegroundColor: const Color(0xFFFFF8E7),
+      cancelButtonBorderColor: const Color(0xFF8B6914).withOpacity(0.6), // Plank Brown
+      cancelButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFFFF8E7),
+      ),
+      errorTextColor: const Color(0xFFC41E3A), // Blood Red
+    );
+  }
+
   /// Tiki Golf theme — Palm Green bg, Lagoon Blue/Tropical Orange accents, Boogaloo/Nunito fonts
   factory AddPlayerDialogConfig.tikiGolf() {
     return AddPlayerDialogConfig(

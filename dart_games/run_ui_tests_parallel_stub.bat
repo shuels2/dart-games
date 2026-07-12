@@ -11,6 +11,9 @@ REM   set STUB_FAIL=1
 REM   run_ui_tests_parallel_stub.bat
 REM ============================================================
 
+call "%~dp0check_python_deps.bat"
+if errorlevel 1 exit /b 1
+
 set STUB_MODE=1
 call "%~dp0run_ui_tests_parallel.bat" %*
 exit /b %errorlevel%

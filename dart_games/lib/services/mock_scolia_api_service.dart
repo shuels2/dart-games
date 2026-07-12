@@ -55,12 +55,22 @@ class MockScoliaApiService {
     // Generate sector suggestions (nearby sectors)
     List<String> sectorSuggestions = _generateSectorSuggestions(sector, baseScore, multiplier);
 
-    // Create THROW_DETECTED message per Scolia API spec
+    // Create THROW_DETECTED message per Scolia API spec.
+    // NOTE: score/multiplier/baseScore are NOT part of the real Scolia
+    // payload schema — Scolia hardware only emits sector + coordinates and
+    // the consumer derives score from sector. They are included here so
+    // game screens that don't yet derive everything from sector (e.g.
+    // Treasure Divide reads payload['score']/['multiplier']/['baseScore']
+    // directly) still receive the test's intended values. Game screens that
+    // ignore these extra fields are unaffected (additive).
     final throwDetectedMessage = {
       'type': 'THROW_DETECTED',
       'id': _uuid.v4(),
       'payload': {
         'sector': sector,
+        'score': score,
+        'multiplier': multiplier,
+        'baseScore': baseScore,
         'coordinates': coordinates,
         'angle': angle,
         'bounceout': bounceout,

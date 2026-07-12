@@ -19,7 +19,7 @@ REM Adding entries here automatically:
 REM   - assigns the next port (server = 9000+N, chromedriver = 4443+N)
 REM   - reserves a worker slot (one parallel worker per entry)
 REM   - includes the dir in pre-run worktree cleanup (loop below at ~line 283)
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena tiki_golf home_screen pause_modal"
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena tiki_golf home_screen pause_modal treasure_divide"
 
 REM Strip trailing backslash from script directory to avoid \" quoting
 REM issues when paths contain spaces (e.g. /D "path\" breaks start).
@@ -38,25 +38,49 @@ REM ============================================================
 REM Same two-level filter logic as run_ui_tests.bat:
 REM   Game level  - determines which workers to launch
 REM   File level  - passed through to workers for per-file filtering
+REM
+REM MAX_WORKERS handling — batched dispatcher:
+REM   Default 5, overridable via MAX_WORKERS env var, or via a
+REM   `--max-workers=N` CLI flag (highest precedence). Args other than
+REM   `--max-workers=` are treated as filter tokens like before, so
+REM   the flag does NOT set run_all=0 by itself — a run of
+REM   `run_ui_tests_parallel.bat --max-workers=3` still runs every
+REM   game (in batches of 3), matching the "no args = run all" idiom.
 REM ============================================================
+if not defined MAX_WORKERS set "MAX_WORKERS=5"
+
 set "run_all=1"
 set "token_count=0"
 set "filter_args="
 
 if not "%~1"=="" (
-    set "run_all=0"
     for %%T in (%*) do (
-        set /a token_count+=1
-        set "_nt=%%T"
-        set "_nt=!_nt:\=/!"
-        set "_nt=!_nt:.dart=!"
-        set "tok!token_count!=!_nt!"
-        if "!filter_args!"=="" (
-            set "filter_args=%%T"
+        set "_arg=%%T"
+        REM Match `--max-workers=<N>` prefix (14 chars).
+        if /i "!_arg:~0,14!"=="--max-workers=" (
+            set "MAX_WORKERS=!_arg:~14!"
         ) else (
-            set "filter_args=!filter_args! %%T"
+            set "run_all=0"
+            set /a token_count+=1
+            set "_nt=%%T"
+            set "_nt=!_nt:\=/!"
+            set "_nt=!_nt:.dart=!"
+            set "tok!token_count!=!_nt!"
+            if "!filter_args!"=="" (
+                set "filter_args=%%T"
+            ) else (
+                set "filter_args=!filter_args! %%T"
+            )
         )
     )
+)
+
+REM Validate MAX_WORKERS is a positive integer. Silently coerce
+REM anything invalid back to the default rather than aborting the run.
+set /a "_mw_test=MAX_WORKERS" 2>nul
+if !_mw_test! lss 1 (
+    echo WARNING: MAX_WORKERS=!MAX_WORKERS! invalid, using default 5.
+    set "MAX_WORKERS=5"
 )
 
 REM ============================================================
@@ -68,6 +92,9 @@ echo          [PARALLEL MODE]
 if defined STUB_MODE echo          [STUB MODE]
 echo ========================================
 echo.
+
+call "%~dp0check_python_deps.bat"
+if !errorlevel! neq 0 exit /b 1
 
 set "_PARALLEL_DIR=integration_test_output\parallel"
 if not exist "integration_test_output" mkdir integration_test_output
@@ -207,6 +234,12 @@ if !worker_count! equ 0 (
     exit /b 1
 )
 
+REM Clamp slot count — one worker slot per concurrent game, but never
+REM more than there are games to run. Games rotate through the slots
+REM as each finishes (see :dispatch_loop below).
+set "slot_count=!MAX_WORKERS!"
+if !slot_count! gtr !worker_count! set "slot_count=!worker_count!"
+
 echo.
 if "!run_all!"=="1" (
     echo Running All UI Automation Tests [PARALLEL]
@@ -215,16 +248,17 @@ if "!run_all!"=="1" (
     for /l %%i in (1,1,!token_count!) do echo   [%%i] !tok%%i!
 )
 echo.
-echo Games: !game_list!
-echo Workers: !worker_count!
-echo Output: %_PARALLEL_DIR%
+echo Games:    !game_list!
+echo Games:    !worker_count! total
+echo Slots:    !slot_count! concurrent ^(MAX_WORKERS=!MAX_WORKERS!^)
+echo Output:   %_PARALLEL_DIR%
 echo.
-echo Port Assignments:
-for /l %%N in (1,1,!worker_count!) do (
+echo Slot Port Assignments ^(games rotate through these ports as slots free up^):
+for /l %%N in (1,1,!slot_count!) do (
     set /a "_cd_port=4443+%%N"
     set /a "_web_port=_cd_port+36000"
     set /a "_srv_port=9000+%%N"
-    echo   !game%%N!: ChromeDriver=!_cd_port! Web=!_web_port! Server=!_srv_port!
+    echo   slot %%N: ChromeDriver=!_cd_port! Web=!_web_port! Server=!_srv_port!
 )
 echo.
 
@@ -346,7 +380,7 @@ REM Remove any leftover worktrees from a previous failed run
 if exist "!_WORKTREE_BASE!" (
     echo Cleaning up previous worker worktrees...
     REM Keep this list in sync with the GAMES variable at the top of the file.
-    for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena tiki_golf home_screen pause_modal) do (
+    for %%G in (target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena tiki_golf home_screen pause_modal treasure_divide) do (
         git worktree remove --force "!_WORKTREE_BASE!\%%G" >> "!_WT_LOG!" 2>&1
     )
     git worktree prune >> "!_WT_LOG!" 2>&1
@@ -458,18 +492,23 @@ echo Starting Infrastructure
 echo ========================================
 echo.
 
-REM Start ChromeDrivers and backend servers for each game
-for /l %%N in (1,1,!worker_count!) do (
-    set "_g=!game%%N!"
+REM Start slot_count ChromeDriver + backend server pairs — one per
+REM SLOT (not per game). Games rotate through these fixed ports as
+REM the dispatcher assigns them. Server data-dirs stay per-game and
+REM are created lazily by the worker when it starts a new game;
+REM shared server state is reset between games via the worker's
+REM `UITestHelpers.resetServerState()` call at the start of each
+REM test file.
+for /l %%N in (1,1,!slot_count!) do (
     set /a "_cd_port=4443+%%N"
     set /a "_srv_port=9000+%%N"
-    set "_data_dir=%_PARALLEL_DIR%\test_data_!_g!"
-    set "_server_log=%_PARALLEL_DIR%\server_!_g!.log"
+    set "_data_dir=%_PARALLEL_DIR%\test_data_slot%%N"
+    set "_server_log=%_PARALLEL_DIR%\server_slot%%N.log"
 
-    echo Starting ChromeDriver on port !_cd_port! for !_g!...
+    echo Starting ChromeDriver on port !_cd_port! for slot %%N...
     start /B "" "chromedriver\chromedriver-win64\chromedriver.exe" --port=!_cd_port! >nul 2>&1
 
-    echo Starting backend server on port !_srv_port! for !_g!...
+    echo Starting backend server on port !_srv_port! for slot %%N...
     if not exist "!_data_dir!" mkdir "!_data_dir!"
     start /B "" cmd /C "cd server && dart run bin/server.dart --port !_srv_port! --data-dir ..\!_data_dir! >> ..\!_server_log! 2>&1"
 )
@@ -477,8 +516,8 @@ for /l %%N in (1,1,!worker_count!) do (
 echo.
 echo Health-checking all services...
 
-REM Wait for all ChromeDrivers
-for /l %%N in (1,1,!worker_count!) do (
+REM Wait for all ChromeDrivers (per slot)
+for /l %%N in (1,1,!slot_count!) do (
     set /a "_cd_port=4443+%%N"
     call :wait_for_chromedriver_port !_cd_port!
     if !errorlevel! neq 0 (
@@ -487,8 +526,8 @@ for /l %%N in (1,1,!worker_count!) do (
     )
 )
 
-REM Wait for all backend servers
-for /l %%N in (1,1,!worker_count!) do (
+REM Wait for all backend servers (per slot)
+for /l %%N in (1,1,!slot_count!) do (
     set /a "_srv_port=9000+%%N"
     call :wait_for_server_port !_srv_port!
     if !errorlevel! neq 0 (
@@ -509,77 +548,126 @@ echo.
 :skip_infrastructure_end
 
 REM ============================================================
-REM Launch workers
+REM Dispatch loop — batched worker scheduler
 REM ============================================================
+REM Rolling FIFO scheduler: the queue is game1..game<worker_count>,
+REM the pool is slot1..slot<slot_count>. Each iteration:
+REM   (a) reaps finished slots by looking for <game>_results.txt,
+REM   (b) fills any free slot from the queue head (2s stagger between
+REM       successive launches this tick, matching the SDK-cache race
+REM       protection the old launch loop had),
+REM   (c) exits when every slot is free AND the queue is drained.
+REM
+REM Slots own the fixed port pair (CD=4443+N, SRV=9000+N) established
+REM during infrastructure startup — games rotate through those ports.
+REM
+REM Global timeout: 14 hours (5040 polls * 10s = 50,400s). Longer than
+REM the old 6h to account for batched wall-clock being N/slot_count
+REM times the single-fastest-game runtime instead of the max.
 echo ========================================
-echo Launching Workers
+echo Dispatch Loop ^(rolling batches^)
 echo ========================================
 echo.
-
-REM Stagger worker launches by 2 seconds so the first worker's `flutter`
-REM bootstrap finishes writing the shared SDK cache file
-REM (C:\...\flutter\bin\cache\engine.realm) before the next worker boots.
-REM Without this, two workers race the same Set-Content and one fails with
-REM "process cannot access the file ... engine.realm" before any test runs.
-REM Skip the sleep after the LAST worker — nothing follows it to race with.
-for /l %%N in (1,1,!worker_count!) do (
-    set "_g=!game%%N!"
-    set /a "_cd_port=4443+%%N"
-    set /a "_srv_port=9000+%%N"
-    set "_wt=!worktree%%N!"
-    if "!_wt!"=="" set "_wt=stub"
-
-    echo Launching worker for !_g! ^(CD=!_cd_port! SRV=!_srv_port!^)...
-    REM Quote arguments that may contain spaces. Past failure: when
-    REM `_WORKTREE_BASE` was made absolute (commit 4834b12), `!_wt!` became
-    REM a path containing spaces (`C:\Projects\Claude Code Projects\...`).
-    REM Without quoting, cmd's arg splitter broke `!_wt!` into multiple
-    REM tokens so the worker's %5 was just the first token before a space.
-    REM Test discovery then ran against a non-existent path and every
-    REM worker reported TOTAL=0. Same hazard applies to %_PARALLEL_DIR%
-    REM and !_SCRIPT_DIR! if either ever lives under a path with spaces.
-    start "Worker: !_g!" /D "!_SCRIPT_DIR!" cmd /C ""!_SCRIPT_DIR!\run_ui_tests_parallel_worker.bat" !_g! !_cd_port! !_srv_port! "%_PARALLEL_DIR%" "!_wt!" !filter_args!"
-    if %%N lss !worker_count! timeout /T 2 /NOBREAK >nul 2>&1
-)
-
+echo Slot count: !slot_count!   Queue length: !worker_count!
 echo.
+
+REM Queue state: queue_head=1..worker_count is the next game to dequeue.
+set "queue_head=1"
+set /a "queue_tail=!worker_count!"
+
+REM Slot state: slot_<N>_game is empty when the slot is free, or holds
+REM the currently-running game name.
+for /l %%N in (1,1,!slot_count!) do set "slot_%%N_game="
+
 REM Capture the wall-clock start time (seconds since midnight)
 for /f %%T in ('powershell -NoProfile -Command "$n=Get-Date; $n.Hour*3600+$n.Minute*60+$n.Second"') do set "_start_s=%%T"
 set "_start_stamp=%date% %time%"
 
-echo All !worker_count! workers launched at !_start_stamp!
-echo Waiting for completion...
+echo Started at !_start_stamp!
 echo.
 
-REM ============================================================
-REM Wait for workers (poll for result files)
-REM ============================================================
 set "_poll_count=0"
+set "_total_launches=0"
 
-:poll_workers
-set "_all_done=1"
-set "_done_count=0"
-for /l %%N in (1,1,!worker_count!) do (
-    set "_g=!game%%N!"
-    if exist "%_PARALLEL_DIR%\!_g!_results.txt" (
-        set /a _done_count+=1
-    ) else (
-        set "_all_done=0"
+:dispatch_loop
+REM ---- (a) Reap finished slots first so we can refill them below ----
+for /l %%N in (1,1,!slot_count!) do (
+    if not "!slot_%%N_game!"=="" (
+        set "_reap_g=!slot_%%N_game!"
+        if exist "%_PARALLEL_DIR%\!_reap_g!_results.txt" (
+            echo   Slot %%N freed ^(!_reap_g! finished^).
+            set "slot_%%N_game="
+        )
     )
 )
 
-if "!_all_done!"=="1" goto :workers_done
+REM ---- (b) Fill any free slot from the queue head (FIFO) ----
+set "_launched_this_tick=0"
+for /l %%N in (1,1,!slot_count!) do (
+    if "!slot_%%N_game!"=="" (
+        if !queue_head! leq !queue_tail! (
+            REM Indirect variable expansion — %%I becomes the literal
+            REM value of queue_head, then !game<value>! resolves.
+            for %%I in (!queue_head!) do set "_deq_g=!game%%I!"
+            set "slot_%%N_game=!_deq_g!"
+            set /a "_cd_port=4443+%%N"
+            set /a "_srv_port=9000+%%N"
+            REM Resolve the worktree path directly from the game name
+            REM instead of by index. Path is deterministic:
+            REM   <_WORKTREE_BASE>\<game>[\<_GIT_PREFIX>]
+            REM In STUB_MODE the worktree base is skipped; workers are
+            REM tolerant of "stub" as the placeholder path.
+            if defined STUB_MODE (
+                set "_wt=stub"
+            ) else (
+                set "_wt=!_WORKTREE_BASE!\!_deq_g!"
+                if not "!_GIT_PREFIX!"=="" set "_wt=!_wt!\!_GIT_PREFIX!"
+            )
 
-REM 6-hour timeout: 2160 polls * 10 seconds = 21600 seconds
+            REM 2s stagger between successive launches this tick so the
+            REM first worker's flutter bootstrap finishes writing the
+            REM shared SDK cache (engine.realm) before the next worker
+            REM boots — same protection the old launch loop had, moved
+            REM inside the dispatcher.
+            if !_launched_this_tick! gtr 0 (
+                timeout /t 2 /nobreak >nul 2>&1
+            )
+
+            echo   Slot %%N launching: !_deq_g! ^(CD=!_cd_port! SRV=!_srv_port!^)
+            start "Worker: !_deq_g!" /D "!_SCRIPT_DIR!" cmd /C ""!_SCRIPT_DIR!\run_ui_tests_parallel_worker.bat" !_deq_g! !_cd_port! !_srv_port! "%_PARALLEL_DIR%" "!_wt!" !filter_args!"
+
+            set /a queue_head+=1
+            set /a _launched_this_tick+=1
+            set /a _total_launches+=1
+        )
+    )
+)
+
+REM ---- (c) Compute progress + exit condition ----
+set "_active=0"
+for /l %%N in (1,1,!slot_count!) do (
+    if not "!slot_%%N_game!"=="" set /a _active+=1
+)
+set "_done_count=0"
+for /l %%N in (1,1,!worker_count!) do (
+    set "_g=!game%%N!"
+    if exist "%_PARALLEL_DIR%\!_g!_results.txt" set /a _done_count+=1
+)
+set /a "_queued=queue_tail - queue_head + 1"
+if !_queued! lss 0 set "_queued=0"
+
+if !_active! equ 0 if !_queued! equ 0 goto :workers_done
+
+REM 14-hour global timeout: 5040 polls * 10 seconds = 50,400 seconds
 set /a _poll_count+=1
-if !_poll_count! gtr 2160 (
+if !_poll_count! gtr 5040 (
     echo.
-    echo ERROR: 6-hour global timeout reached.
-    echo Workers completed: !_done_count!/!worker_count!
+    echo ERROR: 14-hour global timeout reached.
+    echo Games completed: !_done_count!/!worker_count!   Still running: !_active!   Still queued: !_queued!
     for /l %%N in (1,1,!worker_count!) do (
         set "_g=!game%%N!"
         if not exist "%_PARALLEL_DIR%\!_g!_results.txt" (
-            echo   TIMED OUT: !_g!
+            echo   TIMED OUT or QUEUED: !_g!
         )
     )
     goto :workers_done
@@ -589,11 +677,11 @@ REM Progress update every 6 polls (60 seconds)
 set /a "_poll_mod=_poll_count %% 6"
 if !_poll_mod! equ 0 (
     set /a "_elapsed_min=_poll_count * 10 / 60"
-    echo   [!_elapsed_min!m] Workers completed: !_done_count!/!worker_count!
+    echo   [!_elapsed_min!m] Completed: !_done_count!/!worker_count!   Running: !_active!/!slot_count!   Queued: !_queued!
 )
 
 powershell -NoProfile -Command "Start-Sleep 10" >nul 2>&1
-goto :poll_workers
+goto :dispatch_loop
 
 :workers_done
 
@@ -730,14 +818,17 @@ echo Stopping all parallel infrastructure...
 
 if defined STUB_MODE goto :skip_cleanup
 
-REM Kill Chrome children of each ChromeDriver (PID-scoped)
-for /l %%N in (1,1,!worker_count!) do (
+REM Kill Chrome children of each slot's ChromeDriver (PID-scoped).
+REM Infrastructure teardown is now slot-scoped, not game-scoped —
+REM ChromeDriver + backend server pairs are allocated per slot and
+REM rotate games through them (see :dispatch_loop above).
+for /l %%N in (1,1,!slot_count!) do (
     set /a "_cd_port=4443+%%N"
     call :kill_chrome_for_port !_cd_port!
 )
 
-REM Kill all ChromeDrivers and servers by port
-for /l %%N in (1,1,!worker_count!) do (
+REM Kill each slot's ChromeDriver + backend server by port.
+for /l %%N in (1,1,!slot_count!) do (
     set /a "_cd_port=4443+%%N"
     set /a "_srv_port=9000+%%N"
     call :kill_port !_cd_port!
@@ -747,6 +838,8 @@ taskkill /F /IM chromedriver.exe >nul 2>&1
 
 :skip_cleanup
 
+REM Worktrees remain per-game (one per queued game) so games never
+REM share a checkout across the dispatcher's rotation.
 echo Removing worker worktrees...
 for /l %%N in (1,1,!worker_count!) do (
     set "_g=!game%%N!"
@@ -780,41 +873,56 @@ echo          [PARALLEL MODE]
 echo ========================================
 echo.
 echo USAGE:
-echo   run_ui_tests_parallel.bat [filter1] [filter2] ...
+echo   run_ui_tests_parallel.bat [--max-workers=N] [filter1] [filter2] ...
 echo   run_ui_tests_parallel.bat /?
 echo.
 echo DESCRIPTION:
-echo   Runs UI automation tests for all game categories in parallel,
-echo   reducing wall-clock time from ~588 minutes to ~170 minutes.
-echo   Each game gets its own ChromeDriver, backend server, and git
-echo   worktree so Flutter builds are fully isolated (no shared
-echo   build cache or build/web/ output directory conflicts).
+echo   Runs UI automation tests across game categories with a rolling
+echo   batched dispatcher. Up to MAX_WORKERS games run at once; as each
+echo   worker finishes, the next queued game rotates into its slot
+echo   without waiting for the batch. Minimizes wall-clock while
+echo   capping simultaneous resource use.
 echo.
-echo PORT ASSIGNMENTS (auto-assigned by position in GAMES list):
+echo   Each game runs in its own git worktree (Flutter builds are
+echo   fully isolated — no shared build cache or build/web/ output
+echo   directory conflicts). ChromeDriver + backend server pairs are
+echo   allocated PER SLOT, and games rotate through those fixed
+echo   ports as slots free up.
+echo.
+echo CONCURRENCY CONTROL:
+echo   --max-workers=N   Cap concurrent workers. Default 5. Highest
+echo                     precedence — overrides MAX_WORKERS env var.
+echo   MAX_WORKERS       Env var override for the default. Applies
+echo                     when --max-workers=N is not passed.
+echo.
+echo SLOT PORT ASSIGNMENTS (fixed per slot, games rotate through):
 set "_help_n=0"
-for %%G in (!GAMES!) do (
-    set /a "_help_n+=1"
-    set /a "_help_cd=4443+_help_n"
-    set /a "_help_srv=9000+_help_n"
-    echo   %%G: ChromeDriver=!_help_cd! Server=!_help_srv!
+for /l %%S in (1,1,10) do (
+    set /a "_help_cd=4443+%%S"
+    set /a "_help_srv=9000+%%S"
+    echo   slot %%S: ChromeDriver=!_help_cd! Server=!_help_srv!
 )
+echo   (only the first MAX_WORKERS slots are actually started)
 echo.
 echo FILTERING:
 echo   Same filter syntax as run_ui_tests.bat.
 echo   Without arguments, runs ALL test files across all games.
 echo   Filters apply at two levels:
-echo     1. Game level  - determines which workers to launch
-echo     2. File level  - within each worker, which test files to run
+echo     1. Game level  - determines which games are queued
+echo     2. File level  - within each game, which test files to run
 echo.
 echo EXAMPLES:
-echo   Run all tests in parallel:
+echo   Run all tests in parallel (5 slots concurrent, default):
 echo     run_ui_tests_parallel.bat
+echo.
+echo   Run all tests with 3-slot concurrency cap:
+echo     run_ui_tests_parallel.bat --max-workers=3
 echo.
 echo   Run only Target Tag tests:
 echo     run_ui_tests_parallel.bat target_tag
 echo.
-echo   Run two games in parallel:
-echo     run_ui_tests_parallel.bat target_tag monster_mash
+echo   Run two games with 2-slot cap (effectively equivalent to 2):
+echo     run_ui_tests_parallel.bat --max-workers=2 target_tag monster_mash
 echo.
 echo   Run only save/resume tests across all games:
 echo     run_ui_tests_parallel.bat save_resume
@@ -826,11 +934,11 @@ echo   Run a specific test file:
 echo     run_ui_tests_parallel.bat save_modal_back_0_darts
 echo.
 echo NOTES:
-echo   - Requires 16GB+ RAM recommended for all games
+echo   - Requires 16GB+ RAM recommended when MAX_WORKERS >= 5
 echo   - Results saved to integration_test_output\parallel\
 echo   - PID-scoped Chrome killing prevents cross-worker interference
 echo   - Per-session DB isolation (X-DB-Session) prevents data pollution
-echo   - 6-hour global timeout for all workers
+echo   - 14-hour global timeout across the whole run (dispatcher)
 echo   - Use run_ui_tests.bat for sequential debugging of single tests
 echo.
 exit /b 0

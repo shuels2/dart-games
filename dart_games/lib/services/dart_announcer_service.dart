@@ -31,6 +31,29 @@ enum AnnouncerVoice {
 
 /// Service for announcing dart throws with different voices and phrases
 class DartAnnouncerService {
+  /// App-wide shared instance. Created on first access, kept alive for
+  /// the lifetime of the app.
+  ///
+  /// Why a singleton: `FlutterTts()` on web wraps `SpeechSynthesisUtterance`,
+  /// and Chrome's `speechSynthesis.getVoices()` returns `[]` until the
+  /// browser fires `voiceschanged` (which can happen well after page
+  /// load). A `DartAnnouncerService` constructed mid-game (each game
+  /// screen used to create its own via `GameAnnouncementQueueService`)
+  /// therefore hits `_initializeTts()` before voices have loaded and
+  /// falls back to the OS-default voice — which on a de-DE Windows
+  /// kiosk is a German voice, so games spoke German even though the
+  /// Options screen (which used the home-screen's much-older instance)
+  /// correctly used the saved English voice.
+  ///
+  /// Sharing a single instance means voices only need to load once, and
+  /// whatever the Options screen configures via `setSystemVoice` /
+  /// `useResponsiveVoice` is the exact same state that games speak with.
+  ///
+  /// [dispose] is a no-op on the shared instance — see the note there.
+  static DartAnnouncerService? _shared;
+  static DartAnnouncerService get shared =>
+      _shared ??= DartAnnouncerService();
+
   final FlutterTts _tts = FlutterTts();
   final ResponsiveVoiceService _responsiveVoice = ResponsiveVoiceService();
   VoiceEngine _engine = VoiceEngine.browser;
@@ -52,8 +75,22 @@ class DartAnnouncerService {
   // event-driven instead of estimated.
   Completer<void>? _ttsCompleter;
 
+  // Future completed when _initializeTts() finishes populating
+  // _availableVoices. Callers that need to set a specific system voice
+  // must `await ready` first; otherwise setSystemVoice() runs against an
+  // empty _availableVoices list, silently fails to call _tts.setVoice,
+  // and the browser falls back to the OS default (which on non-English
+  // Windows locales is not an English voice).
+  late final Future<void> _initFuture;
+
+  /// Resolves when the async init started in the constructor is done —
+  /// specifically once [_availableVoices] has been populated from
+  /// `flutter_tts.getVoices`. Await this before calling [setSystemVoice]
+  /// on a freshly-constructed instance.
+  Future<void> get ready => _initFuture;
+
   DartAnnouncerService() {
-    _initializeTts();
+    _initFuture = _initializeTts();
   }
 
   /// Set the user-configurable playback rate. 1.0 = normal speed.
@@ -91,8 +128,24 @@ class DartAnnouncerService {
       if (c != null && !c.isCompleted) c.complete();
     });
 
-    // Get available voices
-    _availableVoices = await _tts.getVoices ?? [];
+    // Get available voices. Chrome's speechSynthesis.getVoices() returns
+    // [] until the browser fires its `voiceschanged` event, and the
+    // flutter_tts_web wrapper does NOT wait for that event — it calls
+    // synth.getVoices() synchronously and returns whatever it sees.
+    // A DartAnnouncerService constructed shortly after page load (as
+    // each game screen does) therefore gets an empty list, no voice
+    // is ever set on the underlying SpeechSynthesisUtterance, and
+    // Chrome falls back to the OS default (German on a de-DE Windows
+    // kiosk). Poll a handful of times to give the browser a chance
+    // to populate voices before we bail.
+    for (var attempt = 0; attempt < 20; attempt++) {
+      final voices = await _tts.getVoices ?? [];
+      if (voices.isNotEmpty) {
+        _availableVoices = voices;
+        break;
+      }
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
 
     // Try to select Australian voice as default
     if (_availableVoices.isNotEmpty) {
@@ -196,30 +249,58 @@ class DartAnnouncerService {
     _enabled = enabled;
   }
 
-  /// Update TTS settings based on selected voice
-  Future<void> _updateVoiceSettings() async {
+  /// Personality base rate for browser TTS. The values are tuned for
+  /// `SpeechSynthesisUtterance.rate` where 0.5 is a slow announcer
+  /// cadence and 1.0 is natural conversation speed. Multiplied by the
+  /// user's [_playbackRate] to produce the effective rate.
+  double _browserBaseRate() {
     switch (_currentVoice) {
       case AnnouncerVoice.professional:
-        await _tts.setSpeechRate(0.5);
-        await _tts.setPitch(1.0);
-        break;
+        return 0.5;
       case AnnouncerVoice.excited:
-        await _tts.setSpeechRate(0.6);
-        await _tts.setPitch(1.3);
-        break;
+        return 0.6;
       case AnnouncerVoice.calm:
-        await _tts.setSpeechRate(0.4);
-        await _tts.setPitch(0.8);
-        break;
+        return 0.4;
       case AnnouncerVoice.funny:
-        await _tts.setSpeechRate(0.55);
-        await _tts.setPitch(1.1);
-        break;
+        return 0.55;
       case AnnouncerVoice.drill:
-        await _tts.setSpeechRate(0.65);
-        await _tts.setPitch(0.9);
-        break;
+        return 0.65;
     }
+  }
+
+  /// Personality pitch for browser TTS.
+  double _browserPitch() {
+    switch (_currentVoice) {
+      case AnnouncerVoice.professional:
+        return 1.0;
+      case AnnouncerVoice.excited:
+        return 1.3;
+      case AnnouncerVoice.calm:
+        return 0.8;
+      case AnnouncerVoice.funny:
+        return 1.1;
+      case AnnouncerVoice.drill:
+        return 0.9;
+    }
+  }
+
+  /// Update TTS settings based on selected voice. Pitch stays fixed
+  /// per personality; the effective SPEECH rate is set right before
+  /// each speak call in [_setBrowserSpeechRate] so the user's live
+  /// [_playbackRate] is always folded in as a multiplier.
+  Future<void> _updateVoiceSettings() async {
+    await _setBrowserSpeechRate();
+    await _tts.setPitch(_browserPitch());
+  }
+
+  /// Compute and apply the effective browser-TTS speech rate:
+  /// `personality-base-rate * playbackRate`, clamped to a safe range.
+  /// Called before every browser-TTS speak so the slider is honored.
+  Future<void> _setBrowserSpeechRate() async {
+    final effective = _browserBaseRate() * _playbackRate;
+    // SpeechSynthesisUtterance.rate accepts 0.1 - 10, but past ~1.5
+    // most engines sound clipped and past 2.0 they refuse to speak.
+    await _tts.setSpeechRate(effective.clamp(0.1, 2.0));
   }
 
   /// Announce a dart throw
@@ -264,8 +345,10 @@ class DartAnnouncerService {
         pitch: pitch,
       );
     } else {
-      // Use browser TTS
-      await _tts.setSpeechRate(_playbackRate.clamp(0.0, 2.0));
+      // Browser TTS: multiply the personality base rate by the user's
+      // playback-rate slider so the slider is honored consistently
+      // with the ResponsiveVoice path above.
+      await _setBrowserSpeechRate();
       await _tts.speak(phrase);
     }
   }
@@ -477,7 +560,7 @@ class DartAnnouncerService {
         rate: _playbackRate,
       );
     } else {
-      await _tts.setSpeechRate(_playbackRate.clamp(0.0, 2.0));
+      await _setBrowserSpeechRate();
       await _tts.speak(phrase);
     }
   }
@@ -506,15 +589,25 @@ class DartAnnouncerService {
       // the utterance STARTS, so we use the completer as the actual
       // "speech finished" signal.
       _ttsCompleter = Completer<void>();
-      // Browser-TTS rate range tends to be 0.0-2.0. Use the same multiplier.
-      await _tts.setSpeechRate(_playbackRate.clamp(0.0, 2.0));
+      // Effective rate = personality base rate × user slider. Slider
+      // at 1.0 keeps the personality's intended announcer cadence;
+      // 0.7 slows it 30%, 1.5 speeds it 50%. See _setBrowserSpeechRate.
+      await _setBrowserSpeechRate();
       await _tts.speak(text);
       await _ttsCompleter!.future;
     }
   }
 
-  /// Dispose of TTS resources
+  /// Dispose of TTS resources.
+  ///
+  /// No-op on the shared singleton — the app-wide instance is kept alive
+  /// intentionally so voice-list state, saved voice selection, and the
+  /// browser-TTS `SpeechSynthesisUtterance.voice` binding survive across
+  /// screen transitions (see the doc on [shared]). Only stops speech
+  /// and cancels ResponsiveVoice for non-shared instances, which today
+  /// means nothing — every consumer routes through [shared].
   void dispose() {
+    if (identical(this, _shared)) return;
     _tts.stop();
     _responsiveVoice.cancel();
   }

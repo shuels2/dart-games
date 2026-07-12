@@ -84,7 +84,7 @@ void main() {
   });
 
   group('GameFilterRegistry', () {
-    test('all 9 currently-shipped games are registered', () {
+    test('all 10 currently-shipped games are registered', () {
       const expectedIds = {
         'carnival_derby',
         'clockwork_quest',
@@ -95,6 +95,7 @@ void main() {
         'reef_royale',
         'target_tag',
         'tiki_golf',
+        'treasure_divide',
       };
       final actualIds = GameFilterRegistry.all.map((m) => m.gameId).toSet();
       expect(actualIds, equals(expectedIds));
@@ -175,20 +176,20 @@ void main() {
       expect(ids, equals({'target_tag', 'monster_mash', 'gladiator_arena'}));
     });
 
-    test('Race style returns five race games (including Gladiator Arena and Tiki Golf)', () {
+    test('Race style returns six race games (including Gladiator Arena, Tiki Golf, and Treasure Divide)', () {
       final result = GameFilterRegistry.filter({
         FilterCriterion.gameplayStyle: <Object>{GameplayStyle.race},
       });
       final ids = result.map((m) => m.gameId).toSet();
-      expect(ids, equals({'carnival_derby', 'clockwork_quest', 'lunar_lander', 'gladiator_arena', 'tiki_golf'}));
+      expect(ids, equals({'carnival_derby', 'clockwork_quest', 'lunar_lander', 'gladiator_arena', 'tiki_golf', 'treasure_divide'}));
     });
 
-    test('Solo or Team returns Target Tag and Tiki Golf', () {
+    test('Solo or Team returns Target Tag, Tiki Golf, and Treasure Divide', () {
       final result = GameFilterRegistry.filter({
         FilterCriterion.soloTeam: <Object>{SoloTeamSupport.soloOrTeam},
       });
       final ids = result.map((m) => m.gameId).toSet();
-      expect(ids, equals({'target_tag', 'tiki_golf'}));
+      expect(ids, equals({'target_tag', 'tiki_golf', 'treasure_divide'}));
     });
 
     test('two-only + strategy returns only Pirate\'s Grid', () {

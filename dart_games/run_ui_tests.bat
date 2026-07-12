@@ -51,6 +51,9 @@ echo Dart Games UI Automation Test Runner
 echo ========================================
 echo.
 
+call "%~dp0check_python_deps.bat"
+if !errorlevel! neq 0 exit /b 1
+
 if not exist "integration_test_output" mkdir integration_test_output
 
 echo Cleaning previous test results...
@@ -333,7 +336,7 @@ if !_RST_ATTEMPT! gtr 1 (
 )
 if "!_RST_ABORT!"=="1" goto :run_single_test_done
 
-start /B "" cmd /C "flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --dart-define=SERVER_PORT=!_CAT_PORT! --web-browser-flag=--start-maximized --browser-dimension=1920x1080 >> "!_RST_LOG!" 2>&1"
+start /B "" cmd /C "flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d chrome --dart-define=SERVER_PORT=!_CAT_PORT! --dart-define=OVERFLOW_TRAP=true --web-browser-flag=--start-maximized --browser-dimension=1920x1080 >> "!_RST_LOG!" 2>&1"
 
 powershell -NoProfile -Command "$log='!_RST_LOG!';$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;Get-Process chrome -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue;Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed')) -and (-not ($c -match 'Failure Details:'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 
@@ -401,7 +404,7 @@ REM home_screen and pause_modal hold non-game-specific tests (filter bar,
 REM home-screen pause modal). They get the same per-category treatment
 REM (own port, own data dir, own server boot) so they never share state
 REM with each other or with a game's tests.
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena tiki_golf home_screen pause_modal"
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena tiki_golf home_screen pause_modal treasure_divide"
 
 for %%G in (%GAMES%) do (
     set "_GAME=%%G"

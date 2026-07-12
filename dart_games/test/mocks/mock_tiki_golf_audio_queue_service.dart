@@ -79,8 +79,22 @@ class MockTikiGolfAudioQueueService {
     announce('Final hole! $playerName leads by $leadBy!');
   }
 
-  void announceVictory(String winnerName) {
-    announce('$winnerName wins the Golden Tiki!');
+  /// Mirrors [TikiGolfAnnouncementHelper.announceVictory] so tests can
+  /// assert both the 1-winner and N-winner (tie) phrasings.
+  void announceVictory(List<String> winnerNames) {
+    if (winnerNames.isEmpty) return;
+    if (winnerNames.length == 1) {
+      announce('${winnerNames.first} wins the Golden Tiki!');
+      return;
+    }
+    announce('${_joinWithAnd(winnerNames)} tie for the Golden Tiki!');
+  }
+
+  String _joinWithAnd(List<String> parts) {
+    if (parts.length == 1) return parts.single;
+    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
+    final head = parts.sublist(0, parts.length - 1).join(', ');
+    return '$head, and ${parts.last}';
   }
 
   void announceHoleComplete(int nextHoleNumber) {
@@ -95,7 +109,7 @@ class MockTikiGolfAudioQueueService {
   /// so integration tests can drive the mock without a real queue service.
   void pickAndAnnounceMoment({
     bool victory = false,
-    String? victoryWinnerName,
+    List<String>? victoryWinnerNames,
     bool holeComplete = false,
     int? holeCompleteNextHole,
     bool mulliganReminder = false,
@@ -116,8 +130,10 @@ class MockTikiGolfAudioQueueService {
     String? nearWinPlayerName,
     int? nearWinLeadBy,
   }) {
-    if (victory && victoryWinnerName != null) {
-      announceVictory(victoryWinnerName);
+    if (victory &&
+        victoryWinnerNames != null &&
+        victoryWinnerNames.isNotEmpty) {
+      announceVictory(victoryWinnerNames);
     } else if (holeComplete && holeCompleteNextHole != null) {
       announceHoleComplete(holeCompleteNextHole);
     } else if (mulliganReminder) {

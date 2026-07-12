@@ -95,6 +95,15 @@ class GameFilterRegistry {
       gameLength: GameLength.medium,
       soloTeam: SoloTeamSupport.soloOrTeam,
     ),
+    GameMetadata(
+      gameId: 'treasure_divide',
+      displayName: 'Treasure Divide',
+      maxPlayers: MaxPlayersBucket.upToTen,
+      gameplayStyles: {GameplayStyle.race},
+      playerInteraction: PlayerInteraction.parallel,
+      gameLength: GameLength.medium,
+      soloTeam: SoloTeamSupport.soloOrTeam,
+    ),
   ];
 
   /// Every registered game's metadata, in registration order.

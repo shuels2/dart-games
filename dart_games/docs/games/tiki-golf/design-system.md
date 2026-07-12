@@ -62,7 +62,7 @@ The overlay sits BEHIND all foreground UI (AppBar, panels, scorecard, dartboard 
 
 ### Menu Screen
 - **Background:** Illustrated tropical background + Palm Green 60% overlay
-- **AppBar:** Palm Green background, Sand White title "TIKI GOLF SETUP" in Boogaloo 20pt, Tiki Brown bottom border
+- **AppBar:** Palm Green background, Sand White title "TIKI GOLF GAME SETUP" in Boogaloo 36pt, Tiki Brown bottom border
 - **Settings Boxes:** Palm Green at 0.9 opacity background, Tiki Brown 2px border, 8px border radius, 12px internal padding
 - **Segmented Toggles:** Lagoon Blue active segment, Sand White inactive, Boogaloo 16pt Bold labels
 - **TeamPlayerListPanel:** Tiki Brown border, Palm Green background at 0.85 opacity
@@ -71,7 +71,7 @@ The overlay sits BEHIND all foreground UI (AppBar, panels, scorecard, dartboard 
 
 ### Game Screen
 - **Background:** Same illustrated background + Palm Green 60% overlay
-- **AppBar:** Palm Green background, hole name + target number in Boogaloo
+- **AppBar:** Palm Green background, Sand White title `'TIKI GOLF'` in Boogaloo 36pt with 4-corner Tiki Brown outline shadow (same font style as the Menu and Results AppBars). Hole name + target number are surfaced below the AppBar in the active-player / scorecard panels — NOT in the AppBar title.
 - **Active Player Panel:** Tiki Brown border, Palm Green 0.9 opacity background; shows avatar + name + running total (Solo) or team logo + team name + active player + team total (Team)
 - **Dart Row:** Max Darts indicator slots (3-6 dynamic), Tiki Brown border, dart hit/miss indicators. Skip Turn button (Hibiscus Pink) always visible. Mulligan button (Tiki Brown, tiki mask icon + "1x" badge) visible when Mulligan ON.
 - **Scorecard Panel:** Palm Green 0.85 opacity background, Tiki Brown border, alternating Coconut Cream/Palm Green rows, score cells colored by stroke count (Lagoon Blue = birdie, Sand White = par, Hibiscus Pink = bogey, Tropical Orange = splash)
@@ -80,6 +80,7 @@ The overlay sits BEHIND all foreground UI (AppBar, panels, scorecard, dartboard 
 
 ### Results Screen
 - **Background:** Same illustrated background + Palm Green 60% overlay
+- **AppBar:** Palm Green background, Sand White title `'TIKI GOLF RESULTS'` in Boogaloo 36pt with 4-corner Tiki Brown outline shadow (identical font style to Menu and Game AppBars).
 - **Winner Display (Solo):** Golden Tiki trophy image (GoldenTiki.png), large Boogaloo "GOLDEN TIKI CHAMPION!" headline in Sand White
 - **Winner Display (Team):** Winning team's crest image (large, 120×120), team name in Boogaloo 36pt, team color accent
 - **Stats Panel:** Palm Green 0.9 opacity background, Tiki Brown border, scorecard with all players' hole-by-hole scores

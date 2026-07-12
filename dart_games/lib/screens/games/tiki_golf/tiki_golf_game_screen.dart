@@ -287,8 +287,20 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     // ── Compute fact flags ──────────────────────────────────────────────────
     final victory = false; // Victory deferred to _handleGameWon (after takeout)
 
-    final holeComplete =
-        currentTurnEnded && !hasWinner && game.isCurrentHoleComplete;
+    // holeComplete: turn-end AND every player has scored this hole AND we
+    // still have holes left. Without the isAtFinalHole guard, the last
+    // dart on hole 9 announces "On to hole 10!" (there is no hole 10) —
+    // the provider correctly caps currentHole and calls _endGame(), but
+    // the announcer's pickAndAnnounceMoment saw currentTurnEnded &&
+    // isCurrentHoleComplete && !hasWinner (winner is only set inside
+    // confirmTurnEnd, which runs AFTER this method) and fired the
+    // hole-transition line. Gating on !isAtFinalHole lets rank 5 (score)
+    // announce on the final hole's last dart instead, and _handleGameWon
+    // then fires the victory line after takeout.
+    final holeComplete = currentTurnEnded &&
+        !hasWinner &&
+        game.isCurrentHoleComplete &&
+        !game.isAtFinalHole;
 
     final mulliganAlreadyUsed =
         (game.playerMulligansUsed[throwerId] ?? 0) == 1;
@@ -336,24 +348,26 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     final playerName = context.read<PlayerProvider>().byId(throwerId)?.name ??
         throwerId;
 
-    // Winner name (solo or team)
-    String? winnerName;
+    // Winner names (solo or team). List — supports ties. See
+    // TikiGolfAnnouncementHelper.announceVictory for the 1/2/3+ phrasing.
+    // The victory branch is currently dead code here (victory is always
+    // false at this call site — _handleGameWon owns the actual victory
+    // announcement post-takeout) but resolving the list keeps the
+    // pickAndAnnounceMoment contract honest for any future call site
+    // that wires victory=true here directly.
+    List<String>? winnerNames;
     if (victory) {
-      if (game.winnerId != null) {
-        winnerName = context.read<PlayerProvider>().byId(game.winnerId!)?.name ??
-            game.winnerId;
-      } else if (game.winnerTeamId != null) {
-        winnerName = _teamDisplayName(game.winnerTeamId);
-      }
+      winnerNames = _resolveWinnerNames(game);
     }
 
     // ── Fire moment announcement (precedence chain) ─────────────────────────
     _audioQueue?.pickAndAnnounceMoment(
       victory: victory,
-      victoryWinnerName: winnerName,
+      victoryWinnerNames: winnerNames,
       holeComplete: holeComplete,
       holeCompleteNextHole: holeComplete ? game.currentHole + 1 : null,
       mulliganReminder: mulliganReminder,
+      mulliganReminderPlayerName: mulliganReminder ? playerName : null,
       score: scoreLabel,
       scorePlayerName: scoreLabel != null ? playerName : null,
       almostThere: almostThere,
@@ -361,8 +375,13 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       miss: miss,
     );
 
-    // ── Remove Darts: UNCONDITIONAL on turn-end, NOT inside precedence chain ─
-    if (currentTurnEnded) { // unconditional remove-darts line
+    // ── Remove Darts: on turn-end, EXCEPT when the splash+mulligan modal is
+    //    about to appear. In that case the player must first pick Use
+    //    Mulligan (→ "Mulligan! Remove your darts and try again") or Next
+    //    Player (→ standard remove-darts fired from the button handler).
+    //    Firing the generic remove-darts line here would race with the
+    //    modal and confuse the player into skipping the mulligan choice.
+    if (currentTurnEnded && !mulliganReminder) {
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _audioQueue?.announceRemoveDarts(playerName);
       });
@@ -471,18 +490,17 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     if (_dartboardEmulatorController.isAutoPlaying) {
       navigateToResults();
     } else {
-      // Fire victory announcement
+      // Fire victory announcement. Reads winnerIds / winnerTeamIds (both
+      // lists populated by _determineSoloWinner / _determineTeamWinner in
+      // the provider), so a solo tie or team tie announces EVERY winner
+      // — not just the first. Falls back to the legacy single-winner
+      // fields for older saved games loaded before the tie support was
+      // added.
       final game = context.read<TikiGolfProvider>().currentGame;
       if (game != null) {
-        String? winnerName;
-        if (game.winnerId != null) {
-          winnerName = context.read<PlayerProvider>().byId(game.winnerId!)?.name ??
-              game.winnerId;
-        } else if (game.winnerTeamId != null) {
-          winnerName = _teamDisplayName(game.winnerTeamId);
-        }
-        if (winnerName != null) {
-          _audioQueue?.announceVictory(winnerName);
+        final winnerNames = _resolveWinnerNames(game);
+        if (winnerNames.isNotEmpty) {
+          _audioQueue?.announceVictory(winnerNames);
         }
       }
       _audioQueue?.whenIdle().then((_) {
@@ -1913,6 +1931,11 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
+                      // Fire the deferred remove-darts cue that the
+                      // dispatch loop skipped while the modal was open —
+                      // the player has now chosen "lock in the splash",
+                      // so the standard end-of-turn instruction applies.
+                      _audioQueue?.announceRemoveDarts(currentPlayerName);
                       // Record the Splash as final and advance
                       _handleTakeoutFinished();
                     },
@@ -1948,6 +1971,31 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       return List.generate(count, (_) => 'Miss');
     }
     return List<String>.from(_currentTurnSegments.take(count));
+  }
+
+  /// Builds the ordered list of winner display names for the victory
+  /// announcement. Prefers the plural [TikiGolfGame.winnerIds] /
+  /// [TikiGolfGame.winnerTeamIds] fields (populated in every code path
+  /// added with tie support) and falls back to the legacy singular
+  /// [TikiGolfGame.winnerId] / [TikiGolfGame.winnerTeamId] fields for
+  /// older saved games. Returns an empty list if the game has no
+  /// resolved winner yet — callers should guard on isEmpty before
+  /// announcing.
+  List<String> _resolveWinnerNames(TikiGolfGame game) {
+    final playerProvider = context.read<PlayerProvider>();
+    final soloIds = (game.winnerIds != null && game.winnerIds!.isNotEmpty)
+        ? game.winnerIds!
+        : (game.winnerId != null ? [game.winnerId!] : const <String>[]);
+    if (soloIds.isNotEmpty) {
+      return [
+        for (final id in soloIds) playerProvider.byId(id)?.name ?? id,
+      ];
+    }
+    final teamIds =
+        (game.winnerTeamIds != null && game.winnerTeamIds!.isNotEmpty)
+            ? game.winnerTeamIds!
+            : (game.winnerTeamId != null ? [game.winnerTeamId!] : const <String>[]);
+    return [for (final id in teamIds) _teamDisplayName(id)];
   }
 
   /// Formats a team display name from its teamId (e.g. 'team_1' → 'Team 1').

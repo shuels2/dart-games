@@ -49,6 +49,9 @@ echo [STUB MODE - No real tests run]
 echo ========================================
 echo.
 
+call "%~dp0check_python_deps.bat"
+if !errorlevel! neq 0 exit /b 1
+
 if not exist "integration_test_output" mkdir integration_test_output
 
 echo Cleaning previous test results...
@@ -157,7 +160,7 @@ REM DISCOVER AND RUN TESTS
 REM ============================================================
 :discover_tests
 
-set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena tiki_golf"
+set "GAMES=target_tag carnival_derby monster_mash reef_royale clockwork_quest lunar_lander pirates_grid gladiator_arena tiki_golf treasure_divide"
 
 for %%G in (%GAMES%) do (
     set "_GAME=%%G"

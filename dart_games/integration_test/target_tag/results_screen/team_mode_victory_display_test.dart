@@ -35,7 +35,7 @@ void main() {
     // Verify results screen shows WINNERS (plural for team)
     // Note: May show WINNER! or WINNERS! depending on implementation
     expect(find.textContaining('WINNER'), findsOneWidget);
-    expect(find.text('Target Tag Game Over'), findsOneWidget);
+    expect(find.text('Target Tag Results'), findsOneWidget);
     expect(find.text('Play Again'), findsOneWidget);
     expect(find.text('Change Settings'), findsOneWidget);
     expect(find.text('Select Different Game'), findsOneWidget);

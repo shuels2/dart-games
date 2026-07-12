@@ -31,7 +31,7 @@ Vibrant underwater reef aesthetic with ocean-inspired colors, coral imagery, and
 
 | Element | Font | Size | Weight |
 |---------|------|------|--------|
-| Screen title | Fredoka | 54pt | Bold |
+| AppBar title (all 3 screens) | Fredoka | 35pt | Bold (letterSpacing 2) |
 | Section headers | Fredoka | 34pt | Bold |
 | Player name | Fredoka | 18pt | Bold |
 | Pearl/coral counts | Fredoka | 20-22pt | Bold |
@@ -43,7 +43,12 @@ Vibrant underwater reef aesthetic with ocean-inspired colors, coral imagery, and
 ## AppBar
 
 - **Gradient:** Deep Reef Blue → Seafoam Green (left to right)
-- **Title:** "REEF ROYALE" with seafoam green glow and dark drop shadow
+- **Title strings (per screen):**
+  - Menu: `Reef Royale Game Setup`
+  - Gameplay: `Reef Royale`
+  - Results: `Reef Royale Results`
+- **Title style:** `GoogleFonts.fredoka`, `FontWeight.bold`, `fontSize: 35`, `letterSpacing: 2`, color `_pearlWhite`, with seafoam green glow and dark drop shadow
+- **Title vertical nudge:** the title `Text` is wrapped in `Transform.translate(offset: Offset(0, -3))` — 3px upward shift for optical centering within the AppBar
 - **Center:** Round progress bar
 - **Right of progress bar:** Option badges (CURSED in coral pink, NEIGHBORS in sandy gold, BUFFS in seafoam green)
 

@@ -159,7 +159,7 @@ class _ReefRoyaleMenuScreenState extends State<ReefRoyaleMenuScreen> {
               child: Text(
                 'Reef Royale Game Setup',
                 style: GoogleFonts.fredoka(
-                  fontSize: 32,
+                  fontSize: 35,
                   fontWeight: FontWeight.bold,
                   color: _pearlWhite,
                   letterSpacing: 2,

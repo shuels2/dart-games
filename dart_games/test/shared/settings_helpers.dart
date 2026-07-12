@@ -646,6 +646,77 @@ class SettingsHelpers {
     await toggleSwitch(tester, ElementFinders.getTikiGolfMulliganSwitch());
   }
 
+  // ==========================================================================
+  // TREASURE DIVIDE SETTINGS HELPERS
+  // ==========================================================================
+
+  /// Treasure Divide: Tap the TEAM segment of the Game Mode toggle
+  static Future<void> setTreasureDivideGameModeTeam(WidgetTester tester) async {
+    final teamSegment = ElementFinders.getTreasureDivideGameModeTeam();
+    await tester.tap(teamSegment);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  }
+
+  /// Treasure Divide: Tap the SOLO segment of the Game Mode toggle
+  static Future<void> setTreasureDivideGameModeSolo(WidgetTester tester) async {
+    final soloSegment = ElementFinders.getTreasureDivideGameModeSolo();
+    await tester.tap(soloSegment);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  }
+
+  /// Treasure Divide: Tap the MANUAL segment of the Team Assignment toggle
+  static Future<void> setTreasureDivideAssignmentManual(WidgetTester tester) async {
+    final manualSegment = ElementFinders.getTreasureDivideAssignmentModeManual();
+    await tester.tap(manualSegment);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  }
+
+  /// Treasure Divide: Tap the RANDOM segment of the Team Assignment toggle
+  static Future<void> setTreasureDivideAssignmentRandom(WidgetTester tester) async {
+    final randomSegment = ElementFinders.getTreasureDivideAssignmentModeRandom();
+    await tester.tap(randomSegment);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  }
+
+  /// Treasure Divide: Select number of rounds from the dropdown (7, 9, or 12)
+  static Future<void> selectTreasureDivideRounds(
+      WidgetTester tester, int rounds) async {
+    await setDropdownValue(
+      tester,
+      ElementFinders.getTreasureDivideRoundsDropdown(),
+      '$rounds',
+    );
+  }
+
+  /// Treasure Divide: Toggle the Quarter It switch
+  static Future<void> toggleTreasureDivideQuarterIt(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getTreasureDivideQuarterItSwitch());
+  }
+
+  /// Treasure Divide: Toggle the Custom Targets switch
+  static Future<void> toggleTreasureDivideCustomTargets(WidgetTester tester) async {
+    await toggleSwitch(tester, ElementFinders.getTreasureDivideCustomTargetsSwitch());
+  }
+
+  /// Treasure Divide: Select number of crews from the Team Count dropdown
+  /// (only visible in Team + Manual mode)
+  static Future<void> selectTreasureDivideCrews(
+      WidgetTester tester, int crews) async {
+    await setDropdownValue(
+      tester,
+      ElementFinders.getTreasureDivideTeamCountDropdown(),
+      '$crews',
+    );
+  }
+
   /// Clockwork Quest: Full flow to add a player
   static Future<void> addClockworkQuestPlayer(
     WidgetTester tester,

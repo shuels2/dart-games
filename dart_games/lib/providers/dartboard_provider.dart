@@ -40,6 +40,25 @@ class DartboardProvider with ChangeNotifier {
   MockScoliaApiService? _mockApiService;
   ScoliaWebSocketService? _webSocketService;
 
+  // Stable, provider-owned broadcast of dartboard events. Sources come
+  // and go (WebSocket reconnects, emulator swap-in, etc.) but this
+  // stream is created once and stays alive for the lifetime of the
+  // provider. Game screens subscribe here in initState and NEVER have
+  // to re-subscribe across reconnects — the provider rewires the
+  // underlying source into this bus via [_rewireEventForwarding].
+  //
+  // Past bug: game screens listened directly to
+  // `_webSocketService!.eventStream`. On a WebSocket reconnect
+  // (network blip, hardware power-cycle) the provider swapped
+  // `_webSocketService` for a new instance, but the game's
+  // subscription was still tied to the old (dead) stream. Dart throws
+  // stopped registering until the user save/resumed the game — which
+  // rebuilt the game screen and re-subscribed. The bus + rewire logic
+  // fixes it at the source so every game gets it for free.
+  final StreamController<Map<String, dynamic>> _eventBus =
+      StreamController<Map<String, dynamic>>.broadcast();
+  StreamSubscription<Map<String, dynamic>>? _sourceSubscription;
+
   List<DartboardConnectionProfile> _savedProfiles = [];
 
   ApiClient? _apiClient;
@@ -77,12 +96,26 @@ class DartboardProvider with ChangeNotifier {
   List<DartboardConnectionProfile> get savedProfiles => List.unmodifiable(_savedProfiles);
 
   /// Unified event stream from whichever dartboard source is active
-  /// (real WebSocket or emulator). Games subscribe to this for dart events.
-  Stream<Map<String, dynamic>>? get dartboardEventStream {
-    if (_webSocketService != null && _webSocketService!.isConnected) {
-      return _webSocketService!.eventStream;
-    }
-    return _mockApiService?.eventStream;
+  /// (real WebSocket or emulator). Games subscribe to this once in
+  /// initState — the bus is provider-owned, so it survives underlying
+  /// source swaps (reconnects, emulator toggle) transparently.
+  Stream<Map<String, dynamic>>? get dartboardEventStream => _eventBus.stream;
+
+  /// Point the bus at a new source, cancelling any prior forwarding.
+  /// Called every time [_webSocketService] or [_mockApiService] is
+  /// (re)created so game screens keep receiving events without having
+  /// to re-subscribe.
+  void _rewireEventForwarding(Stream<Map<String, dynamic>> source) {
+    _sourceSubscription?.cancel();
+    _sourceSubscription = source.listen(
+      _eventBus.add,
+      // Absorb source-stream errors so the provider-owned bus never
+      // closes; the failure surfaces through status transitions
+      // instead (which trigger reconnects).
+      onError: (Object err, StackTrace st) {
+        debugPrint('[Dartboard] event-forwarding source error: $err');
+      },
+    );
   }
 
   // Load dartboard configuration from API
@@ -232,6 +265,7 @@ class DartboardProvider with ChangeNotifier {
   // Activate emulator
   void _activateEmulator() {
     _mockApiService = MockScoliaApiService();
+    _rewireEventForwarding(_mockApiService!.eventStream);
     _status = DartboardConnectionStatus.emulator;
     _error = null;
     notifyListeners();
@@ -301,9 +335,12 @@ class DartboardProvider with ChangeNotifier {
   void _onWebSocketConnected() {
     // 1. Subscribe BEFORE setting status so any SBC status event that
     //    races us (e.g. arrives between connect() returning and us
-    //    subscribing) is caught.
+    //    subscribing) is caught. Also rewire the provider-owned event
+    //    bus so game screens (which listen once in initState) keep
+    //    receiving throw events across reconnect boundaries.
     debugPrint('[Dartboard] WebSocket auth OK. Subscribing to event stream '
         'before resolving status.');
+    _rewireEventForwarding(_webSocketService!.eventStream);
     _webSocketService!.eventStream.listen((event) {
       if (event['type'] == 'disconnected') {
         debugPrint('[Dartboard] event: disconnected '
@@ -421,6 +458,8 @@ class DartboardProvider with ChangeNotifier {
     _apiKey = null;
     _useEmulatorMode = false;
     _mockApiService = null;
+    _sourceSubscription?.cancel();
+    _sourceSubscription = null;
     _webSocketService?.dispose();
     _webSocketService = null;
     _status = DartboardConnectionStatus.disconnected;
@@ -697,6 +736,9 @@ class DartboardProvider with ChangeNotifier {
     stopStatusChecking();
     _resetReconnectState();
     _wakeListener.stop();
+    _sourceSubscription?.cancel();
+    _sourceSubscription = null;
+    _eventBus.close();
     _webSocketService?.dispose();
     super.dispose();
   }

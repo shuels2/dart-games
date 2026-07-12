@@ -10,6 +10,12 @@ class Player {
   int gamesWon;
   List<GameHistoryEntry> gameHistory;
 
+  /// Normalized face-landmark data populated by the server's mediapipe sidecar
+  /// when a player uploads an avatar photo.  Coordinates are 0..1 relative to
+  /// image dimensions.  Null when no photo has been analysed (default avatar,
+  /// detection failure, or older API response from non-Treasure-Divide games).
+  final Map<String, dynamic>? faceLandmarks;
+
   Player({
     required this.id,
     required this.name,
@@ -18,6 +24,7 @@ class Player {
     this.gamesPlayed = 0,
     this.gamesWon = 0,
     List<GameHistoryEntry>? gameHistory,
+    this.faceLandmarks,
   }) : gameHistory = gameHistory ?? [];
 
   // Factory constructor to create a new player with generated ID
@@ -46,6 +53,7 @@ class Player {
       'gamesPlayed': gamesPlayed,
       'gamesWon': gamesWon,
       'gameHistory': gameHistory.map((e) => e.toJson()).toList(),
+      'faceLandmarks': faceLandmarks,
     };
   }
 
@@ -62,6 +70,7 @@ class Player {
               ?.map((e) => GameHistoryEntry.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      faceLandmarks: json['faceLandmarks'] as Map<String, dynamic>?,
     );
   }
 
@@ -74,6 +83,7 @@ class Player {
     int? gamesPlayed,
     int? gamesWon,
     List<GameHistoryEntry>? gameHistory,
+    Map<String, dynamic>? faceLandmarks,
   }) {
     return Player(
       id: id ?? this.id,
@@ -83,6 +93,7 @@ class Player {
       gamesPlayed: gamesPlayed ?? this.gamesPlayed,
       gamesWon: gamesWon ?? this.gamesWon,
       gameHistory: gameHistory ?? this.gameHistory,
+      faceLandmarks: faceLandmarks ?? this.faceLandmarks,
     );
   }
 

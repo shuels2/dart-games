@@ -2,14 +2,14 @@
 
 ## Complete Test Suite
 
-The Dart Games app has a comprehensive test suite with 2837 total tests:
-- **2060 Flutter non-UI tests** (models, providers, services, widgets, game logic)
-- **190 server tests** (database, models, routes, migrations)
-- **722 UI automation tests** (end-to-end testing with Chrome) — optional
+The Dart Games app has a comprehensive test suite with 3285 total tests:
+- **2428 Flutter non-UI tests** (models, providers, services, widgets, game logic)
+- **225 server tests** (database, models, routes, migrations)
+- **820 UI automation tests** (end-to-end testing with Chrome) — optional (+ 98 Treasure Divide UI)
 
-## Non-UI Tests (2060 Flutter + 190 Server = 2250 tests)
+## Non-UI Tests (2428 Flutter + 225 Server = 2653 tests)
 
-### Flutter Tests (2060 tests)
+### Flutter Tests (2428 tests)
 **Run with:** `flutter test`
 **Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
@@ -22,7 +22,7 @@ The Dart Games app has a comprehensive test suite with 2837 total tests:
 - VictoryMusicFile: 12 tests
 - Additional models (Dartboard, DartboardConnectionProfile, ApiLogEntry, SavedGameMetadata): 58 tests
 
-**Model Serialization Tests (142 tests)**
+**Model Serialization Tests (169 tests)**
 - HorseRaceGame serialization: 10 tests
 - TargetTagGame serialization: 13 tests
 - MonsterMashGame serialization: 13 tests
@@ -32,12 +32,13 @@ The Dart Games app has a comprehensive test suite with 2837 total tests:
 - PiratesGridGame serialization: 24 tests
 - GladiatorArenaGame serialization: 17 tests
 - TikiGolfGame serialization: 15 tests
+- TreasureDivideGame serialization: 27 tests
 
 **Provider Tests (74 tests)**
 - PlayerProvider: 44 tests (CRUD, selection, stats, history, sorting)
 - DartboardProvider: 30 tests (emulator mode, profiles, loadConfiguration, status checking)
 
-**Provider Save/Restore Tests (70 tests)**
+**Provider Save/Restore Tests (85 tests)**
 - HorseRaceProvider save/restore: 7 tests
 - TargetTagProvider save/restore: 7 tests
 - MonsterMashProvider save/restore: 7 tests
@@ -47,8 +48,9 @@ The Dart Games app has a comprehensive test suite with 2837 total tests:
 - PiratesGridProvider save/restore: 12 tests
 - GladiatorArenaProvider save/restore: 15 tests
 - TikiGolfProvider save/restore: 13 tests
+- TreasureDivideProvider save/restore: 15 tests
 
-**Provider Game Mechanics Tests (381 tests)**
+**Provider Game Mechanics Tests (436 tests)**
 - HorseRaceProvider: 50 tests (startGame, processDartThrow, exact score/bust, skipTurn, editScore, getHorsePosition)
 - ClockworkQuestProvider: 49 tests (normal + speed mode, target advancement, laps, bullseye, editScore, win conditions)
 - MonsterMashProvider: 44 tests (health/damage/healing, elimination, processDartThrow, editScore, speed play)
@@ -56,6 +58,7 @@ The Dart Games app has a comprehensive test suite with 2837 total tests:
 - TargetTagProvider: 45 tests (solo/team modes, shield mechanics, tag-in/out, elimination, hero bonus)
 - GladiatorArenaProvider: 81 tests (scoring, knockoff, bust detection, double finish, shield round, speed play, edit score, win conditions)
 - TikiGolfProvider: 67 tests (startGame, processDartThrow with variable maxDarts, currentTurnEnded flag, mulligan flow, team grouped rotation, best-ball aggregation, random distribution N=3-16, win conditions)
+- TreasureDivideProvider: 55 tests (startGame, processDartThrow, halving/quartering, crew-grouped rotation, solo crew 6-dart rule, SUM aggregation, crew-wide halving, randomDistribution N=3-10, pirate theme assignment)
 
 **API Client Tests (49 tests)**
 - ApiConfig: 5 tests
@@ -90,6 +93,7 @@ The Dart Games app has a comprehensive test suite with 2837 total tests:
 - Pirate's Grid Game Logic + Announcements: 132 tests (31 game logic + 14 three-in-a-row checker + 27 announcements + 24 game-with-announcements + 24 serialization + 12 save-restore)
 - Gladiator Arena Game Logic + Announcements: 77 tests (26 game logic + 33 announcements + 18 game-with-announcements)
 - Tiki Golf Game Logic + Announcements: 126 tests (72 game logic + 36 announcements + 18 game-with-announcements)
+- Treasure Divide Game Logic + Announcements: ~238 tests (89 game logic + 60 announcements direct + 89 game-with-announcements)
 
 **Save/Resume Integration Tests (20 tests)**
 - Save trigger conditions: 8 tests
@@ -100,18 +104,19 @@ The Dart Games app has a comprehensive test suite with 2837 total tests:
 **Utility Tests (34 tests)**
 - DartboardLayout: 34 tests (clockwiseOrder, getNeighbors, isNeighbor, findNeighborTarget)
 
-_Note: Some tests span multiple categories. The total (2060) is the authoritative count from `flutter test`._
+_Note: Some tests span multiple categories. The total (2428) is the authoritative count from `flutter test`._
 
 **Shared Component Tests (24 tests)**
 - SectorParser: 14 tests
 - PlayerTestUtils: 10 tests
 
-**Widget Tests (44 tests)**
+**Widget Tests (61 tests)**
 - InteractiveDartboard: 23 tests
 - SaveGameModal: 8 tests
 - ResumeGameModal: 13 tests
+- PirateAvatarWidget (Treasure Divide): 17 tests
 
-### Server Tests (190 tests)
+### Server Tests (225 tests)
 **Run with:** `cd server && dart test`
 **Execution time:** Seconds
 **MANDATORY:** Must pass 100% before every build
@@ -127,12 +132,14 @@ _Note: Some tests span multiple categories. The total (2060) is the authoritativ
 - Victory music routes: 14 tests
 - Failed stats routes: 6 tests
 - Test routes: 6 tests
+- Additional routes (Pirate's Grid): 12 tests
+- Face landmarks routes + V5 migration + service (Treasure Divide): 35 tests
 
-## UI Automation Tests (722 tests)
+## UI Automation Tests (820 tests + 98 Treasure Divide)
 
 **Run with:** `./run_ui_tests.bat` (sequential) or `./run_ui_tests_parallel.bat` (parallel)
-**Sequential time:** ~843+ minutes — interactive Chrome sessions visible
-**Parallel time:** ~211+ minutes — fully headless, no visible Chrome sessions
+**Sequential time:** ~988+ minutes — interactive Chrome sessions visible
+**Parallel time:** ~356+ minutes — fully headless, no visible Chrome sessions
 **OPTIONAL:** Ask user before running
 
 ### Target Tag (73 tests, ~107 minutes)
@@ -231,11 +238,25 @@ _Note: Some tests span multiple categories. The total (2060) is the authoritativ
 - Team Setup: 10 files (Tiki Golf-specific)
 - Team Mode Gameplay: 10 files (Tiki Golf-specific)
 
+### Treasure Divide (98 testWidgets across 83 files, ~145 minutes)
+- Add Player: 3 files
+- Edit Score: 5 files
+- Gameplay: 12 files
+- Menu and Settings: 11 files
+- Navigation: 4 files
+- Pause Modal: 3 files (20 testWidgets: 7+8+5)
+- Play to Complete: 5 files
+- Results Screen: 7 files (5 base + solo_tie + team_tie)
+- Save & Resume: 16 files
+- Team Setup: 7 files (4 base + solo_to_team + team_to_solo + team_random_no_ui)
+- Team Mode Gameplay: 4 files (3 base + team_results_all_winning_players)
+- Visual Validation: 6 files (4 programmatic + 2 screenshot files — 22 total captures)
+
 ## Test Requirements
 
 ### Before Every Build
-✅ Run `flutter test` (2060 tests)
-✅ Run `cd server && dart test` (190 tests)
+✅ Run `flutter test` (2428 tests)
+✅ Run `cd server && dart test` (225 tests)
 ✅ 100% pass rate MANDATORY for both
 ✅ If ANY test fails, DO NOT proceed
 ✅ Fix failing tests, re-run, verify all pass
@@ -249,10 +270,10 @@ _Note: Some tests span multiple categories. The total (2060) is the authoritativ
 
 ### All Non-UI Tests
 ```bash
-# Flutter tests (2060 tests)
+# Flutter tests (2428 tests)
 flutter test
 
-# Server tests (190 tests)
+# Server tests (225 tests)
 cd server && dart test
 ```
 

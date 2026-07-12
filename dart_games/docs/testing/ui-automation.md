@@ -2,11 +2,11 @@
 
 ## Overview
 
-612 UI automation tests validate end-to-end user flows in Chrome browser.
+820 UI automation tests (+ 98 Treasure Divide) validate end-to-end user flows in Chrome browser.
 
 **Run with:** `flutter drive` with chromedriver
-**Sequential time:** ~843 minutes (~14h 3m) — `run_ui_tests.bat`, interactive Chrome sessions visible
-**Parallel time:** ~211 minutes (~3h 31m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
+**Sequential time:** ~988+ minutes (~16h 28m) — `run_ui_tests.bat`, interactive Chrome sessions visible
+**Parallel time:** ~356+ minutes (~5h 56m) — `run_ui_tests_parallel.bat`, fully headless (no visible Chrome)
 **OPTIONAL:** Ask user before running
 
 ## Test Suite
@@ -101,6 +101,20 @@
 11. Randomization: 4 files (Tiki Golf-specific — hole targets unique, targets vary between games, images shuffled, hole name follows image)
 12. Team Setup: 10 files (Tiki Golf-specific — Solo/Team caps, random distribution table including N=8 and N=12 special cases, manual assignment, team crests)
 13. Team Mode Gameplay: 10 files (Tiki Golf-specific — grouped turn order, best-ball scoring, team panel display, per-player mulligan in team mode)
+
+### Treasure Divide (98 testWidgets across 83 files, ~145 minutes)
+1. Add Player: 3 files
+2. Edit Score: 5 files
+3. Gameplay: 12 files
+4. Menu and Settings: 11 files
+5. Navigation: 4 files (mandatory pack — menu back, game back settings persist, change settings back to home, change settings preserves settings)
+6. Pause Modal: 3 files (20 testWidgets total: 7 + 8 + 5)
+7. Play to Complete: 5 files (TreasureDivideStrategy — sentinel target mapping for Any Double/Triple/Bull)
+8. Results Screen: 7 files (5 base results + solo_tie + team_tie — tiebreaker display validation)
+9. Save & Resume: 16 files (1 testWidget each — includes targetSequence, playerPirateThemes, teamAssignments preservation)
+10. Team Setup: 7 files (4 base + solo_to_team + team_to_solo + team_random_no_ui — randomDistribution N=3..10 table, Solo Crew 6-dart badge)
+11. Team Mode Gameplay: 4 files (3 base + team_results_all_winning_players — crew SUM aggregation, crew wipeout halving, active panel 6-dart indicator slots)
+12. Visual Validation: 6 files (4 programmatic + 2 screenshot files — 22 total captures; split across menu/game and results files to fit 600s parallel budget)
 
 **Known infrastructure flake:** `save_resume/resumed_state_correct_test.dart` — test assertions all pass ("All tests passed!" in log) but `flutter drive` crashes during chromedriver teardown with `SocketException: errno = 1225`. Both retry attempts hit the same deterministic teardown crash. Effective pass rate: 45/46. This is a `flutter drive` infrastructure bug, not a Lunar Lander code defect.
 
@@ -366,6 +380,7 @@ Ports are auto-assigned by position in the `GAMES` list in `run_ui_tests_paralle
 | tiki_golf | 9009 | 4452 |
 | home_screen | 9010 | 4453 |
 | pause_modal | 9011 | 4454 |
+| treasure_divide | 9012 | 4455 |
 
 Directories the runners intentionally skip: `_smoke/` (manual self-tests for the failure-screenshot helper, run via direct `flutter drive` invocation) and `shared/` (helper files, no tests).
 
@@ -572,6 +587,48 @@ Key shared helpers:
 - **`PumpSequences`** — Standardized frame pumping patterns
 
 When adding a new game, extend the shared helpers and create game-specific `_helpers.dart` files using the delegate pattern. See [Shared Helpers Reference](shared-helpers-reference.md) for templates and the full helper list.
+
+## Font Measurement Tests (Utility, NOT part of the standard suite)
+
+Two visual-ribbon integration tests live at the TOP level of
+`integration_test/` (NOT inside a per-game folder — the runner
+`run_ui_tests.bat` does NOT auto-discover them). They compare every
+game's title fonts against **Target Tag as the visual baseline** and
+report pixel-precise cap-height diffs.
+
+- **`integration_test/appbar_title_measurement_test.dart`** — 3-column
+  ribbon (current fs / recommended fs / baseline-aligned red-on-white
+  overlay) sized for the **56 px AppBar** strip. Target = LuckiestGuy
+  @ `fontSize: 36`. Applies to the three per-game screen files
+  (`<game>_menu_screen.dart` / `<game>_game_screen.dart` /
+  `<game>_results_screen.dart`).
+
+- **`integration_test/home_screen_font_measurement_test.dart`** — same
+  layout sized for the **44 px home-card label** strip
+  (`SizedBox(height: 44)` in `home_screen.dart`). Target = LuckiestGuy
+  @ `fontSize: 22`. Applies to a single per-game `+N` offset in the
+  ternary inside `_buildGameCard(...)` in `lib/screens/home_screen.dart`.
+
+**Run manually** (start chromedriver first; the tests are NOT in the
+standard runner):
+
+```bash
+./chromedriver/chromedriver-win64/chromedriver.exe --port=4444 &
+flutter drive --driver=test_driver/screenshot_test.dart \
+  --target=integration_test/appbar_title_measurement_test.dart \
+  -d chrome --web-browser-flag=--start-maximized \
+  --browser-dimension=1920x1080
+# ... then repeat for home_screen_font_measurement_test.dart
+```
+
+Screenshots land in `temp_screenshots/appbar_title_ribbon.png` and
+`temp_screenshots/home_screen_font_ribbon.png`.
+
+Use these when adding a new game (see the "Optional post-build font
+audit" section in the game.build skill for the full workflow — add
+the new game's `_Entry(...)` to both test files, run each, apply the
+winning `fontSize` values, iterate until cap heights are within
+±2 px of Target Tag's baseline in the pixel-precise Python analysis).
 
 ## Related Documentation
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/player.dart';
 import '../../providers/player_provider.dart';
 import '../add_player/add_player.dart';
+import '../face_landmarks_hint.dart';
 import '../player_selection_card.dart';
 import 'dual_player_list_panel_config.dart';
 
@@ -317,20 +318,20 @@ class _DualPlayerListPanelState extends State<DualPlayerListPanel> {
   }
 
   void _handleAddPlayer() async {
+    // The dialog handles savePlayer inside onSubmit, showing its own
+    // progress indicator while the roundtrip is in flight. We only get
+    // the returned Player back after it has already been persisted.
+    final playerProvider = context.read<PlayerProvider>();
     final player = await showAddPlayerDialog(
       context: context,
       config: config.addPlayerDialogConfig,
+      onSubmit: playerProvider.savePlayer,
     );
 
     if (player != null && mounted) {
-      final playerProvider = context.read<PlayerProvider>();
-      await playerProvider.savePlayer(player);
-      // savePlayer is an HTTP roundtrip; the widget tree (and the provider
-      // it watches) may be disposed before the response returns — e.g. the
-      // dartboard disconnect modal grabs nav focus, or the user backs out.
-      // Touching the provider after disposal triggers a "ChangeNotifier was
-      // used after being disposed" assertion. Same guard as team_player_list_panel.
-      if (!mounted) return;
+      // Non-blocking face-landmarks hint (only fires when server-side
+      // detection ran and failed on the just-uploaded photo).
+      showFaceLandmarksHintIfAny(context);
 
       // Auto-select the newly added player only if max not reached
       if (playerProvider.selectedPlayers.length < config.maxPlayers) {

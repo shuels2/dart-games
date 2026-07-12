@@ -531,4 +531,56 @@ class EditScoreDialogConfig {
       ),
     );
   }
+
+  /// Treasure Divide — Ocean Teal bg, Treasure Gold border, PirataOne/Merriweather fonts
+  /// Pattern B (Dart Throw Display): no scoreDisplayTransform — raw segment strings shown (S20, D15, T20, Bull).
+  factory EditScoreDialogConfig.treasureDivide() {
+    return EditScoreDialogConfig(
+      backgroundColor: const Color(0xFF008B8B).withOpacity(0.97), // Ocean Teal
+      borderColor: const Color(0xFFFFD700), // Treasure Gold
+      borderWidth: 4,
+      // Every fontSize bumped +4 vs. the prior pass for legibility on
+      // the larger HUD scale.
+      titleStyle: GoogleFonts.pirataOne(
+        fontSize: 26,
+        color: const Color(0xFFFFD700), // Treasure Gold
+        letterSpacing: 1.2,
+      ),
+      dartLabelStyle: GoogleFonts.merriweather(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFFFF8E7).withOpacity(0.7), // Sail White
+      ),
+      scoreBoxBackgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      // Dart-label container outline switched from plank brown (low
+      // contrast on the ocean-teal panel) to sail white.
+      scoreBoxDefaultBorderColor:
+          const Color(0xFFFFF8E7).withOpacity(0.6), // Sail White
+      scoreTextStyle: GoogleFonts.pirataOne(
+        fontSize: 22,
+        color: const Color(0xFFFFF8E7), // Sail White
+      ),
+      buttonUnselectedColor: const Color(0xFF006666), // darker Ocean Teal
+      buttonUnselectedForeground: const Color(0xFFFFF8E7), // Sail White
+      buttonSelectedColor: const Color(0xFFFFD700), // Treasure Gold
+      buttonSelectedForeground: const Color(0xFF008B8B), // Ocean Teal
+      buttonTextStyle: GoogleFonts.merriweather(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+      cancelButtonColor: const Color(0xFF006666).withOpacity(0.85),
+      cancelButtonForeground: const Color(0xFFFFF8E7),
+      cancelButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+      submitButtonColor: const Color(0xFFFFD700).withOpacity(0.9), // Treasure Gold
+      submitButtonForeground: const Color(0xFF008B8B), // Ocean Teal
+      submitButtonTextStyle: GoogleFonts.pirataOne(
+        fontSize: 20,
+        letterSpacing: 1.0,
+      ),
+      // No scoreDisplayTransform — raw dart segment strings shown (S20, D15, T20, Bull, etc.)
+    );
+  }
 }

@@ -229,6 +229,31 @@ class GameUIConfig {
     );
   }
 
+  /// Treasure Divide game configuration
+  factory GameUIConfig.treasureDivide() {
+    return GameUIConfig._(
+      gameName: 'Treasure Divide',
+      getGameCard: ElementFinders.getTreasureDivideCard,
+      getAddPlayerButton: ElementFinders.getTreasureDivideAddPlayerButton,
+      getPlayerTile: ElementFinders.getTreasureDividePlayerTile,
+      getStartButton: ElementFinders.getTreasureDivideStartButton,
+      getSkipTurnButton: ElementFinders.getTreasureDivideSkipTurnButton,
+      getEditScoreButton: ElementFinders.getTreasureDivideEditScoreButton,
+      getDartButton: (multiplier, number) =>
+          find.text('Not used in Treasure Divide directly'),
+      getBullseyeButton: () =>
+          find.text('Not used in Treasure Divide directly'),
+      getOuterBullButton: () =>
+          find.text('Not used in Treasure Divide directly'),
+      getMissButton: () => find.text('Not used in Treasure Divide directly'),
+      getPlayAgainButton: ElementFinders.getTreasureDividePlayAgainButton,
+      getChangeSettingsButton:
+          ElementFinders.getTreasureDivideChangeSettingsButton,
+      getBackToMenuButton: ElementFinders.getTreasureDivideBackToMenuButton,
+      getGameBackButton: ElementFinders.getTreasureDivideGameBackButton,
+    );
+  }
+
   /// Clockwork Quest game configuration
   factory GameUIConfig.clockworkQuest() {
     return GameUIConfig._(

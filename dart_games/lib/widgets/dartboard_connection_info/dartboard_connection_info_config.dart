@@ -371,6 +371,38 @@ class DartboardConnectionInfoConfig {
     );
   }
 
+  /// Treasure Divide — Ocean Teal panel, Treasure Gold/Island Green indicators, Merriweather font
+  factory DartboardConnectionInfoConfig.treasureDivide() {
+    return DartboardConnectionInfoConfig(
+      backgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      backgroundOpacity: 0.95,
+      emulatorBorderColor: const Color(0xFFFFD700), // Treasure Gold
+      hardwareBorderColor: const Color(0xFF228B22), // Island Green
+      nameTextStyle: GoogleFonts.merriweather(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        height: 1.0,
+        color: const Color(0xFFFFF8E7), // Sail White
+      ),
+      statusTextStyle: GoogleFonts.merriweather(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        height: 1.0,
+      ),
+      emulatorLabelTextStyle: GoogleFonts.merriweather(
+        fontSize: 10,
+        height: 1.0,
+        color: const Color(0xFFFFD700), // Treasure Gold
+      ),
+      emulatorIconColor: const Color(0xFFFFD700), // Treasure Gold
+      hardwareIconColor: const Color(0xFF228B22), // Island Green
+      connectedColor: const Color(0xFF228B22), // Island Green
+      connectingColor: const Color(0xFFFFD700), // Treasure Gold
+      disconnectedColor: const Color(0xFFC41E3A), // Blood Red
+      errorColor: const Color(0xFFC41E3A), // Blood Red
+    );
+  }
+
   /// Tiki Golf — Palm Green panel, Lagoon Blue accents for all dartboard
   /// status indicators (border, icon, connected text) per user request so the
   /// status reads the same color across all three Tiki Golf AppBars. Pink

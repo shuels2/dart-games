@@ -224,7 +224,7 @@ void main() {
       // to a web client). The actual file still lives at
       // <dataDir>/photos/<id>.png on disk.
       expect(body['photoPath'], '/api/v1/players/$playerId/photo');
-      expect(File('$dataDir/photos/$playerId.png').existsSync(), isTrue);
+      expect(File('$dataDir/photos/$playerId.jpg').existsSync(), isTrue);
     });
 
     test('GET /<id>/photo serves the uploaded photo', () async {
@@ -241,11 +241,14 @@ void main() {
       );
 
       expect(response.statusCode, 200);
-      expect(response.headers['content-type'], contains('image/png'));
+      // Server canonicalizes every upload to a 512x512 JPEG, so the
+      // served file is always image/jpeg regardless of what the client
+      // uploaded.
+      expect(response.headers['content-type'], contains('image/jpeg'));
       final bytes = await response.read().expand((chunk) => chunk).toList();
       expect(bytes, isNotEmpty);
-      // Verify the bytes match the decoded base64
-      expect(bytes, equals(base64Decode(_tinyPng)));
+      // Bytes are the canonicalized JPEG, not the input PNG.
+      expect(bytes, isNot(equals(base64Decode(_tinyPng))));
     });
 
     test('GET /<id>/photo returns 404 when no photo uploaded', () async {
@@ -320,7 +323,7 @@ void main() {
           'fileName': 'avatar.png',
         }),
       );
-      final onDiskPath = '$dataDir/photos/$playerId.png';
+      final onDiskPath = '$dataDir/photos/$playerId.jpg';
       expect(File(onDiskPath).existsSync(), isTrue);
 
       // Delete the photo
@@ -350,7 +353,7 @@ void main() {
           'fileName': 'avatar.png',
         }),
       );
-      final onDiskPath = '$dataDir/photos/$playerId.png';
+      final onDiskPath = '$dataDir/photos/$playerId.jpg';
       expect(File(onDiskPath).existsSync(), isTrue);
 
       // Delete the player

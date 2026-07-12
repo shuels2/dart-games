@@ -194,6 +194,25 @@ class GameSaveConfig {
         leadingPlayerScore: '2 holes completed',
         gameState: {'_marker': 'test2'},
       );
+
+  factory GameSaveConfig.treasureDivide() => const GameSaveConfig(
+        gameType: 'treasure_divide',
+        playerNames: ['Alice', 'Bob'],
+        progressInfo: 'Round 1 of 9',
+        gameModeName: 'Solo, 9 Rounds',
+        leadingPlayerName: 'Alice',
+        leadingPlayerScore: '0 coins',
+      );
+
+  factory GameSaveConfig.treasureDivideSecond() => const GameSaveConfig(
+        gameType: 'treasure_divide',
+        playerNames: ['Charlie', 'Diana'],
+        progressInfo: 'Round 3 of 9',
+        gameModeName: 'Solo, 9 Rounds',
+        leadingPlayerName: 'Charlie',
+        leadingPlayerScore: '40 coins',
+        gameState: {'_marker': 'test2'},
+      );
 }
 
 class SaveResumeHelpers {

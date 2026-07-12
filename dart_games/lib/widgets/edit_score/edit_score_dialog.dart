@@ -199,7 +199,14 @@ Future<void> showEditScoreDialog({
 Map<String, dynamic> _parseScore(String segment) {
   if (segment.isEmpty || segment == '-') {
     return {'ring': null, 'number': null};
-  } else if (segment == 'Miss') {
+  } else if (segment == 'Miss' || segment == 'None') {
+    // 'None' is the alternate miss sector that the dartboard emulator
+    // (and some real-dartboard events) emit instead of 'Miss'. The
+    // provider's _parseSectorString already treats both as misses,
+    // but the edit-score dialog was only recognizing 'Miss' — that
+    // left a recorded 'None' segment with no ring preselected at all,
+    // so the MISS button never lit up when the player opened Edit
+    // Score after a miss dart.
     return {'ring': 'Miss', 'number': null};
   } else if (segment == 'Bull') {
     return {'ring': 'Bullseye', 'number': null};

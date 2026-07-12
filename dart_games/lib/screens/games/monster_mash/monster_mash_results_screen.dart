@@ -232,9 +232,9 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
             title: Padding(
               padding: const EdgeInsets.only(top: 0),
               child: Text(
-                'Monster Mash Game Over',
+                'Monster Mash Results',
                 style: GoogleFonts.creepster(
-                  fontSize: 39,
+                  fontSize: 35,
                   letterSpacing: 1.5,
                   shadows: [
                     Shadow(

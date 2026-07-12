@@ -19,11 +19,11 @@ Gladiator Arena channels Disney's Hercules meets the Roman Colosseum — warm go
 
 ## Typography
 
-All three AppBars (Menu, Game, Results) use **identical title styling**: Cinzel Bold, 20pt, Marble White, letterSpacing: 1.5, with a dark text shadow.
+All three AppBars (Menu, Game, Results) use **identical title styling**: Cinzel Bold, 36, Marble White, letterSpacing: 1.5, with a dark text shadow (`Colors.black54`, blurRadius 4, offset `Offset(1, 1)`). Each title `Text` widget is wrapped in `Transform.translate(offset: Offset(0, 2))` — a 2 px downward nudge because Cinzel's ascender pushes the visual baseline high in the 56 px AppBar strip. The AppBar itself is a bare `AppBar` (not `PreferredSize`).
 
 | Element | Font | Weight | Size | Color |
 |---|---|---|---|---|
-| Game Title (AppBar) | `GoogleFonts.cinzel` | Bold | 20pt | Marble White |
+| Game Title (AppBar) | `GoogleFonts.cinzel` | Bold | 36 | Marble White |
 | Section Headers | `GoogleFonts.cinzel` | Bold | 28–32pt | Marble White |
 | Player Names | `GoogleFonts.cinzel` | Bold | 20–24pt | Player accent color |
 | Score Numbers (podium) | `GoogleFonts.cinzel` | Bold | 14pt | Gladiator Gold |
@@ -69,7 +69,7 @@ All three AppBars (Menu, Game, Results) use **identical title styling**: Cinzel 
 ### Results Screen
 
 - **Background:** Same colosseum background with dark overlay
-- **AppBar:** "GLADIATOR ARENA RESULTS" in Cinzel Bold 20pt Marble White; Arena Sand with dark overlay
+- **AppBar:** "GLADIATOR ARENA RESULTS" in Cinzel Bold 36 Marble White; Arena Sand with dark overlay
 - **Winner Display:** "CHAMPION OF THE ARENA!" in Cinzel 36pt Gladiator Gold with shadow; centered Row of winner character image (left, 270×270 with Gladiator Gold drop-shadow glow + golden laurel wreath overlay) and winner player photo / fallback initial (right, 270×270 ClipOval); winner name Cinzel Bold 28pt Gladiator Gold; final score Cinzel 20pt Marble White
 - **Rankings:** Rank 1 Gladiator Gold, rank 2 Marble White, rank 3 Bronze, rank 4+ Colosseum Gray; 2-column layout for 5–8 players (left ranks 1–4, right ranks 5–8)
 - **Knockoff Stats:** Lato 14pt, Arena Sand bg at 0.6 opacity; shown only if at least one knockoff occurred

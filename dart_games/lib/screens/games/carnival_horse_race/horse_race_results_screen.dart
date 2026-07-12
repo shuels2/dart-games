@@ -230,10 +230,10 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
               ),
               child: AppBar(
                 title: Text(
-                  'Carnival Derby Race Results',
+                  'Carnival Derby Results',
                   style: GoogleFonts.rye(
                     fontWeight: FontWeight.bold,
-                    fontSize: 24,
+                    fontSize: 33,
                     color: const Color(0xFFF1FAEE), // Cloud Dancer
                     shadows: [
                       const Shadow(

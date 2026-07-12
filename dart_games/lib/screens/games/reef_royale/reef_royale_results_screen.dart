@@ -206,9 +206,9 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
             title: Transform.translate(
               offset: const Offset(0, -3),
               child: Text(
-                'Reef Royale — Game Over',
+                'Reef Royale Results',
                 style: GoogleFonts.fredoka(
-                  fontSize: 32,
+                  fontSize: 35,
                   fontWeight: FontWeight.bold,
                   color: _pearlWhite,
                   letterSpacing: 2,

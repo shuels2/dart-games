@@ -8,6 +8,47 @@ import 'provider_helpers.dart';
 import 'game_ui_config.dart';
 
 class GameSetupHelpers {
+  // ===== Treasure Divide =====
+
+  static Future<void> setupAndStartTreasureDivide(
+    WidgetTester tester,
+    GameUIConfig config, {
+    int numberOfRounds = 9,
+    bool quarterItEnabled = false,
+    bool customTargetsEnabled = false,
+    bool teamMode = false,
+    bool manualAssignment = false,
+    int? teamCount,
+    List<String>? playerNames,
+  }) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+
+    if (teamMode) {
+      await SettingsHelpers.setTreasureDivideGameModeTeam(tester);
+      await PumpSequences.fullRebuild(tester);
+      if (manualAssignment) {
+        await SettingsHelpers.setTreasureDivideAssignmentManual(tester);
+        await PumpSequences.fullRebuild(tester);
+      }
+    }
+    if (numberOfRounds != 9) {
+      await SettingsHelpers.selectTreasureDivideRounds(tester, numberOfRounds);
+    }
+    if (quarterItEnabled) {
+      await SettingsHelpers.toggleTreasureDivideQuarterIt(tester);
+    }
+    if (customTargetsEnabled) {
+      await SettingsHelpers.toggleTreasureDivideCustomTargets(tester);
+    }
+
+    final names = playerNames ?? ['Player A', 'Player B'];
+    for (final name in names) {
+      await UITestHelpers.addPlayer(tester, name, config);
+    }
+
+    await UITestHelpers.startGame(tester, config);
+  }
+
   // ===== Tiki Golf =====
 
   static Future<void> setupAndStartTikiGolf(

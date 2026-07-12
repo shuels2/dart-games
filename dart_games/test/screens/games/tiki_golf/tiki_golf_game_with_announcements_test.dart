@@ -85,7 +85,13 @@ void _announceForThrow({
   final victory = hasWinner && currentTurnEnded;
 
   // Hole complete: all players have scored the current hole AND turn just ended
-  final holeComplete = currentTurnEnded && !hasWinner && game.isCurrentHoleComplete;
+  // AND there IS a next hole. Without the isAtFinalHole guard we'd announce
+  // "On to hole 10!" after hole 9 completes — hole 10 doesn't exist. Matches
+  // lib/screens/games/tiki_golf/tiki_golf_game_screen.dart:_fireDartAnnouncement.
+  final holeComplete = currentTurnEnded &&
+      !hasWinner &&
+      game.isCurrentHoleComplete &&
+      !game.isAtFinalHole;
 
   // Score (only when turn ended with a score). Mirrors the classifier in
   // lib/screens/games/tiki_golf/tiki_golf_game_screen.dart — splash wins
@@ -128,7 +134,7 @@ void _announceForThrow({
 
   queue.pickAndAnnounceMoment(
     victory: victory,
-    victoryWinnerName: victory ? throwerId : null,
+    victoryWinnerNames: victory ? [throwerId] : null,
     holeComplete: holeComplete,
     holeCompleteNextHole: holeComplete ? game.currentHole + 1 : null,
     mulliganReminder: mulliganReminder,
@@ -611,9 +617,103 @@ void main() {
 
       // Announce Victory (game screen would detect hasWinner in _handleTakeoutFinished
       // and fire victory before navigating to results).
-      queue.announceVictory('p1'); // p1 has lower total (all pars vs p2 birdie)
+      queue.announceVictory(['p1']); // p1 has lower total (all pars vs p2 birdie)
 
       expect(queue.announcements.first, contains('Golden Tiki'));
+    });
+
+    test(
+        'Final hole (9): last player\'s completing dart announces score, NOT "On to hole 10!"',
+        () {
+      // Regression: the announcer used to say "On to hole 10!" when the
+      // last player finished hole 9, because holeComplete fired before
+      // hasWinner was set (winner is set inside confirmTurnEnd, which
+      // runs after _fireDartAnnouncement). Fixed by gating holeComplete
+      // on !game.isAtFinalHole. This test verifies the fix by mimicking
+      // exactly what _fireDartAnnouncement / _announceForThrow do at
+      // that moment.
+      final rng = Random(3);
+      final provider = _makeSoloProvider(
+        playerIds: ['p1', 'p2'],
+        maxStrokes: 3,
+        random: rng,
+      );
+      final game = provider.currentGame!;
+
+      // Fill holes 1-8 for both players.
+      for (int h = 0; h < 8; h++) {
+        for (final pid in ['p1', 'p2']) {
+          game.playerHoleScores[pid]![h] = 2;
+        }
+      }
+      // Set to hole 9, p1 first.
+      game.currentHole = 9;
+      game.activePlayerId = 'p1';
+      game.dartsThrown['p1'] = 0;
+      game.currentTurnEnded = false;
+
+      final target9 = _target(game, 8);
+      final queue = MockTikiGolfAudioQueueService();
+
+      // p1 plays hole 9 first — hole NOT yet complete.
+      provider.processDartThrow(sector: _hitSector(target9), score: target9);
+      _announceForThrow(queue: queue, provider: provider, prevHole: 9);
+      queue.clearAnnouncements();
+
+      // Advance to p2 (the LAST player on the LAST hole).
+      provider.confirmTurnEnd();
+      expect(game.activePlayerId, equals('p2'));
+      game.dartsThrown['p2'] = 0;
+      game.currentTurnEnded = false;
+
+      // p2's completing dart — this is where the "On to hole 10!" bug fired.
+      provider.processDartThrow(sector: _hitSector(target9), score: target9);
+      expect(game.currentTurnEnded, isTrue);
+      expect(game.isCurrentHoleComplete, isTrue);
+      expect(game.isAtFinalHole, isTrue);
+
+      _announceForThrow(queue: queue, provider: provider, prevHole: 9);
+
+      // NO "On to hole" line — the game is at the final hole.
+      expect(
+        queue.announcements.any((a) => a.contains('On to hole')),
+        isFalse,
+        reason: 'Final-hole completion must not announce a next hole',
+      );
+      // Score IS announced (rank 5 fires now that holeComplete is suppressed).
+      expect(queue.announcements.any((a) => a.contains('Birdie')), isTrue);
+    });
+
+    test('Solo tie: victory announcement uses "and … tie for" phrasing', () {
+      // Both players finish with an identical total → winnerIds contains
+      // both → announceVictory should speak BOTH names.
+      final rng = Random(5);
+      final provider = _makeSoloProvider(
+        playerIds: ['p1', 'p2'],
+        maxStrokes: 3,
+        random: rng,
+      );
+      final game = provider.currentGame!;
+      // Every hole = 2 (par) for both players → identical totals.
+      for (int h = 0; h < 9; h++) {
+        for (final pid in ['p1', 'p2']) {
+          game.playerHoleScores[pid]![h] = 2;
+        }
+      }
+      provider.endGame(); // populates winnerIds with tied players
+
+      expect(game.winnerIds, isNotNull);
+      expect(game.winnerIds!.toSet(), equals({'p1', 'p2'}));
+
+      // Simulate what _handleGameWon does: hand the full list to
+      // announceVictory.
+      final queue = MockTikiGolfAudioQueueService();
+      queue.announceVictory(game.winnerIds!);
+
+      expect(queue.announcements.length, equals(1));
+      expect(queue.announcements.first, contains('tie for the Golden Tiki'));
+      expect(queue.announcements.first, contains('p1'));
+      expect(queue.announcements.first, contains('p2'));
     });
   });
 

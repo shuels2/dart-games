@@ -53,7 +53,7 @@ color: const Color(0xFF8B5E3C),
   - Usage: Descriptive text, input labels, settings
 
 ### Text Styles
-- **Screen Title:** Rye, Bold, 28-32pt, Canary Yellow (#FFD700)
+- **Screen Title:** Rye, Bold, 33pt, Canary Yellow (#FFD700)
 - **Section Header:** Bangers, Bold, 20-24pt, Canary Yellow (#FFD700)
 - **Body Text:** Montserrat, Regular, 14-16pt, White
 - **Button Text:** Luckiest Guy or Bangers, Bold, 16-20pt, White or Black
@@ -64,7 +64,7 @@ color: const Color(0xFF8B5E3C),
 ```dart
 // Screen titles
 GoogleFonts.rye(
-  fontSize: 32,
+  fontSize: 33,
   fontWeight: FontWeight.bold,
   color: const Color(0xFFFFD700),
 )
@@ -87,6 +87,7 @@ GoogleFonts.bangers(
 
 ### Menu Screen
 - **Background:** Rotated wood plank texture (CarnivalDerby-WoodPlanks.jpg) with Cedar (#8B5E3C) tint, overlaid with radial gradient spotlight effect
+- **AppBar Title:** `'Carnival Derby Game Setup'`
 - **AppBar:** Horizontal gradient (Lava Red → Canary Yellow → Electric Teal) with Canary Yellow glow and drop shadow
 - **Buttons:** Lava Red background, white text, Canary Yellow border, rounded corners
 - **Player Tiles:** White background, Electric Teal when selected, player photo and name, draggable
@@ -95,6 +96,7 @@ GoogleFonts.bangers(
 
 ### Game Screen
 - **Background:** Same wood plank texture with radial spotlight as menu screen
+- **AppBar Title:** `'Carnival Derby Race'`
 - **AppBar:** Same tri-color gradient as menu screen
 - **Race Track:** Oval track with horse icons, finish line marker, score progress visualization
 - **Player Panels:** Current player highlighted with Canary Yellow border and glow
@@ -105,6 +107,7 @@ GoogleFonts.bangers(
 
 ### Results Screen
 - **Background:** Same wood plank texture with radial spotlight
+- **AppBar Title:** `'Carnival Derby Results'`
 - **AppBar:** Same tri-color gradient
 - **Winner Display:** Electric Teal header with Canary Yellow glow, large trophy icon, confetti-style presentation
 - **Winner Name:** Luckiest Guy font, Canary Yellow color with yellow glow effect

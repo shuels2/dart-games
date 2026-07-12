@@ -319,4 +319,36 @@ class SaveGameModalConfig {
       ),
     );
   }
+
+  /// Treasure Divide — Ocean Teal bg, Treasure Gold border, PirataOne/Merriweather fonts
+  /// SAVE = Island Green, DON'T SAVE = Blood Red
+  factory SaveGameModalConfig.treasureDivide() {
+    return SaveGameModalConfig(
+      backgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      borderColor: const Color(0xFFFFD700), // Treasure Gold
+      boxShadowColor: const Color(0xFFFFD700),
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFFFD700), // Treasure Gold
+      iconSize: 48,
+      titleTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFFFFD700), // Treasure Gold
+        fontSize: 24,
+        letterSpacing: 1.2,
+      ),
+      messageTextStyle: GoogleFonts.merriweather(
+        color: const Color(0xFFFFF8E7), // Sail White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      saveButtonColor: const Color(0xFF228B22), // Island Green — SAVE
+      saveButtonTextColor: const Color(0xFFFFF8E7), // Sail White
+      saveButtonTextStyle: GoogleFonts.pirataOne(fontSize: 18, letterSpacing: 1.0),
+      dontSaveButtonColor: const Color(0xFFC41E3A), // Blood Red — DON'T SAVE
+      dontSaveButtonTextColor: const Color(0xFFFFF8E7), // Sail White
+      dontSaveButtonTextStyle: GoogleFonts.merriweather(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 }

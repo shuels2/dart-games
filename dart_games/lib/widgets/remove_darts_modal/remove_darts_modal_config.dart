@@ -369,4 +369,41 @@ class RemoveDartsModalConfig {
       maxWidth: double.infinity,
     );
   }
+
+  /// Treasure Divide — Ocean Teal bg, Treasure Gold border, PirataOne/Merriweather fonts
+  factory RemoveDartsModalConfig.treasureDivide() {
+    return RemoveDartsModalConfig(
+      backgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      backgroundOpacity: 0.97,
+      borderColor: const Color(0xFFFFD700), // Treasure Gold
+      borderWidth: 4,
+      boxShadowColor: const Color(0xFFFFD700), // Treasure Gold glow
+      boxShadowOpacity: 0.3,
+      iconColor: const Color(0xFFFFF8E7), // Sail White
+      iconSize: 48,
+      playerNameTextStyle: GoogleFonts.pirataOne(
+        color: const Color(0xFFFFD700), // Treasure Gold
+        fontSize: 24,
+        letterSpacing: 1.0,
+      ),
+      instructionTextStyle: GoogleFonts.merriweather(
+        color: const Color(0xFFFFF8E7), // Sail White
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      buttonBackgroundColor: const Color(0xFFFFD700).withOpacity(0.9), // Treasure Gold
+      buttonForegroundColor: const Color(0xFF008B8B), // Ocean Teal
+      buttonBorderSide: BorderSide(
+        color: const Color(0xFF8B6914), // Plank Brown
+        width: 2,
+      ),
+      buttonTextStyle: GoogleFonts.merriweather(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFF008B8B),
+      ),
+      editButtonText: 'Edit Score',
+      maxWidth: double.infinity,
+    );
+  }
 }

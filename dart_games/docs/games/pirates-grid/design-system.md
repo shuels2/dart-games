@@ -45,8 +45,8 @@ Pirate's Grid channels the feel of Pirates of the Caribbean poster art meets han
 ### Text Styles
 | Element | Font | Size | Color | Notes |
 |---------|------|------|-------|-------|
-| Game Title (AppBar) | Pirata One | 32pt | Treasure Gold | letterSpacing: 1.5, Ink Black shadow |
-| Screen Title (AppBar) | Pirata One | 20pt | Treasure Gold | All three AppBars identical style |
+| Game Title (AppBar) | Pirata One | 35pt | Treasure Gold | letterSpacing: 1.5, Ink Black shadow |
+| Screen Title (AppBar) | Pirata One | 35pt | Treasure Gold | All three AppBars identical style |
 | Section Headers | Pirata One | 24-28pt | Treasure Gold | |
 | Player Names | Pirata One | 20pt | Blood Red (P1) / Sea Foam Teal (P2) | Bold |
 | Score/Status | Pirata One | 36-44pt | Treasure Gold | |
@@ -56,7 +56,7 @@ Pirate's Grid channels the feel of Pirates of the Caribbean poster art meets han
 | Button Labels | Pirata One | 18-22pt | Parchment Tan | On Compass Rose Bronze bg |
 | Body Text | Lora | 14-18pt | Parchment Tan / Ink Black | How-to-play, descriptions |
 
-**IMPORTANT: All 3 AppBars (Menu, Game, Results) MUST use identical title styling:** Pirata One, 32pt, Treasure Gold, letterSpacing: 1.5, Ink Black shadow.
+**IMPORTANT: All 3 AppBars (Menu, Game, Results) MUST use identical title styling:** Pirata One, 35pt, Treasure Gold, letterSpacing: 1.5, Ink Black shadow. Title strings: Menu = "PIRATE'S GRID GAME SETUP", Game = "PIRATE'S GRID", Results = "PIRATE'S GRID RESULTS".
 
 ## Screen-by-Screen Styling
 

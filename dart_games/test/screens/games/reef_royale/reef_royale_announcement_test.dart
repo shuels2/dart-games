@@ -162,9 +162,40 @@ void main() {
       expect(mockQueue.announcements, contains("Time's up! The tides decide the winner!"));
     });
 
-    test('victory announcement', () {
-      mockQueue.announceVictory('Alice');
-      expect(mockQueue.announcements, contains('All hail Alice, Crown of the Reef!'));
+    test('victory announcement — single winner', () {
+      mockQueue.announceVictory(['Alice']);
+      expect(mockQueue.announcements,
+          contains('All hail Alice, Crown of the Reef!'));
+    });
+
+    test('victory announcement — two-way tie names both winners', () {
+      // Regression: prior to the fix, reef_royale_game_screen read
+      // winnerId (singular) even when the model computed winnerIds
+      // (list) for a tie, silencing every tied winner but one. The
+      // helper now speaks EVERY tied name.
+      mockQueue.clearAnnouncements();
+      mockQueue.announceVictory(['Alice', 'Bob']);
+      expect(
+        mockQueue.announcements,
+        contains('The reef is shared! Alice and Bob '
+            'tie for the Crown of the Reef!'),
+      );
+    });
+
+    test('victory announcement — three-way tie uses Oxford-comma list', () {
+      mockQueue.clearAnnouncements();
+      mockQueue.announceVictory(['Alice', 'Bob', 'Carol']);
+      expect(
+        mockQueue.announcements,
+        contains('The reef is shared! Alice, Bob, and Carol '
+            'tie for the Crown of the Reef!'),
+      );
+    });
+
+    test('victory announcement — empty list is a no-op (defensive)', () {
+      mockQueue.clearAnnouncements();
+      mockQueue.announceVictory(const []);
+      expect(mockQueue.announcements, isEmpty);
     });
   });
 

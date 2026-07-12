@@ -1,13 +1,17 @@
+import 'dart:convert' show JsonEncoder, base64Encode;
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import '../main.dart' show apiClient;
 import '../services/dart_announcer_service.dart';
 import '../services/app_settings.dart';
 import '../services/victory_music_service.dart';
 import '../services/photo_service.dart';
 import '../services/test_data_service.dart';
+import '../services/test_headshot_landmarks_service.dart';
 import '../models/victory_music_file.dart';
 import '../widgets/add_player/add_player.dart';
 import '../models/player.dart';
@@ -17,6 +21,10 @@ import 'api_logger_screen.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../widgets/player_avatar_widget.dart';
+import '../widgets/face_landmark_inspector/face_landmark_inspector.dart';
+import '../widgets/face_landmarks_hint.dart';
+import '../utils/concurrent_runner.dart';
+import '../services/api/api_config.dart';
 import '../providers/dartboard_provider.dart';
 import '../build_info.dart';
 
@@ -61,6 +69,13 @@ class _OptionsScreenState extends State<OptionsScreen> {
     _playerProvider = context.read<PlayerProvider>();
   }
 
+  /// Cached face-landmark sidecar diagnostics, populated in [initState]
+  /// via a background call to `GET /face-landmarks/diagnostics` and
+  /// consumed by [_buildSidecarWarningBanner] to render a persistent
+  /// orange banner at the top of the screen when detection is broken.
+  /// Kept as state so we don't poll the endpoint on every rebuild.
+  Map<String, dynamic>? _faceLandmarksDiagnostics;
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +86,18 @@ class _OptionsScreenState extends State<OptionsScreen> {
     // Load players when screen opens (ensures alphabetical sorting)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await context.read<PlayerProvider>().loadPlayers();
+    });
+    // Background probe of the face-landmarks sidecar so the persistent
+    // warning banner appears if detection is broken. Failures are
+    // logged but not surfaced — the banner just doesn't render if the
+    // probe itself couldn't reach the endpoint.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final diag = await apiClient.faceLandmarksDiagnostics();
+        if (mounted) setState(() => _faceLandmarksDiagnostics = diag);
+      } catch (e) {
+        debugPrint('Face-landmarks diagnostics probe failed: $e');
+      }
     });
   }
 
@@ -318,22 +345,42 @@ class _OptionsScreenState extends State<OptionsScreen> {
           throw Exception('Could not read file bytes. Please try again.');
         }
 
-        // Use the VictoryMusicService to add the music file
-        debugPrint('Adding music file...');
-        final musicService = VictoryMusicService();
-        await musicService.addMusicFile(
+        // Live phase label for the progress dialog. addMusicFile runs
+        // base64Encode synchronously and then POSTs the whole payload
+        // — the two phases can't be observed granularly without
+        // refactoring the service, so we swap labels around the
+        // await boundary to at least signal "still working".
+        final phaseLabel = ValueNotifier<String>('Preparing file…');
+        _showMusicUploadProgress(
           fileName: fileName,
-          filePath: kIsWeb ? null : file.path, // path not available on web
-          fileBytes: file.bytes,
+          fileSizeBytes: fileSize,
+          phaseLabel: phaseLabel,
         );
 
-        debugPrint('Music file added, reloading list...');
-        // Reload the files list
-        final files = await musicService.getMusicFiles();
+        try {
+          phaseLabel.value = 'Uploading to server…';
+          debugPrint('Adding music file...');
+          final musicService = VictoryMusicService();
+          await musicService.addMusicFile(
+            fileName: fileName,
+            filePath: kIsWeb ? null : file.path, // path not available on web
+            fileBytes: file.bytes,
+          );
 
-        setState(() {
-          _victoryMusicFiles = files;
-        });
+          debugPrint('Music file added, reloading list...');
+          phaseLabel.value = 'Refreshing library…';
+          // Reload the files list
+          final files = await musicService.getMusicFiles();
+
+          setState(() {
+            _victoryMusicFiles = files;
+          });
+        } finally {
+          if (mounted && Navigator.of(context, rootNavigator: true).canPop()) {
+            Navigator.of(context, rootNavigator: true).pop();
+          }
+          phaseLabel.dispose();
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -358,6 +405,74 @@ class _OptionsScreenState extends State<OptionsScreen> {
         );
       }
     }
+  }
+
+  /// Shows a non-dismissible progress modal while a music file is
+  /// uploading. The API doesn't expose byte-level progress (single
+  /// POST with a base64 payload), so the dialog uses an indeterminate
+  /// linear progress bar plus a live phase label to signal "still
+  /// working" — important on the kiosk where WAV files can take
+  /// 10-30s to encode + upload on port 80 with no feedback otherwise.
+  void _showMusicUploadProgress({
+    required String fileName,
+    required int fileSizeBytes,
+    required ValueNotifier<String> phaseLabel,
+  }) {
+    final sizeMb = fileSizeBytes / (1024 * 1024);
+    final sizeText = sizeMb >= 1
+        ? '${sizeMb.toStringAsFixed(1)} MB'
+        : '${(fileSizeBytes / 1024).toStringAsFixed(0)} KB';
+
+    // Not awaited — the caller pops it explicitly in a finally so
+    // errors don't leave a stuck modal on screen. Uses the root
+    // navigator so subsequent pushDialog calls (e.g. error dialogs)
+    // don't stack under a still-mounted SnackBar.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('Uploading Music'),
+          content: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  sizeText,
+                  style: const TextStyle(color: Colors.black54),
+                ),
+                const SizedBox(height: 16),
+                const LinearProgressIndicator(),
+                const SizedBox(height: 12),
+                ValueListenableBuilder<String>(
+                  valueListenable: phaseLabel,
+                  builder: (_, label, __) => Text(
+                    label,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Large files can take a few seconds. Please wait.',
+                  style: TextStyle(fontSize: 12, color: Colors.black45),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _removeMusicFile(String id) async {
@@ -455,18 +570,21 @@ class _OptionsScreenState extends State<OptionsScreen> {
   }
 
   void _handleAddPlayer() async {
+    // The dialog handles savePlayer inside onSubmit, showing its own
+    // progress indicator while the roundtrip is in flight. We only get
+    // the returned Player back after it has already been persisted.
+    final playerProvider = context.read<PlayerProvider>();
     final player = await showAddPlayerDialog(
       context: context,
       config: AddPlayerDialogConfig.optionsScreen(context),
+      onSubmit: playerProvider.savePlayer,
     );
 
     if (player != null && mounted) {
-      final playerProvider = context.read<PlayerProvider>();
-      await playerProvider.savePlayer(player);
-      // savePlayer is an HTTP roundtrip; the screen may unmount during the
-      // gap. Early-return to avoid touching disposed state below (snackbar
-      // ScaffoldMessenger, ScrollController in _scrollToNewPlayer).
-      if (!mounted) return;
+      // Non-blocking hint if the server-side face-landmark detection
+      // couldn't find a face in the just-uploaded photo. Photo is still
+      // saved; hint tells the operator to retake or re-detect.
+      showFaceLandmarksHintIfAny(context);
 
       // Show success snackbar (Options screen only)
       ScaffoldMessenger.of(context).showSnackBar(
@@ -646,6 +764,9 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
                 if (context.mounted) {
                   Navigator.pop(dialogContext);
+                  // Non-blocking face-landmarks hint (only fires when
+                  // detection ran and failed on the just-uploaded photo).
+                  showFaceLandmarksHintIfAny(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Player "${updatedPlayer.name}" updated'),
@@ -658,6 +779,257 @@ class _OptionsScreenState extends State<OptionsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Kiosk-friendly diagnostic for the mediapipe sidecar. Hits the
+  /// server's `/api/v1/players/face-landmarks/diagnostics` route and
+  /// renders the report in a dialog so the operator can see why
+  /// Re-detect is failing (python missing, sidecar not on disk, or
+  /// mediapipe not importable for the service account) without
+  /// spelunking the WinSW service log.
+  Future<void> _runFaceLandmarksDiagnostics() async {
+    if (!mounted) return;
+    // Loading dialog while the server probes python + imports mediapipe
+    // (can take a few seconds cold).
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        title: Text('Diagnosing face landmarks…'),
+        content: SizedBox(
+          height: 60,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+    );
+
+    Map<String, dynamic>? report;
+    String? fetchError;
+    try {
+      report = await apiClient.faceLandmarksDiagnostics();
+    } catch (e) {
+      fetchError = e.toString();
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // close loader
+
+    final buffer = StringBuffer();
+    Widget statusIcon;
+    String headline;
+
+    if (fetchError != null) {
+      headline = 'Could not reach server';
+      statusIcon = const Icon(Icons.error, color: Colors.red, size: 32);
+      buffer.writeln(fetchError);
+    } else if (report == null) {
+      headline = 'No report returned';
+      statusIcon = const Icon(Icons.error, color: Colors.red, size: 32);
+    } else {
+      final pythonFound = report['pythonFound'] == true;
+      final sidecarFound = report['sidecarFound'] == true;
+      final mediapipeOk = report['mediapipeOk'] == true;
+
+      if (pythonFound && sidecarFound && mediapipeOk) {
+        headline = 'Face landmarks pipeline OK';
+        statusIcon = const Icon(Icons.check_circle,
+            color: Colors.green, size: 32);
+      } else {
+        headline = 'Face landmarks NOT ready';
+        statusIcon = const Icon(Icons.warning, color: Colors.orange, size: 32);
+      }
+
+      String yn(bool b) => b ? '✓' : '✗';
+      buffer.writeln('${yn(pythonFound)} Python interpreter');
+      buffer.writeln(
+          '    ${report['pythonCommand'] ?? "not found"}');
+      final envOverride = report['envOverride'];
+      if (envOverride != null && envOverride.toString().isNotEmpty) {
+        buffer.writeln('    (from DART_GAMES_PYTHON env var)');
+      }
+      buffer.writeln('');
+      buffer.writeln('${yn(sidecarFound)} Sidecar script');
+      buffer.writeln(
+          '    ${report['sidecarPath'] ?? "not found"}');
+      buffer.writeln('');
+      buffer.writeln('${yn(mediapipeOk)} mediapipe importable');
+      if (mediapipeOk) {
+        buffer.writeln(
+            '    version ${report['mediapipeVersion'] ?? "unknown"}');
+      } else if (report['mediapipeError'] != null) {
+        buffer.writeln('    ${report['mediapipeError']}');
+      }
+      buffer.writeln('');
+      buffer.writeln('Server working dir:');
+      buffer.writeln('    ${report['workingDirectory']}');
+      buffer.writeln('Server script:');
+      buffer.writeln('    ${report['scriptPath']}');
+      buffer.writeln('Platform:');
+      buffer.writeln('    ${report['platform']}');
+    }
+
+    final text = buffer.toString();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Row(
+          children: [
+            statusIcon,
+            const SizedBox(width: 12),
+            Expanded(child: Text(headline)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: SelectableText(
+            text,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.copy),
+            label: const Text('Copy'),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: text));
+              if (!dialogCtx.mounted) return;
+              ScaffoldMessenger.of(dialogCtx).showSnackBar(
+                const SnackBar(
+                  content: Text('Report copied to clipboard'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Collect every loaded test-player's current face landmarks into the
+  /// `headshot-NN.png → landmarks` JSON shape, then show a copyable dialog
+  /// the user can paste into `assets/common/test_headshot_landmarks.json`.
+  ///
+  /// The match is by display name against [TestDataService.generateTestPlayers];
+  /// players with no stored landmarks are silently skipped.
+  Future<void> _exportTestHeadshotLandmarkOverrides() async {
+    final playerProvider = context.read<PlayerProvider>();
+    final overrides = TestHeadshotLandmarksService.buildExportPayload(
+      playerProvider.allPlayers,
+    );
+
+    if (overrides.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'No test-data players with stored landmarks were found. '
+              'Load Test Data, then correct landmarks via the face-mapping '
+              'icon next to each player.'),
+          duration: Duration(seconds: 5),
+        ),
+      );
+      return;
+    }
+
+    // Pretty-print so the committed JSON diffs cleanly.
+    final encoder = const JsonEncoder.withIndent('  ');
+    final pretty = encoder.convert(overrides);
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+            'Landmark overrides for ${overrides.length}/20 test players'),
+        content: SizedBox(
+          width: 600,
+          height: 400,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Copy this JSON and replace the contents of '
+                'assets/common/test_headshot_landmarks.json, then commit. '
+                'Future Load Test Data runs will apply these corrections '
+                'automatically.',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      pretty,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.copy),
+            label: const Text('Copy to clipboard'),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: pretty));
+              if (ctx.mounted) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(
+                    content: Text('Copied. Paste into '
+                        'assets/common/test_headshot_landmarks.json'),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Resolve the player's photo to an absolute URL the inspector's
+  /// Image.network can load. The server stores `photoPath` as the relative
+  /// API endpoint `/api/v1/players/<id>/photo`; ApiConfig knows the host.
+  String _photoUrlForInspector(Player player) {
+    final path = player.photoPath ?? '';
+    if (path.startsWith('http')) return path;
+    return ApiConfig.url(path);
+  }
+
+  void _showFaceLandmarkInspector(BuildContext context, Player player) {
+    final playerProvider = context.read<PlayerProvider>();
+    showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => FaceLandmarkInspector(
+        player: player,
+        photoUrl: _photoUrlForInspector(player),
+        onSave: (landmarks) =>
+            playerProvider.updateFaceLandmarks(player.id, landmarks),
+        onRedetect: () =>
+            playerProvider.redetectFaceLandmarks(player.id),
       ),
     );
   }
@@ -825,6 +1197,12 @@ class _OptionsScreenState extends State<OptionsScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (player.photoPath != null)
+            IconButton(
+              icon: const Icon(Icons.face_retouching_natural, size: 20),
+              tooltip: 'Inspect / edit face mapping',
+              onPressed: () => _showFaceLandmarkInspector(context, player),
+            ),
           IconButton(
             icon: const Icon(Icons.edit, size: 20),
             tooltip: 'Edit player',
@@ -1167,6 +1545,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
           content: const Text(
             'This will add:\n'
             '• 20 sample players with varied game history\n'
+            '• 20 sample headshots (1 per player) — each runs through '
+            'the face-landmarks detector on upload\n'
             '• 2 sample victory music files\n\n'
             'These will be added to your existing data.',
           ),
@@ -1187,56 +1567,581 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     if (confirmed != true) return;
 
-    // Generate and save test players
+    // Generate inputs upfront so the progress dialog can show accurate
+    // totals from the very first frame.
     final testPlayers = TestDataService.generateTestPlayers();
-    for (final player in testPlayers) {
-      await playerProvider.savePlayer(player);
-    }
-
-    // Persist each player's pre-populated gameHistory to the server so
-    // games_played and games_won accumulate correctly. Without this, the
-    // stats only live in PlayerProvider's local cache until any subsequent
-    // loadPlayers() (e.g., navigating to a game menu) wipes them.
-    for (final player in testPlayers) {
-      await playerProvider.seedPlayerHistory(player.id, player.gameHistory);
-    }
-
-    // Refresh local cache from the server so optimistic local stats match
-    // the persisted state.
-    await playerProvider.loadPlayers();
-
-    // Generate and save test victory music files (embedded as data URLs)
-    final musicService = VictoryMusicService();
+    final headshotPaths = TestDataService.getTestHeadshotAssetPaths();
     final testMusicDataUrls = TestDataService.getTestVictoryMusicDataUrls();
+    final musicService = VictoryMusicService();
 
+    // ── Progress tracker ────────────────────────────────────────────────
+    // Drives the modal status indicator below. Each phase pushes a new
+    // record with phase metadata + within-phase counters so the user sees
+    // both the current step's label and "X of Y" progress.
+    const int totalPhases = 5;
+    final progress = ValueNotifier<({
+      int phase,
+      String phaseLabel,
+      int done,
+      int total,
+    })>((
+      phase: 1,
+      phaseLabel: 'Saving players',
+      done: 0,
+      total: testPlayers.length,
+    ));
+    void setProgress(int phase, String label, int done, int total) {
+      progress.value =
+          (phase: phase, phaseLabel: label, done: done, total: total);
+    }
+
+    // Non-dismissible status dialog. Not awaited — we pop it manually
+    // once all phases finish (in the finally block so errors don't
+    // leave a stuck modal on screen).
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('Loading Test Data'),
+          content: ValueListenableBuilder<({
+            int phase,
+            String phaseLabel,
+            int done,
+            int total,
+          })>(
+            valueListenable: progress,
+            builder: (_, p, __) {
+              final pct = p.total > 0 ? p.done / p.total : 0.0;
+              return SizedBox(
+                width: 320,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Step ${p.phase} of $totalPhases',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      p.phaseLabel,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    LinearProgressIndicator(value: pct),
+                    const SizedBox(height: 6),
+                    Text('${p.done} of ${p.total}'),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    int photosAdded = 0;
+    int landmarkOverridesApplied = 0;
     int filesAdded = 0;
-    for (final musicData in testMusicDataUrls) {
+    // Track per-player face-landmark detection failures so the completion
+    // dialog can list them and offer a Retry button. Also feeds the
+    // "detection is broken globally" warning path via the preflight ping.
+    final failedDetections = <_LoaderDetectionFailure>[];
+    bool sidecarBrokenAcknowledged = false;
+
+    try {
+      // ── Phase 1: Save players ────────────────────────────────────────
+      for (var i = 0; i < testPlayers.length; i++) {
+        await playerProvider.savePlayer(testPlayers[i]);
+        setProgress(1, 'Saving players', i + 1, testPlayers.length);
+      }
+
+      // ── Phase 2: Upload headshots ────────────────────────────────────
+      // Each upload hits POST /api/v1/players/<id>/photo, which the
+      // server now runs face-landmarks detection on synchronously (per
+      // the recent sidecar sync change). Two behaviors worth knowing:
+      //   * Detection failures come back as HTTP 200 with a
+      //     `faceLandmarksError` field on the response — NOT as thrown
+      //     exceptions. We accumulate those into failedDetections so
+      //     the completion dialog can list them and offer a Retry
+      //     button. HTTP / network errors still throw and are caught
+      //     per-photo below just like before.
+      //   * We preflight the sidecar via GET /face-landmarks/diagnostics
+      //     to detect a globally-broken interpreter (missing Python,
+      //     mediapipe not importable, sidecar script missing, etc.).
+      //     When broken we prompt once, then batch-flip every upload to
+      //     detectLandmarks:false so we don't hammer a doomed sidecar
+      //     20 times just to accumulate the same failure.
+      setProgress(2, 'Checking face detection', 0, 1);
+      Map<String, dynamic>? diag;
       try {
-        await musicService.addMusicFile(
-          fileName: musicData['name']!,
-          dataUrl: musicData['dataUrl']!,
-        );
-        filesAdded++;
+        diag = await apiClient.faceLandmarksDiagnostics();
       } catch (e) {
-        debugPrint('Error loading test music file ${musicData['name']}: $e');
+        debugPrint(
+            'Face-landmarks diagnostics ping failed (proceeding anyway): $e');
+      }
+      final sidecarBroken = diag != null &&
+          (diag['pythonFound'] != true ||
+              diag['sidecarFound'] != true ||
+              diag['mediapipeOk'] != true);
+      if (sidecarBroken) {
+        if (!mounted) return;
+        final proceed = await _showSidecarBrokenDialog(diag);
+        if (proceed != true) {
+          // User chose Cancel — abort the whole load. The finally
+          // block below will close the progress dialog.
+          return;
+        }
+        sidecarBrokenAcknowledged = true;
+      }
+
+      // Pre-load the bundled override map once. Empty by default;
+      // populated via the Export action and committed to assets/common/.
+      final overrides =
+          await TestHeadshotLandmarksService.loadOverrides();
+
+      setProgress(2, 'Uploading headshots', 0, testPlayers.length);
+      final photoCount = testPlayers.length < headshotPaths.length
+          ? testPlayers.length
+          : headshotPaths.length;
+      final photoIndices = List<int>.generate(photoCount, (i) => i);
+      // Concurrent uploads (limit 4). Cold-start MediaPipe dominates
+      // the first call; subsequent ones are ~1s each with a warm
+      // interpreter, so 4 in flight amortizes wall-clock cleanly
+      // without saturating the sidecar's per-process spawn budget.
+      await runConcurrent<int>(
+        photoIndices,
+        limit: 4,
+        onProgress: (done) =>
+            setProgress(2, 'Uploading headshots', done, testPlayers.length),
+        worker: (i, _) async {
+          final player = testPlayers[i];
+          final assetPath = headshotPaths[i];
+          try {
+            final bytes =
+                (await rootBundle.load(assetPath)).buffer.asUint8List();
+            final base64Data = base64Encode(bytes);
+            final fileName = assetPath.split('/').last;
+            // If we have a saved override OR the sidecar is broken,
+            // skip the server-side mediapipe job. Overrides are the
+            // authoritative-write case; a broken sidecar just wastes
+            // wall-clock racing the same failure 20 times.
+            final override = overrides[fileName];
+            final hasOverride = override != null;
+            final skipDetection = hasOverride || sidecarBrokenAcknowledged;
+            final result = await apiClient.uploadPlayerPhoto(
+              player.id,
+              base64Data,
+              fileName,
+              detectLandmarks: !skipDetection,
+            );
+            photosAdded++;
+
+            // Track per-photo detection failure (only when detection
+            // actually ran). The sidecar-broken case is already
+            // surfaced globally by the preflight dialog — we don't
+            // spam it 20 more times here.
+            if (!skipDetection && result.faceLandmarksError != null) {
+              failedDetections.add(_LoaderDetectionFailure(
+                playerId: player.id,
+                playerName: player.name,
+                errorReason: result.faceLandmarksError!,
+              ));
+            }
+
+            // Apply the manual correction now. With mediapipe suppressed
+            // above, this is the authoritative write — nothing else will
+            // touch face_landmarks for this player.
+            if (hasOverride) {
+              try {
+                await playerProvider.updateFaceLandmarks(
+                    player.id, override);
+                landmarkOverridesApplied++;
+              } catch (e) {
+                debugPrint(
+                    'Error applying landmark override for ${player.name}: $e');
+              }
+            }
+          } catch (e) {
+            debugPrint(
+                'Error uploading test headshot $assetPath for ${player.name}: $e');
+          }
+        },
+      );
+
+      // ── Phase 3: Seed game history ───────────────────────────────────
+      // Persist each player's pre-populated gameHistory to the server so
+      // games_played and games_won accumulate correctly. Without this,
+      // the stats only live in PlayerProvider's local cache until any
+      // subsequent loadPlayers() (e.g., navigating to a game menu)
+      // wipes them.
+      setProgress(
+          3, 'Seeding game history', 0, testPlayers.length);
+      for (var i = 0; i < testPlayers.length; i++) {
+        await playerProvider.seedPlayerHistory(
+            testPlayers[i].id, testPlayers[i].gameHistory);
+        setProgress(
+            3, 'Seeding game history', i + 1, testPlayers.length);
+      }
+
+      // ── Phase 4: Add victory music files ─────────────────────────────
+      setProgress(
+          4, 'Adding music files', 0, testMusicDataUrls.length);
+      for (var i = 0; i < testMusicDataUrls.length; i++) {
+        final musicData = testMusicDataUrls[i];
+        try {
+          await musicService.addMusicFile(
+            fileName: musicData['name']!,
+            dataUrl: musicData['dataUrl']!,
+          );
+          filesAdded++;
+        } catch (e) {
+          debugPrint(
+              'Error loading test music file ${musicData['name']}: $e');
+        }
+        setProgress(
+            4, 'Adding music files', i + 1, testMusicDataUrls.length);
+      }
+
+      // ── Phase 5: Refresh local caches ────────────────────────────────
+      // Refresh local cache from the server so optimistic local stats
+      // match the persisted state, then refresh victory music list.
+      setProgress(5, 'Refreshing data', 0, 2);
+      await playerProvider.loadPlayers();
+      setProgress(5, 'Refreshing data', 1, 2);
+      final files = await musicService.getMusicFiles();
+      if (mounted) {
+        setState(() {
+          _victoryMusicFiles = files;
+        });
+      }
+      setProgress(5, 'Refreshing data', 2, 2);
+    } finally {
+      // Always close the progress dialog, even if a phase threw, so the
+      // user can never be left looking at a stuck modal.
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
       }
     }
 
-    // Reload victory music in UI
-    final files = await musicService.getMusicFiles();
-    setState(() {
-      _victoryMusicFiles = files;
-    });
-
-    if (mounted) {
+    if (!mounted) return;
+    // Completion UI branches on whether ANY detection failure needs
+    // operator attention. Zero failures → keep the light-touch green
+    // snackbar. One or more → open a dialog listing them with a
+    // Retry button so the operator doesn't have to open each player
+    // and hit Re-detect manually. Sidecar-broken failures are already
+    // acknowledged in the preflight dialog so we DON'T re-list them
+    // here (retry would just fail again against the same broken
+    // sidecar).
+    if (failedDetections.isEmpty || sidecarBrokenAcknowledged) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Loaded ${testPlayers.length} players and $filesAdded music files'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
+          content: Text(
+              '✅ Loaded ${testPlayers.length} players, '
+              '$photosAdded headshots'
+              '${landmarkOverridesApplied > 0 ? " ($landmarkOverridesApplied with saved landmark overrides)" : ""}'
+              '${sidecarBrokenAcknowledged ? " (face detection was skipped — see the warning above)" : ""}'
+              ', and $filesAdded music files'),
+          backgroundColor: sidecarBrokenAcknowledged
+              ? Colors.orange
+              : Colors.green,
+          duration: const Duration(seconds: 4),
         ),
       );
+    } else {
+      await _showLoaderCompletionDialog(
+        totalPlayers: testPlayers.length,
+        photosAdded: photosAdded,
+        landmarkOverridesApplied: landmarkOverridesApplied,
+        filesAdded: filesAdded,
+        failedDetections: failedDetections,
+        playerProvider: playerProvider,
+      );
     }
+  }
+
+  /// Whether the last diagnostics probe indicates the sidecar is
+  /// unhealthy enough that detection will fail for every incoming
+  /// upload. Null means "no probe result yet" (banner stays hidden).
+  bool _isSidecarBroken(Map<String, dynamic>? diag) {
+    if (diag == null) return false;
+    return diag['pythonFound'] != true ||
+        diag['sidecarFound'] != true ||
+        diag['mediapipeOk'] != true;
+  }
+
+  /// Persistent orange warning banner shown at the top of the Options
+  /// screen body when [_faceLandmarksDiagnostics] indicates a broken
+  /// sidecar. Includes a "Diagnose" button that opens the same
+  /// diagnostics dialog the admin section uses (via
+  /// [_runFaceLandmarksDiagnostics]) so the operator can see the
+  /// exact failure and copy details out.
+  Widget _buildSidecarWarningBanner(ThemeData theme) {
+    final diag = _faceLandmarksDiagnostics;
+    if (diag == null) return const SizedBox.shrink();
+
+    final reasons = <String>[];
+    if (diag['pythonFound'] != true) reasons.add('Python not found');
+    if (diag['sidecarFound'] != true) reasons.add('sidecar script missing');
+    if (diag['mediapipeOk'] != true) reasons.add('mediapipe not importable');
+    final reasonLine =
+        reasons.isEmpty ? 'unknown state' : reasons.join(' + ');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        border: Border.all(color: Colors.orange, width: 1.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber, color: Colors.orange, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Face-landmarks detection is offline',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Reason: $reasonLine. New player photos will save but '
+                  'themed avatars (hats, glasses, mustaches) will sit '
+                  'in heuristic positions until an admin fixes the '
+                  'sidecar. See docs/deployment/kiosk-setup.md.',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _runFaceLandmarksDiagnostics,
+            icon: const Icon(Icons.info_outline),
+            label: const Text('Diagnose'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Modal shown before Phase 2 starts when the face-landmark
+  /// sidecar's diagnostics come back with Python / mediapipe /
+  /// sidecar-script problems. Returns `true` if the operator chose
+  /// "Load anyway (skip detection)" — the loader then flips every
+  /// upload to `detectLandmarks:false`. Returns `false` (or `null`)
+  /// to cancel the whole load.
+  Future<bool?> _showSidecarBrokenDialog(Map<String, dynamic> diag) {
+    final lines = <String>[];
+    if (diag['pythonFound'] != true) {
+      lines.add(
+          '• Python interpreter not found (env DART_GAMES_PYTHON or PATH probe).');
+    }
+    if (diag['sidecarFound'] != true) {
+      lines.add(
+          '• Sidecar script not found next to server/ (python/mediapipe_sidecar.py).');
+    }
+    if (diag['mediapipeOk'] != true) {
+      final err = diag['mediapipeError'];
+      lines.add(
+          '• MediaPipe not importable' + (err != null ? ': $err' : '.'));
+    }
+    if (diag['taskModelFound'] == false && diag['sidecarFound'] == true) {
+      lines.add(
+          '• face_landmarker.task missing next to sidecar — Haar '
+          'fallback would run instead of MediaPipe (less accurate).');
+    }
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.warning_amber, color: Colors.orange, size: 40),
+        title: const Text('Face detection is offline'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'The face-landmarks sidecar reported problems that '
+                'would make every test-player photo fail detection. '
+                'Loading is possible without detection, but themed '
+                'avatars (pirate hats, glasses, mustaches, etc.) will '
+                'sit in heuristic positions until an admin fixes the '
+                'sidecar and each player is Re-detected.',
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Diagnostics reported:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              ...lines.map((l) => Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(l),
+                  )),
+              const SizedBox(height: 12),
+              const Text(
+                'Fix path: run check_python_deps.bat, then '
+                'install_service.bat. See docs/deployment/kiosk-setup.md.',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Load anyway (skip detection)'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Completion dialog shown when Phase 2 finished with per-photo
+  /// detection failures the operator can retry. Lists each failed
+  /// player and offers a Retry button that calls
+  /// [PlayerProvider.redetectFaceLandmarks] once per failed player,
+  /// then rebuilds the list to reflect remaining failures.
+  Future<void> _showLoaderCompletionDialog({
+    required int totalPlayers,
+    required int photosAdded,
+    required int landmarkOverridesApplied,
+    required int filesAdded,
+    required List<_LoaderDetectionFailure> failedDetections,
+    required PlayerProvider playerProvider,
+  }) async {
+    final remaining = List<_LoaderDetectionFailure>.from(failedDetections);
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) {
+          var retrying = false;
+          Future<void> retry() async {
+            setDialog(() => retrying = true);
+            final stillFailing = <_LoaderDetectionFailure>[];
+            for (final failure in remaining) {
+              try {
+                await playerProvider.redetectFaceLandmarks(failure.playerId);
+                // Success — do NOT add to stillFailing.
+              } catch (e) {
+                // The redetect API throws FaceLandmarksException on the
+                // sidecar's error reason (503 with the reason string in
+                // the body). Any other exception (network, 404) is also
+                // captured as-is.
+                stillFailing.add(_LoaderDetectionFailure(
+                  playerId: failure.playerId,
+                  playerName: failure.playerName,
+                  errorReason: e.toString(),
+                ));
+              }
+            }
+            setDialog(() {
+              remaining
+                ..clear()
+                ..addAll(stillFailing);
+              retrying = false;
+            });
+          }
+
+          return AlertDialog(
+            icon: Icon(
+              remaining.isEmpty ? Icons.check_circle : Icons.warning_amber,
+              color: remaining.isEmpty ? Colors.green : Colors.orange,
+              size: 40,
+            ),
+            title: Text(
+              remaining.isEmpty
+                  ? 'All players loaded'
+                  : 'Loaded with detection warnings',
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$totalPlayers players, $photosAdded headshots'
+                    '${landmarkOverridesApplied > 0 ? " ($landmarkOverridesApplied with saved overrides)" : ""}'
+                    ', $filesAdded music files.',
+                  ),
+                  const SizedBox(height: 12),
+                  if (remaining.isNotEmpty) ...[
+                    Text(
+                      '${remaining.length} of $totalPlayers headshots did not '
+                      'produce landmarks:',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    ...remaining.map((f) => Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            '• ${f.playerName} — ${_shortReason(f.errorReason)}',
+                          ),
+                        )),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Retry re-runs detection on each failed photo. If '
+                      'the sidecar is unhealthy, retries will fail with '
+                      'the same reason.',
+                      style: TextStyle(fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              if (remaining.isNotEmpty)
+                ElevatedButton.icon(
+                  onPressed: retrying ? null : retry,
+                  icon: retrying
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                  label: Text(retrying ? 'Retrying…' : 'Retry failed'),
+                ),
+              TextButton(
+                onPressed: retrying ? null : () => Navigator.of(ctx).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// Trim the sidecar reason string to one short line for display in
+  /// the completion dialog's failure list.
+  String _shortReason(String reason) {
+    final firstLine = reason.split('\n').first.trim();
+    if (firstLine.length <= 90) return firstLine;
+    return '${firstLine.substring(0, 87)}…';
   }
 
   /// Clear all players, game history, and victory music
@@ -1362,6 +2267,15 @@ class _OptionsScreenState extends State<OptionsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Persistent banner if the face-landmark sidecar is
+                  // broken. Populated in initState via a background
+                  // diagnostics probe. Kept above all sections so the
+                  // operator can't miss a broken-detection state — a
+                  // few games depend on this feature (Treasure Divide
+                  // pirate hats, Monster Mash overlays) and the
+                  // symptom (avatars sit wrong) is otherwise silent.
+                  if (_isSidecarBroken(_faceLandmarksDiagnostics))
+                    _buildSidecarWarningBanner(theme),
                   // Announcer Setup Section
                   Container(
                     key: _announcerKey,
@@ -1978,6 +2892,37 @@ class _OptionsScreenState extends State<OptionsScreen> {
                         const SizedBox(height: 8),
                         Card(
                           child: ListTile(
+                            leading: const Icon(Icons.file_download,
+                                color: Colors.indigo),
+                            title: const Text(
+                                'Export test-data landmark overrides'),
+                            subtitle: const Text(
+                                'Saves your manual face-mapping corrections '
+                                'for the test players. Drop the JSON into '
+                                'assets/common/test_headshot_landmarks.json '
+                                'and commit to bake them in.'),
+                            trailing: const Icon(Icons.arrow_forward_ios),
+                            onTap: _exportTestHeadshotLandmarkOverrides,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.health_and_safety,
+                                color: Colors.deepPurple),
+                            title: const Text('Diagnose face landmarks'),
+                            subtitle: const Text(
+                                'Checks whether the mediapipe sidecar is '
+                                'reachable from the server: python found, '
+                                'sidecar script located, mediapipe importable. '
+                                'Use this when "Re-detect" fails on a kiosk.'),
+                            trailing: const Icon(Icons.arrow_forward_ios),
+                            onTap: _runFaceLandmarksDiagnostics,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          child: ListTile(
                             leading: const Icon(Icons.delete_forever, color: Colors.red),
                             title: const Text('Clear All Data'),
                             subtitle: const Text('Delete all players, game history, and victory music'),
@@ -2028,4 +2973,20 @@ class _OptionsScreenState extends State<OptionsScreen> {
       ),
     );
   }
+}
+
+/// A single test-player photo whose upload succeeded but whose face
+/// landmarks detection failed. Used by the loader completion dialog to
+/// list the affected players and let the operator retry them all with
+/// one tap. Not exported — internal to [OptionsScreenState].
+class _LoaderDetectionFailure {
+  final String playerId;
+  final String playerName;
+  final String errorReason;
+
+  const _LoaderDetectionFailure({
+    required this.playerId,
+    required this.playerName,
+    required this.errorReason,
+  });
 }

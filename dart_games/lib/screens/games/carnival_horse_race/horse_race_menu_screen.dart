@@ -144,7 +144,7 @@ class _HorseRaceMenuScreenState extends State<HorseRaceMenuScreen> {
                   'Carnival Derby Game Setup',
                   style: GoogleFonts.rye(
                     fontWeight: FontWeight.bold,
-                    fontSize: 24,
+                    fontSize: 33,
                     color: const Color(0xFFF1FAEE), // Cloud Dancer
                     shadows: [
                       Shadow(

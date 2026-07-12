@@ -10,6 +10,11 @@ REM   run_app.bat                   Launch with default database (persistent)
 REM   run_app.bat --fresh           Clear default database and start clean
 REM   run_app.bat --temp            Use a temporary database (deleted on exit)
 REM   run_app.bat --port 9090       Launch server on custom port
+REM   run_app.bat --log             Tee Flutter output to logs\flutter_run.log
+REM                                 alongside the normal console output, so
+REM                                 external tools / agents can watch the
+REM                                 live app log. Hot-reload keys (r / R / q)
+REM                                 still flow normally.
 REM
 REM Press q in the Flutter console to quit. The server is cleaned
 REM up automatically on exit.
@@ -20,8 +25,12 @@ echo ============================================================
 echo  Dart Games Launcher
 echo ============================================================
 
+call "%~dp0check_python_deps.bat"
+if errorlevel 1 exit /b 1
+
 set SERVER_PORT=8080
 set MODE=default
+set LOG_OUTPUT=0
 
 REM Parse arguments
 :parse_args
@@ -39,6 +48,11 @@ if "%~1"=="--fresh" (
 )
 if "%~1"=="--temp" (
     set MODE=temp
+    shift
+    goto parse_args
+)
+if "%~1"=="--log" (
+    set LOG_OUTPUT=1
     shift
     goto parse_args
 )
@@ -141,11 +155,21 @@ echo  Launching Dart Games in Chrome...
 echo  Server:   %SERVER_URL%
 echo  Mode:     %MODE%
 echo  Database: server/%DB_PATH%
+if "%LOG_OUTPUT%"=="1" echo  Log file: logs\flutter_run.log
 echo  Type Q and press Enter in this window to stop the server and exit.
 echo ============================================================
 echo.
 
-flutter run -d chrome
+if "%LOG_OUTPUT%"=="1" (
+    if not exist "logs" mkdir "logs"
+    REM Tee Flutter's combined stdout/stderr to the log file while still
+    REM forwarding to the console. PowerShell's Tee-Object preserves the
+    REM pipeline so hot-reload keys (r, R, q) still reach flutter run via
+    REM the inherited stdin. The log file is truncated on each launch.
+    powershell -NoProfile -Command "flutter run -d chrome 2>&1 | Tee-Object -FilePath 'logs\flutter_run.log'"
+) else (
+    flutter run -d chrome
+)
 
 echo.
 echo ============================================================

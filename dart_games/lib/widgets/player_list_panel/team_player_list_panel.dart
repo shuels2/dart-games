@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/player.dart';
 import '../../providers/player_provider.dart';
 import '../add_player/add_player.dart';
+import '../face_landmarks_hint.dart';
 import '../player_selection_card.dart';
 import '../player_avatar_widget.dart';
 import 'team_player_list_panel_config.dart';
@@ -41,6 +41,12 @@ class TeamPlayerListPanel extends StatefulWidget {
   final Key Function(String id)? teamDialogDropdownKey;
   final Key? teamDialogCancelKey;
 
+  // Initial team assignments — seeds the internal team-assignment map
+  // when the widget mounts. Without this, a menu re-entry via SAIL
+  // AGAIN / CHANGE COURSE would drop the assignments coming from a
+  // finished team game (the parent's map wouldn't propagate here).
+  final Map<String, String>? initialTeamAssignments;
+
   const TeamPlayerListPanel({
     super.key,
     required this.config,
@@ -57,6 +63,7 @@ class TeamPlayerListPanel extends StatefulWidget {
     this.teamDialogContainerKey,
     this.teamDialogDropdownKey,
     this.teamDialogCancelKey,
+    this.initialTeamAssignments,
   });
 
   @override
@@ -70,6 +77,19 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
   TeamPlayerListPanelConfig get config => widget.config;
 
   bool get _isManualTeamMode => widget.isTeamMode && widget.isManualTeamAssignment;
+
+  @override
+  void initState() {
+    super.initState();
+    // Seed the internal team-assignment map from the widget parameter
+    // so a CHANGE COURSE round-trip (menu → game → results → menu)
+    // preserves the crew assignments the player picked. Without this
+    // the widget always mounted with an empty map and the team icons
+    // next to each player disappeared on menu re-entry.
+    if (widget.initialTeamAssignments != null) {
+      _playerTeamAssignments.addAll(widget.initialTeamAssignments!);
+    }
+  }
 
   @override
   void dispose() {
@@ -310,7 +330,7 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
     String? assignedTeamId,
     PlayerProvider playerProvider,
   ) {
-    // Get team icon index if player is assigned to a team
+    // Resolve the team-icon index if the player is already assigned.
     int? teamIconIndex;
     if (assignedTeamId != null) {
       final teamNumber = int.tryParse(assignedTeamId.replaceAll('team', ''));
@@ -319,33 +339,29 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
       }
     }
 
-    // Build trailing widget for team mode
+    // Build the trailing widget: team icon (if assigned), "Assign team"
+    // button (if selected without a team), or null (unselected, no
+    // trailing — matches the plain PlayerSelectionCard behavior).
     Widget? trailingWidget;
-    if (teamIconIndex != null) {
-      trailingWidget = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: isSelected ? () => _showTeamSelectionDialog(player) : null,
-            child: Container(
-              width: config.teamIconSize,
-              height: config.teamIconSize,
-              decoration: BoxDecoration(
-                color: config.teamIconBackgroundColor,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: config.teamIconBorderColor,
-                  width: 2,
-                ),
-              ),
-              child: Image.asset(
-                widget.teamIconPaths[teamIconIndex],
-                fit: BoxFit.contain,
-              ),
+    if (teamIconIndex != null && teamIconIndex < widget.teamIconPaths.length) {
+      trailingWidget = GestureDetector(
+        onTap: isSelected ? () => _showTeamSelectionDialog(player) : null,
+        child: Container(
+          width: config.teamIconSize,
+          height: config.teamIconSize,
+          decoration: BoxDecoration(
+            color: config.teamIconBackgroundColor,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: config.teamIconBorderColor,
+              width: 2,
             ),
           ),
-          const SizedBox(width: 8),
-        ],
+          child: Image.asset(
+            widget.teamIconPaths[teamIconIndex],
+            fit: BoxFit.contain,
+          ),
+        ),
       );
     } else if (isSelected) {
       trailingWidget = ElevatedButton(
@@ -364,85 +380,37 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
       );
     }
 
-    // For non-selected with no team: show nothing (no trailing needed)
-    // For selected with no team: show "Assign team" button via trailing
-    // For selected with team icon: show icon via trailing
-    // We also need the check icon for selected solo/random mode, but in
-    // manual team mode the trailing replaces the check icon entirely.
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? config.teamAccentColor.withOpacity(0.2)
-            : const Color(0xFF2A2A3E),
-        border: Border.all(
-          color: isSelected ? config.teamAccentColor : Colors.white24,
-          width: isSelected ? 3 : 2,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            if (isSelected) {
-              playerProvider.deselectPlayer(player.id);
-              // Remove team assignment when deselecting
-              setState(() {
-                _playerTeamAssignments.remove(player.id);
-              });
-              _notifyTeamAssignmentsChanged();
-            } else {
-              final effectiveMax = widget.isTeamMode
-                  ? config.maxPlayers
-                  : (config.maxPlayersSoloMode ?? config.maxPlayers);
-              playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
-            }
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-            child: Row(
-              children: [
-                PlayerAvatarWidget(
-                  player: player,
-                  size: 22.0,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        player.name,
-                        style: GoogleFonts.fredoka(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Games: ${player.gamesPlayed} | Wins: ${player.gamesWon}',
-                        style: GoogleFonts.fredoka(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (trailingWidget != null)
-                  trailingWidget
-                else if (isSelected)
-                  Icon(Icons.check_circle, color: config.teamAccentColor, size: 24),
-              ],
-            ),
-          ),
-        ),
-      ),
+    // Delegate to PlayerSelectionCard — same widget used in solo mode
+    // — so the tile's fonts, colors, avatar size, padding, and margin
+    // are IDENTICAL across solo and manual-team modes. Only the
+    // trailing element changes (team icon or Assign button instead of
+    // the check icon).
+    return PlayerSelectionCard(
+      key: widget.playerTileKey?.call(player.id),
+      player: player,
+      isSelected: isSelected,
+      selectedColor: config.selectedColor,
+      selectedBorderColor: config.selectedBorderColor,
+      unselectedBackgroundColor: config.unselectedBackgroundColor,
+      unselectedBorderColor: config.unselectedBorderColor,
+      nameStyle: config.cardNameStyle,
+      statsStyle: config.cardStatsStyle,
+      checkIconColor: config.checkIconColor,
+      trailing: trailingWidget,
+      onTap: () {
+        if (isSelected) {
+          playerProvider.deselectPlayer(player.id);
+          setState(() {
+            _playerTeamAssignments.remove(player.id);
+          });
+          _notifyTeamAssignmentsChanged();
+        } else {
+          final effectiveMax = widget.isTeamMode
+              ? config.maxPlayers
+              : (config.maxPlayersSoloMode ?? config.maxPlayers);
+          playerProvider.selectPlayer(player, maxPlayers: effectiveMax);
+        }
+      },
     );
   }
 
@@ -686,20 +654,20 @@ class _TeamPlayerListPanelState extends State<TeamPlayerListPanel> {
   }
 
   void _handleAddPlayer() async {
+    // The dialog handles savePlayer inside onSubmit, showing its own
+    // progress indicator while the roundtrip is in flight. We only get
+    // the returned Player back after it has already been persisted.
+    final playerProvider = context.read<PlayerProvider>();
     final player = await showAddPlayerDialog(
       context: context,
       config: config.addPlayerDialogConfig,
+      onSubmit: playerProvider.savePlayer,
     );
 
     if (player != null && mounted) {
-      final playerProvider = context.read<PlayerProvider>();
-      await playerProvider.savePlayer(player);
-      // savePlayer is an HTTP roundtrip; the widget tree (and the provider
-      // it watches) may be disposed before the response returns — e.g. the
-      // dartboard disconnect modal grabs nav focus, or the user backs out.
-      // Touching the provider after disposal triggers a "ChangeNotifier was
-      // used after being disposed" assertion.
-      if (!mounted) return;
+      // Non-blocking face-landmarks hint (only fires when server-side
+      // detection ran and failed on the just-uploaded photo).
+      showFaceLandmarksHintIfAny(context);
 
       final effectiveMax = widget.isTeamMode
           ? config.maxPlayers

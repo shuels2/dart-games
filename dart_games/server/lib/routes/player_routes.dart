@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:image/image.dart' as img;
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
@@ -12,6 +15,7 @@ import '../database/database_helpers.dart';
 import '../database/database_registry.dart';
 import '../models/game_history_model.dart';
 import '../models/player_model.dart';
+import '../services/face_landmarks_service.dart';
 
 const _jsonHeaders = {'content-type': 'application/json'};
 
@@ -61,6 +65,21 @@ class PlayerRoutes {
     // PUT /api/v1/players/<id>/stats - Update player stats
     router.put('/<id>/stats', _updateStats);
 
+    // PATCH /api/v1/players/<id>/face-landmarks - Overwrite stored landmarks
+    // with a manually-corrected payload from the inspector UI.
+    router.patch('/<id>/face-landmarks', _updateFaceLandmarks);
+
+    // POST /api/v1/players/<id>/face-landmarks/redetect - Re-run mediapipe
+    // on the player's current photo and overwrite the stored landmarks.
+    router.post('/<id>/face-landmarks/redetect', _redetectFaceLandmarks);
+
+    // GET /api/v1/players/face-landmarks/diagnostics - Kiosk-friendly
+    // health check for the mediapipe sidecar plumbing. Returns which
+    // python is resolved, where the sidecar script lives, and whether
+    // `import mediapipe` works — driven by the "Diagnose face
+    // landmarks" button in System Settings → Admin Options.
+    router.get('/face-landmarks/diagnostics', _faceLandmarksDiagnostics);
+
     return router;
   }
 
@@ -94,6 +113,7 @@ class PlayerRoutes {
       gamesPlayed: player.gamesPlayed,
       gamesWon: player.gamesWon,
       gameHistory: history,
+      faceLandmarks: player.faceLandmarks,
     );
   }
 
@@ -139,6 +159,7 @@ class PlayerRoutes {
         p.created_at      AS p_created_at,
         p.games_played    AS p_games_played,
         p.games_won       AS p_games_won,
+        p.face_landmarks  AS p_face_landmarks,
         h.id              AS h_id,
         h.game_name       AS h_game_name,
         h.timestamp       AS h_timestamp,
@@ -169,6 +190,7 @@ class PlayerRoutes {
           'created_at': row['p_created_at'],
           'games_played': row['p_games_played'],
           'games_won': row['p_games_won'],
+          'face_landmarks': row['p_face_landmarks'],
         });
         histories[pid] = [];
         order.add(pid);
@@ -199,6 +221,7 @@ class PlayerRoutes {
         gamesPlayed: p.gamesPlayed,
         gamesWon: p.gamesWon,
         gameHistory: histories[id]!,
+        faceLandmarks: p.faceLandmarks,
       ).toJson());
     }).toList();
 
@@ -327,11 +350,20 @@ class PlayerRoutes {
 
     final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     final photoData = body['photoData'] as String;
-    final fileName = body['fileName'] as String;
-    final ext = p.extension(fileName).isNotEmpty ? p.extension(fileName) : '.jpg';
-
+    // Opt-out switch for the background mediapipe job. Defaults to true
+    // so all existing callers (regular uploads from System Settings, the
+    // Add Player flow, etc.) keep auto-detecting. The test-data loader
+    // sets this to `false` when it's about to PATCH a known-good landmark
+    // override — otherwise mediapipe finishes after the PATCH and
+    // overwrites the override (the source of the "landmarks shift on
+    // reimport" bug).
+    final detectLandmarks = body['detectLandmarks'] as bool? ?? true;
+    // We canonicalize EVERY upload to a 512x512 JPEG regardless of the
+    // client-suggested file name's extension, so the stored extension is
+    // always .jpg. This keeps every photo in the same shape for the
+    // circular avatar + for mediapipe's normalized coordinate space.
     final photosDir = _photosDir();
-    final filePath = p.join(photosDir, '$id$ext');
+    final filePath = p.join(photosDir, '$id.jpg');
 
     // Normalize and decode base64 (pad if needed, strip whitespace).
     var normalized = photoData.replaceAll(RegExp(r'\s+'), '');
@@ -340,7 +372,13 @@ class PlayerRoutes {
       normalized = normalized.padRight(normalized.length + (4 - remainder), '=');
     }
     final bytes = base64Decode(normalized);
-    File(filePath).writeAsBytesSync(bytes);
+
+    // Canonicalize: center-crop to 1:1, resize to 512x512, re-encode as JPEG.
+    // Decoding can return null for unsupported formats (e.g. HEIC); in that
+    // case we fall through to writing the raw bytes so the caller at least
+    // gets a usable file, mirroring pre-canonicalization behavior.
+    final canonicalBytes = _canonicalizePhoto(bytes);
+    File(filePath).writeAsBytesSync(canonicalBytes);
 
     // Update the player's photo_path in the database.
     executeUpdate(
@@ -349,11 +387,50 @@ class PlayerRoutes {
       [filePath, id],
     );
 
+    // Synchronous face-landmark detection. The endpoint waits for
+    // mediapipe (or the Haar fallback) before returning, so:
+    //   1. The response can include the fresh landmarks (client
+    //      caches them, no follow-up GET needed).
+    //   2. Detection failures surface immediately as a
+    //      `faceLandmarksError` field with the same error-reason
+    //      string the redetect endpoint returns — the client can show
+    //      "detection didn't find a face" instead of silently
+    //      rendering a heuristic avatar.
+    //   3. On success + failure the photo is still saved. Detection
+    //      is best-effort; failing to find a face doesn't roll the
+    //      upload back.
+    // Skipped entirely when the caller opts out via `detectLandmarks:false`
+    // — used by the test-data loader before it PATCHes a known-good
+    // manual override.
+    Map<String, dynamic>? landmarks;
+    String? landmarksError;
+    if (detectLandmarks) {
+      final result =
+          await FaceLandmarksService.instance.detectDetailed(filePath);
+      if (result.success) {
+        landmarks = result.landmarks;
+        executeUpdate(
+          _db,
+          'UPDATE players SET face_landmarks = ? WHERE id = ?;',
+          [jsonEncode(landmarks), id],
+        );
+      } else {
+        landmarksError = result.errorReason;
+      }
+    }
+
     // Return the API URL (not the server-side filesystem path) so the
     // client's saved value matches what subsequent GET /players responses
-    // will return.
+    // will return. `faceLandmarks` is present only when detection ran and
+    // succeeded; `faceLandmarksError` is present only when detection ran
+    // and failed. When `detectLandmarks:false` was passed, neither field
+    // appears (opt-out).
     return Response.ok(
-      jsonEncode({'photoPath': '/api/v1/players/$id/photo'}),
+      jsonEncode({
+        'photoPath': '/api/v1/players/$id/photo',
+        if (landmarks != null) 'faceLandmarks': landmarks,
+        if (landmarksError != null) 'faceLandmarksError': landmarksError,
+      }),
       headers: _jsonHeaders,
     );
   }
@@ -427,6 +504,178 @@ class PlayerRoutes {
     );
 
     return Response(204);
+  }
+
+  /// PATCH /<id>/face-landmarks — overwrite stored landmarks with a
+  /// manually-corrected payload. Body must be the full landmarks Map
+  /// (same shape mediapipe emits): boundingBox{x,y,width,height} +
+  /// leftEye/rightEye/noseTip/mouthCenter as {x,y} points. All numeric
+  /// values must be in 0..1; boundingBox width/height must be > 0.
+  ///
+  /// Returns 200 with the persisted landmarks on success.
+  Future<Response> _updateFaceLandmarks(Request request, String id) async {
+    if (!rowExists(_db, 'players', 'id = ?', [id])) {
+      return Response.notFound(
+        jsonEncode({'error': 'Player not found'}),
+        headers: _jsonHeaders,
+      );
+    }
+
+    final dynamic raw;
+    try {
+      raw = jsonDecode(await request.readAsString());
+    } catch (_) {
+      return Response(400,
+          body: jsonEncode({'error': 'Invalid JSON body'}),
+          headers: _jsonHeaders);
+    }
+    if (raw is! Map) {
+      return Response(400,
+          body: jsonEncode({'error': 'Body must be a JSON object'}),
+          headers: _jsonHeaders);
+    }
+    final body = Map<String, dynamic>.from(raw);
+
+    final error = _validateLandmarks(body);
+    if (error != null) {
+      return Response(400,
+          body: jsonEncode({'error': error}), headers: _jsonHeaders);
+    }
+
+    executeUpdate(
+      _db,
+      'UPDATE players SET face_landmarks = ? WHERE id = ?;',
+      [jsonEncode(body), id],
+    );
+
+    return Response.ok(
+      jsonEncode({'faceLandmarks': body}),
+      headers: _jsonHeaders,
+    );
+  }
+
+  /// POST /<id>/face-landmarks/redetect — re-run mediapipe on the player's
+  /// current `photo_path` and overwrite stored landmarks with the fresh
+  /// result. Synchronous (caller waits for detection).
+  ///
+  /// Returns 200 with the new landmarks on success, 404 if the player has
+  /// no photo, 503 if detection fails (no python, no face found, timeout).
+  Future<Response> _redetectFaceLandmarks(Request request, String id) async {
+    final rows = _db.select(
+      'SELECT photo_path FROM players WHERE id = ?;',
+      [id],
+    );
+    if (rows.isEmpty) {
+      return Response.notFound(
+        jsonEncode({'error': 'Player not found'}),
+        headers: _jsonHeaders,
+      );
+    }
+    final photoPath = rows.first['photo_path'] as String?;
+    if (photoPath == null || !File(photoPath).existsSync()) {
+      return Response.notFound(
+        jsonEncode({'error': 'Player has no photo to re-detect'}),
+        headers: _jsonHeaders,
+      );
+    }
+
+    final result =
+        await FaceLandmarksService.instance.detectDetailed(photoPath);
+    if (!result.success) {
+      return Response(503,
+          body: jsonEncode({
+            'error': result.errorReason ??
+                'Face landmarks detection failed for an unknown reason.',
+          }),
+          headers: _jsonHeaders);
+    }
+
+    executeUpdate(
+      _db,
+      'UPDATE players SET face_landmarks = ? WHERE id = ?;',
+      [jsonEncode(result.landmarks), id],
+    );
+
+    return Response.ok(
+      jsonEncode({'faceLandmarks': result.landmarks}),
+      headers: _jsonHeaders,
+    );
+  }
+
+  /// GET /face-landmarks/diagnostics — kiosk-friendly probe of the
+  /// mediapipe sidecar plumbing. Answers "why is Re-detect failing":
+  /// which python is on PATH, where the sidecar lives, whether
+  /// mediapipe imports for the running account. Never touches player
+  /// state.
+  Future<Response> _faceLandmarksDiagnostics(Request request) async {
+    final report = await FaceLandmarksService.instance.diagnostics();
+    return Response.ok(jsonEncode(report), headers: _jsonHeaders);
+  }
+
+  /// Canonical avatar dimensions. Every stored photo lives at this size so
+  /// every circular avatar crops the same way and mediapipe's normalized
+  /// 0..1 coordinates mean the same thing across players.
+  static const int _kCanonicalAvatarSize = 512;
+  static const int _kCanonicalJpegQuality = 90;
+
+  /// Center-crop the image to 1:1 and resize to [_kCanonicalAvatarSize].
+  /// Returns the re-encoded JPEG bytes. If decoding fails (unsupported
+  /// format, corrupt bytes) the original bytes are returned unchanged so
+  /// the upload still produces a viewable file.
+  static List<int> _canonicalizePhoto(List<int> raw) {
+    final decoded = img.decodeImage(Uint8List.fromList(raw));
+    if (decoded == null) return raw;
+    final side = decoded.width < decoded.height ? decoded.width : decoded.height;
+    final cropX = (decoded.width - side) ~/ 2;
+    final cropY = (decoded.height - side) ~/ 2;
+    final cropped = img.copyCrop(
+      decoded,
+      x: cropX,
+      y: cropY,
+      width: side,
+      height: side,
+    );
+    final resized = img.copyResize(
+      cropped,
+      width: _kCanonicalAvatarSize,
+      height: _kCanonicalAvatarSize,
+      interpolation: img.Interpolation.cubic,
+    );
+    return img.encodeJpg(resized, quality: _kCanonicalJpegQuality);
+  }
+
+  /// Returns an error message if the landmark payload is malformed, or
+  /// null if it's valid. The contract matches the mediapipe sidecar output
+  /// shape and the client-side `resolveAnchorPosition` consumer.
+  String? _validateLandmarks(Map<String, dynamic> m) {
+    String? checkPoint(String key) {
+      final v = m[key];
+      if (v is! Map) return '$key must be an object {x, y}';
+      final x = v['x'];
+      final y = v['y'];
+      if (x is! num || y is! num) return '$key.x and $key.y must be numbers';
+      if (x < 0 || x > 1 || y < 0 || y > 1) {
+        return '$key.x and $key.y must be in 0..1';
+      }
+      return null;
+    }
+
+    final bb = m['boundingBox'];
+    if (bb is! Map) return 'boundingBox must be an object';
+    for (final k in const ['x', 'y', 'width', 'height']) {
+      final v = bb[k];
+      if (v is! num) return 'boundingBox.$k must be a number';
+      if (v < 0 || v > 1) return 'boundingBox.$k must be in 0..1';
+    }
+    if ((bb['width'] as num) <= 0 || (bb['height'] as num) <= 0) {
+      return 'boundingBox width and height must be > 0';
+    }
+
+    for (final k in const ['leftEye', 'rightEye', 'noseTip', 'mouthCenter']) {
+      final err = checkPoint(k);
+      if (err != null) return err;
+    }
+    return null;
   }
 
   /// POST /<id>/history - Add a game history entry for a player.

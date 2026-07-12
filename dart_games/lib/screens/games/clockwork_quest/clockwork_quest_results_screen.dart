@@ -157,9 +157,9 @@ class _ClockworkQuestResultsScreenState
             backgroundColor: const Color(0xFF2C2C34),
             leading: const SizedBox(), // No back button on results
             title: Text(
-              'CLOCKWORK QUEST',
+              'CLOCKWORK QUEST RESULTS',
               style: GoogleFonts.cinzelDecorative(
-                fontSize: 26,
+                fontSize: 29,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFFF5F0E8),
                 letterSpacing: 1.5,

@@ -109,17 +109,30 @@ class TikiGolfAnnouncementHelper {
     );
   }
 
+  /// Fires the moment the player taps "Use Mulligan" on the splash
+  /// modal. Includes the remove-your-darts instruction so it lands
+  /// AFTER the player has committed to the mulligan path — the
+  /// standalone remove-darts cue is intentionally suppressed while
+  /// the splash+mulligan modal is up (see
+  /// [announceMulliganReminder]).
   void announceMulliganUsed(String playerName) {
     _queueService.announce(
-      'Mulligan! $playerName gets a do-over!',
+      'Mulligan! Remove your darts and try again, $playerName!',
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.mulligan,
     );
   }
 
-  void announceMulliganReminder() {
+  /// Fires when a player splashes and still has a mulligan available.
+  /// Names the two on-screen buttons so the operator knows a choice
+  /// is required — previously read "Splash! Use your mulligan?"
+  /// followed 1.5s later by the generic "remove your darts" line,
+  /// which sounded like a two-step recipe and steered players away
+  /// from the mulligan without noticing.
+  void announceMulliganReminder(String playerName) {
     _queueService.announce(
-      'Splash! Use your mulligan?',
+      'Splash! $playerName missed every dart. '
+      "Tap Use Mulligan for a do-over, or Next Player to lock it in.",
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.tikiChime,
     );
@@ -133,12 +146,40 @@ class TikiGolfAnnouncementHelper {
     );
   }
 
-  void announceVictory(String winnerName) {
+  /// Victory announcement — accepts a list of winner names so ties are
+  /// announced with EVERY name spoken. Works for both solo player names
+  /// and team display names (game screen resolves the ids upstream).
+  ///
+  /// - 1 winner:  "{name} wins the Golden Tiki!"
+  /// - 2 winners: "{a} and {b} tie for the Golden Tiki!"
+  /// - 3+ winners: "{a}, {b}, and {c} tie for the Golden Tiki!"
+  void announceVictory(List<String> winnerNames) {
+    if (winnerNames.isEmpty) return;
+    if (winnerNames.length == 1) {
+      _queueService.announce(
+        '${winnerNames.first} wins the Golden Tiki!',
+        AudioPriority.victory,
+        soundEffect: TikiGolfSoundEffects.victoryFanfare,
+      );
+      return;
+    }
+    final names = _joinWithAnd(winnerNames);
     _queueService.announce(
-      '$winnerName wins the Golden Tiki!',
+      '$names tie for the Golden Tiki!',
       AudioPriority.victory,
       soundEffect: TikiGolfSoundEffects.victoryFanfare,
     );
+  }
+
+  /// Joins a list of strings with commas + "and" at the end:
+  /// ['A']            => 'A'
+  /// ['A', 'B']       => 'A and B'
+  /// ['A', 'B', 'C']  => 'A, B, and C' (Oxford comma)
+  String _joinWithAnd(List<String> parts) {
+    if (parts.length == 1) return parts.single;
+    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
+    final head = parts.sublist(0, parts.length - 1).join(', ');
+    return '$head, and ${parts.last}';
   }
 
   void announceHoleComplete(int nextHoleNumber) {
@@ -183,12 +224,13 @@ class TikiGolfAnnouncementHelper {
   void pickAndAnnounceMoment({
     // Rank 1
     bool victory = false,
-    String? victoryWinnerName,
+    List<String>? victoryWinnerNames,
     // Rank 2
     bool holeComplete = false,
     int? holeCompleteNextHole,
     // Rank 3
     bool mulliganReminder = false,
+    String? mulliganReminderPlayerName,
     // Rank 4
     bool mulliganUsed = false,
     String? mulliganUsedPlayerName,
@@ -215,16 +257,18 @@ class TikiGolfAnnouncementHelper {
     int? nearWinLeadBy,
   }) {
     // ── Rank 1: Victory ────────────────────────────────────────────────────────
-    if (victory && victoryWinnerName != null) {
-      announceVictory(victoryWinnerName);
+    if (victory &&
+        victoryWinnerNames != null &&
+        victoryWinnerNames.isNotEmpty) {
+      announceVictory(victoryWinnerNames);
     }
     // ── Rank 2: Hole Complete ──────────────────────────────────────────────────
     else if (holeComplete && holeCompleteNextHole != null) {
       announceHoleComplete(holeCompleteNextHole);
     }
     // ── Rank 3: Mulligan Reminder ──────────────────────────────────────────────
-    else if (mulliganReminder) {
-      announceMulliganReminder();
+    else if (mulliganReminder && mulliganReminderPlayerName != null) {
+      announceMulliganReminder(mulliganReminderPlayerName);
     }
     // ── Rank 4: Mulligan Used ──────────────────────────────────────────────────
     else if (mulliganUsed && mulliganUsedPlayerName != null) {
