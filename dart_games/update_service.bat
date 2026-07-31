@@ -54,11 +54,20 @@ set /a _BRANCH_COUNT=0
 set "_DEFAULT_CHOICE="
 echo.
 echo Available branches on origin:
-for /f "usebackq tokens=*" %%B in (`git for-each-ref --format^="%%^(refname:short^)" refs/remotes/origin`) do (
-    set "_REMOTE=%%B"
-    REM Strip the leading "origin/" so "origin/main" becomes "main".
-    set "_LOCAL=!_REMOTE:origin/=!"
-    if not "!_LOCAL!"=="HEAD" (
+REM     Do NOT caret-escape the parens in --format. Inside a `for /f`
+REM     backtick set the carets are NOT consumed, so git receives a
+REM     literal "%^(refname:short^)" and echoes the placeholder back
+REM     verbatim instead of expanding it. Plain double quotes are
+REM     enough to protect the parens from the `in (...)` parser.
+REM     `strip=3` drops "refs/remotes/origin/", leaving the bare
+REM     branch name, so no substring surgery is needed afterwards.
+for /f "usebackq tokens=*" %%B in (`git for-each-ref --format="%%(refname:strip=3)" "refs/remotes/origin/*"`) do (
+    set "_LOCAL=%%B"
+    REM origin/HEAD is a symbolic ref pointing at the default branch,
+    REM not a checkout-able branch of its own - skip it. (With
+    REM refname:short it would have shortened to plain "origin" and
+    REM slipped past this filter.)
+    if /i not "!_LOCAL!"=="HEAD" (
         set /a _BRANCH_COUNT+=1
         set "_BRANCH_!_BRANCH_COUNT!=!_LOCAL!"
         if /i "!_LOCAL!"=="!CURRENT_BRANCH!" (
