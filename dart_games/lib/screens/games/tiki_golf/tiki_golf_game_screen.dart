@@ -1863,7 +1863,11 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                         playerName: currentPlayerName,
                         initialSegments: initialSegments,
                         onSubmit: (newSegments) {
-                          // Phase 5: wire editPlayerScore
+                          provider.editPlayerScore(
+                            playerId: activePlayerId,
+                            holeIndex: game.currentHole - 1,
+                            newDartSegments: newSegments,
+                          );
                         },
                         config: EditScoreDialogConfig.tikiGolf(),
                       );

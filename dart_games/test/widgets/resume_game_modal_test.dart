@@ -4,6 +4,9 @@ import 'package:dart_games/widgets/resume_game_modal/resume_game_modal.dart';
 import 'package:dart_games/constants/test_keys.dart';
 import 'package:dart_games/models/saved_game_metadata.dart';
 import 'package:dart_games/services/save_game_service.dart';
+import 'package:dart_games/services/api/api_client.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import '../shared/mock_api_helpers.dart';
 
 void main() {
@@ -206,6 +209,64 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(ResumeGameModalKeys.container), findsOneWidget);
+    });
+
+    // ─── Load failure handling ───────────────────────────────────────────────
+
+    group('when loading saved games fails', () {
+      /// Builds a modal whose API fails for the first [failures] requests,
+      /// then serves an empty list — mirroring a server that comes back up.
+      Widget buildFailingModal({required int failures}) {
+        var attempts = 0;
+        final client = ApiClient(client: MockClient((_) async {
+          attempts++;
+          if (attempts <= failures) {
+            return http.Response('server exploded', 500);
+          }
+          return http.Response('[]', 200,
+              headers: {'content-type': 'application/json'});
+        }));
+        return MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                ResumeGameModal(
+                  config: ResumeGameModalConfig.carnivalDerby(),
+                  gameType: 'carnival_derby',
+                  onStartNewGame: () => startNewCalled = true,
+                  onResumeGame: (game) => resumedGame = game,
+                  onClose: () {},
+                  apiClient: client,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      testWidgets('shows an error instead of spinning forever', (tester) async {
+        await tester.pumpWidget(buildFailingModal(failures: 1));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull,
+            reason: 'A failed load must not escape as an unhandled exception');
+        expect(find.byType(CircularProgressIndicator), findsNothing,
+            reason: 'The spinner must stop when the load fails');
+        expect(find.byKey(ResumeGameModalKeys.errorMessage), findsOneWidget);
+        expect(find.byKey(ResumeGameModalKeys.retryButton), findsOneWidget);
+      });
+
+      testWidgets('Retry reloads and clears the error', (tester) async {
+        await tester.pumpWidget(buildFailingModal(failures: 1));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(ResumeGameModalKeys.retryButton));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(ResumeGameModalKeys.errorMessage), findsNothing);
+        expect(find.byKey(ResumeGameModalKeys.emptyStateText), findsOneWidget,
+            reason: 'The successful retry returned an empty saved-games list');
+      });
     });
   });
 }

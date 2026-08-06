@@ -95,5 +95,86 @@ void main() {
 
       expect(find.byKey(SaveGameModalKeys.container), findsOneWidget);
     });
+
+    // ─── Save failure handling ───────────────────────────────────────────────
+
+    group('when the save fails', () {
+      /// Builds a modal whose save throws until [failures] attempts have been
+      /// made, then succeeds — mirroring a server that comes back up.
+      Widget buildFlakyModal({required int failures, VoidCallback? onSuccess}) {
+        var attempts = 0;
+        return MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                SaveGameModal(
+                  config: SaveGameModalConfig.carnivalDerby(),
+                  onSave: () async {
+                    attempts++;
+                    if (attempts <= failures) {
+                      throw Exception('save failed');
+                    }
+                    onSuccess?.call();
+                  },
+                  onDontSave: () {},
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      testWidgets('surfaces an error instead of throwing', (tester) async {
+        await tester.pumpWidget(buildFlakyModal(failures: 1));
+
+        await tester.tap(find.byKey(SaveGameModalKeys.saveButton));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull,
+            reason: 'A failed save must not escape as an unhandled exception');
+        expect(find.byKey(SaveGameModalKeys.errorMessage), findsOneWidget);
+      });
+
+      testWidgets('leaves the Save button enabled so the user can retry',
+          (tester) async {
+        await tester.pumpWidget(buildFlakyModal(failures: 1));
+
+        await tester.tap(find.byKey(SaveGameModalKeys.saveButton));
+        await tester.pumpAndSettle();
+
+        final button = tester.widget<ElevatedButton>(
+            find.byKey(SaveGameModalKeys.saveButton));
+        expect(button.onPressed, isNotNull,
+            reason:
+                'A failed save used to disable Save forever, leaving '
+                "Don't Save (discarding the game) as the only way out");
+      });
+
+      testWidgets('a retry after a failure can succeed', (tester) async {
+        var saved = false;
+        await tester.pumpWidget(
+            buildFlakyModal(failures: 1, onSuccess: () => saved = true));
+
+        await tester.tap(find.byKey(SaveGameModalKeys.saveButton));
+        await tester.pumpAndSettle();
+        expect(saved, isFalse);
+
+        await tester.tap(find.byKey(SaveGameModalKeys.saveButton));
+        await tester.pumpAndSettle();
+
+        expect(saved, isTrue);
+        expect(find.byKey(SaveGameModalKeys.errorMessage), findsNothing,
+            reason: 'The error should clear once the save succeeds');
+      });
+
+      testWidgets('no error is shown when the save succeeds', (tester) async {
+        await tester.pumpWidget(buildFlakyModal(failures: 0));
+
+        await tester.tap(find.byKey(SaveGameModalKeys.saveButton));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(SaveGameModalKeys.errorMessage), findsNothing);
+      });
+    });
   });
 }

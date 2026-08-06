@@ -34,11 +34,21 @@ Future<void> clickDartsRemoved(WidgetTester tester) =>
 Future<void> setupAndStartGame(
   WidgetTester tester, {
   int maxStrokes = 3,
+  bool mulliganEnabled = false,
   List<String>? playerNames,
 }) =>
     GameSetupHelpers.setupAndStartTikiGolf(
       tester,
       config,
       maxStrokes: maxStrokes,
+      mulliganEnabled: mulliganEnabled,
       playerNames: playerNames,
     );
+
+/// Miss every dart of the turn, ending it in a Splash.
+Future<void> throwAllMissesToSplash(WidgetTester tester,
+    {int maxStrokes = 3}) async {
+  for (int i = 0; i < maxStrokes; i++) {
+    await throwMissViaMock(tester);
+  }
+}

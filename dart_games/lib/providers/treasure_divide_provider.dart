@@ -1017,7 +1017,49 @@ class TreasureDivideProvider extends ChangeNotifier {
         Map<String, dynamic>.from(savedGame.gameState));
     _currentGame!.shouldPromptTakeout = savedGame.waitingForTakeout;
     _resumedSavedGameId = savedGame.id;
-    _currentTurnHaul = 0;
+    _restoreInFlightTurnState();
     notifyListeners();
+  }
+
+  /// Rebuilds the turn-scoped state that lives on the provider rather than on
+  /// the serialized game model: the haul accumulated by darts already thrown
+  /// this turn, and the score snapshot taken at turn start.
+  ///
+  /// Round hauls are only committed to [playerRoundScores] at takeout, so a
+  /// game saved mid-turn carries its thrown darts in
+  /// [currentTurnDartSegments] but no haul. Restoring with a haul of 0 makes
+  /// the pending takeout commit 0 for the round, which reads as an all-miss
+  /// turn and halves the player's treasure.
+  void _restoreInFlightTurnState() {
+    final game = _currentGame!;
+    final playerId = game.currentPlayerId;
+    final roundIndex = game.currentRoundIndex;
+
+    _currentTurnHaul = 0;
+    if (roundIndex >= 0 && roundIndex < game.numberOfRounds) {
+      final target = game.targetSequence[roundIndex];
+      final segments =
+          game.currentTurnDartSegments[playerId] ?? const <String>[];
+      for (final seg in segments) {
+        final parsed = _parseSectorString(seg);
+        if (parsed == null) continue;
+        _currentTurnHaul += _computeHitScore(
+          target: target,
+          baseScore: parsed.baseScore,
+          multiplier: parsed.multiplier,
+          score: parsed.score,
+          sector: seg,
+        );
+      }
+    }
+
+    // The active player's committed total still excludes this turn, so it is
+    // the same value processDartThrow captures on the first dart.
+    if (game.gameMode == TreasureDivideGameMode.team &&
+        game.activeTeamId != null) {
+      _scoreBeforeCurrentTurn = game.totalForTeam(game.activeTeamId!);
+    } else {
+      _scoreBeforeCurrentTurn = game.totalForPlayer(playerId);
+    }
   }
 }
