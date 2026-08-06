@@ -402,6 +402,15 @@ class ClockworkQuestProvider extends ChangeNotifier {
   }
 
   // Parse sector string from dartboard
+  /// NOT migrated to the shared [DartSector] — deliberately.
+  ///
+  /// Every other game reads `Bull` as the inner bull worth 50. This one reads
+  /// `Bull`/`SBull` as the 25 ring (multiplier 1) and only `DBull` as 50.
+  /// Routing it through `DartSector`, which follows the majority reading,
+  /// would silently change what a bullseye scores in Clockwork Quest.
+  ///
+  /// One of the two readings is wrong; resolving that is a gameplay decision,
+  /// not a refactor. See QUESTIONS-FOR-FABLE.md Q5.
   Map<String, dynamic>? _parseSector(String sector) {
     if (sector.isEmpty ||
         sector == 'None' ||

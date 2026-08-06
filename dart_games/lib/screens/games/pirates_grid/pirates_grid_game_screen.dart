@@ -34,6 +34,7 @@ import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../widgets/save_game_modal/save_game_modal_config.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import 'pirates_grid_results_screen.dart';
+import '../../../utils/dart_sector.dart';
 
 class PiratesGridGameScreen extends StatefulWidget {
   const PiratesGridGameScreen({super.key});
@@ -452,21 +453,16 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     return false;
   }
 
+  /// Parses a board sector string into this game's legacy map shape.
+  ///
+  /// `score` is the FACE value and `multiplier` the factor — the caller
+  /// multiplies them. Delegates to [DartSector].
   Map<String, dynamic>? _parseSector(String sector) {
-    if (sector == 'None') return null;
-    if (sector == 'Bull') return {'score': 50, 'multiplier': 1};
-    if (sector == '25') return {'score': 25, 'multiplier': 1};
-
-    final match = RegExp(r'([SDTsdt])(\d+)').firstMatch(sector);
-    if (match == null) return null;
-
-    final prefix = match.group(1)!.toUpperCase();
-    final number = int.parse(match.group(2)!);
-    int multiplier = 1;
-    if (prefix == 'D') multiplier = 2;
-    if (prefix == 'T') multiplier = 3;
-
-    return {'score': number, 'multiplier': multiplier};
+    final dart = DartSector.parse(sector);
+    if (dart.isMiss) return null;
+    if (dart.isInnerBull) return {'score': 50, 'multiplier': 1};
+    if (dart.isOuterBull) return {'score': 25, 'multiplier': 1};
+    return {'score': dart.face, 'multiplier': dart.factor};
   }
 
   // ─── Round Complete overlay ────────────────────────────────────────────────

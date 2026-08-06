@@ -5,6 +5,7 @@ import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
 import '../services/game_skip_turn_helper.dart';
 import '../services/api/api_client.dart';
+import '../utils/dart_sector.dart';
 
 class TargetTagProvider extends ChangeNotifier {
   TargetTagGame? _currentGame;
@@ -230,33 +231,14 @@ class TargetTagProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Parse dartboard sector string (e.g., "D20", "T19", "S18", "Bull")
+  /// Parses a board sector string into this game's legacy map shape.
+  ///
+  /// Delegates to [DartSector]; null still means "treat as a miss", which is
+  /// what every caller here already does.
   Map<String, dynamic>? _parseSector(String sector) {
-    // Handle bulls
-    if (sector == 'Bull') {
-      return {'number': 50, 'multiplier': 'single'};
-    }
-    if (sector == '25') {
-      return {'number': 25, 'multiplier': 'single'};
-    }
-    if (sector == 'None' || sector.isEmpty) {
-      return null; // Treat "None" as a miss, not a score
-    }
-
-    // Parse regular sectors (D20, T19, S18, etc.)
-    final match = RegExp(r'[A-Za-z](\d+)').firstMatch(sector);
-    if (match == null) return null;
-
-    final baseNumber = int.parse(match.group(1)!);
-    String multiplier = 'single';
-
-    if (sector.startsWith('D') || sector.startsWith('d')) {
-      multiplier = 'double';
-    } else if (sector.startsWith('T') || sector.startsWith('t')) {
-      multiplier = 'triple';
-    }
-
-    return {'number': baseNumber, 'multiplier': multiplier};
+    final dart = DartSector.parse(sector);
+    if (dart.isMiss) return null;
+    return {'number': dart.legacyNumber, 'multiplier': dart.multiplierName};
   }
 
   // Skip remaining darts in current turn

@@ -26,6 +26,7 @@ import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'monster_mash_results_screen.dart';
+import '../../../utils/dart_sector.dart';
 
 class MonsterMashGameScreen extends StatefulWidget {
   const MonsterMashGameScreen({super.key});
@@ -438,20 +439,14 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     setState(() {});
   }
 
+  /// Parses a board sector string into this game's legacy map shape.
+  ///
+  /// Delegates to [DartSector]; null still means "treat as a miss", which is
+  /// what every caller here already does.
   Map<String, dynamic>? _parseSector(String sector) {
-    if (sector == 'Bull') return {'number': 50, 'multiplier': 'single'};
-    if (sector == '25') return {'number': 25, 'multiplier': 'single'};
-    if (sector == 'None') return null;
-
-    final match = RegExp(r'[A-Za-z](\d+)').firstMatch(sector);
-    if (match == null) return null;
-
-    final baseNumber = int.parse(match.group(1)!);
-    String multiplier = 'single';
-    if (sector.startsWith('D') || sector.startsWith('d')) multiplier = 'double';
-    if (sector.startsWith('T') || sector.startsWith('t')) multiplier = 'triple';
-
-    return {'number': baseNumber, 'multiplier': multiplier};
+    final dart = DartSector.parse(sector);
+    if (dart.isMiss) return null;
+    return {'number': dart.legacyNumber, 'multiplier': dart.multiplierName};
   }
 
   void _handleTakeoutFinished() {

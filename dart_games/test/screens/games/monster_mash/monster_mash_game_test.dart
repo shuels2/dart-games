@@ -921,7 +921,7 @@ void group9_sectorParsing() {
       expect(game.dartsThrown[game.getCurrentPlayerId()], 1);
 
       // This test confirms parsing works. For full sector coverage,
-      // see the sector_parser tests in test/shared/.
+      // see the DartSector tests in test/utils/dart_sector_test.dart.
     });
   });
 }
