@@ -413,6 +413,23 @@ void main() {
       expect(meta.leadingPlayerScore, '${target * 3} gold');
     });
 
+    test('saveGame lists only the players in THIS game, not the whole roster',
+        () async {
+      startSoloGame(playerIds: ['p1', 'p2']);
+
+      await provider.saveGame(saveService, playerNamesById: {
+        'p1': 'Alice',
+        'p2': 'Bob',
+        'p3': 'Charlie',
+        'p4': 'Dana',
+      });
+
+      final saved = await savedGames();
+      expect(saved[0].playerNames, ['Alice', 'Bob'],
+          reason: 'A saved tile must not advertise players who are not in the '
+              'match');
+    });
+
     // ─── 16. In-flight turn haul survives save/restore ────────────────────────
 
     test('mid-turn haul is restored, so the pending takeout commits the real score',

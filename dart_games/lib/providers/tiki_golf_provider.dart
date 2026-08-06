@@ -567,12 +567,23 @@ class TikiGolfProvider extends ChangeNotifier {
 
   // ─── Save / Restore ─────────────────────────────────────────────────────────
 
-  Future<void> saveGame(SaveGameService service, {List<String>? playerNames, bool isAutoSave = false}) async {
+  /// Saves the current game.
+  ///
+  /// [playerNamesById] maps player ids to display names. Prefer it over
+  /// [playerNames]: the saved-game tile should list the players in THIS game,
+  /// and without the ids the provider cannot filter a caller-supplied list
+  /// down from the whole roster. Without either, the tile falls back to raw
+  /// ids, which are UUIDs.
+  Future<void> saveGame(SaveGameService service,
+      {List<String>? playerNames,
+      Map<String, String>? playerNamesById,
+      bool isAutoSave = false}) async {
     if (_currentGame == null || _saving) return;
     _saving = true;
     try {
       final game = _currentGame!;
-      final names = playerNames ?? game.playerIds;
+      String nameOf(String id) => playerNamesById?[id] ?? id;
+      final names = playerNames ?? game.playerIds.map(nameOf).toList();
       final completedHoles = game.currentHole - 1;
       final modeName = game.gameMode == TikiGolfGameMode.solo ? 'Solo' : 'Team';
 
@@ -581,7 +592,8 @@ class TikiGolfProvider extends ChangeNotifier {
         playerNames: names,
         progressInfo: 'Hole ${game.currentHole} of 9',
         gameModeName: '$modeName, Max Darts: ${game.maxStrokes}',
-        leadingPlayerName: game.activePlayerId ?? '',
+        leadingPlayerName:
+            game.activePlayerId == null ? '' : nameOf(game.activePlayerId!),
         leadingPlayerScore: '$completedHoles holes completed',
         gameState: game.toJson(),
         waitingForTakeout: game.currentTurnEnded,

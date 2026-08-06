@@ -562,8 +562,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         if (!hasDartsThrown) return;
         provider.saveGame(
           SaveGameService(),
-          playerNames:
-              playerProvider.allPlayers.map((p) => p.name).toList(),
+          playerNamesById: _playerNamesById(playerProvider, game),
           isAutoSave: true,
         );
       },
@@ -774,11 +773,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
               config: SaveGameModalConfig.tikiGolf(),
               onSave: () async {
                 final nav = Navigator.of(context);
-                final allPlayers = playerProvider.allPlayers;
                 await provider.saveGame(
                   SaveGameService(),
-                  playerNames:
-                      allPlayers.map((p) => p.name).toList(),
+                  playerNamesById: _playerNamesById(playerProvider, game),
                 );
                 if (mounted) nav.pop();
               },
@@ -1783,6 +1780,17 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
   /// Shown instead of the standard RemoveDartsModal when:
   ///   currentTurnEnded && wasSplash && mulliganEnabled && !mulliganAlreadyUsed
+  /// Display names for the players in THIS game, keyed by id.
+  ///
+  /// Saved-game tiles show these. Passing the whole roster listed people who
+  /// were not in the match; passing nothing at all fell back to raw UUIDs.
+  Map<String, String> _playerNamesById(
+      PlayerProvider playerProvider, TikiGolfGame game) {
+    return {
+      for (final id in game.playerIds) id: playerProvider.nameOf(id),
+    };
+  }
+
   Widget _buildSplashMulliganModal({
     required TikiGolfGame game,
     required TikiGolfProvider provider,
