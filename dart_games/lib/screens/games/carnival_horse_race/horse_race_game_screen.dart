@@ -19,6 +19,7 @@ import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../services/play_to_complete/carnival_derby_strategy.dart';
+import '../../../services/carnival_derby_sound_effects.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
@@ -59,7 +60,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
       // Initialize global announcement queue with Carnival Derby helper
       final globalQueue = GameAnnouncementQueueService();
-      await globalQueue.loadSettings();
+      await globalQueue.loadSettings(preloadEffects: CarnivalDerbySoundEffects.all);
       _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
 
       // Subscribe to dartboard events (works for both WebSocket and emulator)
@@ -356,7 +357,9 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
       if (winner != null) {
         _audioQueue?.announceWinner(winner.name);
       }
-      _audioQueue?.whenIdle().then((_) {
+      (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
       });
     }

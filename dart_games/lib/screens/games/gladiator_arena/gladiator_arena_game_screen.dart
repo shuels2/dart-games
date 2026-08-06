@@ -13,6 +13,7 @@ import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/gladiator_arena_announcement_helper.dart';
 import '../../../services/play_to_complete/gladiator_arena_strategy.dart';
+import '../../../services/gladiator_arena_sound_effects.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_emulator/buff_toggle_column.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
@@ -89,7 +90,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
 
     // Initialize announcement helper
     final queueService = GameAnnouncementQueueService();
-    await queueService.loadSettings();
+    await queueService.loadSettings(preloadEffects: GladiatorArenaSoundEffects.all);
     _audioQueue = GladiatorArenaAnnouncementHelper(queueService: queueService);
 
     // Announce game start
@@ -116,7 +117,9 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           if (firstPlayer != null) {
             _audioQueue?.announcePlayerTurn(firstPlayer.name);
           }
-          _audioQueue?.whenIdle().then((_) {
+          (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
             if (mounted) _startSpeedPlayTimerIfNeeded();
           });
         }
@@ -402,7 +405,9 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
               _audioQueue?.announcePlayerTurn(nextPlayer.name);
             }
           }
-          _audioQueue?.whenIdle().then((_) {
+          (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
             if (mounted) _startSpeedPlayTimerIfNeeded();
           });
         }
@@ -476,7 +481,9 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           _audioQueue?.announceVictory(winner.name);
         }
       }
-      _audioQueue?.whenIdle().then((_) {
+      (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
       });
     }

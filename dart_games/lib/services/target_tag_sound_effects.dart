@@ -106,4 +106,24 @@ class TargetTagSoundEffects {
     startSeconds: 0.0,
     endSeconds: null, // Play entire file
   );
+
+  /// Every effect this game uses. Preloaded at game start so
+  /// the first play does not pay the asset-load cost.
+  static const List<SoundEffectConfig> all = [
+    turnStart,
+    removeDarts,
+    singleHit,
+    doubleHit,
+    tripleHit,
+    bullseye,
+    outerBull,
+    miss,
+    shieldGained,
+    taggedIn,
+    eliminated,
+    gameStart,
+    successfulTag,
+    lowShields,
+    taggedOut,
+  ];
 }

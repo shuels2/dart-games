@@ -11,6 +11,7 @@ import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/lunar_lander_announcement_helper.dart';
 import '../../../services/play_to_complete/lunar_lander_strategy.dart';
+import '../../../services/lunar_lander_sound_effects.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
 import '../../../widgets/dartboard_emulator/play_to_complete_runner.dart';
@@ -70,7 +71,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
 
     // Initialize announcement queue
     final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings();
+    await globalQueue.loadSettings(preloadEffects: LunarLanderSoundEffects.all);
     _audioQueue = LunarLanderAnnouncementHelper(globalQueue);
 
     // Subscribe to dartboard events
@@ -292,7 +293,9 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
         );
         _audioQueue?.announceWinner(winner.name);
       }
-      _audioQueue?.whenIdle().then((_) {
+      (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
       });
     }

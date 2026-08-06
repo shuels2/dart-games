@@ -63,7 +63,9 @@ class GameAnnouncementQueueService {
   final List<Completer<void>> _idleWaiters = [];
 
   // Load announcer settings from API via AppSettings
-  Future<void> loadSettings() async {
+  /// Applies the saved voice settings, and optionally warms the audio cache
+  /// for [preloadEffects] (pass the game's `SoundEffects.all`).
+  Future<void> loadSettings({Iterable<SoundEffectConfig>? preloadEffects}) async {
     // Wait for the announcer's TTS init to finish populating its
     // available-voices list. Without this, a freshly-constructed
     // DartAnnouncerService (each game screen makes one) hits
@@ -86,10 +88,12 @@ class GameAnnouncementQueueService {
     }
 
     try {
-      // Check if voice is enabled
+      // Check if voice is enabled. Set this unconditionally: the announcer is
+      // a shared singleton, so latching it off without ever setting it back
+      // true would silence every game for the rest of the session.
       final voiceEnabled = await AppSettings.getVoiceEnabled();
+      _announcer.setEnabled(voiceEnabled);
       if (!voiceEnabled) {
-        _announcer.setEnabled(false);
         debugPrint('Game announcement queue disabled (voice_enabled=false)');
         return;
       }
@@ -128,6 +132,12 @@ class GameAnnouncementQueueService {
       final rate = await AppSettings.getVoicePlaybackRate();
       _announcer.setPlaybackRate(rate);
 
+      // Warm the sound-effect cache while the screen is still setting up.
+      // Unawaited: game start must not wait on audio assets.
+      if (preloadEffects != null) {
+        unawaited(_sfxPool.preload(preloadEffects));
+      }
+
       debugPrint('Game announcement queue loaded settings: '
           'engine=$voiceEngine, style=$announcerVoice, rate=$rate');
     } catch (e) {
@@ -136,14 +146,28 @@ class GameAnnouncementQueueService {
   }
 
   // Add announcement to queue with priority and optional sound effect
-  void announce(String text, AudioPriority priority, {SoundEffectConfig? soundEffect}) {
+  void announce(
+    String text,
+    AudioPriority priority, {
+    SoundEffectConfig? soundEffect,
+    Duration? maxAge,
+    String? coalesceKey,
+  }) {
     if (text.isEmpty || _disposed || !_announcer.enabled) return;
 
     final announcement = QueuedAnnouncement(
       text: text,
       priority: priority,
       soundEffect: soundEffect,
+      maxAge: maxAge,
+      coalesceKey: coalesceKey,
     );
+
+    // A newer line on the same subject replaces the queued older one. Only
+    // queued items — whatever is being spoken right now is left alone.
+    if (coalesceKey != null) {
+      _queue.removeWhere((q) => q.coalesceKey == coalesceKey);
+    }
 
     _queue.add(announcement);
     debugPrint('[Audio] Queued (depth=${_queue.length}, pri=${priority.name}): '
@@ -182,12 +206,26 @@ class GameAnnouncementQueueService {
     if (_isProcessing) return;
     _isProcessing = true;
 
-    try {
-      while (_queue.isNotEmpty && !_disposed) {
+    while (_queue.isNotEmpty && !_disposed) {
+      // Per-item error containment. A throw used to abort the whole drain,
+      // stranding everything still queued while whenIdle() resolved anyway —
+      // so games navigated to results believing audio had finished, and the
+      // stranded lines played later, out of context.
+      try {
         // Strict FIFO — pop the oldest-queued announcement. Priority is no
         // longer used for ordering (see class doc).
         final announcement = _queue.removeFirst();
         final speakIssuedAt = DateTime.now().millisecondsSinceEpoch;
+
+        // Drop announcements that have sat too long to still be true. Three
+        // darts thrown quickly can queue 8-12s of speech; a turn-transition
+        // line arriving after the next player has already thrown is worse
+        // than silence.
+        if (announcement.isStale) {
+          debugPrint('[Audio] Dropping stale announcement: '
+              '"${announcement.text}"');
+          continue;
+        }
         debugPrint('[Audio] Speaking (depth=${_queue.length} remain): '
             '"${announcement.text}"');
 
@@ -228,12 +266,16 @@ class GameAnnouncementQueueService {
         bool timedOut = false;
         await _announcer.speak(announcement.text).timeout(
           Duration(milliseconds: ttsFallbackMs),
-          onTimeout: () {
+          onTimeout: () async {
             timedOut = true;
             debugPrint('[Audio] TIMEOUT after ${ttsFallbackMs}ms — engine '
                 'onend did NOT fire for: "${announcement.text}". This is '
                 'the slow path; if it fires often the fallback is '
                 'effectively the inter-announcement gap.');
+            // Timing out abandons the await but leaves the utterance playing
+            // (browsers queue utterances internally), so the next line would
+            // talk over it. Stop it before moving on.
+            await _announcer.stopSpeaking();
           },
         );
         final speechElapsedMs =
@@ -248,9 +290,11 @@ class GameAnnouncementQueueService {
         // No SFX-tail wait. The previous SFX (if any) continues playing
         // on its own pool player and will stop or fade-out on its own
         // schedule. The next iteration can start immediately.
+      } catch (e) {
+        // Log and keep draining — one bad announcement must not silence
+        // the rest of the queue.
+        debugPrint('[Audio] Announcement failed, continuing queue: $e');
       }
-    } catch (e) {
-      debugPrint('Announcement queue processing stopped: $e');
     }
 
     _isProcessing = false;
@@ -286,6 +330,10 @@ class GameAnnouncementQueueService {
       if (!c.isCompleted) c.complete();
     }
     _idleWaiters.clear();
+    // Silence the current utterance. The announcer is a shared singleton
+    // whose own dispose() is deliberately a no-op, so without this the
+    // speech keeps going after the screen it belongs to is gone.
+    _announcer.stopSpeaking();
     _sfxPool.dispose();
     _announcer.dispose();
   }

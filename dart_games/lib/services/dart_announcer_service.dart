@@ -75,6 +75,10 @@ class DartAnnouncerService {
   // event-driven instead of estimated.
   Completer<void>? _ttsCompleter;
 
+  // Tail of the serialized speech chain. Every speak() links onto this so two
+  // queues sharing this singleton cannot talk over each other.
+  Future<void> _speakChain = Future<void>.value();
+
   // Future completed when _initializeTts() finishes populating
   // _availableVoices. Callers that need to set a specific system voice
   // must `await ready` first; otherwise setSystemVoice() runs against an
@@ -574,7 +578,25 @@ class DartAnnouncerService {
   /// start the next utterance — no wordCount-based estimate required.
   ///
   /// The user-configurable [playbackRate] is applied to both engines.
-  Future<void> speak(String text) async {
+  Future<void> speak(String text) {
+    if (!_enabled) return Future.value();
+
+    // Serialize every caller through one chain. There is always more than
+    // one queue alive — each game screen has one and GlobalConnectionAnnouncer
+    // keeps an app-lifetime one — and they share this singleton. Concurrent
+    // speak() calls used to overwrite _ttsCompleter, so the first caller's
+    // await hung until its queue's timeout while the first utterance's
+    // completion resolved the SECOND caller's completer, advancing that queue
+    // mid-speech.
+    final previous = _speakChain;
+    final done = Completer<void>();
+    _speakChain = done.future;
+    return previous.then((_) => _speakNow(text)).whenComplete(() {
+      if (!done.isCompleted) done.complete();
+    });
+  }
+
+  Future<void> _speakNow(String text) async {
     if (!_enabled) return;
 
     if (_engine == VoiceEngine.responsiveVoice && _responsiveVoice.isReady()) {
@@ -588,14 +610,32 @@ class DartAnnouncerService {
       // (wired in _initializeTts). _tts.speak typically returns when
       // the utterance STARTS, so we use the completer as the actual
       // "speech finished" signal.
-      _ttsCompleter = Completer<void>();
+      final completer = Completer<void>();
+      _ttsCompleter = completer;
       // Effective rate = personality base rate × user slider. Slider
       // at 1.0 keeps the personality's intended announcer cadence;
       // 0.7 slows it 30%, 1.5 speeds it 50%. See _setBrowserSpeechRate.
       await _setBrowserSpeechRate();
       await _tts.speak(text);
-      await _ttsCompleter!.future;
+      await completer.future;
     }
+  }
+
+  /// Stops whatever is currently being spoken.
+  ///
+  /// Needed by the queue's watchdog: `Future.timeout` abandons the await but
+  /// leaves the utterance playing (and queued inside the browser's speech
+  /// engine), so without this the next announcement talks over it.
+  Future<void> stopSpeaking() async {
+    try {
+      await _tts.stop();
+    } catch (_) {
+      // Engine may not be initialized yet; nothing to stop.
+    }
+    _responsiveVoice.cancel();
+    final c = _ttsCompleter;
+    _ttsCompleter = null;
+    if (c != null && !c.isCompleted) c.complete();
   }
 
   /// Dispose of TTS resources.

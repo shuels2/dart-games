@@ -76,4 +76,19 @@ class CarnivalDerbySoundEffects {
   );
 
   // Winner announcement has no sound effect (as specified by user)
+
+  /// Every effect this game uses. Preloaded at game start so
+  /// the first play does not pay the asset-load cost.
+  static const List<SoundEffectConfig> all = [
+    horseraceStart,
+    removeDarts,
+    miss,
+    singleHit,
+    doubleHit,
+    tripleHit,
+    bullseye,
+    outerBull,
+    bust,
+    gameComplete,
+  ];
 }

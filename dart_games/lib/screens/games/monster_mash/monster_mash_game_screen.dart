@@ -14,6 +14,7 @@ import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/monster_mash_announcement_helper.dart';
 import '../../../services/play_to_complete/monster_mash_strategy.dart';
 import '../../../services/play_to_tie/monster_mash_strategy.dart';
+import '../../../services/monster_mash_sound_effects.dart';
 import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
@@ -74,7 +75,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     if (mounted) setState(() {});
 
     final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings();
+    await globalQueue.loadSettings(preloadEffects: MonsterMashSoundEffects.all);
     _audioQueue = MonsterMashAnnouncementHelper(globalQueue);
 
     // Subscribe to dartboard events (works for both WebSocket and emulator)
@@ -530,7 +531,9 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       if (winners.isNotEmpty) {
         _audioQueue?.announceWinners(winners.map((p) => p.name).toList());
       }
-      _audioQueue?.whenIdle().then((_) {
+      (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
       });
     }

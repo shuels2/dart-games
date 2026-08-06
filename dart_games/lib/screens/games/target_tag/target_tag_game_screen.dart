@@ -16,6 +16,7 @@ import '../../../widgets/target_tag/game_info_panel_widget.dart';
 import '../../../widgets/target_tag/player_card_widget.dart';
 import '../../../widgets/target_tag/tech_neon_background.dart';
 import '../../../services/play_to_complete/target_tag_strategy.dart';
+import '../../../services/target_tag_sound_effects.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -65,7 +66,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
 
     // Initialize global announcement queue with Target Tag helper
     final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings();
+    await globalQueue.loadSettings(preloadEffects: TargetTagSoundEffects.all);
     _audioQueue = TargetTagAnnouncementHelper(globalQueue);
 
     // Subscribe to dartboard events (works for both WebSocket and emulator)
@@ -491,7 +492,9 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
         final winnerNames = winners.map((p) => p.name).toList();
         _audioQueue?.announceWinner(winnerNames);
       }
-      _audioQueue?.whenIdle().then((_) {
+      (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
       });
     }

@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/game_announcement_models.dart';
 
@@ -214,213 +216,103 @@ void main() {
       expect(announcement.soundEffect, sfx);
     });
   });
+  // The queue is strict FIFO — AudioPriority is retained on
+  // QueuedAnnouncement for logging only and does NOT affect playback order
+  // (see the class doc on GameAnnouncementQueueService). These tests cover
+  // the ordering rules that DO apply: arrival order, staleness, and
+  // coalescing.
+  group('Queue ordering rules', () {
+    test('announcements keep their arrival order', () {
+      final queue = Queue<QueuedAnnouncement>();
+      queue.add(QueuedAnnouncement(
+          text: 'Victory!', priority: AudioPriority.victory));
+      queue.add(QueuedAnnouncement(
+          text: 'Turn change', priority: AudioPriority.turnTransition));
+      queue.add(QueuedAnnouncement(
+          text: 'Hit confirmed', priority: AudioPriority.hitConfirm));
 
-  group('Priority ordering logic', () {
-    test('sorting by priority puts higher values first', () {
+      expect(queue.removeFirst().text, 'Victory!');
+      expect(queue.removeFirst().text, 'Turn change');
+      expect(queue.removeFirst().text, 'Hit confirmed',
+          reason: 'A high-priority line queued later must not jump ahead');
+    });
+
+    test('priority does not reorder anything', () {
       final low = QueuedAnnouncement(
-        text: 'Turn change',
-        priority: AudioPriority.turnTransition,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 0),
-      );
-      final mid = QueuedAnnouncement(
-        text: 'Hit confirmed',
-        priority: AudioPriority.hitConfirm,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 1),
-      );
-      final high = QueuedAnnouncement(
+          text: 'Turn change', priority: AudioPriority.turnTransition);
+      final high =
+          QueuedAnnouncement(text: 'Victory!', priority: AudioPriority.victory);
+      final queue = Queue<QueuedAnnouncement>()..add(low)..add(high);
+
+      expect(queue.toList().map((a) => a.text), ['Turn change', 'Victory!']);
+    });
+  });
+
+  group('Staleness', () {
+    test('an announcement without maxAge never goes stale', () {
+      final a = QueuedAnnouncement(
         text: 'Victory!',
         priority: AudioPriority.victory,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 2),
+        queuedAt: DateTime.now().subtract(const Duration(minutes: 5)),
       );
-
-      // Same sort logic as _processQueue: sort by priority desc, then queuedAt asc
-      final queue = [low, mid, high];
-      queue.sort((a, b) {
-        final priorityCompare = b.priority.value.compareTo(a.priority.value);
-        if (priorityCompare != 0) return priorityCompare;
-        return a.queuedAt.compareTo(b.queuedAt);
-      });
-
-      expect(queue[0].text, 'Victory!');
-      expect(queue[1].text, 'Hit confirmed');
-      expect(queue[2].text, 'Turn change');
+      expect(a.isStale, isFalse);
     });
 
-    test('same priority uses FIFO (earlier queuedAt first)', () {
-      final first = QueuedAnnouncement(
-        text: 'First hit',
-        priority: AudioPriority.hitConfirm,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 0),
-      );
-      final second = QueuedAnnouncement(
-        text: 'Second hit',
-        priority: AudioPriority.hitConfirm,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 1),
-      );
-      final third = QueuedAnnouncement(
-        text: 'Third hit',
-        priority: AudioPriority.hitConfirm,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 2),
-      );
-
-      final queue = [third, first, second];
-      queue.sort((a, b) {
-        final priorityCompare = b.priority.value.compareTo(a.priority.value);
-        if (priorityCompare != 0) return priorityCompare;
-        return a.queuedAt.compareTo(b.queuedAt);
-      });
-
-      expect(queue[0].text, 'First hit');
-      expect(queue[1].text, 'Second hit');
-      expect(queue[2].text, 'Third hit');
-    });
-
-    test('mixed priorities and timestamps sort correctly', () {
-      final earlyLow = QueuedAnnouncement(
-        text: 'Early low',
+    test('an announcement past its maxAge is stale', () {
+      final a = QueuedAnnouncement(
+        text: 'Alice, you are up',
         priority: AudioPriority.turnTransition,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 0),
+        queuedAt: DateTime.now().subtract(const Duration(seconds: 10)),
+        maxAge: const Duration(seconds: 4),
       );
-      final lateHigh = QueuedAnnouncement(
-        text: 'Late high',
-        priority: AudioPriority.victory,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 5),
-      );
-      final earlyHigh = QueuedAnnouncement(
-        text: 'Early high',
-        priority: AudioPriority.victory,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 1),
-      );
-      final lateLow = QueuedAnnouncement(
-        text: 'Late low',
+      expect(a.isStale, isTrue,
+          reason: 'A turn line arriving after the next player threw is worse '
+              'than silence');
+    });
+
+    test('an announcement within its maxAge is not stale', () {
+      final a = QueuedAnnouncement(
+        text: 'Alice, you are up',
         priority: AudioPriority.turnTransition,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 6),
+        queuedAt: DateTime.now().subtract(const Duration(seconds: 1)),
+        maxAge: const Duration(seconds: 4),
       );
-      final midMid = QueuedAnnouncement(
-        text: 'Mid mid',
-        priority: AudioPriority.shieldStatus,
-        queuedAt: DateTime(2026, 1, 1, 12, 0, 3),
-      );
+      expect(a.isStale, isFalse);
+    });
+  });
 
-      final queue = [earlyLow, lateHigh, earlyHigh, lateLow, midMid];
-      queue.sort((a, b) {
-        final priorityCompare = b.priority.value.compareTo(a.priority.value);
-        if (priorityCompare != 0) return priorityCompare;
-        return a.queuedAt.compareTo(b.queuedAt);
-      });
-
-      // Victory (5) first, ordered by time
-      expect(queue[0].text, 'Early high');
-      expect(queue[1].text, 'Late high');
-      // Shield status (3)
-      expect(queue[2].text, 'Mid mid');
-      // Turn transition (1) last, ordered by time
-      expect(queue[3].text, 'Early low');
-      expect(queue[4].text, 'Late low');
+  group('Coalescing', () {
+    test('coalesceKey defaults to null so nothing is replaced', () {
+      final a = QueuedAnnouncement(
+          text: 'Single 20', priority: AudioPriority.hitConfirm);
+      expect(a.coalesceKey, isNull);
+      expect(a.maxAge, isNull);
     });
 
-    test('all five priority levels sort in correct order', () {
-      final announcements = [
-        QueuedAnnouncement(
-          text: 'Turn',
+    test('a newer keyed announcement supersedes the queued older one', () {
+      // Mirrors announce(): remove queued entries sharing the key, then add.
+      final queue = Queue<QueuedAnnouncement>();
+      void enqueue(QueuedAnnouncement a) {
+        if (a.coalesceKey != null) {
+          queue.removeWhere((q) => q.coalesceKey == a.coalesceKey);
+        }
+        queue.add(a);
+      }
+
+      enqueue(QueuedAnnouncement(
+          text: 'Alice, you are up',
           priority: AudioPriority.turnTransition,
-          queuedAt: DateTime(2026, 1, 1, 12, 0, 0),
-        ),
-        QueuedAnnouncement(
-          text: 'Hit',
-          priority: AudioPriority.hitConfirm,
-          queuedAt: DateTime(2026, 1, 1, 12, 0, 0),
-        ),
-        QueuedAnnouncement(
-          text: 'Shield',
-          priority: AudioPriority.shieldStatus,
-          queuedAt: DateTime(2026, 1, 1, 12, 0, 0),
-        ),
-        QueuedAnnouncement(
-          text: 'Status',
-          priority: AudioPriority.statusChange,
-          queuedAt: DateTime(2026, 1, 1, 12, 0, 0),
-        ),
-        QueuedAnnouncement(
-          text: 'Victory',
-          priority: AudioPriority.victory,
-          queuedAt: DateTime(2026, 1, 1, 12, 0, 0),
-        ),
-      ];
-
-      // Shuffle to ensure sort works regardless of input order
-      announcements.shuffle();
-
-      announcements.sort((a, b) {
-        final priorityCompare = b.priority.value.compareTo(a.priority.value);
-        if (priorityCompare != 0) return priorityCompare;
-        return a.queuedAt.compareTo(b.queuedAt);
-      });
-
-      expect(announcements[0].text, 'Victory');
-      expect(announcements[1].text, 'Status');
-      expect(announcements[2].text, 'Shield');
-      expect(announcements[3].text, 'Hit');
-      expect(announcements[4].text, 'Turn');
-    });
-
-    test('single item list remains unchanged after sort', () {
-      final single = [
-        QueuedAnnouncement(
-          text: 'Only one',
-          priority: AudioPriority.statusChange,
-          queuedAt: DateTime(2026, 1, 1),
-        ),
-      ];
-
-      single.sort((a, b) {
-        final priorityCompare = b.priority.value.compareTo(a.priority.value);
-        if (priorityCompare != 0) return priorityCompare;
-        return a.queuedAt.compareTo(b.queuedAt);
-      });
-
-      expect(single.length, 1);
-      expect(single[0].text, 'Only one');
-    });
-
-    test('empty list sort does not throw', () {
-      final empty = <QueuedAnnouncement>[];
-
-      expect(() {
-        empty.sort((a, b) {
-          final priorityCompare = b.priority.value.compareTo(a.priority.value);
-          if (priorityCompare != 0) return priorityCompare;
-          return a.queuedAt.compareTo(b.queuedAt);
-        });
-      }, returnsNormally);
-
-      expect(empty, isEmpty);
-    });
-
-    test('identical timestamps with different priorities sort by priority', () {
-      final sameTime = DateTime(2026, 1, 1, 12, 0, 0);
-
-      final announcements = [
-        QueuedAnnouncement(
-          text: 'Low',
+          coalesceKey: 'turn'));
+      enqueue(QueuedAnnouncement(
+          text: 'Single 20', priority: AudioPriority.hitConfirm));
+      enqueue(QueuedAnnouncement(
+          text: 'Bob, you are up',
           priority: AudioPriority.turnTransition,
-          queuedAt: sameTime,
-        ),
-        QueuedAnnouncement(
-          text: 'High',
-          priority: AudioPriority.victory,
-          queuedAt: sameTime,
-        ),
-      ];
+          coalesceKey: 'turn'));
 
-      announcements.sort((a, b) {
-        final priorityCompare = b.priority.value.compareTo(a.priority.value);
-        if (priorityCompare != 0) return priorityCompare;
-        return a.queuedAt.compareTo(b.queuedAt);
-      });
-
-      expect(announcements[0].text, 'High');
-      expect(announcements[1].text, 'Low');
+      expect(queue.map((a) => a.text), ['Single 20', 'Bob, you are up'],
+          reason: 'Only the latest turn line survives; unkeyed lines are '
+              'untouched');
     });
   });
 

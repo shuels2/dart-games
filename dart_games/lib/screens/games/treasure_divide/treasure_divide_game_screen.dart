@@ -27,6 +27,7 @@ import '../../../widgets/treasure_divide/pirate_avatar_widget.dart';
 import '../../../widgets/treasure_divide/treasure_map_widget.dart';
 import '../../../services/play_to_complete/treasure_divide_strategy.dart';
 import '../../../services/play_to_tie/treasure_divide_strategy.dart';
+import '../../../services/treasure_divide_sound_effects.dart';
 import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import 'treasure_divide_results_screen.dart';
 
@@ -108,7 +109,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
 
     // ── Audio queue setup ──
     final queueService = GameAnnouncementQueueService();
-    await queueService.loadSettings();
+    await queueService.loadSettings(preloadEffects: TreasureDivideSoundEffects.all);
     _audioQueue = TreasureDivideAnnouncementHelper(queueService);
 
     final provider = context.read<TreasureDivideProvider>();

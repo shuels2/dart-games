@@ -15,6 +15,7 @@ import '../../../services/play_to_tie/tiki_golf_strategy.dart';
 import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import '../../../services/save_game_service.dart';
 import '../../../services/tiki_golf_announcement_helper.dart';
+import '../../../services/tiki_golf_sound_effects.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
@@ -146,7 +147,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
     // ── Announcement helper ───────────────────────────────────────────────────
     final queueService = GameAnnouncementQueueService();
-    await queueService.loadSettings();
+    await queueService.loadSettings(preloadEffects: TikiGolfSoundEffects.all);
     _audioQueue = TikiGolfAnnouncementHelper(queueService);
 
     if (!mounted) return;
@@ -503,7 +504,9 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
           _audioQueue?.announceVictory(winnerNames);
         }
       }
-      _audioQueue?.whenIdle().then((_) {
+      (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
       });
     }

@@ -112,16 +112,6 @@ class MockPiratesGridAudioQueueService {
 
   // ─── Connection-status announcements ──────────────────────────────────────
 
-  void announceGamePaused() {
-    _record(
-      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
-    );
-  }
-
-  void announceConnectionRestored() {
-    _record('Dartboard reconnected. Resume play when ready.');
-  }
-
   // ─── Dispose ──────────────────────────────────────────────────────────────
 
   void dispose() {

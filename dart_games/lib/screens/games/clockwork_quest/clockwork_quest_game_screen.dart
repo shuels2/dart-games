@@ -25,6 +25,7 @@ import '../../../services/play_to_complete/clockwork_quest_strategy.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/clockwork_quest_announcement_helper.dart';
+import '../../../services/clockwork_quest_sound_effects.dart';
 import 'clockwork_quest_results_screen.dart';
 
 class ClockworkQuestGameScreen extends StatefulWidget {
@@ -62,7 +63,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     if (mounted) setState(() {});
 
     final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings();
+    await globalQueue.loadSettings(preloadEffects: ClockworkQuestSoundEffects.all);
     _audioQueue = ClockworkQuestAnnouncementHelper(globalQueue);
 
     // Subscribe to dartboard events
@@ -259,7 +260,9 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
         );
         _audioQueue?.announceVictory(winner);
       }
-      _audioQueue?.whenIdle().then((_) {
+      (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
       });
     }

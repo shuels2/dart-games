@@ -15,6 +15,7 @@ import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/pirates_grid_announcement_helper.dart';
 import '../../../services/play_to_complete/pirates_grid_strategy.dart';
 import '../../../services/play_to_tie/pirates_grid_strategy.dart';
+import '../../../services/pirates_grid_sound_effects.dart';
 import '../../../widgets/dartboard_emulator/buff_toggle_column.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
@@ -127,7 +128,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
 
     // Initialize announcement queue
     final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings();
+    await globalQueue.loadSettings(preloadEffects: PiratesGridSoundEffects.all);
     _audioQueue = PiratesGridAnnouncementHelper(globalQueue);
 
     // Announce game start
@@ -146,7 +147,9 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
           if (!_dartboardEmulatorController.isAutoPlaying) {
             _audioQueue?.announcePlayerTurn(playerName);
           }
-          _audioQueue?.whenIdle().then((_) {
+          (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
             if (mounted && game.speedPlay) {
               _startSpeedPlayTimerForCurrentPlayer(game);
             }
@@ -523,7 +526,9 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         final playerName = playerProvider.getPlayerById(currentPlayerId)?.name ??
             'Player ${game.currentPlayerIndex + 1}';
         _audioQueue?.announcePlayerTurn(playerName);
-        _audioQueue?.whenIdle().then((_) {
+        (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
           if (mounted && game.speedPlay) {
             _startSpeedPlayTimerForCurrentPlayer(game);
           }
@@ -557,7 +562,9 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       final playerProvider = context.read<PlayerProvider>();
       final winnerName = playerProvider.getPlayerById(winnerId ?? '')?.name ?? '';
       _audioQueue?.announceWinner(winnerName);
-      _audioQueue?.whenIdle().then((_) {
+      (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
         Future.delayed(const Duration(milliseconds: 250), navigateToResults);
       });
     }
