@@ -3,11 +3,17 @@ import 'package:flutter/foundation.dart';
 import '../models/treasure_divide_game.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
+import 'game_provider_base.dart';
 
-class TreasureDivideProvider extends ChangeNotifier {
-  TreasureDivideGame? _currentGame;
-  String? _resumedSavedGameId;
-  bool _saving = false;
+class TreasureDivideProvider extends GameProviderBase<TreasureDivideGame> {
+  /// Internal alias for [GameProviderBase.game].
+  ///
+  /// This file names its locals `game` in roughly sixty places
+  /// (`final game = _currentGame!;`), so renaming the field to match the base
+  /// class would mean rewriting every one of those bodies. The alias keeps the
+  /// storage in the base while leaving the game logic untouched.
+  TreasureDivideGame? get _currentGame => game;
+  set _currentGame(TreasureDivideGame? value) => game = value;
 
   // Accumulates the haul for the current player's in-progress turn.
   int _currentTurnHaul = 0;
@@ -33,11 +39,21 @@ class TreasureDivideProvider extends ChangeNotifier {
 
   TreasureDivideGame? get currentGame => _currentGame;
 
+  @override
   bool get isGameActive =>
       _currentGame?.state == TreasureDivideGameState.playing;
 
+  /// Model-owned takeout flag. Treasure Divide keeps it on the game object so
+  /// it serializes with the save for free — see [GameProviderBase] for why the
+  /// base routes every read and write through this pair.
+  @override
   bool get shouldPromptTakeout => _currentGame?.shouldPromptTakeout ?? false;
 
+  @override
+  set waitingForTakeout(bool value) =>
+      _currentGame?.shouldPromptTakeout = value;
+
+  @override
   bool get hasWinner => _currentGame?.hasWinner ?? false;
 
   String? get currentPlayerId => _currentGame?.currentPlayerId;
@@ -53,8 +69,6 @@ class TreasureDivideProvider extends ChangeNotifier {
     if (idx < 0 || idx >= game.teamCrestPaths.length) return null;
     return game.teamCrestPaths[idx];
   }
-
-  String? get resumedSavedGameId => _resumedSavedGameId;
 
   /// The winning crew's display name (team mode). Returns null if no winner yet.
   String? get winningCrewName {
@@ -142,9 +156,6 @@ class TreasureDivideProvider extends ChangeNotifier {
   /// new round's properties are.
   int get previousRoundIndex => _previousRoundIndex;
 
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
-  }
 
   // ─── randomDistribution ──────────────────────────────────────────────────────
 
@@ -339,6 +350,16 @@ class TreasureDivideProvider extends ChangeNotifier {
 
   /// Called when the takeout prompt is confirmed (darts removed from the board).
   /// Commits the turn score, applies halving, and advances rotation.
+  /// Overrides the base flow.
+  ///
+  /// The base's sequence is advance-then-clear, which suits games whose turn
+  /// state lives entirely on the model. Treasure Divide has to commit the
+  /// round haul and apply halving BEFORE the rotation moves on, and it clears
+  /// the takeout flag as part of resetting turn state rather than after
+  /// advancing. It also has no winner short-circuit here: the game is only
+  /// finalized *inside* the advance, so the screen re-checks `hasWinner`
+  /// afterwards.
+  @override
   void handleTakeoutFinished() {
     if (_currentGame == null) return;
     if (!_currentGame!.shouldPromptTakeout) return;
@@ -378,13 +399,18 @@ class TreasureDivideProvider extends ChangeNotifier {
     _currentTurnHaul = 0;
 
     // ── Advance rotation ──
-    if (game.gameMode == TreasureDivideGameMode.solo) {
+    advanceToNextPlayer();
+
+    notifyListeners();
+  }
+
+  @override
+  void advanceToNextPlayer() {
+    if (_currentGame!.gameMode == TreasureDivideGameMode.solo) {
       _advanceSoloPlayer();
     } else {
       _advanceTeamPlayer();
     }
-
-    notifyListeners();
   }
 
   // ─── skipTurn ────────────────────────────────────────────────────────────────
@@ -411,18 +437,18 @@ class TreasureDivideProvider extends ChangeNotifier {
     }
 
     // Record the forfeited darts so the dart indicators show why the turn
-    // ended instead of rendering blank slots.
+    // ended instead of rendering blank slots. The shared policy owns the
+    // marker string, the takeout latch and the notify; `onSkipped` carries the
+    // one thing that is Treasure Divide's own — forcing the dart count up to a
+    // full turn so the round commits as an all-miss.
     game.currentTurnDartSegments[playerId] ??= [];
-    final thrown = game.currentTurnDartSegments[playerId]!.length;
-    for (int i = thrown; i < game.dartsThisTurn; i++) {
-      game.currentTurnDartSegments[playerId]!.add('Skip');
-    }
-
-    // Treat remaining darts as misses — mark turn as done
-    game.dartsThrown = game.dartsThisTurn;
-    game.shouldPromptTakeout = true;
-
-    notifyListeners();
+    runSkipTurn(
+      dartsThrown: game.currentTurnDartSegments[playerId]!.length,
+      maxDartsPerTurn: game.dartsThisTurn,
+      addVisualMarker: (marker) =>
+          game.currentTurnDartSegments[playerId]!.add(marker),
+      onSkipped: () => game.dartsThrown = game.dartsThisTurn,
+    );
   }
 
   // ─── editPlayerScore ────────────────────────────────────────────────────────
@@ -985,11 +1011,14 @@ class TreasureDivideProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Unlike the base, Treasure Divide forgets the saved-game slot on clear —
+  /// starting a fresh game here must not overwrite the row the previous game
+  /// was resumed from.
+  @override
   void clearGame() {
-    _currentGame = null;
-    _resumedSavedGameId = null;
+    clearResumedSavedGameId();
     _currentTurnHaul = 0;
-    notifyListeners();
+    super.clearGame();
   }
 
   // ─── Save / Restore ─────────────────────────────────────────────────────────
@@ -1005,9 +1034,7 @@ class TreasureDivideProvider extends ChangeNotifier {
     Map<String, String>? playerNamesById,
     bool isAutoSave = false,
   }) async {
-    if (_currentGame == null || _saving) return;
-    _saving = true;
-    try {
+    await persistSave(service, (existingId) {
       final game = _currentGame!;
       String nameOf(String id) => playerNamesById?[id] ?? id;
       final names = playerNames ?? game.playerIds.map(nameOf).toList();
@@ -1017,7 +1044,7 @@ class TreasureDivideProvider extends ChangeNotifier {
           'Round ${game.currentRoundIndex + 1} of ${game.numberOfRounds}';
       final leader = _leadingEntry(nameOf);
 
-      final metadata = SavedGameMetadata.create(
+      return SavedGameMetadata.create(
         gameType: 'treasure_divide',
         playerNames: names,
         progressInfo: roundDisplay,
@@ -1027,16 +1054,9 @@ class TreasureDivideProvider extends ChangeNotifier {
         gameState: game.toJson(),
         waitingForTakeout: game.shouldPromptTakeout,
         isAutoSave: isAutoSave,
-        existingId: _resumedSavedGameId,
+        existingId: existingId,
       );
-
-      final saved = await service.saveGame(metadata);
-      if (saved) {
-        _resumedSavedGameId = metadata.id;
-      }
-    } finally {
-      _saving = false;
-    }
+    });
   }
 
   /// The player (Solo) or crew (Team) currently holding the most gold, for
@@ -1074,14 +1094,15 @@ class TreasureDivideProvider extends ChangeNotifier {
     );
   }
 
-  void restoreGame(SavedGameMetadata savedGame) {
-    _currentGame = TreasureDivideGame.fromJson(
-        Map<String, dynamic>.from(savedGame.gameState));
-    _currentGame!.shouldPromptTakeout = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
-    _restoreInFlightTurnState();
-    notifyListeners();
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = TreasureDivideGame.fromJson(json);
   }
+
+  /// Runs after the base has deserialized the game and restored the takeout
+  /// flag and slot id.
+  @override
+  void onRestored() => _restoreInFlightTurnState();
 
   /// Rebuilds the turn-scoped state that lives on the provider rather than on
   /// the serialized game model: the haul accumulated by darts already thrown

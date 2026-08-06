@@ -57,6 +57,13 @@ abstract class GameProviderBase<G> extends ChangeNotifier {
 
   // ── Takeout ───────────────────────────────────────────────────────────────
 
+  /// Whether the board is waiting for the player to pull their darts.
+  ///
+  /// Backed by a provider field by default. Games whose model carries the flag
+  /// (so it serializes with the game for free — Treasure Divide) override this
+  /// pair to point at the model instead. Everything in this class goes through
+  /// the getter/setter rather than the field, so an override takes effect
+  /// everywhere.
   bool get shouldPromptTakeout => _waitingForTakeout;
 
   @protected
@@ -71,7 +78,7 @@ abstract class GameProviderBase<G> extends ChangeNotifier {
     required int maxDartsPerTurn,
   }) {
     if (dartsThrown >= maxDartsPerTurn || hasWinner) {
-      _waitingForTakeout = true;
+      waitingForTakeout = true;
     }
   }
 
@@ -79,12 +86,16 @@ abstract class GameProviderBase<G> extends ChangeNotifier {
   ///
   /// If the game is already won, this only clears the waiting state — the
   /// screen navigates to results and there is no next player to advance to.
+  ///
+  /// Games that must commit turn state *before* advancing (Treasure Divide
+  /// commits the round haul and applies halving) override this outright; the
+  /// rest of the class is still theirs.
   void handleTakeoutFinished() {
     if (_game == null) return;
-    if (!_waitingForTakeout) return;
+    if (!shouldPromptTakeout) return;
 
     if (hasWinner) {
-      _waitingForTakeout = false;
+      waitingForTakeout = false;
       notifyListeners();
       return;
     }
@@ -92,7 +103,7 @@ abstract class GameProviderBase<G> extends ChangeNotifier {
     if (!isGameActive) return;
 
     advanceToNextPlayer();
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
     notifyListeners();
   }
 
@@ -104,15 +115,21 @@ abstract class GameProviderBase<G> extends ChangeNotifier {
   /// Returns false when the skip was rejected (no game, already waiting for a
   /// takeout, or the turn is already complete) — in which case nothing was
   /// mutated and no listeners were notified.
+  ///
+  /// [onSkipped] runs after the markers are appended and before the takeout
+  /// flag is set, for games that also have to settle their own turn counters
+  /// (Treasure Divide forces `dartsThrown` up to a full turn so the round
+  /// commits as an all-miss).
   @protected
   bool runSkipTurn({
     required int dartsThrown,
     required int maxDartsPerTurn,
     required void Function(String marker) addVisualMarker,
+    VoidCallback? onSkipped,
   }) {
     if (!GameSkipTurnHelper.canSkipTurn(
       gameActive: isGameActive,
-      waitingForTakeout: _waitingForTakeout,
+      waitingForTakeout: shouldPromptTakeout,
       currentDartCount: dartsThrown,
       maxDartsPerTurn: maxDartsPerTurn,
     )) {
@@ -125,7 +142,9 @@ abstract class GameProviderBase<G> extends ChangeNotifier {
       addVisualMarker: addVisualMarker,
     );
 
-    _waitingForTakeout = true;
+    onSkipped?.call();
+
+    waitingForTakeout = true;
     notifyListeners();
     return true;
   }
@@ -169,7 +188,7 @@ abstract class GameProviderBase<G> extends ChangeNotifier {
   /// the slot, then notify.
   void restoreGame(SavedGameMetadata savedGame) {
     loadGameState(Map<String, dynamic>.from(savedGame.gameState));
-    _waitingForTakeout = savedGame.waitingForTakeout;
+    waitingForTakeout = savedGame.waitingForTakeout;
     _resumedSavedGameId = savedGame.id;
     onRestored();
     notifyListeners();
@@ -177,10 +196,14 @@ abstract class GameProviderBase<G> extends ChangeNotifier {
 
   /// Drops the game entirely. Note this does NOT clear [resumedSavedGameId] —
   /// the menu screen clears it explicitly when starting a fresh game, and the
-  /// results screen still needs it after the game object is gone.
+  /// results screen still needs it after the game object is gone. Games that
+  /// DO want the slot forgotten call [clearResumedSavedGameId] in an override.
+  ///
+  /// The takeout flag is cleared before the game is dropped, so a model-owned
+  /// flag is written while its model still exists.
   void clearGame() {
+    waitingForTakeout = false;
     _game = null;
-    _waitingForTakeout = false;
     notifyListeners();
   }
 }

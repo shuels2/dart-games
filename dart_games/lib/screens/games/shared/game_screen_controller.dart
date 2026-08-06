@@ -86,6 +86,11 @@ mixin GameScreenController<T extends StatefulWidget> on State<T> {
     setState(() => _showSaveModal = true);
   }
 
+  void closeSaveModal() {
+    if (!_showSaveModal) return;
+    setState(() => _showSaveModal = false);
+  }
+
   // ── Init / dispose ────────────────────────────────────────────────────────
 
   /// Wires the screen up: grabs the mock API, loads the announcement queue,
@@ -208,9 +213,17 @@ mixin GameScreenController<T extends StatefulWidget> on State<T> {
   /// With darts on the board: announce "remove your darts" at 1500ms, then
   /// start the takeout at 3500ms. With an empty board (a skip before the first
   /// dart): advance directly at 500ms, with no modal in between.
+  ///
+  /// Set [autoStartTakeout] to false to schedule only the announcement and
+  /// leave the takeout to the player. Treasure Divide's normal end-of-turn
+  /// does this — the emulator's DARTS REMOVED button drives it instead — while
+  /// its Skip path keeps the auto-start. Passing `null` for
+  /// [announceRemoveDarts] suppresses the announcement, which is how callers
+  /// stay silent during auto-play.
   void scheduleTakeoutSequence({
     required bool dartsOnBoard,
     VoidCallback? announceRemoveDarts,
+    bool autoStartTakeout = true,
   }) {
     cancelTakeoutSequence();
 
@@ -221,9 +234,11 @@ mixin GameScreenController<T extends StatefulWidget> on State<T> {
           if (mounted) announceRemoveDarts?.call();
         },
       );
-      _takeoutTimer = Timer(const Duration(milliseconds: 3500), () {
-        if (mounted) _mockApi?.simulateTakeoutStarted();
-      });
+      if (autoStartTakeout) {
+        _takeoutTimer = Timer(const Duration(milliseconds: 3500), () {
+          if (mounted) _mockApi?.simulateTakeoutStarted();
+        });
+      }
     } else {
       _takeoutTimer = Timer(const Duration(milliseconds: 500), () {
         if (!mounted) return;
