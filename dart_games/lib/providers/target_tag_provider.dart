@@ -3,120 +3,118 @@ import '../models/target_tag_game.dart';
 import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
-import '../services/game_skip_turn_helper.dart';
 import '../services/api/api_client.dart';
 import '../utils/dart_sector.dart';
+import 'game_provider_base.dart';
 
-class TargetTagProvider extends ChangeNotifier {
-  TargetTagGame? _currentGame;
-  bool _waitingForTakeout = false;
-  ApiClient? _apiClient;
+class TargetTagProvider extends GameProviderBase<TargetTagGame> {
+  final ApiClient? _apiClient;
 
   TargetTagProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
-  TargetTagGame? get currentGame => _currentGame;
+  TargetTagGame? get currentGame => game;
 
+  @override
   bool get isGameActive =>
-      _currentGame?.state == GameState.playing ||
-      _currentGame?.state == GameState.suddenDeath;
+      game?.state == GameState.playing ||
+      game?.state == GameState.suddenDeath;
 
-  bool get shouldPromptTakeout => _waitingForTakeout;
-
-  bool get isSuddenDeath => _currentGame?.state == GameState.suddenDeath;
+  bool get isSuddenDeath => game?.state == GameState.suddenDeath;
 
   Player? getCurrentPlayer(List<Player> players) {
-    if (_currentGame == null) return null;
-    return _currentGame!.getCurrentPlayer(players);
+    if (game == null) return null;
+    return game!.getCurrentPlayer(players);
   }
 
   String? getCurrentPlayerId() {
-    return _currentGame?.getCurrentPlayerId();
+    return game?.getCurrentPlayerId();
   }
 
   int getCurrentPlayerDartsThrown() {
-    return _currentGame?.getCurrentPlayerDartsThrown() ?? 0;
+    return game?.getCurrentPlayerDartsThrown() ?? 0;
   }
 
   List<String> getCurrentTurnDarts(String playerId) {
-    return _currentGame?.getCurrentTurnDarts(playerId) ?? [];
+    return game?.getCurrentTurnDarts(playerId) ?? [];
   }
 
   List<bool> getDartThrowTaggedInStatus(String playerId) {
-    return _currentGame?.getDartThrowTaggedInStatus(playerId) ?? [];
+    return game?.getDartThrowTaggedInStatus(playerId) ?? [];
   }
 
   List<bool> getDartThrowHeroBonusHit(String playerId) {
-    return _currentGame?.getDartThrowHeroBonusHit(playerId) ?? [];
+    return game?.getDartThrowHeroBonusHit(playerId) ?? [];
   }
 
   List<bool> getDartThrowReachedMax(String playerId) {
-    return _currentGame?.getDartThrowReachedMax(playerId) ?? [];
+    return game?.getDartThrowReachedMax(playerId) ?? [];
   }
 
   List<bool> getDartThrowCausedElimination(String playerId) {
-    return _currentGame?.getDartThrowCausedElimination(playerId) ?? [];
+    return game?.getDartThrowCausedElimination(playerId) ?? [];
   }
 
   List<bool> getDartThrowHitOpponentTarget(String playerId) {
-    return _currentGame?.getDartThrowHitOpponentTarget(playerId) ?? [];
+    return game?.getDartThrowHitOpponentTarget(playerId) ?? [];
   }
 
-  bool get hasWinner => _currentGame?.hasWinner() ?? false;
+  @override
+  bool get hasWinner => game?.hasWinner() ?? false;
 
   Player? getWinner(List<Player> players) {
-    return _currentGame?.getWinner(players);
+    return game?.getWinner(players);
   }
 
   List<Player> getWinners(List<Player> players) {
-    return _currentGame?.getWinners(players) ?? [];
+    return game?.getWinners(players) ?? [];
   }
 
   // Get shields for entity (player or team)
   int getShields(String playerId) {
-    if (_currentGame == null) return 0;
-    final entityId = _currentGame!.mode == GameMode.solo
+    if (game == null) return 0;
+    final entityId = game!.mode == GameMode.solo
         ? playerId
-        : _currentGame!.playerToTeam![playerId]!;
-    return _currentGame!.getEntityShields(entityId);
+        : game!.playerToTeam![playerId]!;
+    return game!.getEntityShields(entityId);
   }
 
   // Check if player/team is tagged in
   bool isTaggedIn(String playerId) {
-    if (_currentGame == null) return false;
-    final entityId = _currentGame!.mode == GameMode.solo
+    if (game == null) return false;
+    final entityId = game!.mode == GameMode.solo
         ? playerId
-        : _currentGame!.playerToTeam![playerId]!;
-    return _currentGame!.isEntityTaggedIn(entityId);
+        : game!.playerToTeam![playerId]!;
+    return game!.isEntityTaggedIn(entityId);
   }
 
   // Check if player/team is eliminated
   bool isEliminated(String playerId) {
-    if (_currentGame == null) return false;
-    final entityId = _currentGame!.mode == GameMode.solo
+    if (game == null) return false;
+    final entityId = game!.mode == GameMode.solo
         ? playerId
-        : _currentGame!.playerToTeam![playerId]!;
-    return _currentGame!.isEntityEliminated(entityId);
+        : game!.playerToTeam![playerId]!;
+    return game!.isEntityEliminated(entityId);
   }
 
   // Get target number for player
   int? getTargetNumber(String playerId) {
-    return _currentGame?.targetNumbers[playerId];
+    return game?.targetNumbers[playerId];
   }
 
   // Get solo hero buff number for a specific player (if applicable)
   int? getSoloHeroBuffNumber(String playerId) {
-    return _currentGame?.soloHeroBuffNumbers?[playerId];
+    return game?.soloHeroBuffNumbers?[playerId];
   }
 
   // Get solo hero buff multiplier for a specific player (if applicable)
   String? getSoloHeroBuffMultiplier(String playerId) {
-    return _currentGame?.soloHeroBuffMultipliers?[playerId];
+    return game?.soloHeroBuffMultipliers?[playerId];
   }
 
   // Check if player is solo hero (has a buff number)
   bool isSoloHero(String playerId) {
-    return _currentGame?.soloHeroBuffNumbers?.containsKey(playerId) ?? false;
+    return game?.soloHeroBuffNumbers?.containsKey(playerId) ?? false;
   }
 
   // Start a new solo mode game
@@ -132,19 +130,14 @@ class TargetTagProvider extends ChangeNotifier {
     }
 
     final playerIds = players.map((p) => p.id).toList();
-    _currentGame = TargetTagGame.createSolo(
+    game = TargetTagGame.createSolo(
       playerIds: playerIds,
       shieldMax: shieldMax,
       heroBonus: heroBonus,
     );
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
 
-    // Save initial turn start state
-    _currentGame!.turnStartShields = Map.from(_currentGame!.shields);
-    _currentGame!.turnStartTaggedIn = Map.from(_currentGame!.taggedIn);
-    _currentGame!.turnStartEliminated = Map.from(_currentGame!.eliminated);
-    _currentGame!.turnStartWinnerId = _currentGame!.winnerId;
-    _currentGame!.turnStartState = _currentGame!.state;
+    _captureTurnStartState();
 
     notifyListeners();
   }
@@ -168,50 +161,50 @@ class TargetTagProvider extends ChangeNotifier {
       return;
     }
 
-    _currentGame = TargetTagGame.createTeam(
+    game = TargetTagGame.createTeam(
       teams: teams,
       shieldMax: shieldMax,
       soloHeroBonus: soloHeroBonus,
       teamIconOverrides: teamIconOverrides,
     );
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
 
-    // Save initial turn start state
-    _currentGame!.turnStartShields = Map.from(_currentGame!.shields);
-    _currentGame!.turnStartTaggedIn = Map.from(_currentGame!.taggedIn);
-    _currentGame!.turnStartEliminated = Map.from(_currentGame!.eliminated);
-    _currentGame!.turnStartWinnerId = _currentGame!.winnerId;
-    _currentGame!.turnStartState = _currentGame!.state;
+    _captureTurnStartState();
 
     notifyListeners();
   }
 
+  /// Snapshots the shields/tagged-in/eliminated maps so Edit Score can replay
+  /// a turn from a clean starting point.
+  void _captureTurnStartState() {
+    final g = game!;
+    g.turnStartShields = Map.from(g.shields);
+    g.turnStartTaggedIn = Map.from(g.taggedIn);
+    g.turnStartEliminated = Map.from(g.eliminated);
+    g.turnStartWinnerId = g.winnerId;
+    g.turnStartState = g.state;
+  }
+
   // Process a dart throw from dartboard event
   void processDartThrow(String sector) {
-    if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (game == null || !isGameActive) return;
+    if (shouldPromptTakeout) return;
 
     // Parse sector string to get number and multiplier
     final parsed = _parseSector(sector);
 
     // Record the dart segment for display (track misses and "None" as "Miss")
-    final currentPlayerId = _currentGame!.getCurrentPlayerId();
-    _currentGame!.currentTurnDarts[currentPlayerId] ??= [];
+    final currentPlayerId = game!.getCurrentPlayerId();
+    game!.currentTurnDarts[currentPlayerId] ??= [];
 
     // Convert "None" or null to "Miss" for display
     final displaySector = (parsed == null || sector == 'None' || sector.isEmpty) ? 'Miss' : sector;
-    _currentGame!.currentTurnDarts[currentPlayerId]!.add(displaySector);
+    game!.currentTurnDarts[currentPlayerId]!.add(displaySector);
 
     if (parsed == null) {
       // Process miss (increments dart counter, adds tracking arrays)
-      _currentGame!.processMiss(currentPlayerId);
-
-      // Check if this was the 3rd dart or if there's a winner
-      final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-      if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-        _waitingForTakeout = true;
-      }
-
+      game!.processMiss(currentPlayerId);
+      _latchTakeoutIfTurnOver();
       notifyListeners();
       return;
     }
@@ -220,15 +213,18 @@ class TargetTagProvider extends ChangeNotifier {
     final multiplier = parsed['multiplier'] as String;
 
     // Process the hit in game logic
-    _currentGame!.processDartHit(currentPlayerId, number, multiplier);
+    game!.processDartHit(currentPlayerId, number, multiplier);
 
-    // Check if this was the 3rd dart or if there's a winner
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
+    _latchTakeoutIfTurnOver();
 
     notifyListeners();
+  }
+
+  void _latchTakeoutIfTurnOver() {
+    checkTakeoutCondition(
+      dartsThrown: game!.getCurrentPlayerDartsThrown(),
+      maxDartsPerTurn: game!.maxDartsPerTurn,
+    );
   }
 
   /// Parses a board sector string into this game's legacy map shape.
@@ -243,171 +239,113 @@ class TargetTagProvider extends ChangeNotifier {
 
   // Skip remaining darts in current turn
   void skipTurn() {
-    if (_currentGame == null) return;
+    if (game == null) return;
 
-    final currentPlayerId = _currentGame!.getCurrentPlayerId();
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
+    final currentPlayerId = game!.getCurrentPlayerId();
 
-    // Validate using global helper
-    if (!GameSkipTurnHelper.canSkipTurn(
-      gameActive: isGameActive,
-      waitingForTakeout: _waitingForTakeout,
-      currentDartCount: dartsThrown,
-      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
-    )) {
-      return;
-    }
-
-    // Execute skip using global helper
-    GameSkipTurnHelper.skipRemainingDarts(
-      currentDartCount: dartsThrown,
-      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
+    runSkipTurn(
+      dartsThrown: game!.getCurrentPlayerDartsThrown(),
+      maxDartsPerTurn: game!.maxDartsPerTurn,
       addVisualMarker: (marker) {
-        _currentGame!.currentTurnDarts[currentPlayerId] ??= [];
-        _currentGame!.currentTurnDarts[currentPlayerId]!.add(marker);
+        game!.currentTurnDarts[currentPlayerId] ??= [];
+        game!.currentTurnDarts[currentPlayerId]!.add(marker);
       },
     );
-
-    _waitingForTakeout = true;
-    notifyListeners();
   }
 
-  // Handle takeout finished event
-  void handleTakeoutFinished() {
-    if (_currentGame == null) return;
-    if (!_waitingForTakeout) return;
+  @override
+  void advanceToNextPlayer() => game!.advanceToNextPlayer();
 
-    // If game is finished (winner exists), just clear waiting state
-    if (_currentGame!.hasWinner()) {
-      _waitingForTakeout = false;
-      notifyListeners();
-      return;
-    }
-
-    // Only advance if game is still active
-    if (!isGameActive) return;
-
-    // Advance to next player
-    _currentGame!.advanceToNextPlayer();
-    _waitingForTakeout = false;
-
-    notifyListeners();
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    game = TargetTagGame.fromJson(json);
   }
 
-  // --- Save/Restore ---
-
-  String? _resumedSavedGameId;
-  bool _saving = false;
-  String? get resumedSavedGameId => _resumedSavedGameId;
-
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
-  }
+  // --- Save ---
 
   Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
-    debugPrint('[TargetTagProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
-    if (_currentGame == null || _saving) {
-      debugPrint('[TargetTagProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
-      return;
-    }
-    _saving = true;
-    try {
-    final game = _currentGame!;
+    await persistSave(SaveGameService(_apiClient), (existingId) {
+      final g = game!;
 
-    // Count non-eliminated entities
-    final entityIds = game.mode == GameMode.solo
-        ? game.playerIds
-        : game.teamPlayers!.keys.toList();
-    final activeCount = entityIds.where((id) => !(game.eliminated[id] ?? false)).length;
+      // Count non-eliminated entities
+      final entityIds = g.mode == GameMode.solo
+          ? g.playerIds
+          : g.teamPlayers!.keys.toList();
+      final activeCount =
+          entityIds.where((id) => !(g.eliminated[id] ?? false)).length;
 
-    // Find leading entity (most shields)
-    String leaderId = game.playerIds.first;
-    int maxShields = 0;
-    for (final entityId in entityIds) {
-      final shields = game.shields[entityId] ?? 0;
-      if (shields > maxShields) {
-        maxShields = shields;
-        leaderId = entityId;
+      // Find leading entity (most shields)
+      String leaderId = g.playerIds.first;
+      int maxShields = 0;
+      for (final entityId in entityIds) {
+        final shields = g.shields[entityId] ?? 0;
+        if (shields > maxShields) {
+          maxShields = shields;
+          leaderId = entityId;
+        }
       }
-    }
 
-    // Get leader display name
-    String leaderName;
-    if (game.mode == GameMode.team) {
-      // For teams, get first player name from team
-      final teamPlayers = game.teamPlayers![leaderId] ?? [];
-      final teamPlayer = teamPlayers.isNotEmpty
-          ? players.where((p) => p.id == teamPlayers.first).firstOrNull
-          : null;
-      leaderName = teamPlayer?.name ?? 'Team';
-    } else {
-      final player = players.where((p) => p.id == leaderId).firstOrNull;
-      leaderName = player?.name ?? 'Unknown';
-    }
+      // Get leader display name
+      String leaderName;
+      if (g.mode == GameMode.team) {
+        // For teams, get first player name from team
+        final teamPlayers = g.teamPlayers![leaderId] ?? [];
+        final teamPlayer = teamPlayers.isNotEmpty
+            ? players.where((p) => p.id == teamPlayers.first).firstOrNull
+            : null;
+        leaderName = teamPlayer?.name ?? 'Team';
+      } else {
+        final player = players.where((p) => p.id == leaderId).firstOrNull;
+        leaderName = player?.name ?? 'Unknown';
+      }
 
-    final metadata = SavedGameMetadata.create(
-      gameType: 'target_tag',
-      playerNames: players
-          .where((p) => game.playerIds.contains(p.id))
-          .map((p) => p.name)
-          .toList(),
-      progressInfo: '$activeCount of ${entityIds.length} players remaining',
-      gameModeName: '${game.mode == GameMode.solo ? "Solo" : "Team"}, Shields: ${game.shieldMax}${game.soloHeroBonus ? ", Hero Bonus" : ""}',
-      leadingPlayerName: leaderName,
-      leadingPlayerScore: '$maxShields shields',
-      gameState: game.toJson(),
-      waitingForTakeout: _waitingForTakeout,
-      isAutoSave: isAutoSave,
-      existingId: _resumedSavedGameId,
-    );
-
-    debugPrint('[TargetTagProvider] saving with id=${metadata.id}');
-    final saved = await SaveGameService(_apiClient).saveGame(metadata);
-    if (saved) {
-      _resumedSavedGameId = metadata.id;
-    }
-    debugPrint('[TargetTagProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
-    } finally {
-      _saving = false;
-    }
-  }
-
-  void restoreGame(SavedGameMetadata savedGame) {
-    _currentGame = TargetTagGame.fromJson(
-        Map<String, dynamic>.from(savedGame.gameState));
-    _waitingForTakeout = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
-    notifyListeners();
+      return SavedGameMetadata.create(
+        gameType: 'target_tag',
+        playerNames: players
+            .where((p) => g.playerIds.contains(p.id))
+            .map((p) => p.name)
+            .toList(),
+        progressInfo: '$activeCount of ${entityIds.length} players remaining',
+        gameModeName:
+            '${g.mode == GameMode.solo ? "Solo" : "Team"}, Shields: ${g.shieldMax}${g.soloHeroBonus ? ", Hero Bonus" : ""}',
+        leadingPlayerName: leaderName,
+        leadingPlayerScore: '$maxShields shields',
+        gameState: g.toJson(),
+        waitingForTakeout: shouldPromptTakeout,
+        isAutoSave: isAutoSave,
+        existingId: existingId,
+      );
+    });
   }
 
   // End the current game
   void endGame() {
-    if (_currentGame != null) {
-      _currentGame!.state = GameState.finished;
+    if (game != null) {
+      game!.state = GameState.finished;
     }
     notifyListeners();
   }
 
   // Update all three dart scores at once and recalculate turn
   void updateAllDartScores(String playerId, List<String> newDartSegments) {
-    if (_currentGame == null) return;
-    if (playerId != _currentGame!.getCurrentPlayerId()) return;
+    if (game == null) return;
+    if (playerId != game!.getCurrentPlayerId()) return;
     if (newDartSegments.length != 3) return;
 
     // Store current game state to restore player index after recalculation
-    final currentPlayerIndex = _currentGame!.currentPlayerIndex;
+    final currentPlayerIndex = game!.currentPlayerIndex;
 
     // Clear the current turn data for this player
-    _currentGame!.currentTurnDarts[playerId] = [];
-    _currentGame!.dartsThrown[playerId] = 0;
-    _currentGame!.dartThrowTaggedInStatus[playerId] = [];
-    _currentGame!.dartThrowHeroBonusHit[playerId] = [];
-    _currentGame!.dartThrowReachedMax[playerId] = [];
-    _currentGame!.dartThrowCausedElimination[playerId] = [];
-    _currentGame!.dartThrowHitOpponentTarget[playerId] = [];
+    game!.currentTurnDarts[playerId] = [];
+    game!.dartsThrown[playerId] = 0;
+    game!.dartThrowTaggedInStatus[playerId] = [];
+    game!.dartThrowHeroBonusHit[playerId] = [];
+    game!.dartThrowReachedMax[playerId] = [];
+    game!.dartThrowCausedElimination[playerId] = [];
+    game!.dartThrowHitOpponentTarget[playerId] = [];
 
     // Reset shields and tagged in status to start of turn
-    _currentGame!.resetToStartOfTurn(playerId);
+    game!.resetToStartOfTurn(playerId);
 
     // Replay all three darts with the new values in order
     // This ensures each dart is processed with the correct game state
@@ -415,53 +353,41 @@ class TargetTagProvider extends ChangeNotifier {
       final sector = newDartSegments[i];
 
       // Add to display
-      _currentGame!.currentTurnDarts[playerId]!.add(sector);
+      game!.currentTurnDarts[playerId]!.add(sector);
 
       // Parse and process
       final parsed = _parseSector(sector);
       if (parsed == null || sector == 'Miss') {
-        _currentGame!.processMiss(playerId);
+        game!.processMiss(playerId);
       } else {
         final number = parsed['number'] as int;
         final multiplier = parsed['multiplier'] as String;
-        _currentGame!.processDartHit(playerId, number, multiplier);
+        game!.processDartHit(playerId, number, multiplier);
       }
     }
 
     // Restore player index
-    _currentGame!.currentPlayerIndex = currentPlayerIndex;
+    game!.currentPlayerIndex = currentPlayerIndex;
 
     // Check if turn should end
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
+    _latchTakeoutIfTurnOver();
 
-    notifyListeners();
-  }
-
-  // Clear the current game
-  void clearGame() {
-    _currentGame = null;
-    _waitingForTakeout = false;
     notifyListeners();
   }
 
   // Get team icon path
   String? getTeamIcon(String teamId) {
-    return _currentGame?.teamIcons?[teamId];
+    return game?.teamIcons?[teamId];
   }
 
   // Get team players
   List<String>? getTeamPlayers(String teamId) {
-    return _currentGame?.teamPlayers?[teamId];
+    return game?.teamPlayers?[teamId];
   }
 
   // Get all active (non-eliminated) players
   List<String> getActivePlayers() {
-    if (_currentGame == null) return [];
-    return _currentGame!.playerIds
-        .where((id) => !isEliminated(id))
-        .toList();
+    if (game == null) return [];
+    return game!.playerIds.where((id) => !isEliminated(id)).toList();
   }
 }
