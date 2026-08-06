@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -216,9 +217,14 @@ Future<void> _preloadFonts() async {
   GoogleFonts.merriweather(fontWeight: FontWeight.w600);
   GoogleFonts.merriweather(fontWeight: FontWeight.w700);
 
-  // Wait for all fonts to load
-  await GoogleFonts.pendingFonts([
-    GoogleFonts.nunito(),
+  // Only the app's base font blocks the first frame. The game display fonts
+  // are requested above and awaited in the background: nothing on the home
+  // screen needs them, and the splash gives them ~1s of head start before any
+  // game screen can be reached. Awaiting all 17 families here delayed first
+  // paint by the slowest of them.
+  await GoogleFonts.pendingFonts([GoogleFonts.nunito()]);
+
+  unawaited(GoogleFonts.pendingFonts([
     GoogleFonts.rye(),
     GoogleFonts.bangers(),
     GoogleFonts.luckiestGuy(),
@@ -235,7 +241,7 @@ Future<void> _preloadFonts() async {
     GoogleFonts.cinzel(),
     GoogleFonts.boogaloo(),
     GoogleFonts.merriweather(),
-  ]);
+  ]));
 }
 
 class DartGamesApp extends StatelessWidget {
