@@ -14,6 +14,26 @@ The user provides a path to a game research spec MD file:
 /game.build docs/research/games/tier1/candy-cascade.md
 ```
 
+## STEP ZERO: check for an interrupted build
+
+Before reading anything else, check for
+`temp_build_state/[GAME_SNAKE]/build_state.json`.
+
+**If it exists, this is a RESUME.** Do not start over.
+
+1. Read it. Re-verify each recorded gate with its cheap check — the branch
+   exists, the recorded files exist, `flutter test` passes for the game's test
+   directories. A gate that no longer verifies is downgraded to not-done.
+2. Print a resume report: phase and step reached, gates verified vs downgraded,
+   user approvals already given, and (if in Phase 8) the open-issue list with
+   per-issue fix attempts.
+3. Confirm the resume point with the user, then continue from there.
+
+Restarting a build that got to Phase 7 wastes hours and re-asks approvals the
+user already gave. The state file exists so that never happens; the only reason
+to ignore it is if the user explicitly asks for a clean rebuild (in which case
+delete the directory first).
+
 If no argument is provided, ask the user for the spec file path.
 
 $ARGUMENTS
@@ -363,6 +383,29 @@ If any check fails, STOP and surface to the user. Do not proceed.
    - Branch strategy (default: `[GAME_NAME_HYPHEN]-dev`)
    - Files summary (if present)
 9. Create one task per phase using TaskCreate. Mark Phase 0 in_progress.
+9b. **Write the build-state file** — `temp_build_state/[GAME_SNAKE]/build_state.json`.
+    TaskCreate state is session-scoped; this file is not. A crashed or
+    compacted session that cannot read this file has to restart from Phase 0,
+    which is how a half-built game gets rebuilt from scratch.
+
+    ```json
+    {"game": "candy_cascade",
+     "branch": "candy-cascade-dev",
+     "spec": "docs/research/games/tier1/candy-cascade.md",
+     "section_map": {"Game Options & Settings": 7, "Screen Designs": 10},
+     "phase": 4,
+     "step": "AR-4",
+     "gates": {"gate1": "PASS@<sha>", "gate1_5": "PASS@<sha>"},
+     "approvals": {"phase0": true, "stageA": true, "stageB": false},
+     "phase8": {"cycle": 0, "screenshots_clean": [], "open_issues": []}}
+    ```
+
+    Rewrite it at every gate, every AR, every user approval, and every Phase-8
+    cycle boundary. Also write the spec digests from step 8 to
+    `temp_build_state/[GAME_SNAKE]/spec_digest/*.md` (options, screens, assets,
+    tests, section_map) instead of only holding them in context: sub-agent
+    prompts then reference a 10KB digest file rather than re-reading a 160KB
+    spec, and a restart loses nothing.
 10. Present the build plan to the user, including:
     - Game name (all four casings)
     - Branch name
@@ -1603,11 +1646,89 @@ After the sub-agent returns:
 > - Rule 26 (Shared helper sync): verify every shared-helper file in `integration_test/shared/` has an identical counterpart in `test/shared/`. Run `diff -q` on each pair.
 > - Rule 27 (Runtime target lookup): if rule 9 applies (randomized targets), verify a `get[GameName]CellTargetNumber(tester, row, col)` helper exists in `provider_helpers.dart` and EVERY gameplay test that throws a specific dart uses it; verify a `throwForCellTarget(tester, target)` dispatch helper handles the `single`/`double`/`triple`/`bull` multiplier chooser.
 >
+> - **(zz) Option wiring trace.** For EVERY option in the spec's Options
+>   section, cite four links with file:line:
+>   1. **CONTROL** — the menu widget, its key in `[Game]MenuKeys`, and the
+>      `onChanged`/`onTap` that writes the state field.
+>   2. **HANDOFF** — that field appearing in the `provider.startGame(...)`
+>      argument list.
+>   3. **CONSUMPTION** — the provider or model reading it.
+>   4. **EFFECT** — a keyed widget or branch on the game screen that renders
+>      differently because of it.
+>   A broken link at any step means the option does nothing the player can
+>   see. Report the row as FAIL and dispatch a corrective sub-agent.
+>   `flutter test test/meta/option_wiring_lint_test.dart` checks link 2
+>   mechanically for every game — run it first and only hand-trace what it
+>   cannot see (links 1, 3, 4).
+
 > For each item I will cite the file and line number, or report MISSING.
 > I will list every gap found."
 
 Report AR-4 findings. Dispatch a corrective Sonnet sub-agent for any gaps before proceeding.
 
+---
+
+### GATE 1.5: Compile, Lint, and Boot Smoke (NON-NEGOTIABLE — before Phase 5)
+
+**Why this gate exists.** Before it, the first time the app actually *ran* was
+the screenshot phase. Every boot-time defect — a null in `initState`, an
+unregistered provider, a home card that navigates nowhere, a web-only compile
+error — surfaced there, as a capture that hung or produced a black frame, and
+each one cost a full chromedriver cycle to diagnose. Gates 1-3 run
+`flutter test`, which compiles `lib/` but never boots the app.
+
+Run all four steps. Do not enter Phase 5 until every one is green.
+
+**1. Analyze — zero errors:**
+```bash
+flutter analyze lib/ test/
+```
+Warnings are acceptable; errors are not. A pre-existing error anywhere in
+`lib/` fails this gate — fix it or report it, do not route around it.
+
+**2. Meta lints — these encode the rules this skill used to enforce by prose:**
+```bash
+flutter test test/meta/
+```
+- `game_style_lint_test.dart` — no raw Material palette colours in the new
+  game, AppBar title uses a display font, back button is 32px with all three
+  hover/highlight/splash colours transparent.
+- `option_wiring_lint_test.dart` — every mutable menu setting reaches
+  `provider.startGame(...)`. This is the "the toggle renders, toggles,
+  persists, and changes nothing" failure, and it is invisible to behaviour
+  tests.
+
+A new game starts at zero violations. Do NOT add it to any baseline.
+
+**3. Non-UI tests for the new game:**
+```bash
+flutter test test/providers/[GAME_SNAKE]_provider_game_test.dart \
+             test/providers/[GAME_SNAKE]_save_restore_test.dart \
+             test/models/[GAME_SNAKE]_serialization_test.dart
+```
+
+**4. Boot smoke — one drive test, under 90 seconds:**
+
+Author `integration_test/[GAME_SNAKE]/visual_validation/boot_smoke_test.dart`:
+ONE `testWidgets`, helpers inlined per the screenshot-test rules. It must:
+
+1. Boot the app and find `HomeKeys.[game]Card`.
+2. Tap it; assert the menu AppBar title renders.
+3. Add two players; assert Start becomes enabled.
+4. Start; assert the game screen's root key is present.
+5. Throw one dart through the mock API; assert provider state changed.
+6. Back out; choose DON'T SAVE; assert the menu is showing.
+
+Zero uncaught exceptions throughout. Run it with the STEP 1 preflight
+(`Phase 8 → STEP 1 PRE-FLIGHT`), which is also mandatory here.
+
+On failure: fix the app, re-run. This test stays in the tree — Phase 8's
+STEP 1 re-runs it as its own preflight step 0, so a regression that would
+break the screenshot run is caught in 90 seconds rather than 10 minutes.
+
+**Record in the build-state file:** `gates.gate1_5 = "PASS@<git sha>"`.
+
+---
 ---
 
 ## Phase 5: Announcement and Sound System
@@ -2547,6 +2668,66 @@ STEP 7 → STEP 8 decision
 
 ---
 
+### STEP 1 PRE-FLIGHT (scripted — run before every capture attempt)
+
+Screenshot runs fail for two very different reasons — the app is broken, or the
+harness is — and both produce the same symptom: a run that hangs and a log that
+ends at "Debug service listening". Separate them BEFORE spending a chromedriver
+cycle.
+
+**0. Boot smoke is green in this cycle.** If `boot_smoke_test.dart` (GATE 1.5)
+has not run since the last app edit, run it first. It fails in 90 seconds where
+a screenshot run fails in ten minutes.
+
+**1. Analyze the new game — zero errors:**
+```bash
+flutter analyze lib/screens/games/[GAME_SNAKE]/ integration_test/[GAME_SNAKE]/
+```
+
+**2. Environment, in this order, each verified before the next:**
+```bash
+./update_chromedriver.bat                    # Chrome auto-updates; drivers don't
+taskkill /F /IM chromedriver.exe             # NEVER chrome.exe — crash-recovery state
+rm -rf "$LOCALAPPDATA/Temp/flutter_tools."*  # stale kernel → "Member not found"
+```
+Then start the server and poll until it answers, and start chromedriver and
+poll `http://localhost:4444/status` until ready. Poll — never sleep a fixed
+duration and hope.
+
+**3. Budget check — BEFORE running, not after it dies:**
+```bash
+grep -c takeScreenshot integration_test/[GAME_SNAKE]/visual_validation/*.dart
+```
+Estimate `captures × 20s + 60s boot`. Over ~480s, split the file NOW. The
+runner kills at 600s and the resulting log is indistinguishable from a
+structural bug (see CLAUDE.md → Screenshot Test Technical Rules).
+
+**4. Run with a watchdog.** Launch in the background and poll
+`temp_screenshots/` every 30s. If no new file appears for 60s while the process
+is alive, kill chromedriver, capture the log tail, and go to TRIAGE. Do not sit
+through a ten-minute hang.
+
+### STEP 1 TRIAGE — consult this BEFORE contacting the user
+
+| What you see | Cause | Do this |
+|---|---|---|
+| Hangs at the FIRST `takeScreenshot`, zero files written | Wrong driver | Use `test_driver/screenshot_test.dart`; re-run |
+| `DURATION=` near 600s in `<game>_results.txt`; log ends "Debug service listening"; `SocketException` at `WebDriver.quit` | 600s budget | Split the screenshot file; re-run |
+| `Member not found` | Stale flutter_tools kernel | Wipe `flutter_tools.*`; re-run |
+| `org-dartlang-app:/…File not found` | New file in `integration_test/shared/` invisible to the web compile cache | Fold the helper into an existing shared class (Rule §26); re-run |
+| `AppConnectionException` | Chrome crash-recovery state | Open Chrome manually, dismiss the restore prompt, close it, restart chromedriver |
+| "session not created" / version mismatch | Chrome updated under you | `./update_chromedriver.bat`; re-run |
+| Stalls mid-file at capture #N | App exception in that state, OR an unfrozen `Timer.periodic` keeping the frame busy | Read the partial log and the last written PNG; re-run just that screen; check for uncancelled timers |
+| Connection refused in the log | Server not up, or wrong port | Preflight step 2 |
+
+**Escalation rule.** Work the table. Only after **two** distinct triage
+attempts have failed do you stop and ask the user — and when you do, report:
+the log tail, which screenshots were captured, which triage rows you tried, and
+what each produced. "The screenshot test failed" is not a report.
+
+Never stop before triage. That was the single largest source of manual
+intervention in this pipeline.
+
 ### STEP 1: CAPTURE (Sonnet sub-agent)
 
 **Hung-process safety:** Past sessions have seen the screenshot test deadlock for 25+ minutes when the game UI has a build error or missing widget. The orchestrator imposes a **25-second progress timeout** on the screenshot test process — if no new screenshot file appears in `temp_screenshots/` for 25 seconds AND the flutter_drive process hasn't exited, the orchestrator instructs the sub-agent to KILL chromedriver + chrome + flutter_drive, read the partial log, and assess what's wrong before retrying. The 25s threshold matches the actual per-screenshot capture time observed in healthy runs (5–15s typical, with margin for the initial app boot of the first capture). Past failure: Pirate's Grid screenshot test halted at #12 of 15 (the speed-play timer transition) and we waited 4 minutes before killing it — wasted iteration time. Tighter timeout = faster failure detection = faster fix loop.
@@ -2594,17 +2775,36 @@ STEP 7 → STEP 8 decision
 > - Skip `update_chromedriver.bat`
 > - Read or evaluate the screenshots — that's the orchestrator's job
 
-If the screenshot test fails to run, the orchestrator STOPs and asks the user. Do NOT skip.
+If the screenshot test fails to run, work the **STEP 1 TRIAGE** table above.
+Only after two distinct triage attempts have failed does the orchestrator stop
+and ask the user — with the log tail, the list of screenshots captured, and
+what each triage attempt produced. Do NOT skip the run, and do NOT stop before
+triage.
 
 ---
 
-### STEP 2: EVALUATE every screenshot (orchestrator only — Opus)
+### STEP 2: EVALUATE every screenshot
 
-**Visual evaluation MUST stay on the orchestrator. Do NOT delegate this step.**
+**Who does this.** The orchestrator reads and judges every screenshot itself.
+It MAY additionally fan out the same set to parallel top-tier lens reviewers
+(layout / typography / brand — Playbook §3) and merge their flags; any lens's
+flag counts as an issue. What is forbidden is *delegating the judgment away* —
+handing evaluation to a cheaper sub-agent and accepting its verdict without
+looking. If you fan out, you still read every screenshot yourself.
+
+**Compare against the approved wireframes, not just the checklist.** Phase 2
+spent four user-approval gates fixing what these screens should look like.
+For each screenshot, open the corresponding approved wireframe and check:
+same background treatment, panel positions within ~5% of the viewport, same
+fonts and sizes, same option-box heights and gaps, same imagery placement.
+**Any divergence the user did not explicitly approve is an issue**, even if it
+looks fine on its own — "looks fine" is how a game ends up not matching the
+design the user signed off on.
 
 For EACH screenshot image in `temp_screenshots/`:
 1. Read the screenshot image file using the Read tool.
-2. Check EVERY item on this checklist:
+2. Diff it against its approved wireframe (above).
+3. Check EVERY item on this checklist:
 
 **Layout & Spacing:**
 - [ ] No scrolling required on this screen
@@ -2668,6 +2868,37 @@ Present the full report to the user.
 1. Diagnose what's wrong with the screen at the failure point (read the partial log + assess widget tree state).
 2. Dispatch a focused diagnostic sub-agent to capture JUST the failing screen state via a minimal targeted test that sets up just enough state for that screen.
 3. Once that one screen renders, re-run the full screenshot test. Per-screen iteration is much faster than re-running the full ~4-minute screenshot capture for each fix.
+
+**Per-screen iteration is the DEFAULT from cycle 2 onward** — do not re-run the
+full capture set for a one-screen fix. Re-run the full set only once every
+targeted screen renders clean; the "re-evaluate ALL screenshots" rule still
+applies to that full run.
+
+#### Loop control (mandatory — this loop has no natural end)
+
+Maintain in the build-state file:
+
+```json
+"phase8": { "cycle": 3,
+            "open_issues": [{"shot": "05_game_early", "sev": "High",
+                             "desc": "player column overflows 24px",
+                             "fix_attempts": 2}] }
+```
+
+At the top of every cycle print: `Cycle N — open issues carried in: M`.
+
+- **Per-issue:** after 3 failed fix attempts on the same issue, stop working
+  that issue, mark it `escalated`, and carry on with the others. One stubborn
+  issue must not block the rest of the cycle.
+- **Per-loop:** if `cycle > 3` AND the open-issue count did not decrease
+  against the previous cycle, STOP. Write the state file and present a
+  convergence report: every open issue, how many times each was attempted,
+  what was tried, and the suspected root cause. Then ask the user to choose:
+  (a) keep going, (b) accept the listed issues as known, or (c) take over.
+
+The only two ways out of this loop are zero open issues or that report. Never
+exit silently, and never keep cycling past the point where progress has
+stopped — that is the failure mode where the model appears to give up.
 
 **NO (issues = 0):**
 - Continue to STEP 5.
@@ -4776,7 +5007,7 @@ This catches sub-agents that drift out of scope before the divergence cascades i
 - NEVER evaluate only a subset of screenshots.
 - NEVER auto-update tests to make them pass without user approval.
 - NEVER modify dartboard emulator code without user permission.
-- NEVER delegate the screenshot evaluation step (Phase 8 Step 2) to a sub-agent — visual judgment stays on the orchestrator.
+- NEVER accept a sub-agent's screenshot verdict without looking yourself. Fanning out to parallel lens reviewers is encouraged (Playbook §3); skipping your own read of every screenshot is not. See Phase 8 STEP 2.
 - NEVER delegate adversarial reviews to a Sonnet sub-agent — they are critique work and stay on Opus.
 - NEVER skip `cd server && dart test` — the 178 server tests are mandatory at every gate that runs non-UI tests.
 - NEVER skip the 4 mandatory navigation tests, the 3 mandatory results-screen tests, or the play-to-complete tests.

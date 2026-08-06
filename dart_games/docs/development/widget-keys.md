@@ -95,7 +95,7 @@ class HomeKeys {
 }
 
 // Your game keys
-class YourGameMenuKeys { /* ... */ }
+class TreasureDivideMenuKeys { /* ... */ }
 class YourGameGameKeys { /* ... */ }
 class YourGameDialogKeys { /* ... */ }
 class YourGameResultsKeys { /* ... */ }
@@ -145,9 +145,9 @@ await tester.tap(aliceTile);
 Use dynamic key generation for list items:
 
 ```dart
-class YourGameMenuKeys {
-  static playerTile(String playerId) => Key('menu_yg_player_tile_$playerId');
-  static settingItem(int index) => Key('menu_yg_setting_$index');
+class TreasureDivideMenuKeys {
+  static Key playerTile(String playerId) => Key('td_menu_player_tile_$playerId');
+  static Key settingItem(int index) => Key('td_menu_setting_$index');
 }
 ```
 
@@ -155,21 +155,21 @@ class YourGameMenuKeys {
 
 ### Buttons
 ```dart
-static const startButton = Key('screen_game_start_button');
-static const cancelButton = Key('screen_game_cancel_button');
-static const submitButton = Key('screen_game_submit_button');
+static const startButton = Key('td_menu_start_button');
+static const cancelButton = Key('td_menu_cancel_button');
+static const submitButton = Key('td_menu_submit_button');
 ```
 
 ### Input Fields
 ```dart
-static const nameField = Key('screen_game_name_field');
-static const scoreField = Key('screen_game_score_field');
+static const nameField = Key('td_menu_name_field');
+static const scoreField = Key('td_game_score_field');
 ```
 
 ### List Items
 ```dart
-static playerTile(String id) => Key('screen_game_player_tile_$id');
-static gameCard(String name) => Key('home_game_card_$name');
+static Key playerTile(String id) => Key('td_menu_player_tile_$id');
+static Key gameCard(String name) => Key('home_card_$name');
 ```
 
 ### Dialogs
@@ -207,10 +207,10 @@ static const confirmDialog = Key('dialog_confirm');
 ## Reference Implementations
 
 See existing games for complete examples:
-- Target Tag: `lib/constants/test_keys.dart` (TargetTagMenuKeys, TargetTagGameKeys)
+- Treasure Divide: `lib/constants/test_keys.dart` (TreasureDivideMenuKeys, TreasureDivideGameKeys) — newest, follows every current rule
 - Carnival Derby: `lib/constants/test_keys.dart` (CarnivalDerbyMenuKeys, CarnivalDerbyGameKeys)
 - Monster Mash: `lib/constants/test_keys.dart` (MonsterMashMenuKeys, MonsterMashGameKeys, MonsterMashResultsKeys)
-- Example tests: `integration_test/target_tag/target_tag_menu_and_mechanics_test.dart`
+- Example tests: `integration_test/treasure_divide/`
 
 ## Related Documentation
 
