@@ -32,6 +32,18 @@ class DartboardProvider with ChangeNotifier {
   Timer? _reconnectTimer;
   int _reconnectAttempt = 0;
 
+  // Guards the 5-second "hardware never answered" timeout armed while
+  // resolving the initial SBC status. The generation counter identifies
+  // which connection attempt armed the timer, so a stale timer from an
+  // earlier attempt cannot fail a newer one that is still connecting.
+  Timer? _statusTimeoutTimer;
+  int _connectGeneration = 0;
+  bool _disposed = false;
+
+  // Handler for connection/status events on the current WebSocket. Held so
+  // it can be replaced on reconnect and cancelled on dispose.
+  StreamSubscription? _statusSubscription;
+
   // Page-visibility wake listener (web-only; no-op on native). When the
   // browser tab regains focus after sleep, this triggers an immediate
   // reconnect bypassing the current backoff window.
@@ -341,7 +353,10 @@ class DartboardProvider with ChangeNotifier {
     debugPrint('[Dartboard] WebSocket auth OK. Subscribing to event stream '
         'before resolving status.');
     _rewireEventForwarding(_webSocketService!.eventStream);
-    _webSocketService!.eventStream.listen((event) {
+    // Replace any listener left from a previous connection so reconnects
+    // don't stack handlers on top of each other.
+    _statusSubscription?.cancel();
+    _statusSubscription = _webSocketService!.eventStream.listen((event) {
       if (event['type'] == 'disconnected') {
         debugPrint('[Dartboard] event: disconnected '
             '(message=${event['data']?['message']}). Status -> error. '
@@ -389,7 +404,13 @@ class DartboardProvider with ChangeNotifier {
     notifyListeners();
     _webSocketService?.sendGetSbcStatus();
 
-    Future.delayed(const Duration(seconds: 5), () {
+    final generation = ++_connectGeneration;
+    _statusTimeoutTimer?.cancel();
+    _statusTimeoutTimer = Timer(const Duration(seconds: 5), () {
+      // Ignore a timer left over from a superseded attempt, and never touch
+      // a disposed provider — either would report a failure that belongs to
+      // a connection nobody is waiting on any more.
+      if (_disposed || generation != _connectGeneration) return;
       if (_status == DartboardConnectionStatus.connecting) {
         debugPrint('[Dartboard] SBC status timeout (5s) — hardware did NOT '
             'respond. Status -> error. The dartboard is likely powered off '
@@ -401,29 +422,50 @@ class DartboardProvider with ChangeNotifier {
     });
   }
 
+  /// Test seam for [_applyBoardStatus], which is otherwise only reachable
+  /// through a live WebSocket connection.
+  @visibleForTesting
+  void applyBoardStatusForTest(String? boardStatus, [dynamic payload]) =>
+      _applyBoardStatus(boardStatus, payload);
+
   /// Apply a boardStatus value from an SBC_STATUS_CHANGED event and
   /// notify listeners. Shared between the live event handler and the
   /// initial-status resolver. Recognized values are Ready/Throw/Takeout
   /// (→ connected) and Offline/Error/null (→ error). Anything else
   /// leaves the current status untouched.
   void _applyBoardStatus(String? boardStatus, dynamic payload) {
+    final DartboardConnectionStatus newStatus;
+    final String? newError;
+
     if (boardStatus == 'Ready' ||
         boardStatus == 'Throw' ||
         boardStatus == 'Takeout') {
-      _status = DartboardConnectionStatus.connected;
-      _error = null;
+      newStatus = DartboardConnectionStatus.connected;
+      newError = null;
+      // Always runs: a live board means any pending reconnect/timeout work
+      // is stale, whether or not the reported status changed.
       _resetReconnectState();
     } else if (boardStatus == 'Offline' ||
         boardStatus == 'Error' ||
         boardStatus == null) {
-      _status = DartboardConnectionStatus.error;
-      _error = boardStatus == 'Offline'
+      newStatus = DartboardConnectionStatus.error;
+      newError = boardStatus == 'Offline'
           ? 'Dartboard is offline'
           : 'Dartboard error: ${payload?['errorType'] ?? 'unknown'}';
     } else {
       debugPrint('[Dartboard]   (unrecognized boardStatus="$boardStatus" — '
           'status stays at ${_status.name})');
+      return;
     }
+
+    // Hardware emits SBC_STATUS_CHANGED on every Throw/Takeout transition —
+    // several times per turn — and all three healthy values collapse to
+    // `connected`. Notifying unconditionally rebuilt every screen watching
+    // this provider on each of those no-op events.
+    if (newStatus == _status && newError == _error) return;
+
+    _status = newStatus;
+    _error = newError;
     notifyListeners();
   }
 
@@ -716,6 +758,10 @@ class DartboardProvider with ChangeNotifier {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     _reconnectAttempt = 0;
+    // A resolved (or abandoned) connection has no pending status timeout.
+    _statusTimeoutTimer?.cancel();
+    _statusTimeoutTimer = null;
+    _connectGeneration++;
   }
 
   /// Public hook used by visibility / lifecycle listeners on web to
@@ -733,9 +779,12 @@ class DartboardProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     stopStatusChecking();
     _resetReconnectState();
     _wakeListener.stop();
+    _statusSubscription?.cancel();
+    _statusSubscription = null;
     _sourceSubscription?.cancel();
     _sourceSubscription = null;
     _eventBus.close();

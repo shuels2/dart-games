@@ -18,6 +18,7 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
+import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/edit_score/edit_score_dialog.dart';
 import '../../../widgets/edit_score/edit_score_dialog_config.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
@@ -685,7 +686,16 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       }
     }
 
-    return PopScope(
+    return AutoSaveOnPause(
+      onPaused: () {
+        if (!hasDartsThrown) return;
+        provider.saveGame(
+          SaveGameService(),
+          playerNamesById: _playerNamesById(playerProvider, game),
+          isAutoSave: true,
+        );
+      },
+      child: PopScope(
       canPop: !hasDartsThrown || _showSaveModal,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || _showSaveModal) return;
@@ -975,7 +985,10 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
               config: SaveGameModalConfig.treasureDivide(),
               onSave: () async {
                 final saveService = SaveGameService();
-                await provider.saveGame(saveService);
+                await provider.saveGame(
+                  saveService,
+                  playerNamesById: _playerNamesById(playerProvider, game),
+                );
                 if (mounted) {
                   setState(() => _showSaveModal = false);
                   Navigator.of(context).pop();
@@ -997,7 +1010,18 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 config: DartboardPausedModalConfig.treasureDivide()),
         ],
       ),
+      ),
     );
+  }
+
+  /// Display names for the players in this game, keyed by id. Saved-game
+  /// tiles show these; without them the tile falls back to raw UUIDs.
+  Map<String, String> _playerNamesById(
+      PlayerProvider playerProvider, TreasureDivideGame game) {
+    return {
+      for (final id in game.playerIds)
+        id: playerProvider.getPlayerById(id)?.name ?? id,
+    };
   }
 
   // ─── Badge row ────────────────────────────────────────────────────────────────
@@ -1688,7 +1712,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   /// (e.g. S5 on a target=20 round) counts as a non-scoring dart —
   /// visually the same as a miss for indicator-color purposes.
   bool _dartScoredGold(String seg, int target) {
-    if (seg == 'Miss' || seg == 'None' || seg.isEmpty) return false;
+    if (seg == 'Miss' || seg == 'None' || seg == 'Skip' || seg.isEmpty) {
+      return false;
+    }
     // -1 = AnyDouble sentinel from kTargetAnyDouble.
     if (target == -1) {
       return seg.toUpperCase().startsWith('D');
@@ -1750,7 +1776,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       List<String> segments, TreasureDivideGame game, double scale) {
     if (index >= dartsThrown) return null;
     final seg = index < segments.length ? segments[index] : '';
-    final isMiss = seg == 'Miss' || seg == 'None' || seg.isEmpty;
+    // 'Skip' marks a dart forfeited by Skip Turn — no gold, same as a miss.
+    final isMiss =
+        seg == 'Miss' || seg == 'None' || seg == 'Skip' || seg.isEmpty;
     // Both miss and hit labels render in sail white — the per-state
     // background tint (blood-red wash for misses, island-green wash
     // for hits) already conveys the outcome, and the previous dark

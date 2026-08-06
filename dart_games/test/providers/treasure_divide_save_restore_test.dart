@@ -383,6 +383,36 @@ void main() {
           reason: 'Index 8 must be kTargetBull (25) after provider restore');
     });
 
+    // ─── 15b. Saved metadata shows names, not raw ids ─────────────────────────
+
+    test('saveGame records display names and the actual leader', () async {
+      startSoloGame(playerIds: ['id-aaa', 'id-bbb']);
+      final target = provider.currentGame!.targetSequence[0];
+
+      // First player scores, then finishes the turn — the lead is now theirs
+      // even though the active player has moved on.
+      for (int i = 0; i < 3; i++) {
+        provider.processDartThrow(
+            score: target,
+            multiplier: 'single',
+            baseScore: target,
+            sector: 'S$target');
+      }
+      provider.handleTakeoutFinished();
+
+      await provider.saveGame(saveService,
+          playerNamesById: {'id-aaa': 'Alice', 'id-bbb': 'Bob'});
+      final saved = await savedGames();
+      final meta = saved[0];
+
+      expect(meta.playerNames, ['Alice', 'Bob'],
+          reason: 'Saved-game tiles must show names, never raw UUIDs');
+      expect(meta.leadingPlayerName, 'Alice',
+          reason: 'The leader is whoever holds the most gold, not whoever '
+              'happens to be the active player');
+      expect(meta.leadingPlayerScore, '${target * 3} gold');
+    });
+
     // ─── 16. In-flight turn haul survives save/restore ────────────────────────
 
     test('mid-turn haul is restored, so the pending takeout commits the real score',

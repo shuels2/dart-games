@@ -318,6 +318,34 @@ void main() {
       expect(game.shouldPromptTakeout, true);
     });
 
+    test('19b. skipTurn records the forfeited darts', () {
+      final p = _makeSolo();
+      final game = p.currentGame!;
+      final playerId = game.currentPlayerId;
+      _miss(p); // 1 dart thrown, 2 forfeited
+
+      p.skipTurn();
+
+      expect(game.currentTurnDartSegments[playerId]!.length,
+          game.dartsThisTurn,
+          reason:
+              'Every dart of the turn needs a segment, or the indicators '
+              'render blank slots after a skip');
+      expect(game.currentTurnDartSegments[playerId]!.sublist(1),
+          everyElement('Skip'));
+    });
+
+    test('19c. skipped darts score nothing', () {
+      final p = _makeSolo();
+      final game = p.currentGame!;
+      final playerId = game.currentPlayerId;
+
+      p.skipTurn();
+      p.handleTakeoutFinished();
+
+      expect(game.playerRoundScores[playerId]![0], 0);
+    });
+
     test('20. Dart counter resets to 0 per turn', () {
       final p = _makeSolo();
       final game = p.currentGame!;
@@ -547,6 +575,32 @@ void main() {
       );
       expect(game.playerRoundScores[pid]![0], target);
       expect(game.timesHalvedPerPlayer[pid], 0);
+    });
+
+    test('36b. Editing the in-flight turn refreshes the visible darts', () {
+      final p = _makeSolo(random: Random(1));
+      final game = p.currentGame!;
+      final pid = game.currentPlayerId;
+      final target = game.targetSequence[0];
+      if (target <= 0 || target == 25) return;
+
+      _miss(p);
+      _miss(p);
+      _miss(p);
+      expect(game.currentTurnDartSegments[pid]!.length, 3);
+      expect(p.currentTurnHaul, 0);
+
+      p.editPlayerScore(
+        playerId: pid,
+        roundIndex: 0,
+        newSegments: ['S$target', 'Miss', 'Miss'],
+      );
+
+      expect(game.currentTurnDartSegments[pid], ['S$target', 'Miss', 'Miss'],
+          reason:
+              'Stale segments leave the dart indicators — and a re-opened '
+              'edit dialog — showing the throws the edit replaced');
+      expect(p.currentTurnHaul, target);
     });
 
     test(

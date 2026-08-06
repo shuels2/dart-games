@@ -527,4 +527,67 @@ void main() {
       }
     });
   });
+
+  group('DartboardProvider - board status notifications', () {
+    test('repeated healthy statuses notify only on the first change', () {
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+
+      // Hardware sends SBC_STATUS_CHANGED on every Throw/Takeout transition,
+      // several times per turn; all three values mean "connected".
+      provider.applyBoardStatusForTest('Ready');
+      expect(notifications, 1, reason: 'disconnected -> connected is a change');
+      expect(provider.status, DartboardConnectionStatus.connected);
+
+      provider.applyBoardStatusForTest('Throw');
+      provider.applyBoardStatusForTest('Takeout');
+      provider.applyBoardStatusForTest('Ready');
+      provider.applyBoardStatusForTest('Throw');
+
+      expect(notifications, 1,
+          reason:
+              'No-op status churn must not rebuild every screen watching '
+              'this provider');
+      expect(provider.status, DartboardConnectionStatus.connected);
+    });
+
+    test('a real status change still notifies', () {
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+
+      provider.applyBoardStatusForTest('Ready');
+      provider.applyBoardStatusForTest('Offline');
+      expect(notifications, 2);
+      expect(provider.status, DartboardConnectionStatus.error);
+      expect(provider.error, 'Dartboard is offline');
+
+      provider.applyBoardStatusForTest('Ready');
+      expect(notifications, 3);
+      expect(provider.status, DartboardConnectionStatus.connected);
+      expect(provider.error, isNull);
+    });
+
+    test('repeated error statuses with the same message do not re-notify', () {
+      provider.applyBoardStatusForTest('Offline');
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+
+      provider.applyBoardStatusForTest('Offline');
+      provider.applyBoardStatusForTest('Offline');
+
+      expect(notifications, 0);
+    });
+
+    test('an unrecognized status leaves state untouched and does not notify',
+        () {
+      provider.applyBoardStatusForTest('Ready');
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+
+      provider.applyBoardStatusForTest('Wobbling');
+
+      expect(notifications, 0);
+      expect(provider.status, DartboardConnectionStatus.connected);
+    });
+  });
 }

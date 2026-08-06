@@ -400,6 +400,22 @@ class TreasureDivideProvider extends ChangeNotifier {
     // Ensure totalTurns is incremented if no darts have been thrown yet
     if (game.dartsThrown == 0) {
       game.totalTurns[playerId] = (game.totalTurns[playerId] ?? 0) + 1;
+      // Capture the pre-turn total so the turn-end announcement knows whether
+      // there is treasure at stake, exactly as the first dart would.
+      if (game.gameMode == TreasureDivideGameMode.team &&
+          game.activeTeamId != null) {
+        _scoreBeforeCurrentTurn = game.totalForTeam(game.activeTeamId!);
+      } else {
+        _scoreBeforeCurrentTurn = game.totalForPlayer(playerId);
+      }
+    }
+
+    // Record the forfeited darts so the dart indicators show why the turn
+    // ended instead of rendering blank slots.
+    game.currentTurnDartSegments[playerId] ??= [];
+    final thrown = game.currentTurnDartSegments[playerId]!.length;
+    for (int i = thrown; i < game.dartsThisTurn; i++) {
+      game.currentTurnDartSegments[playerId]!.add('Skip');
     }
 
     // Treat remaining darts as misses — mark turn as done
@@ -488,6 +504,9 @@ class TreasureDivideProvider extends ChangeNotifier {
     if (roundIndex == game.currentRoundIndex &&
         game.currentPlayerId == playerId) {
       _currentTurnHaul = newHaul;
+      // Keep the visible darts in step with the edit — otherwise the dart
+      // indicators (and a re-opened edit dialog) keep showing the old throws.
+      game.currentTurnDartSegments[playerId] = List<String>.from(newSegments);
     }
 
     // If the game is finished and this is an edit that may change the winner,
@@ -975,28 +994,36 @@ class TreasureDivideProvider extends ChangeNotifier {
 
   // ─── Save / Restore ─────────────────────────────────────────────────────────
 
+  /// Saves the current game.
+  ///
+  /// [playerNamesById] maps player ids to display names. Without it the
+  /// saved-game tile falls back to raw ids — which are UUIDs, so the resume
+  /// list would show gibberish instead of names.
   Future<void> saveGame(
     SaveGameService service, {
     List<String>? playerNames,
+    Map<String, String>? playerNamesById,
     bool isAutoSave = false,
   }) async {
     if (_currentGame == null || _saving) return;
     _saving = true;
     try {
       final game = _currentGame!;
-      final names = playerNames ?? game.playerIds;
+      String nameOf(String id) => playerNamesById?[id] ?? id;
+      final names = playerNames ?? game.playerIds.map(nameOf).toList();
       final modeName =
           game.gameMode == TreasureDivideGameMode.solo ? 'Solo' : 'Team';
       final roundDisplay =
           'Round ${game.currentRoundIndex + 1} of ${game.numberOfRounds}';
+      final leader = _leadingEntry(nameOf);
 
       final metadata = SavedGameMetadata.create(
         gameType: 'treasure_divide',
         playerNames: names,
         progressInfo: roundDisplay,
         gameModeName: '$modeName, ${game.numberOfRounds} Rounds',
-        leadingPlayerName: game.currentPlayerId,
-        leadingPlayerScore: '${game.currentRoundIndex + 1} rounds played',
+        leadingPlayerName: leader.name,
+        leadingPlayerScore: '${leader.gold} gold',
         gameState: game.toJson(),
         waitingForTakeout: game.shouldPromptTakeout,
         isAutoSave: isAutoSave,
@@ -1010,6 +1037,41 @@ class TreasureDivideProvider extends ChangeNotifier {
     } finally {
       _saving = false;
     }
+  }
+
+  /// The player (Solo) or crew (Team) currently holding the most gold, for
+  /// the saved-game tile. Falls back to the first entry when nothing has been
+  /// scored yet, so the tile never shows a raw id.
+  ({String name, int gold}) _leadingEntry(String Function(String) nameOf) {
+    final game = _currentGame!;
+
+    if (game.gameMode == TreasureDivideGameMode.team &&
+        game.teamPlayers.isNotEmpty) {
+      String? bestId;
+      int bestGold = -1;
+      for (final teamId in game.teamPlayers.keys) {
+        final gold = game.totalForTeam(teamId);
+        if (gold > bestGold) {
+          bestGold = gold;
+          bestId = teamId;
+        }
+      }
+      return (name: bestId ?? 'Crew', gold: bestGold < 0 ? 0 : bestGold);
+    }
+
+    String? bestId;
+    int bestGold = -1;
+    for (final playerId in game.playerIds) {
+      final gold = game.totalForPlayer(playerId);
+      if (gold > bestGold) {
+        bestGold = gold;
+        bestId = playerId;
+      }
+    }
+    return (
+      name: bestId == null ? '' : nameOf(bestId),
+      gold: bestGold < 0 ? 0 : bestGold,
+    );
   }
 
   void restoreGame(SavedGameMetadata savedGame) {
