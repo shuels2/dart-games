@@ -349,22 +349,6 @@ class MockScoliaApiService {
     });
   }
 
-  /// Calculate display score based on multiplier
-  int _calculateDisplayScore(int score, String multiplier) {
-    switch (multiplier) {
-      case 'double':
-        return score * 2;
-      case 'triple':
-        return score * 3;
-      case 'bullseye':
-        return 50;
-      case 'outer_bull':
-        return 25;
-      default:
-        return score;
-    }
-  }
-
   /// Clear all logs
   void clearLogs() {
     _apiLogs.clear();

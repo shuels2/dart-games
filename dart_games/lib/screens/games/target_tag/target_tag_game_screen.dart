@@ -918,14 +918,6 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     );
   }
 
-  int _getCrossAxisCount(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    if (width > 1200) return 5;
-    if (width > 800) return 4;
-    if (width > 600) return 3;
-    return 2;
-  }
-
   int _getEntityCount(dynamic game, List<Player> allPlayers) {
     if (game.mode.toString().contains('solo')) {
       return game.playerIds.length;

@@ -150,8 +150,4 @@ class PhotoService {
     }
   }
 
-  // Get default avatar path (returns null to use Flutter icon instead)
-  String? getDefaultAvatarPath() {
-    return null;
-  }
 }
