@@ -648,6 +648,63 @@ void main() {
       final body = await _readJson(response) as Map<String, dynamic>;
       expect(body['error'], contains('not found'));
     });
+
+    test('POST /<id>/stats/increment adds to the stored values', () async {
+      await createPlayer();
+      await handler(
+        _jsonRequest('PUT', '/$playerId/stats', {
+          'gamesPlayed': 4,
+          'gamesWon': 1,
+        }),
+      );
+
+      final response = await handler(
+        _jsonRequest('POST', '/$playerId/stats/increment', {
+          'gamesPlayed': 1,
+          'gamesWon': 1,
+        }),
+      );
+
+      expect(response.statusCode, 200);
+      final body = await _readJson(response) as Map<String, dynamic>;
+      expect(body['gamesPlayed'], 5);
+      expect(body['gamesWon'], 2);
+    });
+
+    test('concurrent increments both land', () async {
+      await createPlayer();
+
+      // Two games finishing at once. With client-computed absolute values
+      // each would send "played = 1" and one increment would be lost.
+      await Future.wait<Response>([
+        Future.value(handler(_jsonRequest('POST', '/$playerId/stats/increment', {
+          'gamesPlayed': 1,
+          'gamesWon': 1,
+        }))),
+        Future.value(handler(_jsonRequest('POST', '/$playerId/stats/increment', {
+          'gamesPlayed': 1,
+          'gamesWon': 0,
+        }))),
+      ]);
+
+      final getResponse = await handler(
+        Request('GET', Uri.parse('http://localhost/$playerId')),
+      );
+      final body = await _readJson(getResponse) as Map<String, dynamic>;
+      expect(body['gamesPlayed'], 2);
+      expect(body['gamesWon'], 1);
+    });
+
+    test('POST /<id>/stats/increment returns 404 for unknown player', () async {
+      final response = await handler(
+        _jsonRequest('POST', '/unknown-id/stats/increment', {
+          'gamesPlayed': 1,
+          'gamesWon': 0,
+        }),
+      );
+
+      expect(response.statusCode, 404);
+    });
   });
 
   // ---------------------------------------------------------------------------

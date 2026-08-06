@@ -422,6 +422,13 @@ Future<Player?> showAddPlayerDialog({
       ),
     ),
   );
+  // NOTE: nameController is intentionally not disposed here. Disposing on the
+  // dialog future's completion throws "A TextEditingController was used after
+  // being disposed" — the route's exit transition keeps rebuilding the
+  // TextField for several frames after pop. Proper ownership needs the dialog
+  // body to be a StatefulWidget (see docs/plans .. 03-shared-components.md);
+  // until then the controller is simply collected once the closure is
+  // unreachable.
 }
 
 /// Progress / error status row shown at the bottom of the Add Player

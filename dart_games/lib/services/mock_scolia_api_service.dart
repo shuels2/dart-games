@@ -12,6 +12,20 @@ class MockScoliaApiService {
 
   Stream<Map<String, dynamic>> get eventStream => _eventStreamController.stream;
 
+  /// Once disposed the service goes inert: emits are dropped rather than
+  /// throwing on a closed controller. A replaced emulator source can still be
+  /// held by code that hasn't noticed the swap.
+  bool _disposed = false;
+  bool get isDisposed => _disposed;
+
+  void _emit(Map<String, dynamic> event) {
+    if (_disposed) return;
+    _eventStreamController.add(event);
+  }
+
+  /// Cap on retained simulated-API log entries.
+  static const int maxApiLogs = 2000;
+
   final List<Map<String, dynamic>> _apiLogs = [];
   List<Map<String, dynamic>> get apiLogs => List.unmodifiable(_apiLogs);
 
@@ -24,7 +38,12 @@ class MockScoliaApiService {
       'response': responseData,
     };
     _apiLogs.add(log);
-    _eventStreamController.add({
+    // One entry per simulated throw — bounded so a long emulator session
+    // doesn't grow this without limit.
+    if (_apiLogs.length > maxApiLogs) {
+      _apiLogs.removeRange(0, _apiLogs.length - maxApiLogs);
+    }
+    _emit({
       'type': 'api_log',
       'data': log,
     });
@@ -89,7 +108,7 @@ class MockScoliaApiService {
       },
     );
 
-    _eventStreamController.add({
+    _emit({
       'type': 'throw_detected',
       'data': throwDetectedMessage,
     });
@@ -225,7 +244,7 @@ class MockScoliaApiService {
       },
     );
 
-    _eventStreamController.add({
+    _emit({
       'type': eventType,
       'data': eventData,
     });
@@ -249,7 +268,7 @@ class MockScoliaApiService {
       eventData,
     );
 
-    _eventStreamController.add({
+    _emit({
       'type': 'board_connected',
       'data': eventData,
     });
@@ -271,7 +290,7 @@ class MockScoliaApiService {
       eventData,
     );
 
-    _eventStreamController.add({
+    _emit({
       'type': 'board_disconnected',
       'data': eventData,
     });
@@ -297,7 +316,7 @@ class MockScoliaApiService {
       },
     );
 
-    _eventStreamController.add({
+    _emit({
       'type': 'takeout_started',
       'data': takeoutStartedMessage,
     });
@@ -324,7 +343,7 @@ class MockScoliaApiService {
       },
     );
 
-    _eventStreamController.add({
+    _emit({
       'type': 'takeout_finished',
       'data': takeoutFinishedMessage,
     });
@@ -349,13 +368,15 @@ class MockScoliaApiService {
   /// Clear all logs
   void clearLogs() {
     _apiLogs.clear();
-    _eventStreamController.add({
+    _emit({
       'type': 'logs_cleared',
       'data': {},
     });
   }
 
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
     _eventStreamController.close();
   }
 }

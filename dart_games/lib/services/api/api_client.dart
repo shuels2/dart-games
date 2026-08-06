@@ -290,6 +290,22 @@ class ApiClient {
     });
   }
 
+  /// POST /api/v1/players/<id>/stats/increment - Add to a player's stats.
+  ///
+  /// Use this to record a finished game. The server does the addition, so two
+  /// games finishing at once cannot overwrite each other's increment the way
+  /// a client-computed absolute value does.
+  Future<void> incrementPlayerStats(
+    String id, {
+    int gamesPlayed = 0,
+    int gamesWon = 0,
+  }) async {
+    await _post('/api/v1/players/$id/stats/increment', {
+      'gamesPlayed': gamesPlayed,
+      'gamesWon': gamesWon,
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Saved Games
   // ---------------------------------------------------------------------------

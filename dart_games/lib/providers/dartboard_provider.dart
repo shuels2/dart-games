@@ -276,6 +276,9 @@ class DartboardProvider with ChangeNotifier {
 
   // Activate emulator
   void _activateEmulator() {
+    // Replacing without disposing leaves the old service's broadcast
+    // controller and its accumulated logs alive for the session.
+    _mockApiService?.dispose();
     _mockApiService = MockScoliaApiService();
     _rewireEventForwarding(_mockApiService!.eventStream);
     _status = DartboardConnectionStatus.emulator;
@@ -499,6 +502,7 @@ class DartboardProvider with ChangeNotifier {
     _dartboard = null;
     _apiKey = null;
     _useEmulatorMode = false;
+    _mockApiService?.dispose();
     _mockApiService = null;
     _sourceSubscription?.cancel();
     _sourceSubscription = null;
@@ -787,6 +791,8 @@ class DartboardProvider with ChangeNotifier {
     _statusSubscription = null;
     _sourceSubscription?.cancel();
     _sourceSubscription = null;
+    _mockApiService?.dispose();
+    _mockApiService = null;
     _eventBus.close();
     _webSocketService?.dispose();
     super.dispose();

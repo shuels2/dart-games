@@ -575,10 +575,12 @@ class PlayerProvider extends ChangeNotifier {
         }
       } else {
         try {
-          await _api.updatePlayerStats(
+          // Deltas, not absolutes: two games finishing at once must not
+          // clobber each other's increment.
+          await _api.incrementPlayerStats(
             playerId,
-            gamesPlayed: player.gamesPlayed + 1,
-            gamesWon: won ? player.gamesWon + 1 : player.gamesWon,
+            gamesPlayed: 1,
+            gamesWon: won ? 1 : 0,
           );
         } catch (e) {
           print('updatePlayerStats: server rejected stats for $playerId: $e');

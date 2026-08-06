@@ -139,6 +139,9 @@ class ScoliaWebSocketService {
       return connected;
     } catch (e) {
       _isConnected = false;
+      // A channel opened before the failure would otherwise stay open with a
+      // live listener on it.
+      disconnect();
       ApiLoggerService.logApiCall(
         method: 'WS_CONNECT',
         endpoint: _wsBaseUrl,

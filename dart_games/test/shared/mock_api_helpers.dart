@@ -172,6 +172,21 @@ class MockApiServer {
       return _jsonResponse(players[idx]);
     }
 
+    final statsIncrementMatch =
+        RegExp(r'^/api/v1/players/([^/]+)/stats/increment$').firstMatch(path);
+    if (statsIncrementMatch != null && method == 'POST') {
+      final id = statsIncrementMatch.group(1)!;
+      final idx = players.indexWhere((p) => p['id'] == id);
+      if (idx < 0) return http.Response('', 404);
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      players[idx]['gamesPlayed'] =
+          ((players[idx]['gamesPlayed'] as int?) ?? 0) +
+              ((body['gamesPlayed'] as int?) ?? 0);
+      players[idx]['gamesWon'] = ((players[idx]['gamesWon'] as int?) ?? 0) +
+          ((body['gamesWon'] as int?) ?? 0);
+      return _jsonResponse(players[idx]);
+    }
+
     if (path == '/api/v1/players/history/batch' && method == 'POST') {
       final body = jsonDecode(request.body) as Map<String, dynamic>;
       final entries = body['entries'];

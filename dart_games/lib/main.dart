@@ -16,6 +16,7 @@ import 'providers/treasure_divide_provider.dart';
 import 'services/api/api_client.dart';
 import 'services/api/api_config.dart';
 import 'services/app_settings.dart';
+import 'services/save_game_service.dart';
 import 'services/storage_service.dart';
 import 'services/victory_music_service.dart';
 import 'services/global_connection_announcer.dart';
@@ -133,6 +134,9 @@ Future<void> main() async {
   AppSettings.initialize(apiClient);
   StorageService.initialize(apiClient);
   VictoryMusicService().initializeApi(apiClient);
+  // Game screens construct SaveGameService() without arguments; point those
+  // at the shared client rather than letting each mint its own.
+  SaveGameService.defaultClient = apiClient;
 
   // Initialize the app-root pause/reconnect announcer. Owns its own
   // GameAnnouncementQueueService so the dartboard disconnect /
