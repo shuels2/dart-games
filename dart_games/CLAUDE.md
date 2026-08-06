@@ -39,10 +39,16 @@ Each game has its own unique visual identity while integrating with global syste
 - [Data Migrations](docs/development/data-migrations.md) - Server-side SQLite schema migration system
 - [Widget Keys](docs/development/widget-keys.md) - Widget key requirements for testing
 
-### 🧪 Testing (3285 tests total — non-UI: 2653+35 server=2688, UI: 820 optional + 98 TD)
-- [Test Overview](docs/testing/test-overview.md) - **2428 Flutter + 225 server + 820 UI tests**
-- [Non-UI Tests](docs/testing/non-ui-tests.md) - 2653 non-UI tests (MANDATORY before builds)
-- [UI Automation](docs/testing/ui-automation.md) - 722 UI tests (~843+ minutes sequential / ~211+ minutes parallel, optional)
+### 🧪 Testing
+> **No test counts in docs.** They drifted into six incompatible generations
+> across a dozen files, and a wrong count is worse than none: it invites
+> "close enough" when a suite silently loses tests. The gate is the exit code
+> — `flutter test` and `cd server && dart test` must both pass 100%.
+
+- [Test Overview](docs/testing/test-overview.md) - Flutter, server, and UI suites
+- [Non-UI Tests](docs/testing/non-ui-tests.md) - MANDATORY before builds
+- [UI Automation](docs/testing/ui-automation.md) - optional, chromedriver-driven
+- [Meta lints](test/meta/) - style + option-wiring checks that run in `flutter test`
 - [Continuous Animations](docs/testing/continuous-animations.md) - Critical pumpAndSettle() rules
 - [Test Maintenance](docs/testing/test-maintenance.md) - Updating tests when features change
 - [Shared Helpers Reference](docs/testing/shared-helpers-reference.md) - Shared test helper files, delegate pattern, new game templates
@@ -75,13 +81,13 @@ Each game has its own unique visual identity while integrating with global syste
 
 ### Run All Non-UI Tests (MANDATORY before builds)
 ```bash
-# Flutter tests (2428 tests)
+# Flutter tests
 flutter test
 
-# Server tests (225 tests)
+# Server tests
 cd server && dart test
 ```
-**Required:** 100% pass rate (2653 tests total)
+**Required:** 100% pass rate (both commands exit 0)
 
 ### Run UI Automation Tests (Optional)
 ```bash
@@ -138,68 +144,38 @@ flutter test test/screens/games/tiki_golf/
 flutter test test/screens/games/treasure_divide/
 ```
 
-## Current Test Counts
+## Test Suites
 
-**Total: 3285 tests**
-- **Flutter Non-UI Tests:** 2428 tests (100% pass rate MANDATORY)
-  - API client tests: 49 (5 config + 38 client + 6 voice settings)
-  - Model tests: 98 (40 core + 58 additional)
-  - Model serialization tests: 169 (HorseRace 10 + TargetTag 13 + MonsterMash 13 + ReefRoyale 19 + ClockworkQuest 19 + LunarLander 12 + PiratesGrid 24 + GladiatorArena 17 + TikiGolf 15 + TreasureDivide 27)
-  - Provider tests: 74 (PlayerProvider 44 + DartboardProvider 30)
-  - Provider save/restore tests: 85 (6 prior games x 7 + PiratesGrid 12 + GladiatorArena 15 + TikiGolf 13 + TreasureDivide 15)
-  - Provider game mechanics tests: 436 (HorseRace 50 + ClockworkQuest 49 + MonsterMash 44 + ReefRoyale 45 + TargetTag 45 + GladiatorArena 81 + TikiGolf 67 + TreasureDivide 55)
-  - Service tests: 91 (AppSettings 20 + VictoryMusicService 22 + StorageService 24 + ApiLoggerService 25)
-  - Save game service tests: 13
-  - Announcement queue model tests: 30
-  - Integration tests: 163
-  - Save/resume integration tests: 20
-  - Shared component tests: 24
-  - Utility tests: 34 (DartboardLayout)
-  - Widget tests: 61 (23 dartboard + 8 save modal + 13 resume modal + 17 PirateAvatarWidget)
-  - Monster Mash announcements: 18
-  - Reef Royale game logic + announcements: ~154
-  - Clockwork Quest game logic + announcements: 84 (66 game logic + 18 announcements)
-  - Carnival Derby game logic: 8 (included in integration above)
-  - Lunar Lander game logic + announcements: 66 (33 game logic + 33 announcements)
-  - Pirate's Grid game logic + announcements: 132 (31 game logic + 14 checker + 27 announcements + 24 with-announcements + 24 serialization + 12 save-restore)
-  - Gladiator Arena game logic + announcements: 77 (26 game logic + 33 announcements + 18 with-announcements)
-  - Tiki Golf game logic + announcements: 126 (72 game logic + 36 announcements + 18 with-announcements)
-  - Treasure Divide game logic + announcements: 238 (89 game logic + 60 announcement direct + 89 game-with-announcements)
+Three suites. The first two are mandatory before any build; the third is
+optional and slow.
 
-- **Server Tests:** 225 tests (100% pass rate MANDATORY)
-  - Database & helpers: 25
-  - Database registry & middleware: 10
-  - Model roundtrips: 32
-  - Migration runner, V1 baseline & V2 failed_stats: 29
-  - Settings routes: 9
-  - Dartboard routes: 10
-  - Player routes: 24
-  - Saved game routes: 13
-  - Victory music routes: 14
-  - Failed stats routes: 6
-  - Test routes: 6
-  - Additional routes (added for Pirate's Grid): 12
-  - Face landmarks service, V5 migration, routes (added for Treasure Divide): 35
+| Suite | Command | Gate |
+|---|---|---|
+| Flutter non-UI | `flutter test` | 100% pass, MANDATORY |
+| Server | `cd server && dart test` | 100% pass, MANDATORY |
+| UI automation | `./run_ui_tests_parallel.bat` | optional — ask the user first |
 
-- **UI Automation Tests:** 820 tests (optional, ask before running)
-  - Target Tag: 80 tests (~113 minutes) [71 functional + 4 navigation + 5 play-to-complete]
-  - Carnival Derby: 51 tests (~68 minutes) [42 functional + 4 navigation + 5 play-to-complete]
-  - Monster Mash: 76 tests (~103 minutes) [68 functional + 4 navigation + 4 play-to-complete]
-  - Reef Royale: 92 tests (~124 minutes) [84 functional + 4 navigation + 4 play-to-complete]
-  - Clockwork Quest: 116 tests (~153 minutes) [92 functional + 3 navigation + 16 save/resume + 5 play-to-complete]
-  - Lunar Lander: 46 tests (~61 minutes) [37 functional + 4 navigation + 5 play-to-complete]
-  - Pirate's Grid: 69 tests (~90 minutes) [55 functional + 4 navigation + 6 play-to-complete]
-  - Gladiator Arena: 99 tests (~131 minutes) [85 functional + 4 navigation + 5 play-to-complete + 5 pause modal + 7 visual validation]
-  - Tiki Golf: 111 files (93 categorized + 2 screenshot + 16 save/resume) [randomization/4 + team_setup/10 + team_mode_gameplay/10 + gameplay/13 + 4 navigation + 5 play-to-complete + 3 pause modal + 2 visual validation (screenshot split into menu/solo + results files to fit 600s parallel-runner budget)]
-  - Treasure Divide: 105 testWidgets (~155 minutes) [87 test files: add_player/3 + edit_score/5 + gameplay/13 + menu_and_settings/10 + navigation/4 + pause_modal/3 + play_to_complete/7 + results_screen/9 + save_resume/16 + team_setup/7 + team_mode_gameplay/4 + visual_validation/6]
-  - **Sequential (`run_ui_tests.bat`): ~988+ minutes — interactive Chrome sessions**
-  - **Parallel (`run_ui_tests_parallel.bat`): ~356+ minutes — fully headless, no visible Chrome**
+**Counts are deliberately not recorded here.** They drifted into six mutually
+contradictory generations across CLAUDE.md and a dozen docs — one file carried
+three different totals at once. A stale count is worse than no count: it makes
+a suite that has silently lost tests look correct. The gate is the exit code.
+
+To see the current shape of a suite: `flutter test --reporter=compact | tail -1`.
+
+Notable groupings inside `test/`:
+- `test/providers/` — per-game mechanics and save/restore round-trips
+- `test/models/` — serialization round-trips
+- `test/services/` — API client, settings, storage, announcement queue
+- `test/screens/games/<game>/` — announcement behaviour per game
+- `test/meta/` — style and option-wiring lints that apply to every game
+  automatically, including games added later
 
 ## Critical Reminders
 
 ### Before Any Build
-✅ Run `flutter test` - ALL 2428 Flutter non-UI tests MUST pass
-✅ Run `cd server && dart test` - ALL 225 server tests MUST pass
+✅ Run `flutter test` — must exit 0 (100% pass)
+✅ Run `cd server && dart test` — must exit 0 (100% pass)
+✅ Run `flutter analyze lib/ test/` — zero errors
 ✅ Ask user: "Would you like me to run UI automation tests?"
 ✅ Only proceed with build after tests pass
 
@@ -274,21 +250,51 @@ Capturing screenshots is NOT the same as validating them. A passing test only me
 
 ### Screenshot Test Technical Rules
 These rules prevent common debugging traps. Follow them EXACTLY:
-- ✅ Use `test_driver/screenshot_test.dart` as the driver (has `onScreenshot` callback)
-- ✅ **Use ONE `testWidgets` block per screenshot test file** — capture every screenshot inside a single continuous flow. Match the structure of every other game's screenshot test (`gladiator_arena_screenshot_test.dart`, `pirates_grid_screenshot_test.dart`, etc.).
-- ✅ **Define helpers FULLY inline in the screenshot test file** — both the helper interface AND its body. Do NOT import `_helpers.dart`, AND do NOT delegate to `shared/dart_throw_helpers.dart` or `shared/game_setup_helpers.dart` either. Talk directly to `package:dart_games/services/mock_scolia_api_service.dart` and the per-test `SettingsHelpers`/`UITestHelpers`/`PumpSequences`/`ProviderHelpers` shared files. Reference: copy the structure of `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart` line-for-line.
-- ❌ NEVER use `test_driver/integration_test.dart` for screenshot tests (will hang silently on `takeScreenshot()` — that driver has no `onScreenshot` callback so the future never resolves; **verified**).
-- ❌ NEVER split a screenshot test into multiple `testWidgets` blocks — the `integration_test_driver_extended` protocol expects one test per file. All working game screenshot tests use a single `testWidgets`.
-- ❌ NEVER `import '_helpers.dart' as h;` (or any other local sibling file) from a screenshot test. All working game screenshot tests inline their helpers.
-- ❌ NEVER import `shared/dart_throw_helpers.dart` or `shared/game_setup_helpers.dart` from a screenshot test. All working game screenshot tests inline the helper BODIES — talk to `mock_scolia_api_service` directly, like Pirate's Grid / Gladiator Arena / etc.
-- ⚠️ **About the three "NEVER" rules above (multi-`testWidgets`, `_helpers.dart` import, shared dart-throw/game-setup imports):** they were originally documented as causing a `SocketException` at `WebDriver.quit` ~14s into the run. That attribution was based on the Tiki Golf screenshot test failure — but we later applied all three "fixes" to Tiki Golf and the failure persisted unchanged. The actual cause turned out to be the 600s runtime-budget rule below. So we don't have an isolated test case that proves any of these three patterns cause that SocketException on their own. They may still be required (every working test follows them, and the `integration_test_driver_extended` protocol genuinely expects one test per file), but **before debugging a screenshot-test hang as a structural bug, check `DURATION=` in `<game>_results.txt` first** — if it's near 600s, the timeout is the cause.
-- ⚠️ **A SINGLE SCREENSHOT TEST FILE MUST FINISH IN UNDER 600s (10 min) END-TO-END.** The parallel UI worker (`run_ui_tests_parallel_worker.bat:253`) polls the per-test log for `'All tests passed' | 'Some tests failed' | 'Application finished' | 'Failed to compile application'` for up to 600 seconds, then kills Chrome. If the test is still running at 600s, the framework never gets to emit "All tests passed" → log shows only "Debug service listening" → `SocketException` at `WebDriver.quit` when flutter_tools tries to tear down a dead Chrome. **This is the same log signature as the three structural patterns above would produce in theory**, so check `DURATION=` in `<game>_results.txt` first — if it's near 600s, total runtime is the cause. **Fix:** split the screenshot test into multiple files (e.g. `<game>_screenshot_test.dart` for menu/solo, `<game>_screenshot_results_test.dart` for team/results). Both filenames match the runner's `findstr /i "screenshot"` driver-detection, so each gets its own 600s budget. Past failure: Tiki Golf's full screenshot test (28 captures, 2 full 9-hole rapid-completion loops) hit the 600s timeout silently until split into PARTS 1-5 + PARTS 6-10 across two files.
-- ❌ NEVER use `--no-headless` flag — follow `run_ui_tests.bat` pattern
-- ❌ NEVER use `pumpAndSettle()` in integration tests — splash screen `CircularProgressIndicator` prevents settling
-- ❌ NEVER kill all `chrome.exe` processes — only kill `chromedriver.exe` (killing Chrome causes crash recovery state)
-- ✅ Restart chromedriver before each test run
-- ✅ Reference `run_ui_tests.bat` for the established launch pattern
-- ✅ See [UI Automation](docs/testing/ui-automation.md) for full details
+
+**Required structure** (every working game screenshot test follows it, and the
+`integration_test_driver_extended` protocol expects one test per file):
+- ✅ Driver is `test_driver/screenshot_test.dart` — it has the `onScreenshot`
+  callback. `test_driver/integration_test.dart` does NOT, so `takeScreenshot()`
+  never resolves and the run hangs silently. **Verified.**
+- ✅ ONE `testWidgets` block per file — capture every screenshot in a single
+  continuous flow.
+- ✅ Helpers defined FULLY inline, interface and body. Do not import
+  `_helpers.dart`, `shared/dart_throw_helpers.dart`, or
+  `shared/game_setup_helpers.dart`; talk to
+  `package:dart_games/services/mock_scolia_api_service.dart` directly.
+  Reference: `integration_test/pirates_grid/visual_validation/pirates_grid_screenshot_test.dart`.
+- ❌ Never pass `--no-headless` — follow the `run_ui_tests.bat` pattern.
+- ❌ Never kill all `chrome.exe` — kill `chromedriver.exe` only. Killing Chrome
+  leaves crash-recovery state that breaks the next run.
+- ✅ Restart chromedriver before each run.
+
+**The 600s budget — check this FIRST when a screenshot run hangs.**
+A single screenshot file must finish in under 600s end-to-end. The parallel
+worker (`run_ui_tests_parallel_worker.bat:253`) polls the per-test log for
+`'All tests passed' | 'Some tests failed' | 'Application finished' |
+'Failed to compile application'` for 600 seconds, then kills Chrome. A test
+still running at that point never emits a result, so the log ends at
+"Debug service listening" and flutter_tools reports `SocketException` at
+`WebDriver.quit` while tearing down a dead Chrome.
+
+Diagnosis: read `DURATION=` in `<game>_results.txt`. Near 600s → the budget is
+the cause, not the test's structure. This matters because the structural rules
+above produce the *same* log signature in theory, and that ambiguity has
+already cost one long debugging session: the three "never" rules were
+originally introduced as the fix for Tiki Golf's hang, all three were applied,
+and the hang persisted — the real cause was total runtime.
+
+Fix: split the file (e.g. `<game>_screenshot_test.dart` for menu/solo,
+`<game>_screenshot_results_test.dart` for team/results). Both names match the
+runner's `findstr /i "screenshot"` detection, so each gets its own 600s budget.
+Estimate before running: captures × ~20s + ~60s boot; over ~480s, split first.
+
+Also: never use `pumpAndSettle()` in integration tests — the splash screen's
+`CircularProgressIndicator` never settles. Reference `run_ui_tests.bat` for the
+established launch pattern.
+
+For the full forensic history, see
+[UI Automation](docs/testing/ui-automation.md).
 
 **Pattern for a screenshot test file** (use this template for every new game):
 ```dart
@@ -370,11 +376,11 @@ dart_games/
 │           ├── pirates_grid/
 │           ├── gladiator_arena/
 │           └── tiki_golf/
-├── test/                            # Flutter non-UI tests (2060 tests)
+├── test/                            # Flutter non-UI tests
 │   ├── shared/                     # Shared test helpers (MockApiServer, etc.)
 │   ├── services/api/               # API client tests
 │   └── ...
-├── integration_test/                # UI automation tests (722 tests)
+├── integration_test/                # UI automation tests
 │   ├── shared/                     # Shared test helpers
 │   ├── target_tag/                 # Target Tag UI tests
 │   ├── carnival_derby/             # Carnival Derby UI tests
@@ -482,13 +488,12 @@ git push origin <branch>        # Push (with permission)
 
 ## Notes
 
-- Original CLAUDE.md (2800 lines) has been reorganized into 93 focused documentation files
-- Each topic has its own file for better maintainability and navigation
+- This file is a navigation hub; each topic has its own file under `docs/`
 - Game-specific documentation lives in `docs/games/[game_name]/`
 - Shared documentation lives in topic-based folders (architecture, development, testing, etc.)
+- Counts of any kind (tests, files, games) are deliberately absent — they went
+  stale faster than anyone updated them, and a wrong number is worse than none
 
 ---
 
-**Last Updated:** 2026-06-10
-**Documentation Version:** 4.7 (Treasure Divide)
-**Total Documentation Files:** 117
+**Last Updated:** 2026-08-06

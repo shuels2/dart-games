@@ -37,45 +37,49 @@ Add `Key` to ALL interactive elements:
 ## Key Naming Convention
 
 ### Format
-`Key('screen_game_element_descriptor')`
+`Key('game_screen_element')` — game first, then screen, then element.
 
-**Components:**
-- `screen` - Where element appears (menu, game, results, dialog)
-- `game` - Game abbreviation (cd = Carnival Derby, tt = Target Tag)
-- `element` - Element type (button, tile, field, card)
-- `descriptor` - Specific identifier
-
-### Examples
+**All keys live in one file:** `lib/constants/test_keys.dart`.
 
 ```dart
-// Menu screen keys
-class YourGameMenuKeys {
-  static const startButton = Key('menu_yg_start_button');
-  static const addPlayerButton = Key('menu_yg_add_player_button');
-  static playerTile(String playerId) => Key('menu_yg_player_tile_$playerId');
+// Real examples from test_keys.dart — copy this shape.
+class TreasureDivideMenuKeys {
+  static const backButton = Key('td_menu_back_button');
+  static const startButton = Key('td_menu_start_button');
+  static Key playerTile(String playerId) => Key('td_menu_player_tile_$playerId');
 }
 
-// Game screen keys
-class YourGameGameKeys {
-  static const dartSingle20 = Key('game_yg_dart_single_20_button');
-  static const dartDouble20 = Key('game_yg_dart_double_20_button');
-  static const skipTurnButton = Key('game_yg_skip_turn_button');
-  static const dartsRemovedButton = Key('game_yg_darts_removed_button');
-}
-
-// Dialog keys
-class YourGameDialogKeys {
-  static const editScoreDialog = Key('dialog_yg_edit_score');
-  static const confirmButton = Key('dialog_yg_confirm_button');
-  static const cancelButton = Key('dialog_yg_cancel_button');
-}
-
-// Results screen keys
-class YourGameResultsKeys {
-  static const playAgainButton = Key('results_yg_play_again_button');
-  static const changeSettingsButton = Key('results_yg_change_settings_button');
+class TikiGolfGameKeys {
+  static const skipTurnButton = Key('tiki_golf_game_skip_turn_button');
+  static const editScoreButton = Key('tiki_golf_game_edit_score_button');
+  static Key dartIndicator(int index) => Key('tiki_golf_game_dart_indicator_$index');
 }
 ```
+
+The game segment may be an abbreviation (`td_`) or the full name
+(`tiki_golf_`); be consistent within a game. Home-screen cards use
+`home_card_<game>` for new games.
+
+### Shared component keys — do not redefine these
+
+The shared widgets already declare their own keys. Use them rather than adding
+per-game duplicates:
+
+| Class | Covers |
+|---|---|
+| `AddPlayerDialogKeys` | Add Player dialog |
+| `EditScoreDialogKeys` | Edit Score dialog |
+| `SaveGameModalKeys` | Save Game modal (incl. `errorMessage`) |
+| `ResumeGameModalKeys` | Resume Game modal (incl. `errorMessage`, `retryButton`) |
+| `RemoveDartsModalKeys` | Remove Darts modal |
+| `DartboardEmulatorKeys` | Emulator section, incl. `playToTieButton` / `buffToggleButton` |
+
+### Parameterised keys
+
+Take the identifier the widget actually renders from, and keep the meaning
+consistent across screens. Tiki Golf has `teamBox(teamIndex)` on the menu and
+`teamBox(teamId)` on the game screen — same name, different argument, which is
+a trap for anyone writing tests against both.
 
 ## Key Organization
 

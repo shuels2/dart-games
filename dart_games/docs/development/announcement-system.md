@@ -138,74 +138,72 @@ _audioQueue?.announceScore(player.name, score);
 _audioQueue?.announceWinner(winner.name);
 ```
 
-## Priority Levels
+## Playback order
 
-The announcement queue uses five priority levels (lower number = higher priority):
+**The queue is strict FIFO. `AudioPriority` does NOT affect playback order.**
+Announcements play in the order they were enqueued. The enum is retained on
+`QueuedAnnouncement` for debug logging only — see the class doc on
+`GameAnnouncementQueueService`, which says so explicitly:
 
-### 1. turnTransition (Priority 1) - Highest Priority
-**Usage:** Turn start/end announcements
+> "strict FIFO is the desired behavior — `priority` is retained on
+> `QueuedAnnouncement` only for backwards compatibility and debug logging"
 
-**Examples:**
+The values, verbatim from `lib/services/game_announcement_models.dart`:
+
 ```dart
-_queue.announce(
-  '$playerName, your turn',
-  AudioPriority.turnTransition,
-);
+enum AudioPriority {
+  turnTransition(1), // Lowest - turn changes
+  hitConfirm(2),     // Hit/miss announcements
+  shieldStatus(3),   // Shield milestones (Target Tag specific)
+  statusChange(4),   // Status changes (tagged in/out, busts, eliminations)
+  victory(5);        // Highest - game completion
+}
 ```
 
-### 2. hitConfirm (Priority 2)
-**Usage:** Immediate feedback for dart throws
+Pass the value that describes the announcement — it makes the debug log
+readable — but do not expect it to reorder anything.
 
-**Examples:**
+### Controlling what the player actually hears
+
+Decide at **enqueue** time. Three darts thrown quickly can queue 8-12 seconds
+of speech, and a line that arrives after the moment it described is worse than
+silence.
+
+**1. Don't queue it.** The stacking rule — at most two announcements per dart —
+is the primary control. A game that queues everything it could say will run
+permanently behind the play.
+
+**2. `maxAge:`** — drop the line if it waited too long to still be true. Use for
+anything tied to the current moment.
+
 ```dart
 _queue.announce(
   'Triple 20!',
   AudioPriority.hitConfirm,
+  maxAge: const Duration(seconds: 4),
 );
 ```
 
-### 3. shieldStatus (Priority 3)
-**Usage:** Status changes (shields, tagged-in, special states)
+**3. `coalesceKey:`** — a newer line on the same subject replaces the queued
+older one (the line being spoken right now is never replaced). Use for state
+that only matters in its latest form.
 
-**Examples:**
 ```dart
 _queue.announce(
-  '$playerName gained a shield',
-  AudioPriority.shieldStatus,
+  '$playerName, your turn',
+  AudioPriority.turnTransition,
+  maxAge: const Duration(seconds: 4),
+  coalesceKey: 'turn',
 );
 ```
 
-### 4. statusChange (Priority 4)
-**Usage:** General game state changes
+### Which value to pass
 
-**Examples:**
-```dart
-_queue.announce(
-  'Game mode changed to hard difficulty',
-  AudioPriority.statusChange,
-);
-```
-
-### 5. victory (Priority 5) - Lowest Priority
-**Usage:** Game over and winner announcements
-
-**Examples:**
-```dart
-_queue.announce(
-  'Congratulations $winner, you win!',
-  AudioPriority.victory,
-);
-```
-
-### Priority Guidelines
-
-**When to use each priority:**
-- **turnTransition:** Always for turn changes (most frequent, needs to play quickly)
-- **hitConfirm:** Dart throw feedback, scoring confirmations
-- **shieldStatus:** Game-specific status changes (Target Tag shields, etc.)
-- **statusChange:** Less urgent game state changes
-- **victory:** End-of-game announcements (can wait)
-
+- **turnTransition:** turn changes
+- **hitConfirm:** dart throw feedback, scoring confirmations
+- **shieldStatus:** game-specific status changes (Target Tag shields, etc.)
+- **statusChange:** general game state changes
+- **victory:** end-of-game announcements
 ## Sound Effects
 
 Sound effects can be played simultaneously with announcements.
@@ -508,9 +506,14 @@ Every game screen MUST wire the announcement system following this 8-point check
 
 ### DON'T:
 ❌ Use `DartAnnouncerService` directly (use queue service instead)
-❌ Create multiple queue instances (use singleton pattern)
+❌ Create more than one queue for a screen — one per game screen, created in
+   `initState` and disposed in `dispose`. (The queue is NOT a singleton; the
+   shared object is `DartAnnouncerService.shared`, which every queue speaks
+   through. `GlobalConnectionAnnouncer` owns a second, app-lifetime queue for
+   dartboard pause/reconnect lines — never announce those from a game helper
+   or the player hears them twice.)
 ❌ Forget to dispose of the helper
-❌ Use wrong priority levels
+❌ Expect `AudioPriority` to reorder anything — the queue is FIFO
 ❌ Create very long announcements (keep under 5 seconds)
 ❌ Fire every applicable announcement per dart — use precedence to pick one
 

@@ -69,8 +69,8 @@ flutter test
 ```
 
 ### 3. Verify All Tests Pass
-- All 505 non-UI tests must pass (100% pass rate required)
-- If running UI tests, all 231 must pass
+- All non-UI tests must pass (100% pass rate required)
+- If running UI tests, all of them must pass
 
 ### 4. Ask Permission to Push
 ```

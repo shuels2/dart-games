@@ -23,6 +23,10 @@ for (final playerId in game.playerIds) {
     won: isWinner,
     gameName: 'Your Game Name',
     gameDuration: gameDuration,  // SAME duration for all players
+    // Optional but expected — omitting them loses the stat silently.
+    dartThrows: game.totalDartsThrown[playerId],
+    turns: game.totalTurns[playerId],
+    playerCount: game.playerIds.length,
   );
 }
 ```
@@ -31,7 +35,8 @@ for (final playerId in game.playerIds) {
 
 ✅ **Create game-specific announcement helper**
 ✅ **DO NOT use DartAnnouncerService directly**
-✅ **Use priority-based queuing**
+✅ **Queue is FIFO** — control what plays with `maxAge` / `coalesceKey` and by
+not queuing marginal lines, never by `AudioPriority` (which is log-only)
 ✅ **Analyze announcement stacking** — identify worst-case per-dart announcement count
 ✅ **Apply precedence rules** — max 2 announcements per dart (1 moment + Remove Darts)
 ✅ **"Remove your darts" must always play** — never suppress this announcement
@@ -144,7 +149,7 @@ Every game MUST have these 4 navigation UI tests in `integration_test/your_game/
 3. **`change_settings_back_to_home_test.dart`** — Complete game, click Change Settings, tap menu back, verify home screen (catches the `route.isFirst` bug)
 4. **`change_settings_preserves_settings_test.dart`** — Complete game, click Change Settings, verify settings and players preserved on menu
 
-See existing implementations in `integration_test/*/navigation/` for all 5 games.
+See existing implementations in `integration_test/*/navigation/`.
 
 ## Optional But Recommended Integrations
 
