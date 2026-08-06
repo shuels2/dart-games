@@ -234,49 +234,6 @@ class MonsterMashProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Update a specific dart score and recalculate turn
-  void updateDartScore(String playerId, int dartIndex, String newSector) {
-    if (_currentGame == null) return;
-    if (playerId != _currentGame!.getCurrentPlayerId()) return;
-
-    final currentTurnDarts = _currentGame!.currentTurnDarts[playerId] ?? [];
-    if (dartIndex >= currentTurnDarts.length) return;
-
-    final currentPlayerIndex = _currentGame!.currentPlayerIndex;
-
-    _currentGame!.currentTurnDarts[playerId] = [];
-    _currentGame!.dartsThrown[playerId] = 0;
-    _currentGame!.dartThrowHealAmount[playerId] = [];
-    _currentGame!.dartThrowDamageDealt[playerId] = [];
-    _currentGame!.dartThrowTargetPlayerId[playerId] = [];
-
-    _currentGame!.resetToStartOfTurn(playerId);
-
-    for (int i = 0; i < currentTurnDarts.length; i++) {
-      final sector = i == dartIndex ? newSector : currentTurnDarts[i];
-
-      _currentGame!.currentTurnDarts[playerId]!.add(sector);
-
-      final parsed = _parseSector(sector);
-      if (parsed == null || sector == 'Miss') {
-        _currentGame!.processMiss(playerId);
-      } else {
-        final number = parsed['number'] as int;
-        final multiplier = parsed['multiplier'] as String;
-        _currentGame!.processDartHit(playerId, number, multiplier);
-      }
-    }
-
-    _currentGame!.currentPlayerIndex = currentPlayerIndex;
-
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
-
-    notifyListeners();
-  }
-
   // Update all three dart scores at once
   void updateAllDartScores(String playerId, List<String> newDartSegments) {
     if (_currentGame == null) return;

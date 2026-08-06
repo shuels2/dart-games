@@ -243,44 +243,6 @@ class ReefRoyaleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Update a specific dart score and recalculate turn
-  void updateDartScore(
-      String playerId, int dartIndex, String newSector) {
-    if (_currentGame == null) return;
-    if (playerId != _currentGame!.getCurrentPlayerId()) return;
-
-    final currentTurnDarts =
-        _currentGame!.currentTurnDarts[playerId] ?? [];
-    if (dartIndex >= currentTurnDarts.length) return;
-
-    final currentPlayerIndex = _currentGame!.currentPlayerIndex;
-
-    // Reset dart tracking
-    _currentGame!.currentTurnDarts[playerId] = [];
-    _currentGame!.dartsThrown[playerId] = 0;
-    _currentGame!.dartThrowMarksAdded[playerId] = [];
-    _currentGame!.dartThrowPearlsScored[playerId] = [];
-    _currentGame!.dartThrowClaimedCoral[playerId] = [];
-    _currentGame!.dartThrowLockedReef[playerId] = [];
-    _currentGame!.dartThrowTargetNumber[playerId] = [];
-    _currentGame!.dartThrowIsNeighbor[playerId] = [];
-    _currentGame!.dartThrowPearlRecipientIds[playerId] = [];
-    _currentGame!.dartThrowTargetCount[playerId] = [];
-
-    _currentGame!.resetToStartOfTurn(playerId);
-
-    // Replay all darts with the updated one
-    for (int i = 0; i < currentTurnDarts.length; i++) {
-      final sector =
-          i == dartIndex ? newSector : currentTurnDarts[i];
-      _replayDart(playerId, sector);
-    }
-
-    _currentGame!.currentPlayerIndex = currentPlayerIndex;
-    _checkTakeoutCondition();
-    notifyListeners();
-  }
-
   // Update all three dart scores at once
   void updateAllDartScores(
       String playerId, List<String> newDartSegments) {

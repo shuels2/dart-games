@@ -388,60 +388,6 @@ class TargetTagProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Update a specific dart score and recalculate turn
-  void updateDartScore(String playerId, int dartIndex, String newSector) {
-    if (_currentGame == null) return;
-    if (playerId != _currentGame!.getCurrentPlayerId()) return;
-
-    // Get current turn data
-    final currentTurnDarts = _currentGame!.currentTurnDarts[playerId] ?? [];
-    if (dartIndex >= currentTurnDarts.length) return;
-
-    // Store current game state to restore player index after recalculation
-    final currentPlayerIndex = _currentGame!.currentPlayerIndex;
-
-    // Clear the current turn data for this player
-    _currentGame!.currentTurnDarts[playerId] = [];
-    _currentGame!.dartsThrown[playerId] = 0;
-    _currentGame!.dartThrowTaggedInStatus[playerId] = [];
-    _currentGame!.dartThrowHeroBonusHit[playerId] = [];
-    _currentGame!.dartThrowReachedMax[playerId] = [];
-    _currentGame!.dartThrowCausedElimination[playerId] = [];
-    _currentGame!.dartThrowHitOpponentTarget[playerId] = [];
-
-    // Reset shields and tagged in status to start of turn
-    _currentGame!.resetToStartOfTurn(playerId);
-
-    // Replay all darts with the updated value
-    for (int i = 0; i < currentTurnDarts.length; i++) {
-      final sector = i == dartIndex ? newSector : currentTurnDarts[i];
-
-      // Add to display
-      _currentGame!.currentTurnDarts[playerId]!.add(sector);
-
-      // Parse and process
-      final parsed = _parseSector(sector);
-      if (parsed == null) {
-        _currentGame!.processMiss(playerId);
-      } else {
-        final number = parsed['number'] as int;
-        final multiplier = parsed['multiplier'] as String;
-        _currentGame!.processDartHit(playerId, number, multiplier);
-      }
-    }
-
-    // Restore player index
-    _currentGame!.currentPlayerIndex = currentPlayerIndex;
-
-    // Check if turn should end
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
-
-    notifyListeners();
-  }
-
   // Update all three dart scores at once and recalculate turn
   void updateAllDartScores(String playerId, List<String> newDartSegments) {
     if (_currentGame == null) return;

@@ -492,21 +492,6 @@ void main() {
       ]);
       expect(provider.getShields('p1'), 0);
     });
-
-    test('updateDartScore edits a single dart and replays', () {
-      provider.startSoloGame(players, 5, false);
-      final p1Target = provider.currentGame!.targetNumbers['p1']!;
-
-      // Throw miss, self-hit, miss
-      provider.processDartThrow('None');
-      provider.processDartThrow(singleSector(p1Target));
-      provider.processDartThrow('None');
-      expect(provider.getShields('p1'), 1);
-
-      // Edit dart index 0 from miss to self-hit
-      provider.updateDartScore('p1', 0, singleSector(p1Target));
-      expect(provider.getShields('p1'), 2);
-    });
   });
 
   // =====================================================================

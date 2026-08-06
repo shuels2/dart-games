@@ -62,7 +62,7 @@ integration_test_output/*.txt
 temp_screenshots/
 temp_wireframes/
 integration_test_output/
-ui_test_data/
+ui_test_data*/
 server/build/
 # Per-session test databases created by the server's database registry.
 # Never cleaned up automatically; pure local scratch state.

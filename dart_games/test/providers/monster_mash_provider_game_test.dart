@@ -492,40 +492,9 @@ void main() {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // 9. editScore — updateDartScore / updateAllDartScores
+  // 9. editScore — updateAllDartScores
   // ─────────────────────────────────────────────────────────────────
   group('editScore', () {
-    test('updateDartScore replays turn with edited dart', () {
-      final targets = startGameAndGetTargets();
-      final p2Target = targets['p2']!;
-
-      // Throw 3 misses
-      provider.processDartThrow('None');
-      provider.processDartThrow('None');
-      provider.processDartThrow('None');
-
-      // p2 should still be at full health
-      expect(provider.getHealth('p2'), 20);
-
-      // Edit dart 1 (index 1) to hit p2's target
-      provider.updateDartScore('p1', 1, 'S$p2Target');
-
-      // Now p2 should have taken 1 damage
-      expect(provider.getHealth('p2'), 19);
-    });
-
-    test('updateDartScore ignores if playerId is not current player', () {
-      final targets = startGameAndGetTargets();
-      final p2Target = targets['p2']!;
-
-      provider.processDartThrow('None');
-      provider.processDartThrow('None');
-      provider.processDartThrow('None');
-
-      // Try to edit p2's darts — should be ignored since p1 is current
-      provider.updateDartScore('p2', 0, 'S$p2Target');
-      expect(provider.getHealth('p2'), 20); // No change
-    });
 
     test('updateAllDartScores replays all 3 darts', () {
       final targets = startGameAndGetTargets();

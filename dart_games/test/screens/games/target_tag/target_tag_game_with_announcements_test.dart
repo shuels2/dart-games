@@ -1218,15 +1218,17 @@ void main() {
       helper.processDartThrowWithAnnouncements('Miss');
       helper.clearAnnouncements();
 
-      // Step 2: Edit dart 0 to Double 20 (tag, no status change -> Tag fires)
-      provider.updateDartScore(alice.id, 0, 'D20');
+      // Step 2: Edit dart 0 to Double 20 (tag, no status change -> Tag fires).
+      // Goes through updateAllDartScores, which is what the Edit Score dialog
+      // actually calls.
+      provider.updateAllDartScores(alice.id, ['D20', 'S17', 'Miss']);
       audioQueue.announceSuccessfulTag();
       expect(provider.getShields(bob.id), 2);
       helper.verifyAnnouncements(['Tag! Got \'em!']);
       helper.clearAnnouncements();
 
       // Step 3: Edit dart 1 to Double 17 (low shields > tag, hit suppressed)
-      provider.updateDartScore(alice.id, 1, 'D17');
+      provider.updateAllDartScores(alice.id, ['D20', 'D17', 'Miss']);
       audioQueue.announceLowShields([carol.name]);
       expect(provider.getShields(carol.id), 1);
       helper.verifyAnnouncements(['Warning! Shields almost gone for Carol!']);
@@ -1269,14 +1271,14 @@ void main() {
       audioQueue.clearAnnouncements();
 
       // Step 2: Edit dart 0 to Single 17 (low shields > tag, hit suppressed)
-      provider.updateDartScore(bob.id, 0, 'S17');
+      provider.updateAllDartScores(bob.id, ['S17', 'S14', 'Miss']);
       audioQueue.announceLowShields([carol.name]);
       expect(provider.getShields(carol.id), 1);
       helper.verifyAnnouncements(['Warning! Shields almost gone for Carol!']);
       helper.clearAnnouncements();
 
       // Step 3: Edit dart 1 to Single 17 (vulnerable > tag, hit suppressed)
-      provider.updateDartScore(bob.id, 1, 'S17');
+      provider.updateAllDartScores(bob.id, ['S17', 'S17', 'Miss']);
       audioQueue.announceVulnerable([carol.name]);
       expect(provider.getShields(carol.id), 0);
       expect(provider.isEliminated(carol.id), false);
@@ -1284,7 +1286,7 @@ void main() {
       helper.clearAnnouncements();
 
       // Step 4: Edit dart 2 to Single 17 (elimination > tag, hit suppressed)
-      provider.updateDartScore(bob.id, 2, 'S17');
+      provider.updateAllDartScores(bob.id, ['S17', 'S17', 'S17']);
       audioQueue.announceEliminated([carol.name]);
       expect(provider.getShields(carol.id), 0);
       expect(provider.isEliminated(carol.id), true);
@@ -1324,14 +1326,14 @@ void main() {
       audioQueue.clearAnnouncements();
 
       // Step 2: Remove last dart (change to Miss)
-      provider.updateDartScore(alice.id, 2, 'None');
+      provider.updateAllDartScores(alice.id, ['S14', 'T14', 'None']);
       expect(provider.getShields(alice.id), 4);
       expect(provider.isTaggedIn(alice.id), false);
       // Announcements may replay or be silent - not strictly validating here
       helper.clearAnnouncements();
 
       // Step 3: Remove middle dart (change to Miss)
-      provider.updateDartScore(alice.id, 1, 'None');
+      provider.updateAllDartScores(alice.id, ['S14', 'None', 'None']);
       expect(provider.getShields(alice.id), 1);
       expect(provider.isTaggedIn(alice.id), false);
 
@@ -1376,7 +1378,7 @@ void main() {
       audioQueue.clearAnnouncements();
 
       // Step 2: Edit dart 0 to Single 14 (tagged-in, hit suppressed)
-      provider.updateDartScore(alice.id, 0, 'S14');
+      provider.updateAllDartScores(alice.id, ['S14', 'Miss', 'Miss']);
       audioQueue.announceTaggedIn([alice.name, bob.name]);
       expect(provider.getShields(alice.id), 5);
       expect(provider.getShields(bob.id), 5);
@@ -1386,7 +1388,7 @@ void main() {
       helper.clearAnnouncements();
 
       // Step 3: Edit dart 1 to Single 14 (already at max, no secondary -> hit fires)
-      provider.updateDartScore(alice.id, 1, 'S14');
+      provider.updateAllDartScores(alice.id, ['S14', 'S14', 'Miss']);
       audioQueue.announceHit(14, 'single');
       expect(provider.getShields(alice.id), 5);
       expect(provider.getShields(bob.id), 5);
