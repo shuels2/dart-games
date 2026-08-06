@@ -3,34 +3,44 @@ import 'package:flutter/foundation.dart';
 import '../models/tiki_golf_game.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
+import 'game_provider_base.dart';
 
-class TikiGolfProvider extends ChangeNotifier {
-  TikiGolfGame? _currentGame;
-  String? _resumedSavedGameId;
-  bool _saving = false;
+class TikiGolfProvider extends GameProviderBase<TikiGolfGame> {
+  /// Internal alias for [GameProviderBase.game] — same rationale as Treasure
+  /// Divide: the game logic below names its locals `game` throughout, so the
+  /// alias keeps the storage in the base without rewriting every body.
+  TikiGolfGame? get _currentGame => game;
+  set _currentGame(TikiGolfGame? value) => game = value;
 
   // ─── Getters ─────────────────────────────────────────────────────────────────
 
   TikiGolfGame? get currentGame => _currentGame;
 
+  @override
   bool get isGameActive =>
       _currentGame?.state == TikiGolfGameState.playing;
 
+  /// Tiki Golf's third flag-storage shape (see plan notes Q13): a stored,
+  /// serialized model field (`currentTurnEnded`) OR-ed with the derived
+  /// winner condition. The setter writes only the stored half — the
+  /// `hasWinner` disjunct is monotonic, so writing `currentTurnEnded = false`
+  /// while the game is won correctly leaves the prompt up until the results
+  /// navigation, exactly as before the migration.
+  @override
   bool get shouldPromptTakeout =>
       (_currentGame?.currentTurnEnded ?? false) ||
       (_currentGame?.hasWinner ?? false);
 
+  @override
+  set waitingForTakeout(bool value) =>
+      _currentGame?.currentTurnEnded = value;
+
+  @override
   bool get hasWinner => _currentGame?.hasWinner ?? false;
 
   String? get currentPlayerId => _currentGame?.activePlayerId;
 
   String? get currentTeamId => _currentGame?.activeTeamId;
-
-  String? get resumedSavedGameId => _resumedSavedGameId;
-
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
-  }
 
   // ─── randomDistribution ──────────────────────────────────────────────────────
 
@@ -308,6 +318,13 @@ class TikiGolfProvider extends ChangeNotifier {
   // ─── confirmTurnEnd ──────────────────────────────────────────────────────────
 
   /// Called when the player taps NEXT PLAYER / DARTS REMOVED — standard takeout.
+  ///
+  /// This is Tiki Golf's [handleTakeoutFinished] under its historical name
+  /// (tests call it directly). Like Treasure Divide, it cannot use the base
+  /// flow: the game is only finalized *inside* the advance (the last player
+  /// completing hole 9 runs `_advanceToNextHole → _endGame`), so the screen
+  /// re-checks `hasWinner` after this returns. Note the guard is the stored
+  /// `currentTurnEnded` specifically, not the derived [shouldPromptTakeout].
   void confirmTurnEnd() {
     if (_currentGame == null) return;
     if (!_currentGame!.currentTurnEnded) return;
@@ -328,6 +345,18 @@ class TikiGolfProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  @override
+  void handleTakeoutFinished() => confirmTurnEnd();
+
+  @override
+  void advanceToNextPlayer() {
+    if (_currentGame!.gameMode == TikiGolfGameMode.solo) {
+      _advanceSoloPlayer();
+    } else {
+      _advanceTeamPlayer();
+    }
   }
 
   // ─── _advanceSoloPlayer ──────────────────────────────────────────────────────
@@ -578,16 +607,14 @@ class TikiGolfProvider extends ChangeNotifier {
       {List<String>? playerNames,
       Map<String, String>? playerNamesById,
       bool isAutoSave = false}) async {
-    if (_currentGame == null || _saving) return;
-    _saving = true;
-    try {
+    await persistSave(service, (existingId) {
       final game = _currentGame!;
       String nameOf(String id) => playerNamesById?[id] ?? id;
       final names = playerNames ?? game.playerIds.map(nameOf).toList();
       final completedHoles = game.currentHole - 1;
       final modeName = game.gameMode == TikiGolfGameMode.solo ? 'Solo' : 'Team';
 
-      final metadata = SavedGameMetadata.create(
+      return SavedGameMetadata.create(
         gameType: 'tiki_golf',
         playerNames: names,
         progressInfo: 'Hole ${game.currentHole} of 9',
@@ -596,25 +623,17 @@ class TikiGolfProvider extends ChangeNotifier {
             game.activePlayerId == null ? '' : nameOf(game.activePlayerId!),
         leadingPlayerScore: '$completedHoles holes completed',
         gameState: game.toJson(),
+        // The stored half only — the derived winner half never needs saving
+        // (a finished game is deleted from the resume list, not saved).
         waitingForTakeout: game.currentTurnEnded,
         isAutoSave: isAutoSave,
-        existingId: _resumedSavedGameId,
+        existingId: existingId,
       );
-
-      final saved = await service.saveGame(metadata);
-      if (saved) {
-        _resumedSavedGameId = metadata.id;
-      }
-    } finally {
-      _saving = false;
-    }
+    });
   }
 
-  void restoreGame(SavedGameMetadata savedGame) {
-    _currentGame =
-        TikiGolfGame.fromJson(Map<String, dynamic>.from(savedGame.gameState));
-    _currentGame!.currentTurnEnded = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
-    notifyListeners();
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = TikiGolfGame.fromJson(json);
   }
 }

@@ -195,8 +195,8 @@ abstract class GameProviderBase<G> extends ChangeNotifier {
   }
 
   /// Drops the game entirely. Note this does NOT clear [resumedSavedGameId] —
-  /// the menu screen clears it explicitly when starting a fresh game, and the
-  /// results screen still needs it after the game object is gone. Games that
+  /// the results screens read it *after* the game object is gone (they delete
+  /// the saved row and clear the id themselves at game completion). Games that
   /// DO want the slot forgotten call [clearResumedSavedGameId] in an override.
   ///
   /// The takeout flag is cleared before the game is dropped, so a model-owned

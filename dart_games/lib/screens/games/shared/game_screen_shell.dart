@@ -58,6 +58,7 @@ class GameScreenShell extends StatelessWidget {
 
   final Future<void> Function() onSave;
   final VoidCallback onDontSave;
+  final Key? saveGameModalKey;
 
   /// Fired on the connected → disconnected edge, only when [hasDartsThrown].
   final VoidCallback onAutoSave;
@@ -115,6 +116,7 @@ class GameScreenShell extends StatelessWidget {
     required this.onRequestSaveModal,
     required this.onSave,
     required this.onDontSave,
+    this.saveGameModalKey,
     required this.onAutoSave,
     required this.saveGameModalConfig,
     required this.shouldPromptTakeout,
@@ -234,6 +236,7 @@ class GameScreenShell extends StatelessWidget {
             // ── 5. Save Game Modal ────────────────────────────────────────
             if (showSaveModal)
               SaveGameModal(
+                key: saveGameModalKey,
                 config: saveGameModalConfig,
                 onSave: onSave,
                 onDontSave: onDontSave,
