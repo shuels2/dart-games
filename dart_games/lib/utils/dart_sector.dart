@@ -1,19 +1,31 @@
 /// Where a dart landed, parsed once from the board's sector notation.
 ///
-/// The Scolia board reports throws as short strings — `S20`, `D16`, `T19`,
-/// `Bull`, `25`, `None` — and until this existed every game parsed them
-/// itself. Nine private `_parseSector` copies had drifted into four different
-/// return shapes (`number` vs `score`, `String` vs `int` multiplier, bull as
-/// 50 vs 25), and small differences in what counted as a miss. This is the
-/// single grammar; games adapt its fields to whatever shape they need.
+/// The Scolia board's grammar is
+/// `([SsDT])(20|1[0-9]|[1-9]) | 25 | Bull | None` — see
+/// `MockScoliaApiService._convertToScoliaFormat`, which is the app's own
+/// encoder for it. In that grammar:
 ///
-/// Grammar accepted:
-/// - `S<n>` / `D<n>` / `T<n>` (case-insensitive) — single, double, triple
-/// - `Bull` / `SBull` — inner bull (50)
-/// - `DBull` — the double ring of the bull, reported by some boards (50)
-/// - `25` / `Outer Bull` — outer bull (25)
-/// - `Miss`, `None`, empty, or anything unrecognised — a miss
-enum DartRing { miss, single, double, triple, outerBull, innerBull }
+/// - **`Bull` is the bullseye and scores 50.**
+/// - **`25` is the ring around it and scores 25.**
+/// - **There is no double bull.** `DBull` / `SBull` are not sectors the board
+///   can report; any code branching on them is dead.
+///
+/// Until this type existed every game parsed the grammar itself. Nine private
+/// `_parseSector` copies had drifted into four return shapes and — worse — two
+/// of them scored `Bull` as 25, so a bullseye was worth half of what it should
+/// have been in those games.
+enum DartRing {
+  miss,
+  single,
+  double,
+  triple,
+
+  /// The 25 ring. Scores 25.
+  ring25,
+
+  /// The bullseye. Scores 50.
+  bull,
+}
 
 class DartSector {
   const DartSector._({
@@ -27,8 +39,8 @@ class DartSector {
 
   final DartRing ring;
 
-  /// The segment number: 1-20 for the numbered ring, 25 for either bull,
-  /// 0 for a miss.
+  /// The segment number: 1-20 for the numbered ring, 25 for the 25 ring and
+  /// the bullseye, 0 for a miss.
   final int face;
 
   static const DartSector _miss =
@@ -46,17 +58,17 @@ class DartSector {
     }
 
     final lower = raw.toLowerCase();
-    if (lower == 'bull' || lower == 'sbull' || lower == 'dbull') {
-      // Boards differ on whether the inner bull is reported as a double of
-      // the 25 ring; both mean the same 50 points.
-      return DartSector._(raw: raw, ring: DartRing.innerBull, face: 25);
+    if (lower == 'bull') {
+      return DartSector._(raw: raw, ring: DartRing.bull, face: 25);
     }
     if (raw == '25' || lower == 'outer bull') {
-      return DartSector._(raw: raw, ring: DartRing.outerBull, face: 25);
+      return DartSector._(raw: raw, ring: DartRing.ring25, face: 25);
     }
 
     final match = _segment.firstMatch(raw);
-    if (match == null) return DartSector._(raw: raw, ring: DartRing.miss, face: 0);
+    if (match == null) {
+      return DartSector._(raw: raw, ring: DartRing.miss, face: 0);
+    }
 
     final face = int.tryParse(match.group(2)!);
     if (face == null || face < 1 || face > 20) {
@@ -74,39 +86,62 @@ class DartSector {
   }
 
   bool get isMiss => ring == DartRing.miss;
-  bool get isInnerBull => ring == DartRing.innerBull;
-  bool get isOuterBull => ring == DartRing.outerBull;
-  bool get isBull => isInnerBull || isOuterBull;
+
+  /// The bullseye (50).
+  bool get isBullseye => ring == DartRing.bull;
+
+  /// The 25 ring.
+  bool get isRing25 => ring == DartRing.ring25;
+
+  /// Either bull ring.
+  bool get isBull => isBullseye || isRing25;
+
   bool get isDouble => ring == DartRing.double;
   bool get isTriple => ring == DartRing.triple;
 
-  /// 0 for a miss, 1 single/outer bull, 2 double/inner bull, 3 triple.
+  /// Points scored.
   ///
-  /// The inner bull counts as 2 because it is the double of the 25 ring —
-  /// which is how "any double" rounds treat it.
-  int get factor {
+  /// Not `face * factor`: the bullseye is a single landing worth 50, not a
+  /// double of anything.
+  int get score {
     switch (ring) {
       case DartRing.miss:
         return 0;
       case DartRing.single:
-      case DartRing.outerBull:
-        return 1;
+        return face;
       case DartRing.double:
-      case DartRing.innerBull:
-        return 2;
+        return face * 2;
       case DartRing.triple:
-        return 3;
+        return face * 3;
+      case DartRing.ring25:
+        return 25;
+      case DartRing.bull:
+        return 50;
     }
   }
 
-  /// Points scored: face × factor, so 50 for the inner bull and 25 for outer.
-  int get score => face * factor;
+  /// 0 for a miss, 2 for a double, 3 for a triple, otherwise 1.
+  ///
+  /// Both bull rings report 1 — neither is a double. Use [score] for points.
+  int get factor {
+    switch (ring) {
+      case DartRing.miss:
+        return 0;
+      case DartRing.double:
+        return 2;
+      case DartRing.triple:
+        return 3;
+      case DartRing.single:
+      case DartRing.ring25:
+      case DartRing.bull:
+        return 1;
+    }
+  }
 
   /// `single` / `double` / `triple` / `miss`.
   ///
-  /// Both bulls report `single`, matching how most games treat them when they
-  /// only care about the score. Games that distinguish the bull should check
-  /// [isBull] rather than this.
+  /// Both bull rings report `single`. Games that treat the bullseye specially
+  /// should check [isBullseye] rather than reading this.
   String get multiplierName {
     switch (ring) {
       case DartRing.miss:
@@ -116,24 +151,24 @@ class DartSector {
       case DartRing.triple:
         return 'triple';
       case DartRing.single:
-      case DartRing.outerBull:
-      case DartRing.innerBull:
+      case DartRing.ring25:
+      case DartRing.bull:
         return 'single';
     }
   }
 
-  /// The number games historically stored: 50 for the inner bull, 25 for the
-  /// outer, otherwise the face value.
-  int get legacyNumber => isInnerBull ? 50 : face;
+  /// The number games historically stored: 50 for the bullseye, 25 for the
+  /// 25 ring, otherwise the face value.
+  int get legacyNumber => isBullseye ? 50 : face;
 
   /// Canonical display string: `S20`, `D16`, `T19`, `Bull`, `25`, `Miss`.
   String get label {
     switch (ring) {
       case DartRing.miss:
         return 'Miss';
-      case DartRing.innerBull:
+      case DartRing.bull:
         return 'Bull';
-      case DartRing.outerBull:
+      case DartRing.ring25:
         return '25';
       case DartRing.single:
         return 'S$face';

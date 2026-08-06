@@ -610,14 +610,12 @@ class PiratesGridProvider extends ChangeNotifier {
       return null;
     }
 
-    // Inner bull
+    // Both bull rings. `score` here is a CELL TARGET number, not points, and
+    // CellTarget.matches accepts 25 or 50 for a bull cell — so either ring
+    // claims a bull cell, which is the intended rule. There is no double bull.
     if (sector == 'Bull') {
-      return {'score': 25, 'multiplier': 1};
+      return {'score': 50, 'multiplier': 1};
     }
-    if (sector == 'DBull' || sector == '50') {
-      return {'score': 50, 'multiplier': 2};
-    }
-    // Outer bull as plain '25'
     if (sector == '25') {
       return {'score': 25, 'multiplier': 1};
     }

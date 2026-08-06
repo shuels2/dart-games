@@ -143,7 +143,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
     // Build display string for current turn darts
     String displayStr;
     if (hitNumber == 25) {
-      displayStr = multiplier == 2 ? 'DBull' : 'Bull';
+      displayStr = 'Bull';
     } else {
       if (multiplier == 1) {
         displayStr = 'S$hitNumber';
@@ -401,16 +401,11 @@ class ClockworkQuestProvider extends ChangeNotifier {
     _waitingForTakeout = false;
   }
 
-  // Parse sector string from dartboard
-  /// NOT migrated to the shared [DartSector] — deliberately.
-  ///
-  /// Every other game reads `Bull` as the inner bull worth 50. This one reads
-  /// `Bull`/`SBull` as the 25 ring (multiplier 1) and only `DBull` as 50.
-  /// Routing it through `DartSector`, which follows the majority reading,
-  /// would silently change what a bullseye scores in Clockwork Quest.
-  ///
-  /// One of the two readings is wrong; resolving that is a gameplay decision,
-  /// not a refactor. See QUESTIONS-FOR-FABLE.md Q5.
+  /// Not routed through the shared [DartSector] because `number` here is a
+  /// GEAR TARGET, not points: 25 identifies the bullseye gear, and `multiplier`
+  /// drives how far the player advances. `DartSector.legacyNumber` would report
+  /// the bullseye as 50, which is the right answer for a scoring game and the
+  /// wrong one for this progression.
   Map<String, dynamic>? _parseSector(String sector) {
     if (sector.isEmpty ||
         sector == 'None' ||
@@ -419,12 +414,10 @@ class ClockworkQuestProvider extends ChangeNotifier {
       return null;
     }
 
-    // Handle bullseye
-    if (sector == 'Bull' || sector == 'bull' || sector == 'SBull') {
+    // The bullseye gear. The board reports it as `Bull`; there is no double
+    // bull, so a bullseye always advances by one.
+    if (sector == 'Bull' || sector == 'bull') {
       return {'number': 25, 'multiplier': 1};
-    }
-    if (sector == 'DBull' || sector == 'dbull') {
-      return {'number': 25, 'multiplier': 2};
     }
 
     // Parse standard format: S20, s20 (inner single), D20, T20

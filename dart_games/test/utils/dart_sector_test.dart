@@ -14,12 +14,16 @@ void main() {
     });
 
     test('parses both bull rings', () {
-      expect(DartSector.parse('Bull').ring, DartRing.innerBull);
-      expect(DartSector.parse('SBull').ring, DartRing.innerBull);
-      expect(DartSector.parse('DBull').ring, DartRing.innerBull,
-          reason: 'Some boards report the inner bull as a double of the ring');
-      expect(DartSector.parse('25').ring, DartRing.outerBull);
-      expect(DartSector.parse('Outer Bull').ring, DartRing.outerBull);
+      expect(DartSector.parse('Bull').ring, DartRing.bull);
+      expect(DartSector.parse('25').ring, DartRing.ring25);
+      expect(DartSector.parse('Outer Bull').ring, DartRing.ring25);
+    });
+
+    test('there is no double bull — DBull and SBull are not sectors', () {
+      // The board's grammar is ([SsDT])(1-20) | 25 | Bull | None. Code that
+      // branches on DBull/SBull is branching on something that cannot arrive.
+      expect(DartSector.parse('DBull').isMiss, isTrue);
+      expect(DartSector.parse('SBull').isMiss, isTrue);
     });
 
     test('treats every flavour of nothing as a miss', () {
@@ -60,9 +64,9 @@ void main() {
       expect(DartSector.parse('S5').factor, 1);
       expect(DartSector.parse('25').factor, 1);
       expect(DartSector.parse('D5').factor, 2);
-      expect(DartSector.parse('Bull').factor, 2,
-          reason: 'The inner bull is the double of the 25 ring, which is how '
-              '"any double" rounds must treat it');
+      expect(DartSector.parse('Bull').factor, 1,
+          reason: 'The bullseye is a single landing worth 50 — it is not a '
+              'double of anything, and there is no double bull');
       expect(DartSector.parse('T5').factor, 3);
     });
   });
@@ -88,7 +92,7 @@ void main() {
   group('display', () {
     test('label is canonical, not the raw input', () {
       expect(DartSector.parse('s20').label, 'S20');
-      expect(DartSector.parse('DBull').label, 'Bull');
+      expect(DartSector.parse('DBull').label, 'Miss');
       expect(DartSector.parse('Outer Bull').label, '25');
       expect(DartSector.parse('None').label, 'Miss');
       expect(DartSector.parse('').label, 'Miss');
@@ -98,7 +102,9 @@ void main() {
   group('equality', () {
     test('two parses of the same landing are equal regardless of casing', () {
       expect(DartSector.parse('t19'), DartSector.parse('T19'));
-      expect(DartSector.parse('Bull'), DartSector.parse('SBull'));
+      expect(DartSector.parse('BULL'), DartSector.parse('bull'));
+      expect(DartSector.parse('Bull'), isNot(DartSector.parse('25')),
+          reason: 'The bullseye (50) and the 25 ring are different landings');
       expect(DartSector.parse('S20'), isNot(DartSector.parse('D20')));
       expect(DartSector.parse('Bull'), isNot(DartSector.parse('25')));
     });

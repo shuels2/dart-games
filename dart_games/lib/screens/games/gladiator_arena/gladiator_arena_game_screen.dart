@@ -362,8 +362,8 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
   Map<String, dynamic>? _parseSector(String sector) {
     final dart = DartSector.parse(sector);
     if (dart.isMiss) return null;
-    if (dart.isInnerBull) return {'score': 50, 'multiplier': 'bull'};
-    if (dart.isOuterBull) return {'score': 25, 'multiplier': 'single'};
+    if (dart.isBullseye) return {'score': 50, 'multiplier': 'bull'};
+    if (dart.isRing25) return {'score': 25, 'multiplier': 'single'};
     return {'score': dart.face, 'multiplier': dart.multiplierName};
   }
 

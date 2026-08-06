@@ -461,8 +461,8 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   Map<String, dynamic>? _parseSector(String sector) {
     final dart = DartSector.parse(sector);
     if (dart.isMiss) return null;
-    if (dart.isInnerBull) return {'score': 50, 'multiplier': 1};
-    if (dart.isOuterBull) return {'score': 25, 'multiplier': 1};
+    if (dart.isBullseye) return {'score': 50, 'multiplier': 1};
+    if (dart.isRing25) return {'score': 25, 'multiplier': 1};
     return {'score': dart.face, 'multiplier': dart.factor};
   }
 
