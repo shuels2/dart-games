@@ -29,6 +29,7 @@ import '../../../widgets/save_game_modal/save_game_modal_config.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import 'lunar_lander_results_screen.dart';
 import '../../../utils/dart_sector.dart';
+import '../../../widgets/game_background.dart';
 
 class LunarLanderGameScreen extends StatefulWidget {
   const LunarLanderGameScreen({super.key});
@@ -496,12 +497,12 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
             ),
             body: Stack(
               children: [
-                // Background image with dark overlay
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/lunar_lander/images/LunarLander-Background.png',
-                    fit: BoxFit.cover,
-                  ),
+                // Background image. GameBackground caps the decoded
+                // raster; this screen rebuilds on every dart.
+                const GameBackground(
+                  asset:
+                      'assets/games/lunar_lander/images/LunarLander-Background.png',
+                  fallbackColor: Color(0xFF0B0E1A),
                 ),
                 // Main content
                 Column(

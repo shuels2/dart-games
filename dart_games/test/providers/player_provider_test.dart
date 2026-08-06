@@ -1061,5 +1061,22 @@ void main() {
         expect(notifyCount, 0);
       });
     });
+
+    group('nameOf', () {
+      test('returns the display name for a known player', () async {
+        final player = Player.create(name: 'Alice');
+        await provider.savePlayer(player);
+        expect(provider.nameOf(player.id), 'Alice');
+      });
+
+      test('falls back to the id instead of throwing for an unknown player',
+          () {
+        // Game screens render names every frame. If the roster changes
+        // mid-game, throwing here takes down the whole screen mid-turn —
+        // one odd label is the better failure.
+        expect(() => provider.nameOf('ghost-id'), returnsNormally);
+        expect(provider.nameOf('ghost-id'), 'ghost-id');
+      });
+    });
   });
 }

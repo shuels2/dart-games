@@ -24,6 +24,7 @@ import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
+import '../../../widgets/game_background.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'tiki_golf_results_screen.dart';
 
@@ -625,20 +626,13 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
             ),
             body: Stack(
               children: [
-                // Background
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/tiki_golf/images/TikiGolf-Background.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        Container(color: _palmGreen),
-                  ),
-                ),
-                // Palm Green overlay (0.60 opacity)
-                Positioned.fill(
-                  child: Container(
-                    color: _palmGreen.withOpacity(0.60),
-                  ),
+                // Background + Palm Green wash (0.60 opacity). GameBackground
+                // caps the decoded raster; this screen rebuilds on every dart.
+                const GameBackground(
+                  asset: 'assets/games/tiki_golf/images/TikiGolf-Background.png',
+                  fallbackColor: _palmGreen,
+                  overlayColor: _palmGreen,
+                  overlayOpacity: 0.60,
                 ),
                 // Main game content
                 game.gameMode == TikiGolfGameMode.solo

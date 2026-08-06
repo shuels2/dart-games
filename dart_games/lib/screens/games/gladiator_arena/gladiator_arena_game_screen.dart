@@ -32,6 +32,7 @@ import '../../../widgets/save_game_modal/save_game_modal_config.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import 'gladiator_arena_results_screen.dart';
 import '../../../utils/dart_sector.dart';
+import '../../../widgets/game_background.dart';
 
 // ─── Color constants ──────────────────────────────────────────────────────────
 
@@ -699,17 +700,14 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
             ),
             body: Stack(
               children: [
-                // Background image
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/gladiator_arena/images/GladiatorArena-Background.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        Container(color: const Color(0xFF2A1500)),
-                  ),
-                ),
-                Positioned.fill(
-                  child: Container(color: Colors.black.withOpacity(0.45)),
+                // Background image with dark wash. GameBackground caps the
+                // decoded raster; this screen rebuilds on every dart.
+                const GameBackground(
+                  asset:
+                      'assets/games/gladiator_arena/images/GladiatorArena-Background.png',
+                  fallbackColor: Color(0xFF2A1500),
+                  overlayColor: Colors.black,
+                  overlayOpacity: 0.45,
                 ),
                 // Main game content
                 Column(

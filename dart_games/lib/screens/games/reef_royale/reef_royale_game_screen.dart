@@ -27,6 +27,7 @@ import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../utils/dartboard_layout.dart';
 import 'reef_royale_results_screen.dart';
+import '../../../widgets/game_background.dart';
 
 class ReefRoyaleGameScreen extends StatefulWidget {
   const ReefRoyaleGameScreen({super.key});
@@ -337,7 +338,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     final coralName = currentGame.getCoralDisplayName(target);
     final playerProvider = context.read<PlayerProvider>();
     final playerName =
-        playerProvider.allPlayers.firstWhere((p) => p.id == playerId).name;
+        playerProvider.nameOf(playerId);
 
     // Priority: claim > lock > score > mark (max 2 per dart)
     int count = 0;
@@ -593,14 +594,14 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             ),
             body: Stack(
               children: [
-                // Background
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/reef_royale/images/ReefRoyale-Background.png',
-                    fit: BoxFit.cover,
-                    color: Colors.black.withOpacity(0.3),
-                    colorBlendMode: BlendMode.darken,
-                  ),
+                // Background, darkened. GameBackground caps the decoded
+                // raster; this screen rebuilds on every dart.
+                GameBackground(
+                  asset:
+                      'assets/games/reef_royale/images/ReefRoyale-Background.png',
+                  fallbackColor: const Color(0xFF06263B),
+                  imageColor: Colors.black.withOpacity(0.3),
+                  imageBlendMode: BlendMode.darken,
                 ),
 
                 // Main game area

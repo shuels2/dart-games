@@ -27,6 +27,7 @@ import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import 'monster_mash_results_screen.dart';
 import '../../../utils/dart_sector.dart';
+import '../../../widgets/game_background.dart';
 
 class MonsterMashGameScreen extends StatefulWidget {
   const MonsterMashGameScreen({super.key});
@@ -316,7 +317,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       attackTargetId = dartThrowTargetPlayerIds[dartIndex]!;
       attackDamage = dartThrowDamageDealt[dartIndex];
       attackTargetName =
-          allPlayers.firstWhere((p) => p.id == attackTargetId).name;
+          playerProvider.nameOf(attackTargetId);
       hasAttack = true;
     }
 
@@ -336,8 +337,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       if (targets.length == 3 && targets.every((t) => t == targets.first)) {
         hasHatTrick = true;
         hatTrickTargetId = targets.first;
-        hatTrickTargetName =
-            allPlayers.firstWhere((p) => p.id == hatTrickTargetId).name;
+        hatTrickTargetName = playerProvider.nameOf(hatTrickTargetId!);
       }
     }
 
@@ -389,7 +389,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             newlyEliminated.where((id) => id != hatTrickTargetId).toList();
         if (otherEliminated.isNotEmpty) {
           final names = otherEliminated
-              .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+              .map((id) => playerProvider.nameOf(id))
               .toList();
           if (names.length > 1) {
             _audioQueue?.announceCombinedElimination(names);
@@ -399,7 +399,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
         }
       } else if (hasElimination) {
         final eliminatedNames = newlyEliminated
-            .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+            .map((id) => playerProvider.nameOf(id))
             .toList();
         if (eliminatedNames.length > 1) {
           _audioQueue?.announceCombinedElimination(eliminatedNames);
@@ -641,15 +641,15 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
             ),
             body: Stack(
               children: [
-                // Background image
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/monster_mash/images/MonsterMash-Background.png',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.bottomCenter,
-                    color: Colors.black.withOpacity(0.3),
-                    colorBlendMode: BlendMode.darken,
-                  ),
+                // Background image, darkened. GameBackground caps the
+                // decoded raster; this screen rebuilds on every dart.
+                GameBackground(
+                  asset:
+                      'assets/games/monster_mash/images/MonsterMash-Background.png',
+                  fallbackColor: const Color(0xFF1A1025),
+                  alignment: Alignment.bottomCenter,
+                  imageColor: Colors.black.withOpacity(0.3),
+                  imageBlendMode: BlendMode.darken,
                 ),
                 // Main game area (fills entire body)
                 Positioned.fill(

@@ -147,7 +147,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
     if (currentPlayer == null) return;
     final currentGame0 = targetTagProvider.currentGame!;
     final allPlayerNames = currentGame0.playerIds
-        .map((id) => allPlayers.firstWhere((p) => p.id == id).name)
+        .map((id) => playerProvider.nameOf(id))
         .toList();
 
     final wasTaggedIn = targetTagProvider.isTaggedIn(currentPlayer.id);
@@ -286,22 +286,22 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
       // Pick highest-priority moment and fire exactly one
       if (hasElimination) {
         final eliminatedNames = newlyEliminated
-            .map((id) => playerProvider.byId(id)!.name)
+            .map((id) => playerProvider.nameOf(id))
             .toList();
         _audioQueue?.announceEliminated(eliminatedNames, allPlayerNames: allPlayerNames);
       } else if (hasVulnerable) {
         final vulnerableNames = vulnerablePlayers
-            .map((id) => playerProvider.byId(id)!.name)
+            .map((id) => playerProvider.nameOf(id))
             .toList();
         _audioQueue?.announceVulnerable(vulnerableNames, allPlayerNames: allPlayerNames);
       } else if (hasLowShields) {
         final lowShieldNames = lowShieldPlayers
-            .map((id) => playerProvider.byId(id)!.name)
+            .map((id) => playerProvider.nameOf(id))
             .toList();
         _audioQueue?.announceLowShields(lowShieldNames, allPlayerNames: allPlayerNames);
       } else if (hasTaggedOut) {
         final lostNames = lostTaggedInPlayers
-            .map((id) => playerProvider.byId(id)!.name)
+            .map((id) => playerProvider.nameOf(id))
             .toList();
         _audioQueue?.announceTaggedOut(lostNames, allPlayerNames: allPlayerNames);
       } else if (hasSuccessfulTag) {
@@ -313,7 +313,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen> {
           final teamId = currentGame.playerToTeam![currentPlayer.id]!;
           final teamPlayerIds = currentGame.teamPlayers![teamId]!;
           taggedInNames = teamPlayerIds
-              .map((id) => playerProvider.byId(id)!.name)
+              .map((id) => playerProvider.nameOf(id))
               .toList();
         } else {
           taggedInNames = [currentPlayer.name];

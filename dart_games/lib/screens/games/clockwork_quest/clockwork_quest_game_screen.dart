@@ -27,6 +27,7 @@ import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/clockwork_quest_announcement_helper.dart';
 import '../../../services/clockwork_quest_sound_effects.dart';
 import 'clockwork_quest_results_screen.dart';
+import '../../../widgets/game_background.dart';
 
 class ClockworkQuestGameScreen extends StatefulWidget {
   const ClockworkQuestGameScreen({super.key});
@@ -358,17 +359,13 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
             ),
             body: Stack(
               children: [
-                // Background image with dark overlay
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/clockwork_quest/images/background.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Positioned.fill(
-                  child: Container(
-                    color: const Color(0xFF2C2C34).withOpacity(0.75),
-                  ),
+                // Background image with dark overlay. GameBackground caps
+                // the decoded raster; this screen rebuilds on every dart.
+                const GameBackground(
+                  asset: 'assets/games/clockwork_quest/images/background.png',
+                  fallbackColor: Color(0xFF2C2C34),
+                  overlayColor: Color(0xFF2C2C34),
+                  overlayOpacity: 0.75,
                 ),
 
                 // Main game content — Positioned.fill so emulator overlay doesn't resize it

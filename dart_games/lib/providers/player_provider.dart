@@ -42,6 +42,14 @@ class PlayerProvider extends ChangeNotifier {
     return (_byIdCache ??= {for (final p in _allPlayers) p.id: p})[id];
   }
 
+  /// Display name for [id], falling back to the id itself.
+  ///
+  /// Use this anywhere a name is rendered. The alternatives all throw if the
+  /// roster changes mid-game — `allPlayers.firstWhere((p) => p.id == id).name`
+  /// throws StateError, and `byId(id)!.name` throws on null — which takes down
+  /// the game screen mid-turn rather than showing one odd label.
+  String nameOf(String id) => byId(id)?.name ?? id;
+
   /// Guard against concurrent loadPlayers() calls.  If a load is already
   /// in flight, subsequent callers await the same future instead of
   /// firing a second GET that could clobber a freshly-saved player.

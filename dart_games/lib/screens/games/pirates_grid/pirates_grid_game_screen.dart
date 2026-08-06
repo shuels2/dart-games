@@ -35,6 +35,7 @@ import '../../../widgets/save_game_modal/save_game_modal_config.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import 'pirates_grid_results_screen.dart';
 import '../../../utils/dart_sector.dart';
+import '../../../widgets/game_background.dart';
 
 class PiratesGridGameScreen extends StatefulWidget {
   const PiratesGridGameScreen({super.key});
@@ -735,16 +736,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
             ),
             body: Stack(
               children: [
-                // Background image
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/pirates_grid/images/PiratesGrid-Background.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                // Ocean Navy 0.65 overlay
-                Positioned.fill(
-                  child: Container(color: const Color(0xA61B2838)),
+                // Background image + Ocean Navy 0.65 wash. GameBackground
+                // caps the decoded raster; this screen rebuilds on every dart.
+                const GameBackground(
+                  asset:
+                      'assets/games/pirates_grid/images/PiratesGrid-Background.png',
+                  fallbackColor: Color(0xFF1B2838),
+                  overlayColor: Color(0xFF1B2838),
+                  overlayOpacity: 0.65,
                 ),
                 // Main game content
                 _buildGameArea(game, players, currentPlayerId, dartsThrown),
