@@ -190,15 +190,11 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen>
 
       // ── Remove Darts — called UNCONDITIONALLY (not inside any else). ────────
       // Fired when the player has thrown all darts (shouldPromptTakeout flipped
-      // true inside processDartThrow on the last dart).
-      //
-      // Unlike every other game, Treasure Divide does NOT auto-start the
-      // takeout at 3500ms — the player drives it from DARTS REMOVED. Only the
-      // announcement is scheduled.
+      // true inside processDartThrow on the last dart). The player drives the
+      // takeout itself from DARTS REMOVED.
       if (provider.shouldPromptTakeout) {
         scheduleTakeoutSequence(
           dartsOnBoard: true,
-          autoStartTakeout: false,
           announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(),
         );
       }
@@ -1219,11 +1215,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen>
                       : () {
                           final dt = game.dartsThrown;
                           provider.skipTurn();
-                          // Unlike the end-of-turn path above, Skip DOES
-                          // auto-start the takeout at 3500ms — the player has
-                          // already declared they are done with the turn.
-                          // The announcement is suppressed during auto-play;
-                          // the auto-start is not.
+                          // Darts on board → announce, then wait for DARTS
+                          // REMOVED; 0 darts → 500ms auto-advance. The
+                          // announcement is suppressed during auto-play.
                           scheduleTakeoutSequence(
                             dartsOnBoard: dt > 0,
                             announceRemoveDarts: isAutoPlaying

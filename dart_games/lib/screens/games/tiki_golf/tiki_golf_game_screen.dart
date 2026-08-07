@@ -181,9 +181,12 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen>
       }
     }
 
-    // Schedule takeout-started signal for emulator section transition.
-    // No announce callback here — Tiki's remove-darts line is fired from
-    // _fireDartAnnouncement, which owns the mulligan-modal suppression.
+    // Reset the takeout choreography for this turn-end. No announce callback
+    // here — Tiki's remove-darts line is fired from _fireDartAnnouncement,
+    // which owns the mulligan-modal suppression. The call still matters for
+    // its cancel semantics: a stray dart landing inside a zero-dart skip's
+    // 500ms window cancels the pending auto-advance, leaving the takeout to
+    // DARTS REMOVED — correct, since a dart is now physically on the board.
     if (!isAutoPlaying) {
       final game = provider.currentGame;
       if (game != null && game.currentTurnEnded) {
@@ -1281,8 +1284,8 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen>
               provider.skipTurn();
               // Skip ends the turn — clear tracked segments.
               _currentTurnSegments.clear();
-              // Darts on board → takeoutStarted after delay (no announce —
-              // the skip flow has never had a remove-darts line); 0 darts →
+              // Darts on board → wait for DARTS REMOVED (no announce — the
+              // skip flow has never had a remove-darts line); 0 darts →
               // auto-finish takeout with no "remove darts" UX.
               scheduleTakeoutSequence(dartsOnBoard: dartsThrown > 0);
             },

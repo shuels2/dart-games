@@ -417,9 +417,6 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _audioQueue?.announceRemoveDarts(playerName);
       });
-      Future.delayed(const Duration(milliseconds: 3500), () {
-        if (mounted) _mockApi?.simulateTakeoutStarted();
-      });
     }
 
     setState(() {});
@@ -606,9 +603,6 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
           playerProvider.getPlayerById(playerId)?.name ?? 'Player';
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _audioQueue?.announceRemoveDarts(playerName);
-      });
-      Future.delayed(const Duration(milliseconds: 3500), () {
-        if (mounted) _mockApi?.simulateTakeoutStarted();
       });
     } else {
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -1296,9 +1290,6 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                     if (darts > 0) {
                       Future.delayed(const Duration(milliseconds: 1500), () {
                         if (mounted) _audioQueue?.announceRemoveDarts(pName);
-                      });
-                      Future.delayed(const Duration(milliseconds: 3500), () {
-                        if (mounted) _mockApi?.simulateTakeoutStarted();
                       });
                     } else {
                       Future.delayed(const Duration(milliseconds: 500), () {

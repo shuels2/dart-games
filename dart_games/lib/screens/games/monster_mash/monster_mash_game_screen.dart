@@ -431,9 +431,6 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _audioQueue?.announceRemoveDarts();
       });
-      Future.delayed(const Duration(milliseconds: 3500), () {
-        if (mounted) _mockApi?.simulateTakeoutStarted();
-      });
     }
 
     setState(() {});
@@ -970,9 +967,6 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                       if (dartsThrown > 0) {
                         Future.delayed(const Duration(milliseconds: 1500), () {
                           if (mounted) _audioQueue?.announceRemoveDarts();
-                        });
-                        Future.delayed(const Duration(milliseconds: 3500), () {
-                          if (mounted) _mockApi?.simulateTakeoutStarted();
                         });
                       } else {
                         Future.delayed(const Duration(milliseconds: 500), () {

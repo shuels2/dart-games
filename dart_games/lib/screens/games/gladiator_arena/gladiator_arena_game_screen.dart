@@ -330,9 +330,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) _audioQueue?.announceRemoveDarts();
         });
-        Future.delayed(const Duration(milliseconds: 3500), () {
-          if (mounted) _mockApi?.simulateTakeoutStarted();
-        });
       }
     }
 
@@ -446,9 +443,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
         // UNCONDITIONAL remove-darts announcement when timer expires
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) _audioQueue?.announceRemoveDarts();
-        });
-        Future.delayed(const Duration(milliseconds: 3500), () {
-          if (mounted) _mockApi?.simulateTakeoutStarted();
         });
       }
     });
@@ -589,9 +583,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                               // UNCONDITIONAL remove-darts announcement on skip
                               Future.delayed(const Duration(milliseconds: 1500), () {
                                 if (mounted) _audioQueue?.announceRemoveDarts();
-                              });
-                              Future.delayed(const Duration(milliseconds: 3500), () {
-                                if (mounted) _mockApi?.simulateTakeoutStarted();
                               });
                             } else {
                               Future.delayed(const Duration(milliseconds: 500), () {

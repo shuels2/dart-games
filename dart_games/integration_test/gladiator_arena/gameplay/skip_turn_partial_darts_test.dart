@@ -25,7 +25,7 @@ void main() {
     // Tap Skip Turn with 1 dart thrown
     final skipButton = ElementFinders.getGladiatorArenaSkipTurnButton();
     await tester.tap(skipButton);
-    await tester.pump(const Duration(seconds: 4)); // allow simulateTakeoutStarted
+    await tester.pump(const Duration(seconds: 4)); // let skip callbacks settle
     await tester.pump();
 
     // Click DARTS REMOVED

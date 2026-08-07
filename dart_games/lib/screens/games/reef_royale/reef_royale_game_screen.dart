@@ -190,9 +190,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _audioQueue?.announceRemoveDarts();
       });
-      Future.delayed(const Duration(milliseconds: 3500), () {
-        if (mounted) _mockApi?.simulateTakeoutStarted();
-      });
     }
 
     setState(() {});
@@ -1102,10 +1099,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                 final dartsThrown = reefProvider.getCurrentPlayerDartsThrown();
                 reefProvider.skipTurn();
                 if (dartsThrown > 0) {
-                  // Darts in board — wait for physical takeout or emulator button
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (mounted) _mockApi?.simulateTakeoutStarted();
-                  });
+                  // Darts in board — wait for physical takeout or the
+                  // emulator's DARTS REMOVED button. Nothing to schedule.
                 } else {
                   // No darts thrown, advance directly
                   Future.delayed(const Duration(milliseconds: 500), () {

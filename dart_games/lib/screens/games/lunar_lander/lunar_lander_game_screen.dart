@@ -204,11 +204,6 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
             _audioQueue?.announceRemoveDarts(); // UNCONDITIONAL
           }
         });
-        Future.delayed(const Duration(milliseconds: 3500), () {
-          if (mounted) {
-            _mockApi?.simulateTakeoutStarted();
-          }
-        });
       }
     }
 
@@ -398,9 +393,6 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                         // emulator's DARTS REMOVED button.
                         Future.delayed(const Duration(milliseconds: 1500), () {
                           if (mounted) _audioQueue?.announceRemoveDarts();
-                        });
-                        Future.delayed(const Duration(milliseconds: 3500), () {
-                          if (mounted) _mockApi?.simulateTakeoutStarted();
                         });
                       } else {
                         // No darts on board — auto-finish takeout and

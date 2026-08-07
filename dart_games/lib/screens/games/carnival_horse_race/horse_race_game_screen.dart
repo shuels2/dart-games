@@ -206,12 +206,11 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
             Future.delayed(const Duration(milliseconds: 3000), () {
               _audioQueue?.announceRemoveDarts(currentPlayer.name);
 
-              Future.delayed(const Duration(milliseconds: 2000), () {
-                _mockApi?.simulateTakeoutStarted();
-
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  _mockApi?.simulateTakeoutFinished();
-                });
+              // Auto-finish the bust takeout 2500ms after the announcement —
+              // the same total offset as before the F1 cleanup removed the
+              // (consumer-less) takeout-started emission from this chain.
+              Future.delayed(const Duration(milliseconds: 2500), () {
+                _mockApi?.simulateTakeoutFinished();
               });
             });
           });
@@ -769,11 +768,6 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                       Future.delayed(const Duration(milliseconds: 1500), () {
                         if (mounted) {
                           _audioQueue?.announceRemoveDarts(currentPlayer.name);
-                        }
-                      });
-                      Future.delayed(const Duration(milliseconds: 3500), () {
-                        if (mounted) {
-                          _mockApi?.simulateTakeoutStarted();
                         }
                       });
                     } else {

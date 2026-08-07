@@ -821,11 +821,8 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                           provider.getCurrentPlayerDartsThrown();
                       provider.skipTurn();
                       if (dartsThrown > 0) {
-                        // Darts on board — wait for physical takeout or
-                        // emulator's DARTS REMOVED button.
-                        Future.delayed(const Duration(milliseconds: 3500), () {
-                          if (mounted) _mockApi?.simulateTakeoutStarted();
-                        });
+                        // Darts on board — wait for physical takeout or the
+                        // emulator's DARTS REMOVED button. Nothing to schedule.
                       } else {
                         // No darts on board — auto-finish takeout and
                         // advance directly without showing RemoveDartsModal.

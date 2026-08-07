@@ -25,8 +25,8 @@ import '../../../widgets/dartboard_emulator/play_to_tie_strategy.dart';
 /// * the "announce the winner, wait for the queue to drain, then navigate"
 ///   sequence, capped at 10s so a wedged TTS engine can't strand the player
 ///   on the game screen,
-/// * the takeout choreography (1500ms "remove your darts" / 3500ms
-///   `simulateTakeoutStarted`, or the 500ms zero-dart advance).
+/// * the takeout choreography (the 1500ms "remove your darts" announcement,
+///   or the 500ms zero-dart advance).
 ///
 /// Every delayed callback here runs on a **cancellable** [Timer]. Games
 /// previously scheduled them as bare `Future.delayed`s guarded only by
@@ -36,9 +36,10 @@ import '../../../widgets/dartboard_emulator/play_to_tie_strategy.dart';
 /// flight, and [disposeGameScreen] cancels everything.
 ///
 /// Note that a *new dart* deliberately does NOT cancel a pending sequence: a
-/// late `throw_detected` (a bounce-out reported after the third dart) is
-/// rejected by the provider and must not strip the takeout that is already on
-/// its way, or the turn stalls with no way forward.
+/// stray `throw_detected` landing inside a zero-dart skip's 500ms window is
+/// rejected by the provider and must not strip the auto-advance that is
+/// already on its way — nothing would re-schedule it, and the turn would
+/// stall with no way forward.
 mixin GameScreenController<T extends StatefulWidget> on State<T> {
   StreamSubscription<Map<String, dynamic>>? _dartboardSubscription;
   MockScoliaApiService? _mockApi;
@@ -211,19 +212,21 @@ mixin GameScreenController<T extends StatefulWidget> on State<T> {
   /// flight from a previous turn.
   ///
   /// With darts on the board: announce "remove your darts" at 1500ms, then
-  /// start the takeout at 3500ms. With an empty board (a skip before the first
-  /// dart): advance directly at 500ms, with no modal in between.
+  /// wait for the player to press DARTS REMOVED. With an empty board (a skip
+  /// before the first dart): advance directly at 500ms, with no modal in
+  /// between. Passing `null` for [announceRemoveDarts] suppresses the
+  /// announcement, which is how callers stay silent during auto-play.
   ///
-  /// Set [autoStartTakeout] to false to schedule only the announcement and
-  /// leave the takeout to the player. Treasure Divide's normal end-of-turn
-  /// does this — the emulator's DARTS REMOVED button drives it instead — while
-  /// its Skip path keeps the auto-start. Passing `null` for
-  /// [announceRemoveDarts] suppresses the announcement, which is how callers
-  /// stay silent during auto-play.
+  /// History: games used to also fire `simulateTakeoutStarted` at 3500ms
+  /// here. The `takeout_started` event it emitted has no consumer anywhere in
+  /// the app — the takeout has only ever been finished by DARTS REMOVED (or
+  /// auto-play / the zero-dart path) — so that machinery was deleted (F1 in
+  /// the plan notes, user-approved). `MockScoliaApiService.
+  /// simulateTakeoutStarted()` itself is kept: the real Scolia board emits the
+  /// event and the debug dartboard screen simulates it for log fidelity.
   void scheduleTakeoutSequence({
     required bool dartsOnBoard,
     VoidCallback? announceRemoveDarts,
-    bool autoStartTakeout = true,
   }) {
     cancelTakeoutSequence();
 
@@ -234,11 +237,6 @@ mixin GameScreenController<T extends StatefulWidget> on State<T> {
           if (mounted) announceRemoveDarts?.call();
         },
       );
-      if (autoStartTakeout) {
-        _takeoutTimer = Timer(const Duration(milliseconds: 3500), () {
-          if (mounted) _mockApi?.simulateTakeoutStarted();
-        });
-      }
     } else {
       _takeoutTimer = Timer(const Duration(milliseconds: 500), () {
         if (!mounted) return;
