@@ -1,32 +1,23 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/test_keys.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/lunar_lander_provider.dart';
-import '../../../providers/dartboard_provider.dart';
 import '../../../models/lunar_lander_game.dart';
-import '../../../services/mock_scolia_api_service.dart';
-import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/lunar_lander_announcement_helper.dart';
 import '../../../services/play_to_complete/lunar_lander_strategy.dart';
 import '../../../services/lunar_lander_sound_effects.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
-import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
-import '../../../widgets/dartboard_emulator/play_to_complete_runner.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
-import '../../../widgets/edit_score/edit_score_dialog_config.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
-import '../../../widgets/remove_darts_modal/remove_darts_modal_config.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
-import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
-import '../../../widgets/save_game_modal/save_game_modal_config.dart';
 import '../../../widgets/interactive_dartboard.dart';
+import '../shared/game_screen_controller.dart';
+import '../shared/game_screen_shell.dart';
 import 'lunar_lander_results_screen.dart';
 import '../../../utils/dart_sector.dart';
 import '../../../widgets/game_background.dart';
@@ -38,18 +29,11 @@ class LunarLanderGameScreen extends StatefulWidget {
   State<LunarLanderGameScreen> createState() => _LunarLanderGameScreenState();
 }
 
-class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
-  StreamSubscription? _dartboardSubscription;
+class _LunarLanderGameScreenState extends State<LunarLanderGameScreen>
+    with GameScreenController<LunarLanderGameScreen> {
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
-  MockScoliaApiService? _mockApi;
   LunarLanderAnnouncementHelper? _audioQueue;
-  final DartboardEmulatorController _dartboardEmulatorController =
-      DartboardEmulatorController();
-
-  PlayToCompleteRunner? _playToCompleteRunner;
-  bool _gameCompleted = false;
-  bool _showSaveModal = false;
 
   // Color constants
   static const Color _spaceBlack = Color(0xFF0D1B2A);
@@ -63,81 +47,42 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initializeGame());
-  }
-
-  Future<void> _initializeGame() async {
-    final dartboardProvider = context.read<DartboardProvider>();
-    _mockApi = dartboardProvider.apiService;
-    if (mounted) setState(() {});
-
-    // Initialize announcement queue
-    final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings(preloadEffects: LunarLanderSoundEffects.all);
-    _audioQueue = LunarLanderAnnouncementHelper(globalQueue);
-
-    // Subscribe to dartboard events
-    final eventStream = dartboardProvider.dartboardEventStream;
-    if (eventStream != null) {
-      _dartboardSubscription = eventStream.listen(_handleDartboardEvent);
-    }
-
-    // Announce game start
-    final provider = context.read<LunarLanderProvider>();
-    final game = provider.currentGame;
-    if (game != null) {
-      _audioQueue?.announceGameStart(startingAltitude: game.startingAltitude);
-    }
-
-    // Announce first player turn after brief delay
-    Future.delayed(const Duration(milliseconds: 2000), () {
-      if (mounted) _announceCurrentPlayerTurn();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initGameScreen(
+        preloadEffects: LunarLanderSoundEffects.all,
+        buildAudio: (queue) =>
+            _audioQueue = LunarLanderAnnouncementHelper(queue),
+        onReady: () {
+          final game = context.read<LunarLanderProvider>().currentGame;
+          if (game != null) {
+            _audioQueue?.announceGameStart(
+                startingAltitude: game.startingAltitude);
+          }
+        },
+        firstTurnDelay: const Duration(milliseconds: 2000),
+        announceFirstTurn: _announceCurrentPlayerTurn,
+      );
     });
   }
 
   @override
   void dispose() {
-    _playToCompleteRunner?.dispose();
-    _dartboardSubscription?.cancel();
+    disposeGameScreen();
     _audioQueue?.dispose();
-    _dartboardEmulatorController.dispose();
     super.dispose();
   }
 
-  void _onPlayToComplete() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
+  // ─── GameScreenController contract ───────────────────────────────────────────
 
-    _playToCompleteRunner = PlayToCompleteRunner(
-      strategy: LunarLanderStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToCompleteRunner!.run();
-  }
+  @override
+  PlayToCompleteStrategy get playToCompleteStrategy => LunarLanderStrategy();
 
-  void _onCancelAutoPlay() {
-    _playToCompleteRunner?.cancel();
-    _dartboardEmulatorController.setAutoPlaying(false);
-    _dartboardEmulatorController.show();
-  }
+  @override
+  Future<void> whenAnnouncementsIdle() =>
+      _audioQueue?.whenIdle() ?? Future<void>.value();
 
-  void _handleDartboardEvent(Map<String, dynamic> event) {
-    final type = event['type'];
-    if (type == 'throw_detected') {
-      _handleDartThrow(event);
-    } else if (type == 'takeout_finished') {
-      _handleTakeoutFinished();
-    }
-  }
-
-  void _handleDartThrow(Map<String, dynamic> event) {
+  @override
+  void onDartThrowEvent(Map<String, dynamic> event) {
     final provider = context.read<LunarLanderProvider>();
     if (!mounted || !provider.isGameActive) return;
 
@@ -167,7 +112,7 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
     }
 
     // Handle announcements (not during auto-play)
-    if (!_dartboardEmulatorController.isAutoPlaying) {
+    if (!isAutoPlaying) {
       if (currentPlayerId != null) {
         final playerProvider = context.read<PlayerProvider>();
         final player = playerProvider.allPlayers
@@ -199,15 +144,12 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
       // After 3 darts or win — prompt remove darts UNCONDITIONALLY
       final dartsThrown = provider.getCurrentPlayerDartsThrown();
       if (dartsThrown >= 3 || provider.hasWinner) {
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) {
-            _audioQueue?.announceRemoveDarts(); // UNCONDITIONAL
-          }
-        });
+        scheduleTakeoutSequence(
+          dartsOnBoard: true,
+          announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(),
+        );
       }
     }
-
-    setState(() {});
   }
 
   /// Parses a board sector string into this game's legacy map shape.
@@ -222,9 +164,12 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
     return {'score': dart.face, 'multiplier': dart.factor};
   }
 
-  void _handleTakeoutFinished() {
+  @override
+  void onTakeoutFinished() {
     final provider = context.read<LunarLanderProvider>();
     if (!mounted) return;
+
+    cancelTakeoutSequence();
 
     if (provider.hasWinner) {
       _handleGameWon();
@@ -235,13 +180,9 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
 
     provider.advanceTurn();
 
-    if (!_dartboardEmulatorController.isAutoPlaying) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) _announceCurrentPlayerTurn();
-      });
+    if (!isAutoPlaying) {
+      runAfter(const Duration(milliseconds: 500), _announceCurrentPlayerTurn);
     }
-
-    setState(() {});
   }
 
   void _announceCurrentPlayerTurn() {
@@ -261,43 +202,27 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
   }
 
   void _handleGameWon() {
-    if (_gameCompleted) return;
-    _gameCompleted = true;
-
-    void navigateToResults() {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LunarLanderResultsScreen()),
-      );
-    }
-
-    if (_dartboardEmulatorController.isAutoPlaying) {
-      navigateToResults();
-    } else {
-      final provider = context.read<LunarLanderProvider>();
-      final playerProvider = context.read<PlayerProvider>();
-      final winnerId = provider.currentGame?.winnerId;
-      if (winnerId != null) {
-        final winner = playerProvider.allPlayers.firstWhere(
-          (p) => p.id == winnerId,
-          orElse: () => playerProvider.allPlayers.first,
-        );
-        _audioQueue?.announceWinner(winner.name);
-      }
-      (_audioQueue?.whenIdle() ?? Future<void>.value())
-          .timeout(const Duration(seconds: 10), onTimeout: () {})
-          .then((_) {
-        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
-      });
-    }
+    handleGameWon(
+      announceWinner: () {
+        final provider = context.read<LunarLanderProvider>();
+        final playerProvider = context.read<PlayerProvider>();
+        final winnerId = provider.currentGame?.winnerId;
+        if (winnerId != null) {
+          final winner = playerProvider.allPlayers.firstWhere(
+            (p) => p.id == winnerId,
+            orElse: () => playerProvider.allPlayers.first,
+          );
+          _audioQueue?.announceWinner(winner.name);
+        }
+      },
+      resultsBuilder: (_) => const LunarLanderResultsScreen(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<LunarLanderProvider>();
     final playerProvider = context.watch<PlayerProvider>();
-    final dartboardProvider = context.watch<DartboardProvider>();
 
     final game = provider.currentGame;
     if (game == null) {
@@ -314,28 +239,44 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
 
     final hasDartsThrown = game.totalDartsThrown.values.any((c) => c > 0);
 
-    return AutoSaveOnPause(
-      onPaused: () {
-        if (!hasDartsThrown) return;
-        provider.saveGame(allPlayers, isAutoSave: true);
+    return GameScreenShell(
+      hasDartsThrown: hasDartsThrown,
+      showSaveModal: showSaveModal,
+      onRequestSaveModal: openSaveModal,
+      onAutoSave: () => provider.saveGame(allPlayers, isAutoSave: true),
+      onSave: () async {
+        await provider.saveGame(allPlayers);
+        if (mounted) Navigator.of(context).pop();
       },
-      child: PopScope(
-      canPop: !hasDartsThrown || _showSaveModal,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _showSaveModal) return;
-        setState(() => _showSaveModal = true);
-      },
-      child: Stack(
-        children: [
-          Scaffold(
-            backgroundColor: _spaceBlack,
-            appBar: AppBar(
+      onDontSave: () => Navigator.of(context).pop(),
+      saveGameModalConfig: SaveGameModalConfig.lunarLander(),
+      shouldPromptTakeout: shouldPromptTakeout,
+      removeDartsConfig: RemoveDartsModalConfig.lunarLander(),
+      removeDartsPlayerName: allPlayers
+              .where((p) => p.id == currentPlayerId)
+              .firstOrNull
+              ?.name ??
+          'Player',
+      editScoreButtonKey: LunarLanderGameKeys.editScoreButton,
+      onEditScore: () => _showEditScore(provider, allPlayers, currentPlayerId),
+      emulatorController: dartboardEmulatorController,
+      mockApi: mockApi,
+      dartboardKey: _dartboardKey,
+      emulatorSectionConfig: DartboardSectionConfig.lunarLander(),
+      fabConfig: DartboardFABConfig.lunarLander(),
+      onCancelAutoPlay: cancelAutoPlay,
+      onPlayToComplete: mockApi != null ? startPlayToComplete : null,
+      playToCompleteConfig:
+          mockApi != null ? PlayToCompleteButtonConfig.lunarLander() : null,
+      pausedModalConfig: DartboardPausedModalConfig.lunarLander(),
+      backgroundColor: _spaceBlack,
+      appBar: AppBar(
               leading: IconButton(
                 key: LunarLanderGameKeys.backButton,
                 icon: const Icon(Icons.arrow_back, color: _starWhite, size: 32),
                 onPressed: () {
                   if (hasDartsThrown) {
-                    setState(() => _showSaveModal = true);
+                    openSaveModal();
                   } else {
                     Navigator.of(context).pop();
                   }
@@ -388,25 +329,13 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                       final p = context.read<LunarLanderProvider>();
                       final dartsThrown = p.getCurrentPlayerDartsThrown();
                       p.skipTurn();
-                      if (dartsThrown > 0) {
-                        // Darts on board — wait for physical takeout or
-                        // emulator's DARTS REMOVED button.
-                        Future.delayed(const Duration(milliseconds: 1500), () {
-                          if (mounted) _audioQueue?.announceRemoveDarts();
-                        });
-                      } else {
-                        // No darts on board — auto-finish takeout and
-                        // advance directly without showing RemoveDartsModal.
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          if (mounted) {
-                            if (_mockApi != null) {
-                              _mockApi!.simulateTakeoutFinished();
-                            } else {
-                              _handleTakeoutFinished();
-                            }
-                          }
-                        });
-                      }
+                      // Darts on board → announce, wait for DARTS REMOVED;
+                      // 0 darts → 500ms auto-advance with no modal.
+                      scheduleTakeoutSequence(
+                        dartsOnBoard: dartsThrown > 0,
+                        announceRemoveDarts: () =>
+                            _audioQueue?.announceRemoveDarts(),
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: _rocketFlame, width: 1.5),
@@ -508,146 +437,65 @@ class _LunarLanderGameScreenState extends State<LunarLanderGameScreen> {
                 ),
               ],
             ),
-          ),
-          // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
-          // block ALL screen interactions while shown.
-          // RemoveDartsModal sits BEHIND the emulator so DARTS REMOVED stays
-          // visible/tappable on top of the takeout overlay.
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.lunarLander(),
-              playerName: allPlayers
-                      .where((p) => p.id == currentPlayerId)
-                      .firstOrNull
-                      ?.name ??
-                  'Player',
-              editScoreButtonKey: LunarLanderGameKeys.editScoreButton,
-              onEditScore: () {
-                final currentPlayer = allPlayers
-                    .where((p) => p.id == currentPlayerId)
-                    .firstOrNull;
-                if (currentPlayer == null) return;
-                final dartScores =
-                    provider.getCurrentTurnDartScores(currentPlayerId);
-                // Use stored segment strings for proper ring+number pre-selection
-                // in the Edit Score dialog (e.g., 'D20' instead of 'S40').
-                final segments =
-                    provider.getCurrentTurnDartSegments(currentPlayerId);
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayer.name,
-                  initialSegments: segments,
-                  onSubmit: (newSegments) {
-                    // Apply each dart's new value via editPlayerScore.
-                    // Segments arrive from the dialog as one of:
-                    //   'S20' / 's20' / 'D20' / 'T20' — single/double/triple
-                    //   'Bull' (50) / '25' (outer bull)
-                    //   'Miss' — a thrown miss (score 0)
-                    //   '-' or empty — dart not thrown (skip; should not
-                    //   occur because Save is disabled when ring is null)
-                    for (int i = 0; i < newSegments.length && i < 3; i++) {
-                      final seg = newSegments[i];
-                      if (seg.isEmpty || seg == '-') continue;
-                      int score = 0;
-                      int mult = 1;
-                      if (seg == 'Miss') {
-                        score = 0;
-                        mult = 1;
-                      } else if (seg == 'Bull') {
-                        score = 50;
-                        mult = 1;
-                      } else if (seg == '25') {
-                        score = 25;
-                        mult = 1;
-                      } else {
-                        final m = RegExp(r'([SDTsdt])(\d+)').firstMatch(seg);
-                        if (m != null) {
-                          score = int.tryParse(m.group(2)!) ?? 0;
-                          final p = m.group(1)!.toUpperCase();
-                          if (p == 'D') mult = 2;
-                          if (p == 'T') mult = 3;
-                        }
-                      }
-                      if (i < dartScores.length) {
-                        provider.editPlayerScore(
-                          playerId: currentPlayerId,
-                          dartIndex: i,
-                          newScore: score,
-                          newMultiplier: mult,
-                        );
-                      }
-                    }
-                  },
-                  config: EditScoreDialogConfig.lunarLander(),
-                );
-              },
-            ),
-          // Emulator above RemoveDartsModal; below SaveGameModal so the save modal's
-          // Don't Save button isn't intercepted by the emulator.
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.lunarLander(),
-              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-              playToCompleteConfig: _mockApi != null
-                  ? PlayToCompleteButtonConfig.lunarLander()
-                  : null,
-            ),
-          ),
-          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
-          // can block the AppBar back arrow without also blocking the FAB).
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.lunarLander(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-          ),
-          // Save Game Modal
-          if (_showSaveModal)
-            SaveGameModal(
-              config: SaveGameModalConfig.lunarLander(),
-              onSave: () async {
-                await provider.saveGame(allPlayers);
-                if (mounted) Navigator.of(context).pop();
-              },
-              onDontSave: () => Navigator.of(context).pop(),
-            ),
-          // Dartboard Paused Modal — last child, paints on top.
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.lunarLander(),
-            ),
-        ],
-      ),
-      ),
+    );
+  }
+
+  /// Opens the shared Edit Score dialog pre-filled with this turn's segments.
+  void _showEditScore(LunarLanderProvider provider, List<dynamic> allPlayers,
+      String currentPlayerId) {
+    final currentPlayer =
+        allPlayers.where((p) => p.id == currentPlayerId).firstOrNull;
+    if (currentPlayer == null) return;
+    final dartScores = provider.getCurrentTurnDartScores(currentPlayerId);
+    // Use stored segment strings for proper ring+number pre-selection
+    // in the Edit Score dialog (e.g., 'D20' instead of 'S40').
+    final segments = provider.getCurrentTurnDartSegments(currentPlayerId);
+    showEditScoreDialog(
+      context: context,
+      playerName: currentPlayer.name,
+      initialSegments: segments,
+      onSubmit: (newSegments) {
+        // Apply each dart's new value via editPlayerScore.
+        // Segments arrive from the dialog as one of:
+        //   'S20' / 's20' / 'D20' / 'T20' — single/double/triple
+        //   'Bull' (50) / '25' (outer bull)
+        //   'Miss' — a thrown miss (score 0)
+        //   '-' or empty — dart not thrown (skip; should not
+        //   occur because Save is disabled when ring is null)
+        for (int i = 0; i < newSegments.length && i < 3; i++) {
+          final seg = newSegments[i];
+          if (seg.isEmpty || seg == '-') continue;
+          int score = 0;
+          int mult = 1;
+          if (seg == 'Miss') {
+            score = 0;
+            mult = 1;
+          } else if (seg == 'Bull') {
+            score = 50;
+            mult = 1;
+          } else if (seg == '25') {
+            score = 25;
+            mult = 1;
+          } else {
+            final m = RegExp(r'([SDTsdt])(\d+)').firstMatch(seg);
+            if (m != null) {
+              score = int.tryParse(m.group(2)!) ?? 0;
+              final p = m.group(1)!.toUpperCase();
+              if (p == 'D') mult = 2;
+              if (p == 'T') mult = 3;
+            }
+          }
+          if (i < dartScores.length) {
+            provider.editPlayerScore(
+              playerId: currentPlayerId,
+              dartIndex: i,
+              newScore: score,
+              newMultiplier: mult,
+            );
+          }
+        }
+      },
+      config: EditScoreDialogConfig.lunarLander(),
     );
   }
 
