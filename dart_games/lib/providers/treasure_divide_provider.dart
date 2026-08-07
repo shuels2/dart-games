@@ -255,6 +255,11 @@ class TreasureDivideProvider extends GameProviderBase<TreasureDivideGame> {
 
     _currentTurnHaul = 0;
 
+    // A genuinely new game must not inherit the previous game's saved-game
+    // slot — otherwise this game's first save overwrites (and destroys) a
+    // still-resumable abandoned game. See F2 in the plan notes.
+    clearResumedSavedGameId();
+
     _currentGame = TreasureDivideGame.create(
       playerIds: playerIds,
       numberOfRounds: numberOfRounds,

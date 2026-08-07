@@ -102,6 +102,11 @@ class ClockworkQuestProvider extends ChangeNotifier {
       inventorAssignments[playerIds[i]] = availableInventors[i];
     }
 
+    // A genuinely new game must not inherit the previous game's saved-game
+    // slot — otherwise this game's first save overwrites (and destroys) a
+    // still-resumable abandoned game. See F2 in the plan notes.
+    clearResumedSavedGameId();
+
     _currentGame = ClockworkQuestGame(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       startedAt: DateTime.now(),
