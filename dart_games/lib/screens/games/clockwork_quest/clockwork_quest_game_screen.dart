@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -6,26 +5,21 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/test_keys.dart';
 import '../../../providers/clockwork_quest_provider.dart';
-import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
-import '../../../services/mock_scolia_api_service.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
-import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
-import '../../../widgets/remove_darts_modal/remove_darts_modal_config.dart';
 import '../../../widgets/edit_score/edit_score_dialog.dart';
 import '../../../widgets/edit_score/edit_score_dialog_config.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
-import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
-import '../../../widgets/save_game_modal/save_game_modal_config.dart';
+import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../services/play_to_complete/clockwork_quest_strategy.dart';
 import '../../../widgets/interactive_dartboard.dart';
-import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/clockwork_quest_announcement_helper.dart';
 import '../../../services/clockwork_quest_sound_effects.dart';
+import '../shared/game_screen_controller.dart';
+import '../shared/game_screen_shell.dart';
 import 'clockwork_quest_results_screen.dart';
 import '../../../widgets/game_background.dart';
 
@@ -37,58 +31,44 @@ class ClockworkQuestGameScreen extends StatefulWidget {
       _ClockworkQuestGameScreenState();
 }
 
-class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
-  StreamSubscription? _dartboardSubscription;
+class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen>
+    with GameScreenController<ClockworkQuestGameScreen> {
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
-  MockScoliaApiService? _mockApi;
   ClockworkQuestAnnouncementHelper? _audioQueue;
-  final DartboardEmulatorController _dartboardEmulatorController =
-      DartboardEmulatorController();
-  PlayToCompleteRunner? _playToCompleteRunner;
-  bool _showSaveModal = false;
-  bool _gameCompleted = false;
   final Set<String> _bullseyeTargetAnnouncedFor = {};
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeGame();
-    });
-  }
-
-  Future<void> _initializeGame() async {
-    final dartboardProvider = context.read<DartboardProvider>();
-    _mockApi = dartboardProvider.apiService;
-    if (mounted) setState(() {});
-
-    final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings(preloadEffects: ClockworkQuestSoundEffects.all);
-    _audioQueue = ClockworkQuestAnnouncementHelper(globalQueue);
-
-    // Subscribe to dartboard events
-    final eventStream = dartboardProvider.dartboardEventStream;
-    if (eventStream != null) {
-      _dartboardSubscription = eventStream.listen((event) {
-        _handleDartboardEvent(event);
-      });
-    }
-
-    _audioQueue?.announceGameStart();
-    Future.delayed(const Duration(milliseconds: 2000), () {
-      if (mounted) _announceCurrentPlayerTurn();
+      initGameScreen(
+        preloadEffects: ClockworkQuestSoundEffects.all,
+        buildAudio: (queue) =>
+            _audioQueue = ClockworkQuestAnnouncementHelper(queue),
+        onReady: () => _audioQueue?.announceGameStart(),
+        firstTurnDelay: const Duration(milliseconds: 2000),
+        announceFirstTurn: _announceCurrentPlayerTurn,
+      );
     });
   }
 
   @override
   void dispose() {
-    _playToCompleteRunner?.dispose();
-    _dartboardSubscription?.cancel();
+    disposeGameScreen();
     _audioQueue?.dispose();
-    _dartboardEmulatorController.dispose();
     super.dispose();
   }
+
+  // ─── GameScreenController contract ───────────────────────────────────────────
+
+  @override
+  PlayToCompleteStrategy get playToCompleteStrategy =>
+      ClockworkQuestStrategy();
+
+  @override
+  Future<void> whenAnnouncementsIdle() =>
+      _audioQueue?.whenIdle() ?? Future<void>.value();
 
   void _announceCurrentPlayerTurn() {
     final clockworkProvider = context.read<ClockworkQuestProvider>();
@@ -101,40 +81,8 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     }
   }
 
-  void _onPlayToComplete() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
-
-    _playToCompleteRunner = PlayToCompleteRunner(
-      strategy: ClockworkQuestStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToCompleteRunner!.run();
-  }
-
-  void _onCancelAutoPlay() {
-    _playToCompleteRunner?.cancel();
-    _dartboardEmulatorController.setAutoPlaying(false);
-    _dartboardEmulatorController.show();
-  }
-
-  void _handleDartboardEvent(Map<String, dynamic> event) {
-    final type = event['type'];
-    if (type == 'throw_detected') {
-      _handleDartThrow(event);
-    } else if (type == 'takeout_finished') {
-      _handleTakeoutFinished();
-    }
-  }
-
-  void _handleDartThrow(Map<String, dynamic> event) {
+  @override
+  void onDartThrowEvent(Map<String, dynamic> event) {
     final clockworkProvider = context.read<ClockworkQuestProvider>();
     if (!mounted || !clockworkProvider.isGameActive) return;
 
@@ -145,26 +93,24 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
 
     clockworkProvider.processDartThrow(sector);
 
-    if (!_dartboardEmulatorController.isAutoPlaying &&
-        currentPlayerId != null) {
+    if (!isAutoPlaying && currentPlayerId != null) {
       _announceDartResult(clockworkProvider, currentPlayerId);
     }
 
     final dartsThrown = clockworkProvider.getCurrentPlayerDartsThrown();
-    if (!_dartboardEmulatorController.isAutoPlaying &&
+    if (!isAutoPlaying &&
         (dartsThrown >= 3 || clockworkProvider.hasWinner)) {
       final playerProvider = context.read<PlayerProvider>();
       final player = currentPlayerId != null
           ? playerProvider.getPlayerById(currentPlayerId)
           : null;
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted && player != null) {
-          _audioQueue?.announceRemoveDarts(player);
-        }
-      });
+      scheduleTakeoutSequence(
+        dartsOnBoard: true,
+        announceRemoveDarts: () {
+          if (player != null) _audioQueue?.announceRemoveDarts(player);
+        },
+      );
     }
-
-    setState(() {});
   }
 
   void _announceDartResult(ClockworkQuestProvider provider, String playerId) {
@@ -212,9 +158,12 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     }
   }
 
-  void _handleTakeoutFinished() {
+  @override
+  void onTakeoutFinished() {
     final clockworkProvider = context.read<ClockworkQuestProvider>();
     if (!mounted) return;
+
+    cancelTakeoutSequence();
 
     if (clockworkProvider.hasWinner) {
       _handleGameWon();
@@ -225,54 +174,32 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
 
     clockworkProvider.confirmDartsRemoved();
 
-    if (!_dartboardEmulatorController.isAutoPlaying) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) _announceCurrentPlayerTurn();
-      });
+    if (!isAutoPlaying) {
+      runAfter(const Duration(milliseconds: 500), _announceCurrentPlayerTurn);
     }
-
-    setState(() {});
   }
 
   void _handleGameWon() {
-    if (_gameCompleted) return;
-    _gameCompleted = true;
-
-    void navigateToResults() {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const ClockworkQuestResultsScreen(),
-        ),
-      );
-    }
-
-    if (_dartboardEmulatorController.isAutoPlaying) {
-      navigateToResults();
-    } else {
-      final clockworkProvider = context.read<ClockworkQuestProvider>();
-      final playerProvider = context.read<PlayerProvider>();
-      final winnerId = clockworkProvider.currentGame?.winnerId;
-      if (winnerId != null) {
-        final winner = playerProvider.allPlayers.firstWhere(
-          (p) => p.id == winnerId,
-          orElse: () => playerProvider.allPlayers.first,
-        );
-        _audioQueue?.announceVictory(winner);
-      }
-      (_audioQueue?.whenIdle() ?? Future<void>.value())
-          .timeout(const Duration(seconds: 10), onTimeout: () {})
-          .then((_) {
-        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
-      });
-    }
+    handleGameWon(
+      announceWinner: () {
+        final clockworkProvider = context.read<ClockworkQuestProvider>();
+        final playerProvider = context.read<PlayerProvider>();
+        final winnerId = clockworkProvider.currentGame?.winnerId;
+        if (winnerId != null) {
+          final winner = playerProvider.allPlayers.firstWhere(
+            (p) => p.id == winnerId,
+            orElse: () => playerProvider.allPlayers.first,
+          );
+          _audioQueue?.announceVictory(winner);
+        }
+      },
+      resultsBuilder: (_) => const ClockworkQuestResultsScreen(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final clockworkProvider = Provider.of<ClockworkQuestProvider>(context);
-    final dartboardProvider = Provider.of<DartboardProvider>(context);
     final playerProvider = Provider.of<PlayerProvider>(context);
 
     final game = clockworkProvider.currentGame;
@@ -291,22 +218,40 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
     final shouldPromptTakeout = clockworkProvider.shouldPromptTakeout;
     final hasDartsThrown = game.totalDartsThrown.values.any((c) => c > 0);
 
-    return AutoSaveOnPause(
-      onPaused: () {
-        if (!hasDartsThrown) return;
-        clockworkProvider.saveGame(playerProvider.allPlayers, isAutoSave: true);
+    return GameScreenShell(
+      hasDartsThrown: hasDartsThrown,
+      showSaveModal: showSaveModal,
+      onRequestSaveModal: openSaveModal,
+      onAutoSave: () => clockworkProvider.saveGame(playerProvider.allPlayers,
+          isAutoSave: true),
+      onSave: () async {
+        await clockworkProvider.saveGame(playerProvider.allPlayers);
+        if (mounted) Navigator.of(context).pop();
       },
-      child: PopScope(
-      canPop: !hasDartsThrown || _showSaveModal,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _showSaveModal) return;
-        setState(() => _showSaveModal = true);
-      },
-      child: Stack(
-        children: [
-          Scaffold(
-            backgroundColor: const Color(0xFF2C2C34), // Dark Iron
-            appBar: AppBar(
+      onDontSave: () => Navigator.of(context).pop(),
+      saveGameModalConfig: SaveGameModalConfig.clockworkQuest(),
+      shouldPromptTakeout: shouldPromptTakeout,
+      // Clockwork additionally gates the modal on a resolvable player.
+      showRemoveDartsModal: shouldPromptTakeout && currentPlayer != null,
+      removeDartsModalKey: ClockworkQuestGameKeys.removeDartsModal,
+      removeDartsConfig: RemoveDartsModalConfig.clockworkQuest(),
+      removeDartsPlayerName: currentPlayer?.name ?? 'Player',
+      editScoreButtonKey: ClockworkQuestGameKeys.editScoreButton,
+      onEditScore: () => _showEditScoreDialog(context),
+      emulatorSectionKey: ClockworkQuestGameKeys.dartboardSection,
+      emulatorController: dartboardEmulatorController,
+      mockApi: mockApi,
+      dartboardKey: _dartboardKey,
+      emulatorSectionConfig: DartboardSectionConfig.clockworkQuest(),
+      fabConfig: DartboardFABConfig.clockworkQuest(),
+      onCancelAutoPlay: cancelAutoPlay,
+      onPlayToComplete: mockApi != null ? startPlayToComplete : null,
+      playToCompleteConfig: mockApi != null
+          ? PlayToCompleteButtonConfig.clockworkQuest()
+          : null,
+      pausedModalConfig: DartboardPausedModalConfig.clockworkQuest(),
+      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+      appBar: AppBar(
               backgroundColor: const Color(0xFF2C2C34),
               leading: IconButton(
                 key: ClockworkQuestGameKeys.backButton,
@@ -314,7 +259,7 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                     color: Color(0xFFF5F0E8), size: 32),
                 onPressed: () {
                   if (hasDartsThrown) {
-                    setState(() => _showSaveModal = true);
+                    openSaveModal();
                   } else {
                     Navigator.of(context).pop();
                   }
@@ -424,90 +369,6 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                 ),
               ],
             ),
-          ),
-
-          // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
-          // block ALL screen interactions while shown.
-          // RemoveDartsModal sits BEHIND the emulator so DARTS REMOVED stays
-          // visible/tappable on top of the takeout overlay.
-          if (shouldPromptTakeout && currentPlayer != null)
-            RemoveDartsModal(
-              key: ClockworkQuestGameKeys.removeDartsModal,
-              playerName: currentPlayer.name,
-              config: RemoveDartsModalConfig.clockworkQuest(),
-              editScoreButtonKey: ClockworkQuestGameKeys.editScoreButton,
-              onEditScore: () => _showEditScoreDialog(context),
-            ),
-
-          // Emulator above RemoveDartsModal; below SaveGameModal.
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              key: ClockworkQuestGameKeys.dartboardSection,
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.clockworkQuest(),
-              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-              playToCompleteConfig: _mockApi != null
-                  ? PlayToCompleteButtonConfig.clockworkQuest()
-                  : null,
-            ),
-          ),
-
-          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
-          // can block the AppBar back arrow without also blocking the FAB).
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.clockworkQuest(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-          ),
-
-          // Save Game Modal
-          if (_showSaveModal)
-            SaveGameModal(
-              config: SaveGameModalConfig.clockworkQuest(),
-              onSave: () async {
-                await clockworkProvider.saveGame(playerProvider.allPlayers);
-                if (mounted) Navigator.of(context).pop();
-              },
-              onDontSave: () => Navigator.of(context).pop(),
-            ),
-
-          // Dartboard Paused Modal — last child, paints on top.
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.clockworkQuest(),
-            ),
-        ],
-      ),
-      ),
     );
   }
 
@@ -820,22 +681,10 @@ class _ClockworkQuestGameScreenState extends State<ClockworkQuestGameScreen> {
                       final dartsThrown =
                           provider.getCurrentPlayerDartsThrown();
                       provider.skipTurn();
-                      if (dartsThrown > 0) {
-                        // Darts on board — wait for physical takeout or the
-                        // emulator's DARTS REMOVED button. Nothing to schedule.
-                      } else {
-                        // No darts on board — auto-finish takeout and
-                        // advance directly without showing RemoveDartsModal.
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          if (mounted) {
-                            if (_mockApi != null) {
-                              _mockApi!.simulateTakeoutFinished();
-                            } else {
-                              _handleTakeoutFinished();
-                            }
-                          }
-                        });
-                      }
+                      // Darts on board → wait for DARTS REMOVED (Clockwork's
+                      // skip has never announced); 0 darts → 500ms
+                      // auto-advance with no modal.
+                      scheduleTakeoutSequence(dartsOnBoard: dartsThrown > 0);
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB87333),

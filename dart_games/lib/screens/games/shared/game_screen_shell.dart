@@ -81,6 +81,7 @@ class GameScreenShell extends StatelessWidget {
   final VoidCallback? onEditScore;
 
   // ── Layers 3 & 4: emulator ─────────────────────────────────────────────────
+  final Key? emulatorSectionKey;
   final DartboardEmulatorController emulatorController;
   final MockScoliaApiService? mockApi;
   final GlobalKey<InteractiveDartboardState>? dartboardKey;
@@ -126,6 +127,7 @@ class GameScreenShell extends StatelessWidget {
     this.removeDartsModalKey,
     this.editScoreButtonKey,
     this.onEditScore,
+    this.emulatorSectionKey,
     required this.emulatorController,
     required this.mockApi,
     this.dartboardKey,
@@ -190,6 +192,7 @@ class GameScreenShell extends StatelessWidget {
               right: 0,
               bottom: 0,
               child: DartboardEmulatorSection(
+                key: emulatorSectionKey,
                 controller: emulatorController,
                 isConnected: isConnected,
                 shouldPromptTakeout: shouldPromptTakeout,

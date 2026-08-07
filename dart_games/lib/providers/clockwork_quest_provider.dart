@@ -3,24 +3,27 @@ import '../models/clockwork_quest_game.dart';
 import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
-import '../services/game_skip_turn_helper.dart';
 import '../services/api/api_client.dart';
+import 'game_provider_base.dart';
 
-class ClockworkQuestProvider extends ChangeNotifier {
-  ClockworkQuestGame? _currentGame;
-  bool _waitingForTakeout = false;
-  ApiClient? _apiClient;
+class ClockworkQuestProvider extends GameProviderBase<ClockworkQuestGame> {
+  /// Internal alias for [GameProviderBase.game] — keeps the game logic below
+  /// untouched while the storage lives in the base.
+  ClockworkQuestGame? get _currentGame => game;
+  set _currentGame(ClockworkQuestGame? value) => game = value;
+
+  final ApiClient? _apiClient;
 
   ClockworkQuestProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
   ClockworkQuestGame? get currentGame => _currentGame;
 
+  @override
   bool get isGameActive =>
       _currentGame?.state == ClockworkQuestGameState.playing;
 
-  bool get shouldPromptTakeout => _waitingForTakeout;
-
+  @override
   bool get hasWinner => _currentGame?.isGameOver ?? false;
 
   String? getCurrentPlayerId() => _currentGame?.currentPlayerId;
@@ -119,7 +122,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
       state: ClockworkQuestGameState.playing,
     );
 
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
     _saveInitialTurnStartState();
     notifyListeners();
   }
@@ -127,7 +130,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
   // Process a dart throw from dartboard event
   void processDartThrow(String sector) {
     if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (shouldPromptTakeout) return;
 
     final parsed = _parseSector(sector);
     final currentPlayerId = _currentGame!.currentPlayerId;
@@ -279,19 +282,27 @@ class ClockworkQuestProvider extends ChangeNotifier {
   void _checkTakeoutCondition() {
     if (_currentGame == null) return;
     final currentPlayerId = _currentGame!.currentPlayerId;
-    final dartsThrown = _currentGame!.dartsThrown[currentPlayerId] ?? 0;
-
-    if (dartsThrown >= _currentGame!.maxDartsPerTurn || hasWinner) {
-      _waitingForTakeout = true;
-    }
+    checkTakeoutCondition(
+      dartsThrown: _currentGame!.dartsThrown[currentPlayerId] ?? 0,
+      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
+    );
   }
 
-  // Confirm darts removed (called when RemoveDartsModal is confirmed)
+  // Confirm darts removed (called when RemoveDartsModal is confirmed).
+  // Clockwork's historical name for the takeout-finish flow — its advance
+  // also resets per-turn tracking and re-snapshots turn-start state, so it
+  // keeps its own flow rather than the base's.
   void confirmDartsRemoved() {
     if (_currentGame == null) return;
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
     advanceTurn();
   }
+
+  @override
+  void handleTakeoutFinished() => confirmDartsRemoved();
+
+  @override
+  void advanceToNextPlayer() => advanceTurn();
 
   // Advance to next turn
   void advanceTurn() {
@@ -321,7 +332,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
     // Save turn start state for the new player
     _saveInitialTurnStartState();
 
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
     notifyListeners();
   }
 
@@ -329,26 +340,14 @@ class ClockworkQuestProvider extends ChangeNotifier {
   void skipTurn() {
     if (_currentGame == null || !isGameActive) return;
 
-    if (!GameSkipTurnHelper.canSkipTurn(
-      gameActive: isGameActive,
-      waitingForTakeout: _waitingForTakeout,
-      currentDartCount: getCurrentPlayerDartsThrown(),
-      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
-    )) {
-      return;
-    }
-
     final currentPlayerId = _currentGame!.currentPlayerId;
-    GameSkipTurnHelper.skipRemainingDarts(
-      currentDartCount: getCurrentPlayerDartsThrown(),
+    runSkipTurn(
+      dartsThrown: getCurrentPlayerDartsThrown(),
       maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
       addVisualMarker: (marker) {
         _currentGame!.currentTurnDarts[currentPlayerId]!.add(marker);
       },
     );
-
-    _waitingForTakeout = true;
-    notifyListeners();
   }
 
   // Edit score (restore to turn start, then apply new throws)
@@ -403,7 +402,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
     _currentGame!.dartThrowAdvanced[currentPlayerId] = [];
     _currentGame!.dartThrowCompletedLap[currentPlayerId] = [];
 
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
   }
 
   /// Not routed through the shared [DartSector] because `number` here is a
@@ -448,23 +447,16 @@ class ClockworkQuestProvider extends ChangeNotifier {
   }
 
   // Save/Resume functionality
-  String? _resumedSavedGameId;
-  bool _saving = false;
-  String? get resumedSavedGameId => _resumedSavedGameId;
 
+  /// Clockwork notifies on slot clear (the others don't) — preserved.
+  @override
   void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
+    super.clearResumedSavedGameId();
     notifyListeners();
   }
 
   Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
-    debugPrint('[ClockworkQuestProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
-    if (_currentGame == null || _saving) {
-      debugPrint('[ClockworkQuestProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
-      return;
-    }
-    _saving = true;
-    try {
+    await persistSave(SaveGameService(_apiClient), (existingId) {
     final game = _currentGame!;
 
     // Find leading player (furthest along in laps)
@@ -485,7 +477,7 @@ class ClockworkQuestProvider extends ChangeNotifier {
     final leaderLaps = game.lapsCompleted[leaderId] ?? 0;
     final leaderTarget = game.currentTarget[leaderId] ?? 1;
 
-    final metadata = SavedGameMetadata.create(
+    return SavedGameMetadata.create(
       gameType: 'clockwork_quest',
       playerNames: players
           .where((p) => game.playerIds.contains(p.id))
@@ -498,28 +490,16 @@ class ClockworkQuestProvider extends ChangeNotifier {
       leadingPlayerName: leaderPlayer.name,
       leadingPlayerScore: 'Lap ${leaderLaps + 1}, #$leaderTarget',
       gameState: game.toJson(),
-      waitingForTakeout: _waitingForTakeout,
+      waitingForTakeout: shouldPromptTakeout,
       isAutoSave: isAutoSave,
-      existingId: _resumedSavedGameId,
+      existingId: existingId,
     );
-
-    debugPrint('[ClockworkQuestProvider] saving with id=${metadata.id}');
-    final saved = await SaveGameService(_apiClient).saveGame(metadata);
-    if (saved) {
-      _resumedSavedGameId = metadata.id;
-    }
-    debugPrint('[ClockworkQuestProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
-    } finally {
-      _saving = false;
-    }
+    });
   }
 
-  void restoreGame(SavedGameMetadata savedGame) {
-    _currentGame = ClockworkQuestGame.fromJson(
-        Map<String, dynamic>.from(savedGame.gameState));
-    _waitingForTakeout = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
-    notifyListeners();
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = ClockworkQuestGame.fromJson(json);
   }
 
   // End the current game
@@ -530,11 +510,12 @@ class ClockworkQuestProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Clear the current game
+  /// Clockwork forgets the saved-game slot on clear (like Treasure Divide).
+  /// `super.clearResumedSavedGameId()` is the non-notifying base version —
+  /// the original cleared the slot and notified exactly once.
+  @override
   void clearGame() {
-    _currentGame = null;
-    _waitingForTakeout = false;
-    _resumedSavedGameId = null;
-    notifyListeners();
+    super.clearResumedSavedGameId();
+    super.clearGame();
   }
 }
