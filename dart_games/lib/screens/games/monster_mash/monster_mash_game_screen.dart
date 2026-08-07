@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,14 +7,10 @@ import '../../../models/player.dart';
 import '../../../models/monster_mash_game.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/monster_mash_provider.dart';
-import '../../../providers/dartboard_provider.dart';
-import '../../../services/mock_scolia_api_service.dart';
-import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/monster_mash_announcement_helper.dart';
 import '../../../services/play_to_complete/monster_mash_strategy.dart';
 import '../../../services/play_to_tie/monster_mash_strategy.dart';
 import '../../../services/monster_mash_sound_effects.dart';
-import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -23,8 +18,9 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
+import '../shared/game_screen_controller.dart';
+import '../shared/game_screen_shell.dart';
 import 'monster_mash_results_screen.dart';
 import '../../../utils/dart_sector.dart';
 import '../../../widgets/game_background.dart';
@@ -36,18 +32,11 @@ class MonsterMashGameScreen extends StatefulWidget {
   State<MonsterMashGameScreen> createState() => _MonsterMashGameScreenState();
 }
 
-class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
-  StreamSubscription? _dartboardSubscription;
+class _MonsterMashGameScreenState extends State<MonsterMashGameScreen>
+    with GameScreenController<MonsterMashGameScreen> {
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
-  MockScoliaApiService? _mockApi;
   MonsterMashAnnouncementHelper? _audioQueue;
-  final DartboardEmulatorController _dartboardEmulatorController =
-      DartboardEmulatorController();
-  PlayToCompleteRunner? _playToCompleteRunner;
-  PlayToTieRunner? _playToTieRunner;
-  bool _gameCompleted = false;
-  bool _showSaveModal = false;
 
   // Track health tiers for announcement threshold-crossing detection
   // 0=healthy(>70%), 1=weakening(<=70%), 2=critical(<=30%), 3=barely(<=10%)
@@ -67,51 +56,33 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeGame();
-    });
-  }
+      initGameScreen(
+        preloadEffects: MonsterMashSoundEffects.all,
+        buildAudio: (queue) =>
+            _audioQueue = MonsterMashAnnouncementHelper(queue),
+        onReady: () {
+          // Generate shuffled order for grid cell assignment
+          final monsterMashProvider = context.read<MonsterMashProvider>();
+          final opponentCount =
+              (monsterMashProvider.currentGame?.playerIds.length ?? 2) - 1;
+          _shuffledOpponentOrder = List.generate(opponentCount, (i) => i)
+            ..shuffle(Random());
 
-  Future<void> _initializeGame() async {
-    final dartboardProvider = context.read<DartboardProvider>();
-    _mockApi = dartboardProvider.apiService;
-    if (mounted) setState(() {});
+          // Initialize health tiers based on starting health
+          final currentGameInit = monsterMashProvider.currentGame;
+          if (currentGameInit != null) {
+            for (final playerId in currentGameInit.playerIds) {
+              final pct = monsterMashProvider.getHealth(playerId) /
+                  currentGameInit.healthMax;
+              _playerHealthTier[playerId] = _getHealthTier(pct);
+            }
+          }
 
-    final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings(preloadEffects: MonsterMashSoundEffects.all);
-    _audioQueue = MonsterMashAnnouncementHelper(globalQueue);
-
-    // Subscribe to dartboard events (works for both WebSocket and emulator)
-    final eventStream = dartboardProvider.dartboardEventStream;
-    if (eventStream != null) {
-      _dartboardSubscription = eventStream.listen((event) {
-        _handleDartboardEvent(event);
-      });
-    }
-
-    // Generate shuffled order for grid cell assignment
-    final monsterMashProvider = context.read<MonsterMashProvider>();
-    final opponentCount =
-        (monsterMashProvider.currentGame?.playerIds.length ?? 2) - 1;
-    _shuffledOpponentOrder = List.generate(opponentCount, (i) => i)
-      ..shuffle(Random());
-
-    // Initialize health tiers based on starting health
-    final monsterMashProviderInit = context.read<MonsterMashProvider>();
-    final currentGameInit = monsterMashProviderInit.currentGame;
-    if (currentGameInit != null) {
-      for (final playerId in currentGameInit.playerIds) {
-        final pct = monsterMashProviderInit.getHealth(playerId) /
-            currentGameInit.healthMax;
-        _playerHealthTier[playerId] = _getHealthTier(pct);
-      }
-    }
-
-    _audioQueue?.announceGameStart();
-
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        _announceCurrentPlayerTurn();
-      }
+          _audioQueue?.announceGameStart();
+        },
+        firstTurnDelay: const Duration(milliseconds: 2500),
+        announceFirstTurn: _announceCurrentPlayerTurn,
+      );
     });
   }
 
@@ -200,67 +171,24 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
 
   @override
   void dispose() {
-    _playToCompleteRunner?.dispose();
-    _playToTieRunner?.dispose();
-    _dartboardSubscription?.cancel();
+    disposeGameScreen();
     _audioQueue?.dispose();
-    _dartboardEmulatorController.dispose();
     super.dispose();
   }
 
-  void _onPlayToComplete() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
+  // ─── GameScreenController contract ───────────────────────────────────────────
 
-    _playToCompleteRunner = PlayToCompleteRunner(
-      strategy: MonsterMashStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToCompleteRunner!.run();
-  }
+  @override
+  PlayToCompleteStrategy get playToCompleteStrategy => MonsterMashStrategy();
 
-  void _onPlayToTie() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
+  @override
+  Future<void> whenAnnouncementsIdle() =>
+      _audioQueue?.whenIdle() ?? Future<void>.value();
 
-    _playToTieRunner = PlayToTieRunner(
-      strategy: MonsterMashTieStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToTieRunner!.run();
-  }
+  void _onPlayToTie() => startPlayToTie(MonsterMashTieStrategy());
 
-  void _onCancelAutoPlay() {
-    _playToCompleteRunner?.cancel();
-    _playToTieRunner?.cancel();
-    _dartboardEmulatorController.setAutoPlaying(false);
-    _dartboardEmulatorController.show();
-  }
-
-  void _handleDartboardEvent(Map<String, dynamic> event) {
-    final type = event['type'];
-    if (type == 'throw_detected') {
-      _handleDartThrow(event);
-    } else if (type == 'takeout_finished') {
-      _handleTakeoutFinished();
-    }
-  }
-
-  void _handleDartThrow(Map<String, dynamic> event) {
+  @override
+  void onDartThrowEvent(Map<String, dynamic> event) {
     final monsterMashProvider = context.read<MonsterMashProvider>();
     if (!mounted || !monsterMashProvider.isGameActive) return;
 
@@ -363,7 +291,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     }
 
     // --- Apply precedence rules ---
-    if (!_dartboardEmulatorController.isAutoPlaying) {
+    if (!isAutoPlaying) {
       final hasSecondary = hasHealing ||
           hasClutchHeal ||
           hasAttack ||
@@ -426,14 +354,13 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
 
     // Remove darts (always fires on 3rd dart or winner)
     final dartsThrown = monsterMashProvider.getCurrentPlayerDartsThrown();
-    if (!_dartboardEmulatorController.isAutoPlaying &&
+    if (!isAutoPlaying &&
         (dartsThrown >= 3 || monsterMashProvider.hasWinner)) {
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _audioQueue?.announceRemoveDarts();
-      });
+      scheduleTakeoutSequence(
+        dartsOnBoard: true,
+        announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(),
+      );
     }
-
-    setState(() {});
   }
 
   /// Parses a board sector string into this game's legacy map shape.
@@ -446,9 +373,12 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     return {'number': dart.legacyNumber, 'multiplier': dart.multiplierName};
   }
 
-  void _handleTakeoutFinished() {
+  @override
+  void onTakeoutFinished() {
     final monsterMashProvider = context.read<MonsterMashProvider>();
     if (!mounted) return;
+
+    cancelTakeoutSequence();
 
     if (monsterMashProvider.hasWinner) {
       _handleGameWon();
@@ -464,31 +394,23 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
 
     // Check if buff changed (new round started)
     final buffAfter = monsterMashProvider.getActiveBuff();
-    if (!_dartboardEmulatorController.isAutoPlaying &&
-        buffAfter != null &&
-        buffAfter != buffBefore) {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) _audioQueue?.announceBuff(buffAfter);
+    if (!isAutoPlaying && buffAfter != null && buffAfter != buffBefore) {
+      runAfter(const Duration(milliseconds: 300), () {
+        _audioQueue?.announceBuff(buffAfter);
       });
     }
 
     // Check for game end after advancing (round limit)
     if (monsterMashProvider.hasWinner) {
-      if (!_dartboardEmulatorController.isAutoPlaying) {
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) _handleGameWon();
-        });
+      if (!isAutoPlaying) {
+        runAfter(const Duration(milliseconds: 1500), _handleGameWon);
       }
       return;
     }
 
-    if (!_dartboardEmulatorController.isAutoPlaying) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) _announceCurrentPlayerTurn();
-      });
+    if (!isAutoPlaying) {
+      runAfter(const Duration(milliseconds: 500), _announceCurrentPlayerTurn);
     }
-
-    setState(() {});
   }
 
   void _announceCurrentPlayerTurn() {
@@ -502,40 +424,24 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
   }
 
   void _handleGameWon() {
-    if (_gameCompleted) return;
-    _gameCompleted = true;
-
-    void navigateToResults() {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-            builder: (context) => const MonsterMashResultsScreen()),
-      );
-    }
-
-    if (_dartboardEmulatorController.isAutoPlaying) {
-      navigateToResults();
-    } else {
-      final playerProvider = context.read<PlayerProvider>();
-      final monsterMashProvider = context.read<MonsterMashProvider>();
-      final winners = monsterMashProvider.getWinners(playerProvider.allPlayers);
-      if (winners.isNotEmpty) {
-        _audioQueue?.announceWinners(winners.map((p) => p.name).toList());
-      }
-      (_audioQueue?.whenIdle() ?? Future<void>.value())
-          .timeout(const Duration(seconds: 10), onTimeout: () {})
-          .then((_) {
-        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
-      });
-    }
+    handleGameWon(
+      announceWinner: () {
+        final playerProvider = context.read<PlayerProvider>();
+        final monsterMashProvider = context.read<MonsterMashProvider>();
+        final winners =
+            monsterMashProvider.getWinners(playerProvider.allPlayers);
+        if (winners.isNotEmpty) {
+          _audioQueue?.announceWinners(winners.map((p) => p.name).toList());
+        }
+      },
+      resultsBuilder: (_) => const MonsterMashResultsScreen(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final monsterMashProvider = context.watch<MonsterMashProvider>();
     final playerProvider = context.watch<PlayerProvider>();
-    final dartboardProvider = context.watch<DartboardProvider>();
 
     final currentGame = monsterMashProvider.currentGame;
     if (currentGame == null) {
@@ -551,22 +457,78 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
     final hasDartsThrown =
         currentGame.totalDartsThrown.values.any((c) => c > 0);
 
-    return AutoSaveOnPause(
-      onPaused: () {
-        if (!hasDartsThrown) return;
-        monsterMashProvider.saveGame(allPlayers, isAutoSave: true);
+    return GameScreenShell(
+      hasDartsThrown: hasDartsThrown,
+      showSaveModal: showSaveModal,
+      onRequestSaveModal: openSaveModal,
+      onAutoSave: () =>
+          monsterMashProvider.saveGame(allPlayers, isAutoSave: true),
+      onSave: () async {
+        await monsterMashProvider.saveGame(allPlayers);
+        if (mounted) Navigator.of(context).pop();
       },
-      child: PopScope(
-      canPop: !hasDartsThrown || _showSaveModal,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _showSaveModal) return;
-        setState(() => _showSaveModal = true);
+      onDontSave: () => Navigator.of(context).pop(),
+      saveGameModalConfig: SaveGameModalConfig.monsterMash(),
+      shouldPromptTakeout: shouldPromptTakeout,
+      removeDartsConfig: RemoveDartsModalConfig.monsterMash(),
+      removeDartsPlayerName: currentPlayer?.name ?? 'Player',
+      editScoreButtonKey: MonsterMashGameKeys.editScoreButton,
+      onEditScore: () {
+        if (currentPlayer == null) return;
+        showEditScoreDialog(
+          context: context,
+          playerName: currentPlayer.name,
+          initialSegments:
+              monsterMashProvider.getCurrentTurnDarts(currentPlayer.id),
+          onSubmit: (newSegments) => monsterMashProvider.updateAllDartScores(
+              currentPlayer.id, newSegments),
+          config: EditScoreDialogConfig.monsterMash(),
+          dartBorderColors:
+              _computeDartBorderColors(currentPlayer.id, monsterMashProvider),
+        );
       },
-      child: Stack(
-        children: [
-          Scaffold(
-            backgroundColor: const Color(0xFF1A1A2E),
-            appBar: AppBar(
+      emulatorController: dartboardEmulatorController,
+      mockApi: mockApi,
+      dartboardKey: _dartboardKey,
+      emulatorSectionConfig: DartboardSectionConfig.monsterMash(),
+      fabConfig: DartboardFABConfig.monsterMash(),
+      onCancelAutoPlay: cancelAutoPlay,
+      onPlayToComplete: mockApi != null ? startPlayToComplete : null,
+      playToCompleteConfig:
+          mockApi != null ? PlayToCompleteButtonConfig.monsterMash() : null,
+      // Play to Tie — only meaningful in Speed Play mode; without it the game
+      // is last-player-standing and can't tie. The button still renders for
+      // visibility but disables itself via playToTieEnabled.
+      onPlayToTie: mockApi != null ? _onPlayToTie : null,
+      playToTieConfig:
+          mockApi != null ? PlayToTieButtonConfig.monsterMash() : null,
+      playToTieEnabled: currentGame.speedPlayEnabled,
+      // Emulator-only buff-toggle buttons. Disabled (greyed) when
+      // bonusBuffsEnabled is off so the user understands toggling won't
+      // affect the active game's natural roll.
+      buffToggles: mockApi != null
+          ? BonusBuff.values
+              .map<BuffToggleSpec<Object>>((b) => BuffToggleSpec<Object>(
+                    buff: b,
+                    label: MonsterMashGame.getBuffDisplayName(b),
+                    isActive: currentGame.activeBuff == b,
+                    isEnabled: currentGame.bonusBuffsEnabled,
+                    buttonKey:
+                        DartboardEmulatorKeys.buffToggleButton(b.name),
+                    config: BuffToggleButtonConfig.monsterMash(b),
+                  ))
+              .toList()
+          : null,
+      onBuffToggle: mockApi != null
+          ? (Object buff) {
+              final b = buff as BonusBuff;
+              final current = monsterMashProvider.currentGame?.activeBuff;
+              monsterMashProvider.setActiveBuff(current == b ? null : b);
+            }
+          : null,
+      pausedModalConfig: DartboardPausedModalConfig.monsterMash(),
+      backgroundColor: const Color(0xFF1A1A2E),
+      appBar: AppBar(
               leading: IconButton(
                 key: MonsterMashGameKeys.backButton,
                 icon: Icon(
@@ -586,7 +548,7 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                 ),
                 onPressed: () {
                   if (hasDartsThrown) {
-                    setState(() => _showSaveModal = true);
+                    openSaveModal();
                   } else {
                     Navigator.of(context).pop();
                   }
@@ -689,129 +651,6 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
                 ),
               ],
             ),
-          ),
-          // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
-          // block ALL screen interactions while shown.
-          // RemoveDartsModal sits BEHIND the emulator so DARTS REMOVED stays
-          // visible/tappable on top of the takeout overlay.
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.monsterMash(),
-              playerName: currentPlayer?.name ?? 'Player',
-              editScoreButtonKey: MonsterMashGameKeys.editScoreButton,
-              onEditScore: () {
-                if (currentPlayer == null) return;
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayer.name,
-                  initialSegments:
-                      monsterMashProvider.getCurrentTurnDarts(currentPlayer.id),
-                  onSubmit: (newSegments) => monsterMashProvider
-                      .updateAllDartScores(currentPlayer.id, newSegments),
-                  config: EditScoreDialogConfig.monsterMash(),
-                  dartBorderColors: _computeDartBorderColors(
-                      currentPlayer.id, monsterMashProvider),
-                );
-              },
-            ),
-          // Emulator above RemoveDartsModal; below SaveGameModal.
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.monsterMash(),
-              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-              playToCompleteConfig: _mockApi != null
-                  ? PlayToCompleteButtonConfig.monsterMash()
-                  : null,
-              // Play to Tie — only meaningful in Speed Play mode; without
-              // it the game is last-player-standing and can't tie.
-              // The button still renders for visibility but disables
-              // itself via playToTieEnabled.
-              onPlayToTie: _mockApi != null ? _onPlayToTie : null,
-              playToTieConfig: _mockApi != null
-                  ? PlayToTieButtonConfig.monsterMash()
-                  : null,
-              playToTieEnabled: currentGame.speedPlayEnabled,
-              // Emulator-only buff-toggle buttons. Disabled (greyed)
-              // when bonusBuffsEnabled is off so the user understands
-              // toggling won't affect the active game's natural roll.
-              buffToggles: _mockApi != null
-                  ? BonusBuff.values
-                      .map<BuffToggleSpec<Object>>((b) => BuffToggleSpec<Object>(
-                            buff: b,
-                            label: MonsterMashGame.getBuffDisplayName(b),
-                            isActive: currentGame.activeBuff == b,
-                            isEnabled: currentGame.bonusBuffsEnabled,
-                            buttonKey:
-                                DartboardEmulatorKeys.buffToggleButton(b.name),
-                            config: BuffToggleButtonConfig.monsterMash(b),
-                          ))
-                      .toList()
-                  : null,
-              onBuffToggle: _mockApi != null
-                  ? (Object buff) {
-                      final b = buff as BonusBuff;
-                      final current =
-                          monsterMashProvider.currentGame?.activeBuff;
-                      monsterMashProvider.setActiveBuff(current == b ? null : b);
-                    }
-                  : null,
-            ),
-          ),
-          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
-          // can block the AppBar back arrow without also blocking the FAB).
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.monsterMash(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-          ),
-          // Save Game Modal
-          if (_showSaveModal)
-            SaveGameModal(
-              config: SaveGameModalConfig.monsterMash(),
-              onSave: () async {
-                await monsterMashProvider.saveGame(allPlayers);
-                if (mounted) Navigator.of(context).pop();
-              },
-              onDontSave: () => Navigator.of(context).pop(),
-            ),
-          // Dartboard Paused Modal — last child, paints on top.
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.monsterMash(),
-            ),
-        ],
-      ),
-      ),
     );
   }
 
@@ -964,21 +803,13 @@ class _MonsterMashGameScreenState extends State<MonsterMashGameScreen> {
               onPressed: dartsThrown < 3 && !provider.shouldPromptTakeout
                   ? () {
                       provider.skipTurn();
-                      if (dartsThrown > 0) {
-                        Future.delayed(const Duration(milliseconds: 1500), () {
-                          if (mounted) _audioQueue?.announceRemoveDarts();
-                        });
-                      } else {
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          if (mounted) {
-                            if (_mockApi != null) {
-                              _mockApi!.simulateTakeoutFinished();
-                            } else {
-                              _handleTakeoutFinished();
-                            }
-                          }
-                        });
-                      }
+                      // Darts on board → announce, wait for DARTS REMOVED;
+                      // 0 darts → 500ms auto-advance with no modal.
+                      scheduleTakeoutSequence(
+                        dartsOnBoard: dartsThrown > 0,
+                        announceRemoveDarts: () =>
+                            _audioQueue?.announceRemoveDarts(),
+                      );
                     }
                   : null,
               style: ElevatedButton.styleFrom(
