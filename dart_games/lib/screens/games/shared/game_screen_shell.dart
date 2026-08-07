@@ -101,6 +101,15 @@ class GameScreenShell extends StatelessWidget {
   final List<BuffToggleSpec<Object>>? buffToggles;
   final void Function(Object buff)? onBuffToggle;
 
+  // ── Layer 1b ───────────────────────────────────────────────────────────────
+
+  /// Overlays painted directly above the Scaffold but BELOW every modal layer
+  /// (remove-darts, emulator, save, paused). For full-screen effects that must
+  /// not outrank the takeout chrome — Pirate's Grid's "Round Complete" banner
+  /// renders here so the remove-darts modal still dims it, exactly as before
+  /// the migration.
+  final List<Widget> overlaysBelowModals;
+
   // ── Layer 4b ───────────────────────────────────────────────────────────────
   final List<Widget> extraOverlays;
 
@@ -142,6 +151,7 @@ class GameScreenShell extends StatelessWidget {
     this.playToTieEnabled = true,
     this.buffToggles,
     this.onBuffToggle,
+    this.overlaysBelowModals = const [],
     this.extraOverlays = const [],
     required this.pausedModalConfig,
   });
@@ -171,6 +181,9 @@ class GameScreenShell extends StatelessWidget {
               appBar: appBar,
               body: body,
             ),
+
+            // ── 1b. Game-specific overlays below the modal layers ─────────
+            ...overlaysBelowModals,
 
             // ── 2. RemoveDartsModal — BELOW the emulator on purpose. ───────
             // These outer-Stack modals paint above the Scaffold (including

@@ -4,17 +4,22 @@ import '../models/pirates_grid_game.dart';
 import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
-import '../services/game_skip_turn_helper.dart';
 import '../services/api/api_client.dart';
 import '../screens/games/pirates_grid/utils/three_in_a_row_checker.dart';
 import '../screens/games/pirates_grid/utils/grid_target_generator.dart';
+import 'game_provider_base.dart';
 
-class PiratesGridProvider extends ChangeNotifier {
-  PiratesGridGame? _currentGame;
+class PiratesGridProvider extends GameProviderBase<PiratesGridGame> {
+  /// Internal alias for [GameProviderBase.game] — keeps the game logic below
+  /// untouched while the storage lives in the base.
+  PiratesGridGame? get _currentGame => game;
+  set _currentGame(PiratesGridGame? value) => game = value;
+
+  /// Pirates' own stored half of the takeout flag — the getter below OR-s it
+  /// with two derived conditions, so the base's private storage can't back it.
   bool _waitingForTakeout = false;
-  String? _resumedSavedGameId;
-  ApiClient? _apiClient;
-  bool _saving = false;
+
+  final ApiClient? _apiClient;
 
   PiratesGridProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
@@ -22,8 +27,14 @@ class PiratesGridProvider extends ChangeNotifier {
 
   PiratesGridGame? get currentGame => _currentGame;
 
+  @override
   bool get isGameActive => _currentGame?.state == GameState.playing;
 
+  /// Fourth flag-storage shape in the roster (see plan notes Q13): a provider
+  /// field OR-ed with two derived conditions. The setter writes the stored
+  /// half only — the derived disjuncts latch true on the same events that set
+  /// the field, so writes behave exactly as before the migration.
+  @override
   bool get shouldPromptTakeout {
     if (_currentGame == null) return false;
     if (_waitingForTakeout) return true;
@@ -32,14 +43,16 @@ class PiratesGridProvider extends ChangeNotifier {
     return false;
   }
 
+  @override
+  set waitingForTakeout(bool value) => _waitingForTakeout = value;
+
+  @override
   bool get hasWinner => _currentGame?.hasWinner() ?? false;
 
   bool get isCurrentRoundFinished {
     if (_currentGame == null) return false;
     return _currentGame!.winnerId != null || _currentGame!.isDraw;
   }
-
-  String? get resumedSavedGameId => _resumedSavedGameId;
 
   // ─── startGame ───────────────────────────────────────────────────────────────
 
@@ -181,32 +194,20 @@ class PiratesGridProvider extends ChangeNotifier {
 
     final game = _currentGame!;
     final playerId = game.getCurrentPlayerId();
-    final dartCount = game.getCurrentPlayerDartsThrown();
 
-    if (!GameSkipTurnHelper.canSkipTurn(
-      gameActive: isGameActive,
-      waitingForTakeout: _waitingForTakeout,
-      currentDartCount: dartCount,
-      maxDartsPerTurn: 3,
-    )) {
-      return;
-    }
-
-    GameSkipTurnHelper.skipRemainingDarts(
-      currentDartCount: dartCount,
+    runSkipTurn(
+      dartsThrown: game.getCurrentPlayerDartsThrown(),
       maxDartsPerTurn: 3,
       addVisualMarker: (marker) {
         game.currentTurnDartSegments[playerId] ??= [];
         game.currentTurnDartSegments[playerId]!.add(marker);
       },
     );
-
-    _waitingForTakeout = true;
-    notifyListeners();
   }
 
   // ─── advanceToNextPlayer ─────────────────────────────────────────────────────
 
+  @override
   void advanceToNextPlayer() {
     if (_currentGame == null) return;
 
@@ -225,6 +226,11 @@ class PiratesGridProvider extends ChangeNotifier {
 
   // ─── handleTakeoutFinished ───────────────────────────────────────────────────
 
+  /// Overrides the base flow: Pirates' takeout has a third branch — a round
+  /// (not match) ending triggers the round transition instead of a plain
+  /// advance. Guarded on the raw stored field, matching pre-migration
+  /// behavior.
+  @override
   void handleTakeoutFinished() {
     if (_currentGame == null) return;
     if (!_waitingForTakeout) return;
@@ -335,9 +341,7 @@ class PiratesGridProvider extends ChangeNotifier {
   // ─── Save / Restore ──────────────────────────────────────────────────────────
 
   Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
-    if (_currentGame == null || _saving) return;
-    _saving = true;
-    try {
+    await persistSave(SaveGameService(_apiClient), (existingId) {
       final game = _currentGame!;
 
       final p1 = game.playerIds[0];
@@ -363,7 +367,7 @@ class PiratesGridProvider extends ChangeNotifier {
         leadWins = p2Wins;
       }
 
-      final metadata = SavedGameMetadata.create(
+      return SavedGameMetadata.create(
         gameType: 'pirates_grid',
         playerNames: [p1Name, p2Name],
         progressInfo: 'Round ${game.currentRound}/${game.bestOf} — '
@@ -375,37 +379,18 @@ class PiratesGridProvider extends ChangeNotifier {
         leadingPlayerName: leadName,
         leadingPlayerScore: '$leadWins round${leadWins == 1 ? "" : "s"} won',
         gameState: game.toJson(),
+        // The stored half only — the derived disjuncts reconstruct themselves
+        // from the restored game state.
         waitingForTakeout: _waitingForTakeout,
         isAutoSave: isAutoSave,
-        existingId: _resumedSavedGameId,
+        existingId: existingId,
       );
-
-      final saved = await SaveGameService(_apiClient).saveGame(metadata);
-      if (saved) {
-        _resumedSavedGameId = metadata.id;
-      }
-    } finally {
-      _saving = false;
-    }
+    });
   }
 
-  void restoreGame(SavedGameMetadata savedGame) {
-    _currentGame = PiratesGridGame.fromJson(
-      Map<String, dynamic>.from(savedGame.gameState),
-    );
-    _waitingForTakeout = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
-    notifyListeners();
-  }
-
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
-  }
-
-  void clearGame() {
-    _currentGame = null;
-    _waitingForTakeout = false;
-    notifyListeners();
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = PiratesGridGame.fromJson(json);
   }
 
   void endGame() {

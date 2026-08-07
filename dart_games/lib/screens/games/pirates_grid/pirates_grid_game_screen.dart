@@ -7,32 +7,22 @@ import 'package:provider/provider.dart';
 import '../../../constants/test_keys.dart';
 import '../../../models/pirates_grid_game.dart';
 import '../../../models/player.dart';
-import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/pirates_grid_provider.dart';
-import '../../../services/mock_scolia_api_service.dart';
-import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/pirates_grid_announcement_helper.dart';
 import '../../../services/play_to_complete/pirates_grid_strategy.dart';
 import '../../../services/play_to_tie/pirates_grid_strategy.dart';
 import '../../../services/pirates_grid_sound_effects.dart';
-import '../../../widgets/dartboard_emulator/buff_toggle_column.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
-import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
-import '../../../widgets/dartboard_emulator/play_to_complete_runner.dart';
-import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
-import '../../../widgets/edit_score/edit_score_dialog_config.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
-import '../../../widgets/remove_darts_modal/remove_darts_modal_config.dart';
-import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
-import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
-import '../../../widgets/save_game_modal/save_game_modal_config.dart';
+import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../widgets/interactive_dartboard.dart';
+import '../shared/game_screen_controller.dart';
+import '../shared/game_screen_shell.dart';
 import 'pirates_grid_results_screen.dart';
 import '../../../utils/dart_sector.dart';
 import '../../../widgets/game_background.dart';
@@ -45,18 +35,9 @@ class PiratesGridGameScreen extends StatefulWidget {
 }
 
 class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
-    with TickerProviderStateMixin {
-  StreamSubscription? _dartboardSubscription;
+    with TickerProviderStateMixin, GameScreenController<PiratesGridGameScreen> {
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
-  MockScoliaApiService? _mockApi;
-  final DartboardEmulatorController _dartboardEmulatorController =
-      DartboardEmulatorController();
-
-  PlayToCompleteRunner? _playToCompleteRunner;
-  PlayToTieRunner? _playToTieRunner;
-  bool _gameCompleted = false;
-  bool _showSaveModal = false;
   PiratesGridAnnouncementHelper? _audioQueue;
 
   // Character paths — randomized per game session
@@ -120,109 +101,72 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initializeGame());
-  }
-
-  Future<void> _initializeGame() async {
-    final dartboardProvider = context.read<DartboardProvider>();
-    _mockApi = dartboardProvider.apiService;
-    if (mounted) setState(() {});
-
-    // Initialize announcement queue
-    final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings(preloadEffects: PiratesGridSoundEffects.all);
-    _audioQueue = PiratesGridAnnouncementHelper(globalQueue);
-
-    // Announce game start
-    _audioQueue?.announceGameStart();
-
-    // Announce first player turn after 2-second delay
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        final provider = context.read<PiratesGridProvider>();
-        final game = provider.currentGame;
-        if (game != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initGameScreen(
+        preloadEffects: PiratesGridSoundEffects.all,
+        buildAudio: (queue) =>
+            _audioQueue = PiratesGridAnnouncementHelper(queue),
+        onReady: () => _audioQueue?.announceGameStart(),
+        // First player turn after a 2-second delay, then arm the Speed Play
+        // timer only once the announcement has finished playing.
+        firstTurnDelay: const Duration(seconds: 2),
+        announceFirstTurn: () {
+          final provider = context.read<PiratesGridProvider>();
+          final game = provider.currentGame;
+          if (game == null) return;
           final playerProvider = context.read<PlayerProvider>();
           final currentPlayerId = game.getCurrentPlayerId();
-          final playerName = playerProvider.getPlayerById(currentPlayerId)?.name ??
-              'Player ${game.currentPlayerIndex + 1}';
-          if (!_dartboardEmulatorController.isAutoPlaying) {
+          final playerName =
+              playerProvider.getPlayerById(currentPlayerId)?.name ??
+                  'Player ${game.currentPlayerIndex + 1}';
+          if (!isAutoPlaying) {
             _audioQueue?.announcePlayerTurn(playerName);
           }
           (_audioQueue?.whenIdle() ?? Future<void>.value())
-          .timeout(const Duration(seconds: 10), onTimeout: () {})
-          .then((_) {
+              .timeout(const Duration(seconds: 10), onTimeout: () {})
+              .then((_) {
             if (mounted && game.speedPlay) {
               _startSpeedPlayTimerForCurrentPlayer(game);
             }
           });
-        }
-      }
+        },
+      );
     });
-
-    // Subscribe to dartboard events
-    final eventStream = dartboardProvider.dartboardEventStream;
-    if (eventStream != null) {
-      _dartboardSubscription = eventStream.listen(_handleDartboardEvent);
-    }
   }
 
   @override
   void dispose() {
+    disposeGameScreen();
     _audioQueue?.dispose();
-    _playToCompleteRunner?.dispose();
-    _playToTieRunner?.dispose();
-    _dartboardSubscription?.cancel();
-    _dartboardEmulatorController.dispose();
     _speedPlayTimer?.cancel();
     _roundCompleteTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
   }
 
-  void _onPlayToComplete() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
-    _speedPlayTimer?.cancel();
+  // ─── GameScreenController contract ───────────────────────────────────────────
 
-    _playToCompleteRunner = PlayToCompleteRunner(
-      strategy: PiratesGridStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToCompleteRunner!.run();
+  @override
+  PlayToCompleteStrategy get playToCompleteStrategy => PiratesGridStrategy();
+
+  @override
+  Future<void> whenAnnouncementsIdle() =>
+      _audioQueue?.whenIdle() ?? Future<void>.value();
+
+  // Speed Play wraps the mixin's auto-play controls: both starters freeze the
+  // turn timer, and cancel restarts it for the current player.
+  void _onPlayToComplete() {
+    _speedPlayTimer?.cancel();
+    startPlayToComplete();
   }
 
   void _onPlayToTie() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
     _speedPlayTimer?.cancel();
-
-    _playToTieRunner = PlayToTieRunner(
-      strategy: PiratesGridTieStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToTieRunner!.run();
+    startPlayToTie(PiratesGridTieStrategy());
   }
 
   void _onCancelAutoPlay() {
-    _playToCompleteRunner?.cancel();
-    _playToTieRunner?.cancel();
-    _dartboardEmulatorController.setAutoPlaying(false);
-    _dartboardEmulatorController.show();
+    cancelAutoPlay();
 
     // Restart timer if applicable
     final game = context.read<PiratesGridProvider>().currentGame;
@@ -231,16 +175,8 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     }
   }
 
-  void _handleDartboardEvent(Map<String, dynamic> event) {
-    final type = event['type'];
-    if (type == 'throw_detected') {
-      _handleDartThrow(event);
-    } else if (type == 'takeout_finished') {
-      _handleTakeoutFinished();
-    }
-  }
-
-  void _handleDartThrow(Map<String, dynamic> event) {
+  @override
+  void onDartThrowEvent(Map<String, dynamic> event) {
     final provider = context.read<PiratesGridProvider>();
     if (!mounted || !provider.isGameActive) return;
 
@@ -369,7 +305,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
         _hasTwoInARowWithEmpty(gameAfter, playerId);
 
     // ── Pick winner from precedence chain (skip if isAutoPlaying) ──────────
-    if (!_dartboardEmulatorController.isAutoPlaying) {
+    if (!isAutoPlaying) {
       if (justWonMatch) {
         // Victory deferred to _handleGameWon. Fire the dart-level announcement.
         if (wasMatched && wasMatchedCellEmpty) {
@@ -413,13 +349,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     }
 
     // ── UNCONDITIONALLY announce remove darts when takeout is needed ────────
-    if (provider.shouldPromptTakeout && !_dartboardEmulatorController.isAutoPlaying) {
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _audioQueue?.announceRemoveDarts(playerName);
-      });
+    if (provider.shouldPromptTakeout && !isAutoPlaying) {
+      scheduleTakeoutSequence(
+        dartsOnBoard: true,
+        announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(playerName),
+      );
     }
-
-    setState(() {});
   }
 
   /// Returns true if [playerId] has exactly 2 flags in a line with
@@ -479,11 +414,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     });
   }
 
-  void _handleTakeoutFinished() {
+  @override
+  void onTakeoutFinished() {
     _currentTurnHits = [];
     _lastTurnPlayerId = null;
     final provider = context.read<PiratesGridProvider>();
     if (!mounted) return;
+
+    cancelTakeoutSequence();
 
     if (provider.hasWinner) {
       _handleGameWon();
@@ -508,9 +446,8 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     }
 
     // Announce round transition or next player turn (with 500ms delay)
-    if (!_dartboardEmulatorController.isAutoPlaying && game != null) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (!mounted) return;
+    if (!isAutoPlaying && game != null) {
+      runAfter(const Duration(milliseconds: 500), () {
         final newRound = game.currentRound;
         if (wasRoundFinished && newRound > roundBefore) {
           _audioQueue?.announceRoundTransition(newRound);
@@ -531,37 +468,21 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     } else if (game != null && game.speedPlay) {
       _startSpeedPlayTimerForCurrentPlayer(game);
     }
-
-    setState(() {});
   }
 
   void _handleGameWon() {
-    if (_gameCompleted) return;
-    _gameCompleted = true;
     _speedPlayTimer?.cancel();
-
-    void navigateToResults() {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PiratesGridResultsScreen()),
-      );
-    }
-
-    if (_dartboardEmulatorController.isAutoPlaying) {
-      navigateToResults();
-    } else {
-      final game = context.read<PiratesGridProvider>().currentGame;
-      final winnerId = game?.matchWinnerId;
-      final playerProvider = context.read<PlayerProvider>();
-      final winnerName = playerProvider.getPlayerById(winnerId ?? '')?.name ?? '';
-      _audioQueue?.announceWinner(winnerName);
-      (_audioQueue?.whenIdle() ?? Future<void>.value())
-          .timeout(const Duration(seconds: 10), onTimeout: () {})
-          .then((_) {
-        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
-      });
-    }
+    handleGameWon(
+      announceWinner: () {
+        final game = context.read<PiratesGridProvider>().currentGame;
+        final winnerId = game?.matchWinnerId;
+        final playerProvider = context.read<PlayerProvider>();
+        final winnerName =
+            playerProvider.getPlayerById(winnerId ?? '')?.name ?? '';
+        _audioQueue?.announceWinner(winnerName);
+      },
+      resultsBuilder: (_) => const PiratesGridResultsScreen(),
+    );
   }
 
   // ─── Speed Play timer ──────────────────────────────────────────────────────
@@ -595,31 +516,21 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     final provider = context.read<PiratesGridProvider>();
     provider.skipTurn();
     final dartsThrown = provider.getCurrentPlayerDartsThrown();
-    if (dartsThrown > 0) {
-      final playerProvider = context.read<PlayerProvider>();
-      final game = provider.currentGame;
-      final playerId = game?.getCurrentPlayerId() ?? '';
-      final playerName =
-          playerProvider.getPlayerById(playerId)?.name ?? 'Player';
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _audioQueue?.announceRemoveDarts(playerName);
-      });
-    } else {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          if (_mockApi != null) {
-            _mockApi!.simulateTakeoutFinished();
-          } else {
-            _handleTakeoutFinished();
-          }
-        }
-      });
-    }
+    final playerProvider = context.read<PlayerProvider>();
+    final game = provider.currentGame;
+    final playerId = game?.getCurrentPlayerId() ?? '';
+    final playerName =
+        playerProvider.getPlayerById(playerId)?.name ?? 'Player';
+    // Darts on board → announce, wait for DARTS REMOVED; 0 darts → 500ms
+    // auto-advance with no modal.
+    scheduleTakeoutSequence(
+      dartsOnBoard: dartsThrown > 0,
+      announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(playerName),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final dartboardProvider = context.watch<DartboardProvider>();
     final provider = context.watch<PiratesGridProvider>();
     final playerProvider = context.watch<PlayerProvider>();
 
@@ -640,23 +551,132 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     // Current turn dart segments
     final currentDartSegments = provider.getCurrentTurnDartSegments(currentPlayerId);
 
-    return AutoSaveOnPause(
-      onPaused: () {
-        if (!hasDartsThrown) return;
-        provider.saveGame(players, isAutoSave: true);
+    return GameScreenShell(
+      hasDartsThrown: hasDartsThrown,
+      showSaveModal: showSaveModal,
+      onRequestSaveModal: openSaveModal,
+      onAutoSave: () => provider.saveGame(players, isAutoSave: true),
+      onSave: () async {
+        await provider.saveGame(players);
+        if (mounted) Navigator.of(context).pop();
       },
-      child: PopScope(
-      canPop: !hasDartsThrown || _showSaveModal,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _showSaveModal) return;
-        setState(() => _showSaveModal = true);
+      onDontSave: () => Navigator.of(context).pop(),
+      saveGameModalConfig: SaveGameModalConfig.piratesGrid(),
+      shouldPromptTakeout: shouldPromptTakeout,
+      removeDartsConfig: RemoveDartsModalConfig.piratesGrid(),
+      removeDartsPlayerName: players
+              .where((p) => p.id == currentPlayerId)
+              .map((p) => p.name)
+              .firstOrNull ??
+          'Player',
+      editScoreButtonKey: PiratesGridGameKeys.editScoreButton,
+      onEditScore: () {
+        final currentPlayer =
+            players.where((p) => p.id == currentPlayerId).firstOrNull;
+        if (currentPlayer == null) return;
+        final segments =
+            provider.getCurrentTurnDartSegments(currentPlayerId);
+        // Convert thrown misses (score 0 darts) to 'Miss' for dialog
+        final initialSegments = segments
+            .where((s) => s != 'Skip')
+            .map((s) => (s.isEmpty || s == '-') ? 'Miss' : s)
+            .toList();
+        showEditScoreDialog(
+          context: context,
+          playerName: currentPlayer.name,
+          initialSegments: initialSegments,
+          onSubmit: (newSegments) {
+            final cleanedSegments = <String>[];
+            for (final seg in newSegments) {
+              if (seg.isEmpty || seg == '-') continue;
+              cleanedSegments.add(seg);
+            }
+            provider.editPlayerScore(
+              playerId: currentPlayerId,
+              newSegments: cleanedSegments,
+            );
+          },
+          config: EditScoreDialogConfig.piratesGrid(),
+        );
       },
-      child: Stack(
-        children: [
-          // 1. Scaffold — AppBar + body content; NO floatingActionButton
-          Scaffold(
-            backgroundColor: _oceanNavy,
-            appBar: AppBar(
+      emulatorController: dartboardEmulatorController,
+      mockApi: mockApi,
+      dartboardKey: _dartboardKey,
+      emulatorSectionConfig: DartboardSectionConfig.piratesGrid(),
+      fabConfig: DartboardFABConfig.piratesGrid(),
+      onCancelAutoPlay: _onCancelAutoPlay,
+      onPlayToComplete: mockApi != null ? _onPlayToComplete : null,
+      playToCompleteConfig:
+          mockApi != null ? PlayToCompleteButtonConfig.piratesGrid() : null,
+      // Play to Stalemate — Pirate's Grid can always produce a cat's-game
+      // draw (fixed cell-claim sequence that ends with no 3-in-a-row).
+      onPlayToTie: mockApi != null ? _onPlayToTie : null,
+      playToTieConfig:
+          mockApi != null ? PlayToTieButtonConfig.piratesGrid() : null,
+      buffToggles: mockApi != null
+          ? [
+              BuffToggleSpec<Object>(
+                buff: 'roundComplete',
+                label: 'Round\nComplete',
+                isActive: _showRoundCompleteOverlay,
+                isEnabled: true,
+                buttonKey:
+                    DartboardEmulatorKeys.buffToggleButton('roundComplete'),
+                config: BuffToggleButtonConfig.piratesGrid(),
+              ),
+            ]
+          : null,
+      onBuffToggle: mockApi != null
+          ? (_) {
+              setState(() {
+                _showRoundCompleteOverlay = !_showRoundCompleteOverlay;
+                _roundCompleteRound = provider.currentGame?.currentRound ?? 1;
+              });
+            }
+          : null,
+      // Layer 1b — the Round Complete banner paints BELOW the remove-darts
+      // modal so a takeout that lands with a round end still dims it.
+      overlaysBelowModals: [
+        if (_showRoundCompleteOverlay && (game.bestOf > 1 || mockApi != null))
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Material(
+                color: Colors.black54,
+                child: Center(
+                  child: Text(
+                    'Round $_roundCompleteRound Complete!',
+                    key: const Key('pirates_grid_round_complete_overlay'),
+                    style: GoogleFonts.pirataOne(
+                      fontSize: 124,
+                      color: _treasureGold,
+                      shadows: const [
+                        Shadow(
+                            color: _inkBlack,
+                            offset: Offset(-1.5, -1.5),
+                            blurRadius: 0),
+                        Shadow(
+                            color: _inkBlack,
+                            offset: Offset(1.5, -1.5),
+                            blurRadius: 0),
+                        Shadow(
+                            color: _inkBlack,
+                            offset: Offset(-1.5, 1.5),
+                            blurRadius: 0),
+                        Shadow(
+                            color: _inkBlack,
+                            offset: Offset(1.5, 1.5),
+                            blurRadius: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+      pausedModalConfig: DartboardPausedModalConfig.piratesGrid(),
+      backgroundColor: _oceanNavy,
+      appBar: AppBar(
               backgroundColor: Colors.transparent,
               leading: IconButton(
                 key: PiratesGridGameKeys.backButton,
@@ -667,7 +687,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                 ),
                 onPressed: () {
                   if (hasDartsThrown) {
-                    setState(() => _showSaveModal = true);
+                    openSaveModal();
                   } else {
                     Navigator.of(context).pop();
                   }
@@ -743,161 +763,6 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                 _buildGameArea(game, players, currentPlayerId, dartsThrown),
               ],
             ),
-          ),
-          // 2. Round Complete overlay (bestOf > 1 during gameplay, or emulator toggle)
-          if (_showRoundCompleteOverlay && (game.bestOf > 1 || _mockApi != null))
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Material(
-                  color: Colors.black54,
-                  child: Center(
-                    child: Text(
-                      'Round $_roundCompleteRound Complete!',
-                      key: const Key('pirates_grid_round_complete_overlay'),
-                      style: GoogleFonts.pirataOne(
-                        fontSize: 124,
-                        color: _treasureGold,
-                        shadows: const [
-                          Shadow(color: _inkBlack, offset: Offset(-1.5, -1.5), blurRadius: 0),
-                          Shadow(color: _inkBlack, offset: Offset( 1.5, -1.5), blurRadius: 0),
-                          Shadow(color: _inkBlack, offset: Offset(-1.5,  1.5), blurRadius: 0),
-                          Shadow(color: _inkBlack, offset: Offset( 1.5,  1.5), blurRadius: 0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          // 3. RemoveDartsModal (conditional)
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.piratesGrid(),
-              playerName: players
-                      .where((p) => p.id == currentPlayerId)
-                      .map((p) => p.name)
-                      .firstOrNull ??
-                  'Player',
-              editScoreButtonKey: PiratesGridGameKeys.editScoreButton,
-              onEditScore: () {
-                final currentPlayer =
-                    players.where((p) => p.id == currentPlayerId).firstOrNull;
-                if (currentPlayer == null) return;
-                final segments =
-                    provider.getCurrentTurnDartSegments(currentPlayerId);
-                // Convert thrown misses (score 0 darts) to 'Miss' for dialog
-                final initialSegments = segments
-                    .where((s) => s != 'Skip')
-                    .map((s) => (s.isEmpty || s == '-') ? 'Miss' : s)
-                    .toList();
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayer.name,
-                  initialSegments: initialSegments,
-                  onSubmit: (newSegments) {
-                    final cleanedSegments = <String>[];
-                    for (final seg in newSegments) {
-                      if (seg.isEmpty || seg == '-') continue;
-                      cleanedSegments.add(seg);
-                    }
-                    provider.editPlayerScore(
-                      playerId: currentPlayerId,
-                      newSegments: cleanedSegments,
-                    );
-                  },
-                  config: EditScoreDialogConfig.piratesGrid(),
-                );
-              },
-            ),
-          // 4. DartboardEmulatorSection — Positioned bottom 0
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.piratesGrid(),
-              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-              playToCompleteConfig:
-                  _mockApi != null ? PlayToCompleteButtonConfig.piratesGrid() : null,
-              // Play to Stalemate — Pirate's Grid can always produce a
-              // cat's-game draw (fixed cell-claim sequence that ends
-              // with no 3-in-a-row).
-              onPlayToTie: _mockApi != null ? _onPlayToTie : null,
-              playToTieConfig:
-                  _mockApi != null ? PlayToTieButtonConfig.piratesGrid() : null,
-              buffToggles: _mockApi != null
-                  ? [
-                      BuffToggleSpec<Object>(
-                        buff: 'roundComplete',
-                        label: 'Round\nComplete',
-                        isActive: _showRoundCompleteOverlay,
-                        isEnabled: true,
-                        buttonKey: DartboardEmulatorKeys.buffToggleButton('roundComplete'),
-                        config: BuffToggleButtonConfig.piratesGrid(),
-                      ),
-                    ]
-                  : null,
-              onBuffToggle: _mockApi != null
-                  ? (_) {
-                      setState(() {
-                        _showRoundCompleteOverlay = !_showRoundCompleteOverlay;
-                        _roundCompleteRound = provider.currentGame?.currentRound ?? 1;
-                      });
-                    }
-                  : null,
-            ),
-          ),
-          // 5. DartboardEmulatorFAB — Positioned bottom-right 16,16
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.piratesGrid(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-          ),
-          // 6. SaveGameModal (conditional)
-          if (_showSaveModal)
-            SaveGameModal(
-              config: SaveGameModalConfig.piratesGrid(),
-              onSave: () async {
-                await provider.saveGame(players);
-                if (mounted) Navigator.of(context).pop();
-              },
-              onDontSave: () => Navigator.of(context).pop(),
-            ),
-          // 7. DartboardPausedModal — last child, paints on top
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.piratesGrid(),
-            ),
-        ],
-      ),
-      ),
     );
   }
 
@@ -1287,21 +1152,13 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
                     _currentTurnHits = [];
                     _lastTurnPlayerId = null;
                     p.skipTurn();
-                    if (darts > 0) {
-                      Future.delayed(const Duration(milliseconds: 1500), () {
-                        if (mounted) _audioQueue?.announceRemoveDarts(pName);
-                      });
-                    } else {
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        if (mounted) {
-                          if (_mockApi != null) {
-                            _mockApi!.simulateTakeoutFinished();
-                          } else {
-                            _handleTakeoutFinished();
-                          }
-                        }
-                      });
-                    }
+                    // Darts on board → announce, wait for DARTS REMOVED;
+                    // 0 darts → 500ms auto-advance with no modal.
+                    scheduleTakeoutSequence(
+                      dartsOnBoard: darts > 0,
+                      announceRemoveDarts: () =>
+                          _audioQueue?.announceRemoveDarts(pName),
+                    );
                   },
             style: OutlinedButton.styleFrom(
               backgroundColor: _compassBronze,
