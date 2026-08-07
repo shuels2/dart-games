@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 /// Interactive dartboard widget that detects clicks on different segments
 class InteractiveDartboard extends StatefulWidget {
@@ -158,8 +159,35 @@ class DartboardPainter extends CustomPainter {
     20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5
   ];
 
+  /// Cached recording of the static board art (frame, segments, numbers,
+  /// bulls). The board depends only on [Size], so it is recorded once and
+  /// replayed on every subsequent paint — previously each dart that landed
+  /// re-laid-out ~82 TextPainters and redrew all 80 sector arcs just to add
+  /// one dart dot (WS04 §4.6, user-approved emulator change). Static because
+  /// painter instances are const-constructed fresh on every build; the cache
+  /// is shared across all boards, keyed by the recorded size.
+  static ui.Picture? _cachedBoard;
+  static Size? _cachedBoardSize;
+
   @override
   void paint(Canvas canvas, Size size) {
+    // Replay the cached static board, re-recording only when the size
+    // changes. Pixel-identical to painting directly: a Picture replays the
+    // exact same draw commands.
+    if (_cachedBoard == null || _cachedBoardSize != size) {
+      final recorder = ui.PictureRecorder();
+      _paintStaticBoard(Canvas(recorder), size);
+      _cachedBoard?.dispose();
+      _cachedBoard = recorder.endRecording();
+      _cachedBoardSize = size;
+    }
+    canvas.drawPicture(_cachedBoard!);
+
+    _paintDarts(canvas);
+  }
+
+  /// Paints everything that does not depend on [dartPositions].
+  void _paintStaticBoard(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
@@ -321,7 +349,10 @@ class DartboardPainter extends CustomPainter {
         center.dy - bullseyeTextPainter.height / 2,
       ),
     );
+  }
 
+  /// Paints the darts — the only part that changes between repaints.
+  void _paintDarts(Canvas canvas) {
     // Draw darts on the board
     for (final normalizedDartPos in dartPositions) {
       // Denormalize position (convert from 0.0-1.0 to actual pixel coordinates)
