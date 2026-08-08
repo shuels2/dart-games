@@ -1,6 +1,7 @@
 // integration_test/tiki_golf/navigation/_helpers.dart
 //
 // Delegates to shared helpers for Tiki Golf navigation tests.
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 
@@ -13,6 +14,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/settings_helpers.dart';
 import '../../shared/results_helpers.dart';
+import '../../shared/suites/navigation_suite.dart';
 
 final config = GameUIConfig.tikiGolf();
 
@@ -77,3 +79,68 @@ Future<void> playGameToCompletion(WidgetTester tester) async {
   // Wait for results navigation (3s victory delay + animation)
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== NAVIGATION SUITE SPECS =====
+//
+// Shared bodies live in shared/suites/navigation_suite.dart. Tiki Golf needs
+// TWO specs because its hand-written files used different player names and
+// settings per scenario; both are reproduced exactly.
+
+/// Default settings, "GoPlayer" names — used by the two home-navigation tests.
+final navigationSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getTikiGolfBackButton,
+  setupAndStart: (tester) => setupAndStartGame(
+    tester,
+    playerNames: ['GoPlayer1', 'GoPlayer2'],
+  ),
+  playToVictory: playGameToCompletion,
+);
+
+void _verifyStrokesAndMulligan(WidgetTester tester, List<String> playerNames) {
+  expect(find.text('5'), findsWidgets,
+      reason: 'Max Strokes "5" not showing — settings not preserved');
+  final mulliganSwitch = ElementFinders.getTikiGolfMulliganSwitch();
+  expect(mulliganSwitch, findsOneWidget,
+      reason: 'Mulligan switch not found on menu');
+  expect(tester.widget<Switch>(mulliganSwitch).value, isTrue,
+      reason: 'Mulligan should be ON — settings not preserved');
+  for (final name in playerNames) {
+    expect(find.text(name), findsWidgets,
+        reason: '$name not found in menu after navigating back');
+  }
+}
+
+/// Max Strokes 5 + Mulligan ON — used by the settings-preservation tests.
+/// The two differ only in player names, matching the originals.
+final navigationSettingsSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getTikiGolfBackButton,
+  setupAndStart: (tester) => setupAndStartGame(
+    tester,
+    maxStrokes: 5,
+    mulliganEnabled: true,
+    playerNames: ['SettingsP1', 'SettingsP2'],
+  ),
+  playToVictory: playGameToCompletion,
+  verifySettings: (tester) =>
+      _verifyStrokesAndMulligan(tester, ['SettingsP1', 'SettingsP2']),
+);
+
+final navigationGameBackSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getTikiGolfBackButton,
+  // Backs out of a freshly started game (0 darts thrown).
+  reachGameScreen: (tester) async {
+    await setupAndStartGame(
+      tester,
+      maxStrokes: 5,
+      mulliganEnabled: true,
+      playerNames: ['NavPlayer1', 'NavPlayer2'],
+    );
+    expect(ElementFinders.getTikiGolfHoleCounter(), findsOneWidget,
+        reason: 'Game screen not loaded — hole counter not found');
+  },
+  verifySettings: (tester) =>
+      _verifyStrokesAndMulligan(tester, ['NavPlayer1', 'NavPlayer2']),
+);
