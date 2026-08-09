@@ -289,6 +289,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen>
         final playerProvider = context.read<PlayerProvider>();
         final winner = horseRaceProvider.getWinner(playerProvider.allPlayers);
         if (winner != null) {
+          // "The game is complete" moved here from the results screen (2.9b).
+          // The results screen used to announce it AND repeat the winner line
+          // this callback had already spoken, so players heard the winner
+          // twice. Saying both here keeps the spoken content and order and
+          // lets the results screen drop its queue entirely — the third live
+          // queue flagged in WS02.
+          _audioQueue?.announceGameComplete();
           _audioQueue?.announceWinner(winner.name);
         }
       },

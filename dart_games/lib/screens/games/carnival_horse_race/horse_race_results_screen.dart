@@ -16,8 +16,6 @@ import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../providers/dartboard_provider.dart';
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
-import '../../../services/game_announcement_queue_service.dart';
-import '../../../services/carnival_derby_announcement_helper.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../constants/test_keys.dart';
 import 'horse_race_menu_screen.dart';
@@ -39,7 +37,6 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   /// Detaches the victory-music duck listener. The notifier it hooks is
   /// app-wide, so failing to call this on dispose leaks into the next screen.
   VoidCallback? _stopDucking;
-  CarnivalDerbyAnnouncementHelper? _audioQueue;
   bool _statsUpdated = false;
 
   @override
@@ -67,7 +64,6 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _deleteResumedSavedGame();
       _updatePlayerStats();
-      _announceGameCompletion();
       // Start confetti after a short delay
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
@@ -98,7 +94,6 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
     _stopDucking?.call();
     _stopDucking = null;
     _audioPlayer.dispose();
-    _audioQueue?.dispose();
     super.dispose();
   }
 
@@ -149,41 +144,6 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
       }
     } catch (e) {
       debugPrint('Error deleting resumed saved game: $e');
-    }
-  }
-
-  void _announceGameCompletion() async {
-    try {
-      // Initialize global announcement queue with Carnival Derby helper
-      final globalQueue = GameAnnouncementQueueService();
-      await globalQueue.loadSettings();
-      if (!mounted) return;
-      _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
-
-      final horseRaceProvider = context.read<HorseRaceProvider>();
-      final playerProvider = context.read<PlayerProvider>();
-      final currentGame = horseRaceProvider.currentGame;
-
-      if (currentGame == null) return;
-
-      final players = currentGame.playerIds
-          .map((id) => playerProvider.getPlayerById(id))
-          .whereType<Player>()
-          .toList();
-
-      final winner = horseRaceProvider.getWinner(players);
-
-      if (winner != null) {
-        // Announce game completion first
-        _audioQueue?.announceGameComplete();
-
-        // Then announce the winner after a delay (longer to ensure first announcement finishes)
-        Future.delayed(const Duration(milliseconds: 3000), () {
-          if (mounted) _audioQueue?.announceWinner(winner.name);
-        });
-      }
-    } catch (e) {
-      debugPrint('Error announcing game completion: $e');
     }
   }
 

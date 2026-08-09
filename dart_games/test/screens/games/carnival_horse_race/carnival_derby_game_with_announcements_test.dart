@@ -546,7 +546,10 @@ void main() {
       helper.processDartThrowWithAnnouncements('T20');
       helper.clearAnnouncements();
 
-      // Simulate results screen announcements
+      // Both lines are spoken by the GAME screen's win path (2.9b). They
+      // used to be split — winner here, then "complete" + winner AGAIN on the
+      // results screen, so players heard the winner twice. Order matters and
+      // is asserted below.
       helper.announceGameComplete();
       helper.announceWinner();
 
