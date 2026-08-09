@@ -98,8 +98,16 @@ class SaveResumeSpec {
   /// `config.getSkipTurnButton()`, which every current game exposes.
   final void Function(WidgetTester tester)? verifyOnGameScreen;
 
-  /// The Resume button's colour once enabled. Each game themes it.
-  final Color enabledColor;
+  /// The Resume button's colour once enabled. Each game themes it. Null for
+  /// the games whose colour test never asserted a colour (Gladiator checks
+  /// only that the button is enabled and carries the right icon).
+  final Color? enabledColor;
+
+  /// True for games that HIDE the Resume button entirely when nothing is
+  /// saved, rather than showing it disabled. Lunar Lander, Pirate's Grid and
+  /// Gladiator Arena wrap it in `if (_hasSavedGames)`, so there is no
+  /// IconButton to interrogate and the assertion is simply that it is absent.
+  final bool hiddenWhenNoSaves;
 
   /// The Resume button's icon once enabled.
   final IconData enabledIcon;
@@ -114,8 +122,10 @@ class SaveResumeSpec {
 
   /// Drives the RESUMED game to its results screen. The resumed turn is
   /// already one dart in, so this is not the same as a from-scratch victory
-  /// helper and each game supplies its own.
-  final Future<void> Function(WidgetTester tester)? completeResumedGame;
+  /// helper and each game supplies its own. Receives the saved-game id, which
+  /// Lunar Lander asserts the provider is tracking for auto-deletion.
+  final Future<void> Function(WidgetTester tester, String savedGameId)?
+      completeResumedGame;
 
   const SaveResumeSpec({
     required this.config,
@@ -128,6 +138,7 @@ class SaveResumeSpec {
     required this.menuBackButton,
     this.verifyOnGameScreen,
     this.enabledColor = const Color(0xFFEEF0F2),
+    this.hiddenWhenNoSaves = false,
     this.enabledIcon = Icons.history,
     this.verifyResumedState,
     this.navigateToQuickGameScreen,
@@ -346,6 +357,12 @@ void runResumeButtonDisabledNoSavesTest(SaveResumeSpec spec,
     await UITestHelpers.resetServerState();
     await UITestHelpers.navigateToGameMenu(tester, spec.config);
 
+    if (spec.hiddenWhenNoSaves) {
+      expect(spec.menuResumeButton(), findsNothing,
+          reason: 'Resume button should not be shown when nothing is saved');
+      return;
+    }
+
     final button = _resumeIconButton(tester, spec);
     expect(button.onPressed, isNull,
         reason: 'Resume button is tappable with no saved games');
@@ -377,7 +394,14 @@ void runResumeButtonColorWhenEnabledTest(SaveResumeSpec spec,
     await _playAndSave(tester, spec);
 
     final button = _resumeIconButton(tester, spec);
-    expect(button.color, spec.enabledColor);
+    // Gladiator's colour test asserts only enabled-ness and the icon, so its
+    // spec leaves enabledColor null rather than inventing an expected colour.
+    if (spec.enabledColor != null) {
+      expect(button.color, spec.enabledColor);
+    } else {
+      expect(button.onPressed, isNotNull,
+          reason: 'Resume button is not enabled after a save');
+    }
     expect((button.icon as Icon).icon, spec.enabledIcon);
   });
 }
@@ -480,9 +504,9 @@ void runResumeAutoDeletesOnCompletionTest(SaveResumeSpec spec,
     await UITestHelpers.tapSaveGameButton(tester);
 
     await _menuToHomeAndBack(tester, spec);
-    await _resumeOnlySavedGame(tester, spec);
+    final savedGameId = await _resumeOnlySavedGame(tester, spec);
 
-    await spec.completeResumedGame!(tester);
+    await spec.completeResumedGame!(tester, savedGameId);
     await ResultsHelpers.pumpUntilResults(tester, spec.config);
     expect(spec.config.getPlayAgainButton(), findsOneWidget,
         reason: 'Resumed game did not reach the results screen');

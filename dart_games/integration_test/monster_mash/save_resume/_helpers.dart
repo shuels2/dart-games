@@ -56,7 +56,8 @@ Future<void> navigateToGameScreenLowHealth(WidgetTester tester) async {
 /// Finishes a RESUMED game. The resumed turn already has one dart on it, so
 /// Alice has two left — this is not the same shape as a from-scratch victory
 /// helper. Health Max is 10 (set by [navigateToGameScreenLowHealth]).
-Future<void> _completeResumedGame(WidgetTester tester) async {
+Future<void> _completeResumedGame(
+    WidgetTester tester, String savedGameId) async {
   final bob = ProviderHelpers.findPlayerByName(tester, 'Bob')!;
   final bobTarget = ProviderHelpers.getMonsterMashPlayerTarget(tester, bob.id)!;
 
