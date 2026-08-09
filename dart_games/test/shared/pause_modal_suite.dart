@@ -140,9 +140,26 @@ class PauseModalSpec {
   /// `hasDartsThrown` so the back arrow raises the Save prompt.
   final Future<void> Function(WidgetTester tester)? throwOneDart;
 
+  /// The second dart of the resume-after-reconnect scenario. Games threw a
+  /// different dart there than the first (a miss, or another number), and the
+  /// distinction matters for games where repeating the first dart would hit
+  /// an already-claimed target. Falls back to [throwOneDart].
+  final Future<void> Function(WidgetTester tester)? throwAnotherDart;
+
   /// Throws a whole turn so the takeout prompt ("DARTS REMOVED") appears.
   /// Dart counts and hit/miss choices differ per game, so this is the game's.
   final Future<void> Function(WidgetTester tester)? throwTurnToTakeout;
+
+  /// Extra assertion for the "pause blocks the game-screen back arrow"
+  /// scenario: the games that threw a dart first also proved the Save prompt
+  /// never appeared, and they spelled that prompt differently ('Save' vs
+  /// 'Save Game?').
+  final void Function(WidgetTester tester)? verifyNoSavePrompt;
+
+  /// Extra assertion for the "pause blocks the emulator" scenario, for the
+  /// game whose original test also proved a specific emulator control had
+  /// gone (rather than only that the modal was on top).
+  final void Function(WidgetTester tester)? verifyEmulatorBlocked;
 
   /// Completes the pending takeout, advancing the turn.
   final Future<void> Function(WidgetTester tester)? finishTakeout;
@@ -177,7 +194,10 @@ class PauseModalSpec {
     this.startGame,
     this.verifyOnGameScreen,
     this.throwOneDart,
+    this.throwAnotherDart,
     this.throwTurnToTakeout,
+    this.verifyNoSavePrompt,
+    this.verifyEmulatorBlocked,
     this.finishTakeout,
     this.openEditScore,
     this.reachResults,
@@ -451,6 +471,7 @@ void runGameplayPauseBlocksBackTest(PauseModalSpec spec,
     await _tapBlocked(tester, spec.config.getGameBackButton());
 
     PauseModalHelpers.verifyPauseModalVisible(tester);
+    spec.verifyNoSavePrompt?.call(tester);
     _verifyOnGameScreen(tester, spec);
 
     await PauseModalHelpers.simulateReconnectAndVerify(tester);
@@ -470,6 +491,7 @@ void runGameplayPauseBlocksEmulatorTest(PauseModalSpec spec,
     // The emulator section re-renders without its controls while the board is
     // down, so the modal being on top IS the assertion.
     PauseModalHelpers.verifyPauseModalVisible(tester);
+    spec.verifyEmulatorBlocked?.call(tester);
 
     await PauseModalHelpers.simulateReconnectAndVerify(tester);
   });
@@ -557,7 +579,7 @@ void runGameplayPauseDismissesTest(PauseModalSpec spec, {String? description}) {
     await PauseModalHelpers.simulateReconnectAndVerify(tester);
 
     // The board accepting another dart is the proof gameplay resumed.
-    await spec.throwOneDart!(tester);
+    await (spec.throwAnotherDart ?? spec.throwOneDart)!(tester);
 
     _verifyOnGameScreen(tester, spec);
   });

@@ -17,6 +17,10 @@ export '../../shared/pause_modal_helpers.dart';
 export '../../shared/provider_helpers.dart';
 export '../../shared/edit_score_helpers.dart';
 
+import '../../shared/element_finders.dart';
+import '../../shared/pause_modal_suite.dart';
+import '../../shared/ui_test_helpers.dart';
+
 final config = GameUIConfig.piratesGrid();
 
 // ===== DELEGATES TO SHARED HELPERS =====
@@ -119,3 +123,43 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   await DartThrowHelpers.clickDartsRemoved(tester);
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== PAUSE MODAL SUITE SPEC =====
+//
+// Shared bodies live in shared/pause_modal_suite.dart; everything
+// game-specific for Pirate's Grid is supplied here. Darts are aimed at cell
+// (0,0)'s target, whose requirement varies with the difficulty setting, so
+// the number is read from the provider rather than hard-coded.
+
+Future<void> _hitTopLeftCell(WidgetTester tester) async {
+  final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+  await throwDartViaMock(tester, t00);
+}
+
+final pauseModalSpec = PauseModalSpec(
+  config: config,
+  menuBackButton: ElementFinders.getPiratesGridBackButton,
+  ownGameCard: ElementFinders.getPiratesGridCard,
+  menuSettingsControls: [ElementFinders.getPiratesGridDifficultyDropdown],
+  menuAddPlayerButton: ElementFinders.getPiratesGridAddPlayerButtonEmptyState,
+  startGame: (tester) => setupAndStartGame(tester, config),
+  throwOneDart: _hitTopLeftCell,
+  // A miss, not another cell hit — (0,0) is already claimed by then.
+  throwAnotherDart: throwMissViaMock,
+  throwTurnToTakeout: (tester) async {
+    await _hitTopLeftCell(tester);
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+  },
+  finishTakeout: clickDartsRemoved,
+  openEditScore: (tester) => openEditScore(tester, config),
+  reachResults: (tester) async {
+    await setupAndStartGame(tester, config);
+    await completeGameToVictory(tester);
+  },
+  resultsAfterReconnect: (tester) async {
+    await UITestHelpers.clickBackToMenu(tester, config);
+    expect(ElementFinders.getPiratesGridCard(), findsOneWidget,
+        reason: 'Back to Menu did not work after reconnect');
+  },
+);

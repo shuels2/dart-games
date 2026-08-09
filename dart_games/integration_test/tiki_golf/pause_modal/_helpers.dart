@@ -18,6 +18,11 @@ export '../../shared/provider_helpers.dart';
 export '../../shared/edit_score_helpers.dart';
 export '../../shared/element_finders.dart';
 
+import '../../shared/element_finders.dart';
+import '../../shared/pause_modal_suite.dart';
+import '../../shared/pump_sequences.dart';
+import '../../shared/ui_test_helpers.dart';
+
 final config = GameUIConfig.tikiGolf();
 
 // ===== DELEGATES TO SHARED HELPERS =====
@@ -79,3 +84,45 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   // Wait for results screen navigation
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== PAUSE MODAL SUITE SPEC =====
+//
+// Shared bodies live in shared/pause_modal_suite.dart; everything
+// game-specific for Tiki Golf is supplied here. Tiki throws misses rather
+// than scoring darts: a hit sinks the hole and ends the turn immediately,
+// which would skip past the states these tests need to observe.
+
+final pauseModalSpec = PauseModalSpec(
+  config: config,
+  menuBackButton: ElementFinders.getTikiGolfBackButton,
+  ownGameCard: ElementFinders.getTikiGolfCard,
+  // Tiki exercised two controls, so both are tapped.
+  menuSettingsControls: [
+    ElementFinders.getTikiGolfMaxStrokesDropdown,
+    ElementFinders.getTikiGolfMulliganSwitch,
+  ],
+  menuAddPlayerButton: ElementFinders.getTikiGolfAddPlayerButtonEmptyState,
+  startGame: (tester) => setupAndStartGame(tester),
+  throwOneDart: throwMissViaMock,
+  throwTurnToTakeout: (tester) async {
+    // maxStrokes (3) misses ends the turn without sinking the hole.
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await PumpSequences.simpleUpdate(tester);
+  },
+  verifyEmulatorBlocked: (tester) => expect(
+      find.text('DARTS REMOVED'), findsNothing,
+      reason: 'Emulator takeout control still reachable while paused'),
+  finishTakeout: clickDartsRemoved,
+  openEditScore: (tester) => openEditScore(tester, config),
+  reachResults: (tester) async {
+    await setupAndStartGame(tester, playerNames: ['Player A', 'Player B']);
+    await completeGameToVictory(tester);
+  },
+  resultsAfterReconnect: (tester) async {
+    await UITestHelpers.clickBackToMenu(tester, config);
+    expect(ElementFinders.getTikiGolfCard(), findsOneWidget,
+        reason: 'Back to Menu did not work after reconnect');
+  },
+);

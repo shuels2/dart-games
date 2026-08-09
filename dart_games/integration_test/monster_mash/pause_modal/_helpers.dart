@@ -116,6 +116,7 @@ final pauseModalSpec = PauseModalSpec(
   menuAddPlayerButton: ElementFinders.getMonsterMashAddPlayerButtonEmptyState,
   startGame: (tester) => setupAndStartGame(tester, config),
   throwOneDart: (tester) => throwDartViaMock(tester, 20),
+  throwAnotherDart: (tester) => throwDartViaMock(tester, 19),
   throwTurnToTakeout: (tester) async {
     // Three 20s ends the turn and raises the takeout prompt.
     await throwDartViaMock(tester, 20);

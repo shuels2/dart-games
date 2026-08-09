@@ -15,6 +15,10 @@ export '../../shared/edit_score_helpers.dart';
 
 import '../../shared/results_helpers.dart';
 
+import '../../shared/element_finders.dart';
+import '../../shared/pause_modal_suite.dart';
+import '../../shared/ui_test_helpers.dart';
+
 final config = GameUIConfig.gladiatorArena();
 
 // ===== DELEGATES TO SHARED HELPERS =====
@@ -93,3 +97,49 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
 
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== PAUSE MODAL SUITE SPEC =====
+//
+// Shared bodies live in shared/pause_modal_suite.dart; everything
+// game-specific for Gladiator Arena is supplied here.
+//
+// NOTE: Gladiator's twenty hand-written pause tests were hollow — every body
+// in all three files was the same four lines (navigate, disconnect, assert
+// the start/back button, reconnect) regardless of the test's name, and not
+// one of them contained a `tester.tap`. Wiring them to these runners is what
+// finally gives the category the coverage its names have always claimed.
+//
+// Results uses targetScore 100 with double-finish off, per the note on
+// completeGameToVictory: 5 x S20 reaches 100 and ends the game quickly.
+
+final pauseModalSpec = PauseModalSpec(
+  config: config,
+  menuBackButton: ElementFinders.getGladiatorArenaBackButton,
+  ownGameCard: ElementFinders.getGladiatorArenaCard,
+  verifyOnMenu: (tester) =>
+      expect(ElementFinders.getGladiatorArenaStartButton(), findsOneWidget,
+          reason: 'Menu screen not showing — start button not found'),
+  menuSettingsControls: [ElementFinders.getGladiatorArenaTargetScoreSlider],
+  menuAddPlayerButton:
+      ElementFinders.getGladiatorArenaAddPlayerButtonEmptyState,
+  startGame: (tester) => setupAndStartGame(tester, config),
+  throwOneDart: (tester) => throwDartViaMock(tester, 20),
+  throwAnotherDart: (tester) => throwDartViaMock(tester, 19),
+  throwTurnToTakeout: (tester) async {
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+  },
+  finishTakeout: clickDartsRemoved,
+  openEditScore: (tester) => openEditScore(tester, config),
+  reachResults: (tester) async {
+    await setupAndStartGame(tester, config,
+        targetScore: 100, doubleFinishEnabled: false);
+    await completeGameToVictory(tester);
+  },
+  resultsAfterReconnect: (tester) async {
+    await UITestHelpers.clickBackToMenu(tester, config);
+    expect(ElementFinders.getGladiatorArenaCard(), findsOneWidget,
+        reason: 'Back to Menu did not work after reconnect');
+  },
+);

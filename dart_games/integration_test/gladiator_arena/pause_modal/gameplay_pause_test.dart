@@ -1,112 +1,32 @@
-﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import '../../shared/element_finders.dart';
+import '../../shared/pause_modal_suite.dart';
 import '_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Test 1: Pause modal appears during gameplay',
-      (WidgetTester tester) async {
-    await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
+  runGameplayPauseAppearsTest(pauseModalSpec,
+      description: 'Test 1: Pause modal appears during gameplay');
 
-    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
+  runGameplayPauseBlocksBackTest(pauseModalSpec,
+      description: 'Test 2: Pause blocks AppBar back button during gameplay');
 
-    // Verify we are still on the game screen
-    expect(config.getGameBackButton(), findsOneWidget);
+  runGameplayPauseBlocksEmulatorTest(pauseModalSpec,
+      description: 'Test 3: Pause blocks dartboard emulator');
 
-    await PauseModalHelpers.simulateReconnectAndVerify(tester);
-  });
+  runGameplayPauseOverRemoveDartsTest(pauseModalSpec,
+      description: 'Test 4: Pause over RemoveDartsModal');
 
-  testWidgets('Test 2: Pause blocks AppBar back button during gameplay',
-      (WidgetTester tester) async {
-    await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
+  runGameplayPauseOverSaveGameTest(pauseModalSpec,
+      description: 'Test 5: Pause over SaveGameModal');
 
-    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
+  runGameplayEditScoreAutoClosesTest(pauseModalSpec,
+      description: 'Test 6: EditScoreDialog auto-closes on disconnect');
 
-    // Verify we are still on the game screen
-    expect(config.getGameBackButton(), findsOneWidget);
+  runGameplayPauseDismissesTest(pauseModalSpec,
+      description: 'Test 7: Pause dismisses on reconnect game continues');
 
-    await PauseModalHelpers.simulateReconnectAndVerify(tester);
-  });
-
-  testWidgets('Test 3: Pause blocks dartboard emulator',
-      (WidgetTester tester) async {
-    await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
-
-    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
-
-    // Verify we are still on the game screen
-    expect(config.getGameBackButton(), findsOneWidget);
-
-    await PauseModalHelpers.simulateReconnectAndVerify(tester);
-  });
-
-  testWidgets('Test 4: Pause over RemoveDartsModal',
-      (WidgetTester tester) async {
-    await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
-
-    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
-
-    // Verify we are still on the game screen
-    expect(config.getGameBackButton(), findsOneWidget);
-
-    await PauseModalHelpers.simulateReconnectAndVerify(tester);
-  });
-
-  testWidgets('Test 5: Pause over SaveGameModal', (WidgetTester tester) async {
-    await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
-
-    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
-
-    // Verify we are still on the game screen
-    expect(config.getGameBackButton(), findsOneWidget);
-
-    await PauseModalHelpers.simulateReconnectAndVerify(tester);
-  });
-
-  testWidgets('Test 6: EditScoreDialog auto-closes on disconnect',
-      (WidgetTester tester) async {
-    await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
-
-    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
-
-    // Verify we are still on the game screen
-    expect(config.getGameBackButton(), findsOneWidget);
-
-    await PauseModalHelpers.simulateReconnectAndVerify(tester);
-  });
-
-  testWidgets('Test 7: Pause dismisses on reconnect game continues',
-      (WidgetTester tester) async {
-    await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
-
-    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
-
-    // Verify we are still on the game screen
-    expect(config.getGameBackButton(), findsOneWidget);
-
-    await PauseModalHelpers.simulateReconnectAndVerify(tester);
-  });
-
-  testWidgets('Test 8: RemoveDartsModal still visible after reconnect',
-      (WidgetTester tester) async {
-    await UITestHelpers.resetServerState();
-    await setupAndStartGame(tester, config);
-
-    await PauseModalHelpers.simulateDisconnectAndVerify(tester);
-
-    // Verify we are still on the game screen
-    expect(config.getGameBackButton(), findsOneWidget);
-
-    await PauseModalHelpers.simulateReconnectAndVerify(tester);
-  });
+  runGameplayRemoveDartsSurvivesTest(pauseModalSpec,
+      description: 'Test 8: RemoveDartsModal still visible after reconnect');
 }

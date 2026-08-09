@@ -8,6 +8,14 @@ import '../../shared/provider_helpers.dart';
 import '../../shared/results_helpers.dart';
 import '../../shared/settings_helpers.dart';
 
+import 'package:dart_games/constants/test_keys.dart';
+
+import '../../shared/edit_score_helpers.dart';
+import '../../shared/element_finders.dart';
+import '../../shared/game_setup_helpers.dart';
+import '../../shared/pause_modal_suite.dart';
+import '../../shared/ui_test_helpers.dart';
+
 final config = GameUIConfig.targetTag();
 
 // ===== DELEGATES TO SHARED HELPERS =====
@@ -83,3 +91,63 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   // Wait for _handleGameWon 3s navigation delay
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== PAUSE MODAL SUITE SPEC =====
+//
+// Shared bodies live in shared/pause_modal_suite.dart; everything
+// game-specific for Target Tag is supplied here.
+//
+// Target Tag's hand-written pause tests were the older generation: they
+// guarded every tap with `if (finder.evaluate().isNotEmpty)` and skipped the
+// pause-still-visible assert and the trailing reconnect that the newer games
+// make. The shared bodies are a strict superset — nothing Target Tag asserted
+// is dropped, and the overlay assertions it lacked are now made.
+
+Future<void> _hitOwnTarget(WidgetTester tester) async {
+  final targetNumber = GameSetupHelpers.getCurrentPlayerTargetNumber(tester);
+  await DartThrowHelpers.throwDartViaMock(tester, targetNumber);
+}
+
+final pauseModalSpec = PauseModalSpec(
+  config: config,
+  menuBackButton: ElementFinders.getTargetTagBackButton,
+  ownGameCard: ElementFinders.getTargetTagCard,
+  verifyOnMenu: (tester) =>
+      expect(find.text('TARGET TAG GAME SETUP'), findsWidgets,
+          reason: 'Menu screen not showing — setup heading not found'),
+  menuSettingsControls: [ElementFinders.getTargetTagShieldMaxSlider],
+  menuStartPlayers: const ['PauseA', 'PauseB'],
+  verifyOnHome: (tester) {
+    expect(find.byKey(HomeKeys.carnivalDerbyCard), findsOneWidget);
+    expect(find.byKey(HomeKeys.targetTagCard), findsOneWidget);
+  },
+  startGame: (tester) =>
+      GameSetupHelpers.setupAndStartTargetTag(tester, config),
+  verifyOnGameScreen: (tester) {
+    expect(config.getGameBackButton(), findsOneWidget,
+        reason: 'Game screen not showing — game back button not found');
+    expect(ProviderHelpers.isTargetTagGameActive(tester), isTrue,
+        reason: 'Game is no longer active');
+  },
+  throwOneDart: _hitOwnTarget,
+  throwAnotherDart: throwMissViaMock,
+  throwTurnToTakeout: (tester) async {
+    // One hit plus two misses fills the turn without eliminating anyone.
+    await _hitOwnTarget(tester);
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+  },
+  verifyNoSavePrompt: (tester) => expect(find.text('Save'), findsNothing,
+      reason: 'Save prompt appeared despite the pause overlay'),
+  finishTakeout: clickDartsRemoved,
+  openEditScore: (tester) => EditScoreHelpers.openEditScore(tester, config),
+  reachResults: (tester) async {
+    await GameSetupHelpers.setupAndStartTargetTag(tester, config, shieldMax: 3);
+    await completeGameToVictory(tester, 'Player A', 'Player B');
+  },
+  resultsAfterReconnect: (tester) async {
+    await UITestHelpers.clickPlayAgain(tester, config);
+    expect(config.getPlayAgainButton(), findsNothing,
+        reason: 'Play Again did not work after reconnect');
+  },
+);

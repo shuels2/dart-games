@@ -5,7 +5,6 @@ import '../../shared/dart_throw_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/edit_score_helpers.dart';
-import '../../shared/pump_sequences.dart';
 
 export '../../shared/ui_test_helpers.dart';
 export '../../shared/pump_sequences.dart';
@@ -14,6 +13,10 @@ export '../../shared/provider_helpers.dart';
 export '../../shared/edit_score_helpers.dart';
 
 import '../../shared/results_helpers.dart';
+
+import '../../shared/element_finders.dart';
+import '../../shared/pause_modal_suite.dart';
+import '../../shared/ui_test_helpers.dart';
 
 final config = GameUIConfig.reefRoyale();
 
@@ -99,3 +102,36 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   // Wait for results screen navigation (3000ms delay in _handleGameWon)
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== PAUSE MODAL SUITE SPEC =====
+//
+// Shared bodies live in shared/pause_modal_suite.dart; everything
+// game-specific for Reef Royale is supplied here.
+
+final pauseModalSpec = PauseModalSpec(
+  config: config,
+  menuBackButton: ElementFinders.getReefRoyaleBackButton,
+  ownGameCard: ElementFinders.getReefRoyaleCard,
+  menuSettingsControls: [ElementFinders.getReefRoyaleEasyClaimSwitch],
+  menuAddPlayerButton: ElementFinders.getReefRoyaleAddPlayerButtonEmptyState,
+  startGame: (tester) => setupAndStartGame(tester, config),
+  throwOneDart: (tester) => throwDartViaMock(tester, 20),
+  throwAnotherDart: (tester) => throwDartViaMock(tester, 19),
+  throwTurnToTakeout: (tester) async {
+    // Three 20s fills the turn and raises the takeout prompt.
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+  },
+  finishTakeout: clickDartsRemoved,
+  openEditScore: (tester) => openEditScore(tester, config),
+  reachResults: (tester) async {
+    await setupAndStartGame(tester, config);
+    await completeGameToVictory(tester);
+  },
+  resultsAfterReconnect: (tester) async {
+    await UITestHelpers.clickBackToMenu(tester, config);
+    expect(ElementFinders.getReefRoyaleCard(), findsOneWidget,
+        reason: 'Back to Menu did not work after reconnect');
+  },
+);
