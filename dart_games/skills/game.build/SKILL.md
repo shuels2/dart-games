@@ -351,7 +351,18 @@ If any check fails, STOP and surface to the user. Do not proceed.
 4. Read `docs/development/game-integration.md` for the integration checklist.
 5. Read `docs/critical-rules/visual-validation.md` for the visual validation rules.
 6. Read `docs/testing/spec-coverage-audit.md` for the audit procedure.
-7. **Build the spec section map.** Grep the spec for `^## \d+\.` headings and produce a table mapping the heading text → the actual section number for THIS spec. Required entries:
+7. **Build the spec section map.** Grep the spec for `^#{2,3} ` headings — **NOT** `^## \d+\.` — and produce a table mapping the heading text → the actual section number for THIS spec.
+
+   > **Why the looser pattern.** Two spec templates are in circulation. The
+   > modern one has `## 14. Definition of Done` (a numbered H2). The legacy one
+   > nests `### Definition of Done` inside §14 as an UNNUMBERED H3, which
+   > `^## \d+\.` cannot see. 13 of the 27 specs in `docs/research/games/` are
+   > the legacy shape. When the section map misses the Definition of Done,
+   > **Gate 5 silently degrades to verifying nothing and the build still
+   > reports success.** `test/meta/spec_lint_test.dart` enforces this and
+   > enumerates the current offenders.
+
+   Required entries:
    - "Overview / Quick Facts" (game name, player count, Dual vs Team)
    - "Style & Visual Identity" / "Design" (color palette + fonts)
    - "Asset Checklist"
@@ -362,7 +373,9 @@ If any check fails, STOP and surface to the user. Do not proceed.
    - "New Components Required"
    - "Testing Plan"
    - "Development Agent Team" (if present)
-   - "Definition of Done" (if present — some specs lack this)
+   - "Definition of Done" — at EITHER heading level. If the spec has
+     none at all (9 specs do not), say so explicitly in the Phase 0
+     report and treat Gate 5 as BLOCKED rather than passed.
    - "Development Workflow" (branch strategy)
    - "Files Summary" (if present)
 
