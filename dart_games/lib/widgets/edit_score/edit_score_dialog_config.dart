@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../theme/game_theme.dart';
+
 /// Configuration class for styling the shared Edit Score dialog.
 ///
 /// Use factory methods to get pre-configured styling for each game:
@@ -62,29 +64,29 @@ class EditScoreDialogConfig {
 
   factory EditScoreDialogConfig.carnivalDerby() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF1D3557).withOpacity(0.95),
-      borderColor: const Color(0xFFFFD700),
+      backgroundColor: GameTheme.carnivalDerby.background.withOpacity(0.95),
+      borderColor: GameTheme.carnivalDerby.accent,
       borderWidth: 4,
       titleStyle: GoogleFonts.luckiestGuy(
         fontSize: 24,
-        color: const Color(0xFFFFD700),
+        color: GameTheme.carnivalDerby.accent,
       ),
       dartLabelStyle: GoogleFonts.bangers(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
         letterSpacing: 1.0,
       ),
-      scoreBoxBackgroundColor: const Color(0xFF1D3557),
-      scoreBoxDefaultBorderColor: const Color(0xFFFFD700),
+      scoreBoxBackgroundColor: GameTheme.carnivalDerby.background,
+      scoreBoxDefaultBorderColor: GameTheme.carnivalDerby.accent,
       scoreTextStyle: GoogleFonts.luckiestGuy(
         fontSize: 18,
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
       ),
       buttonUnselectedColor: const Color(0xFF8B5E3C),
-      buttonUnselectedForeground: const Color(0xFFF1FAEE),
-      buttonSelectedColor: const Color(0xFFFFD700),
-      buttonSelectedForeground: const Color(0xFF1D3557),
+      buttonUnselectedForeground: GameTheme.carnivalDerby.onDark,
+      buttonSelectedColor: GameTheme.carnivalDerby.accent,
+      buttonSelectedForeground: GameTheme.carnivalDerby.background,
       buttonTextStyle: GoogleFonts.bangers(
         fontSize: 12,
         fontWeight: FontWeight.bold,
@@ -97,8 +99,8 @@ class EditScoreDialogConfig {
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
       ),
-      submitButtonColor: const Color(0xFFFFD700).withOpacity(0.85),
-      submitButtonForeground: const Color(0xFF1D3557),
+      submitButtonColor: GameTheme.carnivalDerby.accent.withOpacity(0.85),
+      submitButtonForeground: GameTheme.carnivalDerby.background,
       submitButtonTextStyle: GoogleFonts.bangers(
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -124,27 +126,27 @@ class EditScoreDialogConfig {
 
   factory EditScoreDialogConfig.monsterMash() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF2F4F4F).withOpacity(0.95), // Iron Gate
+      backgroundColor: GameTheme.monsterMash.background.withOpacity(0.95), // Iron Gate
       borderColor: const Color(0xFFFF8C00), // Pumpkin Orange
       borderWidth: 4,
       titleStyle: GoogleFonts.creepster(
         fontSize: 24,
-        color: const Color(0xFFF5F5DC), // Aged Parchment
+        color: GameTheme.monsterMash.onDark, // Aged Parchment
       ),
       dartLabelStyle: GoogleFonts.montserrat(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F5DC).withOpacity(0.7),
+        color: GameTheme.monsterMash.onDark.withOpacity(0.7),
       ),
-      scoreBoxBackgroundColor: const Color(0xFF2F4F4F),
-      scoreBoxDefaultBorderColor: const Color(0xFFF5F5DC).withOpacity(0.3),
+      scoreBoxBackgroundColor: GameTheme.monsterMash.background,
+      scoreBoxDefaultBorderColor: GameTheme.monsterMash.onDark.withOpacity(0.3),
       scoreTextStyle: GoogleFonts.pirataOne(
         fontSize: 18,
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
       ),
       buttonUnselectedColor: const Color(0xFF4B0082), // Haunted Purple
-      buttonUnselectedForeground: const Color(0xFFF5F5DC),
-      buttonSelectedColor: const Color(0xFF7FFF00), // Ecto-Green
+      buttonUnselectedForeground: GameTheme.monsterMash.onDark,
+      buttonSelectedColor: GameTheme.monsterMash.accent, // Ecto-Green
       buttonSelectedForeground: Colors.black,
       buttonTextStyle: GoogleFonts.montserrat(
         fontSize: 12,
@@ -156,7 +158,7 @@ class EditScoreDialogConfig {
         fontSize: 16,
       ),
       submitButtonColor: const Color(0xFF4B0082).withOpacity(0.85),
-      submitButtonForeground: const Color(0xFFF5F5DC),
+      submitButtonForeground: GameTheme.monsterMash.onDark,
       submitButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 16,
       ),
@@ -165,8 +167,8 @@ class EditScoreDialogConfig {
 
   factory EditScoreDialogConfig.targetTag() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF1A1A2E).withOpacity(0.95),
-      borderColor: const Color(0xFFFF007A),
+      backgroundColor: GameTheme.targetTag.background.withOpacity(0.95),
+      borderColor: GameTheme.targetTag.accent,
       borderWidth: 4,
       titleStyle: GoogleFonts.fredoka(
         fontSize: 24,
@@ -178,7 +180,7 @@ class EditScoreDialogConfig {
         fontWeight: FontWeight.bold,
         color: Colors.white70,
       ),
-      scoreBoxBackgroundColor: const Color(0xFF1A1A2E),
+      scoreBoxBackgroundColor: GameTheme.targetTag.background,
       scoreBoxDefaultBorderColor: Colors.white38,
       scoreTextStyle: GoogleFonts.fredoka(
         fontSize: 18,
@@ -199,7 +201,7 @@ class EditScoreDialogConfig {
         fontSize: 16,
         fontWeight: FontWeight.bold,
       ),
-      submitButtonColor: const Color(0xFFFF007A).withOpacity(0.85),
+      submitButtonColor: GameTheme.targetTag.accent.withOpacity(0.85),
       submitButtonForeground: Colors.white,
       submitButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
@@ -211,42 +213,42 @@ class EditScoreDialogConfig {
 
   factory EditScoreDialogConfig.reefRoyale() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF0B3D91).withOpacity(0.95),
-      borderColor: const Color(0xFF48D1CC), // Seafoam Green
+      backgroundColor: GameTheme.reefRoyale.background.withOpacity(0.95),
+      borderColor: GameTheme.reefRoyale.accent, // Seafoam Green
       borderWidth: 4,
       titleStyle: GoogleFonts.fredoka(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8F0), // Pearl White
+        color: GameTheme.reefRoyale.onDark, // Pearl White
       ),
       dartLabelStyle: GoogleFonts.fredoka(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8F0).withOpacity(0.7),
+        color: GameTheme.reefRoyale.onDark.withOpacity(0.7),
       ),
-      scoreBoxBackgroundColor: const Color(0xFF0B3D91),
-      scoreBoxDefaultBorderColor: const Color(0xFFFFF8F0).withOpacity(0.3),
+      scoreBoxBackgroundColor: GameTheme.reefRoyale.background,
+      scoreBoxDefaultBorderColor: GameTheme.reefRoyale.onDark.withOpacity(0.3),
       scoreTextStyle: GoogleFonts.fredoka(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
       ),
-      buttonUnselectedColor: const Color(0xFF0B3D91),
-      buttonUnselectedForeground: const Color(0xFFFFF8F0),
-      buttonSelectedColor: const Color(0xFF48D1CC), // Seafoam Green
-      buttonSelectedForeground: const Color(0xFF0B3D91),
+      buttonUnselectedColor: GameTheme.reefRoyale.background,
+      buttonUnselectedForeground: GameTheme.reefRoyale.onDark,
+      buttonSelectedColor: GameTheme.reefRoyale.accent, // Seafoam Green
+      buttonSelectedForeground: GameTheme.reefRoyale.background,
       buttonTextStyle: GoogleFonts.fredoka(
         fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
       cancelButtonColor: Colors.grey.withOpacity(0.85),
-      cancelButtonForeground: const Color(0xFFFFF8F0),
+      cancelButtonForeground: GameTheme.reefRoyale.onDark,
       cancelButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
         fontWeight: FontWeight.bold,
       ),
-      submitButtonColor: const Color(0xFF48D1CC).withOpacity(0.85),
-      submitButtonForeground: const Color(0xFF0B3D91),
+      submitButtonColor: GameTheme.reefRoyale.accent.withOpacity(0.85),
+      submitButtonForeground: GameTheme.reefRoyale.background,
       submitButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -256,43 +258,43 @@ class EditScoreDialogConfig {
 
   factory EditScoreDialogConfig.lunarLander() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF1B4965).withOpacity(0.95), // Earth Blue
-      borderColor: const Color(0xFFF26430), // Rocket Flame
+      backgroundColor: GameTheme.lunarLander.background.withOpacity(0.95), // Earth Blue
+      borderColor: GameTheme.lunarLander.accent, // Rocket Flame
       borderWidth: 4,
       titleStyle: GoogleFonts.orbitron(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFAFDF6), // Star White
+        color: GameTheme.lunarLander.onDark, // Star White
         letterSpacing: 1.2,
       ),
       dartLabelStyle: GoogleFonts.exo2(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFAFDF6).withOpacity(0.7),
+        color: GameTheme.lunarLander.onDark.withOpacity(0.7),
       ),
-      scoreBoxBackgroundColor: const Color(0xFF1B4965),
-      scoreBoxDefaultBorderColor: const Color(0xFFF26430).withOpacity(0.5),
+      scoreBoxBackgroundColor: GameTheme.lunarLander.background,
+      scoreBoxDefaultBorderColor: GameTheme.lunarLander.accent.withOpacity(0.5),
       scoreTextStyle: GoogleFonts.orbitron(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
       ),
       buttonUnselectedColor: const Color(0xFF0D1B2A), // Space Black
-      buttonUnselectedForeground: const Color(0xFFFAFDF6),
-      buttonSelectedColor: const Color(0xFFF26430), // Rocket Flame
-      buttonSelectedForeground: const Color(0xFFFAFDF6),
+      buttonUnselectedForeground: GameTheme.lunarLander.onDark,
+      buttonSelectedColor: GameTheme.lunarLander.accent, // Rocket Flame
+      buttonSelectedForeground: GameTheme.lunarLander.onDark,
       buttonTextStyle: GoogleFonts.exo2(
         fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
       cancelButtonColor: const Color(0xFF0D1B2A).withOpacity(0.85),
-      cancelButtonForeground: const Color(0xFFFAFDF6),
+      cancelButtonForeground: GameTheme.lunarLander.onDark,
       cancelButtonTextStyle: GoogleFonts.exo2(
         fontSize: 16,
         fontWeight: FontWeight.bold,
       ),
-      submitButtonColor: const Color(0xFFF26430).withOpacity(0.85), // Rocket Flame
-      submitButtonForeground: const Color(0xFFFAFDF6),
+      submitButtonColor: GameTheme.lunarLander.accent.withOpacity(0.85), // Rocket Flame
+      submitButtonForeground: GameTheme.lunarLander.onDark,
       submitButtonTextStyle: GoogleFonts.orbitron(
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -320,7 +322,7 @@ class EditScoreDialogConfig {
   /// Pattern A (Calculated Values): scoreDisplayTransform converts segment strings to point values
   factory EditScoreDialogConfig.gladiatorArena() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF3A2010).withOpacity(0.97), // Dark Arena
+      backgroundColor: GameTheme.gladiatorArena.background.withOpacity(0.97), // Dark Arena
       borderColor: const Color(0xFFDAA520), // Gladiator Gold
       borderWidth: 4,
       titleStyle: GoogleFonts.cinzel(
@@ -332,17 +334,17 @@ class EditScoreDialogConfig {
       dartLabelStyle: GoogleFonts.lato(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8).withOpacity(0.7), // Marble White
+        color: GameTheme.gladiatorArena.onDark.withOpacity(0.7), // Marble White
       ),
-      scoreBoxBackgroundColor: const Color(0xFF3A2010),
+      scoreBoxBackgroundColor: GameTheme.gladiatorArena.background,
       scoreBoxDefaultBorderColor: const Color(0xFFDAA520).withOpacity(0.5),
       scoreTextStyle: GoogleFonts.cinzel(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8), // Marble White
+        color: GameTheme.gladiatorArena.onDark, // Marble White
       ),
       buttonUnselectedColor: const Color(0xFF2A1500), // Dark Arena
-      buttonUnselectedForeground: const Color(0xFFF5F0E8), // Marble White
+      buttonUnselectedForeground: GameTheme.gladiatorArena.onDark, // Marble White
       buttonSelectedColor: const Color(0xFFDAA520), // Gladiator Gold
       buttonSelectedForeground: const Color(0xFF1A0A00), // Near Black
       buttonTextStyle: GoogleFonts.lato(
@@ -350,13 +352,13 @@ class EditScoreDialogConfig {
         fontWeight: FontWeight.bold,
       ),
       cancelButtonColor: const Color(0xFF8B8682).withOpacity(0.85), // Colosseum Gray
-      cancelButtonForeground: const Color(0xFFF5F0E8),
+      cancelButtonForeground: GameTheme.gladiatorArena.onDark,
       cancelButtonTextStyle: GoogleFonts.lato(
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
-      submitButtonColor: const Color(0xFFCD7F32).withOpacity(0.9), // Bronze
-      submitButtonForeground: const Color(0xFFF5F0E8),
+      submitButtonColor: GameTheme.gladiatorArena.accent.withOpacity(0.9), // Bronze
+      submitButtonForeground: GameTheme.gladiatorArena.onDark,
       submitButtonTextStyle: GoogleFonts.cinzel(
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -385,8 +387,8 @@ class EditScoreDialogConfig {
   /// Pattern B (Dart Throw Display): no scoreDisplayTransform — raw segment strings shown
   factory EditScoreDialogConfig.piratesGrid() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF1B2838).withOpacity(0.95), // Ocean Navy
-      borderColor: const Color(0xFFCD7F32), // Compass Bronze
+      backgroundColor: GameTheme.piratesGrid.background.withOpacity(0.95), // Ocean Navy
+      borderColor: GameTheme.piratesGrid.accent, // Compass Bronze
       borderWidth: 4,
       titleStyle: GoogleFonts.pirataOne(
         fontSize: 22,
@@ -396,30 +398,30 @@ class EditScoreDialogConfig {
       dartLabelStyle: GoogleFonts.lora(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5E6C8).withOpacity(0.7),
+        color: GameTheme.piratesGrid.onDark.withOpacity(0.7),
       ),
-      scoreBoxBackgroundColor: const Color(0xFF1B2838),
-      scoreBoxDefaultBorderColor: const Color(0xFFCD7F32).withOpacity(0.5),
+      scoreBoxBackgroundColor: GameTheme.piratesGrid.background,
+      scoreBoxDefaultBorderColor: GameTheme.piratesGrid.accent.withOpacity(0.5),
       scoreTextStyle: GoogleFonts.pirataOne(
         fontSize: 18,
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
       ),
       buttonUnselectedColor: const Color(0xFF1A1A1A), // Ink Black
-      buttonUnselectedForeground: const Color(0xFFF5E6C8),
+      buttonUnselectedForeground: GameTheme.piratesGrid.onDark,
       buttonSelectedColor: const Color(0xFFDAA520), // Treasure Gold
       buttonSelectedForeground: const Color(0xFF1A1A1A),
       buttonTextStyle: GoogleFonts.lora(
         fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
-      cancelButtonColor: const Color(0xFF1B2838).withOpacity(0.85),
-      cancelButtonForeground: const Color(0xFFF5E6C8),
+      cancelButtonColor: GameTheme.piratesGrid.background.withOpacity(0.85),
+      cancelButtonForeground: GameTheme.piratesGrid.onDark,
       cancelButtonTextStyle: GoogleFonts.lora(
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
-      submitButtonColor: const Color(0xFFCD7F32).withOpacity(0.85), // Compass Bronze
-      submitButtonForeground: const Color(0xFFF5E6C8),
+      submitButtonColor: GameTheme.piratesGrid.accent.withOpacity(0.85), // Compass Bronze
+      submitButtonForeground: GameTheme.piratesGrid.onDark,
       submitButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 16,
         letterSpacing: 1.0,
@@ -430,43 +432,43 @@ class EditScoreDialogConfig {
 
   factory EditScoreDialogConfig.clockworkQuest() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF2C2C34).withOpacity(0.95), // Dark Iron
-      borderColor: const Color(0xFFC5A54E), // Brass Gold
+      backgroundColor: GameTheme.clockworkQuest.background.withOpacity(0.95), // Dark Iron
+      borderColor: GameTheme.clockworkQuest.accent, // Brass Gold
       borderWidth: 4,
       titleStyle: GoogleFonts.cinzelDecorative(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8), // Steam White
+        color: GameTheme.clockworkQuest.onDark, // Steam White
         letterSpacing: 1.5,
       ),
       dartLabelStyle: GoogleFonts.lato(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+        color: GameTheme.clockworkQuest.onDark.withOpacity(0.7),
       ),
-      scoreBoxBackgroundColor: const Color(0xFF2C2C34),
+      scoreBoxBackgroundColor: GameTheme.clockworkQuest.background,
       scoreBoxDefaultBorderColor: const Color(0xFFB87333).withOpacity(0.5), // Copper Rose
       scoreTextStyle: GoogleFonts.lato(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.clockworkQuest.onDark,
       ),
-      buttonUnselectedColor: const Color(0xFF2C2C34),
-      buttonUnselectedForeground: const Color(0xFFF5F0E8),
-      buttonSelectedColor: const Color(0xFFC5A54E), // Brass Gold
-      buttonSelectedForeground: const Color(0xFF2C2C34),
+      buttonUnselectedColor: GameTheme.clockworkQuest.background,
+      buttonUnselectedForeground: GameTheme.clockworkQuest.onDark,
+      buttonSelectedColor: GameTheme.clockworkQuest.accent, // Brass Gold
+      buttonSelectedForeground: GameTheme.clockworkQuest.background,
       buttonTextStyle: GoogleFonts.lato(
         fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
       cancelButtonColor: const Color(0xFF4A4A52).withOpacity(0.85),
-      cancelButtonForeground: const Color(0xFFF5F0E8),
+      cancelButtonForeground: GameTheme.clockworkQuest.onDark,
       cancelButtonTextStyle: GoogleFonts.lato(
         fontSize: 16,
         fontWeight: FontWeight.bold,
       ),
-      submitButtonColor: const Color(0xFFC5A54E).withOpacity(0.85), // Brass Gold
-      submitButtonForeground: const Color(0xFF2C2C34),
+      submitButtonColor: GameTheme.clockworkQuest.accent.withOpacity(0.85), // Brass Gold
+      submitButtonForeground: GameTheme.clockworkQuest.background,
       submitButtonTextStyle: GoogleFonts.cinzelDecorative(
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -484,12 +486,12 @@ class EditScoreDialogConfig {
   /// in the game screen (Pass 2).
   factory EditScoreDialogConfig.tikiGolf() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF2D6A4F).withOpacity(0.97), // Palm Green
-      borderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      backgroundColor: GameTheme.tikiGolf.background.withOpacity(0.97), // Palm Green
+      borderColor: GameTheme.tikiGolf.accent, // Lagoon Blue
       borderWidth: 4,
       titleStyle: GoogleFonts.boogaloo(
         fontSize: 24,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
         shadows: const [
           Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, 1), blurRadius: 0),
           Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, -1), blurRadius: 0),
@@ -500,32 +502,32 @@ class EditScoreDialogConfig {
       dartLabelStyle: GoogleFonts.nunito(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
         letterSpacing: 0.5,
       ),
-      scoreBoxBackgroundColor: const Color(0xFF2D6A4F), // Palm Green
-      scoreBoxDefaultBorderColor: const Color(0xFF00B4D8).withOpacity(0.5), // Lagoon Blue
+      scoreBoxBackgroundColor: GameTheme.tikiGolf.background, // Palm Green
+      scoreBoxDefaultBorderColor: GameTheme.tikiGolf.accent.withOpacity(0.5), // Lagoon Blue
       scoreTextStyle: GoogleFonts.nunito(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
       ),
       buttonUnselectedColor: const Color(0xFF3A7B5E), // slightly lighter Palm Green
-      buttonUnselectedForeground: const Color(0xFFFFF5E1),
-      buttonSelectedColor: const Color(0xFF00B4D8), // Lagoon Blue
-      buttonSelectedForeground: const Color(0xFFFFF5E1),
+      buttonUnselectedForeground: GameTheme.tikiGolf.onDark,
+      buttonSelectedColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      buttonSelectedForeground: GameTheme.tikiGolf.onDark,
       buttonTextStyle: GoogleFonts.nunito(
         fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
       cancelButtonColor: const Color(0xFF8B5E3C).withOpacity(0.85), // Tiki Brown
-      cancelButtonForeground: const Color(0xFFFFF5E1),
+      cancelButtonForeground: GameTheme.tikiGolf.onDark,
       cancelButtonTextStyle: GoogleFonts.nunito(
         fontSize: 16,
         fontWeight: FontWeight.bold,
       ),
       submitButtonColor: const Color(0xFFFF8C42).withOpacity(0.90), // Tropical Orange
-      submitButtonForeground: const Color(0xFFFFF5E1),
+      submitButtonForeground: GameTheme.tikiGolf.onDark,
       submitButtonTextStyle: GoogleFonts.boogaloo(
         fontSize: 18,
       ),
@@ -536,46 +538,46 @@ class EditScoreDialogConfig {
   /// Pattern B (Dart Throw Display): no scoreDisplayTransform — raw segment strings shown (S20, D15, T20, Bull).
   factory EditScoreDialogConfig.treasureDivide() {
     return EditScoreDialogConfig(
-      backgroundColor: const Color(0xFF008B8B).withOpacity(0.97), // Ocean Teal
-      borderColor: const Color(0xFFFFD700), // Treasure Gold
+      backgroundColor: GameTheme.treasureDivide.background.withOpacity(0.97), // Ocean Teal
+      borderColor: GameTheme.treasureDivide.accent, // Treasure Gold
       borderWidth: 4,
       // Every fontSize bumped +4 vs. the prior pass for legibility on
       // the larger HUD scale.
       titleStyle: GoogleFonts.pirataOne(
         fontSize: 26,
-        color: const Color(0xFFFFD700), // Treasure Gold
+        color: GameTheme.treasureDivide.accent, // Treasure Gold
         letterSpacing: 1.2,
       ),
       dartLabelStyle: GoogleFonts.merriweather(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8E7).withOpacity(0.7), // Sail White
+        color: GameTheme.treasureDivide.onDark.withOpacity(0.7), // Sail White
       ),
-      scoreBoxBackgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      scoreBoxBackgroundColor: GameTheme.treasureDivide.background, // Ocean Teal
       // Dart-label container outline switched from plank brown (low
       // contrast on the ocean-teal panel) to sail white.
       scoreBoxDefaultBorderColor:
-          const Color(0xFFFFF8E7).withOpacity(0.6), // Sail White
+          GameTheme.treasureDivide.onDark.withOpacity(0.6), // Sail White
       scoreTextStyle: GoogleFonts.pirataOne(
         fontSize: 22,
-        color: const Color(0xFFFFF8E7), // Sail White
+        color: GameTheme.treasureDivide.onDark, // Sail White
       ),
       buttonUnselectedColor: const Color(0xFF006666), // darker Ocean Teal
-      buttonUnselectedForeground: const Color(0xFFFFF8E7), // Sail White
-      buttonSelectedColor: const Color(0xFFFFD700), // Treasure Gold
-      buttonSelectedForeground: const Color(0xFF008B8B), // Ocean Teal
+      buttonUnselectedForeground: GameTheme.treasureDivide.onDark, // Sail White
+      buttonSelectedColor: GameTheme.treasureDivide.accent, // Treasure Gold
+      buttonSelectedForeground: GameTheme.treasureDivide.background, // Ocean Teal
       buttonTextStyle: GoogleFonts.merriweather(
         fontSize: 16,
         fontWeight: FontWeight.bold,
       ),
       cancelButtonColor: const Color(0xFF006666).withOpacity(0.85),
-      cancelButtonForeground: const Color(0xFFFFF8E7),
+      cancelButtonForeground: GameTheme.treasureDivide.onDark,
       cancelButtonTextStyle: GoogleFonts.merriweather(
         fontSize: 20,
         fontWeight: FontWeight.w600,
       ),
-      submitButtonColor: const Color(0xFFFFD700).withOpacity(0.9), // Treasure Gold
-      submitButtonForeground: const Color(0xFF008B8B), // Ocean Teal
+      submitButtonColor: GameTheme.treasureDivide.accent.withOpacity(0.9), // Treasure Gold
+      submitButtonForeground: GameTheme.treasureDivide.background, // Ocean Teal
       submitButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 20,
         letterSpacing: 1.0,

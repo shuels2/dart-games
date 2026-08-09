@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dart_games/theme/game_theme.dart';
+import 'package:dart_games/widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import 'package:dart_games/widgets/save_game_modal/save_game_modal_config.dart';
 
 /// (gameId, the factory that config file exposes for it).
@@ -147,6 +148,41 @@ void main() {
     testWidgets('title sizes differ per game', (tester) async {
       expect(SaveGameModalConfig.carnivalDerby().titleTextStyle.fontSize, 28);
       expect(SaveGameModalConfig.targetTag().titleTextStyle.fontSize, 24);
+    });
+  });
+
+  group('DartboardPausedModalConfig is wired to GameTheme', () {
+    // A second config file, to prove the wiring is not one-file-deep. Only
+    // `backgroundColor` is asserted against the theme: the paused modal
+    // deliberately does NOT use each game's accent for its border/icon — it
+    // uses a danger colour to signal the disconnect — and that distinction is
+    // exactly what the migration had to preserve.
+    final byGame = <String, DartboardPausedModalConfig Function()>{
+      'carnival_derby': DartboardPausedModalConfig.carnivalDerby,
+      'target_tag': DartboardPausedModalConfig.targetTag,
+      'monster_mash': DartboardPausedModalConfig.monsterMash,
+      'reef_royale': DartboardPausedModalConfig.reefRoyale,
+      'lunar_lander': DartboardPausedModalConfig.lunarLander,
+      'pirates_grid': DartboardPausedModalConfig.piratesGrid,
+      'gladiator_arena': DartboardPausedModalConfig.gladiatorArena,
+      'clockwork_quest': DartboardPausedModalConfig.clockworkQuest,
+      'tiki_golf': DartboardPausedModalConfig.tikiGolf,
+      'treasure_divide': DartboardPausedModalConfig.treasureDivide,
+    };
+
+    byGame.forEach((gameId, factory) {
+      testWidgets(gameId, (tester) async {
+        expect(factory().backgroundColor, GameTheme.of(gameId).background);
+      });
+    });
+
+    testWidgets('Gladiator keeps Blood Red for the paused state',
+        (tester) async {
+      final config = DartboardPausedModalConfig.gladiatorArena();
+      expect(config.borderColor, const Color(0xFFC0392B));
+      expect(config.borderColor, isNot(GameTheme.gladiatorArena.accent),
+          reason: 'the disconnect signal is not the theme accent, and the '
+              'migration must not have collapsed it into one');
     });
   });
 }

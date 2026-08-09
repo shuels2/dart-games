@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../theme/game_theme.dart';
+
 /// Configuration class for styling the shared Remove Darts modal.
 ///
 /// Use factory methods to get pre-configured styling for each game:
@@ -55,25 +57,25 @@ class RemoveDartsModalConfig {
   /// Carnival Derby — Canary Yellow border, LuckiestGuy/Bangers fonts, larger icon/padding
   factory RemoveDartsModalConfig.carnivalDerby() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF1D3557), // Midnight Navy
+      backgroundColor: GameTheme.carnivalDerby.background, // Midnight Navy
       backgroundOpacity: 0.95,
-      borderColor: const Color(0xFFFFD700), // Canary Yellow
+      borderColor: GameTheme.carnivalDerby.accent, // Canary Yellow
       borderWidth: 4,
       boxShadowColor: Colors.black,
       boxShadowOpacity: 0.5,
       iconColor: Colors.white,
       iconSize: 64,
       playerNameTextStyle: GoogleFonts.luckiestGuy(
-        color: const Color(0xFFFFD700), // Canary Yellow
+        color: GameTheme.carnivalDerby.accent, // Canary Yellow
         fontSize: 28,
       ),
       instructionTextStyle: GoogleFonts.bangers(
-        color: const Color(0xFFF1FAEE), // Cloud Dancer
+        color: GameTheme.carnivalDerby.onDark, // Cloud Dancer
         fontSize: 24,
         letterSpacing: 1.0,
       ),
-      buttonBackgroundColor: const Color(0xFFFFD700), // Canary Yellow
-      buttonForegroundColor: const Color(0xFF1D3557), // Midnight Navy
+      buttonBackgroundColor: GameTheme.carnivalDerby.accent, // Canary Yellow
+      buttonForegroundColor: GameTheme.carnivalDerby.background, // Midnight Navy
       buttonBorderSide: const BorderSide(
         color: Color(0xFFF1FAEE), // Cloud Dancer border
         width: 2,
@@ -92,16 +94,16 @@ class RemoveDartsModalConfig {
   /// Target Tag — Hot Pink border, Fredoka font, 400px max width
   factory RemoveDartsModalConfig.targetTag() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF1A1A2E), // Dark navy
+      backgroundColor: GameTheme.targetTag.background, // Dark navy
       backgroundOpacity: 0.95,
-      borderColor: const Color(0xFFFF007A), // Hot Pink
+      borderColor: GameTheme.targetTag.accent, // Hot Pink
       borderWidth: 4,
       boxShadowColor: Colors.black,
       boxShadowOpacity: 0.5,
       iconColor: Colors.white,
       iconSize: 48,
       playerNameTextStyle: GoogleFonts.luckiestGuy(
-        color: const Color(0xFFFF007A), // Hot Pink
+        color: GameTheme.targetTag.accent, // Hot Pink
         fontSize: 24,
       ),
       instructionTextStyle: GoogleFonts.fredoka(
@@ -110,7 +112,7 @@ class RemoveDartsModalConfig {
         fontWeight: FontWeight.w600,
         letterSpacing: 1.0,
       ),
-      buttonBackgroundColor: const Color(0xFFFF007A).withOpacity(0.85),
+      buttonBackgroundColor: GameTheme.targetTag.accent.withOpacity(0.85),
       buttonForegroundColor: Colors.white,
       buttonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
@@ -124,24 +126,24 @@ class RemoveDartsModalConfig {
   /// Monster Mash — Lime Green border with green glow shadow, Creepster/PirataOne fonts
   factory RemoveDartsModalConfig.monsterMash() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF2F4F4F), // Iron Gate
+      backgroundColor: GameTheme.monsterMash.background, // Iron Gate
       backgroundOpacity: 0.95,
-      borderColor: const Color(0xFF7FFF00), // Ecto-Green
+      borderColor: GameTheme.monsterMash.accent, // Ecto-Green
       borderWidth: 4,
-      boxShadowColor: const Color(0xFF7FFF00), // Ecto-Green glow
+      boxShadowColor: GameTheme.monsterMash.accent, // Ecto-Green glow
       boxShadowOpacity: 0.3,
-      iconColor: const Color(0xFFF5F5DC), // Aged Parchment
+      iconColor: GameTheme.monsterMash.onDark, // Aged Parchment
       iconSize: 48,
       playerNameTextStyle: GoogleFonts.creepster(
-        color: const Color(0xFF7FFF00), // Ecto-Green
+        color: GameTheme.monsterMash.accent, // Ecto-Green
         fontSize: 24,
       ),
       instructionTextStyle: GoogleFonts.pirataOne(
-        color: const Color(0xFFF5F5DC), // Aged Parchment
+        color: GameTheme.monsterMash.onDark, // Aged Parchment
         fontSize: 20,
       ),
       buttonBackgroundColor: const Color(0xFF4B0082).withOpacity(0.85), // Haunted Purple
-      buttonForegroundColor: const Color(0xFFF5F5DC), // Aged Parchment
+      buttonForegroundColor: GameTheme.monsterMash.onDark, // Aged Parchment
       buttonBorderSide: const BorderSide(
         color: Color(0xFFFF8C00), // Pumpkin Orange
         width: 2,
@@ -158,27 +160,27 @@ class RemoveDartsModalConfig {
   /// Reef Royale — Ocean theme, Fredoka font, Seafoam Green accents
   factory RemoveDartsModalConfig.reefRoyale() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF0B3D91), // Deep Reef Blue
+      backgroundColor: GameTheme.reefRoyale.background, // Deep Reef Blue
       backgroundOpacity: 0.95,
-      borderColor: const Color(0xFF48D1CC), // Seafoam Green
+      borderColor: GameTheme.reefRoyale.accent, // Seafoam Green
       borderWidth: 4,
-      boxShadowColor: const Color(0xFF48D1CC), // Seafoam glow
+      boxShadowColor: GameTheme.reefRoyale.accent, // Seafoam glow
       boxShadowOpacity: 0.3,
-      iconColor: const Color(0xFFFFF8F0), // Pearl White
+      iconColor: GameTheme.reefRoyale.onDark, // Pearl White
       iconSize: 48,
       playerNameTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFF48D1CC), // Seafoam Green
+        color: GameTheme.reefRoyale.accent, // Seafoam Green
         fontSize: 24,
         fontWeight: FontWeight.bold,
       ),
       instructionTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFFFFF8F0), // Pearl White
+        color: GameTheme.reefRoyale.onDark, // Pearl White
         fontSize: 20,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.0,
       ),
-      buttonBackgroundColor: const Color(0xFF48D1CC).withOpacity(0.85),
-      buttonForegroundColor: const Color(0xFF0B3D91), // Deep Reef Blue
+      buttonBackgroundColor: GameTheme.reefRoyale.accent.withOpacity(0.85),
+      buttonForegroundColor: GameTheme.reefRoyale.background, // Deep Reef Blue
       buttonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -191,28 +193,28 @@ class RemoveDartsModalConfig {
   /// Lunar Lander — Earth Blue background, Rocket Flame border, Orbitron/Exo2 fonts
   factory RemoveDartsModalConfig.lunarLander() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF1B4965), // Earth Blue
+      backgroundColor: GameTheme.lunarLander.background, // Earth Blue
       backgroundOpacity: 0.95,
-      borderColor: const Color(0xFFF26430), // Rocket Flame
+      borderColor: GameTheme.lunarLander.accent, // Rocket Flame
       borderWidth: 4,
-      boxShadowColor: const Color(0xFFF26430),
+      boxShadowColor: GameTheme.lunarLander.accent,
       boxShadowOpacity: 0.3,
-      iconColor: const Color(0xFFFAFDF6), // Star White
+      iconColor: GameTheme.lunarLander.onDark, // Star White
       iconSize: 48,
       playerNameTextStyle: GoogleFonts.orbitron(
-        color: const Color(0xFFF26430), // Rocket Flame
+        color: GameTheme.lunarLander.accent, // Rocket Flame
         fontSize: 20,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
       ),
       instructionTextStyle: GoogleFonts.exo2(
-        color: const Color(0xFFFAFDF6), // Star White
+        color: GameTheme.lunarLander.onDark, // Star White
         fontSize: 18,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.0,
       ),
-      buttonBackgroundColor: const Color(0xFFF26430).withOpacity(0.85), // Rocket Flame
-      buttonForegroundColor: const Color(0xFFFAFDF6),
+      buttonBackgroundColor: GameTheme.lunarLander.accent.withOpacity(0.85), // Rocket Flame
+      buttonForegroundColor: GameTheme.lunarLander.onDark,
       buttonTextStyle: GoogleFonts.orbitron(
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -226,13 +228,13 @@ class RemoveDartsModalConfig {
   /// Pirate's Grid — Ocean Navy bg, Compass Bronze border, PirataOne/Lora fonts
   factory RemoveDartsModalConfig.piratesGrid() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF1B2838), // Ocean Navy
+      backgroundColor: GameTheme.piratesGrid.background, // Ocean Navy
       backgroundOpacity: 0.95,
-      borderColor: const Color(0xFFCD7F32), // Compass Bronze
+      borderColor: GameTheme.piratesGrid.accent, // Compass Bronze
       borderWidth: 4,
-      boxShadowColor: const Color(0xFFCD7F32),
+      boxShadowColor: GameTheme.piratesGrid.accent,
       boxShadowOpacity: 0.3,
-      iconColor: const Color(0xFFF5E6C8), // Parchment Tan
+      iconColor: GameTheme.piratesGrid.onDark, // Parchment Tan
       iconSize: 48,
       playerNameTextStyle: GoogleFonts.pirataOne(
         color: const Color(0xFFDAA520), // Treasure Gold
@@ -240,13 +242,13 @@ class RemoveDartsModalConfig {
         letterSpacing: 1.0,
       ),
       instructionTextStyle: GoogleFonts.lora(
-        color: const Color(0xFFF5E6C8), // Parchment Tan
+        color: GameTheme.piratesGrid.onDark, // Parchment Tan
         fontSize: 18,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
       ),
-      buttonBackgroundColor: const Color(0xFFCD7F32).withOpacity(0.85), // Compass Bronze
-      buttonForegroundColor: const Color(0xFFF5E6C8),
+      buttonBackgroundColor: GameTheme.piratesGrid.accent.withOpacity(0.85), // Compass Bronze
+      buttonForegroundColor: GameTheme.piratesGrid.onDark,
       buttonTextStyle: GoogleFonts.pirataOne(
         fontSize: 16,
         letterSpacing: 0.5,
@@ -258,28 +260,28 @@ class RemoveDartsModalConfig {
 
   factory RemoveDartsModalConfig.clockworkQuest() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+      backgroundColor: GameTheme.clockworkQuest.background, // Dark Iron
       backgroundOpacity: 0.95,
-      borderColor: const Color(0xFFC5A54E), // Brass Gold
+      borderColor: GameTheme.clockworkQuest.accent, // Brass Gold
       borderWidth: 4,
       boxShadowColor: const Color(0xFFFFBF00), // Amber Glow
       boxShadowOpacity: 0.4,
-      iconColor: const Color(0xFFF5F0E8), // Steam White
+      iconColor: GameTheme.clockworkQuest.onDark, // Steam White
       iconSize: 48,
       playerNameTextStyle: GoogleFonts.cinzelDecorative(
-        color: const Color(0xFFC5A54E), // Brass Gold
+        color: GameTheme.clockworkQuest.accent, // Brass Gold
         fontSize: 24,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.5,
       ),
       instructionTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8), // Steam White
+        color: GameTheme.clockworkQuest.onDark, // Steam White
         fontSize: 20,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.0,
       ),
-      buttonBackgroundColor: const Color(0xFFC5A54E).withOpacity(0.85), // Brass Gold
-      buttonForegroundColor: const Color(0xFF2C2C34), // Dark Iron
+      buttonBackgroundColor: GameTheme.clockworkQuest.accent.withOpacity(0.85), // Brass Gold
+      buttonForegroundColor: GameTheme.clockworkQuest.background, // Dark Iron
       buttonTextStyle: GoogleFonts.cinzelDecorative(
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -293,7 +295,7 @@ class RemoveDartsModalConfig {
   /// Gladiator Arena — Dark Arena bg, Gladiator Gold border, Cinzel/Lato fonts
   factory RemoveDartsModalConfig.gladiatorArena() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF3A2010), // Dark Arena
+      backgroundColor: GameTheme.gladiatorArena.background, // Dark Arena
       backgroundOpacity: 0.97,
       borderColor: const Color(0xFFDAA520), // Gladiator Gold
       borderWidth: 4,
@@ -308,12 +310,12 @@ class RemoveDartsModalConfig {
         letterSpacing: 1.0,
       ),
       instructionTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8), // Marble White
+        color: GameTheme.gladiatorArena.onDark, // Marble White
         fontSize: 20,
         fontWeight: FontWeight.w600,
       ),
-      buttonBackgroundColor: const Color(0xFFCD7F32), // Bronze
-      buttonForegroundColor: const Color(0xFFF5F0E8), // Marble White
+      buttonBackgroundColor: GameTheme.gladiatorArena.accent, // Bronze
+      buttonForegroundColor: GameTheme.gladiatorArena.onDark, // Marble White
       buttonBorderSide: const BorderSide(
         color: Color(0xFFDAA520), // Gladiator Gold
         width: 2,
@@ -322,7 +324,7 @@ class RemoveDartsModalConfig {
         fontSize: 18,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.gladiatorArena.onDark,
       ),
       editButtonText: 'Edit player score',
       maxWidth: double.infinity,
@@ -332,13 +334,13 @@ class RemoveDartsModalConfig {
   /// Tiki Golf — Palm Green bg, Lagoon Blue border, Boogaloo/Nunito fonts
   factory RemoveDartsModalConfig.tikiGolf() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      backgroundColor: GameTheme.tikiGolf.background, // Palm Green
       backgroundOpacity: 0.97,
-      borderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      borderColor: GameTheme.tikiGolf.accent, // Lagoon Blue
       borderWidth: 4,
       boxShadowColor: Colors.black,
       boxShadowOpacity: 0.5,
-      iconColor: const Color(0xFFFFF5E1), // Sand White
+      iconColor: GameTheme.tikiGolf.onDark, // Sand White
       iconSize: 48,
       playerNameTextStyle: GoogleFonts.boogaloo(
         color: const Color(0xFFFF8C42), // Tropical Orange
@@ -351,19 +353,19 @@ class RemoveDartsModalConfig {
         ],
       ),
       instructionTextStyle: GoogleFonts.nunito(
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
         fontSize: 20,
         fontWeight: FontWeight.w600,
       ),
-      buttonBackgroundColor: const Color(0xFF00B4D8), // Lagoon Blue
-      buttonForegroundColor: const Color(0xFFFFF5E1), // Sand White
+      buttonBackgroundColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      buttonForegroundColor: GameTheme.tikiGolf.onDark, // Sand White
       buttonBorderSide: const BorderSide(
         color: Color(0xFFFF8C42), // Tropical Orange
         width: 2,
       ),
       buttonTextStyle: GoogleFonts.boogaloo(
         fontSize: 20,
-        color: const Color(0xFFFFF5E1),
+        color: GameTheme.tikiGolf.onDark,
       ),
       editButtonText: 'Edit player score',
       maxWidth: double.infinity,
@@ -373,26 +375,26 @@ class RemoveDartsModalConfig {
   /// Treasure Divide — Ocean Teal bg, Treasure Gold border, PirataOne/Merriweather fonts
   factory RemoveDartsModalConfig.treasureDivide() {
     return RemoveDartsModalConfig(
-      backgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      backgroundColor: GameTheme.treasureDivide.background, // Ocean Teal
       backgroundOpacity: 0.97,
-      borderColor: const Color(0xFFFFD700), // Treasure Gold
+      borderColor: GameTheme.treasureDivide.accent, // Treasure Gold
       borderWidth: 4,
-      boxShadowColor: const Color(0xFFFFD700), // Treasure Gold glow
+      boxShadowColor: GameTheme.treasureDivide.accent, // Treasure Gold glow
       boxShadowOpacity: 0.3,
-      iconColor: const Color(0xFFFFF8E7), // Sail White
+      iconColor: GameTheme.treasureDivide.onDark, // Sail White
       iconSize: 48,
       playerNameTextStyle: GoogleFonts.pirataOne(
-        color: const Color(0xFFFFD700), // Treasure Gold
+        color: GameTheme.treasureDivide.accent, // Treasure Gold
         fontSize: 24,
         letterSpacing: 1.0,
       ),
       instructionTextStyle: GoogleFonts.merriweather(
-        color: const Color(0xFFFFF8E7), // Sail White
+        color: GameTheme.treasureDivide.onDark, // Sail White
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
-      buttonBackgroundColor: const Color(0xFFFFD700).withOpacity(0.9), // Treasure Gold
-      buttonForegroundColor: const Color(0xFF008B8B), // Ocean Teal
+      buttonBackgroundColor: GameTheme.treasureDivide.accent.withOpacity(0.9), // Treasure Gold
+      buttonForegroundColor: GameTheme.treasureDivide.background, // Ocean Teal
       buttonBorderSide: BorderSide(
         color: const Color(0xFF8B6914), // Plank Brown
         width: 2,
@@ -400,7 +402,7 @@ class RemoveDartsModalConfig {
       buttonTextStyle: GoogleFonts.merriweather(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFF008B8B),
+        color: GameTheme.treasureDivide.background,
       ),
       editButtonText: 'Edit Score',
       maxWidth: double.infinity,
