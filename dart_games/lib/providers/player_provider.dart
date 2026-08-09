@@ -14,6 +14,10 @@ class PlayerProvider extends ChangeNotifier {
   String? _error;
   DateTime? _lastSortedAt;
 
+  /// Whether [_lastSortedKey] has been read from the server this session.
+  /// Guards a redundant settings GET on every roster refresh (WS04 4.8).
+  bool _lastSortedFetched = false;
+
   /// Populated after a photo upload when the server-side face-landmark
   /// detection ran and failed. Set to the sidecar's `errorReason`
   /// (`no-face-detected`, `python-not-found`, `timeout`, etc.) so the
@@ -101,6 +105,7 @@ class PlayerProvider extends ChangeNotifier {
     _isLoading = false;
     _error = null;
     _lastSortedAt = null;
+    _lastSortedFetched = false;
     _photoBusts.clear();
     notifyListeners();
   }
@@ -175,10 +180,18 @@ class PlayerProvider extends ChangeNotifier {
           _allPlayers.where((p) => !serverIds.contains(p.id)).toList();
       _allPlayers = [...serverPlayers, ...localOnly];
 
-      // Load last sorted timestamp from settings
-      final lastSortedStr = await _api.getSetting(_lastSortedKey);
-      if (lastSortedStr != null) {
-        _lastSortedAt = DateTime.parse(lastSortedStr);
+      // Load the last-sorted timestamp once, not on every load (WS04 4.8).
+      // _doLoadPlayers runs on every roster refresh, and this settings GET is
+      // a separate HTTP round-trip each time. The value only changes when
+      // THIS provider sorts (see sortPlayersNow), which updates _lastSortedAt
+      // in memory anyway — so after the first successful fetch there is
+      // nothing new to learn from the server.
+      if (!_lastSortedFetched) {
+        final lastSortedStr = await _api.getSetting(_lastSortedKey);
+        if (lastSortedStr != null) {
+          _lastSortedAt = DateTime.parse(lastSortedStr);
+        }
+        _lastSortedFetched = true;
       }
 
       // Sort players (alphabetically, with new players at bottom)

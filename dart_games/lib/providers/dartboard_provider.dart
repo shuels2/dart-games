@@ -98,6 +98,45 @@ class DartboardProvider with ChangeNotifier {
   // Getters
   Dartboard? get dartboard => _dartboard;
   DartboardConnectionStatus get status => _status;
+
+  /// Completes as soon as [status] leaves `connecting`, or after [timeout].
+  ///
+  /// Replaces the splash screen's 100ms polling loop (WS04 4.8), which woke
+  /// up sixty times on a cold start just to read a field. This listens for
+  /// the notification that already fires on every status change, so it
+  /// resolves on the first frame the answer is actually known.
+  ///
+  /// Returns the status it settled on. Safe to call when already resolved —
+  /// it returns immediately without registering a listener.
+  Future<DartboardConnectionStatus> whenStatusResolved({
+    Duration timeout = const Duration(seconds: 6),
+  }) {
+    if (_status != DartboardConnectionStatus.connecting) {
+      return Future.value(_status);
+    }
+
+    final completer = Completer<DartboardConnectionStatus>();
+    Timer? timer;
+
+    void listener() {
+      if (_status == DartboardConnectionStatus.connecting) return;
+      if (completer.isCompleted) return;
+      timer?.cancel();
+      removeListener(listener);
+      completer.complete(_status);
+    }
+
+    addListener(listener);
+    timer = Timer(timeout, () {
+      if (completer.isCompleted) return;
+      removeListener(listener);
+      // Timed out still connecting — hand back whatever we have so the
+      // caller makes the same decision the polling loop would have.
+      completer.complete(_status);
+    });
+
+    return completer.future;
+  }
   String? get error => _error;
   bool get isConnected => _status == DartboardConnectionStatus.connected;
   bool get isEmulator => _status == DartboardConnectionStatus.emulator;

@@ -34,13 +34,33 @@ class PlayerAvatarWidget extends StatelessWidget {
   static final Map<String, ImageProvider> _photoProviderCache = {};
 
   static ImageProvider _resolvePhotoProvider(String photoPath) {
-    return _photoProviderCache.putIfAbsent(photoPath, () {
-      final ImageProvider raw = kIsWeb
-          ? NetworkImage(photoPath)
-          : FileImage(File(photoPath));
-      return ResizeImage(raw, width: 512, height: 512);
-    });
+    final existing = _photoProviderCache[photoPath];
+    if (existing != null) return existing;
+
+    // Evict every other entry for the SAME underlying photo before inserting
+    // (WS04 4.8). Keys are cache-busted URLs (`.../avatar.png?v=1699…`), so a
+    // player who re-uploads their headshot five times used to leave five
+    // ResizeImage providers cached forever — each pinning up to ~1MB of
+    // decoded pixels in an unbounded static map. Only the newest URL is ever
+    // requested again, so the older ones are pure leak.
+    final base = photoPath.split('?').first;
+    _photoProviderCache.removeWhere((key, _) => key.split('?').first == base);
+
+    final ImageProvider raw =
+        kIsWeb ? NetworkImage(photoPath) : FileImage(File(photoPath));
+    final provider = ResizeImage(raw, width: 512, height: 512);
+    _photoProviderCache[photoPath] = provider;
+    return provider;
   }
+
+  /// Test hook: the cache is a static that otherwise persists across tests.
+  @visibleForTesting
+  static void clearPhotoProviderCacheForTesting() =>
+      _photoProviderCache.clear();
+
+  @visibleForTesting
+  static int get photoProviderCacheSizeForTesting =>
+      _photoProviderCache.length;
 
   ImageProvider? _getImageProvider() {
     if (player.photoPath == null) return null;
