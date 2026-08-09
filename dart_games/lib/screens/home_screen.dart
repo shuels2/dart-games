@@ -50,6 +50,30 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  /// Resolves a game card's label style from the registry (WS03 §3.2).
+  ///
+  /// This replaced an eleven-way ternary keyed on the DISPLAY STRING
+  /// (`title == 'Carnival Derby' ? ... : title == 'Target Tag' ? ...`).
+  /// Keying on the display name meant renaming a game silently dropped its
+  /// card to the default style, and adding game #11 meant remembering to
+  /// extend a chain buried in a build method. Games with no registered style
+  /// (Pirate's Grid) get the app default, exactly as the ternary's else did.
+  TextStyle? _cardTitleStyle(
+      BuildContext context, String? gameId, bool isDisabled) {
+    final theme = Theme.of(context);
+    final color =
+        isDisabled ? Colors.grey : theme.colorScheme.onSurface;
+    final base = theme.textTheme.titleMedium?.fontSize ?? 16;
+
+    final entry = gameId == null ? null : GameFilterRegistry.byId(gameId);
+    final style = entry?.cardTitleStyle;
+    if (style == null) {
+      return theme.textTheme.titleMedium
+          ?.copyWith(color: color, fontWeight: FontWeight.bold);
+    }
+    return style.resolve(baseSize: base, color: color);
+  }
+
   void _navigateToMenu(String gameType) {
     Widget menuScreen;
     switch (gameType) {
@@ -94,6 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
     Key? key,
     IconData? icon,
     String? imageAssetPath,
+    /// Registry key — drives the card's label style (WS03 §3.2).
+    String? gameId,
     required String title,
     required Color color,
     required VoidCallback? onTap,
@@ -156,78 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           : Offset.zero,
                       child: Text(
                   title,
-                  style: title == 'Carnival Derby'
-                      ? GoogleFonts.rye(
-                          fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 2,
-                          color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        )
-                      : title == 'Target Tag'
-                          ? GoogleFonts.luckiestGuy(
-                              fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
-                              color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                              letterSpacing: 1.2,
-                            )
-                          : title == 'Monster Mash'
-                              ? GoogleFonts.creepster(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : title == 'Reef Royale'
-                              ? GoogleFonts.fredoka(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 5,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                )
-                          : title == 'Clockwork Quest'
-                              ? GoogleFonts.cinzelDecorative(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 3,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.2,
-                                )
-                          : title == 'Lunar Lander'
-                              ? GoogleFonts.orbitron(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 3,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : title == "Pirate's Grid"
-                              ? GoogleFonts.pirataOne(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : title == 'Gladiator Arena'
-                              ? GoogleFonts.cinzel(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : title == 'Tiki Golf'
-                              // Boogaloo's descender pushes the baseline visually low.
-                              // Translate up 5px to align with peer-game baselines.
-                              ? GoogleFonts.boogaloo(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  height: 0.6, // tightens line-box so the text sits 5px higher
-                                )
-                          : title == 'Treasure Divide'
-                              ? GoogleFonts.pirataOne(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : theme.textTheme.titleMedium?.copyWith(
-                              color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  style: _cardTitleStyle(context, gameId, isDisabled),
                       textAlign: TextAlign.center,
                     ),
                     ),
@@ -613,6 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         context: context,
                                         key: rows[rowIndex][i]['key'] as Key?,
                                         imageAssetPath: rows[rowIndex][i]['imageAssetPath'] as String?,
+                                        gameId: rows[rowIndex][i]['gameId'] as String?,
                                         title: rows[rowIndex][i]['title'] as String,
                                         color: rows[rowIndex][i]['color'] as Color,
                                         onTap: rows[rowIndex][i]['onTap'] as VoidCallback?,
