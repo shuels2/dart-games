@@ -4,6 +4,21 @@
 
 ## Phase 4: Screens, UI, and Play-to-Complete
 
+
+> ### LAYOUT LINT — run this as soon as the screens are authored, BEFORE AR-4
+>
+> 1. `flutter test test/meta/` — this now covers the back-arrow size and its
+>    three hover-suppression properties, AppBar title fonts, raw Material
+>    colours, option wiring, and dead widget keys. Do NOT hand-grep those; the
+>    tests are faster and fail loudly.
+> 2. Then work `reference/layout-constants.md` for what is NOT automated: the
+>    dual-list / options-row recipe, where the exact numbers are per-game
+>    design decisions but the RELATIONSHIP between them is fixed.
+>
+> The `listGap: 4` row in that file is the one people get wrong — setting it
+> to match the options-row `SizedBox(width: 8)` makes the pane gap visibly
+> WIDER, for a reason that is not obvious from the code. Read the note.
+
 **Goal:** Create all three screens with full visual theming, shared component integration, and Play-to-Complete strategy + button + runner wiring.
 
 **Model:**

@@ -398,6 +398,7 @@ Read these when the phase that needs them says so.
 | File | When |
 |---|---|
 | `reference/build-quality-rules.md` | **Before Phase 1, and again before every gate.** The accumulated rules and the NEVER list. |
+| `reference/layout-constants.md` | **Phase 4, immediately after the screens are authored — the Layout Lint step.** |
 | `reference/error-handling.md` | When any step fails or a gate is at risk. |
 | `reference/font-parity.md` | Phase 8 Step 0 / AR-10. |
 | `reference/playbook.md` | Every `[Playbook §N]` reference in any phase file. |
