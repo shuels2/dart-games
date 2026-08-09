@@ -660,6 +660,23 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen>
           );
 
           rows.add(
+            // KEPT: IntrinsicHeight. WS04 §4.8 proposed replacing this with a
+            // fixed tile height, on the premise that the screen "already
+            // assumes 400.0". It does not — that number lived in
+            // _scrollToCurrentPlayer's height ESTIMATE, which was wrong (it is
+            // why the scroll drifted, and it has since been replaced by
+            // Scrollable.ensureVisible measuring the real tile).
+            //
+            // Pinning rows to 400 was tried and visually rejected: tiles are
+            // ~250px of content, so every tile gained ~150px of dead space and
+            // the second row was pushed down the page. Screenshots comparing
+            // both are in the WS04 4.8 note in IMPLEMENTATION-STATUS.
+            //
+            // IntrinsicHeight is earning its double layout pass here: tile
+            // height changes with state (dart segments appear mid-turn), so
+            // the row's correct height is only knowable at layout time. Any
+            // fixed value must fit the TALLEST state and therefore wastes
+            // space in the common one.
             IntrinsicHeight(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
