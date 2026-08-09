@@ -1,6 +1,7 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/material.dart';
+
+import '../../../widgets/victory_celebration_overlay.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
@@ -238,56 +239,16 @@ class _ReefRoyaleResultsScreenState extends State<ReefRoyaleResultsScreen>
               ),
 
               // Confetti
-              Align(
-                alignment: Alignment.topLeft,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
+              // Confetti — three emitters, shared scaffolding (WS03 §3.7).
+              VictoryCelebrationOverlay(
+                controller: _confettiController,
+                colors: const [
                     _seafoamGreen,
                     _sandyGold,
                     _coralPink,
                     _sunlitAqua,
-                    _pearlWhite
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topCenter,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 2,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
-                    _seafoamGreen,
-                    _sandyGold,
-                    _coralPink,
-                    _sunlitAqua,
-                    _pearlWhite
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topRight,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: 3 * pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
-                    _seafoamGreen,
-                    _sandyGold,
-                    _coralPink,
-                    _sunlitAqua,
-                    _pearlWhite
-                  ],
-                ),
+                    _pearlWhite,
+                ],
               ),
 
               // Main content

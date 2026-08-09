@@ -1,5 +1,6 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+
+import '../../../widgets/victory_celebration_overlay.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
@@ -204,53 +205,16 @@ class _LunarLanderResultsScreenState extends State<LunarLanderResultsScreen>
                 ),
               ),
               // Confetti
-              Align(
-                alignment: Alignment.topLeft,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 25,
-                  gravity: 0.1,
-                  colors: const [
+              // Confetti — three emitters, shared scaffolding (WS03 §3.7).
+              VictoryCelebrationOverlay(
+                controller: _confettiController,
+                colors: const [
                     _rocketFlame,
                     _missionGreen,
                     Colors.yellow,
                     _starWhite,
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topCenter,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 2,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 25,
-                  gravity: 0.1,
-                  colors: const [
-                    _rocketFlame,
-                    _missionGreen,
-                    Colors.yellow,
-                    _starWhite,
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topRight,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: 3 * pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 25,
-                  gravity: 0.1,
-                  colors: const [
-                    _rocketFlame,
-                    _missionGreen,
-                    Colors.yellow,
-                    _starWhite,
-                  ],
-                ),
+                ],
+                numberOfParticles: 25,
               ),
               // Main content
               Center(

@@ -44,13 +44,13 @@ void main() {
     const rawColorBaseline = <String, int>{
       'carnival_horse_race/horse_race_game_screen.dart': 1,
       'carnival_horse_race/horse_race_menu_screen.dart': 1,
-      'carnival_horse_race/horse_race_results_screen.dart': 22,
-      'lunar_lander/lunar_lander_results_screen.dart': 3,
+      'carnival_horse_race/horse_race_results_screen.dart': 8,
+      'lunar_lander/lunar_lander_results_screen.dart': 1,
       'monster_mash/monster_mash_game_screen.dart': 1,
-      'monster_mash/monster_mash_results_screen.dart': 3,
+      'monster_mash/monster_mash_results_screen.dart': 1,
       'reef_royale/reef_royale_game_screen.dart': 5,
       'target_tag/target_tag_menu_screen.dart': 2,
-      'target_tag/target_tag_results_screen.dart': 9,
+      'target_tag/target_tag_results_screen.dart': 3,
     };
 
     test('no new raw Material colours', () {

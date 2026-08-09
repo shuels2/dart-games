@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+
+import '../../../widgets/victory_celebration_overlay.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../widgets/pulse_animation.dart';
@@ -260,56 +262,16 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
               ),
 
               // Confetti
-              Align(
-                alignment: Alignment.topLeft,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
+              // Confetti — three emitters, shared scaffolding (WS03 §3.7).
+              VictoryCelebrationOverlay(
+                controller: _confettiController,
+                colors: const [
                     Color(0xFF4B0082),
                     Color(0xFF7FFF00),
                     Color(0xFFFF8C00),
                     Color(0xFFF5F5DC),
                     Colors.purple,
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topCenter,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 2,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
-                    Color(0xFF4B0082),
-                    Color(0xFF7FFF00),
-                    Color(0xFFFF8C00),
-                    Color(0xFFF5F5DC),
-                    Colors.purple,
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topRight,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: 3 * pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
-                    Color(0xFF4B0082),
-                    Color(0xFF7FFF00),
-                    Color(0xFFFF8C00),
-                    Color(0xFFF5F5DC),
-                    Colors.purple,
-                  ],
-                ),
+                ],
               ),
 
               // Main content

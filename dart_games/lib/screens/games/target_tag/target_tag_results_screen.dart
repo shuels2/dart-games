@@ -1,5 +1,6 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+
+import '../../../widgets/victory_celebration_overlay.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
@@ -212,57 +213,16 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
               const Positioned.fill(
                 child: TechNeonBackground(),
               ),
-              // Confetti
-              Align(
-                alignment: Alignment.topLeft,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
-                    Color(0xFFFF007A),
-                    Color(0xFF00FFA3),
-                    Colors.yellow,
-                    Colors.blue,
-                    Colors.purple,
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topCenter,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 2,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
-                    Color(0xFFFF007A),
-                    Color(0xFF00FFA3),
-                    Colors.yellow,
-                    Colors.blue,
-                    Colors.purple,
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topRight,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: 3 * pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
-                    Color(0xFFFF007A),
-                    Color(0xFF00FFA3),
-                    Colors.yellow,
-                    Colors.blue,
-                    Colors.purple,
-                  ],
-                ),
+              // Confetti — three emitters, shared scaffolding (WS03 §3.7).
+              VictoryCelebrationOverlay(
+                controller: _confettiController,
+                colors: const [
+                  Color(0xFFFF007A),
+                  Color(0xFF00FFA3),
+                  Colors.yellow,
+                  Colors.blue,
+                  Colors.purple,
+                ],
               ),
 
               // Main content

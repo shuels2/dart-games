@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+
+import '../../../widgets/victory_celebration_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:math';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
@@ -306,63 +307,24 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
               // Content
               Stack(
                 children: [
-                  // Confetti widgets - positioned at different locations (behind content)
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: ConfettiWidget(
-                      confettiController: _confettiController,
-                      blastDirection: pi / 4,
-                      emissionFrequency: 0.05,
-                      numberOfParticles: 20,
-                      gravity: 0.1,
-                      colors: const [
-                        Colors.amber,
-                        Colors.orange,
-                        Colors.red,
-                        Colors.pink,
-                        Colors.purple,
-                        Colors.blue,
-                        Colors.green,
-                      ],
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: ConfettiWidget(
-                      confettiController: _confettiController,
-                      blastDirection: 3 * pi / 4,
-                      emissionFrequency: 0.05,
-                      numberOfParticles: 20,
-                      gravity: 0.1,
-                      colors: const [
-                        Colors.amber,
-                        Colors.orange,
-                        Colors.red,
-                        Colors.pink,
-                        Colors.purple,
-                        Colors.blue,
-                        Colors.green,
-                      ],
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: ConfettiWidget(
-                      confettiController: _confettiController,
-                      blastDirection: pi / 2,
-                      emissionFrequency: 0.05,
-                      numberOfParticles: 30,
-                      gravity: 0.1,
-                      colors: const [
-                        Colors.amber,
-                        Colors.orange,
-                        Colors.red,
-                        Colors.pink,
-                        Colors.purple,
-                        Colors.blue,
-                        Colors.green,
-                      ],
-                    ),
+                  // Confetti — three emitters, shared scaffolding (WS03 §3.7).
+                  //
+                  // Carnival is the one game whose emitters differ: the centre
+                  // fires 30 particles and each corner 20, a heavier central
+                  // burst. That is preserved rather than averaged away.
+                  VictoryCelebrationOverlay(
+                    controller: _confettiController,
+                    numberOfParticlesFor: (alignment) =>
+                        alignment == Alignment.topCenter ? 30 : 20,
+                    colors: const [
+                      Colors.amber,
+                      Colors.orange,
+                      Colors.red,
+                      Colors.pink,
+                      Colors.purple,
+                      Colors.blue,
+                      Colors.green,
+                    ],
                   ),
                   Consumer2<HorseRaceProvider, PlayerProvider>(
                     builder:
