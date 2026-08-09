@@ -227,6 +227,34 @@ void main() {
       expect(File('$dataDir/photos/$playerId.jpg').existsSync(), isTrue);
     });
 
+    // WS04 4.7: photo bytes are streamed with file.openRead() instead of
+    // readAsBytesSync(), so the whole file no longer sits in memory on the
+    // request isolate. content-length is set explicitly so clients that
+    // relied on it (progress bars) still get one.
+    test('GET /<id>/photo streams with an explicit content-length', () async {
+      await createPlayer();
+      await handler(
+        _jsonRequest('POST', '/$playerId/photo', {
+          'photoData': _tinyPng,
+          'fileName': 'avatar.png',
+        }),
+      );
+
+      final response = await handler(
+        Request('GET', Uri.parse('http://localhost/$playerId/photo')),
+      ) as Response;
+
+      expect(response.statusCode, 200);
+      final declared = response.headers['content-length'];
+      expect(declared, isNotNull,
+          reason: 'streamed responses must still declare their length');
+
+      final bytes = await response.read().expand((c) => c).toList();
+      expect(bytes, isNotEmpty);
+      expect(int.parse(declared!), bytes.length,
+          reason: 'declared length must match what is actually streamed');
+    });
+
     test('GET /<id>/photo serves the uploaded photo', () async {
       await createPlayer();
       await handler(

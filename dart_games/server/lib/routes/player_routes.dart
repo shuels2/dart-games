@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -380,8 +381,16 @@ class PlayerRoutes {
     // Decoding can return null for unsupported formats (e.g. HEIC); in that
     // case we fall through to writing the raw bytes so the caller at least
     // gets a usable file, mirroring pre-canonicalization behavior.
-    final canonicalBytes = _canonicalizePhoto(bytes);
-    File(filePath).writeAsBytesSync(canonicalBytes);
+    // Decode + cubic resize + JPEG re-encode of a multi-megapixel upload is
+    // hundreds of ms of pure CPU. On the single shelf isolate that stalled
+    // EVERY other request — including the dartboard-facing ones — for the
+    // duration (WS04 4.7). Isolate.run moves it off the request isolate.
+    //
+    // _canonicalizePhoto must stay a top-level/static function with no
+    // captured state: the closure is sent to another isolate, so anything it
+    // closes over has to be sendable.
+    final canonicalBytes = await Isolate.run(() => _canonicalizePhoto(bytes));
+    await File(filePath).writeAsBytes(canonicalBytes);
 
     // Update the player's photo_path in the database.
     executeUpdate(
@@ -470,11 +479,16 @@ class PlayerRoutes {
 
     final mimeType =
         lookupMimeType(photoPath) ?? 'application/octet-stream';
-    final bytes = file.readAsBytesSync();
 
+    // Streamed, not readAsBytesSync: the sync read blocked the request
+    // isolate and held the whole file in memory at once (WS04 4.7).
+    // content-length is set explicitly so clients still get a progress bar.
     return Response.ok(
-      bytes,
-      headers: {'content-type': mimeType},
+      file.openRead(),
+      headers: {
+        'content-type': mimeType,
+        'content-length': '${await file.length()}',
+      },
     );
   }
 
