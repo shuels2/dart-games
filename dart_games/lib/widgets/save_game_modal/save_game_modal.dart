@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../themed_modal_shell.dart';
 import '../../constants/test_keys.dart';
 import 'save_game_modal_config.dart';
 
@@ -47,43 +49,23 @@ class _SaveGameModalState extends State<SaveGameModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Material(
-        type: MaterialType.transparency,
-        child: Container(
-          key: SaveGameModalKeys.overlay,
-          color: Colors.black.withOpacity(0.7),
-          child: Center(
-            child: _buildModalContent(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModalContent() {
     final config = widget.config;
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: config.maxWidth),
-      child: Container(
-        key: SaveGameModalKeys.container,
-        margin: config.margin,
-        padding: config.padding,
-        decoration: BoxDecoration(
-          color: config.backgroundColor.withOpacity(config.backgroundOpacity),
-          borderRadius: BorderRadius.circular(config.borderRadius),
-          border: Border.all(
-            color: config.borderColor,
-            width: config.borderWidth,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: config.boxShadowColor.withOpacity(config.boxShadowOpacity),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-          ],
-        ),
+    // Chrome — barrier, centring, width cap, panel decoration — lives in
+    // ThemedModalShell (WS03 §3.7). The overlay and container keys pass
+    // through because the UI suites match on them.
+    return ThemedModalShell(
+      barrierKey: SaveGameModalKeys.overlay,
+      panelKey: SaveGameModalKeys.container,
+      backgroundColor: config.backgroundColor,
+      backgroundOpacity: config.backgroundOpacity,
+      borderColor: config.borderColor,
+      borderWidth: config.borderWidth,
+      borderRadius: config.borderRadius,
+      boxShadowColor: config.boxShadowColor,
+      boxShadowOpacity: config.boxShadowOpacity,
+      maxWidth: config.maxWidth,
+      margin: config.margin,
+      padding: config.padding,
         // Scrollable so the modal degrades gracefully on short viewports
         // (and when the error row is showing) instead of overflowing.
         child: SingleChildScrollView(
@@ -156,7 +138,6 @@ class _SaveGameModalState extends State<SaveGameModal> {
             ],
           ),
         ),
-      ),
     );
   }
 }
