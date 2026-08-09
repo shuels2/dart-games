@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:dart_games/providers/dartboard_provider.dart';
+
+import 'dartboard_pause_observer.dart';
 
 /// Side-effect widget that fires [onPaused] exactly once per pause
 /// when the dartboard connection drops while the user is inside a
@@ -20,7 +20,7 @@ import 'package:dart_games/providers/dartboard_provider.dart';
 ///
 /// Skipped entirely in emulator mode — emulator runs never trigger
 /// the pause modal, so auto-save is meaningless there.
-class AutoSaveOnPause extends StatefulWidget {
+class AutoSaveOnPause extends StatelessWidget {
   final VoidCallback onPaused;
   final Widget child;
 
@@ -31,63 +31,16 @@ class AutoSaveOnPause extends StatefulWidget {
   });
 
   @override
-  State<AutoSaveOnPause> createState() => _AutoSaveOnPauseState();
-}
-
-class _AutoSaveOnPauseState extends State<AutoSaveOnPause> {
-  DartboardProvider? _provider;
-  bool _savedThisPause = false;
-  DartboardConnectionStatus? _lastStatus;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final provider = Provider.of<DartboardProvider>(context, listen: false);
-    if (!identical(provider, _provider)) {
-      _provider?.removeListener(_onProviderChange);
-      _provider = provider;
-      _provider!.addListener(_onProviderChange);
-      _lastStatus = provider.status;
-    }
+  Widget build(BuildContext context) {
+    // Edge detection lives in DartboardPauseObserver (WS03 §3.7). This used
+    // to carry its own copy of the subscription, the paused predicate, the
+    // emulator opt-out and the rising-edge check.
+    //
+    // No requireObservedConnected here, unlike the announcer: at cold boot
+    // there is no game in progress to save, so the gate would be inert.
+    return DartboardPauseObserver(
+      onPauseEdge: onPaused,
+      child: child,
+    );
   }
-
-  @override
-  void dispose() {
-    _provider?.removeListener(_onProviderChange);
-    super.dispose();
-  }
-
-  bool _isPaused(DartboardConnectionStatus s) =>
-      s == DartboardConnectionStatus.disconnected ||
-      s == DartboardConnectionStatus.error;
-
-  void _onProviderChange() {
-    final p = _provider;
-    if (p == null || !mounted) return;
-    if (p.isEmulator) {
-      _lastStatus = p.status;
-      return;
-    }
-
-    final status = p.status;
-    final wasPaused = _lastStatus == null ? false : _isPaused(_lastStatus!);
-    final nowPaused = _isPaused(status);
-
-    // Reset the "saved this pause" arming once the connection comes
-    // back. The next pause-edge can then fire onPaused again.
-    if (status == DartboardConnectionStatus.connected) {
-      _savedThisPause = false;
-    }
-
-    // Fire on the rising edge of paused (connected → error / disconnected).
-    if (!wasPaused && nowPaused && !_savedThisPause) {
-      _savedThisPause = true;
-      widget.onPaused();
-    }
-
-    _lastStatus = status;
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
 }
