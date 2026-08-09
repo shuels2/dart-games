@@ -71,24 +71,35 @@ this document points into that appendix.
 
 ### Tier reference
 
-- **Tier 0 — Orchestrator (this thread — Opus 4.7 / 4.8):** every
-  phase decision, every gate decision, "fix code or update tests?"
+> **`effort` is NOT an Agent-tool parameter.** The Agent tool takes
+> `model`, `subagent_type`, `isolation`, `run_in_background` and
+> `prompt` — nothing else. `effort` exists only on `agent()` INSIDE a
+> Workflow script. Where a tier below names an effort level, that
+> applies when the stage runs inside a Workflow; a plain `Agent` call
+> gets the model's default. Passing `effort` to the Agent tool is an
+> input-validation error, not a silent no-op.
+
+- **Tier 0 — Orchestrator (this thread — Opus):** every phase
+  decision, every gate decision, "fix code or update tests?"
   judgment, all AR synthesis, root-cause analysis. Never delegated.
 - **Tier 1 — Opus sub-agent (`{model: 'opus'}`):** independent AR
   verification, adversarial-verify skeptics (3× parallel), Phase 8
   Step 2 perspective-diverse visual-review lenses (3× parallel),
   Phase 2 Stage A wireframe judge, cross-file semantic critique. Use
   when INDEPENDENCE + judgment quality matter more than cost.
-- **Tier 2 — Sonnet sub-agent, `effort: 'high'` (`{model: 'sonnet',
-  effort: 'high'}`):** test-smell reviewer, prior-art briefing
-  synthesis, hard structural refactors. Reasoning that Sonnet CAN
-  do, but only at high effort.
-- **Tier 3 — Sonnet sub-agent, default effort:** most implementation
-  work (screens, providers, UI test files, wireframe HTML/CSS,
-  announcement helpers, save/restore serialization). The workhorse.
-- **Tier 4 — Sonnet sub-agent, `effort: 'low'`:** simple grep-audit
-  stages inside AR-4 Workflow pipelines, structured-data extraction
-  from prose reports, pubspec updates. Cheapest useful tier.
+- **Tier 2 — Sonnet sub-agent (`{model: 'sonnet'}`), high effort where
+  the stage runs in a Workflow:** test-smell reviewer, prior-art
+  briefing synthesis, hard structural refactors. Reasoning that Sonnet
+  CAN do, but only when it is given room.
+- **Tier 3 — Sonnet sub-agent (`{model: 'sonnet'}`), default:** most
+  implementation work (screens, providers, UI test files, wireframe
+  HTML/CSS, announcement helpers, save/restore serialization). The
+  workhorse.
+- **Tier 4 — Sonnet sub-agent, low effort inside a Workflow:** simple
+  grep-audit stages in AR-4 pipelines, structured-data extraction from
+  prose reports, pubspec updates. Cheapest useful tier. As a plain
+  Agent call this is just Tier 3; consider `{model: 'haiku'}` instead
+  for genuinely mechanical greps.
 - **Tier 5 — `Explore` agent type (`subagent_type: 'Explore'`):**
   read-only surveys — prior-art discovery, spec section maps, "which
   existing games use pattern X?", cross-game code recon. Ships with
@@ -96,11 +107,22 @@ this document points into that appendix.
 
 ### Structural tools
 
-- **Workflow tool:** replace serial multi-item work (AR-4's 34 checks,
+- **Workflow tool — REQUIRES EXPLICIT USER OPT-IN.** A workflow can
+  spawn dozens of agents and spend a large number of tokens, so it may
+  only be launched when the user has actually asked for it (the
+  keyword "ultracode", "use a workflow"/"fan out agents" in their own
+  words, or a skill they invoked that says to). Do NOT start one just
+  because a stage below would benefit. If a phase would be materially
+  better as a workflow, say so, give a rough cost, and ask.
+  When opted in: replace serial multi-item work (AR-4's 34 checks,
   Phase 4's 3 screen files, Phase 7's UI-test subdirectories) with a
   `pipeline([items], stage1, stage2)` that streams items through
   stages without a barrier. Reserve `parallel(thunks)` for barriers
   where dedupe / synthesis genuinely needs ALL results together.
+- **Plain fan-out without a Workflow:** issue several `Agent` calls in
+  ONE message and they run concurrently. This is the default way to
+  parallelise (Phase 8 STEP 2's three review lenses, Step 7B's
+  coverage-audit sources) and needs no opt-in.
 - **`isolation: 'worktree'`:** for parallel sub-agents that all
   MUTATE files (Phase 2 judge-panel wireframe authors, Phase 4
   parallel screen authors). Each agent gets its own worktree; the
@@ -112,9 +134,17 @@ this document points into that appendix.
 - **Artifact tool:** render an HTML dashboard for cross-game
   AR-Coverage findings (Phase 10) so the user can visually verify
   coverage in seconds.
-- **`run_in_background: true` + `ScheduleWakeup`:** for 3h+ UI test
-  runs. Fire the runner, sleep 20 min, poll. Frees context to keep
-  working.
+- **`run_in_background: true`:** for 3h+ UI test runs. Fire the
+  runner and keep working; a completion notification arrives when it
+  exits, so there is no need to poll on a timer. `ScheduleWakeup` is
+  for `/loop` self-pacing, not for waiting on a background command
+  that already notifies.
+- **Freeze the tree during a UI run.** `flutter drive` compiles what
+  is on disk WHEN EACH FILE LAUNCHES, so editing `lib/` mid-run makes
+  later files compile a half-edited codebase and produces failures
+  that match nothing in the committed code. Either stop editing for
+  the duration or run from a git worktree pinned to a commit — which
+  is what `run_ui_tests_parallel.bat` does.
 
 ### Where each tier applies (per-phase quick reference)
 
@@ -752,7 +782,7 @@ Do NOT proceed to Phase 3 until the user explicitly approves the full wireframe 
 
 **Goal:** Create the game model, provider, and core game logic with tests.
 
-**Model:** **Tier 3** (Sonnet) for model + provider + tests; **Tier 0** (orchestrator) for AR-3 + Gate 1 verification. **After test authoring:** run **[Playbook §10 — Test-smell reviewer]** (Tier 2, Sonnet + `effort: 'high'`) on the new test files to catch `pumpAndSettle`-and-pass patterns before they land.
+**Model:** **Tier 3** (Sonnet) for model + provider + tests; **Tier 0** (orchestrator) for AR-3 + Gate 1 verification. **After test authoring:** run **[Playbook §10 — Test-smell reviewer]** (Tier 2, Sonnet) on the new test files to catch `pumpAndSettle`-and-pass patterns before they land.
 
 ### Delegate to Sonnet sub-agent
 
@@ -2546,7 +2576,7 @@ If FAIL: dispatch sub-agents for missing tests / fixes, re-audit, re-run BOTH su
 - **Step 2 (visual evaluation):** **[Playbook §3 — Perspective-diverse review]** — 3× Tier-1 Opus lens reviewers (layout / typography / brand) in parallel. This does NOT violate "visual judgment stays on the orchestrator" — all 3 ARE Opus sub-agents. Any lens's flag counts.
 - **Step 3 (report findings):** **Tier 0** (orchestrator) synthesizes across lenses.
 - **Step 4 (fixes):** **Tier 3** (Sonnet), then **[Playbook §9 — Corrective re-audit]** re-runs Step 2 lens(es) that flagged the fixed issue.
-- **Step 5 (UI test runs):** **Tier 3** (Sonnet), and for 3h+ runs use **[Playbook §11 — Background UI runs]** with `run_in_background: true` + `ScheduleWakeup(delaySeconds: 1200)`.
+- **Step 5 (UI test runs):** **Tier 3** (Sonnet), and for 3h+ runs use **[Playbook §11 — Background UI runs]** with `run_in_background: true` (a completion notification arrives; no polling timer needed).
 - **Step 7 (flutter test + server test):** **Tier 3** (Sonnet).
 - **Step 4/6/8 decisions, AR-7, AR-10:** **Tier 0** (orchestrator).
 
