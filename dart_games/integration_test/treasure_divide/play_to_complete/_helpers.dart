@@ -5,11 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 
 import '../../shared/game_ui_config.dart';
-import '../../shared/element_finders.dart';
+import '../../shared/play_to_complete_suite.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/dart_throw_helpers.dart';
-import '../../shared/pump_sequences.dart';
-import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 
 final config = GameUIConfig.treasureDivide();
@@ -76,3 +74,35 @@ Future<void> playGameToCompletion(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 2));
   await tester.pump();
 }
+
+// ===== PLAY TO COMPLETE SUITE SPEC =====
+//
+// Shared bodies live in shared/play_to_complete_suite.dart; everything
+// specific to Treasure Divide is supplied here. Only the two commodity scenarios
+// (default settings, mid-game pickup) use it — the per-option tests in this
+// folder stay hand-written.
+
+final playToCompleteSpec = PlayToCompleteSpec(
+  config: config,
+  setupAndStart: (tester) =>
+      GameSetupHelpers.setupAndStartTreasureDivide(tester, config),
+  hasWinner: (tester) =>
+      ProviderHelpers.getTreasureDivideProvider(tester).hasWinner,
+  // A full turn of misses, then takeout, so auto-play picks up on P2's turn.
+  //
+  // Takeout goes through the mock API, NOT clickDartsRemoved: that taps the
+  // DARTS REMOVED button, which calls
+  // dartboardKey?.currentState?.removeDarts() — and TD's game screen never
+  // passes a dartboardKey to DartboardEmulatorSection, so the tap is a no-op.
+  midGameDarts: (tester) async {
+    for (var i = 0; i < 3; i++) {
+      await DartThrowHelpers.throwMissViaMock(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+    }
+    DartThrowHelpers.getMockApi(tester)?.simulateTakeoutFinished();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+  },
+  maxIterations: 500,
+);

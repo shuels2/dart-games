@@ -5,11 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 
 import '../../shared/game_ui_config.dart';
-import '../../shared/element_finders.dart';
+import '../../shared/play_to_complete_suite.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/dart_throw_helpers.dart';
-import '../../shared/pump_sequences.dart';
-import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 
 final config = GameUIConfig.tikiGolf();
@@ -74,3 +72,24 @@ Future<void> playGameToCompletion(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 2));
   await tester.pump();
 }
+
+// ===== PLAY TO COMPLETE SUITE SPEC =====
+//
+// Shared bodies live in shared/play_to_complete_suite.dart; everything
+// specific to Tiki Golf is supplied here. Only the two commodity scenarios
+// (default settings, mid-game pickup) use it — the per-option tests in this
+// folder stay hand-written.
+
+final playToCompleteSpec = PlayToCompleteSpec(
+  config: config,
+  setupAndStart: (tester) =>
+      GameSetupHelpers.setupAndStartTikiGolf(tester, config),
+  hasWinner: (tester) => ProviderHelpers.getTikiGolfProvider(tester).hasWinner,
+  // A single miss: a hit would sink the hole and end the turn, which is the
+  // opposite of the mid-turn state this scenario wants.
+  midGameDarts: (tester) async {
+    await DartThrowHelpers.throwMissViaMock(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  },
+);
