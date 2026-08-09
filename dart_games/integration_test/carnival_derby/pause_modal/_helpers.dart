@@ -66,7 +66,10 @@ final pauseModalSpec = PauseModalSpec(
   verifyOnMenu: (tester) =>
       expect(find.textContaining('Target score:'), findsOneWidget,
           reason: 'Menu screen not showing — target score label not found'),
-  menuSettingsControls: [ElementFinders.getCarnivalDerbyTargetScoreDropdown],
+  // The target-score SLIDER, not the dropdown: the dropdown key is dead in
+  // lib/, so the hand-written test's `isNotEmpty` guard was permanently
+  // false and it never tapped a settings control at all.
+  menuSettingsControls: [ElementFinders.getCarnivalDerbyTargetScoreSlider],
   menuStartPlayers: const ['PauseA', 'PauseB'],
   verifyOnHome: (tester) {
     expect(find.byKey(HomeKeys.carnivalDerbyCard), findsOneWidget);

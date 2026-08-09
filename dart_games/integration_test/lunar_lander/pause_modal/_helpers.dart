@@ -133,8 +133,11 @@ Future<void> _openEditScoreOnSecondTurn(WidgetTester tester) async {
 
 final pauseModalSpec = PauseModalSpec(
   config: config,
-  // Lunar's menu back arrow is found by tooltip, not by key.
-  menuBackButton: () => find.byTooltip('Back'),
+  // The KEYED back arrow, not find.byTooltip('Back'): the menu's back button
+  // carries no 'Back' tooltip, so the tooltip finder matches nothing. The
+  // hand-written test hid that behind an `isNotEmpty` guard and so never
+  // tapped the back button at all.
+  menuBackButton: ElementFinders.getLunarLanderBackButton,
   ownGameCard: ElementFinders.getLunarLanderCard,
   verifyOnMenu: (tester) =>
       expect(find.text('LUNAR LANDER GAME SETUP'), findsWidgets,

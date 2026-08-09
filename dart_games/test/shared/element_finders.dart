@@ -42,6 +42,17 @@ class ElementFinders {
     return find.byKey(CarnivalDerbyMenuKeys.targetScoreDropdown);
   }
 
+  /// The target-score control Carnival's menu actually builds.
+  ///
+  /// [getCarnivalDerbyTargetScoreDropdown] above matches nothing:
+  /// `carnival_menu_target_score_dropdown` is defined in test_keys.dart but
+  /// never attached to a widget in lib/ — the menu builds a Slider keyed
+  /// `carnival_menu_target_score_slider`. Any test that "tapped" the dropdown
+  /// behind an `isNotEmpty` guard was silently tapping nothing.
+  static Finder getCarnivalDerbyTargetScoreSlider() {
+    return find.byKey(CarnivalDerbyMenuKeys.targetScoreSlider);
+  }
+
   static Finder getCarnivalDerbyPerfectFinishToggle() {
     return find.byKey(CarnivalDerbyMenuKeys.perfectFinishSwitch);
   }
