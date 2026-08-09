@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'pulse_animation.dart';
 import 'dart:math' as math;
 
 class CarnivalStringLights extends StatefulWidget {
@@ -36,7 +38,7 @@ class _CarnivalStringLightsState extends State<CarnivalStringLights>
   /// A 0..1 sawtooth for [index], phase-shifted then folded into a
   /// there-and-back ramp so it matches the old `repeat(reverse: true)`.
   Animation<double> _phased(int index, {required double begin, required double end}) {
-    return _PhaseShiftedAnimation(
+    return PulseAnimation(
       parent: _controller,
       phase: (index * _phaseStep) % 1.0,
     ).drive(
@@ -245,28 +247,4 @@ class _WirePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Maps a repeating 0..1 controller onto a phase-shifted 0→1→0 ramp.
-///
-/// Lets many animations share ONE ticker while staying visually out of step.
-/// The fold (`v <= 0.5 ? v*2 : (1-v)*2`) reproduces `repeat(reverse: true)`
-/// from a controller that only ever counts forward, which is what makes a
-/// per-bulb phase offset possible at all — a reversing controller has no
-/// stable phase to offset from.
-class _PhaseShiftedAnimation extends Animation<double>
-    with AnimationWithParentMixin<double> {
-  _PhaseShiftedAnimation({required this.parent, required this.phase});
-
-  @override
-  final Animation<double> parent;
-
-  /// 0..1 fraction of a full cycle to lead this animation by.
-  final double phase;
-
-  @override
-  double get value {
-    final shifted = (parent.value + phase) % 1.0;
-    return shifted <= 0.5 ? shifted * 2 : (1.0 - shifted) * 2;
-  }
 }
