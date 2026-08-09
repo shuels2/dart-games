@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 
@@ -5,6 +6,10 @@ import '../../shared/dart_throw_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/element_finders.dart';
+import '../../shared/settings_helpers.dart';
+import '../../shared/navigation_suite.dart';
+import '../../shared/ui_test_helpers.dart';
 
 export '../../shared/ui_test_helpers.dart';
 export '../../shared/element_finders.dart';
@@ -87,3 +92,40 @@ Future<void> completeGameToVictory(
 
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== NAVIGATION SUITE SPEC =====
+//
+// Gladiator only uses two of the four shared runners:
+//   * menu_back_to_home and change_settings_back_to_home are BOTH plain
+//     menu → back → home checks here (the latter never plays a game), so
+//     both call runMenuBackToHomeTest.
+//   * game_back_settings_persist throws a dart first, so it is the one game
+//     that ASSERTS the Save modal appears (expectSaveModalOnGameBack).
+//   * change_settings_preserves_settings stays hand-written: it asserts the
+//     OPPOSITE of the other games — that a home round-trip RESETS settings to
+//     defaults — which is a deliberate policy test, not this template.
+
+final navigationSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getGladiatorArenaBackButton,
+  ownGameCard: ElementFinders.getGladiatorArenaCard,
+  verifyOnMenu: (tester) =>
+      expect(ElementFinders.getGladiatorArenaStartButton(), findsOneWidget),
+  reachGameScreen: (tester) async {
+    await UITestHelpers.navigateToGameMenu(tester, config);
+    await SettingsHelpers.setGladiatorArenaTargetScore(tester, 350);
+    await SettingsHelpers.toggleGladiatorArenaShieldRound(tester);
+    await UITestHelpers.addPlayer(tester, 'Player A', config);
+    await UITestHelpers.addPlayer(tester, 'Player B', config);
+    await UITestHelpers.startGame(tester, config);
+    expect(ElementFinders.getGladiatorArenaSkipTurnButton(), findsOneWidget);
+    await DartThrowHelpers.throwDartViaMock(tester, 5);
+  },
+  expectSaveModalOnGameBack: true,
+  verifySettings: (tester) {
+    final slider = tester
+        .widget<Slider>(ElementFinders.getGladiatorArenaTargetScoreSlider());
+    expect(slider.value.toInt(), 350,
+        reason: 'Target score should still be 350 after back from game');
+  },
+);

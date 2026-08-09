@@ -5,6 +5,9 @@ import '../../shared/dart_throw_helpers.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/results_helpers.dart';
+import '../../shared/element_finders.dart';
+import '../../shared/navigation_suite.dart';
+import '../../shared/ui_test_helpers.dart';
 
 final config = GameUIConfig.reefRoyale();
 
@@ -70,3 +73,43 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
 
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== NAVIGATION SUITE SPEC =====
+
+Future<void> _reachGameScreen(WidgetTester tester) async {
+  await setupAndStartGame(tester, config);
+  await completeGameToVictory(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
+  expect(config.getPlayAgainButton(), findsOneWidget);
+  await UITestHelpers.clickPlayAgain(tester, config);
+
+  await tester.pump(const Duration(seconds: 3));
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pump();
+}
+
+final navigationSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getReefRoyaleBackButton,
+  setupAndStart: (tester) => setupAndStartGame(tester, config),
+  playToVictory: completeGameToVictory,
+  reachGameScreen: _reachGameScreen,
+  // The game-back test asserts the Game Mode control is back on the menu.
+  verifySettings: (tester) {
+    expect(find.textContaining('Game Mode'), findsOneWidget);
+  },
+);
+
+/// Change Settings additionally asserts the mode dropdown and both players.
+final navigationSettingsSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getReefRoyaleBackButton,
+  setupAndStart: (tester) => setupAndStartGame(tester, config),
+  playToVictory: completeGameToVictory,
+  verifySettings: (tester) {
+    expect(ElementFinders.getReefRoyaleGameModeDropdown(), findsOneWidget);
+    expect(find.text('Player A'), findsWidgets);
+    expect(find.text('Player B'), findsWidgets);
+  },
+);

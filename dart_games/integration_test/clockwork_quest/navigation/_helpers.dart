@@ -7,6 +7,9 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/results_helpers.dart';
+import '../../shared/element_finders.dart';
+import '../../shared/navigation_suite.dart';
+import '../../shared/ui_test_helpers.dart';
 
 final config = GameUIConfig.clockworkQuest();
 
@@ -84,3 +87,52 @@ Future<void> completeGameToVictory(
 
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== NAVIGATION SUITE SPEC =====
+//
+// Clockwork has no menu_back_to_home file; the other three scenarios map
+// directly onto the shared runners.
+
+void _verifyOptionControls(WidgetTester tester) {
+  expect(ElementFinders.getClockworkQuestIncludeBullseyeCheckbox(),
+      findsOneWidget);
+  expect(ElementFinders.getClockworkQuestSpeedModeCheckbox(), findsOneWidget);
+}
+
+Future<void> _reachGameScreen(WidgetTester tester) async {
+  await setupAndStartGame(tester, config);
+  await completeGameToVictory(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
+  expect(config.getPlayAgainButton(), findsOneWidget);
+  await UITestHelpers.clickPlayAgain(tester, config);
+
+  await tester.pump(const Duration(seconds: 3));
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pump();
+}
+
+final navigationSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getClockworkQuestBackButton,
+  setupAndStart: (tester) => setupAndStartGame(tester, config),
+  playToVictory: completeGameToVictory,
+  reachGameScreen: _reachGameScreen,
+  verifySettings: _verifyOptionControls,
+);
+
+/// Change Settings additionally asserts the two players survived — checked
+/// both through the provider and on screen, as the original did.
+final navigationSettingsSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getClockworkQuestBackButton,
+  setupAndStart: (tester) => setupAndStartGame(tester, config),
+  playToVictory: completeGameToVictory,
+  verifySettings: (tester) {
+    _verifyOptionControls(tester);
+    final playerProvider = ProviderHelpers.getPlayerProvider(tester);
+    expect(playerProvider.selectedPlayers.length, 2);
+    expect(find.text('Player A'), findsWidgets);
+    expect(find.text('Player B'), findsWidgets);
+  },
+);

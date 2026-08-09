@@ -9,7 +9,7 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/results_helpers.dart';
 import '../../shared/settings_helpers.dart';
-import '../../shared/suites/navigation_suite.dart';
+import '../../shared/navigation_suite.dart';
 import '../../shared/ui_test_helpers.dart';
 
 final config = GameUIConfig.targetTag();
@@ -86,7 +86,7 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
 
 // ===== NAVIGATION SUITE SPEC =====
 //
-// Shared bodies live in shared/suites/navigation_suite.dart; everything
+// Shared bodies live in shared/navigation_suite.dart; everything
 // game-specific for Target Tag is supplied here. Shield Max 3 and the two
 // players are the exact setup the four hand-written files used.
 

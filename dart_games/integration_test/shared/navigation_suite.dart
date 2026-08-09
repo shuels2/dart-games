@@ -1,4 +1,4 @@
-// integration_test/shared/suites/navigation_suite.dart
+// integration_test/shared/navigation_suite.dart
 //
 // Shared, parameterized bodies for the navigation scenarios every game
 // implements (WS05 §5.3 item 3 — "template the commodity categories").
@@ -42,11 +42,11 @@
 //     menu loaded → spec's verifySettings runs.
 import 'package:flutter_test/flutter_test.dart';
 
-import '../element_finders.dart';
-import '../game_ui_config.dart';
-import '../pump_sequences.dart';
-import '../results_helpers.dart';
-import '../ui_test_helpers.dart';
+import 'element_finders.dart';
+import 'game_ui_config.dart';
+import 'pump_sequences.dart';
+import 'results_helpers.dart';
+import 'ui_test_helpers.dart';
 
 /// Per-game parameters for the navigation scenarios.
 ///

@@ -14,7 +14,7 @@ import '../../shared/ui_test_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/settings_helpers.dart';
 import '../../shared/results_helpers.dart';
-import '../../shared/suites/navigation_suite.dart';
+import '../../shared/navigation_suite.dart';
 
 final config = GameUIConfig.tikiGolf();
 
@@ -82,7 +82,7 @@ Future<void> playGameToCompletion(WidgetTester tester) async {
 
 // ===== NAVIGATION SUITE SPECS =====
 //
-// Shared bodies live in shared/suites/navigation_suite.dart. Tiki Golf needs
+// Shared bodies live in shared/navigation_suite.dart. Tiki Golf needs
 // TWO specs because its hand-written files used different player names and
 // settings per scenario; both are reproduced exactly.
 
