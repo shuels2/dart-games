@@ -1,3 +1,4 @@
+import 'game_announcement_helper_base.dart';
 import 'game_announcement_queue_service.dart';
 import 'tiki_golf_sound_effects.dart';
 
@@ -6,15 +7,14 @@ import 'tiki_golf_sound_effects.dart';
 /// Wraps [GameAnnouncementQueueService] with convenience methods for every
 /// Section 9 announcement event.  The [pickAndAnnounceMoment] method
 /// implements the stacking-precedence chain from the orchestrator design.
-class TikiGolfAnnouncementHelper {
-  final GameAnnouncementQueueService _queueService;
+class TikiGolfAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  TikiGolfAnnouncementHelper(this._queueService);
+  TikiGolfAnnouncementHelper(super.queue);
 
   // ─── Individual announcement methods ─────────────────────────────────────────
 
   void announceGameStart() {
-    _queueService.announce(
+    queue.announce(
       "Welcome to Tiki Golf! Let's tee off!",
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.ukulele,
@@ -22,7 +22,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceNewHole(int holeNumber, int targetNumber) {
-    _queueService.announce(
+    queue.announce(
       'Hole $holeNumber: Aim for number $targetNumber!',
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.tikiChime,
@@ -30,7 +30,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announcePlayerTurn(String playerName) {
-    _queueService.announce(
+    queue.announce(
       "$playerName, you're on the tee!",
       AudioPriority.turnTransition,
       soundEffect: TikiGolfSoundEffects.ukulele,
@@ -38,7 +38,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceBirdie(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Birdie! You sunk it on the first dart!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.clap,
@@ -46,7 +46,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announcePar(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Par! Solid shot!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.ballDrop,
@@ -54,7 +54,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceBogey(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Bogey! Just squeaked that one in!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.putt,
@@ -62,7 +62,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceDoubleBogey(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Double bogey! Squeaked it out!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.putt,
@@ -70,7 +70,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceTripleBogey(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Triple bogey! Barely hung in!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.putt,
@@ -78,7 +78,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceQuadrupleBogey(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Quadruple bogey! That was a wild one!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.putt,
@@ -86,7 +86,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceSplash(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Splash! Missed them all!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.splash,
@@ -94,7 +94,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceMiss() {
-    _queueService.announce(
+    queue.announce(
       'That one went wide!',
       AudioPriority.hitConfirm,
       soundEffect: TikiGolfSoundEffects.splash,
@@ -102,7 +102,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceAlmostThere(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'One dart left to save par!',
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.tikiChime,
@@ -116,7 +116,7 @@ class TikiGolfAnnouncementHelper {
   /// the splash+mulligan modal is up (see
   /// [announceMulliganReminder]).
   void announceMulliganUsed(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Mulligan! Remove your darts and try again, $playerName!',
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.mulligan,
@@ -130,7 +130,7 @@ class TikiGolfAnnouncementHelper {
   /// which sounded like a two-step recipe and steered players away
   /// from the mulligan without noticing.
   void announceMulliganReminder(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Splash! $playerName missed every dart. '
       "Tap Use Mulligan for a do-over, or Next Player to lock it in.",
       AudioPriority.statusChange,
@@ -139,7 +139,7 @@ class TikiGolfAnnouncementHelper {
   }
 
   void announceNearWin(String playerName, int leadBy) {
-    _queueService.announce(
+    queue.announce(
       'Final hole! $playerName leads by $leadBy!',
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.ukulele,
@@ -156,15 +156,15 @@ class TikiGolfAnnouncementHelper {
   void announceVictory(List<String> winnerNames) {
     if (winnerNames.isEmpty) return;
     if (winnerNames.length == 1) {
-      _queueService.announce(
+      queue.announce(
         '${winnerNames.first} wins the Golden Tiki!',
         AudioPriority.victory,
         soundEffect: TikiGolfSoundEffects.victoryFanfare,
       );
       return;
     }
-    final names = _joinWithAnd(winnerNames);
-    _queueService.announce(
+    final names = GameAnnouncementHelperBase.joinWithAnd(winnerNames);
+    queue.announce(
       '$names tie for the Golden Tiki!',
       AudioPriority.victory,
       soundEffect: TikiGolfSoundEffects.victoryFanfare,
@@ -175,15 +175,9 @@ class TikiGolfAnnouncementHelper {
   /// ['A']            => 'A'
   /// ['A', 'B']       => 'A and B'
   /// ['A', 'B', 'C']  => 'A, B, and C' (Oxford comma)
-  String _joinWithAnd(List<String> parts) {
-    if (parts.length == 1) return parts.single;
-    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
-    final head = parts.sublist(0, parts.length - 1).join(', ');
-    return '$head, and ${parts.last}';
-  }
 
   void announceHoleComplete(int nextHoleNumber) {
-    _queueService.announce(
+    queue.announce(
       'On to hole $nextHoleNumber!',
       AudioPriority.statusChange,
       soundEffect: TikiGolfSoundEffects.tikiChime,
@@ -193,7 +187,7 @@ class TikiGolfAnnouncementHelper {
   /// Unconditional remove-darts announcement.  Called by the game screen on
   /// every turn-end, OUTSIDE the precedence chain.
   void announceRemoveDarts(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
     );
@@ -330,9 +324,4 @@ class TikiGolfAnnouncementHelper {
 
   // ─── Connection-status announcements ────────────────────────────────────────
 
-  Future<void> whenIdle() => _queueService.whenIdle();
-
-  void dispose() {
-    _queueService.dispose();
-  }
 }

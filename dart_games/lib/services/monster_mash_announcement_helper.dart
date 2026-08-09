@@ -1,15 +1,15 @@
 import '../models/monster_mash_game.dart';
+import 'game_announcement_helper_base.dart';
 import 'game_announcement_queue_service.dart';
 import 'monster_mash_sound_effects.dart';
 
-class MonsterMashAnnouncementHelper {
-  final GameAnnouncementQueueService _queue;
+class MonsterMashAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  MonsterMashAnnouncementHelper(this._queue);
+  MonsterMashAnnouncementHelper(super.queue);
 
   // Announce game start
   void announceGameStart() {
-    _queue.announce(
+    queue.announce(
       'Welcome to Monster Mash! Let the battle begin!',
       AudioPriority.victory,
       soundEffect: MonsterMashSoundEffects.gameStart,
@@ -18,7 +18,7 @@ class MonsterMashAnnouncementHelper {
 
   // Announce turn transition
   void announceTurn(String playerName) {
-    _queue.announce(
+    queue.announce(
       '$playerName, your turn',
       AudioPriority.turnTransition,
       soundEffect: MonsterMashSoundEffects.turnStart,
@@ -30,7 +30,7 @@ class MonsterMashAnnouncementHelper {
   // announce (the !hasSecondary fallback path).
   void announceHit(int number, String multiplier, {bool isMiss = false}) {
     if (isMiss) {
-      _queue.announce('Miss', AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.dartHit);
+      queue.announce('Miss', AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.dartHit);
       return;
     }
 
@@ -44,7 +44,7 @@ class MonsterMashAnnouncementHelper {
       text = '$mult $number';
     }
 
-    _queue.announce(text, AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.dartHit);
+    queue.announce(text, AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.dartHit);
   }
 
   // Announce healing
@@ -67,7 +67,7 @@ class MonsterMashAnnouncementHelper {
       text = '${prefix}Plus $amount health!';
     }
 
-    _queue.announce(text, AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.healing);
+    queue.announce(text, AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.healing);
   }
 
   // Announce attack on opponent
@@ -83,7 +83,7 @@ class MonsterMashAnnouncementHelper {
       text = 'A single glancing blow! $playerName feels the sting.';
     }
 
-    _queue.announce(text, AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.attack);
+    queue.announce(text, AudioPriority.hitConfirm, soundEffect: MonsterMashSoundEffects.attack);
   }
 
   void announceHealthWarning(String playerName, double percentage, {int? damage}) {
@@ -99,12 +99,12 @@ class MonsterMashAnnouncementHelper {
       return;
     }
 
-    _queue.announce(text, AudioPriority.shieldStatus, soundEffect: MonsterMashSoundEffects.healthWarning);
+    queue.announce(text, AudioPriority.shieldStatus, soundEffect: MonsterMashSoundEffects.healthWarning);
   }
 
   // Announce elimination
   void announceElimination(String playerName) {
-    _queue.announce(
+    queue.announce(
       '$playerName! Back to the shadows!',
       AudioPriority.statusChange,
       soundEffect: MonsterMashSoundEffects.elimination,
@@ -113,7 +113,7 @@ class MonsterMashAnnouncementHelper {
 
   // Announce hat trick (3 darts all hit same opponent)
   void announceHatTrick(String playerName, int damage) {
-    _queue.announce(
+    queue.announce(
       'MONSTROUS! $damage damage! Triple strike on $playerName!',
       AudioPriority.statusChange,
       soundEffect: MonsterMashSoundEffects.hatTrick,
@@ -121,7 +121,7 @@ class MonsterMashAnnouncementHelper {
   }
 
   void announceHatTrickElimination(String playerName, int damage) {
-    _queue.announce(
+    queue.announce(
       'MONSTROUS! $damage damage! Triple strike eliminates $playerName!',
       AudioPriority.statusChange,
       soundEffect: MonsterMashSoundEffects.hatTrick,
@@ -131,7 +131,7 @@ class MonsterMashAnnouncementHelper {
   // Announce combined elimination (multiple players eliminated at once)
   void announceCombinedElimination(List<String> playerNames) {
     final names = playerNames.join(' and ');
-    _queue.announce(
+    queue.announce(
       '$names! Back to the shadows!',
       AudioPriority.statusChange,
       soundEffect: MonsterMashSoundEffects.elimination,
@@ -140,7 +140,7 @@ class MonsterMashAnnouncementHelper {
 
   // Announce clutch heal (hit own number while below 10 HP)
   void announceClutchHeal(String playerName) {
-    _queue.announce(
+    queue.announce(
       '$playerName rises from near death!',
       AudioPriority.statusChange,
       soundEffect: MonsterMashSoundEffects.clutchHeal,
@@ -161,12 +161,12 @@ class MonsterMashAnnouncementHelper {
         text = 'Laboratory Spark! Bullseye zaps all opponents!';
     }
 
-    _queue.announce(text, AudioPriority.statusChange, soundEffect: MonsterMashSoundEffects.buffActivation);
+    queue.announce(text, AudioPriority.statusChange, soundEffect: MonsterMashSoundEffects.buffActivation);
   }
 
   // Announce remove darts
   void announceRemoveDarts() {
-    _queue.announce(
+    queue.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
     );
@@ -174,7 +174,7 @@ class MonsterMashAnnouncementHelper {
 
   // Announce winner
   void announceWinner(String playerName) {
-    _queue.announce('GAME OVER! The night belongs to $playerName!', AudioPriority.victory);
+    queue.announce('GAME OVER! The night belongs to $playerName!', AudioPriority.victory);
   }
 
   // Announce winners (ties)
@@ -184,12 +184,7 @@ class MonsterMashAnnouncementHelper {
       return;
     }
     final names = playerNames.join(' and ');
-    _queue.announce('GAME OVER! The night is shared by $names!', AudioPriority.victory);
+    queue.announce('GAME OVER! The night is shared by $names!', AudioPriority.victory);
   }
 
-  Future<void> whenIdle() => _queue.whenIdle();
-
-  void dispose() {
-    _queue.dispose();
-  }
 }

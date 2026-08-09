@@ -1,3 +1,4 @@
+import 'game_announcement_helper_base.dart';
 import 'game_announcement_queue_service.dart';
 import 'pirates_grid_sound_effects.dart';
 
@@ -18,16 +19,15 @@ import 'pirates_grid_sound_effects.dart';
 ///   8. Already Claimed (own)       — matched cell is already own flag
 ///   9. Already Claimed (opponent)  — matched cell is opponent's, stealMode OFF
 ///  10. Miss           — dart hit no cell at all
-class PiratesGridAnnouncementHelper {
-  final GameAnnouncementQueueService _queueService;
+class PiratesGridAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  PiratesGridAnnouncementHelper(this._queueService);
+  PiratesGridAnnouncementHelper(super.queue);
 
   // ─── Lifecycle / standalone ──────────────────────────────────────────────────
 
   /// Game start announcement — fires once after queue loads.
   void announceGameStart() {
-    _queueService.announce(
+    queue.announce(
       'Set sail! The grid awaits, captains!',
       AudioPriority.statusChange,
       soundEffect: PiratesGridSoundEffects.shipBell,
@@ -36,7 +36,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Player turn announcement — fires at start of each turn.
   void announcePlayerTurn(String playerName) {
-    _queueService.announce(
+    queue.announce(
       '$playerName, take the helm!',
       AudioPriority.turnTransition,
       soundEffect: PiratesGridSoundEffects.shipBell,
@@ -45,7 +45,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Round transition announcement — fires between rounds in Best Of 3/5.
   void announceRoundTransition(int round) {
-    _queueService.announce(
+    queue.announce(
       'Round $round! Reset the grid!',
       AudioPriority.statusChange,
       soundEffect: PiratesGridSoundEffects.shipBell,
@@ -54,7 +54,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Speed Play timer warning — fires once at 5 seconds remaining.
   void announceSpeedTimerWarning() {
-    _queueService.announce(
+    queue.announce(
       'The wind is picking up!',
       AudioPriority.statusChange,
       soundEffect: PiratesGridSoundEffects.timerTick,
@@ -63,7 +63,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Speed Play timer expired — fires when turn auto-ends.
   void announceTimerExpired() {
-    _queueService.announce(
+    queue.announce(
       "Time's up! The wind takes yer darts!",
       AudioPriority.statusChange,
       soundEffect: PiratesGridSoundEffects.timerTick,
@@ -74,7 +74,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Flag planted on an empty cell.
   void announceFlagPlanted(String playerName, String target) {
-    _queueService.announce(
+    queue.announce(
       'Flag planted at $target!',
       AudioPriority.hitConfirm,
       soundEffect: PiratesGridSoundEffects.flagPlant,
@@ -83,7 +83,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Square stolen from opponent (Steal Mode ON).
   void announceSquareStolen(String playerName, String target, String opponentName) {
-    _queueService.announce(
+    queue.announce(
       'Mutiny! $playerName steals $target!',
       AudioPriority.hitConfirm,
       soundEffect: PiratesGridSoundEffects.swordClash,
@@ -92,7 +92,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Dart matched no cell on the grid.
   void announceMiss() {
-    _queueService.announce(
+    queue.announce(
       'Lost at sea! No square claimed.',
       AudioPriority.hitConfirm,
       soundEffect: PiratesGridSoundEffects.waveCrash,
@@ -107,7 +107,7 @@ class PiratesGridAnnouncementHelper {
     final text = isOwn
         ? 'Yer flag already flies there, captain!'
         : 'That square is defended!';
-    _queueService.announce(
+    queue.announce(
       text,
       AudioPriority.hitConfirm,
       soundEffect: PiratesGridSoundEffects.waveCrash,
@@ -116,7 +116,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Player has exactly 2 flags in a line with the third cell still empty.
   void announceTwoInARow(String playerName, String target) {
-    _queueService.announce(
+    queue.announce(
       '$target claimed! That\'s two in a row! One more for treasure!',
       AudioPriority.statusChange,
       soundEffect: PiratesGridSoundEffects.flagPlant,
@@ -125,7 +125,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Round winner determined (3-in-a-row claimed).
   void announceRoundVictory(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Treasure found! $playerName claims the map!',
       AudioPriority.victory,
       soundEffect: PiratesGridSoundEffects.treasureFound,
@@ -134,7 +134,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Round ended in a draw (all 9 squares filled, no 3-in-a-row).
   void announceRoundDraw() {
-    _queueService.announce(
+    queue.announce(
       'A stalemate! Neither captain claims the map!',
       AudioPriority.statusChange,
       soundEffect: PiratesGridSoundEffects.waveCrash,
@@ -143,7 +143,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Match winner determined (Best Of reached).
   void announceMatchVictory(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'Captain $playerName rules the seas!',
       AudioPriority.victory,
       soundEffect: PiratesGridSoundEffects.cannonBoom,
@@ -152,7 +152,7 @@ class PiratesGridAnnouncementHelper {
 
   /// Match ended in a draw (all rounds played, no winner).
   void announceMatchDraw() {
-    _queueService.announce(
+    queue.announce(
       'The seas remain unclaimed! A true stalemate!',
       AudioPriority.statusChange,
       soundEffect: PiratesGridSoundEffects.waveCrash,
@@ -164,7 +164,7 @@ class PiratesGridAnnouncementHelper {
   /// "Remove your darts" prompt — ALWAYS called unconditionally in the
   /// takeout handler. NEVER suppressed by the precedence chain.
   void announceRemoveDarts(String playerName) {
-    _queueService.announce(
+    queue.announce(
       '$playerName, remove your darts',
       AudioPriority.turnTransition,
     );
@@ -180,9 +180,4 @@ class PiratesGridAnnouncementHelper {
 
   // ─── Connection-status announcements ────────────────────────────────────────
 
-  Future<void> whenIdle() => _queueService.whenIdle();
-
-  void dispose() {
-    _queueService.dispose();
-  }
 }

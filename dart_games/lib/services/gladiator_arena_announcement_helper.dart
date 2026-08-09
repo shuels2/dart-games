@@ -1,3 +1,4 @@
+import 'game_announcement_helper_base.dart';
 import 'game_announcement_queue_service.dart';
 import 'gladiator_arena_sound_effects.dart';
 
@@ -20,17 +21,17 @@ import 'gladiator_arena_sound_effects.dart';
 ///  10.  Good Hit (20-39)   — dart value 20-39 AND multiplier == 'single'
 ///  11.  Small Hit (1-19)   — dart value 1-19 AND multiplier == 'single'
 ///  12.  Miss               — dart value 0
-class GladiatorArenaAnnouncementHelper {
-  final GameAnnouncementQueueService _queueService;
+class GladiatorArenaAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  GladiatorArenaAnnouncementHelper({required GameAnnouncementQueueService queueService})
-      : _queueService = queueService;
+  GladiatorArenaAnnouncementHelper(
+      {required GameAnnouncementQueueService queueService})
+      : super(queueService);
 
   // ─── Lifecycle / standalone ──────────────────────────────────────────────────
 
   /// Fires immediately after game initialisation with the target score.
   void announceGameStart(int targetScore) {
-    _queueService.announce(
+    queue.announce(
       'Gladiators, enter the arena! Race to $targetScore!',
       AudioPriority.statusChange,
       soundEffect: GladiatorArenaSoundEffects.trumpetFanfare,
@@ -39,7 +40,7 @@ class GladiatorArenaAnnouncementHelper {
 
   /// Fires at the start of each player's turn.
   void announcePlayerTurn(String playerName) {
-    _queueService.announce(
+    queue.announce(
       '$playerName, step into the arena!',
       AudioPriority.turnTransition,
       soundEffect: GladiatorArenaSoundEffects.turnBell,
@@ -48,7 +49,7 @@ class GladiatorArenaAnnouncementHelper {
 
   /// Fires when a shield round begins.
   void announceShieldRoundStart() {
-    _queueService.announce(
+    queue.announce(
       'Shield round! The arena grants mercy!',
       AudioPriority.statusChange,
       soundEffect: GladiatorArenaSoundEffects.shieldBlock,
@@ -57,7 +58,7 @@ class GladiatorArenaAnnouncementHelper {
 
   /// Fires when the active player enters double range (DF ON).
   void announceDoubleRange(String playerName) {
-    _queueService.announce(
+    queue.announce(
       '$playerName enters double range!',
       AudioPriority.statusChange,
       soundEffect: GladiatorArenaSoundEffects.swordClash,
@@ -66,7 +67,7 @@ class GladiatorArenaAnnouncementHelper {
 
   /// Fires when the active player is close to the target score.
   void announceNearVictory(String playerName) {
-    _queueService.announce(
+    queue.announce(
       '$playerName is close to glory!',
       AudioPriority.statusChange,
       soundEffect: GladiatorArenaSoundEffects.trumpetFanfare,
@@ -75,7 +76,7 @@ class GladiatorArenaAnnouncementHelper {
 
   /// Fires when the speed-play timer is running low.
   void announceSpeedTimerWarning() {
-    _queueService.announce(
+    queue.announce(
       'The sands are running out!',
       AudioPriority.statusChange,
       soundEffect: GladiatorArenaSoundEffects.timerTick,
@@ -84,7 +85,7 @@ class GladiatorArenaAnnouncementHelper {
 
   /// Fires when the speed-play timer reaches zero.
   void announceSpeedTimerExpired() {
-    _queueService.announce(
+    queue.announce(
       'Time! The arena waits for no one!',
       AudioPriority.statusChange,
       soundEffect: GladiatorArenaSoundEffects.turnBell,
@@ -96,7 +97,7 @@ class GladiatorArenaAnnouncementHelper {
   /// This is ALWAYS called unconditionally at takeout — it is NEVER gated by
   /// the moment-announcement precedence chain.
   void announceRemoveDarts() {
-    _queueService.announce(
+    queue.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
     );
@@ -105,7 +106,7 @@ class GladiatorArenaAnnouncementHelper {
   // ─── Per-dart moment announcements ──────────────────────────────────────────
 
   void announceVictory(String playerName) {
-    _queueService.announce(
+    queue.announce(
       'All hail $playerName, Champion of the Arena!',
       AudioPriority.victory,
       soundEffect: GladiatorArenaSoundEffects.trumpetFanfare,
@@ -113,7 +114,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceKnockoff(String victimName) {
-    _queueService.announce(
+    queue.announce(
       '$victimName is knocked off! Back to zero!',
       AudioPriority.shieldStatus,
       soundEffect: GladiatorArenaSoundEffects.crowdGasp,
@@ -121,7 +122,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceShieldBlock(String victimName) {
-    _queueService.announce(
+    queue.announce(
       'Shields up! $victimName is protected!',
       AudioPriority.shieldStatus,
       soundEffect: GladiatorArenaSoundEffects.shieldBlock,
@@ -129,7 +130,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceBustOvershoot(String playerName) {
-    _queueService.announce(
+    queue.announce(
       '$playerName overshoots! Score unchanged!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.crowdGasp,
@@ -137,7 +138,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceBustNoDouble() {
-    _queueService.announce(
+    queue.announce(
       'Not a double! Bust!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.crowdGasp,
@@ -145,7 +146,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceBullInner() {
-    _queueService.announce(
+    queue.announce(
       'Bullseye! 50 glory points!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.crowdCheer,
@@ -153,7 +154,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceBullOuter() {
-    _queueService.announce(
+    queue.announce(
       'Outer bull! 25 glory points!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.swordClash,
@@ -161,7 +162,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceTripleHit(int n) {
-    _queueService.announce(
+    queue.announce(
       'A triple! $n glory points!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.crowdCheer,
@@ -169,7 +170,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceGreatHit(int n) {
-    _queueService.announce(
+    queue.announce(
       'The crowd goes wild! $n points!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.crowdCheer,
@@ -177,7 +178,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceGoodHit(int n) {
-    _queueService.announce(
+    queue.announce(
       'A mighty strike! $n points!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.swordClash,
@@ -185,7 +186,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceSmallHit(String playerName, int n) {
-    _queueService.announce(
+    queue.announce(
       '$n points.',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.swordClash,
@@ -193,7 +194,7 @@ class GladiatorArenaAnnouncementHelper {
   }
 
   void announceMiss() {
-    _queueService.announce(
+    queue.announce(
       'The dart finds only sand!',
       AudioPriority.hitConfirm,
       soundEffect: GladiatorArenaSoundEffects.missThud,
@@ -300,9 +301,4 @@ class GladiatorArenaAnnouncementHelper {
 
   // ─── Connection-status announcements ────────────────────────────────────────
 
-  Future<void> whenIdle() => _queueService.whenIdle();
-
-  void dispose() {
-    _queueService.dispose();
-  }
 }

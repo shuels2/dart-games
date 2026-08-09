@@ -1,17 +1,17 @@
+import 'game_announcement_helper_base.dart';
 import 'game_announcement_queue_service.dart';
 import 'carnival_derby_sound_effects.dart';
 
 /// Carnival Derby-specific announcement helper
 /// Wraps the global GameAnnouncementQueueService with convenience methods
 /// and automatically applies Carnival Derby sound effects
-class CarnivalDerbyAnnouncementHelper {
-  final GameAnnouncementQueueService _queue;
+class CarnivalDerbyAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  CarnivalDerbyAnnouncementHelper(this._queue);
+  CarnivalDerbyAnnouncementHelper(super.queue);
 
   // Announce player's turn
   void announceTurn(String playerName) {
-    _queue.announce(
+    queue.announce(
       '$playerName, it\'s your turn',
       AudioPriority.turnTransition,
       soundEffect: CarnivalDerbySoundEffects.horseraceStart,
@@ -53,7 +53,7 @@ class CarnivalDerbyAnnouncementHelper {
     String announcement = _formatDartAnnouncement(score, multiplier);
 
     // Queue the announcement with sound effect
-    _queue.announce(
+    queue.announce(
       announcement,
       AudioPriority.hitConfirm,
       soundEffect: soundEffect,
@@ -103,7 +103,7 @@ class CarnivalDerbyAnnouncementHelper {
 
   // Announce miss
   void announceMiss() {
-    _queue.announce(
+    queue.announce(
       'Miss',
       AudioPriority.hitConfirm,
       soundEffect: CarnivalDerbySoundEffects.miss,
@@ -112,7 +112,7 @@ class CarnivalDerbyAnnouncementHelper {
 
   // Announce player bust
   void announceBust(String playerName) {
-    _queue.announce(
+    queue.announce(
       '$playerName, you busted and your turn is over',
       AudioPriority.statusChange,
       soundEffect: CarnivalDerbySoundEffects.bust,
@@ -121,7 +121,7 @@ class CarnivalDerbyAnnouncementHelper {
 
   // Announce remove darts
   void announceRemoveDarts(String playerName) {
-    _queue.announce(
+    queue.announce(
       '$playerName, remove your darts',
       AudioPriority.turnTransition,
     );
@@ -129,7 +129,7 @@ class CarnivalDerbyAnnouncementHelper {
 
   // Announce game completion
   void announceGameComplete() {
-    _queue.announce(
+    queue.announce(
       'The game is complete',
       AudioPriority.victory,
       soundEffect: CarnivalDerbySoundEffects.gameComplete,
@@ -138,15 +138,10 @@ class CarnivalDerbyAnnouncementHelper {
 
   // Announce winner (no sound effect as specified by user)
   void announceWinner(String playerName) {
-    _queue.announce(
+    queue.announce(
       '$playerName is the winner',
       AudioPriority.victory,
     );
   }
 
-  Future<void> whenIdle() => _queue.whenIdle();
-
-  void dispose() {
-    _queue.dispose();
-  }
 }

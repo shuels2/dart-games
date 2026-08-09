@@ -1,3 +1,4 @@
+import 'game_announcement_helper_base.dart';
 import '../services/game_announcement_queue_service.dart';
 import '../services/clockwork_quest_sound_effects.dart';
 import '../models/player.dart';
@@ -6,14 +7,13 @@ import '../models/player.dart';
 ///
 /// Manages all game announcements following the rule: MAX 2 announcements per event.
 /// Priority: victory > lap complete > advance > miss
-class ClockworkQuestAnnouncementHelper {
-  final GameAnnouncementQueueService _queueService;
+class ClockworkQuestAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  ClockworkQuestAnnouncementHelper(this._queueService);
+  ClockworkQuestAnnouncementHelper(super.queue);
 
   /// Game Start
   void announceGameStart() {
-    _queueService.announce(
+    queue.announce(
       'Wind the gears! The quest begins!',
       AudioPriority.statusChange,
       soundEffect: ClockworkQuestSoundEffects.gearSpin,
@@ -22,7 +22,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Player Turn
   void announcePlayerTurn(Player player) {
-    _queueService.announce(
+    queue.announce(
       '${player.name}, your turn to tinker!',
       AudioPriority.turnTransition,
       soundEffect: ClockworkQuestSoundEffects.turnBell,
@@ -31,7 +31,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Single Gear Activated
   void announceGearActivated(int gearNumber) {
-    _queueService.announce(
+    queue.announce(
       'Gear $gearNumber turns! Onward!',
       AudioPriority.hitConfirm,
       soundEffect: ClockworkQuestSoundEffects.gearClick,
@@ -40,7 +40,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Miss (wrong number)
   void announceMiss() {
-    _queueService.announce(
+    queue.announce(
       'That\'s not the right gear!',
       AudioPriority.hitConfirm,
       soundEffect: ClockworkQuestSoundEffects.steamHiss,
@@ -49,7 +49,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Bullseye Target (when player reaches gear 21)
   void announceBullseyeTarget() {
-    _queueService.announce(
+    queue.announce(
       'One final gear! Hit the bullseye to crown the clock!',
       AudioPriority.statusChange,
       soundEffect: ClockworkQuestSoundEffects.gearClick,
@@ -58,7 +58,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Bullseye Hit
   void announceBullseyeHit() {
-    _queueService.announce(
+    queue.announce(
       'The crown gear turns! Magnificent!',
       AudioPriority.hitConfirm,
       soundEffect: ClockworkQuestSoundEffects.clockChime,
@@ -67,7 +67,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Halfway (gear 10)
   void announceHalfway(Player player) {
-    _queueService.announce(
+    queue.announce(
       '${player.name} is halfway! The clock is ticking!',
       AudioPriority.statusChange,
       soundEffect: ClockworkQuestSoundEffects.gearSpin,
@@ -76,7 +76,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Near Victory (gear 18+)
   void announceNearVictory(Player player, int gearsLeft) {
-    _queueService.announce(
+    queue.announce(
       '${player.name} is almost there! Just $gearsLeft gears left!',
       AudioPriority.statusChange,
       soundEffect: ClockworkQuestSoundEffects.gearSpin,
@@ -85,7 +85,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Lap Complete
   void announceLapComplete() {
-    _queueService.announce(
+    queue.announce(
       'Lap complete! Wind it again!',
       AudioPriority.statusChange,
       soundEffect: ClockworkQuestSoundEffects.clockChime,
@@ -94,7 +94,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Speed Mode Timer Expiry
   void announceTimeExpiry() {
-    _queueService.announce(
+    queue.announce(
       'Time\'s up! The gears wait for no one!',
       AudioPriority.statusChange,
       soundEffect: ClockworkQuestSoundEffects.tickTock,
@@ -103,7 +103,7 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Victory
   void announceVictory(Player winner) {
-    _queueService.announce(
+    queue.announce(
       '${winner.name} wins the Clockwork Crown!',
       AudioPriority.victory,
       soundEffect: ClockworkQuestSoundEffects.victoryFanfare,
@@ -112,15 +112,10 @@ class ClockworkQuestAnnouncementHelper {
 
   /// Remove Darts (end of turn)
   void announceRemoveDarts(Player player) {
-    _queueService.announce(
+    queue.announce(
       '${player.name}, remove your darts!',
       AudioPriority.turnTransition,
     );
   }
 
-  Future<void> whenIdle() => _queueService.whenIdle();
-
-  void dispose() {
-    _queueService.dispose();
-  }
 }

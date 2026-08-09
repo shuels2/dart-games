@@ -1,3 +1,4 @@
+import 'game_announcement_helper_base.dart';
 import 'game_announcement_queue_service.dart';
 import 'lunar_lander_sound_effects.dart';
 
@@ -16,16 +17,15 @@ import 'lunar_lander_sound_effects.dart';
 ///   6. Big Descent — dartScore >= 40
 ///   7. Standard Descent — dartScore in [1, 39]
 ///   8. Miss / Drift — dartScore == 0
-class LunarLanderAnnouncementHelper {
-  final GameAnnouncementQueueService _queue;
+class LunarLanderAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  LunarLanderAnnouncementHelper(this._queue);
+  LunarLanderAnnouncementHelper(super.queue);
 
   // ─── Lifecycle / standalone ──────────────────────────────────────────────────
 
   /// Plays the game-start announcement once, immediately after the queue loads.
   void announceGameStart({required int startingAltitude}) {
-    _queue.announce(
+    queue.announce(
       'Mission control, altitude $startingAltitude! Begin descent!',
       AudioPriority.statusChange,
       soundEffect: LunarLanderSoundEffects.missionControl,
@@ -41,7 +41,7 @@ class LunarLanderAnnouncementHelper {
     required String playerName,
     required int altitude,
   }) {
-    _queue.announce(
+    queue.announce(
       '$playerName, you have the controls!',
       AudioPriority.turnTransition,
       soundEffect: LunarLanderSoundEffects.radioBeep,
@@ -53,7 +53,7 @@ class LunarLanderAnnouncementHelper {
   /// This is ALWAYS called unconditionally at takeout — it is NEVER gated by
   /// the moment-announcement precedence chain.
   void announceRemoveDarts() {
-    _queue.announce(
+    queue.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
     );
@@ -115,13 +115,13 @@ class LunarLanderAnnouncementHelper {
   // ─── Private moment-announcement implementations ─────────────────────────────
 
   void _announceTouchdown({required String playerName}) {
-    _queue.announce(
+    queue.announce(
       'Touchdown! $playerName lands on the moon!',
       AudioPriority.victory,
       soundEffect: LunarLanderSoundEffects.touchdown,
     );
     // Queue victory fanfare as a separate sound announcement (no voice text)
-    _queue.announce(
+    queue.announce(
       '',
       AudioPriority.victory,
       soundEffect: LunarLanderSoundEffects.victoryFanfare,
@@ -132,7 +132,7 @@ class LunarLanderAnnouncementHelper {
     required String playerName,
     required int revertedAltitude,
   }) {
-    _queue.announce(
+    queue.announce(
       'Crash landing! Pulling back to $revertedAltitude.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.crashLanding,
@@ -143,7 +143,7 @@ class LunarLanderAnnouncementHelper {
     required String playerName,
     required int altitude,
   }) {
-    _queue.announce(
+    queue.announce(
       'Climbing back! Altitude $altitude.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
@@ -153,7 +153,7 @@ class LunarLanderAnnouncementHelper {
   void _announceNegativeAltitude({
     required int score,
   }) {
-    _queue.announce(
+    queue.announce(
       'Rough landing! Descending $score.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.crashLanding,
@@ -164,7 +164,7 @@ class LunarLanderAnnouncementHelper {
     required String playerName,
     required int altitude,
   }) {
-    _queue.announce(
+    queue.announce(
       'Final approach! Altitude $altitude!',
       AudioPriority.statusChange,
       soundEffect: LunarLanderSoundEffects.warningAlarm,
@@ -175,7 +175,7 @@ class LunarLanderAnnouncementHelper {
     required String playerName,
     required int score,
   }) {
-    _queue.announce(
+    queue.announce(
       'Major burn! Descending $score.',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
@@ -186,7 +186,7 @@ class LunarLanderAnnouncementHelper {
     required String playerName,
     required int score,
   }) {
-    _queue.announce(
+    queue.announce(
       'Descending $score!',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.thrusterBurn,
@@ -194,7 +194,7 @@ class LunarLanderAnnouncementHelper {
   }
 
   void _announceMiss({required String playerName}) {
-    _queue.announce(
+    queue.announce(
       'Whiff. Drifting in orbit!',
       AudioPriority.hitConfirm,
       soundEffect: LunarLanderSoundEffects.driftSound,
@@ -203,9 +203,4 @@ class LunarLanderAnnouncementHelper {
 
   // ─── Connection-status announcements ────────────────────────────────────────
 
-  Future<void> whenIdle() => _queue.whenIdle();
-
-  void dispose() {
-    _queue.dispose();
-  }
 }

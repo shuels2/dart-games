@@ -1,12 +1,12 @@
+import 'game_announcement_helper_base.dart';
 import 'game_announcement_queue_service.dart';
 import 'target_tag_sound_effects.dart';
 
 /// Target Tag-specific announcement helper
 /// Wraps the global GameAnnouncementQueueService with convenience methods
-class TargetTagAnnouncementHelper {
-  final GameAnnouncementQueueService _queue;
+class TargetTagAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  TargetTagAnnouncementHelper(this._queue);
+  TargetTagAnnouncementHelper(super.queue);
 
   // Generic per-dart score readout ("Single 20" / "Bullseye!" / "Miss").
   // The game screen calls this only when no secondary effect is present
@@ -16,7 +16,7 @@ class TargetTagAnnouncementHelper {
 
     if (isMiss) {
       sfx = TargetTagSoundEffects.miss;
-      _queue.announce('Miss', AudioPriority.hitConfirm, soundEffect: sfx);
+      queue.announce('Miss', AudioPriority.hitConfirm, soundEffect: sfx);
       return;
     }
 
@@ -41,7 +41,7 @@ class TargetTagAnnouncementHelper {
       }
     }
 
-    _queue.announce(text, AudioPriority.hitConfirm, soundEffect: sfx);
+    queue.announce(text, AudioPriority.hitConfirm, soundEffect: sfx);
   }
 
   /// Formats a list of names for announcements.
@@ -73,51 +73,51 @@ class TargetTagAnnouncementHelper {
 
   // Announce shield gained
   void announceShieldGained(String playerName, int shields, int shieldMax) {
-    _queue.announce('$shields shields', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.shieldGained);
+    queue.announce('$shields shields', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.shieldGained);
   }
 
   void announceTaggedIn(List<String> playerNames, {List<String>? allPlayerNames}) {
     final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
     final v = verb(playerNames, allPlayerNames: allPlayerNames);
-    _queue.announce('JACKPOT! $names ${v} TAGGED IN!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedIn);
+    queue.announce('JACKPOT! $names ${v} TAGGED IN!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedIn);
   }
 
   void announceTaggedOut(List<String> playerNames, {List<String>? allPlayerNames}) {
     final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
     final v = verb(playerNames, allPlayerNames: allPlayerNames);
-    _queue.announce('Shield compromised! $names ${v} back on the hunt.', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedOut);
+    queue.announce('Shield compromised! $names ${v} back on the hunt.', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.taggedOut);
   }
 
   void announceLowShields(List<String> playerNames, {List<String>? allPlayerNames}) {
     final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
-    _queue.announce('Warning! Shields almost gone for $names!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
+    queue.announce('Warning! Shields almost gone for $names!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
   }
 
   void announceVulnerable(List<String> playerNames, {List<String>? allPlayerNames}) {
     final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
     final v = verb(playerNames, allPlayerNames: allPlayerNames);
-    _queue.announce('DANGER! $names ${v} vulnerable! One more hit and you\'re out!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
+    queue.announce('DANGER! $names ${v} vulnerable! One more hit and you\'re out!', AudioPriority.shieldStatus, soundEffect: TargetTagSoundEffects.lowShields);
   }
 
   void announceEliminated(List<String> playerNames, {List<String>? allPlayerNames}) {
     final names = formatNames(playerNames, allPlayerNames: allPlayerNames);
     final v = verb(playerNames, allPlayerNames: allPlayerNames);
-    _queue.announce('$names ${v} Tagged Out! Better luck next time!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.eliminated);
+    queue.announce('$names ${v} Tagged Out! Better luck next time!', AudioPriority.statusChange, soundEffect: TargetTagSoundEffects.eliminated);
   }
 
   // Announce successful tag on opponent
   void announceSuccessfulTag() {
-    _queue.announce('Tag! Got \'em!', AudioPriority.hitConfirm, soundEffect: TargetTagSoundEffects.successfulTag);
+    queue.announce('Tag! Got \'em!', AudioPriority.hitConfirm, soundEffect: TargetTagSoundEffects.successfulTag);
   }
 
   // Announce turn change
   void announceTurn(String playerName) {
-    _queue.announce('$playerName, your turn', AudioPriority.turnTransition, soundEffect: TargetTagSoundEffects.turnStart);
+    queue.announce('$playerName, your turn', AudioPriority.turnTransition, soundEffect: TargetTagSoundEffects.turnStart);
   }
 
   // Announce game start
   void announceGameStart() {
-    _queue.announce('Welcome to Target Tag! Fill those shields!', AudioPriority.victory, soundEffect: TargetTagSoundEffects.gameStart);
+    queue.announce('Welcome to Target Tag! Fill those shields!', AudioPriority.victory, soundEffect: TargetTagSoundEffects.gameStart);
   }
 
   // Announce winner(s)
@@ -135,17 +135,12 @@ class TargetTagAnnouncementHelper {
       names = '${playerNames.sublist(0, playerNames.length - 1).join(', ')}, and ${playerNames.last}';
       verb = 'are the Target Tag Champions';
     }
-    _queue.announce('GAME OVER! $names $verb!', AudioPriority.victory);
+    queue.announce('GAME OVER! $names $verb!', AudioPriority.victory);
   }
 
   // Announce remove darts
   void announceRemoveDarts() {
-    _queue.announce('Remove your darts', AudioPriority.turnTransition);
+    queue.announce('Remove your darts', AudioPriority.turnTransition);
   }
 
-  Future<void> whenIdle() => _queue.whenIdle();
-
-  void dispose() {
-    _queue.dispose();
-  }
 }
