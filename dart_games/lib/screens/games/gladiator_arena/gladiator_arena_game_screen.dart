@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../../widgets/speed_play_countdown.dart';
 import 'package:provider/provider.dart';
 
 import '../../../constants/test_keys.dart';
@@ -50,8 +52,10 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen>
   GladiatorArenaAnnouncementHelper? _audioQueue;
 
   // Speed Play timer
-  Timer? _speedPlayTimer;
-  int _speedPlaySecondsRemaining = 25;
+  /// Owns the speed-play tick. Replaces a Timer + `int` that setState'd the
+  /// whole 1,448-line screen once a second (WS04 4.3).
+  final SpeedPlayCountdownController _speedPlay =
+      SpeedPlayCountdownController();
 
   // Milestone-announcement state-transition tracking (per playerId). Each
   // milestone fires at most once per *crossing* from out-of-zone → in-zone.
@@ -106,7 +110,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen>
   @override
   void dispose() {
     disposeGameScreen();
-    _speedPlayTimer?.cancel();
+    _speedPlay.dispose();
     _audioQueue?.dispose();
     super.dispose();
   }
@@ -273,8 +277,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen>
       final shouldPrompt = dartsThrown >= 3 || provider.hasWinner;
       if (shouldPrompt) {
         // Cancel speed play timer when turn ends
-        _speedPlayTimer?.cancel();
-        _speedPlayTimer = null;
+        _speedPlay.stop();
 
         // UNCONDITIONAL remove-darts announcement — NOT inside the precedence chain
         scheduleTakeoutSequence(
@@ -332,8 +335,8 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen>
     // Reset timer display immediately so new player sees full time
     final game = provider.currentGame;
     if (game != null && game.speedPlayEnabled) {
-      _speedPlayTimer?.cancel();
-      setState(() => _speedPlaySecondsRemaining = 25);
+      _speedPlay.stop();
+      _speedPlay.reset();
     }
 
     // Announce next player's turn after takeout (500ms delay)
@@ -366,26 +369,16 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen>
     final game = provider.currentGame;
     if (game == null || !game.speedPlayEnabled) return;
 
-    _speedPlayTimer?.cancel();
-    _speedPlaySecondsRemaining = game.speedPlayTimeRemaining ?? 25;
-
-    _speedPlayTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      final p = context.read<GladiatorArenaProvider>();
-      if (p.shouldPromptTakeout) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        _speedPlaySecondsRemaining--;
-      });
-      p.setSpeedPlayTimeRemaining(_speedPlaySecondsRemaining);
-
-      if (_speedPlaySecondsRemaining <= 0) {
-        timer.cancel();
+    _speedPlay.start(
+      seconds: game.speedPlayTimeRemaining ?? 25,
+      // A takeout prompt mid-count stops the clock without expiring it.
+      shouldStop: () =>
+          !mounted || context.read<GladiatorArenaProvider>().shouldPromptTakeout,
+      onTick: (remaining) => context
+          .read<GladiatorArenaProvider>()
+          .setSpeedPlayTimeRemaining(remaining),
+      onExpired: () {
+        final p = context.read<GladiatorArenaProvider>();
         p.onSpeedPlayTimerExpired();
         _audioQueue?.announceSpeedTimerExpired();
         // UNCONDITIONAL remove-darts announcement when timer expires
@@ -393,8 +386,8 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen>
           dartsOnBoard: true,
           announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(),
         );
-      }
-    });
+      },
+    );
   }
 
   void _handleGameWon() {
@@ -536,8 +529,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen>
                             final p = context.read<GladiatorArenaProvider>();
                             final dartsThrown = p.getCurrentPlayerDartsThrown();
                             p.skipTurn();
-                            _speedPlayTimer?.cancel();
-                            _speedPlayTimer = null;
+                            _speedPlay.stop();
                             // Darts on board → announce, wait for DARTS
                             // REMOVED; 0 darts → 500ms auto-advance.
                             scheduleTakeoutSequence(
@@ -993,32 +985,35 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen>
             if (isActive && game.speedPlayEnabled == true)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4, top: 2),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: _speedPlaySecondsRemaining <= 5
-                        ? _kBloodRed.withOpacity(0.25)
-                        : _kImperialPurple.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _speedPlaySecondsRemaining <= 5
-                          ? _kBloodRed
-                          : _kImperialPurple,
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    '$_speedPlaySecondsRemaining',
-                    key: GladiatorArenaGameKeys.timerDisplay,
-                    style: GoogleFonts.cinzel(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: _speedPlaySecondsRemaining <= 5
-                          ? _kBloodRed
-                          : _kMarbleWhite,
-                    ),
-                  ),
+                // Only this subtree rebuilds per tick now (WS04 4.3).
+                child: SpeedPlayCountdown(
+                  controller: _speedPlay,
+                  builder: (context, secondsRemaining) {
+                    final urgent = secondsRemaining <= 5;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: urgent
+                            ? _kBloodRed.withOpacity(0.25)
+                            : _kImperialPurple.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: urgent ? _kBloodRed : _kImperialPurple,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        '$secondsRemaining',
+                        key: GladiatorArenaGameKeys.timerDisplay,
+                        style: GoogleFonts.cinzel(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: urgent ? _kBloodRed : _kMarbleWhite,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             // Double range indicator (active only)

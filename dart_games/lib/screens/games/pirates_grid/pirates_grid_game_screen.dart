@@ -13,6 +13,7 @@ import '../../../services/pirates_grid_announcement_helper.dart';
 import '../../../services/play_to_complete/pirates_grid_strategy.dart';
 import '../../../services/play_to_tie/pirates_grid_strategy.dart';
 import '../../../services/pirates_grid_sound_effects.dart';
+import '../../../widgets/speed_play_countdown.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
@@ -50,8 +51,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   // Speed Play timer — counts down across the entire turn (3 darts), not
   // per throw. 25s gives a brisk turn budget without rushing the takeout
   // animation between players.
-  Timer? _speedPlayTimer;
-  int _speedPlaySecondsRemaining = 25;
+  /// Owns the speed-play tick. Replaces a Timer + `int` that setState'd the
+  /// whole 1,528-line screen once a second (WS04 4.3). The board's
+  /// RepaintBoundary limited repaint but not rebuild, so the cost was paid
+  /// every tick regardless.
+  final SpeedPlayCountdownController _speedPlay =
+      SpeedPlayCountdownController();
 
   // Round Complete overlay state — true for 3 seconds after a non-final round ends
   bool _showRoundCompleteOverlay = false;
@@ -138,7 +143,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   void dispose() {
     disposeGameScreen();
     _audioQueue?.dispose();
-    _speedPlayTimer?.cancel();
+    _speedPlay.dispose();
     _roundCompleteTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
@@ -156,12 +161,12 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   // Speed Play wraps the mixin's auto-play controls: both starters freeze the
   // turn timer, and cancel restarts it for the current player.
   void _onPlayToComplete() {
-    _speedPlayTimer?.cancel();
+    _speedPlay.stop();
     startPlayToComplete();
   }
 
   void _onPlayToTie() {
-    _speedPlayTimer?.cancel();
+    _speedPlay.stop();
     startPlayToTie(PiratesGridTieStrategy());
   }
 
@@ -345,7 +350,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
     // 25-second turn budget should freeze instead of ticking down through
     // the takeout/round-transition animation.
     if (provider.shouldPromptTakeout) {
-      _speedPlayTimer?.cancel();
+      _speedPlay.stop();
     }
 
     // ── UNCONDITIONALLY announce remove darts when takeout is needed ────────
@@ -441,8 +446,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
 
     // Reset timer display immediately so new player sees full time
     if (game != null && game.speedPlay) {
-      _speedPlayTimer?.cancel();
-      setState(() => _speedPlaySecondsRemaining = 25);
+      _speedPlay.reset();
     }
 
     // Announce round transition or next player turn (with 500ms delay)
@@ -471,7 +475,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   }
 
   void _handleGameWon() {
-    _speedPlayTimer?.cancel();
+    _speedPlay.stop();
     handleGameWon(
       announceWinner: () {
         final game = context.read<PiratesGridProvider>().currentGame;
@@ -489,25 +493,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
 
   void _startSpeedPlayTimerForCurrentPlayer(PiratesGridGame game) {
     if (!game.speedPlay) return;
-    _speedPlayTimer?.cancel();
-    setState(() => _speedPlaySecondsRemaining = 25);
-    _speedPlayTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() => _speedPlaySecondsRemaining--);
-
-      // Warning tick at 5 seconds
-      if (_speedPlaySecondsRemaining == 5) {
-        _audioQueue?.announceSpeedTimerWarning();
-      }
-
-      if (_speedPlaySecondsRemaining <= 0) {
-        timer.cancel();
-        _onSpeedPlayTimerExpired();
-      }
-    });
+    _speedPlay.start(
+      shouldStop: () => !mounted,
+      onTick: (remaining) {
+        // Warning tick at 5 seconds
+        if (remaining == 5) _audioQueue?.announceSpeedTimerWarning();
+      },
+      onExpired: _onSpeedPlayTimerExpired,
+    );
   }
 
   void _onSpeedPlayTimerExpired() {
@@ -1142,7 +1135,7 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
             onPressed: context.read<PiratesGridProvider>().shouldPromptTakeout
                 ? null
                 : () {
-                    _speedPlayTimer?.cancel();
+                    _speedPlay.stop();
                     final p = context.read<PiratesGridProvider>();
                     final pp = context.read<PlayerProvider>();
                     final g = p.currentGame;
@@ -1186,7 +1179,14 @@ class _PiratesGridGameScreenState extends State<PiratesGridGameScreen>
   }
 
   Widget _buildSpeedPlayTimer() {
-    final secs = _speedPlaySecondsRemaining;
+    // Only this subtree rebuilds per tick now (WS04 4.3).
+    return SpeedPlayCountdown(
+      controller: _speedPlay,
+      builder: (context, secs) => _buildSpeedPlayTimerLabel(secs),
+    );
+  }
+
+  Widget _buildSpeedPlayTimerLabel(int secs) {
 
     Color timerColor;
     if (secs >= 6) {
