@@ -337,6 +337,13 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen>
     }
   }
 
+  /// One key per grid tile, so [_scrollToCurrentPlayer] can ask the framework
+  /// where a tile actually is instead of guessing (WS04 §4.8).
+  final Map<int, GlobalKey> _tileKeys = {};
+
+  GlobalKey _tileKey(int index) =>
+      _tileKeys.putIfAbsent(index, () => GlobalKey());
+
   void _scrollToCurrentPlayer() {
     final targetTagProvider = context.read<TargetTagProvider>();
     final playerProvider = context.read<PlayerProvider>();
@@ -365,35 +372,32 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen>
 
     if (currentEntityIndex == -1) return;
 
-    // Calculate which row the current player is in (5 tiles per row)
-    const tilesPerRow = 5;
-    final currentRow = currentEntityIndex ~/ tilesPerRow;
-
-    // Scroll based on row
-    if (currentRow >= 1) {
-      // Second row or later - scroll down to show the entire tile
-      // Use estimated tile height (tiles now size to content, not aspect ratio)
-      const estimatedTileHeight = 400.0; // Approximate height based on content
-      const rowSpacing = 20.0;
-
-      // Scroll to show the full tile: (row height × row number) + buffer
-      // Add extra buffer to ensure entire tile is visible
-      final scrollOffset =
-          (currentRow * (estimatedTileHeight + rowSpacing)) + 50;
-
-      _scrollController.animateTo(
-        scrollOffset,
+    // Ask the framework where the tile IS, rather than estimating (WS04 4.8).
+    //
+    // This used to compute `(row * (400.0 + 20)) + 50` from a hardcoded
+    // "approximate height based on content". The tiles size to their content,
+    // so that estimate drifts with player count, name length and team mode —
+    // and when it drifts the screen scrolls to the wrong place.
+    final tileContext = _tileKeys[currentEntityIndex]?.currentContext;
+    if (tileContext != null) {
+      Scrollable.ensureVisible(
+        tileContext,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
+        // Keep the tile just inside the top edge rather than centring it,
+        // which is how the old row-based scroll behaved.
+        alignment: 0.1,
       );
-    } else {
-      // First row - scroll to top
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+      return;
     }
+
+    // Not laid out yet (first frame after a rebuild) — falling back to the
+    // top is what the old code did for row 0 anyway.
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
@@ -636,6 +640,7 @@ class _TargetTagGameScreenState extends State<TargetTagGameScreen>
 
         final tiles = List.generate(entityCount, (index) {
           return SizedBox(
+            key: _tileKey(index),
             width: tileWidth,
             child: _buildPlayerCard(
               context,
