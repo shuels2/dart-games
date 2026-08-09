@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/game_announcement_queue_service.dart';
+import 'package:dart_games/services/api/api_config.dart';
 import 'package:dart_games/services/victory_music_service.dart';
 import 'package:dart_games/models/victory_music_file.dart';
 import '../shared/mock_api_helpers.dart';
@@ -115,27 +116,6 @@ void main() {
       expect(afterAdd, isTrue);
     });
 
-    test('deprecated getMusicSource calls getRandomMusicSource', () async {
-      // Both should return null when no music is available
-      final source1 = await service.getMusicSource();
-      final source2 = await service.getRandomMusicSource();
-
-      expect(source1, source2);
-    });
-
-    test('deprecated getMusicName returns null when empty', () async {
-      final name = await service.getMusicName();
-
-      expect(name, isNull);
-    });
-
-    test('deprecated clearMusic calls clearAllMusic', () async {
-      await service.clearMusic();
-      final files = await service.getMusicFiles();
-
-      expect(files, isEmpty);
-    });
-
     test('multiple initializations are idempotent', () async {
       await service.initialize();
       await service.initialize();
@@ -189,22 +169,26 @@ void main() {
       service.resetForTesting();
     });
 
-    test('deprecated saveMusic throws without proper data', () async {
+    test('addMusicFile throws without bytes or a data URL', () async {
+      // Was covered via the deprecated saveMusic wrapper; asserted directly
+      // now that the wrapper is gone (ANSWERS-FROM-FABLE-2 §A9.1).
       expect(
-        () async => await service.saveMusic(
-          fileName: 'test.mp3',
-          // Missing fileBytes and filePath
-        ),
+        () async => await service.addMusicFile(fileName: 'test.mp3'),
         throwsException,
       );
     });
 
-    test('all deprecated methods exist and are callable', () async {
-      // Verify backward compatibility methods exist
-      expect(service.getMusicSource, isNotNull);
-      expect(service.getMusicName, isNotNull);
-      expect(service.saveMusic, isNotNull);
-      expect(service.clearMusic, isNotNull);
+    test('every source the service can PRODUCE routes to UrlSource', () {
+      // The DeviceFileSource branch in sourceFor() is deliberate dead-end
+      // defence, not a live path. All three ways a source string is born —
+      // _doInitialize, addMusicFile, and VictoryMusicFile.fromJson — build it
+      // from ApiConfig.url(...), i.e. HTTP. This pins that: if a future change
+      // starts handing back a filesystem path, this fails and the decision
+      // gets made deliberately rather than by a silent playback failure.
+      expect(
+        VictoryMusicService.sourceFor(ApiConfig.url('/api/v1/music/x/file')),
+        isA<UrlSource>(),
+      );
     });
   });
 

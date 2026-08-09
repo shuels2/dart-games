@@ -260,35 +260,4 @@ class VictoryMusicService {
     await initialize();
     return _musicFiles.isNotEmpty;
   }
-
-  // DEPRECATED METHODS - kept for backwards compatibility
-
-  /// @deprecated Use getRandomMusicSource() instead
-  Future<String?> getMusicSource() async {
-    return getRandomMusicSource();
-  }
-
-  /// @deprecated Use getMusicFiles() instead
-  Future<String?> getMusicName() async {
-    final files = await getMusicFiles();
-    return files.isNotEmpty ? files.first.name : null;
-  }
-
-  /// @deprecated Use addMusicFile() instead
-  Future<void> saveMusic({
-    required String fileName,
-    String? filePath,
-    Uint8List? fileBytes,
-  }) async {
-    await addMusicFile(
-      fileName: fileName,
-      filePath: filePath,
-      fileBytes: fileBytes,
-    );
-  }
-
-  /// @deprecated Use clearAllMusic() instead
-  Future<void> clearMusic() async {
-    await clearAllMusic();
-  }
 }
