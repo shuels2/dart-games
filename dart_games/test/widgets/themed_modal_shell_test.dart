@@ -127,4 +127,90 @@ void main() {
       expect(caps, hasLength(1));
     });
   });
+
+  group('the two structural options the last two modals needed', () {
+    testWidgets('fill: false omits Positioned.fill', (tester) async {
+      // RemoveDartsModal is mounted as a bare child of the game shell's outer
+      // Stack, in a specific layer (below the emulator so DARTS REMOVED stays
+      // reachable), and returned a plain Material. Wrapping it in
+      // Positioned.fill would turn a loose Stack child into a filling one.
+      await _pump(
+        tester,
+        const ThemedModalShell(
+          fill: false,
+          backgroundColor: Color(0xFF1D3557),
+          borderColor: Color(0xFFFFD700),
+          child: SizedBox.shrink(),
+        ),
+      );
+      expect(
+          find.descendant(
+              of: find.byType(ThemedModalShell),
+              matching: find.byType(Positioned)),
+          findsNothing);
+    });
+
+    testWidgets('fill: true (default) wraps in Positioned', (tester) async {
+      await _pump(
+        tester,
+        const ThemedModalShell(
+          backgroundColor: Color(0xFF1D3557),
+          borderColor: Color(0xFFFFD700),
+          child: SizedBox.shrink(),
+        ),
+      );
+      expect(
+          find.descendant(
+              of: find.byType(ThemedModalShell),
+              matching: find.byType(Positioned)),
+          findsOneWidget);
+    });
+
+    testWidgets('maxHeight constrains the panel too', (tester) async {
+      // Only ResumeGameModal sets one — its saved-game list must stop growing
+      // before it runs off the screen.
+      const panel = Key('panel');
+      await _pump(
+        tester,
+        const ThemedModalShell(
+          panelKey: panel,
+          maxWidth: 500,
+          maxHeight: 600,
+          backgroundColor: Color(0xFF1D3557),
+          borderColor: Color(0xFFFFD700),
+          child: SizedBox.shrink(),
+        ),
+      );
+      final caps = tester
+          .widgetList<ConstrainedBox>(find.ancestor(
+            of: find.byKey(panel),
+            matching: find.byType(ConstrainedBox),
+          ))
+          .where((c) =>
+              c.constraints.maxWidth == 500 && c.constraints.maxHeight == 600);
+      expect(caps, hasLength(1));
+    });
+
+    testWidgets('a height-only cap still inserts the ConstrainedBox',
+        (tester) async {
+      const panel = Key('panel');
+      await _pump(
+        tester,
+        const ThemedModalShell(
+          panelKey: panel,
+          maxHeight: 600,
+          backgroundColor: Color(0xFF1D3557),
+          borderColor: Color(0xFFFFD700),
+          child: SizedBox.shrink(),
+        ),
+      );
+      final caps = tester
+          .widgetList<ConstrainedBox>(find.ancestor(
+            of: find.byKey(panel),
+            matching: find.byType(ConstrainedBox),
+          ))
+          .where((c) => c.constraints.maxHeight == 600);
+      expect(caps, hasLength(1));
+    });
+  });
 }

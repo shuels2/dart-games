@@ -26,11 +26,13 @@ class ThemedModalShell extends StatelessWidget {
     this.boxShadowColor = Colors.black,
     this.boxShadowOpacity = 0.5,
     this.maxWidth = double.infinity,
+    this.maxHeight = double.infinity,
     this.margin = const EdgeInsets.all(16),
     this.padding = const EdgeInsets.all(32),
     this.barrierOpacity = defaultBarrierOpacity,
     this.barrierKey,
     this.panelKey,
+    this.fill = true,
   });
 
   /// The modal's own content, below the chrome.
@@ -44,16 +46,31 @@ class ThemedModalShell extends StatelessWidget {
   final Color boxShadowColor;
   final double boxShadowOpacity;
 
-  /// `double.infinity` means "no width cap" — RemoveDartsModal uses that, and
-  /// the ConstrainedBox is skipped entirely rather than being given an
-  /// infinite constraint.
+  /// `double.infinity` means "no cap" — RemoveDartsModal uses that for width,
+  /// and the ConstrainedBox is skipped entirely rather than being handed an
+  /// infinite constraint. If BOTH are infinite there is no ConstrainedBox at
+  /// all.
   final double maxWidth;
+
+  /// Height cap. Only ResumeGameModal sets one — its saved-game list has to
+  /// stop growing before it runs off the screen.
+  final double maxHeight;
 
   final EdgeInsets margin;
   final EdgeInsets padding;
 
   /// How dark the scrim behind the modal is.
   final double barrierOpacity;
+
+  /// Whether to wrap in [Positioned.fill].
+  ///
+  /// True for modals mounted as a bare Stack child that must cover the
+  /// screen. RemoveDartsModal passes FALSE: it is already placed inside the
+  /// game shell's outer Stack in a specific layer (below the emulator, so
+  /// DARTS REMOVED stays reachable) and returns a plain Material. Wrapping it
+  /// would change it from a loose child to a filling one — a structural change
+  /// with no upside.
+  final bool fill;
 
   /// Keys the UI suites match on. They sit on the barrier and the panel
   /// respectively, so they must be passed through rather than living on the
@@ -90,22 +107,22 @@ class ThemedModalShell extends StatelessWidget {
       child: child,
     );
 
-    if (maxWidth != double.infinity) {
+    if (maxWidth != double.infinity || maxHeight != double.infinity) {
       panel = ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
+        constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
         child: panel,
       );
     }
 
-    return Positioned.fill(
-      child: Material(
-        type: MaterialType.transparency,
-        child: Container(
-          key: barrierKey,
-          color: Colors.black.withOpacity(barrierOpacity),
-          child: Center(child: panel),
-        ),
+    final scrim = Material(
+      type: MaterialType.transparency,
+      child: Container(
+        key: barrierKey,
+        color: Colors.black.withOpacity(barrierOpacity),
+        child: Center(child: panel),
       ),
     );
+
+    return fill ? Positioned.fill(child: scrim) : scrim;
   }
 }
