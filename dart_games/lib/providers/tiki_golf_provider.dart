@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'round_robin_team_rotation.dart';
 import '../models/tiki_golf_game.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
@@ -387,44 +388,43 @@ class TikiGolfProvider extends GameProviderBase<TikiGolfGame> {
 
   void _advanceTeamPlayer() {
     final game = _currentGame!;
-    final teamIds = game.teamPlayers.keys.toList();
-
-    // Increment within-hole pointer for current team
     final currentTeamId = game.activeTeamId;
     if (currentTeamId == null) return;
 
-    final currentPointer =
-        (game.teamWithinHoleRotationPointer[currentTeamId] ?? 0) + 1;
-    final teamSize = game.teamPlayers[currentTeamId]?.length ?? 0;
+    // Pointer arithmetic is shared with Treasure Divide (WS03 §3.7); the
+    // side effects below are Tiki's own.
+    final step = RoundRobinTeamRotation.advance(
+      teamIds: game.teamPlayers.keys.toList(),
+      currentTeamId: currentTeamId,
+      currentTeamIndex: game.currentTeamIndex,
+      withinPeriodPointer: game.teamWithinHoleRotationPointer,
+      teamPlayers: game.teamPlayers,
+    );
 
-    if (currentPointer < teamSize) {
-      // More players on this team to play
-      game.teamWithinHoleRotationPointer[currentTeamId] = currentPointer;
-      final nextPlayerId =
-          game.teamPlayers[currentTeamId]![currentPointer];
-      game.activePlayerId = nextPlayerId;
-      game.dartsThrown[nextPlayerId] = 0;
-      game.currentTurnEnded = false;
-    } else {
-      // This team is done — move to next team
-      game.teamWithinHoleRotationPointer[currentTeamId] = currentPointer;
-      final nextTeamIndex = game.currentTeamIndex + 1;
+    // Written back on every outcome — including when the team is finished, or
+    // it would replay its last player next hole.
+    game.teamWithinHoleRotationPointer[currentTeamId] =
+        step.pointerForCurrentTeam;
 
-      if (nextTeamIndex >= teamIds.length) {
-        // All teams done with this hole
+    switch (step.outcome) {
+      case TeamRotationOutcome.periodComplete:
         _advanceToNextHole();
-      } else {
-        // Move to next team's first player
-        game.currentTeamIndex = nextTeamIndex;
-        final nextTeamId = teamIds[nextTeamIndex];
-        game.activeTeamId = nextTeamId;
-        game.teamWithinHoleRotationPointer[nextTeamId] = 0;
-        final nextPlayerId = game.teamPlayers[nextTeamId]!.first;
-        game.activePlayerId = nextPlayerId;
-        game.dartsThrown[nextPlayerId] = 0;
-        game.currentTurnEnded = false;
-      }
+      case TeamRotationOutcome.nextTeam:
+        game.currentTeamIndex = step.nextTeamIndex!;
+        game.activeTeamId = step.nextTeamId;
+        game.teamWithinHoleRotationPointer[step.nextTeamId!] = 0;
+        _startTurnFor(step.nextPlayerId!);
+      case TeamRotationOutcome.nextPlayerSameTeam:
+        _startTurnFor(step.nextPlayerId!);
     }
+  }
+
+  /// Hands the turn to [playerId]: fresh dart count, turn no longer ended.
+  void _startTurnFor(String playerId) {
+    final game = _currentGame!;
+    game.activePlayerId = playerId;
+    game.dartsThrown[playerId] = 0;
+    game.currentTurnEnded = false;
   }
 
   // ─── _advanceToNextHole ──────────────────────────────────────────────────────

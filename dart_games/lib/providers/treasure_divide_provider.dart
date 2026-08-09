@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'round_robin_team_rotation.dart';
 import 'package:flutter/foundation.dart';
 import '../models/treasure_divide_game.dart';
 import '../models/saved_game_metadata.dart';
@@ -645,46 +646,53 @@ class TreasureDivideProvider extends GameProviderBase<TreasureDivideGame> {
 
   void _advanceTeamPlayer() {
     final game = _currentGame!;
-    final teamIds = game.teamPlayers.keys.toList();
     final currentTeamId = game.activeTeamId;
     if (currentTeamId == null) return;
-
-    final currentPointer =
-        (game.teamWithinRoundRotationPointer[currentTeamId] ?? 0) + 1;
     final teamMembers = game.teamPlayers[currentTeamId] ?? [];
-    final teamSize = teamMembers.length;
 
-    if (currentPointer < teamSize) {
-      // More players on this crew
-      game.teamWithinRoundRotationPointer[currentTeamId] = currentPointer;
-      game.currentPlayerId = teamMembers[currentPointer];
-    } else {
-      // This crew is done with the round — apply crew-wide halving.
-      _applyCrewRoundResult(currentTeamId);
+    // Pointer arithmetic is shared with Tiki Golf (WS03 §3.7); the crew
+    // halving and announcement capture below are TD's own.
+    final step = RoundRobinTeamRotation.advance(
+      teamIds: game.teamPlayers.keys.toList(),
+      currentTeamId: currentTeamId,
+      currentTeamIndex: game.currentTeamIndex,
+      withinPeriodPointer: game.teamWithinRoundRotationPointer,
+      teamPlayers: game.teamPlayers,
+    );
 
-      // Capture crew completion state for announcement helper.
-      final roundIdx = game.currentRoundIndex;
-      int crewHaul = 0;
-      for (final pid in teamMembers) {
-        crewHaul += game.playerRoundScores[pid]?[roundIdx] ?? 0;
-      }
-      _justCompletedCrewId = currentTeamId;
-      _justCompletedCrewHaul = crewHaul;
+    game.teamWithinRoundRotationPointer[currentTeamId] =
+        step.pointerForCurrentTeam;
 
-      // Move to next crew
-      final nextTeamIndex = game.currentTeamIndex + 1;
-      if (nextTeamIndex >= teamIds.length) {
-        // All crews done — advance to next round
-        _advanceToNextRound();
-      } else {
-        game.currentTeamIndex = nextTeamIndex;
-        final nextTeamId = teamIds[nextTeamIndex];
-        game.activeTeamId = nextTeamId;
-        game.teamWithinRoundRotationPointer[nextTeamId] = 0;
-        final nextPlayers = game.teamPlayers[nextTeamId]!;
-        game.currentPlayerId = nextPlayers.first;
-      }
+    if (step.outcome == TeamRotationOutcome.nextPlayerSameTeam) {
+      // Non-null by construction: the rotation only returns this outcome when
+      // the pointer lands inside the crew's member list.
+      game.currentPlayerId = step.nextPlayerId!;
+      return;
     }
+
+    // The crew has finished the round — halve if they scored nothing, and
+    // capture the haul before moving on, because _advanceToNextRound resets
+    // the state the announcement reads.
+    _applyCrewRoundResult(currentTeamId);
+
+    final roundIdx = game.currentRoundIndex;
+    int crewHaul = 0;
+    for (final pid in teamMembers) {
+      crewHaul += game.playerRoundScores[pid]?[roundIdx] ?? 0;
+    }
+    _justCompletedCrewId = currentTeamId;
+    _justCompletedCrewHaul = crewHaul;
+
+    if (step.outcome == TeamRotationOutcome.periodComplete) {
+      _advanceToNextRound();
+      return;
+    }
+
+    game.currentTeamIndex = step.nextTeamIndex!;
+    game.activeTeamId = step.nextTeamId;
+    game.teamWithinRoundRotationPointer[step.nextTeamId!] = 0;
+    // Non-null for a non-empty crew; TD's team builder never makes an empty one.
+    game.currentPlayerId = step.nextPlayerId!;
   }
 
   // ─── _applyCrewRoundResult ───────────────────────────────────────────────────
