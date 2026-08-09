@@ -236,5 +236,43 @@ void main() {
         expect(allBody['y'], equals('fresh'));
       });
     });
+
+    group('DELETE / (bulk)', () {
+      // WS04 4.8: StorageService.clearAll used to GET every setting and then
+      // DELETE each one sequentially — 31 round-trips for 30 settings, and a
+      // failure partway through left the store half-wiped.
+      test('removes every setting in one request', () async {
+        await handler(Request(
+          'PUT',
+          Uri.parse('http://localhost/'),
+          body: jsonEncode({'a': '1', 'b': '2', 'c': '3'}),
+          headers: {'content-type': 'application/json'},
+        ));
+
+        final deleteResponse = await handler(
+          Request('DELETE', Uri.parse('http://localhost/')),
+        ) as Response;
+        expect(deleteResponse.statusCode, equals(204));
+
+        final allResponse = await handler(
+          Request('GET', Uri.parse('http://localhost/')),
+        ) as Response;
+        final body = jsonDecode(await allResponse.readAsString())
+            as Map<String, dynamic>;
+        expect(body, isEmpty);
+      });
+
+      test('is a no-op on an already-empty store', () async {
+        final first = await handler(
+          Request('DELETE', Uri.parse('http://localhost/')),
+        ) as Response;
+        expect(first.statusCode, equals(204));
+
+        final second = await handler(
+          Request('DELETE', Uri.parse('http://localhost/')),
+        ) as Response;
+        expect(second.statusCode, equals(204));
+      });
+    });
   });
 }

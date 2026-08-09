@@ -61,12 +61,13 @@ class StorageService {
     return value == 'true';
   }
 
-  // Clear all stored data
+  // Clear all stored data.
+  //
+  // One request, not N+1 (WS04 4.8). This used to GET every setting and then
+  // issue a sequential DELETE per key — a factory reset with 30 settings was
+  // 31 round-trips, and a failure partway through left the store half-wiped.
   Future<void> clearAll() async {
-    final settings = await _api.getSettings();
-    for (final key in settings.keys) {
-      await _api.deleteSetting(key);
-    }
+    await _api.deleteAllSettings();
   }
 
   // Check if user has authentication credentials

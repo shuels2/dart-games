@@ -66,6 +66,11 @@ class ApiClient {
     await _delete('/api/v1/settings/$key');
   }
 
+  /// DELETE /api/v1/settings - Delete every setting in one request.
+  Future<void> deleteAllSettings() async {
+    await _delete('/api/v1/settings');
+  }
+
   /// PUT /api/v1/settings - Bulk update settings.
   Future<void> putSettings(Map<String, String> settings) async {
     await _put('/api/v1/settings', settings);

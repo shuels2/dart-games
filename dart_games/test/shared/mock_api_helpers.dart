@@ -62,6 +62,13 @@ class MockApiServer {
         }
         return _jsonResponse(body);
       }
+      // Bulk delete (WS04 4.8) — mirrors DELETE /api/v1/settings on the real
+      // server, which StorageService.clearAll now uses instead of N+1
+      // per-key deletes.
+      if (method == 'DELETE') {
+        settings.clear();
+        return http.Response('', 204);
+      }
     }
 
     final settingsMatch = RegExp(r'^/api/v1/settings/(.+)$').firstMatch(path);
