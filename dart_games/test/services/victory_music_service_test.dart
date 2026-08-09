@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dart_games/services/game_announcement_queue_service.dart';
 import 'package:dart_games/services/victory_music_service.dart';
 import 'package:dart_games/models/victory_music_file.dart';
 import '../shared/mock_api_helpers.dart';
@@ -287,6 +289,86 @@ void main() {
       final files = await service.getMusicFiles();
 
       expect(files, isEmpty);
+    });
+  });
+
+  // ─── WS02 2.9 ─────────────────────────────────────────────────────────
+
+  group('VictoryMusicService.sourceFor', () {
+    // Regression cover for a real bug: every one of the ten hand-written
+    // `_playVictoryMusic` copies branched
+    //   startsWith('data:') ? UrlSource : DeviceFileSource
+    // but getRandomMusicSource() returns a SERVER URL
+    // (http://host/api/v1/music/<id>/file). Those all took the else branch,
+    // so uploaded victory music was handed to the device-file loader and
+    // could never play.
+    test('server http URL is a UrlSource, not a DeviceFileSource', () {
+      final source = VictoryMusicService.sourceFor(
+          'http://192.168.1.50:8080/api/v1/music/abc123/file');
+      expect(source, isA<UrlSource>());
+      expect(source, isNot(isA<DeviceFileSource>()));
+    });
+
+    test('https URL is a UrlSource', () {
+      expect(VictoryMusicService.sourceFor('https://example.com/a.mp3'),
+          isA<UrlSource>());
+    });
+
+    test('data URL is a UrlSource', () {
+      expect(VictoryMusicService.sourceFor('data:audio/mpeg;base64,AAAA'),
+          isA<UrlSource>());
+    });
+
+    test('a real filesystem path is still a DeviceFileSource', () {
+      expect(VictoryMusicService.sourceFor(r'C:\musicictory.mp3'),
+          isA<DeviceFileSource>());
+      expect(VictoryMusicService.sourceFor('/home/steve/victory.mp3'),
+          isA<DeviceFileSource>());
+    });
+
+    test('no hardcoded remote fallback remains', () {
+      // The mixkit URL used to be the fallback in all ten results screens and
+      // fails on an offline kiosk. The fallback is now a bundled asset path.
+      expect(VictoryMusicService.fallbackAssetPath, isNot(contains('http')));
+      expect(VictoryMusicService.fallbackAssetPath,
+          'common/sounds/victory_fallback.mp3');
+    });
+  });
+
+  group('GameAnnouncementQueueService.speaking (ducking signal)', () {
+    tearDown(() => GameAnnouncementQueueService.speaking.value = false);
+
+    test('is a static, app-wide notifier', () {
+      // Nine of the ten results screens own no queue — the winner line is
+      // spoken by the game screen's queue before it navigates. A per-instance
+      // notifier would be invisible to exactly the screens that need to duck,
+      // so this must stay reachable without an instance.
+      GameAnnouncementQueueService.speaking.value = true;
+      expect(GameAnnouncementQueueService.speaking.value, isTrue);
+      GameAnnouncementQueueService.speaking.value = false;
+      expect(GameAnnouncementQueueService.speaking.value, isFalse);
+    });
+
+    test('notifies listeners on both edges', () {
+      final seen = <bool>[];
+      void listener() =>
+          seen.add(GameAnnouncementQueueService.speaking.value);
+      GameAnnouncementQueueService.speaking.addListener(listener);
+
+      GameAnnouncementQueueService.speaking.value = true;
+      GameAnnouncementQueueService.speaking.value = false;
+
+      GameAnnouncementQueueService.speaking.removeListener(listener);
+      expect(seen, [true, false]);
+    });
+  });
+
+  group('VictoryMusicService volume constants', () {
+    test('ducked volume is meaningfully below full volume', () {
+      expect(VictoryMusicService.duckedVolume,
+          lessThan(VictoryMusicService.fullVolume));
+      expect(VictoryMusicService.fullVolume, 0.7);
+      expect(VictoryMusicService.duckedVolume, 0.25);
     });
   });
 }

@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'dart:typed_data';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import '../models/victory_music_file.dart';
 import 'api/api_client.dart';
+import 'game_announcement_queue_service.dart';
 import 'api/api_config.dart';
 
 /// Service to manage victory music storage via the backend API.
@@ -157,6 +159,100 @@ class VictoryMusicService {
 
     await _api.deleteAllMusic();
     _musicFiles.clear();
+  }
+
+  // ─── Playback ─────────────────────────────────────────────────────────
+
+  /// Volume victory music plays at when nothing is being spoken.
+  static const double fullVolume = 0.7;
+
+  /// Volume victory music ducks to while an announcement is speaking.
+  static const double duckedVolume = 0.25;
+
+  /// Optional bundled fallback, played when the user has uploaded no music.
+  ///
+  /// Nothing ships at this path today, so with no uploaded music the app is
+  /// simply silent. Dropping an mp3 here (and adding `assets/common/sounds/`
+  /// to pubspec.yaml) is all that is needed to give it a default — no code
+  /// change. It deliberately replaced a hardcoded
+  /// `https://assets.mixkit.co/...` URL that every one of the ten results
+  /// screens carried: that fetch fails on an offline kiosk, which is exactly
+  /// where a dartboard lives.
+  static const String fallbackAssetPath = 'common/sounds/victory_fallback.mp3';
+
+  /// Wraps a music source in the right [Source] for what it actually is.
+  ///
+  /// The ten hand-written copies of this all did
+  /// `startsWith('data:') ? UrlSource : DeviceFileSource`, which sent the
+  /// server URLs this service returns — `http://host/api/v1/music/<id>/file`,
+  /// see [_doInitialize] — down the DEVICE FILE path. A remote URL is not a
+  /// file path, so uploaded victory music could never play. http/https now
+  /// route to [UrlSource] with the data: case.
+  static Source sourceFor(String musicSource) {
+    if (musicSource.startsWith('data:') ||
+        musicSource.startsWith('http://') ||
+        musicSource.startsWith('https://')) {
+      return UrlSource(musicSource);
+    }
+    return DeviceFileSource(musicSource);
+  }
+
+  /// Plays victory music on [player], replacing the ~35-line `_playVictoryMusic`
+  /// each of the ten results screens used to carry.
+  ///
+  /// Returns true if playback was started. Never throws — a results screen
+  /// must render its winner whatever the audio stack does.
+  Future<bool> playVictoryMusic(AudioPlayer player,
+      {double volume = fullVolume}) async {
+    try {
+      final source = await getRandomMusicSource();
+      await player.setVolume(volume);
+
+      if (source != null && source.isNotEmpty) {
+        await player.play(sourceFor(source)).timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => debugPrint('Victory music playback timed out'),
+            );
+        return true;
+      }
+
+      // No uploaded music: try the bundled fallback if one was added.
+      await player.play(AssetSource(fallbackAssetPath)).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => debugPrint('Victory music playback timed out'),
+          );
+      return true;
+    } catch (e) {
+      // Includes the expected "asset not found" when no fallback is bundled.
+      debugPrint('Victory music not played: $e');
+      return false;
+    }
+  }
+
+  /// Ducks [player] under speech for as long as the returned subscription is
+  /// alive: 0.25 while an announcement is speaking, back to 0.7 when it ends.
+  ///
+  /// Returns a callback the caller MUST invoke from `dispose()` to detach the
+  /// listener — the notifier is app-wide and outlives any one screen.
+  ///
+  /// Ducking rather than sequencing is the point: nine of the ten results
+  /// screens have the winner line spoken by the GAME screen's queue while the
+  /// music is already playing, so without this the two simply talk over each
+  /// other.
+  static VoidCallback duckUnderSpeech(AudioPlayer player,
+      {double volume = fullVolume, double ducked = duckedVolume}) {
+    void listener() {
+      final target =
+          GameAnnouncementQueueService.speaking.value ? ducked : volume;
+      // Fire-and-forget: a volume change failing must never break playback.
+      player.setVolume(target).catchError(
+          (Object e) => debugPrint('Victory music duck failed: $e'));
+    }
+
+    GameAnnouncementQueueService.speaking.addListener(listener);
+    listener(); // apply the current state immediately
+    return () =>
+        GameAnnouncementQueueService.speaking.removeListener(listener);
   }
 
   /// Check if any custom music is set.

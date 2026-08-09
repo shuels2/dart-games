@@ -62,6 +62,26 @@ class GameAnnouncementQueueService {
   bool _disposed = false;
   final List<Completer<void>> _idleWaiters = [];
 
+  /// True while an utterance is actually being spoken, ANYWHERE in the app.
+  ///
+  /// Exposed so victory music can duck under speech (WS02 2.9a). It is a
+  /// [ValueNotifier] rather than a plain bool because listeners need both
+  /// edges — down when a line starts, back up when speech ends — without
+  /// polling.
+  ///
+  /// It is **static** deliberately. Queues are per-screen, but they all speak
+  /// through the one [DartAnnouncerService.shared] engine, so only one
+  /// utterance is ever in flight app-wide. It also has to be static to be
+  /// useful: nine of the ten results screens own no queue at all — the
+  /// winner line is spoken by the GAME screen's queue before it navigates —
+  /// so a per-instance notifier would be invisible to exactly the screens
+  /// that need to duck.
+  ///
+  /// It flips false in a `finally`, so a thrown or timed-out utterance cannot
+  /// leave the music permanently ducked. It is never disposed: it outlives
+  /// every individual queue.
+  static final ValueNotifier<bool> speaking = ValueNotifier<bool>(false);
+
   // Load announcer settings from API via AppSettings
   /// Applies the saved voice settings, and optionally warms the audio cache
   /// for [preloadEffects] (pass the game's `SoundEffects.all`).
@@ -264,6 +284,8 @@ class GameAnnouncementQueueService {
         final ttsFallbackMs = wordCount * 1000 + 1500;
         final speakStart = DateTime.now();
         bool timedOut = false;
+        speaking.value = true;
+        try {
         await _announcer.speak(announcement.text).timeout(
           Duration(milliseconds: ttsFallbackMs),
           onTimeout: () async {
@@ -278,6 +300,9 @@ class GameAnnouncementQueueService {
             await _announcer.stopSpeaking();
           },
         );
+        } finally {
+          speaking.value = false;
+        }
         final speechElapsedMs =
             DateTime.now().difference(speakStart).inMilliseconds;
         debugPrint('[Audio] Done (${timedOut ? "TIMEOUT" : "onend"}, '
@@ -298,6 +323,7 @@ class GameAnnouncementQueueService {
     }
 
     _isProcessing = false;
+    speaking.value = false;
     for (final c in _idleWaiters) {
       if (!c.isCompleted) c.complete();
     }
@@ -326,6 +352,7 @@ class GameAnnouncementQueueService {
     _disposed = true;
     _queue.clear();
     _isProcessing = false;
+    speaking.value = false;
     for (final c in _idleWaiters) {
       if (!c.isCompleted) c.complete();
     }

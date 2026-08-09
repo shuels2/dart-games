@@ -33,6 +33,9 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
   late Animation<double> _pulseAnimation;
   late ConfettiController _confettiController;
   final AudioPlayer _audioPlayer = AudioPlayer();
+  /// Detaches the victory-music duck listener. The notifier it hooks is
+  /// app-wide, so failing to call this on dispose leaks into the next screen.
+  VoidCallback? _stopDucking;
   bool _statsUpdated = false; // Prevent duplicate stats updates
 
   @override
@@ -88,6 +91,8 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
     _animationController.dispose();
     _pulseController.dispose();
     _confettiController.dispose();
+    _stopDucking?.call();
+    _stopDucking = null;
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -146,39 +151,11 @@ class _TargetTagResultsScreenState extends State<TargetTagResultsScreen>
     }
   }
 
-  void _playVictoryMusic() async {
-    try {
-      final musicService = VictoryMusicService();
-      final customMusicSource = await musicService.getRandomMusicSource();
-
-      await _audioPlayer.setVolume(0.7);
-
-      if (customMusicSource != null && customMusicSource.isNotEmpty) {
-        if (customMusicSource.startsWith('data:')) {
-          // Web: data URL
-          await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => debugPrint('Audio playback timed out'),
-              );
-        } else {
-          // Native: file path
-          await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => debugPrint('Audio playback timed out'),
-              );
-        }
-      } else {
-        // Fallback
-        await _audioPlayer
-            .play(UrlSource(
-                'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'))
-            .timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => debugPrint('Audio playback timed out'),
-            );
-      }
-    } catch (e) {
-      debugPrint('Error playing victory music: $e');
+  Future<void> _playVictoryMusic() async {
+    final started =
+        await VictoryMusicService().playVictoryMusic(_audioPlayer);
+    if (started) {
+      _stopDucking ??= VictoryMusicService.duckUnderSpeech(_audioPlayer);
     }
   }
 

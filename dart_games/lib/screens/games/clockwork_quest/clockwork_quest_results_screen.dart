@@ -25,6 +25,9 @@ class ClockworkQuestResultsScreen extends StatefulWidget {
 class _ClockworkQuestResultsScreenState
     extends State<ClockworkQuestResultsScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  /// Detaches the victory-music duck listener. The notifier it hooks is
+  /// app-wide, so failing to call this on dispose leaks into the next screen.
+  VoidCallback? _stopDucking;
   bool _musicPlayed = false;
   bool _statsUpdated = false;
 
@@ -85,6 +88,8 @@ class _ClockworkQuestResultsScreenState
 
   @override
   void dispose() {
+    _stopDucking?.call();
+    _stopDucking = null;
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -92,36 +97,10 @@ class _ClockworkQuestResultsScreenState
   Future<void> _playVictoryMusic() async {
     if (_musicPlayed) return;
     _musicPlayed = true;
-
-    try {
-      final musicService = VictoryMusicService();
-      final customMusicSource = await musicService.getRandomMusicSource();
-
-      await _audioPlayer.setVolume(0.7);
-
-      if (customMusicSource != null && customMusicSource.isNotEmpty) {
-        if (customMusicSource.startsWith('data:')) {
-          await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => debugPrint('Audio playback timed out'),
-              );
-        } else {
-          await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => debugPrint('Audio playback timed out'),
-              );
-        }
-      } else {
-        await _audioPlayer
-            .play(UrlSource(
-                'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'))
-            .timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => debugPrint('Audio playback timed out'),
-            );
-      }
-    } catch (e) {
-      debugPrint('Error playing victory music: $e');
+    final started =
+        await VictoryMusicService().playVictoryMusic(_audioPlayer);
+    if (started) {
+      _stopDucking ??= VictoryMusicService.duckUnderSpeech(_audioPlayer);
     }
   }
 
