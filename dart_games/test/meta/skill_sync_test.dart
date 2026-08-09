@@ -3,18 +3,22 @@
 // CLAUDE.md requires every project skill to exist in TWO byte-identical
 // copies:
 //
-//   .claude/skills/<name>/SKILL.md   the locally-installed copy this session
-//                                    actually reads
-//   skills/<name>/SKILL.md           the copy committed to git
+//   .claude/skills/<name>/...   the locally-installed copy this session reads
+//   skills/<name>/...           the copy committed to git
 //
 // Only the second is tracked (`.claude/` is gitignored), so the failure mode
 // is silent and one-directional: edit the installed copy, commit nothing, and
 // the next session on another machine runs the OLD rules while this machine
-// runs the new ones. Or commit only the tracked copy and this session keeps
+// runs the new ones — or commit only the tracked copy and this session keeps
 // reading the stale one.
 //
 // CLAUDE.md says to verify with `diff -q` by hand. Nothing enforced it, which
-// is exactly the kind of rule that quietly rots — so this does.
+// is exactly the kind of rule that quietly rots.
+//
+// A skill is no longer one file: game.build carves its phases into `phases/`
+// and its appendices into `reference/` (WS07 §7.1). Checking only SKILL.md
+// would leave those free to diverge silently, so every markdown file a skill
+// owns is compared.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -35,6 +39,19 @@ Set<String> _skillNames() {
   return names;
 }
 
+/// Every markdown file a skill owns, relative to its own directory.
+Set<String> _markdownFiles(String base, String name) {
+  final dir = Directory('$base/$name');
+  if (!dir.existsSync()) return {};
+  final prefix = '$base/$name/';
+  return dir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.md'))
+      .map((f) => f.path.replaceAll(r'\', '/').split(prefix).last)
+      .toSet();
+}
+
 void main() {
   final names = _skillNames();
 
@@ -44,37 +61,52 @@ void main() {
             'layout changed?');
   });
 
-  group('every project skill exists in both trees, byte-identical', () {
-    for (final name in names) {
-      test(name, () {
-        final tracked = File('skills/$name/SKILL.md');
-        final installed = File('.claude/skills/$name/SKILL.md');
+  for (final name in names) {
+    group(name, () {
+      test('both trees hold the same set of files', () {
+        final tracked = _markdownFiles('skills', name);
+        final installed = _markdownFiles('.claude/skills', name);
 
-        expect(tracked.existsSync(), isTrue,
-            reason: 'skills/$name/SKILL.md is missing. The installed copy is '
-                'gitignored, so this skill is not in version control at all.');
-        expect(installed.existsSync(), isTrue,
-            reason: '.claude/skills/$name/SKILL.md is missing, so THIS session '
-                'is not running the skill that is committed.');
-
-        final a = tracked.readAsStringSync();
-        final b = installed.readAsStringSync();
-        if (a == b) return;
-
-        // Give a useful failure rather than "strings differ" on a 5,000-line
-        // file: report the first differing line.
-        final al = a.split('\n');
-        final bl = b.split('\n');
-        var i = 0;
-        while (i < al.length && i < bl.length && al[i] == bl[i]) {
-          i++;
-        }
-        fail('skills/$name/SKILL.md and .claude/skills/$name/SKILL.md have '
-            'diverged at line ${i + 1}:\n'
-            '  tracked  : ${i < al.length ? al[i] : "<end of file>"}\n'
-            '  installed: ${i < bl.length ? bl[i] : "<end of file>"}\n'
-            'Copy one over the other and commit BOTH, per CLAUDE.md.');
+        expect(tracked, isNotEmpty,
+            reason: 'skills/$name contains no markdown');
+        expect(installed.difference(tracked), isEmpty,
+            reason: 'Installed-only files are NOT in version control, so no '
+                'other machine has them: ${installed.difference(tracked)}');
+        expect(tracked.difference(installed), isEmpty,
+            reason: 'Committed files this session is NOT running: '
+                '${tracked.difference(installed)}');
       });
-    }
-  });
+
+      for (final rel in _markdownFiles('skills', name)) {
+        test(rel, () {
+          final tracked = File('skills/$name/$rel');
+          final installed = File('.claude/skills/$name/$rel');
+
+          expect(tracked.existsSync(), isTrue,
+              reason: 'skills/$name/$rel is missing. The installed copy is '
+                  'gitignored, so it is not in version control at all.');
+          expect(installed.existsSync(), isTrue,
+              reason: '.claude/skills/$name/$rel is missing, so THIS session '
+                  'is not running what is committed.');
+
+          final a = tracked.readAsStringSync();
+          final b = installed.readAsStringSync();
+          if (a == b) return;
+
+          // A useful failure, not "strings differ" on a 5,600-line file.
+          final al = a.split('\n');
+          final bl = b.split('\n');
+          var i = 0;
+          while (i < al.length && i < bl.length && al[i] == bl[i]) {
+            i++;
+          }
+          fail('skills/$name/$rel and .claude/skills/$name/$rel diverged at '
+              'line ${i + 1}:\n'
+              '  tracked  : ${i < al.length ? al[i] : "<end of file>"}\n'
+              '  installed: ${i < bl.length ? bl[i] : "<end of file>"}\n'
+              'Copy one over the other and commit BOTH, per CLAUDE.md.');
+        });
+      }
+    });
+  }
 }
