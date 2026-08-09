@@ -144,6 +144,15 @@ class GameMetadata {
   /// The game's own [GameTheme] (WS03 §3.1).
   final GameTheme? theme;
 
+  /// Widget key for this game's home-screen card, used by the UI suites.
+  final Key? cardKey;
+
+  /// Card artwork.
+  final String? cardImageAsset;
+
+  /// Card tint behind the artwork.
+  final Color? cardColor;
+
   final MaxPlayersBucket maxPlayers;
   final Set<GameplayStyle> gameplayStyles;
   final PlayerInteraction playerInteraction;
@@ -155,6 +164,9 @@ class GameMetadata {
     required this.displayName,
     this.cardTitleStyle,
     this.theme,
+    this.cardKey,
+    this.cardImageAsset,
+    this.cardColor,
     required this.maxPlayers,
     required this.gameplayStyles,
     required this.playerInteraction,
