@@ -84,7 +84,15 @@ final saveResumeSpec = SaveResumeSpec(
   config: config,
   gameType: gameType,
   navigateToGameScreen: navigateToGameScreen,
-  throwOneDart: throwOneDart,
+  // Dart 1 hits the hole's target (Birdie), which ENDS THE TURN and raises
+  // the takeout modal — and that modal blocks the game-screen back arrow, so
+  // the Save prompt never appears. Every hand-written Tiki save/resume test
+  // paired the dart with a clickDartsRemoved for exactly this reason; the
+  // shared runner does not, so the pairing lives here.
+  throwOneDart: (tester) async {
+    await throwOneDart(tester);
+    await clickDartsRemoved(tester);
+  },
   preSaveGame: preSaveGame,
   preSaveTwoGames: preSaveTwoGames,
   menuResumeButton: () => find.byKey(TikiGolfMenuKeys.resumeGameButton),
