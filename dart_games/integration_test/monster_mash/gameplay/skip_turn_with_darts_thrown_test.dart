@@ -35,9 +35,9 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    // Skip turn — with darts on the board, the game screen schedules
-    // simulateTakeoutStarted after 3500ms, so wait long enough for that
-    // delayed callback to fire before tapping DARTS REMOVED.
+    // Skip turn — with darts on the board, the game waits for DARTS
+    // REMOVED. The generous pump gives any skip-scheduled callbacks time
+    // to settle before we tap it.
     await UITestHelpers.clickSkipTurn(tester, config);
     await tester.pump(const Duration(seconds: 4));
     await PumpSequences.fullRebuild(tester);

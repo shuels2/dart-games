@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
+import 'games/game_menu_routes.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/game_filter_registry.dart';
-import '../constants/test_keys.dart';
 import '../models/game_metadata.dart';
 import '../providers/dartboard_provider.dart';
 import '../services/dart_announcer_service.dart';
@@ -12,15 +13,6 @@ import '../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../widgets/game_filter_bar/game_filter_bar.dart';
 import 'options_screen.dart';
-import 'games/carnival_horse_race/horse_race_menu_screen.dart';
-import 'games/target_tag/target_tag_menu_screen.dart';
-import 'games/monster_mash/monster_mash_menu_screen.dart';
-import 'games/reef_royale/reef_royale_menu_screen.dart';
-import 'games/clockwork_quest/clockwork_quest_menu_screen.dart';
-import 'games/lunar_lander/lunar_lander_menu_screen.dart';
-import 'games/pirates_grid/pirates_grid_menu_screen.dart';
-import 'games/gladiator_arena/gladiator_arena_menu_screen.dart';
-import 'games/tiki_golf/tiki_golf_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,43 +42,36 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _navigateToMenu(String gameType) {
-    Widget menuScreen;
-    switch (gameType) {
-      case 'carnival_derby':
-        menuScreen = const HorseRaceMenuScreen();
-        break;
-      case 'target_tag':
-        menuScreen = const TargetTagMenuScreen();
-        break;
-      case 'monster_mash':
-        menuScreen = const MonsterMashMenuScreen();
-        break;
-      case 'reef_royale':
-        menuScreen = const ReefRoyaleMenuScreen();
-        break;
-      case 'clockwork_quest':
-        menuScreen = const ClockworkQuestMenuScreen();
-        break;
-      case 'lunar_lander':
-        menuScreen = const LunarLanderMenuScreen();
-        break;
-      case 'pirates_grid':
-        menuScreen = const PiratesGridMenuScreen();
-        break;
-      case 'gladiator_arena':
-        menuScreen = const GladiatorArenaMenuScreen();
-        break;
-      case 'tiki_golf':
-        menuScreen = const TikiGolfMenuScreen();
-        break;
-      case 'treasure_divide':
-        Navigator.pushNamed(context, '/treasure-divide');
-        return;
-      default:
-        return;
+  /// Resolves a game card's label style from the registry (WS03 §3.2).
+  ///
+  /// This replaced an eleven-way ternary keyed on the DISPLAY STRING
+  /// (`title == 'Carnival Derby' ? ... : title == 'Target Tag' ? ...`).
+  /// Keying on the display name meant renaming a game silently dropped its
+  /// card to the default style, and adding game #11 meant remembering to
+  /// extend a chain buried in a build method. Games with no registered style
+  /// (Pirate's Grid) get the app default, exactly as the ternary's else did.
+  TextStyle? _cardTitleStyle(
+      BuildContext context, String? gameId, bool isDisabled) {
+    final theme = Theme.of(context);
+    final color =
+        isDisabled ? Colors.grey : theme.colorScheme.onSurface;
+    final base = theme.textTheme.titleMedium?.fontSize ?? 16;
+
+    final entry = gameId == null ? null : GameFilterRegistry.byId(gameId);
+    final style = entry?.cardTitleStyle;
+    if (style == null) {
+      return theme.textTheme.titleMedium
+          ?.copyWith(color: color, fontWeight: FontWeight.bold);
     }
-    Navigator.push(context, MaterialPageRoute(builder: (context) => menuScreen));
+    return style.resolve(baseSize: base, color: color);
+  }
+
+  void _navigateToMenu(String gameType) {
+    // The ten-case switch this replaced had a `default: return;` — a game
+    // missing from it did nothing at all when tapped, silently. GameMenuRoutes
+    // exposes that gap instead (missingGameIds), and a test asserts it is
+    // empty for every registered game.
+    GameMenuRoutes.open(context, gameType);
   }
 
   Widget _buildGameCard({
@@ -94,6 +79,8 @@ class _HomeScreenState extends State<HomeScreen> {
     Key? key,
     IconData? icon,
     String? imageAssetPath,
+    /// Registry key — drives the card's label style (WS03 §3.2).
+    String? gameId,
     required String title,
     required Color color,
     required VoidCallback? onTap,
@@ -156,78 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           : Offset.zero,
                       child: Text(
                   title,
-                  style: title == 'Carnival Derby'
-                      ? GoogleFonts.rye(
-                          fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 2,
-                          color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        )
-                      : title == 'Target Tag'
-                          ? GoogleFonts.luckiestGuy(
-                              fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
-                              color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                              letterSpacing: 1.2,
-                            )
-                          : title == 'Monster Mash'
-                              ? GoogleFonts.creepster(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : title == 'Reef Royale'
-                              ? GoogleFonts.fredoka(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 5,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                )
-                          : title == 'Clockwork Quest'
-                              ? GoogleFonts.cinzelDecorative(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 3,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.2,
-                                )
-                          : title == 'Lunar Lander'
-                              ? GoogleFonts.orbitron(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 3,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : title == "Pirate's Grid"
-                              ? GoogleFonts.pirataOne(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : title == 'Gladiator Arena'
-                              ? GoogleFonts.cinzel(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 4,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : title == 'Tiki Golf'
-                              // Boogaloo's descender pushes the baseline visually low.
-                              // Translate up 5px to align with peer-game baselines.
-                              ? GoogleFonts.boogaloo(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  height: 0.6, // tightens line-box so the text sits 5px higher
-                                )
-                          : title == 'Treasure Divide'
-                              ? GoogleFonts.pirataOne(
-                                  fontSize: (theme.textTheme.titleMedium?.fontSize ?? 16) + 6,
-                                  color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                                  letterSpacing: 1.0,
-                                )
-                          : theme.textTheme.titleMedium?.copyWith(
-                              color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  style: _cardTitleStyle(context, gameId, isDisabled),
                       textAlign: TextAlign.center,
                     ),
                     ),
@@ -320,108 +236,20 @@ class _HomeScreenState extends State<HomeScreen> {
     // Define all available games here. Each entry's `gameId` matches the
     // registry id in lib/constants/game_filter_registry.dart so the filter
     // bar can match cards by id.
+    // Card data comes from the registry (WS03 §3.2) rather than ten inline
+    // map literals. Order is the registry's order.
     final games = [
-      {
-        'gameId': 'carnival_derby',
-        'title': 'Carnival Derby',
-        'key': HomeKeys.carnivalDerbyCard,
-        'imageAssetPath': 'assets/common/icons/icon.png',
-        'color': Colors.amber,
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('carnival_derby')
-            : null,
-      },
-      {
-        'gameId': 'target_tag',
-        'title': 'Target Tag',
-        'key': HomeKeys.targetTagCard,
-        'imageAssetPath': 'assets/games/target_tag/icons/TargetTag-Icon.png',
-        'color': const Color(0xFFFF007A),
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('target_tag')
-            : null,
-      },
-      {
-        'gameId': 'monster_mash',
-        'title': 'Monster Mash',
-        'key': HomeKeys.monsterMashCard,
-        'imageAssetPath': 'assets/games/monster_mash/icons/MonsterMash-Icon.png',
-        'color': const Color(0xFF4B0082), // Haunted Purple
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('monster_mash')
-            : null,
-      },
-      {
-        'gameId': 'reef_royale',
-        'title': 'Reef Royale',
-        'key': HomeKeys.reefRoyaleCard,
-        'imageAssetPath': 'assets/games/reef_royale/icons/ReefRoyale-Icon.png',
-        'color': const Color(0xFF0B3D91), // Deep Reef Blue
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('reef_royale')
-            : null,
-      },
-      {
-        'gameId': 'clockwork_quest',
-        'title': 'Clockwork Quest',
-        'key': HomeKeys.clockworkQuestCard,
-        'imageAssetPath': 'assets/games/clockwork_quest/icons/icon.png',
-        'color': const Color(0xFF2C2C34), // Dark Iron
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('clockwork_quest')
-            : null,
-      },
-      {
-        'gameId': 'lunar_lander',
-        'title': 'Lunar Lander',
-        'key': HomeKeys.lunarLanderCard,
-        'imageAssetPath': 'assets/games/lunar_lander/icons/LunarLander-Icon.png',
-        'color': const Color(0xFF1B4965), // Earth Blue
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('lunar_lander')
-            : null,
-      },
-      {
-        'gameId': 'pirates_grid',
-        'title': "Pirate's Grid",
-        'key': HomeKeys.piratesGridCard,
-        'imageAssetPath': 'assets/games/pirates_grid/icons/PiratesGrid-Icon.png',
-        'color': const Color(0xFF1B2838), // Ocean Navy
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('pirates_grid')
-            : null,
-      },
-      {
-        'gameId': 'gladiator_arena',
-        'title': 'Gladiator Arena',
-        'key': HomeKeys.gladiatorArenaCard,
-        'imageAssetPath': 'assets/games/gladiator_arena/icons/GladiatorArena-Icon.png',
-        'color': const Color(0xFF7B2D8E), // Imperial Purple
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('gladiator_arena')
-            : null,
-      },
-      {
-        'gameId': 'tiki_golf',
-        'title': 'Tiki Golf',
-        'key': HomeKeys.tikiGolfCard,
-        'imageAssetPath': 'assets/games/tiki_golf/icons/TikiGolf-Icon.png',
-        'color': const Color(0xFF2D6A4F), // Palm Green
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('tiki_golf')
-            : null,
-      },
-      {
-        'gameId': 'treasure_divide',
-        'title': 'Treasure Divide',
-        'key': HomeKeys.treasureDivideCard,
-        'imageAssetPath': 'assets/games/treasure_divide/icons/TreasureDivide-Icon.png',
-        'color': const Color(0xFF008B8B), // Ocean Teal
-        'onTap': dartboardProvider.canPlayGames
-            ? () => _navigateToMenu('treasure_divide')
-            : null,
-      },
-      // Add new games here - they will automatically be sorted alphabetically
+      for (final game in GameFilterRegistry.all)
+        {
+          'gameId': game.gameId,
+          'title': game.displayName,
+          'key': game.cardKey,
+          'imageAssetPath': game.cardImageAsset,
+          'color': game.cardColor,
+          'onTap': dartboardProvider.canPlayGames
+              ? () => _navigateToMenu(game.gameId)
+              : null,
+        },
     ];
 
     // Sort games alphabetically by title
@@ -613,6 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         context: context,
                                         key: rows[rowIndex][i]['key'] as Key?,
                                         imageAssetPath: rows[rowIndex][i]['imageAssetPath'] as String?,
+                                        gameId: rows[rowIndex][i]['gameId'] as String?,
                                         title: rows[rowIndex][i]['title'] as String,
                                         color: rows[rowIndex][i]['color'] as Color,
                                         onTap: rows[rowIndex][i]['onTap'] as VoidCallback?,

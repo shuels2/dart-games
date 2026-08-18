@@ -1,20 +1,16 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../constants/test_keys.dart';
 import '../../../models/tiki_golf_game.dart';
-import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/tiki_golf_provider.dart';
-import '../../../services/game_announcement_queue_service.dart';
-import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/play_to_complete/tiki_golf_strategy.dart';
 import '../../../services/play_to_tie/tiki_golf_strategy.dart';
-import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
 import '../../../services/save_game_service.dart';
 import '../../../services/tiki_golf_announcement_helper.dart';
+import '../../../services/tiki_golf_sound_effects.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
@@ -22,8 +18,10 @@ import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
+import '../../../widgets/game_background.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
+import '../shared/game_screen_controller.dart';
+import '../shared/game_screen_shell.dart';
 import 'tiki_golf_results_screen.dart';
 
 // ─── Color palette ────────────────────────────────────────────────────────────
@@ -101,18 +99,10 @@ class TikiGolfGameScreen extends StatefulWidget {
   State<TikiGolfGameScreen> createState() => _TikiGolfGameScreenState();
 }
 
-class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
-  StreamSubscription? _dartboardSubscription;
+class _TikiGolfGameScreenState extends State<TikiGolfGameScreen>
+    with GameScreenController<TikiGolfGameScreen> {
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
-  MockScoliaApiService? _mockApi;
-  final DartboardEmulatorController _dartboardEmulatorController =
-      DartboardEmulatorController();
-
-  PlayToCompleteRunner? _playToCompleteRunner;
-  PlayToTieRunner? _playToTieRunner;
-  bool _gameCompleted = false;
-  bool _showSaveModal = false;
 
   // Raw dart-segment strings (e.g. 'S20', 'T14', 'Bull', 'Miss') for the
   // CURRENT player's CURRENT turn. Feeds Edit Score so the dialog opens with
@@ -123,117 +113,50 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
   // ─── Announcement helper ──────────────────────────────────────────────────────
   TikiGolfAnnouncementHelper? _audioQueue;
 
-  // Cached state for mulligan-reminder transition detection
-  bool _lastShowMulliganModal = false;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initializeGame());
-  }
-
-  Future<void> _initializeGame() async {
-    if (!mounted) return;
-    final dartboardProvider = context.read<DartboardProvider>();
-    _mockApi = dartboardProvider.apiService;
-    if (mounted) setState(() {});
-
-    // Subscribe to dartboard events (works for both WebSocket and emulator)
-    final eventStream = dartboardProvider.dartboardEventStream;
-    if (eventStream != null) {
-      _dartboardSubscription = eventStream.listen(_handleDartboardEvent);
-    }
-
-    // ── Announcement helper ───────────────────────────────────────────────────
-    final queueService = GameAnnouncementQueueService();
-    await queueService.loadSettings();
-    _audioQueue = TikiGolfAnnouncementHelper(queueService);
-
-    if (!mounted) return;
-
-    // Game start announcement
-    _audioQueue?.announceGameStart();
-
-    // First player turn announcement (delayed so game start audio plays first)
-    final provider = context.read<TikiGolfProvider>();
-    final firstPlayerId = provider.currentGame?.activePlayerId;
-    final firstPlayerName = firstPlayerId != null
-        ? context.read<PlayerProvider>().byId(firstPlayerId)?.name ?? firstPlayerId
-        : null;
-    if (firstPlayerName != null) {
-      Future.delayed(const Duration(milliseconds: 2000), () {
-        if (mounted) _audioQueue?.announcePlayerTurn(firstPlayerName);
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initGameScreen(
+        preloadEffects: TikiGolfSoundEffects.all,
+        buildAudio: (queue) => _audioQueue = TikiGolfAnnouncementHelper(queue),
+        onReady: () => _audioQueue?.announceGameStart(),
+        // First player turn announcement (delayed so game start audio plays
+        // first).
+        firstTurnDelay: const Duration(milliseconds: 2000),
+        announceFirstTurn: () {
+          final provider = context.read<TikiGolfProvider>();
+          final firstPlayerId = provider.currentGame?.activePlayerId;
+          if (firstPlayerId == null) return;
+          final firstPlayerName =
+              context.read<PlayerProvider>().byId(firstPlayerId)?.name ??
+                  firstPlayerId;
+          _audioQueue?.announcePlayerTurn(firstPlayerName);
+        },
+      );
+    });
   }
 
   @override
   void dispose() {
-    _playToCompleteRunner?.dispose();
-    _playToTieRunner?.dispose();
-    _dartboardSubscription?.cancel();
-    _dartboardEmulatorController.dispose();
-    _audioQueue?.dispose(); // line ~152 — dispose announcement helper
+    disposeGameScreen();
+    _audioQueue?.dispose();
     super.dispose();
   }
 
-  // ─── Play-to-Complete ────────────────────────────────────────────────────────
+  // ─── GameScreenController contract ───────────────────────────────────────────
 
-  void _onPlayToComplete() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
+  @override
+  PlayToCompleteStrategy get playToCompleteStrategy => TikiGolfStrategy();
 
-    _playToCompleteRunner = PlayToCompleteRunner(
-      strategy: TikiGolfStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToCompleteRunner!.run();
-  }
+  @override
+  Future<void> whenAnnouncementsIdle() =>
+      _audioQueue?.whenIdle() ?? Future<void>.value();
 
-  void _onCancelAutoPlay() {
-    _playToCompleteRunner?.cancel();
-    _playToTieRunner?.cancel();
-    _dartboardEmulatorController.setAutoPlaying(false);
-    _dartboardEmulatorController.show();
-  }
+  void _onPlayToTie() => startPlayToTie(TikiGolfTieStrategy());
 
-  void _onPlayToTie() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
-
-    _playToTieRunner = PlayToTieRunner(
-      strategy: TikiGolfTieStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToTieRunner!.run();
-  }
-
-  // ─── Dartboard event routing ─────────────────────────────────────────────────
-
-  void _handleDartboardEvent(Map<String, dynamic> event) {
-    final type = event['type'];
-    if (type == 'throw_detected') {
-      _handleDartThrow(event);
-    } else if (type == 'takeout_finished') {
-      _handleTakeoutFinished();
-    }
-  }
-
-  void _handleDartThrow(Map<String, dynamic> event) {
+  @override
+  void onDartThrowEvent(Map<String, dynamic> event) {
     if (!mounted) return;
     final provider = context.read<TikiGolfProvider>();
     if (!provider.isGameActive) return;
@@ -251,24 +174,25 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     provider.processDartThrow(sector: sector, score: score);
 
     // ── Per-dart announcement (auto-play guard) ───────────────────────────────
-    if (!_dartboardEmulatorController.isAutoPlaying) { // auto-play guard line
+    if (!isAutoPlaying) {
       final game = provider.currentGame;
       if (game != null) {
         _fireDartAnnouncement(game, provider);
       }
     }
 
-    // Schedule takeout-started signal for emulator section transition
-    if (!_dartboardEmulatorController.isAutoPlaying) {
+    // Reset the takeout choreography for this turn-end. No announce callback
+    // here — Tiki's remove-darts line is fired from _fireDartAnnouncement,
+    // which owns the mulligan-modal suppression. The call still matters for
+    // its cancel semantics: a stray dart landing inside a zero-dart skip's
+    // 500ms window cancels the pending auto-advance, leaving the takeout to
+    // DARTS REMOVED — correct, since a dart is now physically on the board.
+    if (!isAutoPlaying) {
       final game = provider.currentGame;
       if (game != null && game.currentTurnEnded) {
-        Future.delayed(const Duration(milliseconds: 3500), () {
-          if (mounted) _mockApi?.simulateTakeoutStarted();
-        });
+        scheduleTakeoutSequence(dartsOnBoard: true);
       }
     }
-
-    setState(() {});
   }
 
   /// Computes fact flags from current game state and fires the single
@@ -382,17 +306,20 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
     //    Firing the generic remove-darts line here would race with the
     //    modal and confuse the player into skipping the mulligan choice.
     if (currentTurnEnded && !mulliganReminder) {
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _audioQueue?.announceRemoveDarts(playerName);
+      runAfter(const Duration(milliseconds: 1500), () {
+        _audioQueue?.announceRemoveDarts(playerName);
       });
     }
   }
 
   // ─── Takeout / turn-advance ──────────────────────────────────────────────────
 
-  void _handleTakeoutFinished() {
+  @override
+  void onTakeoutFinished() {
     final provider = context.read<TikiGolfProvider>();
     if (!mounted) return;
+
+    cancelTakeoutSequence();
 
     if (provider.hasWinner) {
       _handleGameWon();
@@ -418,10 +345,8 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
       return;
     }
 
-    setState(() {});
-
     // ── Post-takeout announcements (auto-play guard) ─────────────────────────
-    if (_dartboardEmulatorController.isAutoPlaying) return;
+    if (isAutoPlaying) return;
 
     final game = provider.currentGame;
     if (game == null) return;
@@ -433,9 +358,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         context.read<PlayerProvider>().byId(newPlayerId)?.name ?? newPlayerId;
     final newHole = game.currentHole;
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
-
+    runAfter(const Duration(milliseconds: 500), () {
       if (newHole != prevHole) {
         // Hole changed: announce New Hole
         final targetNumber = game.holeTargets[newHole - 1];
@@ -476,44 +399,30 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
   }
 
   void _handleGameWon() {
-    if (_gameCompleted) return;
-    _gameCompleted = true;
-
-    void navigateToResults() {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const TikiGolfResultsScreen()),
-      );
-    }
-
-    if (_dartboardEmulatorController.isAutoPlaying) {
-      navigateToResults();
-    } else {
-      // Fire victory announcement. Reads winnerIds / winnerTeamIds (both
-      // lists populated by _determineSoloWinner / _determineTeamWinner in
-      // the provider), so a solo tie or team tie announces EVERY winner
-      // — not just the first. Falls back to the legacy single-winner
-      // fields for older saved games loaded before the tie support was
-      // added.
-      final game = context.read<TikiGolfProvider>().currentGame;
-      if (game != null) {
-        final winnerNames = _resolveWinnerNames(game);
-        if (winnerNames.isNotEmpty) {
-          _audioQueue?.announceVictory(winnerNames);
+    handleGameWon(
+      announceWinner: () {
+        // Fire victory announcement. Reads winnerIds / winnerTeamIds (both
+        // lists populated by _determineSoloWinner / _determineTeamWinner in
+        // the provider), so a solo tie or team tie announces EVERY winner
+        // — not just the first. Falls back to the legacy single-winner
+        // fields for older saved games loaded before the tie support was
+        // added.
+        final game = context.read<TikiGolfProvider>().currentGame;
+        if (game != null) {
+          final winnerNames = _resolveWinnerNames(game);
+          if (winnerNames.isNotEmpty) {
+            _audioQueue?.announceVictory(winnerNames);
+          }
         }
-      }
-      _audioQueue?.whenIdle().then((_) {
-        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
-      });
-    }
+      },
+      resultsBuilder: (_) => const TikiGolfResultsScreen(),
+    );
   }
 
   // ─── Build ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final dartboardProvider = context.watch<DartboardProvider>();
     final provider = context.watch<TikiGolfProvider>();
     final playerProvider = context.watch<PlayerProvider>();
 
@@ -553,27 +462,96 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
         game.dartsThrown.values.any((c) => c > 0) ||
         game.totalTurns.values.any((c) => c > 0);
 
-    return AutoSaveOnPause(
-      onPaused: () {
-        if (!hasDartsThrown) return;
-        provider.saveGame(
+    return GameScreenShell(
+      hasDartsThrown: hasDartsThrown,
+      showSaveModal: showSaveModal,
+      onRequestSaveModal: openSaveModal,
+      onAutoSave: () => provider.saveGame(
+        SaveGameService(),
+        playerNamesById: _playerNamesById(playerProvider, game),
+        isAutoSave: true,
+      ),
+      onSave: () async {
+        final nav = Navigator.of(context);
+        await provider.saveGame(
           SaveGameService(),
-          playerNames:
-              playerProvider.allPlayers.map((p) => p.name).toList(),
-          isAutoSave: true,
+          playerNamesById: _playerNamesById(playerProvider, game),
         );
+        if (mounted) nav.pop();
       },
-      child: PopScope(
-      canPop: !hasDartsThrown || _showSaveModal,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _showSaveModal) return;
-        setState(() => _showSaveModal = true);
-      },
-      child: Stack(
-        children: [
-          // ── 1. Main Scaffold ────────────────────────────────────────────────
-          Scaffold(
-            appBar: AppBar(
+      onDontSave: () => Navigator.of(context).pop(),
+      saveGameModalKey: TikiGolfGameKeys.saveGameModal,
+      saveGameModalConfig: SaveGameModalConfig.tikiGolf(),
+      shouldPromptTakeout: shouldPromptTakeout,
+      // Tiki's takeout variant (Q8 in the plan notes): when the splash +
+      // mulligan modal is up, the STANDARD remove-darts modal is suppressed —
+      // the mulligan modal renders at layer 4b instead (extraOverlays), above
+      // the emulator, so it blocks DARTS REMOVED until the player chooses.
+      showRemoveDartsModal: shouldPromptTakeout && !showMulliganModal,
+      removeDartsModalKey: TikiGolfGameKeys.removeDartsModal,
+      removeDartsConfig: RemoveDartsModalConfig.tikiGolf(),
+      removeDartsPlayerName: currentPlayerName,
+      editScoreButtonKey: TikiGolfGameKeys.editScoreButton,
+      onEditScore: activePlayerId != null
+          ? () {
+              final initialSegments =
+                  _buildInitialSegments(game, activePlayerId);
+              showEditScoreDialog(
+                context: context,
+                playerName: currentPlayerName,
+                initialSegments: initialSegments,
+                onSubmit: (newSegments) {
+                  if (activePlayerId != null) {
+                    provider.editPlayerScore(
+                      playerId: activePlayerId,
+                      holeIndex: game.currentHole - 1,
+                      newDartSegments: newSegments,
+                    );
+                  }
+                },
+                config: EditScoreDialogConfig.tikiGolf(),
+              );
+            }
+          : null,
+      emulatorController: dartboardEmulatorController,
+      mockApi: mockApi,
+      dartboardKey: _dartboardKey,
+      emulatorSectionConfig: DartboardSectionConfig.tikiGolf(),
+      fabConfig: DartboardFABConfig.tikiGolf(),
+      onCancelAutoPlay: cancelAutoPlay,
+      // Hide Play-to-Complete / Play-to-Tie during takeout so the emulator
+      // doesn't overlap the RemoveDartsModal's Edit Score button.
+      onPlayToComplete: (mockApi != null && !shouldPromptTakeout)
+          ? startPlayToComplete
+          : null,
+      playToCompleteConfig: (mockApi != null && !shouldPromptTakeout)
+          ? PlayToCompleteButtonConfig.tikiGolf()
+          : null,
+      // Play to Draw — Tiki Golf can always produce a tie (every player hits
+      // the hole target on dart 1 → all 9 strokes → tied).
+      onPlayToTie:
+          (mockApi != null && !shouldPromptTakeout) ? _onPlayToTie : null,
+      playToTieConfig: (mockApi != null && !shouldPromptTakeout)
+          ? PlayToTieButtonConfig.tikiGolf()
+          : null,
+      // ── 4b. Splash + Mulligan modal (Tiki Golf takeout variant) — ABOVE
+      //    the emulator section. This modal does NOT rely on DARTS REMOVED:
+      //    its own USE MULLIGAN / NEXT PLAYER / Edit Score buttons drive the
+      //    flow. It must therefore block the emulator's DARTS REMOVED so the
+      //    user can't bypass the splash decision by tapping the emulator
+      //    button underneath.
+      extraOverlays: [
+        if (shouldPromptTakeout && showMulliganModal)
+          _buildSplashMulliganModal(
+            game: game,
+            provider: provider,
+            playerProvider: playerProvider,
+            activePlayerId: activePlayerId!,
+            currentPlayerName: currentPlayerName,
+          ),
+      ],
+      pausedModalConfig: DartboardPausedModalConfig.tikiGolf(),
+      appBar: AppBar(
               // 3-stop left-to-right gradient through Hibiscus Pink
               // -> Tropical Orange -> Palm Green (hibiscus -> sunset
               // -> jungle) — unified across all three Tiki Golf
@@ -594,7 +572,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                 icon: const Icon(Icons.arrow_back, color: _sandWhite, size: 32),
                 onPressed: () {
                   if (hasDartsThrown) {
-                    setState(() => _showSaveModal = true);
+                    openSaveModal();
                   } else {
                     Navigator.of(context).pop();
                   }
@@ -622,20 +600,13 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
             ),
             body: Stack(
               children: [
-                // Background
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/tiki_golf/images/TikiGolf-Background.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        Container(color: _palmGreen),
-                  ),
-                ),
-                // Palm Green overlay (0.60 opacity)
-                Positioned.fill(
-                  child: Container(
-                    color: _palmGreen.withOpacity(0.60),
-                  ),
+                // Background + Palm Green wash (0.60 opacity). GameBackground
+                // caps the decoded raster; this screen rebuilds on every dart.
+                const GameBackground(
+                  asset: 'assets/games/tiki_golf/images/TikiGolf-Background.png',
+                  fallbackColor: _palmGreen,
+                  overlayColor: _palmGreen,
+                  overlayOpacity: 0.60,
                 ),
                 // Main game content
                 game.gameMode == TikiGolfGameMode.solo
@@ -659,145 +630,6 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       ),
               ],
             ),
-          ),
-
-          // ── 2. RemoveDartsModal — BEHIND the emulator (canonical layer
-          //      order per skill §907-§966). DARTS REMOVED inside the emulator
-          //      section must paint on top of this overlay so the user can
-          //      finish the takeout. Edit Score lives in the modal's centered
-          //      card, which the emulator's bottom strip doesn't cover.
-          if (shouldPromptTakeout && !showMulliganModal)
-            RemoveDartsModal(
-              key: TikiGolfGameKeys.removeDartsModal,
-              config: RemoveDartsModalConfig.tikiGolf(),
-              playerName: currentPlayerName,
-              editScoreButtonKey: TikiGolfGameKeys.editScoreButton,
-              onEditScore: activePlayerId != null
-                  ? () {
-                      final initialSegments =
-                          _buildInitialSegments(game, activePlayerId);
-                      showEditScoreDialog(
-                        context: context,
-                        playerName: currentPlayerName,
-                        initialSegments: initialSegments,
-                        onSubmit: (newSegments) {
-                          if (activePlayerId != null) {
-                            provider.editPlayerScore(
-                              playerId: activePlayerId,
-                              holeIndex: game.currentHole - 1,
-                              newDartSegments: newSegments,
-                            );
-                          }
-                        },
-                        config: EditScoreDialogConfig.tikiGolf(),
-                      );
-                    }
-                  : null,
-            ),
-
-          // ── 3. Dartboard Emulator Section — ABOVE RemoveDartsModal so the
-          //      DARTS REMOVED button stays visible and tappable.
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.tikiGolf(),
-              // Hide Play-to-Complete button during takeout so the emulator
-              // doesn't overlap the RemoveDartsModal's Edit Score button.
-              onPlayToComplete: (_mockApi != null && !shouldPromptTakeout)
-                  ? _onPlayToComplete
-                  : null,
-              playToCompleteConfig: (_mockApi != null && !shouldPromptTakeout)
-                  ? PlayToCompleteButtonConfig.tikiGolf()
-                  : null,
-              // Play to Draw — Tiki Golf can always produce a tie
-              // (every player hits the hole target on dart 1 → all
-              // 9 strokes → tied).
-              onPlayToTie: (_mockApi != null && !shouldPromptTakeout)
-                  ? _onPlayToTie
-                  : null,
-              playToTieConfig: (_mockApi != null && !shouldPromptTakeout)
-                  ? PlayToTieButtonConfig.tikiGolf()
-                  : null,
-            ),
-          ),
-
-          // ── 4. Dartboard Emulator FAB ────────────────────────────────────────
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.tikiGolf(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-          ),
-
-          // ── 4b. Splash + Mulligan modal (Tiki Golf takeout variant) —
-          //       ABOVE the emulator section. This modal does NOT rely on
-          //       DARTS REMOVED: its own USE MULLIGAN / NEXT PLAYER / Edit
-          //       Score buttons drive the flow. It must therefore block the
-          //       emulator's DARTS REMOVED so the user can't bypass the
-          //       splash decision by tapping the emulator button underneath.
-          if (shouldPromptTakeout && showMulliganModal)
-            _buildSplashMulliganModal(
-              game: game,
-              provider: provider,
-              playerProvider: playerProvider,
-              activePlayerId: activePlayerId!,
-              currentPlayerName: currentPlayerName,
-            ),
-
-          // ── 5. Save Game Modal ───────────────────────────────────────────────
-          if (_showSaveModal)
-            SaveGameModal(
-              key: TikiGolfGameKeys.saveGameModal,
-              config: SaveGameModalConfig.tikiGolf(),
-              onSave: () async {
-                final nav = Navigator.of(context);
-                final allPlayers = playerProvider.allPlayers;
-                await provider.saveGame(
-                  SaveGameService(),
-                  playerNames:
-                      allPlayers.map((p) => p.name).toList(),
-                );
-                if (mounted) nav.pop();
-              },
-              onDontSave: () => Navigator.of(context).pop(),
-            ),
-
-          // ── 6. Dartboard Paused Modal (last child) ──────────────────────────
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.tikiGolf(),
-            ),
-        ],
-      ),
-      ),
     );
   }
 
@@ -1452,23 +1284,10 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
               provider.skipTurn();
               // Skip ends the turn — clear tracked segments.
               _currentTurnSegments.clear();
-              if (dartsThrown > 0) {
-                // Darts are on the board — fire takeoutStarted after delay
-                Future.delayed(const Duration(milliseconds: 3500), () {
-                  if (mounted) _mockApi?.simulateTakeoutStarted();
-                });
-              } else {
-                // 0 darts on board — auto-finish takeout (no "remove darts" UX)
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) {
-                    if (_mockApi != null) {
-                      _mockApi!.simulateTakeoutFinished();
-                    } else {
-                      _handleTakeoutFinished();
-                    }
-                  }
-                });
-              }
+              // Darts on board → wait for DARTS REMOVED (no announce — the
+              // skip flow has never had a remove-darts line); 0 darts →
+              // auto-finish takeout with no "remove darts" UX.
+              scheduleTakeoutSequence(dartsOnBoard: dartsThrown > 0);
             },
       style: ElevatedButton.styleFrom(
         backgroundColor: _tikiBrown,
@@ -1786,6 +1605,17 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
 
   /// Shown instead of the standard RemoveDartsModal when:
   ///   currentTurnEnded && wasSplash && mulliganEnabled && !mulliganAlreadyUsed
+  /// Display names for the players in THIS game, keyed by id.
+  ///
+  /// Saved-game tiles show these. Passing the whole roster listed people who
+  /// were not in the match; passing nothing at all fell back to raw UUIDs.
+  Map<String, String> _playerNamesById(
+      PlayerProvider playerProvider, TikiGolfGame game) {
+    return {
+      for (final id in game.playerIds) id: playerProvider.nameOf(id),
+    };
+  }
+
   Widget _buildSplashMulliganModal({
     required TikiGolfGame game,
     required TikiGolfProvider provider,
@@ -1863,7 +1693,11 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                         playerName: currentPlayerName,
                         initialSegments: initialSegments,
                         onSubmit: (newSegments) {
-                          // Phase 5: wire editPlayerScore
+                          provider.editPlayerScore(
+                            playerId: activePlayerId,
+                            holeIndex: game.currentHole - 1,
+                            newDartSegments: newSegments,
+                          );
                         },
                         config: EditScoreDialogConfig.tikiGolf(),
                       );
@@ -1903,7 +1737,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       // onRemoveDarts callback (= simulateTakeoutFinished),
                       // which would advance to the next player. Mulligan
                       // must NOT advance — the player re-throws.
-                      if (_mockApi != null) {
+                      if (mockApi != null) {
                         final dartboardState = _dartboardKey.currentState;
                         while (dartboardState?.removeSingleDart() == true) {}
                       }
@@ -1937,7 +1771,7 @@ class _TikiGolfGameScreenState extends State<TikiGolfGameScreen> {
                       // so the standard end-of-turn instruction applies.
                       _audioQueue?.announceRemoveDarts(currentPlayerName);
                       // Record the Splash as final and advance
-                      _handleTakeoutFinished();
+                      onTakeoutFinished();
                     },
                     child: Text(
                       'Next Player',

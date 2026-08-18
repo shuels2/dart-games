@@ -3,8 +3,8 @@
 ## Overview
 
 Shared test helpers live in two synchronized folders:
-- `integration_test/shared/` — used by UI automation tests (414 tests)
-- `test/shared/` — used by non-UI tests (1190 tests)
+- `integration_test/shared/` — used by UI automation tests 
+- `test/shared/` — used by non-UI tests 
 
 Both folders contain the same files with the same function signatures. When modifying any shared helper, **both copies must be updated**. See [Test Maintenance](test-maintenance.md) for synchronization rules.
 

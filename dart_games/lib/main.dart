@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,6 +17,7 @@ import 'providers/treasure_divide_provider.dart';
 import 'services/api/api_client.dart';
 import 'services/api/api_config.dart';
 import 'services/app_settings.dart';
+import 'services/save_game_service.dart';
 import 'services/storage_service.dart';
 import 'services/victory_music_service.dart';
 import 'services/global_connection_announcer.dart';
@@ -133,6 +135,9 @@ Future<void> main() async {
   AppSettings.initialize(apiClient);
   StorageService.initialize(apiClient);
   VictoryMusicService().initializeApi(apiClient);
+  // Game screens construct SaveGameService() without arguments; point those
+  // at the shared client rather than letting each mint its own.
+  SaveGameService.defaultClient = apiClient;
 
   // Initialize the app-root pause/reconnect announcer. Owns its own
   // GameAnnouncementQueueService so the dartboard disconnect /
@@ -212,9 +217,14 @@ Future<void> _preloadFonts() async {
   GoogleFonts.merriweather(fontWeight: FontWeight.w600);
   GoogleFonts.merriweather(fontWeight: FontWeight.w700);
 
-  // Wait for all fonts to load
-  await GoogleFonts.pendingFonts([
-    GoogleFonts.nunito(),
+  // Only the app's base font blocks the first frame. The game display fonts
+  // are requested above and awaited in the background: nothing on the home
+  // screen needs them, and the splash gives them ~1s of head start before any
+  // game screen can be reached. Awaiting all 17 families here delayed first
+  // paint by the slowest of them.
+  await GoogleFonts.pendingFonts([GoogleFonts.nunito()]);
+
+  unawaited(GoogleFonts.pendingFonts([
     GoogleFonts.rye(),
     GoogleFonts.bangers(),
     GoogleFonts.luckiestGuy(),
@@ -231,7 +241,7 @@ Future<void> _preloadFonts() async {
     GoogleFonts.cinzel(),
     GoogleFonts.boogaloo(),
     GoogleFonts.merriweather(),
-  ]);
+  ]));
 }
 
 class DartGamesApp extends StatelessWidget {

@@ -6,6 +6,10 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/edit_score_helpers.dart';
 import '../../shared/provider_helpers.dart';
+import '../../shared/element_finders.dart';
+import '../../shared/settings_helpers.dart';
+import '../../shared/pause_modal_suite.dart';
+import '../../shared/ui_test_helpers.dart';
 
 export '../../shared/ui_test_helpers.dart';
 export '../../shared/pump_sequences.dart';
@@ -88,3 +92,43 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   // Wait for victory screen
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== PAUSE MODAL SUITE SPEC =====
+//
+// Shared bodies live in shared/pause_modal_suite.dart; everything
+// game-specific for Monster Mash is supplied here. Health Max 10 and the two
+// players are the exact setup the hand-written results tests used.
+
+Future<void> _reachResults(WidgetTester tester) async {
+  await UITestHelpers.navigateToGameMenu(tester, config);
+  await SettingsHelpers.setMonsterMashHealthMax(tester, 10);
+  await UITestHelpers.addPlayer(tester, 'Player A', config);
+  await UITestHelpers.addPlayer(tester, 'Player B', config);
+  await UITestHelpers.startGame(tester, config);
+  await completeGameToVictory(tester);
+}
+
+final pauseModalSpec = PauseModalSpec(
+  config: config,
+  menuBackButton: ElementFinders.getMonsterMashBackButton,
+  ownGameCard: ElementFinders.getMonsterMashCard,
+  menuSettingsControls: [ElementFinders.getMonsterMashHealthPointsSlider],
+  menuAddPlayerButton: ElementFinders.getMonsterMashAddPlayerButtonEmptyState,
+  startGame: (tester) => setupAndStartGame(tester, config),
+  throwOneDart: (tester) => throwDartViaMock(tester, 20),
+  throwAnotherDart: (tester) => throwDartViaMock(tester, 19),
+  throwTurnToTakeout: (tester) async {
+    // Three 20s ends the turn and raises the takeout prompt.
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+  },
+  finishTakeout: clickDartsRemoved,
+  openEditScore: (tester) => openEditScore(tester, config),
+  reachResults: _reachResults,
+  resultsAfterReconnect: (tester) async {
+    await UITestHelpers.clickBackToMenu(tester, config);
+    expect(ElementFinders.getMonsterMashCard(), findsOneWidget,
+        reason: 'Back to Menu did not work after reconnect');
+  },
+);

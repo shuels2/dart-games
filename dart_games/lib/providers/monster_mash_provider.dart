@@ -3,23 +3,27 @@ import '../models/monster_mash_game.dart';
 import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
-import '../services/game_skip_turn_helper.dart';
 import '../services/api/api_client.dart';
+import '../utils/dart_sector.dart';
+import 'game_provider_base.dart';
 
-class MonsterMashProvider extends ChangeNotifier {
-  MonsterMashGame? _currentGame;
-  bool _waitingForTakeout = false;
-  ApiClient? _apiClient;
+class MonsterMashProvider extends GameProviderBase<MonsterMashGame> {
+  /// Internal alias for [GameProviderBase.game] — keeps the game logic below
+  /// untouched while the storage lives in the base.
+  MonsterMashGame? get _currentGame => game;
+  set _currentGame(MonsterMashGame? value) => game = value;
+
+  final ApiClient? _apiClient;
 
   MonsterMashProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
   MonsterMashGame? get currentGame => _currentGame;
 
+  @override
   bool get isGameActive => _currentGame?.state == MonsterMashGameState.playing;
 
-  bool get shouldPromptTakeout => _waitingForTakeout;
-
+  @override
   bool get hasWinner => _currentGame?.hasWinner() ?? false;
 
   Player? getCurrentPlayer(List<Player> players) {
@@ -122,6 +126,11 @@ class MonsterMashProvider extends ChangeNotifier {
     }
 
     final playerIds = players.map((p) => p.id).toList();
+    // A genuinely new game must not inherit the previous game's saved-game
+    // slot — otherwise this game's first save overwrites (and destroys) a
+    // still-resumable abandoned game. See F2 in the plan notes.
+    clearResumedSavedGameId();
+
     _currentGame = MonsterMashGame.create(
       playerIds: playerIds,
       healthMax: healthMax,
@@ -129,7 +138,7 @@ class MonsterMashProvider extends ChangeNotifier {
       speedPlayEnabled: speedPlay,
       roundLimit: roundLimit,
     );
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
 
     // Save initial turn start state
     _currentGame!.saveInitialTurnStartState();
@@ -140,7 +149,7 @@ class MonsterMashProvider extends ChangeNotifier {
   // Process a dart throw from dartboard event
   void processDartThrow(String sector) {
     if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (shouldPromptTakeout) return;
 
     final parsed = _parseSector(sector);
 
@@ -152,12 +161,7 @@ class MonsterMashProvider extends ChangeNotifier {
 
     if (parsed == null) {
       _currentGame!.processMiss(currentPlayerId);
-
-      final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-      if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-        _waitingForTakeout = true;
-      }
-
+      _latchTakeoutIfTurnOver();
       notifyListeners();
       return;
     }
@@ -167,39 +171,26 @@ class MonsterMashProvider extends ChangeNotifier {
 
     _currentGame!.processDartHit(currentPlayerId, number, multiplier);
 
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
+    _latchTakeoutIfTurnOver();
 
     notifyListeners();
   }
 
-  // Parse dartboard sector string
+  void _latchTakeoutIfTurnOver() {
+    checkTakeoutCondition(
+      dartsThrown: _currentGame!.getCurrentPlayerDartsThrown(),
+      maxDartsPerTurn: 3,
+    );
+  }
+
+  /// Parses a board sector string into this game's legacy map shape.
+  ///
+  /// Delegates to [DartSector]; null still means "treat as a miss", which is
+  /// what every caller here already does.
   Map<String, dynamic>? _parseSector(String sector) {
-    if (sector == 'Bull') {
-      return {'number': 50, 'multiplier': 'single'};
-    }
-    if (sector == '25') {
-      return {'number': 25, 'multiplier': 'single'};
-    }
-    if (sector == 'None' || sector.isEmpty) {
-      return null;
-    }
-
-    final match = RegExp(r'[A-Za-z](\d+)').firstMatch(sector);
-    if (match == null) return null;
-
-    final baseNumber = int.parse(match.group(1)!);
-    String multiplier = 'single';
-
-    if (sector.startsWith('D') || sector.startsWith('d')) {
-      multiplier = 'double';
-    } else if (sector.startsWith('T') || sector.startsWith('t')) {
-      multiplier = 'triple';
-    }
-
-    return {'number': baseNumber, 'multiplier': multiplier};
+    final dart = DartSector.parse(sector);
+    if (dart.isMiss) return null;
+    return {'number': dart.legacyNumber, 'multiplier': dart.multiplierName};
   }
 
   // Skip remaining darts in current turn
@@ -207,91 +198,21 @@ class MonsterMashProvider extends ChangeNotifier {
     if (_currentGame == null) return;
 
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
 
-    if (!GameSkipTurnHelper.canSkipTurn(
-      gameActive: isGameActive,
-      waitingForTakeout: _waitingForTakeout,
-      currentDartCount: dartsThrown,
-      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
-    )) {
-      return;
-    }
-
-    GameSkipTurnHelper.skipRemainingDarts(
-      currentDartCount: dartsThrown,
+    runSkipTurn(
+      dartsThrown: _currentGame!.getCurrentPlayerDartsThrown(),
       maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
       addVisualMarker: (marker) {
         _currentGame!.currentTurnDarts[currentPlayerId] ??= [];
         _currentGame!.currentTurnDarts[currentPlayerId]!.add(marker);
       },
     );
-
-    _waitingForTakeout = true;
-    notifyListeners();
   }
 
-  // Handle takeout finished event
-  void handleTakeoutFinished() {
-    if (_currentGame == null) return;
-    if (!_waitingForTakeout) return;
-
-    if (_currentGame!.hasWinner()) {
-      _waitingForTakeout = false;
-      notifyListeners();
-      return;
-    }
-
-    if (!isGameActive) return;
-
-    _currentGame!.advanceToNextPlayer();
-    _waitingForTakeout = false;
-
-    notifyListeners();
-  }
-
-  // Update a specific dart score and recalculate turn
-  void updateDartScore(String playerId, int dartIndex, String newSector) {
-    if (_currentGame == null) return;
-    if (playerId != _currentGame!.getCurrentPlayerId()) return;
-
-    final currentTurnDarts = _currentGame!.currentTurnDarts[playerId] ?? [];
-    if (dartIndex >= currentTurnDarts.length) return;
-
-    final currentPlayerIndex = _currentGame!.currentPlayerIndex;
-
-    _currentGame!.currentTurnDarts[playerId] = [];
-    _currentGame!.dartsThrown[playerId] = 0;
-    _currentGame!.dartThrowHealAmount[playerId] = [];
-    _currentGame!.dartThrowDamageDealt[playerId] = [];
-    _currentGame!.dartThrowTargetPlayerId[playerId] = [];
-
-    _currentGame!.resetToStartOfTurn(playerId);
-
-    for (int i = 0; i < currentTurnDarts.length; i++) {
-      final sector = i == dartIndex ? newSector : currentTurnDarts[i];
-
-      _currentGame!.currentTurnDarts[playerId]!.add(sector);
-
-      final parsed = _parseSector(sector);
-      if (parsed == null || sector == 'Miss') {
-        _currentGame!.processMiss(playerId);
-      } else {
-        final number = parsed['number'] as int;
-        final multiplier = parsed['multiplier'] as String;
-        _currentGame!.processDartHit(playerId, number, multiplier);
-      }
-    }
-
-    _currentGame!.currentPlayerIndex = currentPlayerIndex;
-
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
-
-    notifyListeners();
-  }
+  // Takeout-finish flow: Monster Mash matches the base exactly
+  // (winner-short-circuit → advance → clear), so only the advance is local.
+  @override
+  void advanceToNextPlayer() => _currentGame!.advanceToNextPlayer();
 
   // Update all three dart scores at once
   void updateAllDartScores(String playerId, List<String> newDartSegments) {
@@ -326,32 +247,15 @@ class MonsterMashProvider extends ChangeNotifier {
 
     _currentGame!.currentPlayerIndex = currentPlayerIndex;
 
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
+    _latchTakeoutIfTurnOver();
 
     notifyListeners();
   }
 
   // --- Save/Restore ---
 
-  String? _resumedSavedGameId;
-  bool _saving = false;
-  String? get resumedSavedGameId => _resumedSavedGameId;
-
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
-  }
-
   Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
-    debugPrint('[MonsterMashProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
-    if (_currentGame == null || _saving) {
-      debugPrint('[MonsterMashProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
-      return;
-    }
-    _saving = true;
-    try {
+    await persistSave(SaveGameService(_apiClient), (existingId) {
     final game = _currentGame!;
 
     // Find leading player (most health)
@@ -367,7 +271,7 @@ class MonsterMashProvider extends ChangeNotifier {
     final leaderPlayer = players.firstWhere((p) => p.id == leaderId,
         orElse: () => players.first);
 
-    final metadata = SavedGameMetadata.create(
+    return SavedGameMetadata.create(
       gameType: 'monster_mash',
       playerNames: players
           .where((p) => game.playerIds.contains(p.id))
@@ -378,28 +282,16 @@ class MonsterMashProvider extends ChangeNotifier {
       leadingPlayerName: leaderPlayer.name,
       leadingPlayerScore: '$maxHealth HP',
       gameState: game.toJson(),
-      waitingForTakeout: _waitingForTakeout,
+      waitingForTakeout: shouldPromptTakeout,
       isAutoSave: isAutoSave,
-      existingId: _resumedSavedGameId,
+      existingId: existingId,
     );
-
-    debugPrint('[MonsterMashProvider] saving with id=${metadata.id}');
-    final saved = await SaveGameService(_apiClient).saveGame(metadata);
-    if (saved) {
-      _resumedSavedGameId = metadata.id;
-    }
-    debugPrint('[MonsterMashProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
-    } finally {
-      _saving = false;
-    }
+    });
   }
 
-  void restoreGame(SavedGameMetadata savedGame) {
-    _currentGame = MonsterMashGame.fromJson(
-        Map<String, dynamic>.from(savedGame.gameState));
-    _waitingForTakeout = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
-    notifyListeners();
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = MonsterMashGame.fromJson(json);
   }
 
   // End the current game
@@ -407,13 +299,6 @@ class MonsterMashProvider extends ChangeNotifier {
     if (_currentGame != null) {
       _currentGame!.state = MonsterMashGameState.finished;
     }
-    notifyListeners();
-  }
-
-  // Clear the current game
-  void clearGame() {
-    _currentGame = null;
-    _waitingForTakeout = false;
     notifyListeners();
   }
 }

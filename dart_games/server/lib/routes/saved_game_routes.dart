@@ -70,16 +70,12 @@ class SavedGameRoutes {
     final json = jsonDecode(body) as Map<String, dynamic>;
     final game = ServerSavedGame.fromJson(json);
 
-    // Diagnostic: log every save so we can trace leaked requests from
-    // prior integration-test runs that arrive after a server reset.
-    final existingCount = _db.select(
-      'SELECT COUNT(*) as cnt FROM saved_games WHERE game_type = ?;',
-      [game.gameType],
-    );
-    final before = existingCount.first['cnt'] as int;
-    print('[SavedGameRoutes] POST /games  id=${game.id}  '
-        'type=${game.gameType}  players=${game.playerNames}  '
-        'existing_${game.gameType}_count=$before');
+    // The per-save COUNT query and the print that consumed it are gone
+    // (WS04 4.8). They ran on EVERY save including auto-saves — an extra
+    // full table scan per game-state write, plus player names on stdout —
+    // to diagnose leaked integration-test requests that are no longer an
+    // issue. Re-add behind a verbose flag if that diagnosis is ever needed
+    // again; do not put it back unconditionally.
 
     final stmt = _db.prepare('''
       INSERT OR REPLACE INTO saved_games

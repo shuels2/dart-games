@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../theme/game_theme.dart';
 import 'package:dart_games/models/monster_mash_game.dart';
 import 'package:dart_games/models/reef_royale_game.dart';
 
@@ -39,14 +41,14 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: Colors.grey[200]!,
       border: const Border(top: BorderSide(color: Colors.grey, width: 1)),
-      disabledOverlayBackgroundColor: const Color(0xFF1D3557).withOpacity(0.9), // Midnight Navy
-      disabledOverlayBorderColor: const Color(0xFFFFD700), // Canary Yellow
+      disabledOverlayBackgroundColor: GameTheme.carnivalDerby.background.withOpacity(0.9), // Midnight Navy
+      disabledOverlayBorderColor: GameTheme.carnivalDerby.accent, // Canary Yellow
       removeButtonBackgroundColor: const Color(0xFFE63946), // Lava Red
-      removeButtonBorderColor: const Color(0xFFFFD700), // Canary Yellow
+      removeButtonBorderColor: GameTheme.carnivalDerby.accent, // Canary Yellow
       removeButtonTextStyle: GoogleFonts.bangers(
         fontSize: 16,
         letterSpacing: 1.0,
-        color: const Color(0xFFF1FAEE), // Cloud Dancer
+        color: GameTheme.carnivalDerby.onDark, // Cloud Dancer
       ),
     );
   }
@@ -56,9 +58,9 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: const Color(0xFF2A2A3E), // Dark blue-gray
       borderRadius: BorderRadius.circular(12),
-      disabledOverlayBackgroundColor: const Color(0xFF1A1A2E).withOpacity(0.9), // Dark navy
-      disabledOverlayBorderColor: const Color(0xFFFF007A), // Hot pink
-      removeButtonBackgroundColor: const Color(0xFFFF007A), // Hot pink
+      disabledOverlayBackgroundColor: GameTheme.targetTag.background.withOpacity(0.9), // Dark navy
+      disabledOverlayBorderColor: GameTheme.targetTag.accent, // Hot pink
+      removeButtonBackgroundColor: GameTheme.targetTag.accent, // Hot pink
       removeButtonBorderColor: const Color(0xFF00FFA3), // Neon green
       removeButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
@@ -74,14 +76,14 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      disabledOverlayBackgroundColor: const Color(0xFF2F4F4F).withOpacity(0.9),
-      disabledOverlayBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      disabledOverlayBackgroundColor: GameTheme.monsterMash.background.withOpacity(0.9),
+      disabledOverlayBorderColor: GameTheme.monsterMash.accent, // Ecto-Green
       removeButtonBackgroundColor: const Color(0xFF4B0082), // Haunted Purple
-      removeButtonBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      removeButtonBorderColor: GameTheme.monsterMash.accent, // Ecto-Green
       removeButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 16,
         letterSpacing: 1.0,
-        color: const Color(0xFFF5F5DC), // Aged Parchment
+        color: GameTheme.monsterMash.onDark, // Aged Parchment
       ),
     );
   }
@@ -91,15 +93,15 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      disabledOverlayBackgroundColor: const Color(0xFF0B3D91).withOpacity(0.9),
-      disabledOverlayBorderColor: const Color(0xFF48D1CC), // Seafoam Green
-      removeButtonBackgroundColor: const Color(0xFF48D1CC), // Seafoam Green
+      disabledOverlayBackgroundColor: GameTheme.reefRoyale.background.withOpacity(0.9),
+      disabledOverlayBorderColor: GameTheme.reefRoyale.accent, // Seafoam Green
+      removeButtonBackgroundColor: GameTheme.reefRoyale.accent, // Seafoam Green
       removeButtonBorderColor: const Color(0xFF00CED1), // Sunlit Aqua
       removeButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
-        color: const Color(0xFFFFF8F0), // Pearl White
+        color: GameTheme.reefRoyale.onDark, // Pearl White
       ),
     );
   }
@@ -108,15 +110,15 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      disabledOverlayBackgroundColor: const Color(0xFF2C2C34).withOpacity(0.95), // Dark Iron
-      disabledOverlayBorderColor: const Color(0xFFC5A54E), // Brass Gold
-      removeButtonBackgroundColor: const Color(0xFFC5A54E), // Brass Gold
+      disabledOverlayBackgroundColor: GameTheme.clockworkQuest.background.withOpacity(0.95), // Dark Iron
+      disabledOverlayBorderColor: GameTheme.clockworkQuest.accent, // Brass Gold
+      removeButtonBackgroundColor: GameTheme.clockworkQuest.accent, // Brass Gold
       removeButtonBorderColor: const Color(0xFFB87333), // Copper Rose
       removeButtonTextStyle: GoogleFonts.cinzelDecorative(
         fontSize: 16,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.2,
-        color: const Color(0xFF2C2C34), // Dark Iron
+        color: GameTheme.clockworkQuest.background, // Dark Iron
       ),
     );
   }
@@ -126,15 +128,15 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      disabledOverlayBackgroundColor: const Color(0xFF1B4965).withOpacity(0.95), // Earth Blue
-      disabledOverlayBorderColor: const Color(0xFFF26430), // Rocket Flame
-      removeButtonBackgroundColor: const Color(0xFFF26430), // Rocket Flame
+      disabledOverlayBackgroundColor: GameTheme.lunarLander.background.withOpacity(0.95), // Earth Blue
+      disabledOverlayBorderColor: GameTheme.lunarLander.accent, // Rocket Flame
+      removeButtonBackgroundColor: GameTheme.lunarLander.accent, // Rocket Flame
       removeButtonBorderColor: const Color(0xFF52B788), // Mission Green
       removeButtonTextStyle: GoogleFonts.orbitron(
         fontSize: 16,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.2,
-        color: const Color(0xFFFAFDF6), // Star White
+        color: GameTheme.lunarLander.onDark, // Star White
       ),
     );
   }
@@ -144,14 +146,14 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      disabledOverlayBackgroundColor: const Color(0xFF1B2838).withOpacity(0.95), // Ocean Navy
-      disabledOverlayBorderColor: const Color(0xFFCD7F32), // Compass Bronze
-      removeButtonBackgroundColor: const Color(0xFFCD7F32), // Compass Bronze
+      disabledOverlayBackgroundColor: GameTheme.piratesGrid.background.withOpacity(0.95), // Ocean Navy
+      disabledOverlayBorderColor: GameTheme.piratesGrid.accent, // Compass Bronze
+      removeButtonBackgroundColor: GameTheme.piratesGrid.accent, // Compass Bronze
       removeButtonBorderColor: const Color(0xFFDAA520), // Treasure Gold
       removeButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 16,
         letterSpacing: 1.2,
-        color: const Color(0xFFF5E6C8), // Parchment Tan
+        color: GameTheme.piratesGrid.onDark, // Parchment Tan
       ),
     );
   }
@@ -161,15 +163,15 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      disabledOverlayBackgroundColor: const Color(0xFF3A2010).withOpacity(0.95), // Dark Arena
+      disabledOverlayBackgroundColor: GameTheme.gladiatorArena.background.withOpacity(0.95), // Dark Arena
       disabledOverlayBorderColor: const Color(0xFFDAA520), // Gladiator Gold
-      removeButtonBackgroundColor: const Color(0xFFCD7F32), // Bronze
+      removeButtonBackgroundColor: GameTheme.gladiatorArena.accent, // Bronze
       removeButtonBorderColor: const Color(0xFFDAA520), // Gladiator Gold
       removeButtonTextStyle: GoogleFonts.cinzel(
         fontSize: 16,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.2,
-        color: const Color(0xFFF5F0E8), // Marble White
+        color: GameTheme.gladiatorArena.onDark, // Marble White
       ),
     );
   }
@@ -179,13 +181,13 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      disabledOverlayBackgroundColor: const Color(0xFF2D6A4F).withOpacity(0.95), // Palm Green
-      disabledOverlayBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
-      removeButtonBackgroundColor: const Color(0xFF00B4D8), // Lagoon Blue
+      disabledOverlayBackgroundColor: GameTheme.tikiGolf.background.withOpacity(0.95), // Palm Green
+      disabledOverlayBorderColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      removeButtonBackgroundColor: GameTheme.tikiGolf.accent, // Lagoon Blue
       removeButtonBorderColor: const Color(0xFFFF8C42), // Tropical Orange
       removeButtonTextStyle: GoogleFonts.boogaloo(
         fontSize: 18,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
       ),
     );
   }
@@ -195,15 +197,15 @@ class DartboardSectionConfig {
     return DartboardSectionConfig(
       backgroundColor: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFFFFD700), width: 2), // Treasure Gold
-      disabledOverlayBackgroundColor: const Color(0xFF008B8B).withOpacity(0.95), // Ocean Teal
+      border: Border.all(color: GameTheme.treasureDivide.accent, width: 2), // Treasure Gold
+      disabledOverlayBackgroundColor: GameTheme.treasureDivide.background.withOpacity(0.95), // Ocean Teal
       disabledOverlayBorderColor: const Color(0xFF8B6914), // Plank Brown
-      removeButtonBackgroundColor: const Color(0xFFFFD700), // Treasure Gold
+      removeButtonBackgroundColor: GameTheme.treasureDivide.accent, // Treasure Gold
       removeButtonBorderColor: const Color(0xFF8B6914), // Plank Brown
       removeButtonTextStyle: GoogleFonts.merriweather(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFF008B8B), // Ocean Teal
+        color: GameTheme.treasureDivide.background, // Ocean Teal
       ),
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../theme/game_theme.dart';
+
 /// Configuration class for styling the shared Dartboard Paused modal.
 ///
 /// Use factory methods to get pre-configured styling for each game:
@@ -44,18 +46,18 @@ class DartboardPausedModalConfig {
   /// Carnival Derby — Midnight Navy with Canary Yellow border
   factory DartboardPausedModalConfig.carnivalDerby() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF1D3557),
-      borderColor: const Color(0xFFFFD700),
+      backgroundColor: GameTheme.carnivalDerby.background,
+      borderColor: GameTheme.carnivalDerby.accent,
       boxShadowColor: Colors.black,
       boxShadowOpacity: 0.5,
-      iconColor: const Color(0xFFFFD700),
+      iconColor: GameTheme.carnivalDerby.accent,
       iconSize: 56,
       titleTextStyle: GoogleFonts.luckiestGuy(
-        color: const Color(0xFFFFD700),
+        color: GameTheme.carnivalDerby.accent,
         fontSize: 28,
       ),
       messageTextStyle: GoogleFonts.bangers(
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
         fontSize: 20,
         letterSpacing: 1.0,
       ),
@@ -65,14 +67,14 @@ class DartboardPausedModalConfig {
   /// Target Tag — Dark navy with Hot Pink border
   factory DartboardPausedModalConfig.targetTag() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF1A1A2E),
-      borderColor: const Color(0xFFFF007A),
+      backgroundColor: GameTheme.targetTag.background,
+      borderColor: GameTheme.targetTag.accent,
       boxShadowColor: Colors.black,
       boxShadowOpacity: 0.5,
-      iconColor: const Color(0xFFFF007A),
+      iconColor: GameTheme.targetTag.accent,
       iconSize: 48,
       titleTextStyle: GoogleFonts.luckiestGuy(
-        color: const Color(0xFFFF007A),
+        color: GameTheme.targetTag.accent,
         fontSize: 24,
       ),
       messageTextStyle: GoogleFonts.fredoka(
@@ -86,18 +88,18 @@ class DartboardPausedModalConfig {
   /// Monster Mash — Iron Gate with Ecto-Green border
   factory DartboardPausedModalConfig.monsterMash() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF2F4F4F),
-      borderColor: const Color(0xFF7FFF00),
-      boxShadowColor: const Color(0xFF7FFF00),
+      backgroundColor: GameTheme.monsterMash.background,
+      borderColor: GameTheme.monsterMash.accent,
+      boxShadowColor: GameTheme.monsterMash.accent,
       boxShadowOpacity: 0.3,
-      iconColor: const Color(0xFF7FFF00),
+      iconColor: GameTheme.monsterMash.accent,
       iconSize: 48,
       titleTextStyle: GoogleFonts.creepster(
-        color: const Color(0xFF7FFF00),
+        color: GameTheme.monsterMash.accent,
         fontSize: 28,
       ),
       messageTextStyle: GoogleFonts.pirataOne(
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
         fontSize: 18,
       ),
     );
@@ -106,19 +108,19 @@ class DartboardPausedModalConfig {
   /// Reef Royale — Deep Reef Blue with Seafoam Green border
   factory DartboardPausedModalConfig.reefRoyale() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF0B3D91),
-      borderColor: const Color(0xFF48D1CC),
-      boxShadowColor: const Color(0xFF48D1CC),
+      backgroundColor: GameTheme.reefRoyale.background,
+      borderColor: GameTheme.reefRoyale.accent,
+      boxShadowColor: GameTheme.reefRoyale.accent,
       boxShadowOpacity: 0.3,
-      iconColor: const Color(0xFF48D1CC),
+      iconColor: GameTheme.reefRoyale.accent,
       iconSize: 48,
       titleTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFF48D1CC),
+        color: GameTheme.reefRoyale.accent,
         fontSize: 24,
         fontWeight: FontWeight.bold,
       ),
       messageTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
@@ -128,7 +130,7 @@ class DartboardPausedModalConfig {
   /// Lunar Lander — Earth Blue with Thruster Red icon, Orbitron/Exo2 fonts
   factory DartboardPausedModalConfig.lunarLander() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF1B4965), // Earth Blue
+      backgroundColor: GameTheme.lunarLander.background, // Earth Blue
       borderColor: const Color(0xFFE63946), // Thruster Red
       boxShadowColor: const Color(0xFFE63946),
       boxShadowOpacity: 0.3,
@@ -141,7 +143,7 @@ class DartboardPausedModalConfig {
         letterSpacing: 1.2,
       ),
       messageTextStyle: GoogleFonts.exo2(
-        color: const Color(0xFFFAFDF6), // Star White
+        color: GameTheme.lunarLander.onDark, // Star White
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
@@ -171,7 +173,7 @@ class DartboardPausedModalConfig {
   /// Pirate's Grid — Ocean Navy bg, Blood Red border, PirataOne/Lora fonts
   factory DartboardPausedModalConfig.piratesGrid() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF1B2838), // Ocean Navy
+      backgroundColor: GameTheme.piratesGrid.background, // Ocean Navy
       borderColor: const Color(0xFF8B0000), // Blood Red
       boxShadowColor: const Color(0xFF8B0000),
       boxShadowOpacity: 0.3,
@@ -183,7 +185,7 @@ class DartboardPausedModalConfig {
         letterSpacing: 1.2,
       ),
       messageTextStyle: GoogleFonts.lora(
-        color: const Color(0xFFF5E6C8), // Parchment Tan
+        color: GameTheme.piratesGrid.onDark, // Parchment Tan
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
@@ -192,20 +194,20 @@ class DartboardPausedModalConfig {
 
   factory DartboardPausedModalConfig.clockworkQuest() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
-      borderColor: const Color(0xFFC5A54E), // Brass Gold
+      backgroundColor: GameTheme.clockworkQuest.background, // Dark Iron
+      borderColor: GameTheme.clockworkQuest.accent, // Brass Gold
       boxShadowColor: const Color(0xFFFFBF00), // Amber Glow
       boxShadowOpacity: 0.4,
-      iconColor: const Color(0xFFC5A54E), // Brass Gold
+      iconColor: GameTheme.clockworkQuest.accent, // Brass Gold
       iconSize: 48,
       titleTextStyle: GoogleFonts.cinzelDecorative(
-        color: const Color(0xFFC5A54E),
+        color: GameTheme.clockworkQuest.accent,
         fontSize: 24,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.5,
       ),
       messageTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8), // Steam White
+        color: GameTheme.clockworkQuest.onDark, // Steam White
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
@@ -215,7 +217,7 @@ class DartboardPausedModalConfig {
   /// Gladiator Arena — Dark Arena bg, Blood Red border (signals danger/disconnection)
   factory DartboardPausedModalConfig.gladiatorArena() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF3A2010), // Dark Arena
+      backgroundColor: GameTheme.gladiatorArena.background, // Dark Arena
       borderColor: const Color(0xFFC0392B), // Blood Red — signals danger/disconnected
       boxShadowColor: const Color(0xFFC0392B),
       boxShadowOpacity: 0.4,
@@ -228,7 +230,7 @@ class DartboardPausedModalConfig {
         letterSpacing: 1.2,
       ),
       messageTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8), // Marble White
+        color: GameTheme.gladiatorArena.onDark, // Marble White
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
@@ -238,7 +240,7 @@ class DartboardPausedModalConfig {
   /// Tiki Golf — Palm Green bg, Hibiscus Pink border (signals disconnection)
   factory DartboardPausedModalConfig.tikiGolf() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      backgroundColor: GameTheme.tikiGolf.background, // Palm Green
       borderColor: const Color(0xFFFF69B4), // Hibiscus Pink
       boxShadowColor: Colors.black,
       boxShadowOpacity: 0.5,
@@ -255,7 +257,7 @@ class DartboardPausedModalConfig {
         ],
       ),
       messageTextStyle: GoogleFonts.nunito(
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
@@ -266,7 +268,7 @@ class DartboardPausedModalConfig {
   /// PirataOne title font, Merriweather body font
   factory DartboardPausedModalConfig.treasureDivide() {
     return DartboardPausedModalConfig(
-      backgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      backgroundColor: GameTheme.treasureDivide.background, // Ocean Teal
       backgroundOpacity: 0.85,
       borderColor: const Color(0xFFC41E3A), // Blood Red
       boxShadowColor: const Color(0xFFC41E3A),
@@ -279,7 +281,7 @@ class DartboardPausedModalConfig {
         letterSpacing: 1.2,
       ),
       messageTextStyle: GoogleFonts.merriweather(
-        color: const Color(0xFFFFF8E7), // Sail White
+        color: GameTheme.treasureDivide.onDark, // Sail White
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),

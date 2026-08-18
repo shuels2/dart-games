@@ -31,6 +31,13 @@ class SettingsRoutes {
     // PUT /api/v1/settings - Bulk update (batch set multiple settings)
     router.put('/', _putBatch);
 
+    // DELETE /api/v1/settings - Delete every setting in one statement.
+    // Registered AFTER '/<key>' deliberately: shelf_router matches in
+    // registration order, and '/<key>' would otherwise swallow '/' only if
+    // it matched an empty segment — it does not, but keeping the specific
+    // route first documents the intent.
+    router.delete('/', _deleteAll);
+
     return router;
   }
 
@@ -89,6 +96,15 @@ class SettingsRoutes {
   /// DELETE /<key> - Deletes a setting by key.
   Future<Response> _delete(Request request, String key) async {
     executeUpdate(_db, 'DELETE FROM settings WHERE key = ?;', [key]);
+    return Response(204);
+  }
+
+  /// DELETE / - Deletes every setting.
+  ///
+  /// Replaces the client doing GET-all then one DELETE per key (WS04 4.8):
+  /// a factory reset with 30 settings was 31 sequential HTTP round-trips.
+  Future<Response> _deleteAll(Request request) async {
+    executeUpdate(_db, 'DELETE FROM settings;', []);
     return Response(204);
   }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../theme/game_theme.dart';
 import '../stone_dialog_button.dart';
 
 /// Configuration class for styling the Add Player dialog.
@@ -85,12 +87,12 @@ class AddPlayerDialogConfig {
   /// Carnival Derby theme configuration (red/yellow/teal carnival theme)
   factory AddPlayerDialogConfig.carnivalDerby() {
     return AddPlayerDialogConfig(
-      backgroundColor: const Color(0xFF1D3557).withOpacity(0.95), // Midnight Navy
-      textColor: const Color(0xFFF1FAEE), // Cloud Dancer
+      backgroundColor: GameTheme.carnivalDerby.background.withOpacity(0.95), // Midnight Navy
+      textColor: GameTheme.carnivalDerby.onDark, // Cloud Dancer
       titleStyle: GoogleFonts.montserrat(
         fontSize: 20,
         fontWeight: FontWeight.w900,
-        color: const Color(0xFFF1FAEE), // Cloud Dancer
+        color: GameTheme.carnivalDerby.onDark, // Cloud Dancer
         shadows: const [
           Shadow(
             color: Color(0xFFFFD700), // Canary Yellow glow
@@ -100,37 +102,37 @@ class AddPlayerDialogConfig {
       ),
       inputLabelStyle: const TextStyle(color: Color(0xFFF1FAEE)), // Cloud Dancer
       inputBorderColor: const Color(0xFF48CAE4), // Electric Teal
-      inputFocusedBorderColor: const Color(0xFFFFD700), // Canary Yellow
+      inputFocusedBorderColor: GameTheme.carnivalDerby.accent, // Canary Yellow
       inputErrorBorderColor: Colors.red,
       photoLabelStyle: GoogleFonts.montserrat(
         fontSize: 16,
         fontWeight: FontWeight.w900,
-        color: const Color(0xFFF1FAEE), // Cloud Dancer
+        color: GameTheme.carnivalDerby.onDark, // Cloud Dancer
       ),
       photoButtonColor: const Color(0xFF48CAE4), // Electric Teal
-      photoButtonForegroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-      photoButtonBorderColor: const Color(0xFFFFD700), // Canary Yellow
+      photoButtonForegroundColor: GameTheme.carnivalDerby.onDark, // Cloud Dancer
+      photoButtonBorderColor: GameTheme.carnivalDerby.accent, // Canary Yellow
       photoButtonTextStyle: GoogleFonts.bangers(
         fontSize: 14,
         letterSpacing: 1.0,
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
       ),
       photoButtonWidth: 130.0,
       addButtonColor: const Color(0xFFE63946), // Lava Red
-      addButtonForegroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
-      addButtonBorderColor: const Color(0xFFFFD700), // Canary Yellow
+      addButtonForegroundColor: GameTheme.carnivalDerby.onDark, // Cloud Dancer
+      addButtonBorderColor: GameTheme.carnivalDerby.accent, // Canary Yellow
       addButtonTextStyle: GoogleFonts.bangers(
         fontSize: 14,
         letterSpacing: 1.0,
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
       ),
-      cancelButtonColor: const Color(0xFF1D3557), // Midnight Navy
-      cancelButtonForegroundColor: const Color(0xFFF1FAEE), // Cloud Dancer
+      cancelButtonColor: GameTheme.carnivalDerby.background, // Midnight Navy
+      cancelButtonForegroundColor: GameTheme.carnivalDerby.onDark, // Cloud Dancer
       cancelButtonBorderColor: const Color(0xFF48CAE4), // Electric Teal
       cancelButtonTextStyle: GoogleFonts.bangers(
         fontSize: 14,
         letterSpacing: 1.0,
-        color: const Color(0xFFF1FAEE), // Cloud Dancer
+        color: GameTheme.carnivalDerby.onDark, // Cloud Dancer
       ),
       errorTextColor: Colors.red,
     );
@@ -139,7 +141,7 @@ class AddPlayerDialogConfig {
   /// Target Tag theme configuration (pink/green tech/neon theme)
   factory AddPlayerDialogConfig.targetTag() {
     return AddPlayerDialogConfig(
-      backgroundColor: const Color(0xFF1A1A2E).withOpacity(0.95), // Dark tech navy
+      backgroundColor: GameTheme.targetTag.background.withOpacity(0.95), // Dark tech navy
       textColor: Colors.white,
       titleStyle: GoogleFonts.fredoka(
         fontSize: 24,
@@ -151,7 +153,7 @@ class AddPlayerDialogConfig {
         color: Colors.white,
       ),
       inputBorderColor: const Color(0xFF00FFA3), // Neon Green
-      inputFocusedBorderColor: const Color(0xFFFF007A), // Hot Pink
+      inputFocusedBorderColor: GameTheme.targetTag.accent, // Hot Pink
       inputErrorBorderColor: Colors.red,
       photoLabelStyle: GoogleFonts.fredoka(
         fontSize: 16,
@@ -160,16 +162,16 @@ class AddPlayerDialogConfig {
       ),
       photoButtonColor: const Color(0xFF00FFA3), // Neon Green
       photoButtonForegroundColor: Colors.white,
-      photoButtonBorderColor: const Color(0xFFFF007A), // Hot Pink
+      photoButtonBorderColor: GameTheme.targetTag.accent, // Hot Pink
       photoButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 14,
         fontWeight: FontWeight.bold,
         color: Colors.white,
       ),
       photoButtonWidth: null, // Expanded
-      addButtonColor: const Color(0xFFFF007A), // Hot Pink
+      addButtonColor: GameTheme.targetTag.accent, // Hot Pink
       addButtonForegroundColor: Colors.white,
-      addButtonBorderColor: const Color(0xFFFF007A), // Hot Pink
+      addButtonBorderColor: GameTheme.targetTag.accent, // Hot Pink
       addButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -190,14 +192,14 @@ class AddPlayerDialogConfig {
   /// Monster Mash theme configuration (purple/green horror theme)
   factory AddPlayerDialogConfig.monsterMash() {
     return AddPlayerDialogConfig(
-      backgroundColor: const Color(0xFF2F4F4F).withOpacity(0.95), // Iron Gate
-      textColor: const Color(0xFFF5F5DC), // Aged Parchment
+      backgroundColor: GameTheme.monsterMash.background.withOpacity(0.95), // Iron Gate
+      textColor: GameTheme.monsterMash.onDark, // Aged Parchment
       titleStyle: GoogleFonts.creepster(
         fontSize: 28,
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
         shadows: [
           Shadow(
-            color: const Color(0xFFF5F5DC).withOpacity(0.4),
+            color: GameTheme.monsterMash.onDark.withOpacity(0.4),
             blurRadius: 8,
           ),
           const Shadow(
@@ -209,25 +211,25 @@ class AddPlayerDialogConfig {
       ),
       inputLabelStyle: GoogleFonts.montserrat(
         fontSize: 18,
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
       ),
-      inputBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      inputBorderColor: GameTheme.monsterMash.accent, // Ecto-Green
       inputFocusedBorderColor: const Color(0xFFFF8C00), // Pumpkin Orange
       inputErrorBorderColor: Colors.red,
       photoLabelStyle: GoogleFonts.montserrat(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
       ),
       photoButtonColor: const Color(0xFF4B0082), // Haunted Purple
-      photoButtonForegroundColor: const Color(0xFFF5F5DC),
-      photoButtonBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      photoButtonForegroundColor: GameTheme.monsterMash.onDark,
+      photoButtonBorderColor: GameTheme.monsterMash.accent, // Ecto-Green
       photoButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 22,
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
         shadows: [
           Shadow(
-            color: const Color(0xFF7FFF00).withOpacity(0.6),
+            color: GameTheme.monsterMash.accent.withOpacity(0.6),
             blurRadius: 8,
           ),
           const Shadow(
@@ -239,7 +241,7 @@ class AddPlayerDialogConfig {
       ),
       photoIconShadows: [
         Shadow(
-          color: const Color(0xFF7FFF00).withOpacity(0.6),
+          color: GameTheme.monsterMash.accent.withOpacity(0.6),
           blurRadius: 8,
         ),
         const Shadow(
@@ -250,18 +252,18 @@ class AddPlayerDialogConfig {
       ],
       photoButtonWidth: null,
       addButtonColor: const Color(0xFF4B0082), // Haunted Purple
-      addButtonForegroundColor: const Color(0xFFF5F5DC),
-      addButtonBorderColor: const Color(0xFF7FFF00), // Ecto-Green
+      addButtonForegroundColor: GameTheme.monsterMash.onDark,
+      addButtonBorderColor: GameTheme.monsterMash.accent, // Ecto-Green
       addButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 24,
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
       ),
-      cancelButtonColor: const Color(0xFF2F4F4F), // Iron Gate
-      cancelButtonForegroundColor: const Color(0xFFF5F5DC),
-      cancelButtonBorderColor: const Color(0xFFF5F5DC).withOpacity(0.5),
+      cancelButtonColor: GameTheme.monsterMash.background, // Iron Gate
+      cancelButtonForegroundColor: GameTheme.monsterMash.onDark,
+      cancelButtonBorderColor: GameTheme.monsterMash.onDark.withOpacity(0.5),
       cancelButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 24,
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
       ),
       buttonPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
       errorTextColor: Colors.red,
@@ -273,11 +275,11 @@ class AddPlayerDialogConfig {
         label: 'CANCEL',
         textStyle: GoogleFonts.pirataOne(
           fontSize: 24,
-          color: const Color(0xFFF5F5DC),
+          color: GameTheme.monsterMash.onDark,
         ),
         showStoneFill: false,
         showShadow: false,
-        borderColor: const Color(0xFF2F4F4F),
+        borderColor: GameTheme.monsterMash.background,
         height: 52,
         seed: 'CANCEL_DIALOG'.hashCode,
       ),
@@ -286,7 +288,7 @@ class AddPlayerDialogConfig {
         onPressed: onPressed,
         label: 'ADD PLAYER',
         showLightning: true,
-        lightningColor: const Color(0xFFF5F5DC),
+        lightningColor: GameTheme.monsterMash.onDark,
         height: 52,
         seed: 'ADD_PLAYER_DIALOG'.hashCode,
       ),
@@ -296,43 +298,43 @@ class AddPlayerDialogConfig {
   /// Reef Royale theme — Deep Reef Blue bg, Seafoam Green accents, Fredoka font
   factory AddPlayerDialogConfig.reefRoyale() {
     return AddPlayerDialogConfig(
-      backgroundColor: const Color(0xFF0B3D91).withOpacity(0.95),
-      textColor: const Color(0xFFFFF8F0), // Pearl White
+      backgroundColor: GameTheme.reefRoyale.background.withOpacity(0.95),
+      textColor: GameTheme.reefRoyale.onDark, // Pearl White
       titleStyle: GoogleFonts.fredoka(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
       ),
       inputLabelStyle: GoogleFonts.nunito(
         fontSize: 18,
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
       ),
-      inputBorderColor: const Color(0xFF48D1CC), // Seafoam Green
+      inputBorderColor: GameTheme.reefRoyale.accent, // Seafoam Green
       inputFocusedBorderColor: const Color(0xFF00CED1), // Sunlit Aqua
       inputErrorBorderColor: const Color(0xFFFF6B6B), // Coral Pink
       photoLabelStyle: GoogleFonts.nunito(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
       ),
-      photoButtonColor: const Color(0xFF0B3D91),
-      photoButtonForegroundColor: const Color(0xFFFFF8F0),
-      photoButtonBorderColor: const Color(0xFF48D1CC),
+      photoButtonColor: GameTheme.reefRoyale.background,
+      photoButtonForegroundColor: GameTheme.reefRoyale.onDark,
+      photoButtonBorderColor: GameTheme.reefRoyale.accent,
       photoButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
       ),
       photoButtonWidth: null,
-      addButtonColor: const Color(0xFF48D1CC),
-      addButtonForegroundColor: const Color(0xFF0B3D91),
-      addButtonBorderColor: const Color(0xFF48D1CC),
+      addButtonColor: GameTheme.reefRoyale.accent,
+      addButtonForegroundColor: GameTheme.reefRoyale.background,
+      addButtonBorderColor: GameTheme.reefRoyale.accent,
       addButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
         fontWeight: FontWeight.bold,
       ),
       cancelButtonColor: Colors.grey,
-      cancelButtonForegroundColor: const Color(0xFFFFF8F0),
+      cancelButtonForegroundColor: GameTheme.reefRoyale.onDark,
       cancelButtonBorderColor: Colors.grey,
       cancelButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
@@ -344,46 +346,46 @@ class AddPlayerDialogConfig {
   /// Clockwork Quest theme configuration (steampunk clocktower theme)
   factory AddPlayerDialogConfig.clockworkQuest() {
     return AddPlayerDialogConfig(
-      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
-      textColor: const Color(0xFFF5F0E8), // Steam White
+      backgroundColor: GameTheme.clockworkQuest.background, // Dark Iron
+      textColor: GameTheme.clockworkQuest.onDark, // Steam White
       titleStyle: GoogleFonts.cinzelDecorative(
         fontSize: 22,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFC5A54E), // Brass Gold
+        color: GameTheme.clockworkQuest.accent, // Brass Gold
         letterSpacing: 1.2,
       ),
       inputLabelStyle: GoogleFonts.lato(
         fontSize: 16,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.clockworkQuest.onDark,
         fontWeight: FontWeight.w600,
       ),
       inputBorderColor: const Color(0xFFB87333), // Copper Rose
-      inputFocusedBorderColor: const Color(0xFFC5A54E), // Brass Gold
+      inputFocusedBorderColor: GameTheme.clockworkQuest.accent, // Brass Gold
       inputErrorBorderColor: const Color(0xFFFF6B6B),
       photoLabelStyle: GoogleFonts.lato(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.clockworkQuest.onDark,
       ),
       photoButtonColor: const Color(0xFFB87333), // Copper Rose
-      photoButtonForegroundColor: const Color(0xFFF5F0E8),
-      photoButtonBorderColor: const Color(0xFFC5A54E),
+      photoButtonForegroundColor: GameTheme.clockworkQuest.onDark,
+      photoButtonBorderColor: GameTheme.clockworkQuest.accent,
       photoButtonTextStyle: GoogleFonts.lato(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.clockworkQuest.onDark,
       ),
       photoButtonWidth: null,
-      addButtonColor: const Color(0xFFC5A54E), // Brass Gold
-      addButtonForegroundColor: const Color(0xFF2C2C34), // Dark Iron
-      addButtonBorderColor: const Color(0xFFC5A54E),
+      addButtonColor: GameTheme.clockworkQuest.accent, // Brass Gold
+      addButtonForegroundColor: GameTheme.clockworkQuest.background, // Dark Iron
+      addButtonBorderColor: GameTheme.clockworkQuest.accent,
       addButtonTextStyle: GoogleFonts.cinzelDecorative(
         fontSize: 16,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
       ),
       cancelButtonColor: const Color(0xFF4A4A52),
-      cancelButtonForegroundColor: const Color(0xFFF5F0E8),
+      cancelButtonForegroundColor: GameTheme.clockworkQuest.onDark,
       cancelButtonBorderColor: const Color(0xFFB87333),
       cancelButtonTextStyle: GoogleFonts.lato(
         fontSize: 16,
@@ -396,51 +398,51 @@ class AddPlayerDialogConfig {
   /// Lunar Lander theme — Earth Blue background, Rocket Flame accents, Orbitron/Exo2 fonts
   factory AddPlayerDialogConfig.lunarLander() {
     return AddPlayerDialogConfig(
-      backgroundColor: const Color(0xFF1B4965).withOpacity(0.95), // Earth Blue
-      textColor: const Color(0xFFFAFDF6), // Star White
+      backgroundColor: GameTheme.lunarLander.background.withOpacity(0.95), // Earth Blue
+      textColor: GameTheme.lunarLander.onDark, // Star White
       titleStyle: GoogleFonts.orbitron(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFAFDF6), // Star White
+        color: GameTheme.lunarLander.onDark, // Star White
         letterSpacing: 1.2,
       ),
       inputLabelStyle: GoogleFonts.exo2(
         fontSize: 16,
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
       ),
-      inputBorderColor: const Color(0xFFF26430), // Rocket Flame
+      inputBorderColor: GameTheme.lunarLander.accent, // Rocket Flame
       inputFocusedBorderColor: const Color(0xFF52B788), // Mission Green
       inputErrorBorderColor: const Color(0xFFE63946), // Thruster Red
       photoLabelStyle: GoogleFonts.exo2(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
       ),
-      photoButtonColor: const Color(0xFF1B4965), // Earth Blue
-      photoButtonForegroundColor: const Color(0xFFFAFDF6),
-      photoButtonBorderColor: const Color(0xFFF26430), // Rocket Flame
+      photoButtonColor: GameTheme.lunarLander.background, // Earth Blue
+      photoButtonForegroundColor: GameTheme.lunarLander.onDark,
+      photoButtonBorderColor: GameTheme.lunarLander.accent, // Rocket Flame
       photoButtonTextStyle: GoogleFonts.exo2(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
       ),
       photoButtonWidth: null,
-      addButtonColor: const Color(0xFFF26430), // Rocket Flame
-      addButtonForegroundColor: const Color(0xFFFAFDF6),
-      addButtonBorderColor: const Color(0xFFF26430),
+      addButtonColor: GameTheme.lunarLander.accent, // Rocket Flame
+      addButtonForegroundColor: GameTheme.lunarLander.onDark,
+      addButtonBorderColor: GameTheme.lunarLander.accent,
       addButtonTextStyle: GoogleFonts.orbitron(
         fontSize: 14,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
       ),
       cancelButtonColor: const Color(0xFF0D1B2A).withOpacity(0.85), // Space Black
-      cancelButtonForegroundColor: const Color(0xFFFAFDF6),
+      cancelButtonForegroundColor: GameTheme.lunarLander.onDark,
       cancelButtonBorderColor: const Color(0xFFC0C0C0), // Rocket Silver
       cancelButtonTextStyle: GoogleFonts.exo2(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
       ),
       errorTextColor: const Color(0xFFE63946), // Thruster Red
     );
@@ -449,8 +451,8 @@ class AddPlayerDialogConfig {
   /// Pirate's Grid theme — Ocean Navy bg, Compass Rose Bronze/Treasure Gold accents, PirataOne/Lora fonts
   factory AddPlayerDialogConfig.piratesGrid() {
     return AddPlayerDialogConfig(
-      backgroundColor: const Color(0xFF1B2838).withOpacity(0.95), // Ocean Navy
-      textColor: const Color(0xFFF5E6C8), // Parchment Tan
+      backgroundColor: GameTheme.piratesGrid.background.withOpacity(0.95), // Ocean Navy
+      textColor: GameTheme.piratesGrid.onDark, // Parchment Tan
       titleStyle: GoogleFonts.pirataOne(
         fontSize: 22,
         color: const Color(0xFFDAA520), // Treasure Gold
@@ -461,40 +463,40 @@ class AddPlayerDialogConfig {
       ),
       inputLabelStyle: GoogleFonts.lora(
         fontSize: 16,
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
       ),
-      inputBorderColor: const Color(0xFFCD7F32), // Compass Bronze
+      inputBorderColor: GameTheme.piratesGrid.accent, // Compass Bronze
       inputFocusedBorderColor: const Color(0xFFDAA520), // Treasure Gold
       inputErrorBorderColor: const Color(0xFF8B0000), // Blood Red
       photoLabelStyle: GoogleFonts.lora(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
       ),
-      photoButtonColor: const Color(0xFF1B2838), // Ocean Navy
-      photoButtonForegroundColor: const Color(0xFFF5E6C8),
-      photoButtonBorderColor: const Color(0xFFCD7F32), // Compass Bronze
+      photoButtonColor: GameTheme.piratesGrid.background, // Ocean Navy
+      photoButtonForegroundColor: GameTheme.piratesGrid.onDark,
+      photoButtonBorderColor: GameTheme.piratesGrid.accent, // Compass Bronze
       photoButtonTextStyle: GoogleFonts.lora(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
       ),
       photoButtonWidth: null,
-      addButtonColor: const Color(0xFFCD7F32), // Compass Bronze
-      addButtonForegroundColor: const Color(0xFFF5E6C8),
+      addButtonColor: GameTheme.piratesGrid.accent, // Compass Bronze
+      addButtonForegroundColor: GameTheme.piratesGrid.onDark,
       addButtonBorderColor: const Color(0xFFDAA520), // Treasure Gold
       addButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 16,
         letterSpacing: 1.0,
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
       ),
-      cancelButtonColor: const Color(0xFF1B2838).withOpacity(0.85), // Ocean Navy
-      cancelButtonForegroundColor: const Color(0xFFF5E6C8),
-      cancelButtonBorderColor: const Color(0xFFCD7F32).withOpacity(0.6),
+      cancelButtonColor: GameTheme.piratesGrid.background.withOpacity(0.85), // Ocean Navy
+      cancelButtonForegroundColor: GameTheme.piratesGrid.onDark,
+      cancelButtonBorderColor: GameTheme.piratesGrid.accent.withOpacity(0.6),
       cancelButtonTextStyle: GoogleFonts.lora(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
       ),
       errorTextColor: const Color(0xFF8B0000), // Blood Red
     );
@@ -504,7 +506,7 @@ class AddPlayerDialogConfig {
   factory AddPlayerDialogConfig.gladiatorArena() {
     return AddPlayerDialogConfig(
       backgroundColor: const Color(0xFF4A3520).withOpacity(0.97), // Dark Arena Brown
-      textColor: const Color(0xFFF5F0E8), // Marble White
+      textColor: GameTheme.gladiatorArena.onDark, // Marble White
       titleStyle: GoogleFonts.cinzel(
         fontSize: 22,
         fontWeight: FontWeight.bold,
@@ -516,41 +518,41 @@ class AddPlayerDialogConfig {
       ),
       inputLabelStyle: GoogleFonts.lato(
         fontSize: 16,
-        color: const Color(0xFFF5F0E8), // Marble White
+        color: GameTheme.gladiatorArena.onDark, // Marble White
       ),
-      inputBorderColor: const Color(0xFFCD7F32), // Bronze
+      inputBorderColor: GameTheme.gladiatorArena.accent, // Bronze
       inputFocusedBorderColor: const Color(0xFFDAA520), // Gladiator Gold
       inputErrorBorderColor: const Color(0xFFC0392B), // Blood Red
       photoLabelStyle: GoogleFonts.lato(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFFF5F0E8), // Marble White
+        color: GameTheme.gladiatorArena.onDark, // Marble White
       ),
       photoButtonColor: const Color(0xFF4A3520),
-      photoButtonForegroundColor: const Color(0xFFF5F0E8),
-      photoButtonBorderColor: const Color(0xFFCD7F32), // Bronze
+      photoButtonForegroundColor: GameTheme.gladiatorArena.onDark,
+      photoButtonBorderColor: GameTheme.gladiatorArena.accent, // Bronze
       photoButtonTextStyle: GoogleFonts.lato(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.gladiatorArena.onDark,
       ),
       photoButtonWidth: null,
-      addButtonColor: const Color(0xFFCD7F32), // Bronze
-      addButtonForegroundColor: const Color(0xFFF5F0E8), // Marble White
+      addButtonColor: GameTheme.gladiatorArena.accent, // Bronze
+      addButtonForegroundColor: GameTheme.gladiatorArena.onDark, // Marble White
       addButtonBorderColor: const Color(0xFFDAA520), // Gladiator Gold
       addButtonTextStyle: GoogleFonts.cinzel(
         fontSize: 16,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.gladiatorArena.onDark,
       ),
       cancelButtonColor: const Color(0xFF4A3520).withOpacity(0.85),
-      cancelButtonForegroundColor: const Color(0xFFF5F0E8),
-      cancelButtonBorderColor: const Color(0xFFCD7F32).withOpacity(0.6),
+      cancelButtonForegroundColor: GameTheme.gladiatorArena.onDark,
+      cancelButtonBorderColor: GameTheme.gladiatorArena.accent.withOpacity(0.6),
       cancelButtonTextStyle: GoogleFonts.lato(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.gladiatorArena.onDark,
       ),
       errorTextColor: const Color(0xFFC0392B), // Blood Red
     );
@@ -604,11 +606,11 @@ class AddPlayerDialogConfig {
   /// Treasure Divide theme — Ocean Teal bg, Treasure Gold/Plank Brown accents, PirataOne/Merriweather fonts
   factory AddPlayerDialogConfig.treasureDivide() {
     return AddPlayerDialogConfig(
-      backgroundColor: const Color(0xFF008B8B).withOpacity(0.97), // Ocean Teal
-      textColor: const Color(0xFFFFF8E7), // Sail White
+      backgroundColor: GameTheme.treasureDivide.background.withOpacity(0.97), // Ocean Teal
+      textColor: GameTheme.treasureDivide.onDark, // Sail White
       titleStyle: GoogleFonts.pirataOne(
         fontSize: 24,
-        color: const Color(0xFFFFD700), // Treasure Gold
+        color: GameTheme.treasureDivide.accent, // Treasure Gold
         letterSpacing: 1.2,
         shadows: const [
           Shadow(color: Color(0xFF1A1A1A), blurRadius: 4, offset: Offset(1, 1)),
@@ -616,40 +618,40 @@ class AddPlayerDialogConfig {
       ),
       inputLabelStyle: GoogleFonts.merriweather(
         fontSize: 16,
-        color: const Color(0xFFFFF8E7), // Sail White
+        color: GameTheme.treasureDivide.onDark, // Sail White
       ),
       inputBorderColor: const Color(0xFF8B6914), // Plank Brown
-      inputFocusedBorderColor: const Color(0xFFFFD700), // Treasure Gold
+      inputFocusedBorderColor: GameTheme.treasureDivide.accent, // Treasure Gold
       inputErrorBorderColor: const Color(0xFFC41E3A), // Blood Red
       photoLabelStyle: GoogleFonts.merriweather(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFFFFF8E7), // Sail White
+        color: GameTheme.treasureDivide.onDark, // Sail White
       ),
-      photoButtonColor: const Color(0xFF008B8B), // Ocean Teal
-      photoButtonForegroundColor: const Color(0xFFFFF8E7),
+      photoButtonColor: GameTheme.treasureDivide.background, // Ocean Teal
+      photoButtonForegroundColor: GameTheme.treasureDivide.onDark,
       photoButtonBorderColor: const Color(0xFF8B6914), // Plank Brown
       photoButtonTextStyle: GoogleFonts.merriweather(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8E7),
+        color: GameTheme.treasureDivide.onDark,
       ),
       photoButtonWidth: null,
-      addButtonColor: const Color(0xFFFFD700), // Treasure Gold
-      addButtonForegroundColor: const Color(0xFF008B8B), // Ocean Teal
+      addButtonColor: GameTheme.treasureDivide.accent, // Treasure Gold
+      addButtonForegroundColor: GameTheme.treasureDivide.background, // Ocean Teal
       addButtonBorderColor: const Color(0xFF8B6914), // Plank Brown
       addButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 18,
         letterSpacing: 1.0,
-        color: const Color(0xFF008B8B),
+        color: GameTheme.treasureDivide.background,
       ),
-      cancelButtonColor: const Color(0xFF008B8B).withOpacity(0.85), // Ocean Teal
-      cancelButtonForegroundColor: const Color(0xFFFFF8E7),
+      cancelButtonColor: GameTheme.treasureDivide.background.withOpacity(0.85), // Ocean Teal
+      cancelButtonForegroundColor: GameTheme.treasureDivide.onDark,
       cancelButtonBorderColor: const Color(0xFF8B6914).withOpacity(0.6), // Plank Brown
       cancelButtonTextStyle: GoogleFonts.merriweather(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: const Color(0xFFFFF8E7),
+        color: GameTheme.treasureDivide.onDark,
       ),
       errorTextColor: const Color(0xFFC41E3A), // Blood Red
     );
@@ -658,11 +660,11 @@ class AddPlayerDialogConfig {
   /// Tiki Golf theme — Palm Green bg, Lagoon Blue/Tropical Orange accents, Boogaloo/Nunito fonts
   factory AddPlayerDialogConfig.tikiGolf() {
     return AddPlayerDialogConfig(
-      backgroundColor: const Color(0xFF2D6A4F).withOpacity(0.97), // Palm Green
-      textColor: const Color(0xFFFFF5E1), // Sand White
+      backgroundColor: GameTheme.tikiGolf.background.withOpacity(0.97), // Palm Green
+      textColor: GameTheme.tikiGolf.onDark, // Sand White
       titleStyle: GoogleFonts.boogaloo(
         fontSize: 26,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
         shadows: const [
           Shadow(color: Color(0xFF00B4D8), offset: Offset(1, 1), blurRadius: 0),
           Shadow(color: Color(0xFF00B4D8), offset: Offset(-1, -1), blurRadius: 0),
@@ -672,39 +674,39 @@ class AddPlayerDialogConfig {
       ),
       inputLabelStyle: GoogleFonts.nunito(
         fontSize: 16,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
       ),
-      inputBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      inputBorderColor: GameTheme.tikiGolf.accent, // Lagoon Blue
       inputFocusedBorderColor: const Color(0xFFFF8C42), // Tropical Orange
       inputErrorBorderColor: const Color(0xFFFF69B4), // Hibiscus Pink
       photoLabelStyle: GoogleFonts.nunito(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
       ),
-      photoButtonColor: const Color(0xFF2D6A4F), // Palm Green
-      photoButtonForegroundColor: const Color(0xFFFFF5E1),
-      photoButtonBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      photoButtonColor: GameTheme.tikiGolf.background, // Palm Green
+      photoButtonForegroundColor: GameTheme.tikiGolf.onDark,
+      photoButtonBorderColor: GameTheme.tikiGolf.accent, // Lagoon Blue
       photoButtonTextStyle: GoogleFonts.nunito(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF5E1),
+        color: GameTheme.tikiGolf.onDark,
       ),
       photoButtonWidth: null,
-      addButtonColor: const Color(0xFF00B4D8), // Lagoon Blue
-      addButtonForegroundColor: const Color(0xFFFFF5E1), // Sand White
-      addButtonBorderColor: const Color(0xFF00B4D8),
+      addButtonColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      addButtonForegroundColor: GameTheme.tikiGolf.onDark, // Sand White
+      addButtonBorderColor: GameTheme.tikiGolf.accent,
       addButtonTextStyle: GoogleFonts.boogaloo(
         fontSize: 18,
-        color: const Color(0xFFFFF5E1),
+        color: GameTheme.tikiGolf.onDark,
       ),
       cancelButtonColor: const Color(0xFF8B5E3C), // Tiki Brown
-      cancelButtonForegroundColor: const Color(0xFFFFF5E1),
+      cancelButtonForegroundColor: GameTheme.tikiGolf.onDark,
       cancelButtonBorderColor: const Color(0xFF8B5E3C),
       cancelButtonTextStyle: GoogleFonts.nunito(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: const Color(0xFFFFF5E1),
+        color: GameTheme.tikiGolf.onDark,
       ),
       errorTextColor: const Color(0xFFFF69B4), // Hibiscus Pink
     );

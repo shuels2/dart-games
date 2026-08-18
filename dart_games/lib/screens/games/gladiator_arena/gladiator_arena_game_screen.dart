@@ -3,33 +3,29 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../../widgets/speed_play_countdown.dart';
 import 'package:provider/provider.dart';
 
 import '../../../constants/test_keys.dart';
-import '../../../providers/dartboard_provider.dart';
 import '../../../providers/gladiator_arena_provider.dart';
 import '../../../providers/player_provider.dart';
-import '../../../services/mock_scolia_api_service.dart';
-import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/gladiator_arena_announcement_helper.dart';
 import '../../../services/play_to_complete/gladiator_arena_strategy.dart';
+import '../../../services/gladiator_arena_sound_effects.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
-import '../../../widgets/dartboard_emulator/buff_toggle_column.dart';
-import '../../../widgets/dartboard_emulator/dartboard_emulator_config.dart';
-import '../../../widgets/dartboard_emulator/play_to_complete_runner.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info_config.dart';
 import '../../../widgets/edit_score/edit_score.dart';
-import '../../../widgets/edit_score/edit_score_dialog_config.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
-import '../../../widgets/remove_darts_modal/remove_darts_modal_config.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
-import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal_config.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
-import '../../../widgets/save_game_modal/save_game_modal_config.dart';
 import '../../../widgets/interactive_dartboard.dart';
+import '../shared/game_screen_controller.dart';
+import '../shared/game_screen_shell.dart';
 import 'gladiator_arena_results_screen.dart';
+import '../../../utils/dart_sector.dart';
+import '../../../widgets/game_background.dart';
 
 // ─── Color constants ──────────────────────────────────────────────────────────
 
@@ -49,22 +45,17 @@ class GladiatorArenaGameScreen extends StatefulWidget {
       _GladiatorArenaGameScreenState();
 }
 
-class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
-  StreamSubscription? _dartboardSubscription;
+class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen>
+    with GameScreenController<GladiatorArenaGameScreen> {
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
-  MockScoliaApiService? _mockApi;
   GladiatorArenaAnnouncementHelper? _audioQueue;
-  final DartboardEmulatorController _dartboardEmulatorController =
-      DartboardEmulatorController();
-
-  PlayToCompleteRunner? _playToCompleteRunner;
-  bool _gameCompleted = false;
-  bool _showSaveModal = false;
 
   // Speed Play timer
-  Timer? _speedPlayTimer;
-  int _speedPlaySecondsRemaining = 25;
+  /// Owns the speed-play tick. Replaces a Timer + `int` that setState'd the
+  /// whole 1,448-line screen once a second (WS04 4.3).
+  final SpeedPlayCountdownController _speedPlay =
+      SpeedPlayCountdownController();
 
   // Milestone-announcement state-transition tracking (per playerId). Each
   // milestone fires at most once per *crossing* from out-of-zone → in-zone.
@@ -79,36 +70,26 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initializeGame());
-  }
-
-  Future<void> _initializeGame() async {
-    final dartboardProvider = context.read<DartboardProvider>();
-    _mockApi = dartboardProvider.apiService;
-    if (mounted) setState(() {});
-
-    // Initialize announcement helper
-    final queueService = GameAnnouncementQueueService();
-    await queueService.loadSettings();
-    _audioQueue = GladiatorArenaAnnouncementHelper(queueService: queueService);
-
-    // Announce game start
-    final provider = context.read<GladiatorArenaProvider>();
-    final targetScore = provider.currentGame?.targetScore ?? 200;
-    _audioQueue?.announceGameStart(targetScore);
-
-    // Subscribe to dartboard events
-    final eventStream = dartboardProvider.dartboardEventStream;
-    if (eventStream != null) {
-      _dartboardSubscription = eventStream.listen(_handleDartboardEvent);
-    }
-
-    // Announce first player turn after brief delay
-    Future.delayed(const Duration(milliseconds: 2000), () {
-      if (mounted) {
-        final p = context.read<GladiatorArenaProvider>();
-        final game = p.currentGame;
-        if (game != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initGameScreen(
+        preloadEffects: GladiatorArenaSoundEffects.all,
+        buildAudio: (queue) => _audioQueue =
+            GladiatorArenaAnnouncementHelper(queueService: queue),
+        onReady: () {
+          final targetScore = context
+                  .read<GladiatorArenaProvider>()
+                  .currentGame
+                  ?.targetScore ??
+              200;
+          _audioQueue?.announceGameStart(targetScore);
+        },
+        // First player turn after a brief delay, then arm the Speed Play
+        // timer only once the announcement has finished playing.
+        firstTurnDelay: const Duration(milliseconds: 2000),
+        announceFirstTurn: () {
+          final p = context.read<GladiatorArenaProvider>();
+          final game = p.currentGame;
+          if (game == null) return;
           final playerProvider = context.read<PlayerProvider>();
           final firstPlayer = playerProvider.allPlayers
               .where((pl) => pl.id == game.currentPlayerId)
@@ -116,58 +97,36 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
           if (firstPlayer != null) {
             _audioQueue?.announcePlayerTurn(firstPlayer.name);
           }
-          _audioQueue?.whenIdle().then((_) {
+          (_audioQueue?.whenIdle() ?? Future<void>.value())
+              .timeout(const Duration(seconds: 10), onTimeout: () {})
+              .then((_) {
             if (mounted) _startSpeedPlayTimerIfNeeded();
           });
-        }
-      }
+        },
+      );
     });
   }
 
   @override
   void dispose() {
-    _playToCompleteRunner?.dispose();
-    _dartboardSubscription?.cancel();
-    _speedPlayTimer?.cancel();
-    _dartboardEmulatorController.dispose();
+    disposeGameScreen();
+    _speedPlay.dispose();
     _audioQueue?.dispose();
     super.dispose();
   }
 
-  void _onPlayToComplete() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
+  // ─── GameScreenController contract ───────────────────────────────────────────
 
-    _playToCompleteRunner = PlayToCompleteRunner(
-      strategy: GladiatorArenaStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToCompleteRunner!.run();
-  }
+  @override
+  PlayToCompleteStrategy get playToCompleteStrategy =>
+      GladiatorArenaStrategy();
 
-  void _onCancelAutoPlay() {
-    _playToCompleteRunner?.cancel();
-    _dartboardEmulatorController.setAutoPlaying(false);
-    _dartboardEmulatorController.show();
-  }
+  @override
+  Future<void> whenAnnouncementsIdle() =>
+      _audioQueue?.whenIdle() ?? Future<void>.value();
 
-  void _handleDartboardEvent(Map<String, dynamic> event) {
-    final type = event['type'];
-    if (type == 'throw_detected') {
-      _handleDartThrow(event);
-    } else if (type == 'takeout_finished') {
-      _handleTakeoutFinished();
-    }
-  }
-
-  void _handleDartThrow(Map<String, dynamic> event) {
+  @override
+  void onDartThrowEvent(Map<String, dynamic> event) {
     final provider = context.read<GladiatorArenaProvider>();
     if (!mounted || !provider.isGameActive) return;
 
@@ -251,7 +210,7 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     }
 
     // Fire ONE moment announcement (not during auto-play)
-    if (!_dartboardEmulatorController.isAutoPlaying) {
+    if (!isAutoPlaying) {
       final playerProvider = context.read<PlayerProvider>();
       final currentPlayer = playerProvider.allPlayers
           .where((p) => p.id == playerId)
@@ -313,25 +272,20 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     }
 
     // After throw: check if turn is complete → unconditionally announce remove darts
-    if (!_dartboardEmulatorController.isAutoPlaying) {
+    if (!isAutoPlaying) {
       final dartsThrown = provider.getCurrentPlayerDartsThrown();
       final shouldPrompt = dartsThrown >= 3 || provider.hasWinner;
       if (shouldPrompt) {
         // Cancel speed play timer when turn ends
-        _speedPlayTimer?.cancel();
-        _speedPlayTimer = null;
+        _speedPlay.stop();
 
         // UNCONDITIONAL remove-darts announcement — NOT inside the precedence chain
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) _audioQueue?.announceRemoveDarts();
-        });
-        Future.delayed(const Duration(milliseconds: 3500), () {
-          if (mounted) _mockApi?.simulateTakeoutStarted();
-        });
+        scheduleTakeoutSequence(
+          dartsOnBoard: true,
+          announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(),
+        );
       }
     }
-
-    setState(() {});
   }
 
   /// Computes the point value for a dart throw (mirrors provider logic).
@@ -350,26 +304,24 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     }
   }
 
+  /// Parses a board sector string into this game's legacy map shape.
+  ///
+  /// `score` is the FACE value; the bull reports multiplier 'bull'.
+  /// Delegates to [DartSector].
   Map<String, dynamic>? _parseSector(String sector) {
-    if (sector == 'None') return null;
-    if (sector == 'Bull') return {'score': 50, 'multiplier': 'bull'};
-    if (sector == '25') return {'score': 25, 'multiplier': 'single'};
-
-    final match = RegExp(r'([SDTsdt])(\d+)').firstMatch(sector);
-    if (match == null) return null;
-
-    final prefix = match.group(1)!.toUpperCase();
-    final number = int.parse(match.group(2)!);
-    String multiplier = 'single';
-    if (prefix == 'D') multiplier = 'double';
-    if (prefix == 'T') multiplier = 'triple';
-
-    return {'score': number, 'multiplier': multiplier};
+    final dart = DartSector.parse(sector);
+    if (dart.isMiss) return null;
+    if (dart.isBullseye) return {'score': 50, 'multiplier': 'bull'};
+    if (dart.isRing25) return {'score': 25, 'multiplier': 'single'};
+    return {'score': dart.face, 'multiplier': dart.multiplierName};
   }
 
-  void _handleTakeoutFinished() {
+  @override
+  void onTakeoutFinished() {
     final provider = context.read<GladiatorArenaProvider>();
     if (!mounted) return;
+
+    cancelTakeoutSequence();
 
     if (provider.hasWinner) {
       _handleGameWon();
@@ -383,35 +335,33 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     // Reset timer display immediately so new player sees full time
     final game = provider.currentGame;
     if (game != null && game.speedPlayEnabled) {
-      _speedPlayTimer?.cancel();
-      setState(() => _speedPlaySecondsRemaining = 25);
+      _speedPlay.stop();
+      _speedPlay.reset();
     }
 
     // Announce next player's turn after takeout (500ms delay)
-    if (!_dartboardEmulatorController.isAutoPlaying) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          final p = context.read<GladiatorArenaProvider>();
-          final game = p.currentGame;
-          if (game != null) {
-            final playerProvider = context.read<PlayerProvider>();
-            final nextPlayer = playerProvider.allPlayers
-                .where((pl) => pl.id == game.currentPlayerId)
-                .firstOrNull;
-            if (nextPlayer != null) {
-              _audioQueue?.announcePlayerTurn(nextPlayer.name);
-            }
+    if (!isAutoPlaying) {
+      runAfter(const Duration(milliseconds: 500), () {
+        final p = context.read<GladiatorArenaProvider>();
+        final game = p.currentGame;
+        if (game != null) {
+          final playerProvider = context.read<PlayerProvider>();
+          final nextPlayer = playerProvider.allPlayers
+              .where((pl) => pl.id == game.currentPlayerId)
+              .firstOrNull;
+          if (nextPlayer != null) {
+            _audioQueue?.announcePlayerTurn(nextPlayer.name);
           }
-          _audioQueue?.whenIdle().then((_) {
-            if (mounted) _startSpeedPlayTimerIfNeeded();
-          });
         }
+        (_audioQueue?.whenIdle() ?? Future<void>.value())
+            .timeout(const Duration(seconds: 10), onTimeout: () {})
+            .then((_) {
+          if (mounted) _startSpeedPlayTimerIfNeeded();
+        });
       });
     } else {
       _startSpeedPlayTimerIfNeeded();
     }
-
-    setState(() {});
   }
 
   void _startSpeedPlayTimerIfNeeded() {
@@ -419,67 +369,42 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     final game = provider.currentGame;
     if (game == null || !game.speedPlayEnabled) return;
 
-    _speedPlayTimer?.cancel();
-    _speedPlaySecondsRemaining = game.speedPlayTimeRemaining ?? 25;
-
-    _speedPlayTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      final p = context.read<GladiatorArenaProvider>();
-      if (p.shouldPromptTakeout) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        _speedPlaySecondsRemaining--;
-      });
-      p.setSpeedPlayTimeRemaining(_speedPlaySecondsRemaining);
-
-      if (_speedPlaySecondsRemaining <= 0) {
-        timer.cancel();
+    _speedPlay.start(
+      seconds: game.speedPlayTimeRemaining ?? 25,
+      // A takeout prompt mid-count stops the clock without expiring it.
+      shouldStop: () =>
+          !mounted || context.read<GladiatorArenaProvider>().shouldPromptTakeout,
+      onTick: (remaining) => context
+          .read<GladiatorArenaProvider>()
+          .setSpeedPlayTimeRemaining(remaining),
+      onExpired: () {
+        final p = context.read<GladiatorArenaProvider>();
         p.onSpeedPlayTimerExpired();
         _audioQueue?.announceSpeedTimerExpired();
         // UNCONDITIONAL remove-darts announcement when timer expires
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) _audioQueue?.announceRemoveDarts();
-        });
-        Future.delayed(const Duration(milliseconds: 3500), () {
-          if (mounted) _mockApi?.simulateTakeoutStarted();
-        });
-      }
-    });
+        scheduleTakeoutSequence(
+          dartsOnBoard: true,
+          announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(),
+        );
+      },
+    );
   }
 
   void _handleGameWon() {
-    if (_gameCompleted) return;
-    _gameCompleted = true;
-
-    void navigateToResults() {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const GladiatorArenaResultsScreen()),
-      );
-    }
-
-    if (_dartboardEmulatorController.isAutoPlaying) {
-      navigateToResults();
-    } else {
-      final provider = context.read<GladiatorArenaProvider>();
-      final playerProvider = context.read<PlayerProvider>();
-      final winnerId = provider.currentGame?.winnerId;
-      if (winnerId != null) {
-        final winner = playerProvider.getPlayerById(winnerId);
-        if (winner != null) {
-          _audioQueue?.announceVictory(winner.name);
+    handleGameWon(
+      announceWinner: () {
+        final provider = context.read<GladiatorArenaProvider>();
+        final playerProvider = context.read<PlayerProvider>();
+        final winnerId = provider.currentGame?.winnerId;
+        if (winnerId != null) {
+          final winner = playerProvider.getPlayerById(winnerId);
+          if (winner != null) {
+            _audioQueue?.announceVictory(winner.name);
+          }
         }
-      }
-      _audioQueue?.whenIdle().then((_) {
-        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
-      });
-    }
+      },
+      resultsBuilder: (_) => const GladiatorArenaResultsScreen(),
+    );
   }
 
   /// Builds the initial segment list for the Edit Score dialog.
@@ -497,7 +422,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<GladiatorArenaProvider>();
     final playerProvider = context.watch<PlayerProvider>();
-    final dartboardProvider = context.watch<DartboardProvider>();
 
     final game = provider.currentGame;
     if (game == null) {
@@ -517,28 +441,54 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
     final currentPlayer = allPlayers.where((p) => p.id == currentPlayerId).firstOrNull;
     final currentPlayerName = currentPlayer?.name ?? 'Player';
 
-    return AutoSaveOnPause(
-      onPaused: () {
-        if (!hasDartsThrown) return;
-        provider.saveGame(allPlayers, isAutoSave: true);
+    return GameScreenShell(
+      hasDartsThrown: hasDartsThrown,
+      showSaveModal: showSaveModal,
+      onRequestSaveModal: openSaveModal,
+      onAutoSave: () => provider.saveGame(allPlayers, isAutoSave: true),
+      onSave: () async {
+        await provider.saveGame(allPlayers);
+        if (mounted) Navigator.of(context).pop();
       },
-      child: PopScope(
-      canPop: !hasDartsThrown || _showSaveModal,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _showSaveModal) return;
-        setState(() => _showSaveModal = true);
+      onDontSave: () => Navigator.of(context).pop(),
+      saveGameModalConfig: SaveGameModalConfig.gladiatorArena(),
+      shouldPromptTakeout: shouldPromptTakeout,
+      removeDartsConfig: RemoveDartsModalConfig.gladiatorArena(),
+      removeDartsPlayerName: currentPlayerName,
+      editScoreButtonKey: GladiatorArenaGameKeys.editScoreButton,
+      onEditScore: () {
+        final initialSegments = _buildInitialSegments(currentPlayerId);
+        showEditScoreDialog(
+          context: context,
+          playerName: currentPlayerName,
+          initialSegments: initialSegments,
+          onSubmit: (newSegments) {
+            context
+                .read<GladiatorArenaProvider>()
+                .editPlayerScore(currentPlayerId, newSegments);
+          },
+          config: EditScoreDialogConfig.gladiatorArena(),
+        );
       },
-      child: Stack(
-        children: [
-          Scaffold(
-            backgroundColor: const Color(0xFF2A1500),
-            appBar: AppBar(
+      emulatorController: dartboardEmulatorController,
+      mockApi: mockApi,
+      dartboardKey: _dartboardKey,
+      emulatorSectionConfig: DartboardSectionConfig.gladiatorArena(),
+      fabConfig: DartboardFABConfig.gladiatorArena(),
+      onCancelAutoPlay: cancelAutoPlay,
+      onPlayToComplete: mockApi != null ? startPlayToComplete : null,
+      playToCompleteConfig: mockApi != null
+          ? PlayToCompleteButtonConfig.gladiatorArena()
+          : null,
+      pausedModalConfig: DartboardPausedModalConfig.gladiatorArena(),
+      backgroundColor: const Color(0xFF2A1500),
+      appBar: AppBar(
               leading: IconButton(
                 key: GladiatorArenaGameKeys.backButton,
                 icon: const Icon(Icons.arrow_back, color: _kMarbleWhite, size: 32),
                 onPressed: () {
                   if (hasDartsThrown) {
-                    setState(() => _showSaveModal = true);
+                    openSaveModal();
                   } else {
                     Navigator.of(context).pop();
                   }
@@ -579,27 +529,14 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                             final p = context.read<GladiatorArenaProvider>();
                             final dartsThrown = p.getCurrentPlayerDartsThrown();
                             p.skipTurn();
-                            _speedPlayTimer?.cancel();
-                            _speedPlayTimer = null;
-                            if (dartsThrown > 0) {
-                              // UNCONDITIONAL remove-darts announcement on skip
-                              Future.delayed(const Duration(milliseconds: 1500), () {
-                                if (mounted) _audioQueue?.announceRemoveDarts();
-                              });
-                              Future.delayed(const Duration(milliseconds: 3500), () {
-                                if (mounted) _mockApi?.simulateTakeoutStarted();
-                              });
-                            } else {
-                              Future.delayed(const Duration(milliseconds: 500), () {
-                                if (mounted) {
-                                  if (_mockApi != null) {
-                                    _mockApi!.simulateTakeoutFinished();
-                                  } else {
-                                    _handleTakeoutFinished();
-                                  }
-                                }
-                              });
-                            }
+                            _speedPlay.stop();
+                            // Darts on board → announce, wait for DARTS
+                            // REMOVED; 0 darts → 500ms auto-advance.
+                            scheduleTakeoutSequence(
+                              dartsOnBoard: dartsThrown > 0,
+                              announceRemoveDarts: () =>
+                                  _audioQueue?.announceRemoveDarts(),
+                            );
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _kImperialPurple,
@@ -696,17 +633,14 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
             ),
             body: Stack(
               children: [
-                // Background image
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/gladiator_arena/images/GladiatorArena-Background.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        Container(color: const Color(0xFF2A1500)),
-                  ),
-                ),
-                Positioned.fill(
-                  child: Container(color: Colors.black.withOpacity(0.45)),
+                // Background image with dark wash. GameBackground caps the
+                // decoded raster; this screen rebuilds on every dart.
+                const GameBackground(
+                  asset:
+                      'assets/games/gladiator_arena/images/GladiatorArena-Background.png',
+                  fallbackColor: Color(0xFF2A1500),
+                  overlayColor: Colors.black,
+                  overlayOpacity: 0.45,
                 ),
                 // Main game content
                 Column(
@@ -796,109 +730,6 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
                 ),
               ],
             ),
-          ),
-          // RemoveDartsModal — behind emulator layer
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.gladiatorArena(),
-              playerName: currentPlayerName,
-              editScoreButtonKey: GladiatorArenaGameKeys.editScoreButton,
-              onEditScore: () {
-                final initialSegments = _buildInitialSegments(currentPlayerId);
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayerName,
-                  initialSegments: initialSegments,
-                  onSubmit: (newSegments) {
-                    context
-                        .read<GladiatorArenaProvider>()
-                        .editPlayerScore(currentPlayerId, newSegments);
-                  },
-                  config: EditScoreDialogConfig.gladiatorArena(),
-                );
-              },
-            ),
-          // Dartboard emulator section
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.gladiatorArena(),
-              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-              playToCompleteConfig: _mockApi != null
-                  ? PlayToCompleteButtonConfig.gladiatorArena()
-                  : null,
-              buffToggles: _mockApi != null
-                  ? [
-                      BuffToggleSpec<Object>(
-                        buff: 'shieldRound',
-                        label: 'Shield\nRound',
-                        isActive: game.isShieldRound,
-                        isEnabled: game.shieldRoundEnabled,
-                        buttonKey: DartboardEmulatorKeys.buffToggleButton('shieldRound'),
-                        config: BuffToggleButtonConfig.gladiatorArena(),
-                      ),
-                    ]
-                  : null,
-              onBuffToggle: _mockApi != null
-                  ? (_) {
-                      context.read<GladiatorArenaProvider>().toggleShieldRoundOverride();
-                    }
-                  : null,
-            ),
-          ),
-          // FAB
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.gladiatorArena(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-          ),
-          // Save Game Modal
-          if (_showSaveModal)
-            SaveGameModal(
-              config: SaveGameModalConfig.gladiatorArena(),
-              onSave: () async {
-                await provider.saveGame(allPlayers);
-                if (mounted) Navigator.of(context).pop();
-              },
-              onDontSave: () => Navigator.of(context).pop(),
-            ),
-          // Dartboard Paused Modal — last child
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.gladiatorArena(),
-            ),
-        ],
-      ),
-      ),
     );
   }
 
@@ -1154,32 +985,35 @@ class _GladiatorArenaGameScreenState extends State<GladiatorArenaGameScreen> {
             if (isActive && game.speedPlayEnabled == true)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4, top: 2),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: _speedPlaySecondsRemaining <= 5
-                        ? _kBloodRed.withOpacity(0.25)
-                        : _kImperialPurple.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _speedPlaySecondsRemaining <= 5
-                          ? _kBloodRed
-                          : _kImperialPurple,
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    '$_speedPlaySecondsRemaining',
-                    key: GladiatorArenaGameKeys.timerDisplay,
-                    style: GoogleFonts.cinzel(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: _speedPlaySecondsRemaining <= 5
-                          ? _kBloodRed
-                          : _kMarbleWhite,
-                    ),
-                  ),
+                // Only this subtree rebuilds per tick now (WS04 4.3).
+                child: SpeedPlayCountdown(
+                  controller: _speedPlay,
+                  builder: (context, secondsRemaining) {
+                    final urgent = secondsRemaining <= 5;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: urgent
+                            ? _kBloodRed.withOpacity(0.25)
+                            : _kImperialPurple.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: urgent ? _kBloodRed : _kImperialPurple,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        '$secondsRemaining',
+                        key: GladiatorArenaGameKeys.timerDisplay,
+                        style: GoogleFonts.cinzel(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: urgent ? _kBloodRed : _kMarbleWhite,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             // Double range indicator (active only)

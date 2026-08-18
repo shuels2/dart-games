@@ -1,22 +1,24 @@
-import 'package:flutter/foundation.dart';
 import '../models/horse_race_game.dart';
 import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
-import '../services/game_skip_turn_helper.dart';
 import '../services/api/api_client.dart';
+import 'game_provider_base.dart';
 
-class HorseRaceProvider extends ChangeNotifier {
-  HorseRaceGame? _currentGame;
-  bool _waitingForTakeout = false;
-  ApiClient? _apiClient;
+class HorseRaceProvider extends GameProviderBase<HorseRaceGame> {
+  /// Internal alias for [GameProviderBase.game] — keeps the game logic below
+  /// untouched while the storage lives in the base.
+  HorseRaceGame? get _currentGame => game;
+  set _currentGame(HorseRaceGame? value) => game = value;
+
+  final ApiClient? _apiClient;
 
   HorseRaceProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
   HorseRaceGame? get currentGame => _currentGame;
+  @override
   bool get isGameActive => _currentGame?.state == GameState.playing;
-  bool get shouldPromptTakeout => _waitingForTakeout;
 
   Player? getCurrentPlayer(List<Player> players) {
     if (_currentGame == null) return null;
@@ -39,6 +41,7 @@ class HorseRaceProvider extends ChangeNotifier {
     return _currentGame?.getCurrentTurnDartScores(playerId) ?? [];
   }
 
+  @override
   bool get hasWinner => _currentGame?.hasWinner() ?? false;
 
   bool get currentPlayerBusted => _currentGame?.currentPlayerBusted ?? false;
@@ -60,12 +63,17 @@ class HorseRaceProvider extends ChangeNotifier {
     }
 
     final playerIds = players.map((p) => p.id).toList();
+    // A genuinely new game must not inherit the previous game's saved-game
+    // slot — otherwise this game's first save overwrites (and destroys) a
+    // still-resumable abandoned game. See F2 in the plan notes.
+    clearResumedSavedGameId();
+
     _currentGame = HorseRaceGame.create(
       playerIds: playerIds,
       targetScore: targetScore,
       exactScoreMode: exactScoreMode,
     );
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
 
     notifyListeners();
   }
@@ -73,23 +81,23 @@ class HorseRaceProvider extends ChangeNotifier {
   // Process a dart throw
   void processDartThrow(int score, {String? dartDisplay}) {
     if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return; // Don't accept throws while waiting for takeout
+    if (shouldPromptTakeout) return; // Don't accept throws while waiting for takeout
 
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
     _currentGame!.recordDartThrow(currentPlayerId, score, dartDisplay: dartDisplay);
 
     // Check if player busted (in exact score mode)
     if (_currentGame!.currentPlayerBusted) {
-      _waitingForTakeout = true;
+      waitingForTakeout = true;
       notifyListeners();
       return;
     }
 
     // Check if this was the 3rd dart or if there's a winner
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
+    checkTakeoutCondition(
+      dartsThrown: _currentGame!.getCurrentPlayerDartsThrown(),
+      maxDartsPerTurn: 3,
+    );
 
     notifyListeners();
   }
@@ -99,30 +107,15 @@ class HorseRaceProvider extends ChangeNotifier {
     if (_currentGame == null) return;
 
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
 
-    // Validate using global helper
-    if (!GameSkipTurnHelper.canSkipTurn(
-      gameActive: isGameActive,
-      waitingForTakeout: _waitingForTakeout,
-      currentDartCount: dartsThrown,
-      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
-    )) {
-      return;
-    }
-
-    // Execute skip using global helper
-    GameSkipTurnHelper.skipRemainingDarts(
-      currentDartCount: dartsThrown,
+    runSkipTurn(
+      dartsThrown: _currentGame!.getCurrentPlayerDartsThrown(),
       maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
       addVisualMarker: (marker) {
         _currentGame!.currentTurnDartScores[currentPlayerId] ??= [];
         _currentGame!.currentTurnDartScores[currentPlayerId]!.add(marker);
       },
     );
-
-    _waitingForTakeout = true;
-    notifyListeners();
   }
 
   // Update all three dart scores at once and recalculate turn
@@ -161,10 +154,10 @@ class HorseRaceProvider extends ChangeNotifier {
     _currentGame!.currentPlayerIndex = currentPlayerIndex;
 
     // Check if turn should end
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
+    checkTakeoutCondition(
+      dartsThrown: _currentGame!.getCurrentPlayerDartsThrown(),
+      maxDartsPerTurn: 3,
+    );
 
     notifyListeners();
   }
@@ -198,10 +191,15 @@ class HorseRaceProvider extends ChangeNotifier {
     return {'score': baseNumber * multiplier};
   }
 
-  // Handle takeout finished event
+  // Handle takeout finished event.
+  //
+  // Overrides the base flow: horse race deliberately KEEPS the takeout flag
+  // latched on a win (the base clears it) — the screen navigates to results
+  // with the prompt still up — and it requires an active game up front.
+  @override
   void handleTakeoutFinished() {
     if (_currentGame == null || !isGameActive) return;
-    if (!_waitingForTakeout) return;
+    if (!shouldPromptTakeout) return;
 
     // Check if there's a winner before advancing
     if (_currentGame!.hasWinner()) {
@@ -212,12 +210,13 @@ class HorseRaceProvider extends ChangeNotifier {
 
     // Advance to next player
     _currentGame!.advanceToNextPlayer();
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
 
     notifyListeners();
   }
 
   // Manually advance to next player (for testing or manual mode)
+  @override
   void advanceToNextPlayer() {
     if (_currentGame == null || !isGameActive) return;
 
@@ -226,71 +225,47 @@ class HorseRaceProvider extends ChangeNotifier {
     }
 
     _currentGame!.advanceToNextPlayer();
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
 
     notifyListeners();
   }
 
   // --- Save/Restore ---
 
-  String? _resumedSavedGameId;
-  bool _saving = false;
-  String? get resumedSavedGameId => _resumedSavedGameId;
-
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
-  }
-
   Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
-    debugPrint('[HorseRaceProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
-    if (_currentGame == null || _saving) {
-      debugPrint('[HorseRaceProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
-      return;
-    }
-    _saving = true;
-    try {
-    final game = _currentGame!;
+    await persistSave(SaveGameService(_apiClient), (existingId) {
+      final game = _currentGame!;
 
-    // Find leading player
-    final sorted = game.getSortedScores();
-    final leaderId = sorted.isNotEmpty ? sorted.first.key : game.playerIds.first;
-    final leaderPlayer = players.firstWhere((p) => p.id == leaderId,
-        orElse: () => players.first);
-    final leaderScore = game.getPlayerScore(leaderId);
+      // Find leading player
+      final sorted = game.getSortedScores();
+      final leaderId =
+          sorted.isNotEmpty ? sorted.first.key : game.playerIds.first;
+      final leaderPlayer = players.firstWhere((p) => p.id == leaderId,
+          orElse: () => players.first);
+      final leaderScore = game.getPlayerScore(leaderId);
 
-    final metadata = SavedGameMetadata.create(
-      gameType: 'carnival_derby',
-      playerNames: players
-          .where((p) => game.playerIds.contains(p.id))
-          .map((p) => p.name)
-          .toList(),
-      progressInfo: 'Leading: $leaderScore pts',
-      gameModeName: 'Target: ${game.targetScore}${game.exactScoreMode ? ' (Perfect Finish)' : ''}',
-      leadingPlayerName: leaderPlayer.name,
-      leadingPlayerScore: '$leaderScore pts',
-      gameState: game.toJson(),
-      waitingForTakeout: _waitingForTakeout,
-      isAutoSave: isAutoSave,
-      existingId: _resumedSavedGameId,
-    );
-
-    debugPrint('[HorseRaceProvider] saving with id=${metadata.id}');
-    final saved = await SaveGameService(_apiClient).saveGame(metadata);
-    if (saved) {
-      _resumedSavedGameId = metadata.id;
-    }
-    debugPrint('[HorseRaceProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
-    } finally {
-      _saving = false;
-    }
+      return SavedGameMetadata.create(
+        gameType: 'carnival_derby',
+        playerNames: players
+            .where((p) => game.playerIds.contains(p.id))
+            .map((p) => p.name)
+            .toList(),
+        progressInfo: 'Leading: $leaderScore pts',
+        gameModeName:
+            'Target: ${game.targetScore}${game.exactScoreMode ? ' (Perfect Finish)' : ''}',
+        leadingPlayerName: leaderPlayer.name,
+        leadingPlayerScore: '$leaderScore pts',
+        gameState: game.toJson(),
+        waitingForTakeout: shouldPromptTakeout,
+        isAutoSave: isAutoSave,
+        existingId: existingId,
+      );
+    });
   }
 
-  void restoreGame(SavedGameMetadata savedGame) {
-    _currentGame = HorseRaceGame.fromJson(
-        Map<String, dynamic>.from(savedGame.gameState));
-    _waitingForTakeout = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
-    notifyListeners();
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = HorseRaceGame.fromJson(json);
   }
 
   // End the current game
@@ -298,13 +273,6 @@ class HorseRaceProvider extends ChangeNotifier {
     if (_currentGame != null) {
       _currentGame!.state = GameState.finished;
     }
-    notifyListeners();
-  }
-
-  // Reset/clear the current game
-  void clearGame() {
-    _currentGame = null;
-    _waitingForTakeout = false;
     notifyListeners();
   }
 

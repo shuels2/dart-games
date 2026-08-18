@@ -331,7 +331,7 @@ void main() {
 
       final currentPlayerId = provider.getCurrentPlayerId()!;
       provider.currentGame!.currentTarget[currentPlayerId] = 21;
-      provider.processDartThrow('DBull');
+      provider.processDartThrow('Bull');
 
       expect(provider.getDartThrowHitTarget(currentPlayerId), [true]);
       expect(provider.getDartThrowAdvanced(currentPlayerId), [true]);
@@ -1025,7 +1025,7 @@ void main() {
       provider.startGame(players, true, true, 1); // speed + bullseye
 
       final pid = provider.getCurrentPlayerId()!;
-      provider.processDartThrow('DBull');
+      provider.processDartThrow('Bull');
 
       expect(provider.getDartThrowHitTarget(pid), [true]);
       expect(provider.getPlayerCompletedTargets(pid), contains(21));

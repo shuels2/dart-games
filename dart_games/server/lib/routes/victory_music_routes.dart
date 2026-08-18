@@ -103,7 +103,9 @@ class VictoryMusicRoutes {
       normalized = normalized.padRight(normalized.length + (4 - remainder), '=');
     }
     final bytes = base64Decode(normalized);
-    File(filePath).writeAsBytesSync(bytes);
+    // Async write: multi-MB music uploads used to block the request isolate
+    // for the whole write (WS04 4.7).
+    await File(filePath).writeAsBytes(bytes);
 
     // Insert into database
     final createdAt = DateTime.now().toUtc().toIso8601String();
@@ -190,11 +192,16 @@ class VictoryMusicRoutes {
 
     final contentType = lookupMimeType(music.filePath) ??
         'application/octet-stream';
-    final bytes = file.readAsBytesSync();
 
+    // Streamed, not readAsBytesSync (WS04 4.7). Victory music files are the
+    // largest thing this server serves; reading one fully into memory on the
+    // request isolate stalled everything else for its duration.
     return Response.ok(
-      bytes,
-      headers: {'content-type': contentType},
+      file.openRead(),
+      headers: {
+        'content-type': contentType,
+        'content-length': '${await file.length()}',
+      },
     );
   }
 

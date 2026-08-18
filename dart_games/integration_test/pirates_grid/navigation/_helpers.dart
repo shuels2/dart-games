@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 import 'package:dart_games/models/pirates_grid_game.dart';
@@ -7,6 +8,8 @@ import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/results_helpers.dart';
+import '../../shared/element_finders.dart';
+import '../../shared/navigation_suite.dart';
 
 export '../../shared/ui_test_helpers.dart';
 export '../../shared/element_finders.dart';
@@ -122,3 +125,40 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
 
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== NAVIGATION SUITE SPECS =====
+//
+// Every scenario uses Bo3 + Steal Mode ON. The original files carried verbose
+// [DIAG ...] reason strings assembled from live finder counts; the shared
+// runners carry plain reasons, and the per-file logs still show which
+// assertion failed.
+
+void _verifyBestOfAndSteal(WidgetTester tester) {
+  expect(find.text('3'), findsWidgets,
+      reason: 'Best Of should still be 3');
+  final stealSwitch = ElementFinders.getPiratesGridStealModeSwitch();
+  expect(stealSwitch, findsOneWidget);
+  expect(tester.widget<Switch>(stealSwitch).value, isTrue,
+      reason: 'Steal Mode should still be ON');
+}
+
+Future<void> _setupBo3Steal(WidgetTester tester) => setupAndStartGame(
+      tester,
+      config,
+      bestOf: '3',
+      stealMode: true,
+      playerNames: ['Player A', 'Player B'],
+    );
+
+final navigationSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getPiratesGridBackButton,
+  verifyOnMenu: (tester) =>
+      expect(ElementFinders.getPiratesGridStartButton(), findsOneWidget),
+  setupAndStart: _setupBo3Steal,
+  playToVictory: completeGameToVictory,
+  // Game-back starts a Bo3+Steal game and backs straight out of it.
+  reachGameScreen: (tester) =>
+      setupAndStartGame(tester, config, bestOf: '3', stealMode: true),
+  verifySettings: _verifyBestOfAndSteal,
+);

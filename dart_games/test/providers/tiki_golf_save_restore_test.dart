@@ -100,6 +100,44 @@ void main() {
       expect(saved[0].playerNames, hasLength(3));
     });
 
+    test('saveGame lists only the players in THIS game, not the whole roster',
+        () async {
+      startSoloGame(playerIds: ['p1', 'p2']);
+
+      // The roster is bigger than the match — a saved tile must not advertise
+      // players who are not playing.
+      await provider.saveGame(saveService, playerNamesById: {
+        'p1': 'Alice',
+        'p2': 'Bob',
+        'p3': 'Charlie',
+        'p4': 'Dana',
+      });
+
+      final saved = await savedGames();
+      expect(saved[0].playerNames, ['Alice', 'Bob']);
+    });
+
+    test('saveGame resolves the leading player to a name, not an id', () async {
+      startSoloGame(playerIds: ['id-aaa', 'id-bbb']);
+
+      await provider.saveGame(saveService,
+          playerNamesById: {'id-aaa': 'Alice', 'id-bbb': 'Bob'});
+
+      final saved = await savedGames();
+      expect(saved[0].leadingPlayerName, 'Alice',
+          reason: 'Player ids are UUIDs — the tile must never show one');
+    });
+
+    test('saveGame falls back to ids when no names are supplied', () async {
+      startSoloGame(playerIds: ['p1', 'p2']);
+
+      await provider.saveGame(saveService);
+
+      final saved = await savedGames();
+      expect(saved[0].playerNames, ['p1', 'p2'],
+          reason: 'Degrades to ids rather than throwing or listing nobody');
+    });
+
     // ─── 4. restoreGame reconstructs full game state ─────────────────────────
 
     test('restoreGame reconstructs full game state', () async {

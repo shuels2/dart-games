@@ -15,6 +15,12 @@ export '../../shared/pause_modal_helpers.dart';
 export '../../shared/provider_helpers.dart';
 export '../../shared/edit_score_helpers.dart';
 
+import 'package:dart_games/constants/test_keys.dart';
+
+import '../../shared/element_finders.dart';
+import '../../shared/pause_modal_helpers.dart';
+import '../../shared/pause_modal_suite.dart';
+
 final config = GameUIConfig.clockworkQuest();
 
 // ===== DELEGATES TO SHARED HELPERS =====
@@ -89,3 +95,66 @@ Future<void> completeGameToVictory(
 
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== PAUSE MODAL SUITE SPEC =====
+//
+// Shared bodies live in shared/pause_modal_suite.dart; everything
+// game-specific for Clockwork Quest is supplied here.
+//
+// Slot 4 is named "Pause blocks settings controls" but its hand-written body
+// only ever tapped the Add Player button. Both controls are listed below so
+// the test now covers what its name claims WITHOUT dropping the add-player
+// tap it actually made.
+
+/// Clockwork's Edit Score button only appears on a turn AFTER the first, so
+/// this finishes the pending takeout and plays a second turn before opening
+/// the dialog — exactly what the hand-written test did.
+Future<void> _openEditScoreOnSecondTurn(WidgetTester tester) async {
+  await clickDartsRemoved(tester);
+  await throwDartViaMock(tester, 4);
+  await throwDartViaMock(tester, 5);
+  await throwDartViaMock(tester, 6);
+  await openEditScore(tester);
+}
+
+final pauseModalSpec = PauseModalSpec(
+  config: config,
+  // The KEYED back arrow, not find.byTooltip('Back'): the menu's back button
+  // carries no 'Back' tooltip, so the tooltip finder matches nothing. The
+  // hand-written test hid that behind an `isNotEmpty` guard and so never
+  // tapped the back button at all.
+  menuBackButton: ElementFinders.getClockworkQuestBackButton,
+  ownGameCard: ElementFinders.getClockworkQuestCard,
+  verifyOnMenu: (tester) =>
+      expect(find.text('CLOCKWORK QUEST GAME SETUP'), findsWidgets,
+          reason: 'Menu screen not showing — setup heading not found'),
+  menuSettingsControls: [
+    ElementFinders.getClockworkQuestNumberOfLapsDropdown,
+    ElementFinders.getClockworkQuestAddPlayerButtonEmptyState,
+  ],
+  startGame: (tester) => setupAndStartGame(tester, config),
+  throwOneDart: (tester) => throwDartViaMock(tester, 1),
+  throwAnotherDart: (tester) => throwDartViaMock(tester, 2),
+  throwTurnToTakeout: (tester) async {
+    // Clockwork advances 1 → 2 → 3, which fills the turn.
+    await throwDartViaMock(tester, 1);
+    await throwDartViaMock(tester, 2);
+    await throwDartViaMock(tester, 3);
+  },
+  verifyNoSavePrompt: (tester) => expect(find.text('Save Game?'), findsNothing,
+      reason: 'Save prompt appeared despite the pause overlay'),
+  finishTakeout: clickDartsRemoved,
+  openEditScore: _openEditScoreOnSecondTurn,
+  reachResults: (tester) async {
+    await setupAndStartGame(tester, config);
+    await completeGameToVictory(tester);
+  },
+  verifyOnResults: (tester) => expect(
+      find.byKey(ClockworkQuestResultsKeys.winnerName), findsOneWidget,
+      reason: 'Results screen not showing — winner name not found'),
+  resultsAfterReconnect: (tester) async {
+    await tester.tap(config.getPlayAgainButton());
+    await PumpSequences.navigation(tester);
+    PauseModalHelpers.verifyPauseModalNotVisible(tester);
+  },
+);

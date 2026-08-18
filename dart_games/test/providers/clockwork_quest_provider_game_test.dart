@@ -151,10 +151,13 @@ void main() {
       expect(provider.getDartThrowMultiplier('p1'), [1]);
     });
 
-    test('parses DBull sector as number 25 multiplier 2', () {
+    test('DBull is not a sector the board can report, so it is a miss', () {
+      // The Scolia grammar is ([SsDT])(1-20) | 25 | Bull | None — there is no
+      // double bull. Anything outside the grammar must degrade to a miss
+      // rather than being scored, exactly as an unparseable sector does.
       provider.processDartThrow('DBull');
-      expect(provider.getDartThrowScoreValue('p1'), [25]);
-      expect(provider.getDartThrowMultiplier('p1'), [2]);
+      expect(provider.getDartThrowScoreValue('p1'), [0]);
+      expect(provider.getDartThrowHitTarget('p1'), [false]);
     });
   });
 

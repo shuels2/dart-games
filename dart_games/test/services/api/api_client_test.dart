@@ -444,6 +444,22 @@ void main() {
       client.dispose();
     });
 
+    test('incrementPlayerStats POSTs deltas to /stats/increment', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.method, 'POST');
+        expect(request.url.path, '/api/v1/players/p1/stats/increment');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['gamesPlayed'], 1,
+            reason: 'Deltas, not totals — the server does the addition');
+        expect(body['gamesWon'], 0);
+        return http.Response(jsonEncode({}), 200);
+      });
+
+      final client = ApiClient(client: mockClient);
+      await client.incrementPlayerStats('p1', gamesPlayed: 1, gamesWon: 0);
+      client.dispose();
+    });
+
     test('batchAddPlayerHistory POSTs to /history/batch with array body',
         () async {
       final mockClient = MockClient((request) async {

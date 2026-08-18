@@ -55,4 +55,16 @@ class ClockworkQuestSoundEffects {
     startSeconds: 0.0,
     endSeconds: 1.0,
   );
+
+  /// Every effect this game uses. Preloaded at game start so
+  /// the first play does not pay the asset-load cost.
+  static const List<SoundEffectConfig> all = [
+    turnBell,
+    clockChime,
+    victoryFanfare,
+    gearClick,
+    gearSpin,
+    steamHiss,
+    tickTock,
+  ];
 }

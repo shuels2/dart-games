@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../shared/dart_throw_helpers.dart';
 import '../../shared/game_ui_config.dart';
+import '../../shared/play_to_complete_suite.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
@@ -47,3 +49,31 @@ Future<void> waitForGameCompletion(
       isComplete: isComplete,
       maxIterations: maxIterations,
     );
+
+// ===== PLAY TO COMPLETE SUITE SPEC =====
+//
+// Shared bodies live in shared/play_to_complete_suite.dart; everything
+// specific to Gladiator Arena is supplied here. Only the two commodity scenarios
+// (default settings, mid-game pickup) use it — the per-option tests in this
+// folder stay hand-written.
+
+final playToCompleteSpec = PlayToCompleteSpec(
+  config: config,
+  setupAndStart: (tester) =>
+      GameSetupHelpers.setupAndStartGladiatorArena(tester, config),
+  // The mid-game run uses a low target with double-finish off so the game is
+  // reachable from a part-played board inside the poll budget.
+  setupAndStartMidGame: (tester) =>
+      GameSetupHelpers.setupAndStartGladiatorArena(tester, config,
+          targetScore: 100, doubleFinishEnabled: false),
+  hasWinner: (tester) =>
+      ProviderHelpers.getGladiatorArenaProvider(tester).hasWinner,
+  // A full scoring turn, taken out, then the opponent's turn missed away.
+  midGameDarts: (tester) async {
+    await DartThrowHelpers.throwDartViaMock(tester, 20);
+    await DartThrowHelpers.throwDartViaMock(tester, 20);
+    await DartThrowHelpers.throwDartViaMock(tester, 20);
+    await DartThrowHelpers.clickDartsRemoved(tester);
+    await DartThrowHelpers.completeTurnWithMisses(tester);
+  },
+);

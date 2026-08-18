@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../theme/game_theme.dart';
 import '../add_player/add_player_dialog_config.dart';
 
 /// Configuration class for the team game pattern player list panel.
@@ -204,7 +206,7 @@ class TeamPlayerListPanelConfig {
       containerColor: const Color(0xFF2A2A3E),
       containerOpacity: 0.85,
       containerBorderColor: Colors.white24,
-      containerBorderColorWhenReady: const Color(0xFFFF007A),
+      containerBorderColorWhenReady: GameTheme.targetTag.accent,
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.fredoka(
         fontSize: 16,
@@ -220,7 +222,7 @@ class TeamPlayerListPanelConfig {
         color: Colors.white70,
         fontSize: 14,
       ),
-      addButtonColor: const Color(0xFFFF007A),
+      addButtonColor: GameTheme.targetTag.accent,
       addButtonForegroundColor: Colors.white,
       addButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 12,
@@ -231,21 +233,21 @@ class TeamPlayerListPanelConfig {
         fontSize: 14,
         fontWeight: FontWeight.bold,
       ),
-      selectedColor: const Color(0xFFFF007A),
-      selectedBorderColor: const Color(0xFFFF007A),
+      selectedColor: GameTheme.targetTag.accent,
+      selectedBorderColor: GameTheme.targetTag.accent,
       checkIconColor: const Color(0xFF00FFA3),
       teamAccentColor: const Color(0xFF00FFA3),
-      assignTeamButtonColor: const Color(0xFFFF007A),
+      assignTeamButtonColor: GameTheme.targetTag.accent,
       assignTeamButtonForegroundColor: Colors.white,
       assignTeamButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
       teamIconBorderColor: const Color(0xFF00FFA3),
-      teamIconBackgroundColor: const Color(0xFF1A1A2E),
+      teamIconBackgroundColor: GameTheme.targetTag.background,
       teamIconSize: 40.0,
       teamBoxSize: 140.0,
-      teamBoxBackgroundColor: const Color(0xFF1A1A2E),
+      teamBoxBackgroundColor: GameTheme.targetTag.background,
       teamBoxBorderColor: Colors.white24,
       teamBoxActiveBorderColor: const Color(0xFF00FFA3),
       teamBoxCountStyle: GoogleFonts.fredoka(
@@ -258,7 +260,7 @@ class TeamPlayerListPanelConfig {
         fontWeight: FontWeight.bold,
         color: const Color(0xFF00FFA3),
       ),
-      dialogBackgroundColor: const Color(0xFF1A1A2E).withOpacity(0.95),
+      dialogBackgroundColor: GameTheme.targetTag.background.withOpacity(0.95),
       dialogTitleTextStyle: GoogleFonts.fredoka(
         fontSize: 18,
         fontWeight: FontWeight.bold,
@@ -303,14 +305,14 @@ class TeamPlayerListPanelConfig {
   /// Crews are identified by crest image only — no crew name labels (Rule §62/§63).
   factory TeamPlayerListPanelConfig.treasureDivide() {
     return TeamPlayerListPanelConfig(
-      containerColor: const Color(0xFF008B8B), // Ocean Teal
+      containerColor: GameTheme.treasureDivide.background, // Ocean Teal
       containerOpacity: 0.85,
       containerBorderColor: const Color(0xFF8B6914), // Plank Brown
-      containerBorderColorWhenReady: const Color(0xFFFFD700), // Treasure Gold
+      containerBorderColorWhenReady: GameTheme.treasureDivide.accent, // Treasure Gold
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.pirataOne(
         fontSize: 22,
-        color: const Color(0xFFFFF8E7), // Sail White
+        color: GameTheme.treasureDivide.onDark, // Sail White
         letterSpacing: 0.5,
         shadows: const [
           // Hard black drop shadow for legibility against any background
@@ -321,19 +323,19 @@ class TeamPlayerListPanelConfig {
       ),
       headerCountStyle: GoogleFonts.merriweather(
         fontSize: 16,
-        color: const Color(0xFFFFF8E7),
+        color: GameTheme.treasureDivide.onDark,
         shadows: const [
           Shadow(color: Color(0xCC000000), offset: Offset(1, 1), blurRadius: 3),
           Shadow(color: Color(0xAA008B8B), offset: Offset(0, 0), blurRadius: 6),
         ],
       ),
-      headerCountColorWhenReady: const Color(0xFFFFD700), // Treasure Gold
+      headerCountColorWhenReady: GameTheme.treasureDivide.accent, // Treasure Gold
       emptyStateTextStyle: GoogleFonts.merriweather(
-        color: const Color(0xFFFFF8E7).withOpacity(0.7),
+        color: GameTheme.treasureDivide.onDark.withOpacity(0.7),
         fontSize: 14,
       ),
-      addButtonColor: const Color(0xFFFFD700), // Treasure Gold
-      addButtonForegroundColor: const Color(0xFF008B8B), // Ocean Teal
+      addButtonColor: GameTheme.treasureDivide.accent, // Treasure Gold
+      addButtonForegroundColor: GameTheme.treasureDivide.background, // Ocean Teal
       addButtonTextStyle: GoogleFonts.merriweather(
         fontSize: 12,
         fontWeight: FontWeight.bold,
@@ -343,12 +345,12 @@ class TeamPlayerListPanelConfig {
         fontSize: 14,
         fontWeight: FontWeight.bold,
       ),
-      selectedColor: const Color(0xFFFFD700), // Treasure Gold
-      selectedBorderColor: const Color(0xFFFFD700), // Treasure Gold
+      selectedColor: GameTheme.treasureDivide.accent, // Treasure Gold
+      selectedBorderColor: GameTheme.treasureDivide.accent, // Treasure Gold
       checkIconColor: const Color(0xFF228B22), // Island Green
-      teamAccentColor: const Color(0xFFFFD700), // Treasure Gold
-      assignTeamButtonColor: const Color(0xFFFFD700), // Treasure Gold
-      assignTeamButtonForegroundColor: const Color(0xFF008B8B), // Ocean Teal
+      teamAccentColor: GameTheme.treasureDivide.accent, // Treasure Gold
+      assignTeamButtonColor: GameTheme.treasureDivide.accent, // Treasure Gold
+      assignTeamButtonForegroundColor: GameTheme.treasureDivide.background, // Ocean Teal
       assignTeamButtonTextStyle: GoogleFonts.merriweather(
         fontSize: 12,
         fontWeight: FontWeight.bold,
@@ -371,7 +373,7 @@ class TeamPlayerListPanelConfig {
       // size) so the count physically matches the header rhythm.
       teamBoxCountStyle: GoogleFonts.pirataOne(
         fontSize: 22,
-        color: const Color(0xFFFFF8E7).withOpacity(0.85),
+        color: GameTheme.treasureDivide.onDark.withOpacity(0.85),
         letterSpacing: 0.5,
         shadows: const [
           Shadow(color: Color(0xCC000000), offset: Offset(2, 2), blurRadius: 4),
@@ -380,17 +382,17 @@ class TeamPlayerListPanelConfig {
       ),
       teamBoxActiveCountStyle: GoogleFonts.pirataOne(
         fontSize: 22,
-        color: const Color(0xFFFFD700), // Treasure Gold
+        color: GameTheme.treasureDivide.accent, // Treasure Gold
         letterSpacing: 0.5,
         shadows: const [
           Shadow(color: Color(0xCC000000), offset: Offset(2, 2), blurRadius: 4),
           Shadow(color: Color(0xAA008B8B), offset: Offset(0, 0), blurRadius: 10),
         ],
       ),
-      dialogBackgroundColor: const Color(0xFF008B8B).withOpacity(0.97), // Ocean Teal
+      dialogBackgroundColor: GameTheme.treasureDivide.background.withOpacity(0.97), // Ocean Teal
       dialogTitleTextStyle: GoogleFonts.pirataOne(
         fontSize: 20,
-        color: const Color(0xFFFFF8E7), // Sail White
+        color: GameTheme.treasureDivide.onDark, // Sail White
         letterSpacing: 0.5,
       ),
       // Manual-team dialog shields doubled from 64. Width tuned so the
@@ -402,14 +404,14 @@ class TeamPlayerListPanelConfig {
       dialogContentWidth: 480.0,
       dialogTeamButtonColor: Colors.transparent,
       dialogTeamButtonBorderColor: Colors.transparent,
-      dialogTeamButtonSelectedColor: const Color(0xFFFFD700), // Treasure Gold
-      dialogTeamButtonSelectedBorderColor: const Color(0xFFFFD700),
-      dialogHighlightGlowColor: const Color(0xFFFFD700), // Treasure Gold
+      dialogTeamButtonSelectedColor: GameTheme.treasureDivide.accent, // Treasure Gold
+      dialogTeamButtonSelectedBorderColor: GameTheme.treasureDivide.accent,
+      dialogHighlightGlowColor: GameTheme.treasureDivide.accent, // Treasure Gold
       dialogFullTeamColor: const Color(0xFFC41E3A), // Blood Red
       dialogFullTeamTextStyle: GoogleFonts.merriweather(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8E7),
+        color: GameTheme.treasureDivide.onDark,
       ),
       dialogRemoveButtonColor: const Color(0xFFC41E3A), // Blood Red
       dialogCancelButtonColor: const Color(0xFF8B6914), // Plank Brown
@@ -420,7 +422,7 @@ class TeamPlayerListPanelConfig {
       ),
       teamAssignmentLabelStyle: GoogleFonts.pirataOne(
         fontSize: 18,
-        color: const Color(0xFFFFF8E7), // Sail White
+        color: GameTheme.treasureDivide.onDark, // Sail White
       ),
       // Hide team assignment label per Rule §62 — crests self-identify
       showTeamAssignmentLabel: false,
@@ -440,26 +442,26 @@ class TeamPlayerListPanelConfig {
   /// Team mode supports up to 16 players across 2-4 teams of up to 4 players each.
   factory TeamPlayerListPanelConfig.tikiGolf() {
     return TeamPlayerListPanelConfig(
-      containerColor: const Color(0xFF2D6A4F), // Palm Green
+      containerColor: GameTheme.tikiGolf.background, // Palm Green
       containerOpacity: 0.85,
       containerBorderColor: const Color(0xFF8B5E3C), // Tiki Brown
-      containerBorderColorWhenReady: const Color(0xFF00B4D8), // Lagoon Blue
+      containerBorderColorWhenReady: GameTheme.tikiGolf.accent, // Lagoon Blue
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.boogaloo(
         fontSize: 20, // +2 from 18 per user feedback
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
       ),
       headerCountStyle: GoogleFonts.nunito(
         fontSize: 14,
-        color: const Color(0xFFFFF5E1).withOpacity(0.7),
+        color: GameTheme.tikiGolf.onDark.withOpacity(0.7),
       ),
       headerCountColorWhenReady: const Color(0xFFFF8C42), // Tropical Orange
       emptyStateTextStyle: GoogleFonts.nunito(
-        color: const Color(0xFFFFF5E1).withOpacity(0.7),
+        color: GameTheme.tikiGolf.onDark.withOpacity(0.7),
         fontSize: 14,
       ),
-      addButtonColor: const Color(0xFF00B4D8), // Lagoon Blue
-      addButtonForegroundColor: const Color(0xFFFFF5E1), // Sand White
+      addButtonColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      addButtonForegroundColor: GameTheme.tikiGolf.onDark, // Sand White
       addButtonTextStyle: GoogleFonts.boogaloo(
         fontSize: 14,
         letterSpacing: 0.5,
@@ -467,12 +469,12 @@ class TeamPlayerListPanelConfig {
       emptyStateAddButtonTextStyle: GoogleFonts.boogaloo(
         fontSize: 16,
       ),
-      selectedColor: const Color(0xFF00B4D8), // Lagoon Blue
-      selectedBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      selectedColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      selectedBorderColor: GameTheme.tikiGolf.accent, // Lagoon Blue
       checkIconColor: const Color(0xFFFF8C42), // Tropical Orange
       teamAccentColor: const Color(0xFFFF8C42), // Tropical Orange
-      assignTeamButtonColor: const Color(0xFF00B4D8), // Lagoon Blue
-      assignTeamButtonForegroundColor: const Color(0xFFFFF5E1),
+      assignTeamButtonColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      assignTeamButtonForegroundColor: GameTheme.tikiGolf.onDark,
       assignTeamButtonTextStyle: GoogleFonts.nunito(
         fontSize: 12,
         fontWeight: FontWeight.bold,
@@ -489,17 +491,17 @@ class TeamPlayerListPanelConfig {
       teamBoxCountStyle: GoogleFonts.nunito(
         fontSize: 18, // +2pt from 16 per user
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF5E1).withOpacity(0.5),
+        color: GameTheme.tikiGolf.onDark.withOpacity(0.5),
       ),
       teamBoxActiveCountStyle: GoogleFonts.nunito(
         fontSize: 18, // +2pt from 16 per user
         fontWeight: FontWeight.bold,
         color: const Color(0xFFFF8C42), // Tropical Orange
       ),
-      dialogBackgroundColor: const Color(0xFF2D6A4F).withOpacity(0.97), // Palm Green
+      dialogBackgroundColor: GameTheme.tikiGolf.background.withOpacity(0.97), // Palm Green
       dialogTitleTextStyle: GoogleFonts.boogaloo(
         fontSize: 20,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
       ),
       dialogTeamButtonSize: 163.0, // +25% from 130px per user
       // Dialog team-pick buttons — no container chrome in default state per user;
@@ -510,14 +512,14 @@ class TeamPlayerListPanelConfig {
       // Wider dialog so all 4 team badges fit on a single row at the larger
       // button size: 4 × 163 + 5 × 16 spacing = 732px.
       dialogContentWidth: 760.0,
-      dialogTeamButtonSelectedColor: const Color(0xFF00B4D8), // Lagoon Blue
-      dialogTeamButtonSelectedBorderColor: const Color(0xFF00B4D8),
-      dialogHighlightGlowColor: const Color(0xFF00B4D8),
+      dialogTeamButtonSelectedColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      dialogTeamButtonSelectedBorderColor: GameTheme.tikiGolf.accent,
+      dialogHighlightGlowColor: GameTheme.tikiGolf.accent,
       dialogFullTeamColor: const Color(0xFFFF69B4), // Hibiscus Pink
       dialogFullTeamTextStyle: GoogleFonts.nunito(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF5E1),
+        color: GameTheme.tikiGolf.onDark,
       ),
       dialogRemoveButtonColor: const Color(0xFFFF69B4), // Hibiscus Pink
       dialogCancelButtonColor: const Color(0xFF8B5E3C), // Tiki Brown
@@ -528,7 +530,7 @@ class TeamPlayerListPanelConfig {
       ),
       teamAssignmentLabelStyle: GoogleFonts.boogaloo(
         fontSize: 18,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
       ),
       maxPlayers: 16,
       maxPlayersSoloMode: 4, // Rule §48: Solo mode caps at 4 players

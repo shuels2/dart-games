@@ -124,6 +124,12 @@ class PhotoService {
 
   // Delete a photo file
   Future<void> deletePhoto(String path) async {
+    // On web the stored path is a server URL, not a file — the server deletes
+    // the file itself when the player is removed. Treating a URL as a path
+    // just throws into the catch below on every delete.
+    if (kIsWeb || path.startsWith('http://') || path.startsWith('https://')) {
+      return;
+    }
     try {
       final file = File(path);
       if (await file.exists()) {
@@ -144,8 +150,4 @@ class PhotoService {
     }
   }
 
-  // Get default avatar path (returns null to use Flutter icon instead)
-  String? getDefaultAvatarPath() {
-    return null;
-  }
 }

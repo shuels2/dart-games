@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../theme/game_theme.dart';
+
 /// Configuration class for styling the DartboardConnectionInfo widget.
 ///
 /// Allows each game/screen to customize the appearance while maintaining
@@ -76,14 +78,14 @@ class DartboardConnectionInfoConfig {
   /// Carnival Derby — Lava Red/Canary Yellow, Montserrat font
   factory DartboardConnectionInfoConfig.carnivalDerby() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF1D3557), // Midnight Navy
+      backgroundColor: GameTheme.carnivalDerby.background, // Midnight Navy
       backgroundOpacity: 0.95,
-      emulatorBorderColor: const Color(0xFFFFD700), // Canary Yellow
+      emulatorBorderColor: GameTheme.carnivalDerby.accent, // Canary Yellow
       hardwareBorderColor: const Color(0xFF48CAE4), // Electric Teal
       nameTextStyle: GoogleFonts.montserrat(
         fontSize: 12,
         fontWeight: FontWeight.w900,
-        color: const Color(0xFFF1FAEE), // Cloud Dancer
+        color: GameTheme.carnivalDerby.onDark, // Cloud Dancer
       ),
       statusTextStyle: GoogleFonts.montserrat(
         fontSize: 12,
@@ -91,12 +93,12 @@ class DartboardConnectionInfoConfig {
       ),
       emulatorLabelTextStyle: GoogleFonts.montserrat(
         fontSize: 10,
-        color: const Color(0xFFFFD700), // Canary Yellow
+        color: GameTheme.carnivalDerby.accent, // Canary Yellow
       ),
-      emulatorIconColor: const Color(0xFFFFD700), // Canary Yellow
+      emulatorIconColor: GameTheme.carnivalDerby.accent, // Canary Yellow
       hardwareIconColor: const Color(0xFF48CAE4), // Electric Teal
       connectedColor: const Color(0xFF48CAE4), // Electric Teal
-      connectingColor: const Color(0xFFFFD700), // Canary Yellow
+      connectingColor: GameTheme.carnivalDerby.accent, // Canary Yellow
       disconnectedColor: const Color(0xFFE63946), // Lava Red
       errorColor: const Color(0xFFE63946), // Lava Red
     );
@@ -108,7 +110,7 @@ class DartboardConnectionInfoConfig {
       backgroundColor: const Color(0xFF2A2A3E), // Dark tech panel
       backgroundOpacity: 0.95,
       emulatorBorderColor: const Color(0xFF00FFA3), // Neon Green
-      hardwareBorderColor: const Color(0xFFFF007A), // Hot Pink
+      hardwareBorderColor: GameTheme.targetTag.accent, // Hot Pink
       nameTextStyle: GoogleFonts.fredoka(
         fontSize: 12,
         fontWeight: FontWeight.bold,
@@ -123,25 +125,25 @@ class DartboardConnectionInfoConfig {
         color: const Color(0xFF00FFA3), // Neon Green
       ),
       emulatorIconColor: const Color(0xFF00FFA3), // Neon Green
-      hardwareIconColor: const Color(0xFFFF007A), // Hot Pink
+      hardwareIconColor: GameTheme.targetTag.accent, // Hot Pink
       connectedColor: const Color(0xFF00FFA3), // Neon Green
       connectingColor: const Color(0xFFFFD700), // Gold
-      disconnectedColor: const Color(0xFFFF007A), // Hot Pink
-      errorColor: const Color(0xFFFF007A), // Hot Pink
+      disconnectedColor: GameTheme.targetTag.accent, // Hot Pink
+      errorColor: GameTheme.targetTag.accent, // Hot Pink
     );
   }
 
   /// Monster Mash — Dark with Lime Green/Beige, Montserrat font
   factory DartboardConnectionInfoConfig.monsterMash() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF2F4F4F), // Iron Gate
+      backgroundColor: GameTheme.monsterMash.background, // Iron Gate
       backgroundOpacity: 0.95,
-      emulatorBorderColor: const Color(0xFF7FFF00), // Ecto-Green
-      hardwareBorderColor: const Color(0xFFF5F5DC), // Aged Parchment
+      emulatorBorderColor: GameTheme.monsterMash.accent, // Ecto-Green
+      hardwareBorderColor: GameTheme.monsterMash.onDark, // Aged Parchment
       nameTextStyle: GoogleFonts.montserrat(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F5DC), // Aged Parchment
+        color: GameTheme.monsterMash.onDark, // Aged Parchment
       ),
       statusTextStyle: GoogleFonts.montserrat(
         fontSize: 12,
@@ -149,11 +151,11 @@ class DartboardConnectionInfoConfig {
       ),
       emulatorLabelTextStyle: GoogleFonts.montserrat(
         fontSize: 10,
-        color: const Color(0xFF7FFF00), // Ecto-Green
+        color: GameTheme.monsterMash.accent, // Ecto-Green
       ),
-      emulatorIconColor: const Color(0xFF7FFF00), // Ecto-Green
-      hardwareIconColor: const Color(0xFFF5F5DC), // Aged Parchment
-      connectedColor: const Color(0xFF7FFF00), // Ecto-Green
+      emulatorIconColor: GameTheme.monsterMash.accent, // Ecto-Green
+      hardwareIconColor: GameTheme.monsterMash.onDark, // Aged Parchment
+      connectedColor: GameTheme.monsterMash.accent, // Ecto-Green
       connectingColor: const Color(0xFFFF8C00), // Pumpkin Orange
       disconnectedColor: Colors.red,
       errorColor: Colors.red,
@@ -221,14 +223,14 @@ class DartboardConnectionInfoConfig {
   /// Reef Royale — Deep Reef Blue with Seafoam Green, Fredoka font
   factory DartboardConnectionInfoConfig.reefRoyale() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF0B3D91), // Deep Reef Blue
+      backgroundColor: GameTheme.reefRoyale.background, // Deep Reef Blue
       backgroundOpacity: 0.95,
-      emulatorBorderColor: const Color(0xFF48D1CC), // Seafoam Green
+      emulatorBorderColor: GameTheme.reefRoyale.accent, // Seafoam Green
       hardwareBorderColor: const Color(0xFF00CED1), // Sunlit Aqua
       nameTextStyle: GoogleFonts.fredoka(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8F0), // Pearl White
+        color: GameTheme.reefRoyale.onDark, // Pearl White
       ),
       statusTextStyle: GoogleFonts.fredoka(
         fontSize: 12,
@@ -236,11 +238,11 @@ class DartboardConnectionInfoConfig {
       ),
       emulatorLabelTextStyle: GoogleFonts.fredoka(
         fontSize: 10,
-        color: const Color(0xFF48D1CC), // Seafoam Green
+        color: GameTheme.reefRoyale.accent, // Seafoam Green
       ),
-      emulatorIconColor: const Color(0xFF48D1CC), // Seafoam Green
+      emulatorIconColor: GameTheme.reefRoyale.accent, // Seafoam Green
       hardwareIconColor: const Color(0xFF00CED1), // Sunlit Aqua
-      connectedColor: const Color(0xFF48D1CC), // Seafoam Green
+      connectedColor: GameTheme.reefRoyale.accent, // Seafoam Green
       connectingColor: const Color(0xFFF4D03F), // Sandy Gold
       disconnectedColor: const Color(0xFFFF6B6B), // Coral Pink
       errorColor: const Color(0xFFFF6B6B), // Coral Pink
@@ -250,14 +252,14 @@ class DartboardConnectionInfoConfig {
   /// Lunar Lander — Earth Blue with Rocket Flame icon, Orbitron/Exo2 fonts
   factory DartboardConnectionInfoConfig.lunarLander() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF1B4965), // Earth Blue
+      backgroundColor: GameTheme.lunarLander.background, // Earth Blue
       backgroundOpacity: 0.95,
-      emulatorBorderColor: const Color(0xFFF26430), // Rocket Flame
+      emulatorBorderColor: GameTheme.lunarLander.accent, // Rocket Flame
       hardwareBorderColor: const Color(0xFF52B788), // Mission Green
       nameTextStyle: GoogleFonts.exo2(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFAFDF6), // Star White
+        color: GameTheme.lunarLander.onDark, // Star White
       ),
       statusTextStyle: GoogleFonts.exo2(
         fontSize: 12,
@@ -265,9 +267,9 @@ class DartboardConnectionInfoConfig {
       ),
       emulatorLabelTextStyle: GoogleFonts.exo2(
         fontSize: 10,
-        color: const Color(0xFFF26430), // Rocket Flame
+        color: GameTheme.lunarLander.accent, // Rocket Flame
       ),
-      emulatorIconColor: const Color(0xFFF26430), // Rocket Flame
+      emulatorIconColor: GameTheme.lunarLander.accent, // Rocket Flame
       hardwareIconColor: const Color(0xFF52B788), // Mission Green
       connectedColor: const Color(0xFF52B788), // Mission Green
       connectingColor: const Color(0xFFD4C5A9), // Moon Dust Gray
@@ -279,14 +281,14 @@ class DartboardConnectionInfoConfig {
   /// Pirate's Grid — Ocean Navy bg, Compass Bronze/Treasure Gold, Lora font
   factory DartboardConnectionInfoConfig.piratesGrid() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF1B2838), // Ocean Navy
+      backgroundColor: GameTheme.piratesGrid.background, // Ocean Navy
       backgroundOpacity: 0.95,
-      emulatorBorderColor: const Color(0xFFCD7F32), // Compass Bronze
+      emulatorBorderColor: GameTheme.piratesGrid.accent, // Compass Bronze
       hardwareBorderColor: const Color(0xFFDAA520), // Treasure Gold
       nameTextStyle: GoogleFonts.lora(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5E6C8), // Parchment Tan
+        color: GameTheme.piratesGrid.onDark, // Parchment Tan
       ),
       statusTextStyle: GoogleFonts.lora(
         fontSize: 12,
@@ -294,9 +296,9 @@ class DartboardConnectionInfoConfig {
       ),
       emulatorLabelTextStyle: GoogleFonts.lora(
         fontSize: 10,
-        color: const Color(0xFFCD7F32), // Compass Bronze
+        color: GameTheme.piratesGrid.accent, // Compass Bronze
       ),
-      emulatorIconColor: const Color(0xFFCD7F32), // Compass Bronze
+      emulatorIconColor: GameTheme.piratesGrid.accent, // Compass Bronze
       hardwareIconColor: const Color(0xFFDAA520), // Treasure Gold
       connectedColor: const Color(0xFF2E8B8B), // Sea Foam Teal
       connectingColor: const Color(0xFFDAA520), // Treasure Gold
@@ -307,15 +309,15 @@ class DartboardConnectionInfoConfig {
 
   factory DartboardConnectionInfoConfig.clockworkQuest() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
+      backgroundColor: GameTheme.clockworkQuest.background, // Dark Iron
       backgroundOpacity: 0.95,
       emulatorBorderColor: const Color(0xFFB87333), // Copper Rose
-      hardwareBorderColor: const Color(0xFFC5A54E), // Brass Gold
+      hardwareBorderColor: GameTheme.clockworkQuest.accent, // Brass Gold
       nameTextStyle: GoogleFonts.lato(
         fontSize: 12,
         fontWeight: FontWeight.bold,
         height: 1.0,
-        color: const Color(0xFFF5F0E8), // Steam White
+        color: GameTheme.clockworkQuest.onDark, // Steam White
       ),
       statusTextStyle: GoogleFonts.lato(
         fontSize: 12,
@@ -328,7 +330,7 @@ class DartboardConnectionInfoConfig {
         color: const Color(0xFFB87333), // Copper Rose
       ),
       emulatorIconColor: const Color(0xFFB87333), // Copper Rose
-      hardwareIconColor: const Color(0xFFC5A54E), // Brass Gold
+      hardwareIconColor: GameTheme.clockworkQuest.accent, // Brass Gold
       connectedColor: const Color(0xFF43B3AE), // Verdigris Green
       connectingColor: const Color(0xFFFFBF00), // Amber Glow
       disconnectedColor: const Color(0xFFFF6B6B),
@@ -338,9 +340,9 @@ class DartboardConnectionInfoConfig {
 
   factory DartboardConnectionInfoConfig.gladiatorArena() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF3A2010), // Dark Arena
+      backgroundColor: GameTheme.gladiatorArena.background, // Dark Arena
       backgroundOpacity: 0.95,
-      emulatorBorderColor: const Color(0xFFCD7F32), // Bronze
+      emulatorBorderColor: GameTheme.gladiatorArena.accent, // Bronze
       hardwareBorderColor: const Color(0xFFDAA520), // Gladiator Gold
       // Lato (mixed-case) matches every other game's dartboard-name styling.
       // Cinzel renders lowercase as capital letterforms (Roman-inscription
@@ -350,7 +352,7 @@ class DartboardConnectionInfoConfig {
         fontSize: 12,
         fontWeight: FontWeight.bold,
         height: 1.0,
-        color: const Color(0xFFF5F0E8), // Marble White
+        color: GameTheme.gladiatorArena.onDark, // Marble White
       ),
       statusTextStyle: GoogleFonts.lato(
         fontSize: 12,
@@ -360,9 +362,9 @@ class DartboardConnectionInfoConfig {
       emulatorLabelTextStyle: GoogleFonts.lato(
         fontSize: 10,
         height: 1.0,
-        color: const Color(0xFFCD7F32), // Bronze
+        color: GameTheme.gladiatorArena.accent, // Bronze
       ),
-      emulatorIconColor: const Color(0xFFCD7F32), // Bronze
+      emulatorIconColor: GameTheme.gladiatorArena.accent, // Bronze
       hardwareIconColor: const Color(0xFFDAA520), // Gladiator Gold
       connectedColor: const Color(0xFF4A7C59), // Laurel Green
       connectingColor: const Color(0xFFDAA520), // Gladiator Gold
@@ -374,15 +376,15 @@ class DartboardConnectionInfoConfig {
   /// Treasure Divide — Ocean Teal panel, Treasure Gold/Island Green indicators, Merriweather font
   factory DartboardConnectionInfoConfig.treasureDivide() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF008B8B), // Ocean Teal
+      backgroundColor: GameTheme.treasureDivide.background, // Ocean Teal
       backgroundOpacity: 0.95,
-      emulatorBorderColor: const Color(0xFFFFD700), // Treasure Gold
+      emulatorBorderColor: GameTheme.treasureDivide.accent, // Treasure Gold
       hardwareBorderColor: const Color(0xFF228B22), // Island Green
       nameTextStyle: GoogleFonts.merriweather(
         fontSize: 12,
         fontWeight: FontWeight.bold,
         height: 1.0,
-        color: const Color(0xFFFFF8E7), // Sail White
+        color: GameTheme.treasureDivide.onDark, // Sail White
       ),
       statusTextStyle: GoogleFonts.merriweather(
         fontSize: 12,
@@ -392,12 +394,12 @@ class DartboardConnectionInfoConfig {
       emulatorLabelTextStyle: GoogleFonts.merriweather(
         fontSize: 10,
         height: 1.0,
-        color: const Color(0xFFFFD700), // Treasure Gold
+        color: GameTheme.treasureDivide.accent, // Treasure Gold
       ),
-      emulatorIconColor: const Color(0xFFFFD700), // Treasure Gold
+      emulatorIconColor: GameTheme.treasureDivide.accent, // Treasure Gold
       hardwareIconColor: const Color(0xFF228B22), // Island Green
       connectedColor: const Color(0xFF228B22), // Island Green
-      connectingColor: const Color(0xFFFFD700), // Treasure Gold
+      connectingColor: GameTheme.treasureDivide.accent, // Treasure Gold
       disconnectedColor: const Color(0xFFC41E3A), // Blood Red
       errorColor: const Color(0xFFC41E3A), // Blood Red
     );
@@ -410,13 +412,13 @@ class DartboardConnectionInfoConfig {
   /// signal that's visually distinct from the normal blue.
   factory DartboardConnectionInfoConfig.tikiGolf() {
     return DartboardConnectionInfoConfig(
-      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
+      backgroundColor: GameTheme.tikiGolf.background, // Palm Green
       backgroundOpacity: 0.95,
-      emulatorBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
-      hardwareBorderColor: const Color(0xFF00B4D8), // Lagoon Blue (was Tropical Orange)
+      emulatorBorderColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      hardwareBorderColor: GameTheme.tikiGolf.accent, // Lagoon Blue (was Tropical Orange)
       nameTextStyle: GoogleFonts.boogaloo(
         fontSize: 12,
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
       ),
       statusTextStyle: GoogleFonts.nunito(
         fontSize: 12,
@@ -424,12 +426,12 @@ class DartboardConnectionInfoConfig {
       ),
       emulatorLabelTextStyle: GoogleFonts.nunito(
         fontSize: 10,
-        color: const Color(0xFF00B4D8), // Lagoon Blue
+        color: GameTheme.tikiGolf.accent, // Lagoon Blue
       ),
-      emulatorIconColor: const Color(0xFF00B4D8), // Lagoon Blue
-      hardwareIconColor: const Color(0xFF00B4D8), // Lagoon Blue (was Tropical Orange)
-      connectedColor: const Color(0xFF00B4D8), // Lagoon Blue
-      connectingColor: const Color(0xFF00B4D8), // Lagoon Blue (was Tropical Orange)
+      emulatorIconColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      hardwareIconColor: GameTheme.tikiGolf.accent, // Lagoon Blue (was Tropical Orange)
+      connectedColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      connectingColor: GameTheme.tikiGolf.accent, // Lagoon Blue (was Tropical Orange)
       disconnectedColor: const Color(0xFFFF69B4), // Hibiscus Pink
       errorColor: const Color(0xFFFF69B4), // Hibiscus Pink
     );

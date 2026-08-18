@@ -1,36 +1,47 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'round_robin_team_rotation.dart';
 import '../models/tiki_golf_game.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
+import 'game_provider_base.dart';
 
-class TikiGolfProvider extends ChangeNotifier {
-  TikiGolfGame? _currentGame;
-  String? _resumedSavedGameId;
-  bool _saving = false;
+class TikiGolfProvider extends GameProviderBase<TikiGolfGame> {
+  /// Internal alias for [GameProviderBase.game] — same rationale as Treasure
+  /// Divide: the game logic below names its locals `game` throughout, so the
+  /// alias keeps the storage in the base without rewriting every body.
+  TikiGolfGame? get _currentGame => game;
+  set _currentGame(TikiGolfGame? value) => game = value;
 
   // ─── Getters ─────────────────────────────────────────────────────────────────
 
   TikiGolfGame? get currentGame => _currentGame;
 
+  @override
   bool get isGameActive =>
       _currentGame?.state == TikiGolfGameState.playing;
 
+  /// Tiki Golf's third flag-storage shape (see plan notes Q13): a stored,
+  /// serialized model field (`currentTurnEnded`) OR-ed with the derived
+  /// winner condition. The setter writes only the stored half — the
+  /// `hasWinner` disjunct is monotonic, so writing `currentTurnEnded = false`
+  /// while the game is won correctly leaves the prompt up until the results
+  /// navigation, exactly as before the migration.
+  @override
   bool get shouldPromptTakeout =>
       (_currentGame?.currentTurnEnded ?? false) ||
       (_currentGame?.hasWinner ?? false);
 
+  @override
+  set waitingForTakeout(bool value) =>
+      _currentGame?.currentTurnEnded = value;
+
+  @override
   bool get hasWinner => _currentGame?.hasWinner ?? false;
 
   String? get currentPlayerId => _currentGame?.activePlayerId;
 
   String? get currentTeamId => _currentGame?.activeTeamId;
-
-  String? get resumedSavedGameId => _resumedSavedGameId;
-
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
-  }
 
   // ─── randomDistribution ──────────────────────────────────────────────────────
 
@@ -144,6 +155,11 @@ class TikiGolfProvider extends ChangeNotifier {
       // Solo mode — no teams
       resolvedTeamCount = 1;
     }
+
+    // A genuinely new game must not inherit the previous game's saved-game
+    // slot — otherwise this game's first save overwrites (and destroys) a
+    // still-resumable abandoned game. See F2 in the plan notes.
+    clearResumedSavedGameId();
 
     _currentGame = TikiGolfGame.create(
       playerIds: playerIds,
@@ -308,6 +324,13 @@ class TikiGolfProvider extends ChangeNotifier {
   // ─── confirmTurnEnd ──────────────────────────────────────────────────────────
 
   /// Called when the player taps NEXT PLAYER / DARTS REMOVED — standard takeout.
+  ///
+  /// This is Tiki Golf's [handleTakeoutFinished] under its historical name
+  /// (tests call it directly). Like Treasure Divide, it cannot use the base
+  /// flow: the game is only finalized *inside* the advance (the last player
+  /// completing hole 9 runs `_advanceToNextHole → _endGame`), so the screen
+  /// re-checks `hasWinner` after this returns. Note the guard is the stored
+  /// `currentTurnEnded` specifically, not the derived [shouldPromptTakeout].
   void confirmTurnEnd() {
     if (_currentGame == null) return;
     if (!_currentGame!.currentTurnEnded) return;
@@ -328,6 +351,18 @@ class TikiGolfProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  @override
+  void handleTakeoutFinished() => confirmTurnEnd();
+
+  @override
+  void advanceToNextPlayer() {
+    if (_currentGame!.gameMode == TikiGolfGameMode.solo) {
+      _advanceSoloPlayer();
+    } else {
+      _advanceTeamPlayer();
+    }
   }
 
   // ─── _advanceSoloPlayer ──────────────────────────────────────────────────────
@@ -353,44 +388,43 @@ class TikiGolfProvider extends ChangeNotifier {
 
   void _advanceTeamPlayer() {
     final game = _currentGame!;
-    final teamIds = game.teamPlayers.keys.toList();
-
-    // Increment within-hole pointer for current team
     final currentTeamId = game.activeTeamId;
     if (currentTeamId == null) return;
 
-    final currentPointer =
-        (game.teamWithinHoleRotationPointer[currentTeamId] ?? 0) + 1;
-    final teamSize = game.teamPlayers[currentTeamId]?.length ?? 0;
+    // Pointer arithmetic is shared with Treasure Divide (WS03 §3.7); the
+    // side effects below are Tiki's own.
+    final step = RoundRobinTeamRotation.advance(
+      teamIds: game.teamPlayers.keys.toList(),
+      currentTeamId: currentTeamId,
+      currentTeamIndex: game.currentTeamIndex,
+      withinPeriodPointer: game.teamWithinHoleRotationPointer,
+      teamPlayers: game.teamPlayers,
+    );
 
-    if (currentPointer < teamSize) {
-      // More players on this team to play
-      game.teamWithinHoleRotationPointer[currentTeamId] = currentPointer;
-      final nextPlayerId =
-          game.teamPlayers[currentTeamId]![currentPointer];
-      game.activePlayerId = nextPlayerId;
-      game.dartsThrown[nextPlayerId] = 0;
-      game.currentTurnEnded = false;
-    } else {
-      // This team is done — move to next team
-      game.teamWithinHoleRotationPointer[currentTeamId] = currentPointer;
-      final nextTeamIndex = game.currentTeamIndex + 1;
+    // Written back on every outcome — including when the team is finished, or
+    // it would replay its last player next hole.
+    game.teamWithinHoleRotationPointer[currentTeamId] =
+        step.pointerForCurrentTeam;
 
-      if (nextTeamIndex >= teamIds.length) {
-        // All teams done with this hole
+    switch (step.outcome) {
+      case TeamRotationOutcome.periodComplete:
         _advanceToNextHole();
-      } else {
-        // Move to next team's first player
-        game.currentTeamIndex = nextTeamIndex;
-        final nextTeamId = teamIds[nextTeamIndex];
-        game.activeTeamId = nextTeamId;
-        game.teamWithinHoleRotationPointer[nextTeamId] = 0;
-        final nextPlayerId = game.teamPlayers[nextTeamId]!.first;
-        game.activePlayerId = nextPlayerId;
-        game.dartsThrown[nextPlayerId] = 0;
-        game.currentTurnEnded = false;
-      }
+      case TeamRotationOutcome.nextTeam:
+        game.currentTeamIndex = step.nextTeamIndex!;
+        game.activeTeamId = step.nextTeamId;
+        game.teamWithinHoleRotationPointer[step.nextTeamId!] = 0;
+        _startTurnFor(step.nextPlayerId!);
+      case TeamRotationOutcome.nextPlayerSameTeam:
+        _startTurnFor(step.nextPlayerId!);
     }
+  }
+
+  /// Hands the turn to [playerId]: fresh dart count, turn no longer ended.
+  void _startTurnFor(String playerId) {
+    final game = _currentGame!;
+    game.activePlayerId = playerId;
+    game.dartsThrown[playerId] = 0;
+    game.currentTurnEnded = false;
   }
 
   // ─── _advanceToNextHole ──────────────────────────────────────────────────────
@@ -567,42 +601,44 @@ class TikiGolfProvider extends ChangeNotifier {
 
   // ─── Save / Restore ─────────────────────────────────────────────────────────
 
-  Future<void> saveGame(SaveGameService service, {List<String>? playerNames, bool isAutoSave = false}) async {
-    if (_currentGame == null || _saving) return;
-    _saving = true;
-    try {
+  /// Saves the current game.
+  ///
+  /// [playerNamesById] maps player ids to display names. Prefer it over
+  /// [playerNames]: the saved-game tile should list the players in THIS game,
+  /// and without the ids the provider cannot filter a caller-supplied list
+  /// down from the whole roster. Without either, the tile falls back to raw
+  /// ids, which are UUIDs.
+  Future<void> saveGame(SaveGameService service,
+      {List<String>? playerNames,
+      Map<String, String>? playerNamesById,
+      bool isAutoSave = false}) async {
+    await persistSave(service, (existingId) {
       final game = _currentGame!;
-      final names = playerNames ?? game.playerIds;
+      String nameOf(String id) => playerNamesById?[id] ?? id;
+      final names = playerNames ?? game.playerIds.map(nameOf).toList();
       final completedHoles = game.currentHole - 1;
       final modeName = game.gameMode == TikiGolfGameMode.solo ? 'Solo' : 'Team';
 
-      final metadata = SavedGameMetadata.create(
+      return SavedGameMetadata.create(
         gameType: 'tiki_golf',
         playerNames: names,
         progressInfo: 'Hole ${game.currentHole} of 9',
         gameModeName: '$modeName, Max Darts: ${game.maxStrokes}',
-        leadingPlayerName: game.activePlayerId ?? '',
+        leadingPlayerName:
+            game.activePlayerId == null ? '' : nameOf(game.activePlayerId!),
         leadingPlayerScore: '$completedHoles holes completed',
         gameState: game.toJson(),
+        // The stored half only — the derived winner half never needs saving
+        // (a finished game is deleted from the resume list, not saved).
         waitingForTakeout: game.currentTurnEnded,
         isAutoSave: isAutoSave,
-        existingId: _resumedSavedGameId,
+        existingId: existingId,
       );
-
-      final saved = await service.saveGame(metadata);
-      if (saved) {
-        _resumedSavedGameId = metadata.id;
-      }
-    } finally {
-      _saving = false;
-    }
+    });
   }
 
-  void restoreGame(SavedGameMetadata savedGame) {
-    _currentGame =
-        TikiGolfGame.fromJson(Map<String, dynamic>.from(savedGame.gameState));
-    _currentGame!.currentTurnEnded = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
-    notifyListeners();
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = TikiGolfGame.fromJson(json);
   }
 }

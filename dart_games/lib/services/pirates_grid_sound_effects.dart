@@ -51,4 +51,16 @@ class PiratesGridSoundEffects {
     startSeconds: 0.0,
     endSeconds: 2.0,
   );
+
+  /// Every effect this game uses. Preloaded at game start so
+  /// the first play does not pay the asset-load cost.
+  static const List<SoundEffectConfig> all = [
+    flagPlant,
+    cannonBoom,
+    waveCrash,
+    treasureFound,
+    shipBell,
+    swordClash,
+    timerTick,
+  ];
 }

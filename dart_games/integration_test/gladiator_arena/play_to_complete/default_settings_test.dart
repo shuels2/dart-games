@@ -1,32 +1,10 @@
-﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import '../../shared/ui_test_helpers.dart';
-import '../../shared/game_ui_config.dart';
-import '../../shared/provider_helpers.dart';
-import '../../shared/play_to_complete_helpers.dart';
-import '../../shared/game_setup_helpers.dart';
-
-final config = GameUIConfig.gladiatorArena();
+import '../../shared/play_to_complete_suite.dart';
+import '_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
-  testWidgets(
-      'Play to Complete: Gladiator Arena with default settings (target=200, DF=ON)',
-      (WidgetTester tester) async {
-    await UITestHelpers.resetServerState();
-    await GameSetupHelpers.setupAndStartGladiatorArena(tester, config);
-
-    await PlayToCompleteHelpers.tapPlayToComplete(tester);
-
-    final provider = ProviderHelpers.getGladiatorArenaProvider(tester);
-    await PlayToCompleteHelpers.waitForGameCompletion(
-      tester,
-      isComplete: () => provider.hasWinner,
-    );
-
-    expect(provider.hasWinner, isTrue);
-    expect(config.getPlayAgainButton(), findsOneWidget);
-  });
+  runPlayToCompleteDefaultTest(playToCompleteSpec,
+      description: 'Play to Complete: Gladiator Arena with default settings (target=200, DF=ON)');
 }

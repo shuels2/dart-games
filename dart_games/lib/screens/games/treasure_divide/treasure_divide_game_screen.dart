@@ -6,11 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/test_keys.dart';
 import '../../../models/treasure_divide_game.dart';
-import '../../../providers/dartboard_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/treasure_divide_provider.dart';
-import '../../../services/game_announcement_queue_service.dart';
-import '../../../services/mock_scolia_api_service.dart';
 import '../../../services/save_game_service.dart';
 import '../../../services/treasure_divide_announcement_helper.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -26,7 +23,9 @@ import '../../../widgets/treasure_divide/pirate_avatar_widget.dart';
 import '../../../widgets/treasure_divide/treasure_map_widget.dart';
 import '../../../services/play_to_complete/treasure_divide_strategy.dart';
 import '../../../services/play_to_tie/treasure_divide_strategy.dart';
-import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
+import '../../../services/treasure_divide_sound_effects.dart';
+import '../shared/game_screen_controller.dart';
+import '../shared/game_screen_shell.dart';
 import 'treasure_divide_results_screen.dart';
 
 // ─── Color palette ────────────────────────────────────────────────────────────
@@ -52,9 +51,8 @@ class TreasureDivideGameScreen extends StatefulWidget {
       _TreasureDivideGameScreenState();
 }
 
-class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
-  StreamSubscription? _dartboardSubscription;
-  MockScoliaApiService? _mockApi;
+class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen>
+    with GameScreenController<TreasureDivideGameScreen> {
   // Key for the InteractiveDartboard inside DartboardEmulatorSection.
   // Required so the emulator's takeout-prompt overlay can dispatch the
   // "Remove Darts" tap via dartboardKey.currentState?.removeDarts().
@@ -62,12 +60,6 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   // other game passes this through; we just hadn't.
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
-  final DartboardEmulatorController _dartboardEmulatorController =
-      DartboardEmulatorController();
-  PlayToCompleteRunner? _playToCompleteRunner;
-  PlayToTieRunner? _playToTieRunner;
-  bool _showSaveModal = false;
-  bool _gameCompleted = false;
 
   // Emulator-only theme preview. When non-null, every player avatar
   // renders with this theme index instead of the per-player assignment
@@ -96,46 +88,34 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeGame();
+      initGameScreen(
+        preloadEffects: TreasureDivideSoundEffects.all,
+        buildAudio: (queue) =>
+            _audioQueue = TreasureDivideAnnouncementHelper(queue),
+        onReady: () {
+          final provider = context.read<TreasureDivideProvider>();
+          final game = provider.currentGame;
+          if (game != null && !isAutoPlaying) {
+            _audioQueue?.announceGameStart(game.numberOfRounds);
+          }
+        },
+        // Announce the first turn after a 2s delay so the game-start audio
+        // has time to play before the first player/crew cue fires.
+        firstTurnDelay: const Duration(milliseconds: 2000),
+        announceFirstTurn: () {
+          final provider = context.read<TreasureDivideProvider>();
+          final game = provider.currentGame;
+          if (game != null) _announceCurrentTurn(provider, game);
+        },
+      );
     });
-  }
-
-  Future<void> _initializeGame() async {
-    final dartboardProvider = context.read<DartboardProvider>();
-    _mockApi = dartboardProvider.apiService;
-    if (mounted) setState(() {});
-
-    // ── Audio queue setup ──
-    final queueService = GameAnnouncementQueueService();
-    await queueService.loadSettings();
-    _audioQueue = TreasureDivideAnnouncementHelper(queueService);
-
-    final provider = context.read<TreasureDivideProvider>();
-    final game = provider.currentGame;
-    if (game != null && !_dartboardEmulatorController.isAutoPlaying) {
-      _audioQueue?.announceGameStart(game.numberOfRounds);
-
-      // Announce the first turn after a 2s delay so the game-start audio
-      // has time to play before the first player/crew cue fires.
-      Future.delayed(const Duration(milliseconds: 2000), () {
-        if (!mounted) return;
-        _announceCurrentTurn(provider, game);
-      });
-    }
-
-    final eventStream = dartboardProvider.dartboardEventStream;
-    if (eventStream != null) {
-      _dartboardSubscription = eventStream.listen((event) {
-        _handleDartboardEvent(event);
-      });
-    }
   }
 
   /// Fires the appropriate turn announcement (player or crew) for the currently
   /// active player based on game mode and within-crew rotation state.
   void _announceCurrentTurn(
       TreasureDivideProvider provider, TreasureDivideGame game) {
-    if (_dartboardEmulatorController.isAutoPlaying) return;
+    if (isAutoPlaying) return;
     final playerProvider = context.read<PlayerProvider>();
     final playerId = game.currentPlayerId;
     final playerName =
@@ -162,70 +142,27 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   @override
   void dispose() {
     _audioQueue?.dispose();
-    _playToCompleteRunner?.dispose();
-    _playToTieRunner?.dispose();
-    _dartboardSubscription?.cancel();
-    _dartboardEmulatorController.dispose();
+    disposeGameScreen();
     super.dispose();
   }
 
-  void _onPlayToComplete() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
+  // ── GameScreenController contract ────────────────────────────────────────
 
-    _playToCompleteRunner = PlayToCompleteRunner(
-      strategy: TreasureDivideStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToCompleteRunner!.run();
-  }
+  @override
+  PlayToCompleteStrategy get playToCompleteStrategy =>
+      TreasureDivideStrategy();
 
-  /// Drives the game to a tie via [TreasureDivideTieStrategy]. Same shape
-  /// as `_onPlayToComplete`; only one of the two runners is active at any
-  /// given moment (the emulator section disables both buttons while
-  /// `isAutoPlaying` is true).
-  void _onPlayToTie() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
+  @override
+  Future<void> whenAnnouncementsIdle() =>
+      _audioQueue?.whenIdle() ?? Future<void>.value();
 
-    _playToTieRunner = PlayToTieRunner(
-      strategy: TreasureDivideTieStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToTieRunner!.run();
-  }
+  /// Drives the game to a tie via [TreasureDivideTieStrategy]. Treasure Divide
+  /// ties are reachable from any settings combination, so the button is
+  /// always enabled when the emulator is on.
+  void _onPlayToTie() => startPlayToTie(TreasureDivideTieStrategy());
 
-  void _onCancelAutoPlay() {
-    _playToCompleteRunner?.cancel();
-    _playToTieRunner?.cancel();
-    _dartboardEmulatorController.setAutoPlaying(false);
-    _dartboardEmulatorController.show();
-  }
-
-  void _handleDartboardEvent(Map<String, dynamic> event) {
-    final type = event['type'];
-    if (type == 'throw_detected') {
-      _handleDartThrow(event);
-    } else if (type == 'takeout_finished') {
-      _handleTakeoutFinished();
-    }
-  }
-
-  void _handleDartThrow(Map<String, dynamic> event) {
+  @override
+  void onDartThrowEvent(Map<String, dynamic> event) {
     final provider = context.read<TreasureDivideProvider>();
     if (!mounted || !provider.isGameActive) return;
 
@@ -243,7 +180,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     );
 
     // ── Per-dart announcement (suppressed during Play-to-Complete) ────────────
-    if (!_dartboardEmulatorController.isAutoPlaying) {
+    if (!isAutoPlaying) {
       _audioQueue?.pickAndAnnounceMoment(
         wasMatched: provider.lastDartWasMatched,
         multiplier: provider.lastDartMultiplier,
@@ -253,21 +190,25 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
 
       // ── Remove Darts — called UNCONDITIONALLY (not inside any else). ────────
       // Fired when the player has thrown all darts (shouldPromptTakeout flipped
-      // true inside processDartThrow on the last dart).
+      // true inside processDartThrow on the last dart). The player drives the
+      // takeout itself from DARTS REMOVED.
       if (provider.shouldPromptTakeout) {
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) _audioQueue?.announceRemoveDarts();
-        });
+        scheduleTakeoutSequence(
+          dartsOnBoard: true,
+          announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(),
+        );
       }
     }
 
     // Do NOT navigate to results here — wait for DARTS REMOVED (Rule §).
-    setState(() {});
   }
 
-  void _handleTakeoutFinished() {
+  @override
+  void onTakeoutFinished() {
     final provider = context.read<TreasureDivideProvider>();
     if (!mounted) return;
+
+    cancelTakeoutSequence();
 
     if (provider.hasWinner) {
       _handleGameWon();
@@ -286,7 +227,6 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     final prevRoundIndex = gameBeforeTakeout.currentRoundIndex;
 
     provider.handleTakeoutFinished();
-    setState(() {});
 
     // Re-check hasWinner AFTER handleTakeoutFinished — the game is only
     // finalized inside handleTakeoutFinished (on the last player's last turn
@@ -298,7 +238,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       return;
     }
 
-    if (_dartboardEmulatorController.isAutoPlaying) return;
+    if (isAutoPlaying) return;
 
     final gameAfter = provider.currentGame;
     if (gameAfter == null) return;
@@ -374,13 +314,14 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
     }
 
     // ── Next turn announcement (500ms delay to follow turn-end audio) ─────────
+    // Re-reads the provider on fire rather than closing over `provider`: the
+    // turn can be won, skipped or edited inside those 500ms.
     if (!provider.hasWinner) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (!mounted) return;
+      runAfter(const Duration(milliseconds: 500), () {
         final freshProvider = context.read<TreasureDivideProvider>();
         final freshGame = freshProvider.currentGame;
         if (freshGame == null || freshProvider.hasWinner) return;
-        if (_dartboardEmulatorController.isAutoPlaying) return;
+        if (isAutoPlaying) return;
         _announceCurrentTurn(freshProvider, freshGame);
       });
     }
@@ -441,23 +382,11 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   }
 
   void _handleGameWon() {
-    if (_gameCompleted) return;
-    _gameCompleted = true;
-
-    void navigateToResults() {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const TreasureDivideResultsScreen()),
-      );
-    }
-
-    if (_dartboardEmulatorController.isAutoPlaying) {
-      navigateToResults();
-    } else {
-      final provider = context.read<TreasureDivideProvider>();
-      final game = provider.currentGame;
-      if (game != null) {
+    handleGameWon(
+      announceWinner: () {
+        final provider = context.read<TreasureDivideProvider>();
+        final game = provider.currentGame;
+        if (game == null) return;
         if (game.gameMode == TreasureDivideGameMode.solo) {
           // Collect EVERY winning player's name. Ties produce
           // winnerIds.length > 1 — the announcement helper pluralizes
@@ -466,8 +395,7 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
           if (game.winnerIds.isNotEmpty) {
             final playerProvider = context.read<PlayerProvider>();
             final winnerNames = game.winnerIds
-                .map((id) =>
-                    playerProvider.getPlayerById(id)?.name ?? id)
+                .map((id) => playerProvider.getPlayerById(id)?.name ?? id)
                 .toList();
             _audioQueue?.announceVictory(winnerNames);
           }
@@ -481,21 +409,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
             _audioQueue?.announceTeamVictory(winningCrewNames);
           }
         }
-      }
-      // Navigate when the audio queue is idle, falling back gracefully:
-      // - If `_audioQueue` is null (init race), navigate after the 250ms
-      //   pacing delay so the dart-throw flow still completes.
-      // - If `whenIdle()` hangs (TTS engine stuck, etc.), cap the wait at
-      //   10s so the user never sees a stuck "Remove your darts" screen.
-      //   Without this guard, tests that complete a game timed out the
-      //   parallel-runner because navigation never fired.
-      final whenIdleFuture = _audioQueue?.whenIdle() ?? Future<void>.value();
-      whenIdleFuture
-          .timeout(const Duration(seconds: 10), onTimeout: () {})
-          .then((_) {
-        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
-      });
-    }
+      },
+      resultsBuilder: (_) => const TreasureDivideResultsScreen(),
+    );
   }
 
   // ─── Theme preview (emulator-only) ──────────────────────────────────────────
@@ -650,7 +566,6 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dartboardProvider = context.watch<DartboardProvider>();
     final provider = context.watch<TreasureDivideProvider>();
     final playerProvider = context.watch<PlayerProvider>();
 
@@ -685,57 +600,127 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       }
     }
 
-    return PopScope(
-      canPop: !hasDartsThrown || _showSaveModal,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _showSaveModal) return;
-        setState(() => _showSaveModal = true);
+    return GameScreenShell(
+      hasDartsThrown: hasDartsThrown,
+      showSaveModal: showSaveModal,
+      onRequestSaveModal: openSaveModal,
+      onAutoSave: () => provider.saveGame(
+        SaveGameService(),
+        playerNamesById: _playerNamesById(playerProvider, game),
+        isAutoSave: true,
+      ),
+      onSave: () async {
+        await provider.saveGame(
+          SaveGameService(),
+          playerNamesById: _playerNamesById(playerProvider, game),
+        );
+        if (mounted) {
+          closeSaveModal();
+          Navigator.of(context).pop();
+        }
       },
-      child: Stack(
-        children: [
-          // ─── 1. Scaffold ───────────────────────────────────────────────────
-          Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                key: TreasureDivideGameKeys.backButton,
-                icon: const Icon(Icons.arrow_back, color: _treasureGold, size: 32),
-                onPressed: () {
-                  if (hasDartsThrown) {
-                    setState(() => _showSaveModal = true);
-                  } else {
-                    Navigator.of(context).pop();
-                  }
-                },
-                hoverColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-                splashColor: Colors.transparent,
-              ),
-              title: Text(
-                'TREASURE DIVIDE',
-                style: GoogleFonts.pirataOne(
-                  fontSize: 34,
-                  color: _treasureGold,
-                  shadows: const [
-                    Shadow(
-                        color: Color(0xCC000000),
-                        offset: Offset(2, 2),
-                        blurRadius: 4),
-                    Shadow(
-                        color: Color(0xAA008B8B),
-                        offset: Offset(0, 0),
-                        blurRadius: 10),
-                  ],
-                ),
-              ),
-              backgroundColor: _oceanTeal,
-              actions: [
-                DartboardConnectionInfo(
-                    config:
-                        DartboardConnectionInfoConfig.treasureDivide()),
-                const SizedBox(width: 8),
-              ],
-            ),
-            body: Stack(
+      onDontSave: () {
+        closeSaveModal();
+        Navigator.of(context).pop();
+      },
+      saveGameModalConfig: SaveGameModalConfig.treasureDivide(),
+      shouldPromptTakeout: shouldPromptTakeout,
+      removeDartsConfig: RemoveDartsModalConfig.treasureDivide(),
+      removeDartsPlayerName: currentPlayerName,
+      editScoreButtonKey: TreasureDivideGameKeys.editScoreButton,
+      onEditScore: () {
+        final segs = game.currentTurnDartSegments[currentPlayerId] ?? [];
+        showEditScoreDialog(
+          context: context,
+          playerName: currentPlayerName,
+          config: EditScoreDialogConfig.treasureDivide(),
+          initialSegments: segs,
+          onSubmit: (newSegments) {
+            provider.editPlayerScore(
+              playerId: currentPlayerId,
+              roundIndex: game.currentRoundIndex,
+              newSegments: newSegments,
+            );
+          },
+        );
+      },
+      emulatorController: dartboardEmulatorController,
+      mockApi: mockApi,
+      dartboardKey: _dartboardKey,
+      emulatorSectionConfig: DartboardSectionConfig.treasureDivide(),
+      fabConfig: DartboardFABConfig.treasureDivide(),
+      onCancelAutoPlay: cancelAutoPlay,
+      // Only Treasure Divide reports the real player name on emulator throws.
+      emulatorThrowPlayerName: currentPlayerName,
+      onPlayToComplete: mockApi != null ? startPlayToComplete : null,
+      playToCompleteConfig: mockApi != null
+          ? PlayToCompleteButtonConfig.treasureDivide()
+          : null,
+      // Play-to-Tie. Same `mockApi != null` gate as PlayToComplete so the
+      // button only renders in emulator mode. TD ties are reachable from any
+      // settings combination — the strategy's `canProduceTie` is always true,
+      // so the enabled flag is static too.
+      onPlayToTie: mockApi != null ? _onPlayToTie : null,
+      playToTieConfig:
+          mockApi != null ? PlayToTieButtonConfig.treasureDivide() : null,
+      playToTieEnabled: true,
+      // Emulator-only theme preview — overrides every player's pirate theme
+      // for sprite-position debugging. Game logic ignores this entirely; it
+      // only routes through the PirateAvatarWidget themeIndex prop.
+      buffToggles: mockApi != null ? _buildThemePreviewSpecs() : null,
+      onBuffToggle: mockApi != null ? _handleThemePreviewToggle : null,
+      // Layer 4b — the island-layout editor. Stacked above the FAB at the
+      // right edge; the Edit toggle shows whenever the emulator is on, Copy
+      // and Reset only while edit mode is engaged.
+      extraOverlays: [
+        if (mockApi != null)
+          Positioned(
+            right: 16,
+            bottom: 96,
+            child: _buildLayoutEditorControls(),
+          ),
+      ],
+      pausedModalConfig: DartboardPausedModalConfig.treasureDivide(),
+      appBar: AppBar(
+        leading: IconButton(
+          key: TreasureDivideGameKeys.backButton,
+          icon: const Icon(Icons.arrow_back, color: _treasureGold, size: 32),
+          onPressed: () {
+            if (hasDartsThrown) {
+              openSaveModal();
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          splashColor: Colors.transparent,
+        ),
+        title: Text(
+          'TREASURE DIVIDE',
+          style: GoogleFonts.pirataOne(
+            fontSize: 34,
+            color: _treasureGold,
+            shadows: const [
+              Shadow(
+                  color: Color(0xCC000000),
+                  offset: Offset(2, 2),
+                  blurRadius: 4),
+              Shadow(
+                  color: Color(0xAA008B8B),
+                  offset: Offset(0, 0),
+                  blurRadius: 10),
+            ],
+          ),
+        ),
+        backgroundColor: _oceanTeal,
+        actions: [
+          DartboardConnectionInfo(
+              config: DartboardConnectionInfoConfig.treasureDivide()),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Stack(
               children: [
                 // Background image — capped at 1280×512 to bound the
                 // decoded raster. The source ships at 1584×588 (~3.7 MB
@@ -869,135 +854,17 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                 ),
               ],
             ),
-          ),
-
-          // ─── 2. RemoveDartsModal (behind emulator) ─────────────────────────
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.treasureDivide(),
-              playerName: currentPlayerName,
-              editScoreButtonKey: TreasureDivideGameKeys.editScoreButton,
-              onEditScore: () {
-                final segs =
-                    game.currentTurnDartSegments[currentPlayerId] ?? [];
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayerName,
-                  config: EditScoreDialogConfig.treasureDivide(),
-                  initialSegments: segs,
-                  onSubmit: (newSegments) {
-                    provider.editPlayerScore(
-                      playerId: currentPlayerId,
-                      roundIndex: game.currentRoundIndex,
-                      newSegments: newSegments,
-                    );
-                  },
-                );
-              },
-            ),
-
-          // ─── 3. DartboardEmulatorSection ───────────────────────────────────
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              config: DartboardSectionConfig.treasureDivide(),
-              controller: _dartboardEmulatorController,
-              dartboardKey: _dartboardKey,
-              isConnected: !dartboardProvider.isEmulator,
-              shouldPromptTakeout: shouldPromptTakeout,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                _mockApi?.simulateDartThrow(
-                  score: score,
-                  multiplier: multiplier,
-                  playerName: currentPlayerName,
-                  baseScore: baseScore,
-                  widgetX: position.dx,
-                  widgetY: position.dy,
-                  widgetSize: 250,
-                );
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              onPlayToComplete:
-                  _mockApi != null ? _onPlayToComplete : null,
-              playToCompleteConfig: _mockApi != null
-                  ? PlayToCompleteButtonConfig.treasureDivide()
-                  : null,
-              // Play-to-Tie. Same `_mockApi != null` gate as PlayToComplete
-              // so the button only renders in emulator mode. TD ties are
-              // reachable from any settings combination — the strategy's
-              // `canProduceTie` is always true, so we set the enabled
-              // flag here statically too.
-              onPlayToTie: _mockApi != null ? _onPlayToTie : null,
-              playToTieConfig: _mockApi != null
-                  ? PlayToTieButtonConfig.treasureDivide()
-                  : null,
-              playToTieEnabled: true,
-              // Emulator-only theme preview — overrides every player's
-              // pirate theme for sprite-position debugging. Game logic
-              // ignores this entirely; it only routes through the
-              // PirateAvatarWidget themeIndex prop.
-              buffToggles:
-                  _mockApi != null ? _buildThemePreviewSpecs() : null,
-              onBuffToggle: _mockApi != null ? _handleThemePreviewToggle : null,
-            ),
-          ),
-
-          // ─── 4. DartboardEmulatorFAB ───────────────────────────────────────
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.treasureDivide(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-          ),
-
-          // ─── 4b. Layout editor controls (emulator-only) ────────────────────
-          // Stacked above the FAB at the right edge. The Edit toggle
-          // shows whenever the emulator is on; Copy + Reset appear only
-          // while edit mode is engaged.
-          if (_mockApi != null)
-            Positioned(
-              right: 16,
-              bottom: 96,
-              child: _buildLayoutEditorControls(),
-            ),
-
-          // ─── 5. SaveGameModal ──────────────────────────────────────────────
-          if (_showSaveModal)
-            SaveGameModal(
-              config: SaveGameModalConfig.treasureDivide(),
-              onSave: () async {
-                final saveService = SaveGameService();
-                await provider.saveGame(saveService);
-                if (mounted) {
-                  setState(() => _showSaveModal = false);
-                  Navigator.of(context).pop();
-                }
-              },
-              onDontSave: () {
-                setState(() => _showSaveModal = false);
-                Navigator.of(context).pop();
-              },
-            ),
-
-          // ─── 6. DartboardPausedModal (LAST) ───────────────────────────────
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status !=
-                  DartboardConnectionStatus.connected &&
-              dartboardProvider.status !=
-                  DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-                config: DartboardPausedModalConfig.treasureDivide()),
-        ],
-      ),
     );
+  }
+
+  /// Display names for the players in this game, keyed by id. Saved-game
+  /// tiles show these; without them the tile falls back to raw UUIDs.
+  Map<String, String> _playerNamesById(
+      PlayerProvider playerProvider, TreasureDivideGame game) {
+    return {
+      for (final id in game.playerIds)
+        id: playerProvider.getPlayerById(id)?.name ?? id,
+    };
   }
 
   // ─── Badge row ────────────────────────────────────────────────────────────────
@@ -1348,34 +1215,15 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
                       : () {
                           final dt = game.dartsThrown;
                           provider.skipTurn();
-                          if (dt > 0) {
-                            // Darts on board — wait for physical takeout.
-                            // Remove Darts is called unconditionally at 1500ms.
-                            if (!_dartboardEmulatorController.isAutoPlaying) {
-                              Future.delayed(
-                                  const Duration(milliseconds: 1500), () {
-                                if (mounted) {
-                                  _audioQueue?.announceRemoveDarts();
-                                }
-                              });
-                            }
-                            Future.delayed(
-                                const Duration(milliseconds: 3500), () {
-                              if (mounted) _mockApi?.simulateTakeoutStarted();
-                            });
-                          } else {
-                            // No darts — auto-finish immediately
-                            Future.delayed(
-                                const Duration(milliseconds: 500), () {
-                              if (mounted) {
-                                if (_mockApi != null) {
-                                  _mockApi!.simulateTakeoutFinished();
-                                } else {
-                                  _handleTakeoutFinished();
-                                }
-                              }
-                            });
-                          }
+                          // Darts on board → announce, then wait for DARTS
+                          // REMOVED; 0 darts → 500ms auto-advance. The
+                          // announcement is suppressed during auto-play.
+                          scheduleTakeoutSequence(
+                            dartsOnBoard: dt > 0,
+                            announceRemoveDarts: isAutoPlaying
+                                ? null
+                                : () => _audioQueue?.announceRemoveDarts(),
+                          );
                         },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: _treasureGold, width: 2),
@@ -1688,7 +1536,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
   /// (e.g. S5 on a target=20 round) counts as a non-scoring dart —
   /// visually the same as a miss for indicator-color purposes.
   bool _dartScoredGold(String seg, int target) {
-    if (seg == 'Miss' || seg == 'None' || seg.isEmpty) return false;
+    if (seg == 'Miss' || seg == 'None' || seg == 'Skip' || seg.isEmpty) {
+      return false;
+    }
     // -1 = AnyDouble sentinel from kTargetAnyDouble.
     if (target == -1) {
       return seg.toUpperCase().startsWith('D');
@@ -1750,7 +1600,9 @@ class _TreasureDivideGameScreenState extends State<TreasureDivideGameScreen> {
       List<String> segments, TreasureDivideGame game, double scale) {
     if (index >= dartsThrown) return null;
     final seg = index < segments.length ? segments[index] : '';
-    final isMiss = seg == 'Miss' || seg == 'None' || seg.isEmpty;
+    // 'Skip' marks a dart forfeited by Skip Turn — no gold, same as a miss.
+    final isMiss =
+        seg == 'Miss' || seg == 'None' || seg == 'Skip' || seg.isEmpty;
     // Both miss and hit labels render in sail white — the per-state
     // background tint (blood-red wash for misses, island-green wash
     // for hits) already conveys the outcome, and the previous dark

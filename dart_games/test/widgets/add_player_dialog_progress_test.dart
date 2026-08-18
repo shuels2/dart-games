@@ -288,4 +288,62 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     });
   });
+
+  group('AddPlayerDialog lifecycle', () {
+    testWidgets('closing the dialog disposes cleanly, including after typing',
+        (tester) async {
+      // The dialog body owns its TextEditingController as State, so it is
+      // disposed with the route — after the exit transition has stopped
+      // rebuilding the field. Disposing on the dialog future's completion
+      // instead throws "A TextEditingController was used after being
+      // disposed" partway through that transition.
+      await tester.pumpWidget(_harness(onOpen: () {}));
+      final context = tester.element(find.byType(ElevatedButton));
+
+      showAddPlayerDialog(
+        context: context,
+        config: AddPlayerDialogConfig.carnivalDerby(),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byKey(AddPlayerDialogKeys.nameTextField), 'Alice');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(AddPlayerDialogKeys.cancelButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(AddPlayerDialogKeys.dialogContainer), findsNothing);
+      expect(tester.takeException(), isNull,
+          reason: 'Disposal must not outlive the exit transition');
+    });
+
+    testWidgets('reopening starts with an empty field', (tester) async {
+      // Each open builds a fresh State, so nothing carries over from the
+      // previous dialog.
+      await tester.pumpWidget(_harness(onOpen: () {}));
+      final context = tester.element(find.byType(ElevatedButton));
+
+      for (var i = 0; i < 2; i++) {
+        showAddPlayerDialog(
+          context: context,
+          config: AddPlayerDialogConfig.carnivalDerby(),
+        );
+        await tester.pumpAndSettle();
+
+        final field = tester.widget<TextField>(
+            find.byKey(AddPlayerDialogKeys.nameTextField));
+        expect(field.controller!.text, isEmpty);
+
+        await tester.enterText(
+            find.byKey(AddPlayerDialogKeys.nameTextField), 'Typed $i');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(AddPlayerDialogKeys.cancelButton));
+        await tester.pumpAndSettle();
+      }
+
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

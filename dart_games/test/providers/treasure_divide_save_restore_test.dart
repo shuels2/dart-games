@@ -382,5 +382,133 @@ void main() {
       expect(restored.targetSequence[8], kTargetBull,
           reason: 'Index 8 must be kTargetBull (25) after provider restore');
     });
+
+    // ─── 15b. Saved metadata shows names, not raw ids ─────────────────────────
+
+    test('saveGame records display names and the actual leader', () async {
+      startSoloGame(playerIds: ['id-aaa', 'id-bbb']);
+      final target = provider.currentGame!.targetSequence[0];
+
+      // First player scores, then finishes the turn — the lead is now theirs
+      // even though the active player has moved on.
+      for (int i = 0; i < 3; i++) {
+        provider.processDartThrow(
+            score: target,
+            multiplier: 'single',
+            baseScore: target,
+            sector: 'S$target');
+      }
+      provider.handleTakeoutFinished();
+
+      await provider.saveGame(saveService,
+          playerNamesById: {'id-aaa': 'Alice', 'id-bbb': 'Bob'});
+      final saved = await savedGames();
+      final meta = saved[0];
+
+      expect(meta.playerNames, ['Alice', 'Bob'],
+          reason: 'Saved-game tiles must show names, never raw UUIDs');
+      expect(meta.leadingPlayerName, 'Alice',
+          reason: 'The leader is whoever holds the most gold, not whoever '
+              'happens to be the active player');
+      expect(meta.leadingPlayerScore, '${target * 3} gold');
+    });
+
+    test('saveGame lists only the players in THIS game, not the whole roster',
+        () async {
+      startSoloGame(playerIds: ['p1', 'p2']);
+
+      await provider.saveGame(saveService, playerNamesById: {
+        'p1': 'Alice',
+        'p2': 'Bob',
+        'p3': 'Charlie',
+        'p4': 'Dana',
+      });
+
+      final saved = await savedGames();
+      expect(saved[0].playerNames, ['Alice', 'Bob'],
+          reason: 'A saved tile must not advertise players who are not in the '
+              'match');
+    });
+
+    // ─── 16. In-flight turn haul survives save/restore ────────────────────────
+
+    test('mid-turn haul is restored, so the pending takeout commits the real score',
+        () async {
+      startSoloGame();
+      final target = provider.currentGame!.targetSequence[0];
+      final playerId = provider.currentGame!.currentPlayerId;
+      expect(target, greaterThan(0),
+          reason: 'Round 1 must be a plain number round for this scenario');
+
+      // Two scoring darts; the turn is still open (third dart unthrown).
+      for (int i = 0; i < 2; i++) {
+        provider.processDartThrow(
+            score: target,
+            multiplier: 'single',
+            baseScore: target,
+            sector: 'S$target');
+      }
+      expect(provider.currentTurnHaul, target * 2);
+      expect(provider.shouldPromptTakeout, isFalse);
+
+      await provider.saveGame(saveService,
+          playerNames: ['Alice', 'Bob', 'Charlie']);
+      final saved = await savedGames();
+
+      final newProvider = TreasureDivideProvider();
+      newProvider.restoreGame(saved[0]);
+
+      expect(newProvider.currentTurnHaul, target * 2,
+          reason: 'Darts already thrown this turn must still count after resume');
+
+      // Finish the turn on the restored provider.
+      newProvider.processDartThrow(
+          score: 0, multiplier: 'miss', baseScore: 0, sector: 'Miss');
+      newProvider.handleTakeoutFinished();
+
+      expect(newProvider.currentGame!.playerRoundScores[playerId]![0],
+          target * 2,
+          reason: 'Round score must include the gold earned before the save');
+      expect(newProvider.currentGame!.timesHalvedPerPlayer[playerId] ?? 0, 0,
+          reason: 'A scoring turn must never be recorded as a halving event');
+    });
+
+    // ─── 17. Saved while awaiting takeout: haul is not lost ───────────────────
+
+    test('haul survives a save taken while the takeout prompt is pending',
+        () async {
+      startSoloGame();
+      final target = provider.currentGame!.targetSequence[0];
+      final playerId = provider.currentGame!.currentPlayerId;
+
+      // One hit then two misses — turn complete, takeout pending.
+      provider.processDartThrow(
+          score: target,
+          multiplier: 'single',
+          baseScore: target,
+          sector: 'S$target');
+      for (int i = 0; i < 2; i++) {
+        provider.processDartThrow(
+            score: 0, multiplier: 'miss', baseScore: 0, sector: 'Miss');
+      }
+      expect(provider.shouldPromptTakeout, isTrue);
+      expect(provider.currentTurnHaul, target);
+
+      await provider.saveGame(saveService,
+          playerNames: ['Alice', 'Bob', 'Charlie']);
+      final saved = await savedGames();
+
+      final newProvider = TreasureDivideProvider();
+      newProvider.restoreGame(saved[0]);
+      expect(newProvider.shouldPromptTakeout, isTrue);
+      expect(newProvider.currentTurnHaul, target);
+
+      newProvider.handleTakeoutFinished();
+
+      expect(newProvider.currentGame!.playerRoundScores[playerId]![0], target,
+          reason: 'Resuming into the takeout must commit the gold, not zero');
+      expect(newProvider.currentGame!.timesHalvedPerPlayer[playerId] ?? 0, 0,
+          reason: 'Treasure must not be halved after a scoring turn');
+    });
   });
 }

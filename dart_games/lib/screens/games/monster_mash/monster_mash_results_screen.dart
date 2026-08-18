@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+
+import '../../../widgets/victory_celebration_overlay.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../../widgets/pulse_animation.dart';
 import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -34,14 +38,22 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   late ConfettiController _confettiController;
-  AnimationController? _glowController1;
-  AnimationController? _glowController2;
-  AnimationController? _glowController3;
+  /// ONE controller drives all three glows (WS04 4.8).
+  ///
+  /// They ran at 1200 / 1800 / 2400 ms with `repeat(reverse: true)`, i.e.
+  /// full periods of 2400 / 3600 / 4800 ms. 14400 ms is the LCM, so a single
+  /// forward-repeating controller of that length completes exactly 6 / 4 / 3
+  /// whole pulses — integer [PulseAnimation.cycles] values, so nothing jumps
+  /// when the parent wraps, and the rendered output is unchanged.
+  AnimationController? _glowController;
   late AnimationController _lightningController;
   Animation<double>? _glowAnimation1;
   Animation<double>? _glowAnimation2;
   Animation<double>? _glowAnimation3;
   final AudioPlayer _audioPlayer = AudioPlayer();
+  /// Detaches the victory-music duck listener. The notifier it hooks is
+  /// app-wide, so failing to call this on dispose leaks into the next screen.
+  VoidCallback? _stopDucking;
   bool _statsUpdated = false;
 
   @override
@@ -69,30 +81,21 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
       duration: const Duration(hours: 1),
     );
 
-    // Glow pulse controllers at different rates
-    _glowController1 = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+    // Glow pulses at three different rates, from one ticker.
+    _glowController = AnimationController(
+      duration: const Duration(milliseconds: 14400),
       vsync: this,
-    )..repeat(reverse: true);
-    _glowAnimation1 = Tween<double>(begin: 0.3, end: 0.8).animate(
-      CurvedAnimation(parent: _glowController1!, curve: Curves.easeInOut),
-    );
+    )..repeat();
 
-    _glowController2 = AnimationController(
-      duration: const Duration(milliseconds: 1800),
-      vsync: this,
-    )..repeat(reverse: true);
-    _glowAnimation2 = Tween<double>(begin: 0.3, end: 0.8).animate(
-      CurvedAnimation(parent: _glowController2!, curve: Curves.easeInOut),
-    );
+    Animation<double> glow(double cycles) =>
+        PulseAnimation(parent: _glowController!, cycles: cycles).drive(
+          Tween<double>(begin: 0.3, end: 0.8)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+        );
 
-    _glowController3 = AnimationController(
-      duration: const Duration(milliseconds: 2400),
-      vsync: this,
-    )..repeat(reverse: true);
-    _glowAnimation3 = Tween<double>(begin: 0.3, end: 0.8).animate(
-      CurvedAnimation(parent: _glowController3!, curve: Curves.easeInOut),
-    );
+    _glowAnimation1 = glow(6); // was 1200ms  -> 2400ms period
+    _glowAnimation2 = glow(4); // was 1800ms  -> 3600ms period
+    _glowAnimation3 = glow(3); // was 2400ms  -> 4800ms period
 
     _lightningController = AnimationController(
       vsync: this,
@@ -119,11 +122,11 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
   void dispose() {
     _animationController.dispose();
     _pulseController.dispose();
-    _glowController1?.dispose();
-    _glowController2?.dispose();
-    _glowController3?.dispose();
+    _glowController?.dispose();
     _lightningController.dispose();
     _confettiController.dispose();
+    _stopDucking?.call();
+    _stopDucking = null;
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -175,36 +178,11 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
     }
   }
 
-  void _playVictoryMusic() async {
-    try {
-      final musicService = VictoryMusicService();
-      final customMusicSource = await musicService.getRandomMusicSource();
-
-      await _audioPlayer.setVolume(0.7);
-
-      if (customMusicSource != null && customMusicSource.isNotEmpty) {
-        if (customMusicSource.startsWith('data:')) {
-          await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => debugPrint('Audio playback timed out'),
-              );
-        } else {
-          await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => debugPrint('Audio playback timed out'),
-              );
-        }
-      } else {
-        await _audioPlayer
-            .play(UrlSource(
-                'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'))
-            .timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => debugPrint('Audio playback timed out'),
-            );
-      }
-    } catch (e) {
-      debugPrint('Error playing victory music: $e');
+  Future<void> _playVictoryMusic() async {
+    final started =
+        await VictoryMusicService().playVictoryMusic(_audioPlayer);
+    if (started) {
+      _stopDucking ??= VictoryMusicService.duckUnderSpeech(_audioPlayer);
     }
   }
 
@@ -284,56 +262,16 @@ class _MonsterMashResultsScreenState extends State<MonsterMashResultsScreen>
               ),
 
               // Confetti
-              Align(
-                alignment: Alignment.topLeft,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
+              // Confetti — three emitters, shared scaffolding (WS03 §3.7).
+              VictoryCelebrationOverlay(
+                controller: _confettiController,
+                colors: const [
                     Color(0xFF4B0082),
                     Color(0xFF7FFF00),
                     Color(0xFFFF8C00),
                     Color(0xFFF5F5DC),
                     Colors.purple,
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topCenter,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: pi / 2,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
-                    Color(0xFF4B0082),
-                    Color(0xFF7FFF00),
-                    Color(0xFFFF8C00),
-                    Color(0xFFF5F5DC),
-                    Colors.purple,
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.topRight,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: 3 * pi / 4,
-                  emissionFrequency: 0.05,
-                  numberOfParticles: 30,
-                  gravity: 0.1,
-                  colors: const [
-                    Color(0xFF4B0082),
-                    Color(0xFF7FFF00),
-                    Color(0xFFFF8C00),
-                    Color(0xFFF5F5DC),
-                    Colors.purple,
-                  ],
-                ),
+                ],
               ),
 
               // Main content

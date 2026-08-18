@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,9 +5,6 @@ import '../../../constants/test_keys.dart';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
-import '../../../providers/dartboard_provider.dart';
-import '../../../services/mock_scolia_api_service.dart';
-import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/carnival_derby_announcement_helper.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/horse_race/race_track_widget.dart';
@@ -19,11 +15,13 @@ import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../services/play_to_complete/carnival_derby_strategy.dart';
+import '../../../services/carnival_derby_sound_effects.dart';
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
+import '../shared/game_screen_controller.dart';
+import '../shared/game_screen_shell.dart';
 import 'horse_race_results_screen.dart';
 
 class HorseRaceGameScreen extends StatefulWidget {
@@ -33,64 +31,51 @@ class HorseRaceGameScreen extends StatefulWidget {
   State<HorseRaceGameScreen> createState() => _HorseRaceGameScreenState();
 }
 
-class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
-  StreamSubscription? _dartboardSubscription;
+class _HorseRaceGameScreenState extends State<HorseRaceGameScreen>
+    with GameScreenController<HorseRaceGameScreen> {
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
 
-  MockScoliaApiService? _mockApi;
   CarnivalDerbyAnnouncementHelper? _audioQueue;
-  final DartboardEmulatorController _dartboardEmulatorController =
-      DartboardEmulatorController();
   final ScrollController _scrollController = ScrollController();
-  PlayToCompleteRunner? _playToCompleteRunner;
-  bool _gameCompleted = false;
-  bool _showSaveModal = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Get services after frame is built
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final dartboardProvider = context.read<DartboardProvider>();
-      _mockApi = dartboardProvider.apiService;
-      if (mounted) setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initGameScreen(
+        preloadEffects: CarnivalDerbySoundEffects.all,
+        buildAudio: (queue) =>
+            _audioQueue = CarnivalDerbyAnnouncementHelper(queue),
+        firstTurnDelay: const Duration(milliseconds: 1000),
+        announceFirstTurn: () {
+          final horseRaceProvider = context.read<HorseRaceProvider>();
+          final playerProvider = context.read<PlayerProvider>();
 
-      // Initialize global announcement queue with Carnival Derby helper
-      final globalQueue = GameAnnouncementQueueService();
-      await globalQueue.loadSettings();
-      _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
+          final players = horseRaceProvider.currentGame!.playerIds
+              .map((id) => playerProvider.getPlayerById(id))
+              .whereType<Player>()
+              .toList();
 
-      // Subscribe to dartboard events (works for both WebSocket and emulator)
-      final eventStream = dartboardProvider.dartboardEventStream;
-      if (eventStream != null) {
-        _dartboardSubscription = eventStream.listen((event) {
-          _handleDartboardEvent(event);
-        });
-      }
-
-      // Announce the first player's turn
-      _announceFirstPlayerTurn();
+          final firstPlayer = horseRaceProvider.getCurrentPlayer(players);
+          if (firstPlayer != null) {
+            _audioQueue?.announceTurn(firstPlayer.name);
+          }
+        },
+      );
     });
   }
 
-  void _announceFirstPlayerTurn() {
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      final horseRaceProvider = context.read<HorseRaceProvider>();
-      final playerProvider = context.read<PlayerProvider>();
+  // ─── GameScreenController contract ───────────────────────────────────────────
 
-      final players = horseRaceProvider.currentGame!.playerIds
-          .map((id) => playerProvider.getPlayerById(id))
-          .whereType<Player>()
-          .toList();
+  @override
+  PlayToCompleteStrategy get playToCompleteStrategy =>
+      CarnivalDerbyStrategy();
 
-      final firstPlayer = horseRaceProvider.getCurrentPlayer(players);
-      if (firstPlayer != null) {
-        _audioQueue?.announceTurn(firstPlayer.name);
-      }
-    });
-  }
+  @override
+  Future<void> whenAnnouncementsIdle() =>
+      _audioQueue?.whenIdle() ?? Future<void>.value();
 
   void _scrollToCurrentPlayer() {
     final horseRaceProvider = context.read<HorseRaceProvider>();
@@ -136,119 +121,90 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
   @override
   void dispose() {
-    _playToCompleteRunner?.dispose();
-    _dartboardSubscription?.cancel();
+    disposeGameScreen();
     _audioQueue?.dispose();
-    _dartboardEmulatorController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _onPlayToComplete() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
-
-    _playToCompleteRunner = PlayToCompleteRunner(
-      strategy: CarnivalDerbyStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToCompleteRunner!.run();
-  }
-
-  void _onCancelAutoPlay() {
-    _playToCompleteRunner?.cancel();
-    _dartboardEmulatorController.setAutoPlaying(false);
-    _dartboardEmulatorController.show();
-  }
-
-  void _handleDartboardEvent(Map<String, dynamic> event) {
-    final type = event['type'];
+  @override
+  void onDartThrowEvent(Map<String, dynamic> event) {
     final horseRaceProvider = context.read<HorseRaceProvider>();
 
-    if (type == 'throw_detected') {
-      final throwData = event['data']['payload'];
-      final sector = throwData['sector'];
-      final score = _calculateScore(sector);
-      final isMiss = sector == 'None';
+    final throwData = event['data']['payload'];
+    final sector = throwData['sector'];
+    final score = _calculateScore(sector);
+    final isMiss = sector == 'None';
 
-      // Get player info before processing throw
-      final playerProvider = context.read<PlayerProvider>();
-      final players = horseRaceProvider.currentGame!.playerIds
-          .map((id) => playerProvider.getPlayerById(id))
-          .whereType<Player>()
-          .toList();
-      final currentPlayer = horseRaceProvider.getCurrentPlayer(players);
+    // Get player info before processing throw
+    final playerProvider = context.read<PlayerProvider>();
+    final players = horseRaceProvider.currentGame!.playerIds
+        .map((id) => playerProvider.getPlayerById(id))
+        .whereType<Player>()
+        .toList();
+    final currentPlayer = horseRaceProvider.getCurrentPlayer(players);
 
-      // Convert sector to display format for storage
-      final dartDisplay = isMiss ? 'Miss' : sector;
+    // Convert sector to display format for storage
+    final dartDisplay = isMiss ? 'Miss' : sector;
 
-      // Process the dart throw with display value
-      horseRaceProvider.processDartThrow(
-        score,
-        dartDisplay: dartDisplay,
-      );
+    // Process the dart throw with display value
+    horseRaceProvider.processDartThrow(
+      score,
+      dartDisplay: dartDisplay,
+    );
 
-      // Check if player busted
-      if (horseRaceProvider.currentPlayerBusted) {
-        if (!_dartboardEmulatorController.isAutoPlaying &&
-            currentPlayer != null) {
-          Future.delayed(const Duration(milliseconds: 500), () {
-            _audioQueue?.announceBust(currentPlayer.name);
+    // Check if player busted
+    if (horseRaceProvider.currentPlayerBusted) {
+      if (!isAutoPlaying && currentPlayer != null) {
+        // Bust chain: announce at 500ms, remove-darts at +3000ms, then
+        // auto-FINISH the takeout at +2500ms (load-bearing — the bust
+        // advances without the player pressing DARTS REMOVED).
+        runAfter(const Duration(milliseconds: 500), () {
+          _audioQueue?.announceBust(currentPlayer.name);
 
-            Future.delayed(const Duration(milliseconds: 3000), () {
-              _audioQueue?.announceRemoveDarts(currentPlayer.name);
+          runAfter(const Duration(milliseconds: 3000), () {
+            _audioQueue?.announceRemoveDarts(currentPlayer.name);
 
-              Future.delayed(const Duration(milliseconds: 2000), () {
-                _mockApi?.simulateTakeoutStarted();
-
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  _mockApi?.simulateTakeoutFinished();
-                });
-              });
+            runAfter(const Duration(milliseconds: 2500), () {
+              mockApi?.simulateTakeoutFinished();
             });
           });
-        }
-        return;
+        });
       }
+      return;
+    }
 
-      if (!_dartboardEmulatorController.isAutoPlaying) {
-        if (isMiss) {
-          _audioQueue?.announceMiss();
-        } else {
-          _audioQueue?.announceDart(
-            score,
-            _getMultiplierFromSector(sector),
-          );
-        }
-      }
-
-      if (!_dartboardEmulatorController.isAutoPlaying) {
-        final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
-        if (dartsThrown >= 3 || horseRaceProvider.hasWinner) {
-          if (currentPlayer != null) {
-            Future.delayed(const Duration(milliseconds: 2500), () {
-              _audioQueue?.announceRemoveDarts(currentPlayer.name);
-            });
-          }
-        }
+    if (!isAutoPlaying) {
+      if (isMiss) {
+        _audioQueue?.announceMiss();
+      } else {
+        _audioQueue?.announceDart(
+          score,
+          _getMultiplierFromSector(sector),
+        );
       }
     }
 
-    if (type == 'takeout_finished') {
-      _onTakeoutComplete();
+    if (!isAutoPlaying) {
+      final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
+      if (dartsThrown >= 3 || horseRaceProvider.hasWinner) {
+        if (currentPlayer != null) {
+          // Carnival's remove-darts cue runs at 2500ms, not the shared
+          // 1500ms — keep its historical timing on a tracked timer.
+          runAfter(const Duration(milliseconds: 2500), () {
+            _audioQueue?.announceRemoveDarts(currentPlayer.name);
+          });
+        }
+      }
     }
   }
 
-  void _onTakeoutComplete() {
+  @override
+  void onTakeoutFinished() {
     final horseRaceProvider = context.read<HorseRaceProvider>();
     if (!mounted) return;
+
+    cancelTakeoutSequence();
 
     if (horseRaceProvider.hasWinner) {
       _handleGameWon();
@@ -259,12 +215,8 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
 
     horseRaceProvider.handleTakeoutFinished();
 
-    if (!_dartboardEmulatorController.isAutoPlaying) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) {
-          _scrollToCurrentPlayer();
-        }
-      });
+    if (!isAutoPlaying) {
+      runAfter(const Duration(milliseconds: 100), _scrollToCurrentPlayer);
 
       final playerProvider = context.read<PlayerProvider>();
       final players = horseRaceProvider.currentGame!.playerIds
@@ -273,13 +225,11 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
           .toList();
       final nextPlayer = horseRaceProvider.getCurrentPlayer(players);
       if (nextPlayer != null) {
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) _audioQueue?.announceTurn(nextPlayer.name);
+        runAfter(const Duration(milliseconds: 500), () {
+          _audioQueue?.announceTurn(nextPlayer.name);
         });
       }
     }
-
-    setState(() {});
   }
 
   int _calculateScore(String sector) {
@@ -333,38 +283,28 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
   }
 
   void _handleGameWon() {
-    // Prevent multiple navigations to results screen
-    if (_gameCompleted) return;
-    _gameCompleted = true;
-
-    void navigateToResults() {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const HorseRaceResultsScreen(),
-        ),
-      );
-    }
-
-    if (_dartboardEmulatorController.isAutoPlaying) {
-      navigateToResults();
-    } else {
-      final horseRaceProvider = context.read<HorseRaceProvider>();
-      final playerProvider = context.read<PlayerProvider>();
-      final winner = horseRaceProvider.getWinner(playerProvider.allPlayers);
-      if (winner != null) {
-        _audioQueue?.announceWinner(winner.name);
-      }
-      _audioQueue?.whenIdle().then((_) {
-        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
-      });
-    }
+    handleGameWon(
+      announceWinner: () {
+        final horseRaceProvider = context.read<HorseRaceProvider>();
+        final playerProvider = context.read<PlayerProvider>();
+        final winner = horseRaceProvider.getWinner(playerProvider.allPlayers);
+        if (winner != null) {
+          // "The game is complete" moved here from the results screen (2.9b).
+          // The results screen used to announce it AND repeat the winner line
+          // this callback had already spoken, so players heard the winner
+          // twice. Saying both here keeps the spoken content and order and
+          // lets the results screen drop its queue entirely — the third live
+          // queue flagged in WS02.
+          _audioQueue?.announceGameComplete();
+          _audioQueue?.announceWinner(winner.name);
+        }
+      },
+      resultsBuilder: (_) => const HorseRaceResultsScreen(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final dartboardProvider = context.watch<DartboardProvider>();
     final horseRaceProvider = context.watch<HorseRaceProvider>();
     final playerProvider = context.watch<PlayerProvider>();
     final currentGame = horseRaceProvider.currentGame;
@@ -383,22 +323,36 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
     final dartsThrown = horseRaceProvider.getCurrentPlayerDartsThrown();
     final shouldPromptTakeout = horseRaceProvider.shouldPromptTakeout;
 
-    return AutoSaveOnPause(
-      onPaused: () {
-        if (!hasDartsThrown) return;
-        horseRaceProvider.saveGame(playerProvider.allPlayers, isAutoSave: true);
+    return GameScreenShell(
+      hasDartsThrown: hasDartsThrown,
+      showSaveModal: showSaveModal,
+      onRequestSaveModal: openSaveModal,
+      onAutoSave: () => horseRaceProvider.saveGame(playerProvider.allPlayers,
+          isAutoSave: true),
+      onSave: () async {
+        await horseRaceProvider.saveGame(playerProvider.allPlayers);
+        if (mounted) Navigator.of(context).pop();
       },
-      child: PopScope(
-      canPop: !hasDartsThrown || _showSaveModal,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _showSaveModal) return;
-        setState(() => _showSaveModal = true);
-      },
-      child: Stack(
-        children: [
-          Scaffold(
-            backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
-            appBar: PreferredSize(
+      onDontSave: () => Navigator.of(context).pop(),
+      saveGameModalConfig: SaveGameModalConfig.carnivalDerby(),
+      shouldPromptTakeout: shouldPromptTakeout,
+      removeDartsConfig: RemoveDartsModalConfig.carnivalDerby(),
+      removeDartsPlayerName: currentPlayer?.name ?? 'Player',
+      editScoreButtonKey: CarnivalDerbyGameKeys.editScoreButton,
+      onEditScore: () => _showEditScore(horseRaceProvider, currentPlayer),
+      emulatorController: dartboardEmulatorController,
+      mockApi: mockApi,
+      dartboardKey: _dartboardKey,
+      emulatorSectionConfig: DartboardSectionConfig.carnivalDerby(),
+      fabConfig: DartboardFABConfig.carnivalDerby(),
+      onCancelAutoPlay: cancelAutoPlay,
+      onPlayToComplete: mockApi != null ? startPlayToComplete : null,
+      playToCompleteConfig: mockApi != null
+          ? PlayToCompleteButtonConfig.carnivalDerby()
+          : null,
+      pausedModalConfig: DartboardPausedModalConfig.carnivalDerby(),
+      backgroundColor: const Color(0xFF8B5E3C), // Warm Cedar base color
+      appBar: PreferredSize(
               preferredSize: const Size.fromHeight(kToolbarHeight),
               child: Container(
                 decoration: const BoxDecoration(
@@ -433,7 +387,7 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     ),
                     onPressed: () {
                       if (hasDartsThrown) {
-                        setState(() => _showSaveModal = true);
+                        openSaveModal();
                       } else {
                         Navigator.of(context).pop();
                       }
@@ -571,95 +525,21 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                   ),
               ],
             ),
-          ),
-          // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
-          // block ALL screen interactions while shown.
-          // RemoveDartsModal sits BEHIND the emulator so DARTS REMOVED stays
-          // visible/tappable on top of the takeout overlay.
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.carnivalDerby(),
-              playerName: currentPlayer?.name ?? 'Player',
-              editScoreButtonKey: CarnivalDerbyGameKeys.editScoreButton,
-              onEditScore: () {
-                if (currentPlayer == null) return;
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayer.name,
-                  initialSegments: horseRaceProvider
-                      .getCurrentTurnDartScores(currentPlayer.id),
-                  onSubmit: (newSegments) => horseRaceProvider
-                      .updateAllDartScores(currentPlayer.id, newSegments),
-                  config: EditScoreDialogConfig.carnivalDerby(),
-                );
-              },
-            ),
-          // Emulator above RemoveDartsModal; below SaveGameModal so the save
-          // modal's Don't Save button isn't intercepted by the emulator.
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.carnivalDerby(),
-              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-              playToCompleteConfig: _mockApi != null
-                  ? PlayToCompleteButtonConfig.carnivalDerby()
-                  : null,
-            ),
-          ),
-          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
-          // can block the AppBar back arrow without also blocking the FAB).
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.carnivalDerby(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-          ),
-          // Save Game Modal
-          if (_showSaveModal)
-            SaveGameModal(
-              config: SaveGameModalConfig.carnivalDerby(),
-              onSave: () async {
-                await horseRaceProvider.saveGame(playerProvider.allPlayers);
-                if (mounted) Navigator.of(context).pop();
-              },
-              onDontSave: () => Navigator.of(context).pop(),
-            ),
-          // Dartboard Paused Modal — last child, paints on top.
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.carnivalDerby(),
-            ),
-        ],
-      ),
-      ),
+    );
+  }
+
+  /// Opens the shared Edit Score dialog for the current player's turn.
+  void _showEditScore(
+      HorseRaceProvider horseRaceProvider, Player? currentPlayer) {
+    if (currentPlayer == null) return;
+    showEditScoreDialog(
+      context: context,
+      playerName: currentPlayer.name,
+      initialSegments:
+          horseRaceProvider.getCurrentTurnDartScores(currentPlayer.id),
+      onSubmit: (newSegments) => horseRaceProvider.updateAllDartScores(
+          currentPlayer.id, newSegments),
+      config: EditScoreDialogConfig.carnivalDerby(),
     );
   }
 
@@ -761,30 +641,13 @@ class _HorseRaceGameScreenState extends State<HorseRaceGameScreen> {
                     // Skip the turn
                     provider.skipTurn();
 
-                    // If darts were thrown, show "remove darts" sequence
-                    if (dartsThrown > 0) {
-                      Future.delayed(const Duration(milliseconds: 1500), () {
-                        if (mounted) {
-                          _audioQueue?.announceRemoveDarts(currentPlayer.name);
-                        }
-                      });
-                      Future.delayed(const Duration(milliseconds: 3500), () {
-                        if (mounted) {
-                          _mockApi?.simulateTakeoutStarted();
-                        }
-                      });
-                    } else {
-                      // No darts thrown, advance directly without showing modals
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        if (mounted) {
-                          if (_mockApi != null) {
-                            _mockApi!.simulateTakeoutFinished();
-                          } else {
-                            _onTakeoutComplete();
-                          }
-                        }
-                      });
-                    }
+                    // Darts on board → announce, wait for DARTS REMOVED;
+                    // 0 darts → 500ms auto-advance with no modal.
+                    scheduleTakeoutSequence(
+                      dartsOnBoard: dartsThrown > 0,
+                      announceRemoveDarts: () =>
+                          _audioQueue?.announceRemoveDarts(currentPlayer.name),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE63946), // Lava Red

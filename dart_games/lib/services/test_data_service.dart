@@ -1,7 +1,6 @@
 import 'package:uuid/uuid.dart';
 import '../models/player.dart';
 import '../models/game_history_entry.dart';
-import 'embedded_test_audio.dart';
 
 /// Service to generate test data for development and testing purposes
 class TestDataService {
@@ -393,20 +392,17 @@ class TestDataService {
     );
   }
 
-  /// Get embedded test audio data URLs (actual user-created MP3 files)
-  static List<Map<String, String>> getTestVictoryMusicDataUrls() {
-    // These are the actual test MP3 files embedded as base64 data URLs
-    return [
-      {
-        'name': 'Epic Victory Theme',
-        'dataUrl': EmbeddedTestAudio.getMusicDataUrl1(),
-      },
-      {
-        'name': 'Celebration Fanfare',
-        'dataUrl': EmbeddedTestAudio.getMusicDataUrl2(),
-      },
-    ];
-  }
+  /// Names of the bundled test victory-music tracks, in the order their data
+  /// URLs are produced by `EmbeddedTestAudio`.
+  ///
+  /// The audio itself is deliberately NOT referenced here. `EmbeddedTestAudio`
+  /// holds ~1.7MB of base64 MP3, and anything reachable from production code
+  /// keeps it in the main bundle. The Options screen loads that library
+  /// deferred and pairs these names with the data URLs at call time.
+  static const List<String> testVictoryMusicNames = [
+    'Epic Victory Theme',
+    'Celebration Fanfare',
+  ];
 
   /// Clear all test data warning message
   static String getClearDataWarning() {

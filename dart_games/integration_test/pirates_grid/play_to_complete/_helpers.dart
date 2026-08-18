@@ -3,6 +3,7 @@ import 'package:dart_games/services/mock_scolia_api_service.dart';
 
 import '../../shared/dart_throw_helpers.dart';
 import '../../shared/game_ui_config.dart';
+import '../../shared/play_to_complete_suite.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
 import '../../shared/provider_helpers.dart';
@@ -58,3 +59,29 @@ Future<void> waitForGameCompletion(WidgetTester tester) =>
       isComplete: () =>
           ProviderHelpers.getPiratesGridProvider(tester).hasWinner,
     );
+
+// ===== PLAY TO COMPLETE SUITE SPEC =====
+//
+// Shared bodies live in shared/play_to_complete_suite.dart; everything
+// specific to Pirate's Grid is supplied here. Only the two commodity scenarios
+// (default settings, mid-game pickup) use it — the per-option tests in this
+// folder stay hand-written.
+
+final playToCompleteSpec = PlayToCompleteSpec(
+  config: config,
+  setupAndStart: (tester) =>
+      GameSetupHelpers.setupAndStartPiratesGrid(tester, config),
+  setupAndStartMidGame: (tester) => setupAndStartGame(tester, config,
+      playerNames: ['Player A', 'Player B']),
+  hasWinner: (tester) =>
+      ProviderHelpers.getPiratesGridProvider(tester).hasWinner,
+  // One cell claimed then two misses, and the turn taken out, so auto-play
+  // picks up on the opponent's turn rather than mid-turn.
+  midGameDarts: (tester) async {
+    final t00 = ProviderHelpers.getPiratesGridCellTargetNumber(tester, 0, 0);
+    await throwDartViaMock(tester, t00);
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await clickDartsRemoved(tester);
+  },
+);

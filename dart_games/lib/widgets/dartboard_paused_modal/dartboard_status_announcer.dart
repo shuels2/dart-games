@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+
+import 'dartboard_pause_observer.dart';
 import 'package:dart_games/providers/dartboard_provider.dart';
 
 /// Side-effect widget that fires [onPaused] / [onReconnected] callbacks
@@ -47,141 +48,46 @@ class DartboardStatusAnnouncer extends StatefulWidget {
 }
 
 class _DartboardStatusAnnouncerState extends State<DartboardStatusAnnouncer> {
-  DartboardConnectionStatus? _lastStatus;
   DateTime? _lastPausedAt;
   DateTime? _lastReconnectedAt;
-  DartboardProvider? _provider;
-  bool _firstObservationDone = false;
 
-  /// Tracks whether the last announcement we fired was [onPaused] (and
-  /// we haven't yet fired the matching [onReconnected]). Set true when
-  /// we fire onPaused; cleared when we fire onReconnected.
+  /// Minimum gap between two consecutive fires of the SAME callback.
   ///
-  /// Why this exists: a real reconnect goes through `connecting` as an
-  /// intermediate state — provider notifies error → connecting →
-  /// connected with two notifyListeners() calls. Without this flag, the
-  /// transition logic checks `wasPaused && status == connected`, which
-  /// fails because by the time we hit `connected`, `_lastStatus` is
-  /// already `connecting` (not paused). The flag lets us fire
-  /// onReconnected whenever we reach `connected` after a pause,
-  /// regardless of what intermediate states we passed through.
-  bool _pendingReconnect = false;
-
-  /// Latches true the first time we observe a successful `connected`
-  /// status in this session. Gates [onPaused] so it only fires when
-  /// the connection actually drops mid-session — NOT when the app
-  /// cold-boots with the dartboard offline (which would otherwise
-  /// fire on the `disconnected → connecting → error` startup
-  /// sequence and play "Game paused" while the user is still being
-  /// routed to the dartboard-setup screen).
-  bool _hasObservedConnected = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the dartboard provider via listen:false + addListener.
-    // Using context.watch here would rebuild this whole subtree on every
-    // notification — wasteful since we only react via callbacks. Pattern
-    // mirrors how the existing game screens consume DartboardProvider in
-    // their long-lived listeners.
-    final provider = Provider.of<DartboardProvider>(context, listen: false);
-    if (!identical(provider, _provider)) {
-      _provider?.removeListener(_onProviderChange);
-      _provider = provider;
-      _provider!.addListener(_onProviderChange);
-    }
-    // First-frame check: if the dartboard is already paused when this
-    // widget mounts, fire onPaused once. Subsequent changes go through
-    // _onProviderChange.
-    if (!_firstObservationDone) {
-      _firstObservationDone = true;
-      _evaluate(provider.status, provider.isEmulator, initialFrame: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _provider?.removeListener(_onProviderChange);
-    super.dispose();
-  }
-
-  void _onProviderChange() {
-    final p = _provider;
-    if (p == null || !mounted) return;
-    _evaluate(p.status, p.isEmulator, initialFrame: false);
-  }
-
-  bool _isPaused(DartboardConnectionStatus s) =>
-      s == DartboardConnectionStatus.disconnected ||
-      s == DartboardConnectionStatus.error;
-
-  void _evaluate(
-    DartboardConnectionStatus status,
-    bool isEmulator, {
-    required bool initialFrame,
-  }) {
-    if (isEmulator) {
-      _lastStatus = status;
-      return;
-    }
-
-    final wasPaused = _lastStatus == null ? false : _isPaused(_lastStatus!);
-    final nowPaused = _isPaused(status);
-
-    // Latch _hasObservedConnected the moment we see a successful
-    // connection. This gates onPaused so the announcement only fires
-    // when the connection actually DROPS mid-session — never on the
-    // cold-boot "no dartboard reachable" path.
-    if (status == DartboardConnectionStatus.connected) {
-      _hasObservedConnected = true;
-    }
-
-    if (initialFrame) {
-      // No prior state to transition from — there's no meaningful
-      // pause to announce yet. Just prime _lastStatus below and let
-      // subsequent provider notifications drive the transition logic.
-    } else {
-      // Pause: any transition from a non-paused state to a paused one,
-      // GATED on having observed a successful connection at some
-      // point this session. Without that gate, the app-root announcer
-      // fires "Game paused" during the normal startup sequence when
-      // the dartboard isn't reachable (status flows
-      // disconnected → connecting → error) — the app correctly
-      // routes the user to dartboard-setup but the audio is wrong.
-      if (!wasPaused &&
-          nowPaused &&
-          _hasObservedConnected &&
-          _shouldFire(_lastPausedAt)) {
-        _lastPausedAt = DateTime.now();
-        _pendingReconnect = true;
-        widget.onPaused();
-      }
-      // Reconnect: we've reached `connected` AND we have an unresolved
-      // pause to announce the recovery for. This handles the real-world
-      // reconnect path that passes through `connecting` as an
-      // intermediate state (error → connecting → connected) — the
-      // direct `wasPaused && status == connected` check would miss
-      // that because `wasPaused` is false by the time we hit
-      // `connected`. _pendingReconnect can only be true if a prior
-      // onPaused fired (which requires _hasObservedConnected), so
-      // we don't need to gate this branch explicitly.
-      else if (status == DartboardConnectionStatus.connected &&
-          _pendingReconnect &&
-          _shouldFire(_lastReconnectedAt)) {
-        _lastReconnectedAt = DateTime.now();
-        _pendingReconnect = false;
-        widget.onReconnected();
-      }
-    }
-
-    _lastStatus = status;
-  }
-
+  /// This stays here rather than moving into DartboardPauseObserver: it is
+  /// about not TALKING over yourself, which only matters for the announcer.
+  /// The observer's job is detecting edges; deciding whether an edge is worth
+  /// speaking is this widget's.
   bool _shouldFire(DateTime? lastAt) {
     if (lastAt == null) return true;
     return DateTime.now().difference(lastAt).inMilliseconds >= widget.debounceMs;
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    return DartboardPauseObserver(
+      // Gate on having seen a real connection first. Without it, a cold boot
+      // with the board switched off walks disconnected -> connecting -> error
+      // and announces "Game paused" while the user is still being routed to
+      // the dartboard-setup screen.
+      requireObservedConnected: true,
+      // A real reconnect passes through `connecting`, so by the time
+      // `connected` arrives the previous status is no longer paused and a
+      // naive edge check never fires.
+      reconnectAfterAnyPause: true,
+      // Deliberately false: mounting while already paused is not a pause
+      // TRANSITION, and announcing one would be wrong.
+      fireOnFirstFrameIfPaused: false,
+      onPauseEdge: () {
+        if (!_shouldFire(_lastPausedAt)) return;
+        _lastPausedAt = DateTime.now();
+        widget.onPaused();
+      },
+      onReconnectEdge: () {
+        if (!_shouldFire(_lastReconnectedAt)) return;
+        _lastReconnectedAt = DateTime.now();
+        widget.onReconnected();
+      },
+      child: widget.child,
+    );
+  }
 }

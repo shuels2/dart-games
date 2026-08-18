@@ -71,6 +71,28 @@ class SoundEffectPlayerPool {
   @visibleForTesting
   int get activeTimerCount => _timers.where((t) => t != null).length;
 
+  /// Warm the audio cache for [effects] so the first play of each doesn't
+  /// pay the load cost.
+  ///
+  /// On web, asset load + seek routinely takes 500-1500 ms (see [play]), which
+  /// is why the first sound effect of a game lands noticeably after the speech
+  /// it belongs with. Fetching the bytes up front moves that cost to game
+  /// start, where nothing is waiting on it.
+  ///
+  /// Failures are ignored: a missing asset should degrade to a silent effect,
+  /// never break game start.
+  Future<void> preload(Iterable<SoundEffectConfig> effects) async {
+    if (_disposed) return;
+    final paths = <String>{for (final e in effects) e.assetPath};
+    for (final path in paths) {
+      try {
+        await AudioCache.instance.load(path);
+      } catch (e) {
+        debugPrint('[SFX] Preload failed for $path: $e');
+      }
+    }
+  }
+
   /// Play a sound-effect config on the next available player and schedule
   /// its stop (or fade + stop) based on `sfx.endSeconds` / `sfx.fadeOutMs`.
   ///

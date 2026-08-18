@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../themed_modal_shell.dart';
 import 'remove_darts_modal_config.dart';
 
 export 'remove_darts_modal_config.dart';
@@ -28,36 +30,27 @@ class RemoveDartsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: Container(
-        color: Colors.black.withOpacity(0.7),
-        child: Center(
-          child: _buildModalContent(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModalContent() {
-    final container = Container(
+    // Chrome lives in ThemedModalShell (WS03 §3.7).
+    //
+    // fill: false is load-bearing. This modal is mounted as a bare child of
+    // the game shell's outer Stack in a SPECIFIC layer — below the emulator,
+    // so DARTS REMOVED stays reachable — and it returned a plain Material,
+    // not a Positioned.fill. Wrapping it would change it from a loose Stack
+    // child to a filling one.
+    return ThemedModalShell(
+      fill: false,
+      backgroundColor: config.backgroundColor,
+      backgroundOpacity: config.backgroundOpacity,
+      borderColor: config.borderColor,
+      borderWidth: config.borderWidth,
+      borderRadius: config.borderRadius,
+      boxShadowColor: config.boxShadowColor,
+      boxShadowOpacity: config.boxShadowOpacity,
+      // Often double.infinity here — the shell then omits the ConstrainedBox
+      // entirely, matching what this file did by hand.
+      maxWidth: config.maxWidth,
       margin: config.margin,
       padding: config.padding,
-      decoration: BoxDecoration(
-        color: config.backgroundColor.withOpacity(config.backgroundOpacity),
-        borderRadius: BorderRadius.circular(config.borderRadius),
-        border: Border.all(
-          color: config.borderColor,
-          width: config.borderWidth,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: config.boxShadowColor.withOpacity(config.boxShadowOpacity),
-            blurRadius: 20,
-            spreadRadius: 5,
-          ),
-        ],
-      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -98,15 +91,6 @@ class RemoveDartsModal extends StatelessWidget {
           ),
         ],
       ),
-    );
-
-    if (config.maxWidth == double.infinity) {
-      return container;
-    }
-
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: config.maxWidth),
-      child: container,
     );
   }
 }

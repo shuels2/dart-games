@@ -37,12 +37,9 @@ class _SplashScreenState extends State<SplashScreen> {
     // `connecting` for up to 5 more seconds. Poll briefly so the
     // navigation decision below sees the FINAL status, not the
     // mid-resolution one.
-    final stopwatch = Stopwatch()..start();
-    while (mounted &&
-        dartboardProvider.status == DartboardConnectionStatus.connecting &&
-        stopwatch.elapsedMilliseconds < 6000) {
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
+    // Listens for the status notification instead of polling every 100ms
+    // (WS04 4.8) — resolves on the first frame the answer is known.
+    await dartboardProvider.whenStatusResolved();
 
     if (!mounted) return;
 

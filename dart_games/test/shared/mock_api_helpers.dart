@@ -62,6 +62,13 @@ class MockApiServer {
         }
         return _jsonResponse(body);
       }
+      // Bulk delete (WS04 4.8) — mirrors DELETE /api/v1/settings on the real
+      // server, which StorageService.clearAll now uses instead of N+1
+      // per-key deletes.
+      if (method == 'DELETE') {
+        settings.clear();
+        return http.Response('', 204);
+      }
     }
 
     final settingsMatch = RegExp(r'^/api/v1/settings/(.+)$').firstMatch(path);
@@ -169,6 +176,21 @@ class MockApiServer {
       final body = jsonDecode(request.body) as Map<String, dynamic>;
       players[idx]['gamesPlayed'] = body['gamesPlayed'];
       players[idx]['gamesWon'] = body['gamesWon'];
+      return _jsonResponse(players[idx]);
+    }
+
+    final statsIncrementMatch =
+        RegExp(r'^/api/v1/players/([^/]+)/stats/increment$').firstMatch(path);
+    if (statsIncrementMatch != null && method == 'POST') {
+      final id = statsIncrementMatch.group(1)!;
+      final idx = players.indexWhere((p) => p['id'] == id);
+      if (idx < 0) return http.Response('', 404);
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      players[idx]['gamesPlayed'] =
+          ((players[idx]['gamesPlayed'] as int?) ?? 0) +
+              ((body['gamesPlayed'] as int?) ?? 0);
+      players[idx]['gamesWon'] = ((players[idx]['gamesWon'] as int?) ?? 0) +
+          ((body['gamesWon'] as int?) ?? 0);
       return _jsonResponse(players[idx]);
     }
 

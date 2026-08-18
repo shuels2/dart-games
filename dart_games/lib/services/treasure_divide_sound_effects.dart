@@ -78,4 +78,17 @@ class TreasureDivideSoundEffects {
     endSeconds: 1.5,
     fadeOutMs: 500,
   );
+
+  /// Every effect this game uses. Preloaded at game start so
+  /// the first play does not pay the asset-load cost.
+  static const List<SoundEffectConfig> all = [
+    coinClink,
+    coinShower,
+    splash,
+    mapUnfurl,
+    missSplash,
+    turnBell,
+    victoryFanfare,
+    quarterStorm,
+  ];
 }

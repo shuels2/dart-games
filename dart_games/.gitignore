@@ -1,6 +1,10 @@
 # Game research specs — local working notes, not tracked
 docs/research/
 
+# Review/implementation plan files — working notes handed between models,
+# left behind after the work lands. Not repo state.
+docs/plans/
+
 # Miscellaneous
 *.class
 *.log
@@ -63,8 +67,11 @@ last_update.txt
 temp_screenshots/
 temp_wireframes/
 integration_test_output/
-ui_test_data/
+ui_test_data*/
 server/build/
+# Per-session test databases created by the server's database registry.
+# Never cleaned up automatically; pure local scratch state.
+server/temp_data_*/
 gladiator_cycle2_results.txt
 
 # Kiosk service (per-machine, contains plaintext password)

@@ -409,7 +409,7 @@ void main() {
     test('center cell (1,1) requires Bull — inner bull (score=50) claims it', () {
       final p = _makeProvider();
       p.startGame(['p1', 'p2'], TargetDifficulty.hard, 1, false, false);
-      p.processDartThrow(score: 50, multiplier: 2, sector: 'DBull');
+      p.processDartThrow(score: 50, multiplier: 2, sector: 'Bull');
       expect(p.currentGame!.grid[1][1].claimedBy, 'p1');
     });
 

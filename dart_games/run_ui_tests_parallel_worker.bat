@@ -253,7 +253,25 @@ if defined STUB_MODE (
 
     start /B "" cmd /C "cd /d %_WORKTREE_PATH% && flutter drive --driver=test_driver/!_RST_DRIVER! --target=!_RST_TARGET! -d web-server --browser-name=chrome --driver-port=%_CD_PORT% --web-port=%_WEB_PORT% --dart-define=SERVER_PORT=%_SERVER_PORT% --dart-define=OVERFLOW_TRAP=true --browser-dimension=1920x1080 >> "!_RST_LOG!" 2>&1"
 
-    powershell -NoProfile -Command "$log='!_RST_LOG!';$cdPort=!_CD_PORT!;$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 3;$elapsed+=3;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};Start-Sleep 10;$cdPid=(Get-NetTCPConnection -LocalPort $cdPort -State Listen -ErrorAction SilentlyContinue).OwningProcess|Select-Object -First 1;if($cdPid){Get-CimInstance Win32_Process|Where-Object{$_.ParentProcessId -eq $cdPid -and $_.Name -eq 'chrome.exe'}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}};Start-Sleep 10;$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed')) -and (-not ($c -match 'Failure Details:'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
+    REM Reap the finished test. Historically this was two unconditional
+    REM 10-second sleeps (teardown grace, then port-release grace) — ~20s of
+    REM constant overhead per file, ~29 min per full single-game run. They
+    REM guarded real races: killing Chrome mid-graceful-shutdown leaves
+    REM crash-recovery state, and starting the next flutter drive before the
+    REM previous one releases the fixed web port is a bind-failure flake.
+    REM Both are now CONDITION POLLS with the same 10s ceilings:
+    REM   1. after the log shows a terminal marker, poll (500ms) until the
+    REM      drive's dart.exe (identified by --web-port on its command line)
+    REM      exits, cap 10s. Graceful exit -> the Chrome kill below no-ops.
+    REM      Still alive at 10s -> it's the hung-WebDriver.quit case, and the
+    REM      kill unsticks it exactly as before.
+    REM   2. after the kill, poll (500ms) until that process is gone AND the
+    REM      web port has no listener, cap 10s, before reading the verdict
+    REM      and letting the next file start.
+    REM Worst case is identical to the old constants; the common case
+    REM (teardown completes in ~1-2s) no longer pays the full 20s.
+    REM The marker poll also tightened 3s -> 1s (same 600s watchdog budget).
+    powershell -NoProfile -Command "$log='!_RST_LOG!';$cdPort=!_CD_PORT!;$webPort=!_WEB_PORT!;$done=$false;$elapsed=0;while(-not $done -and $elapsed -lt 600){Start-Sleep 1;$elapsed+=1;try{$c=[System.IO.File]::ReadAllText($log);if($c -match 'All tests passed|Some tests failed|Application finished|Failed to compile application'){$done=$true}}catch{}};$dl=(Get-Date).AddSeconds(10);while(((Get-Date) -lt $dl) -and (Get-CimInstance Win32_Process | Where-Object{$_.Name -eq 'dart.exe' -and $_.CommandLine -match ('web-port='+$webPort)})){Start-Sleep -Milliseconds 500};$cdPid=(Get-NetTCPConnection -LocalPort $cdPort -State Listen -ErrorAction SilentlyContinue).OwningProcess|Select-Object -First 1;if($cdPid){Get-CimInstance Win32_Process|Where-Object{$_.ParentProcessId -eq $cdPid -and $_.Name -eq 'chrome.exe'}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}};$dl=(Get-Date).AddSeconds(10);while(((Get-Date) -lt $dl) -and ((Get-CimInstance Win32_Process | Where-Object{$_.Name -eq 'dart.exe' -and $_.CommandLine -match ('web-port='+$webPort)}) -or (Get-NetTCPConnection -LocalPort $webPort -State Listen -ErrorAction SilentlyContinue))){Start-Sleep -Milliseconds 500};$found=$false;for($i=0;$i -lt 30;$i++){try{$c=[System.IO.File]::ReadAllText($log);$found=($c -match 'All tests passed') -and (-not ($c -match 'Some tests failed')) -and (-not ($c -match 'Failure Details:'));break}catch{Start-Sleep 1}};exit $(if($found){0}else{1})"
 
     if !errorlevel! equ 0 (set "_RST_PASS=1") else (set "_RST_PASS=0")
 )

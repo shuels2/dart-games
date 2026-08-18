@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../theme/game_theme.dart';
+
 class ResumeGameModalConfig {
   final Color backgroundColor;
   final double backgroundOpacity;
@@ -83,50 +85,50 @@ class ResumeGameModalConfig {
 
   factory ResumeGameModalConfig.carnivalDerby() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF1D3557),
-      borderColor: const Color(0xFFFFD700),
+      backgroundColor: GameTheme.carnivalDerby.background,
+      borderColor: GameTheme.carnivalDerby.accent,
       boxShadowColor: Colors.black,
       boxShadowOpacity: 0.5,
       titleTextStyle: GoogleFonts.luckiestGuy(
-        color: const Color(0xFFFFD700),
+        color: GameTheme.carnivalDerby.accent,
         fontSize: 24,
       ),
-      tileBackgroundColor: const Color(0xFF1D3557).withOpacity(0.6),
-      tileSelectedBackgroundColor: const Color(0xFFFFD700).withOpacity(0.15),
-      tileBorderColor: const Color(0xFFF1FAEE).withOpacity(0.3),
-      tileSelectedBorderColor: const Color(0xFFFFD700),
+      tileBackgroundColor: GameTheme.carnivalDerby.background.withOpacity(0.6),
+      tileSelectedBackgroundColor: GameTheme.carnivalDerby.accent.withOpacity(0.15),
+      tileBorderColor: GameTheme.carnivalDerby.onDark.withOpacity(0.3),
+      tileSelectedBorderColor: GameTheme.carnivalDerby.accent,
       tileDateTextStyle: GoogleFonts.bangers(
-        color: const Color(0xFFF1FAEE).withOpacity(0.7),
+        color: GameTheme.carnivalDerby.onDark.withOpacity(0.7),
         fontSize: 13,
         letterSpacing: 0.5,
       ),
       tilePlayersTextStyle: GoogleFonts.bangers(
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
         fontSize: 16,
         letterSpacing: 0.5,
       ),
       tileProgressTextStyle: GoogleFonts.luckiestGuy(
-        color: const Color(0xFFFFD700),
+        color: GameTheme.carnivalDerby.accent,
         fontSize: 14,
       ),
       tileModeTextStyle: GoogleFonts.bangers(
-        color: const Color(0xFFF1FAEE).withOpacity(0.7),
+        color: GameTheme.carnivalDerby.onDark.withOpacity(0.7),
         fontSize: 13,
         letterSpacing: 0.5,
       ),
       tileLeaderTextStyle: GoogleFonts.bangers(
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
         fontSize: 14,
         letterSpacing: 0.5,
       ),
       deleteButtonColor: const Color(0xFFE63946),
-      resumeButtonColor: const Color(0xFFFFD700),
-      resumeButtonTextColor: const Color(0xFF1D3557),
+      resumeButtonColor: GameTheme.carnivalDerby.accent,
+      resumeButtonTextColor: GameTheme.carnivalDerby.background,
       resumeButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 20),
       resumeButtonPadding: const EdgeInsets.only(top: 17, bottom: 11),
       resumeButtonDisabledColor: Colors.grey,
-      startNewButtonColor: const Color(0xFFF1FAEE).withOpacity(0.2),
-      startNewButtonTextColor: const Color(0xFFF1FAEE),
+      startNewButtonColor: GameTheme.carnivalDerby.onDark.withOpacity(0.2),
+      startNewButtonTextColor: GameTheme.carnivalDerby.onDark,
       startNewButtonTextStyle: GoogleFonts.bangers(fontSize: 18, letterSpacing: 1.0),
       deleteAllButtonColor: const Color(0xFFE63946),
       deleteAllButtonTextStyle: GoogleFonts.bangers(
@@ -139,18 +141,18 @@ class ResumeGameModalConfig {
 
   factory ResumeGameModalConfig.targetTag() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF1A1A2E),
-      borderColor: const Color(0xFFFF007A),
+      backgroundColor: GameTheme.targetTag.background,
+      borderColor: GameTheme.targetTag.accent,
       boxShadowColor: Colors.black,
       boxShadowOpacity: 0.5,
       titleTextStyle: GoogleFonts.luckiestGuy(
-        color: const Color(0xFFFF007A),
+        color: GameTheme.targetTag.accent,
         fontSize: 24,
       ),
-      tileBackgroundColor: const Color(0xFF1A1A2E).withOpacity(0.6),
-      tileSelectedBackgroundColor: const Color(0xFFFF007A).withOpacity(0.15),
+      tileBackgroundColor: GameTheme.targetTag.background.withOpacity(0.6),
+      tileSelectedBackgroundColor: GameTheme.targetTag.accent.withOpacity(0.15),
       tileBorderColor: Colors.white.withOpacity(0.3),
-      tileSelectedBorderColor: const Color(0xFFFF007A),
+      tileSelectedBorderColor: GameTheme.targetTag.accent,
       tileDateTextStyle: GoogleFonts.fredoka(
         color: Colors.white.withOpacity(0.7),
         fontSize: 13,
@@ -162,7 +164,7 @@ class ResumeGameModalConfig {
         fontWeight: FontWeight.w600,
       ),
       tileProgressTextStyle: GoogleFonts.luckiestGuy(
-        color: const Color(0xFFFF007A),
+        color: GameTheme.targetTag.accent,
         fontSize: 14,
       ),
       tileModeTextStyle: GoogleFonts.fredoka(
@@ -175,8 +177,8 @@ class ResumeGameModalConfig {
         fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
-      deleteButtonColor: const Color(0xFFFF007A),
-      resumeButtonColor: const Color(0xFFFF007A),
+      deleteButtonColor: GameTheme.targetTag.accent,
+      resumeButtonColor: GameTheme.targetTag.accent,
       resumeButtonTextColor: Colors.white,
       resumeButtonTextStyle: GoogleFonts.luckiestGuy(fontSize: 20),
       resumeButtonPadding: const EdgeInsets.only(top: 17, bottom: 11),
@@ -184,57 +186,57 @@ class ResumeGameModalConfig {
       startNewButtonColor: Colors.white.withOpacity(0.2),
       startNewButtonTextColor: Colors.white,
       startNewButtonTextStyle: GoogleFonts.fredoka(fontSize: 18, fontWeight: FontWeight.w600),
-      deleteAllButtonColor: const Color(0xFFFF007A),
+      deleteAllButtonColor: GameTheme.targetTag.accent,
       deleteAllButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: const Color(0xFFFF007A),
+        color: GameTheme.targetTag.accent,
       ),
     );
   }
 
   factory ResumeGameModalConfig.monsterMash() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF2F4F4F),
-      borderColor: const Color(0xFF7FFF00),
-      boxShadowColor: const Color(0xFF7FFF00),
+      backgroundColor: GameTheme.monsterMash.background,
+      borderColor: GameTheme.monsterMash.accent,
+      boxShadowColor: GameTheme.monsterMash.accent,
       boxShadowOpacity: 0.3,
       titleTextStyle: GoogleFonts.creepster(
-        color: const Color(0xFF7FFF00),
+        color: GameTheme.monsterMash.accent,
         fontSize: 24,
       ),
-      tileBackgroundColor: const Color(0xFF2F4F4F).withOpacity(0.6),
-      tileSelectedBackgroundColor: const Color(0xFF7FFF00).withOpacity(0.15),
-      tileBorderColor: const Color(0xFFF5F5DC).withOpacity(0.3),
-      tileSelectedBorderColor: const Color(0xFF7FFF00),
+      tileBackgroundColor: GameTheme.monsterMash.background.withOpacity(0.6),
+      tileSelectedBackgroundColor: GameTheme.monsterMash.accent.withOpacity(0.15),
+      tileBorderColor: GameTheme.monsterMash.onDark.withOpacity(0.3),
+      tileSelectedBorderColor: GameTheme.monsterMash.accent,
       tileDateTextStyle: GoogleFonts.pirataOne(
-        color: const Color(0xFFF5F5DC).withOpacity(0.7),
+        color: GameTheme.monsterMash.onDark.withOpacity(0.7),
         fontSize: 13,
       ),
       tilePlayersTextStyle: GoogleFonts.pirataOne(
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
         fontSize: 16,
       ),
       tileProgressTextStyle: GoogleFonts.creepster(
-        color: const Color(0xFF7FFF00),
+        color: GameTheme.monsterMash.accent,
         fontSize: 14,
       ),
       tileModeTextStyle: GoogleFonts.pirataOne(
-        color: const Color(0xFFF5F5DC).withOpacity(0.7),
+        color: GameTheme.monsterMash.onDark.withOpacity(0.7),
         fontSize: 13,
       ),
       tileLeaderTextStyle: GoogleFonts.pirataOne(
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
         fontSize: 14,
       ),
       deleteButtonColor: const Color(0xFFFF4444),
-      resumeButtonColor: const Color(0xFF7FFF00),
-      resumeButtonTextColor: const Color(0xFF2F4F4F),
+      resumeButtonColor: GameTheme.monsterMash.accent,
+      resumeButtonTextColor: GameTheme.monsterMash.background,
       resumeButtonTextStyle: GoogleFonts.creepster(fontSize: 20),
       resumeButtonPadding: const EdgeInsets.only(top: 14, bottom: 14),
       resumeButtonDisabledColor: Colors.grey,
-      startNewButtonColor: const Color(0xFFF5F5DC).withOpacity(0.2),
-      startNewButtonTextColor: const Color(0xFFF5F5DC),
+      startNewButtonColor: GameTheme.monsterMash.onDark.withOpacity(0.2),
+      startNewButtonTextColor: GameTheme.monsterMash.onDark,
       startNewButtonTextStyle: GoogleFonts.pirataOne(fontSize: 18),
       deleteAllButtonColor: const Color(0xFFFF4444),
       deleteAllButtonTextStyle: GoogleFonts.pirataOne(
@@ -246,51 +248,51 @@ class ResumeGameModalConfig {
 
   factory ResumeGameModalConfig.reefRoyale() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF0B3D91),
-      borderColor: const Color(0xFF48D1CC),
-      boxShadowColor: const Color(0xFF48D1CC),
+      backgroundColor: GameTheme.reefRoyale.background,
+      borderColor: GameTheme.reefRoyale.accent,
+      boxShadowColor: GameTheme.reefRoyale.accent,
       boxShadowOpacity: 0.3,
       titleTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFF48D1CC),
+        color: GameTheme.reefRoyale.accent,
         fontSize: 24,
         fontWeight: FontWeight.bold,
       ),
-      tileBackgroundColor: const Color(0xFF0B3D91).withOpacity(0.6),
-      tileSelectedBackgroundColor: const Color(0xFF48D1CC).withOpacity(0.15),
-      tileBorderColor: const Color(0xFFFFF8F0).withOpacity(0.3),
-      tileSelectedBorderColor: const Color(0xFF48D1CC),
+      tileBackgroundColor: GameTheme.reefRoyale.background.withOpacity(0.6),
+      tileSelectedBackgroundColor: GameTheme.reefRoyale.accent.withOpacity(0.15),
+      tileBorderColor: GameTheme.reefRoyale.onDark.withOpacity(0.3),
+      tileSelectedBorderColor: GameTheme.reefRoyale.accent,
       tileDateTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFFFFF8F0).withOpacity(0.7),
+        color: GameTheme.reefRoyale.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tilePlayersTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
       tileProgressTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFF48D1CC),
+        color: GameTheme.reefRoyale.accent,
         fontSize: 14,
         fontWeight: FontWeight.bold,
       ),
       tileModeTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFFFFF8F0).withOpacity(0.7),
+        color: GameTheme.reefRoyale.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tileLeaderTextStyle: GoogleFonts.fredoka(
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
         fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
       deleteButtonColor: const Color(0xFFFF6B6B),
-      resumeButtonColor: const Color(0xFF48D1CC),
-      resumeButtonTextColor: const Color(0xFF0B3D91),
+      resumeButtonColor: GameTheme.reefRoyale.accent,
+      resumeButtonTextColor: GameTheme.reefRoyale.background,
       resumeButtonTextStyle: GoogleFonts.fredoka(fontSize: 18, fontWeight: FontWeight.bold),
       resumeButtonDisabledColor: Colors.grey,
-      startNewButtonColor: const Color(0xFFFFF8F0).withOpacity(0.2),
-      startNewButtonTextColor: const Color(0xFFFFF8F0),
+      startNewButtonColor: GameTheme.reefRoyale.onDark.withOpacity(0.2),
+      startNewButtonTextColor: GameTheme.reefRoyale.onDark,
       startNewButtonTextStyle: GoogleFonts.fredoka(fontSize: 16, fontWeight: FontWeight.w600),
       startNewButtonPadding: const EdgeInsets.only(top: 12, bottom: 16),
       deleteAllButtonColor: const Color(0xFFFF6B6B),
@@ -304,52 +306,52 @@ class ResumeGameModalConfig {
 
   factory ResumeGameModalConfig.lunarLander() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF1B4965), // Earth Blue
-      borderColor: const Color(0xFFF26430), // Rocket Flame
-      boxShadowColor: const Color(0xFFF26430),
+      backgroundColor: GameTheme.lunarLander.background, // Earth Blue
+      borderColor: GameTheme.lunarLander.accent, // Rocket Flame
+      boxShadowColor: GameTheme.lunarLander.accent,
       boxShadowOpacity: 0.3,
       titleTextStyle: GoogleFonts.orbitron(
-        color: const Color(0xFFF26430), // Rocket Flame
+        color: GameTheme.lunarLander.accent, // Rocket Flame
         fontSize: 22,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.2,
       ),
-      tileBackgroundColor: const Color(0xFF1B4965).withOpacity(0.6),
-      tileSelectedBackgroundColor: const Color(0xFFF26430).withOpacity(0.15),
-      tileBorderColor: const Color(0xFFFAFDF6).withOpacity(0.3),
-      tileSelectedBorderColor: const Color(0xFFF26430),
+      tileBackgroundColor: GameTheme.lunarLander.background.withOpacity(0.6),
+      tileSelectedBackgroundColor: GameTheme.lunarLander.accent.withOpacity(0.15),
+      tileBorderColor: GameTheme.lunarLander.onDark.withOpacity(0.3),
+      tileSelectedBorderColor: GameTheme.lunarLander.accent,
       tileDateTextStyle: GoogleFonts.exo2(
-        color: const Color(0xFFFAFDF6).withOpacity(0.7),
+        color: GameTheme.lunarLander.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tilePlayersTextStyle: GoogleFonts.exo2(
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
       tileProgressTextStyle: GoogleFonts.orbitron(
-        color: const Color(0xFFF26430),
+        color: GameTheme.lunarLander.accent,
         fontSize: 14,
         fontWeight: FontWeight.bold,
       ),
       tileModeTextStyle: GoogleFonts.exo2(
-        color: const Color(0xFFFAFDF6).withOpacity(0.7),
+        color: GameTheme.lunarLander.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tileLeaderTextStyle: GoogleFonts.exo2(
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
         fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
       deleteButtonColor: const Color(0xFFE63946), // Thruster Red
       resumeButtonColor: const Color(0xFF52B788), // Mission Green
-      resumeButtonTextColor: const Color(0xFFFAFDF6),
+      resumeButtonTextColor: GameTheme.lunarLander.onDark,
       resumeButtonTextStyle: GoogleFonts.orbitron(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.0),
       resumeButtonDisabledColor: Colors.grey,
-      startNewButtonColor: const Color(0xFFFAFDF6).withOpacity(0.2),
-      startNewButtonTextColor: const Color(0xFFFAFDF6),
+      startNewButtonColor: GameTheme.lunarLander.onDark.withOpacity(0.2),
+      startNewButtonTextColor: GameTheme.lunarLander.onDark,
       startNewButtonTextStyle: GoogleFonts.exo2(fontSize: 16, fontWeight: FontWeight.w600),
       deleteAllButtonColor: const Color(0xFFE63946),
       deleteAllButtonTextStyle: GoogleFonts.exo2(
@@ -363,26 +365,26 @@ class ResumeGameModalConfig {
   /// Pirate's Grid — Ocean Navy bg, Compass Bronze border, PirataOne/Lora fonts
   factory ResumeGameModalConfig.piratesGrid() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF1B2838), // Ocean Navy
-      borderColor: const Color(0xFFCD7F32), // Compass Bronze
-      boxShadowColor: const Color(0xFFCD7F32),
+      backgroundColor: GameTheme.piratesGrid.background, // Ocean Navy
+      borderColor: GameTheme.piratesGrid.accent, // Compass Bronze
+      boxShadowColor: GameTheme.piratesGrid.accent,
       boxShadowOpacity: 0.3,
       titleTextStyle: GoogleFonts.pirataOne(
         color: const Color(0xFFDAA520), // Treasure Gold
         fontSize: 22,
         letterSpacing: 1.2,
       ),
-      tileBackgroundColor: const Color(0xFF1B2838).withOpacity(0.6),
-      tileSelectedBackgroundColor: const Color(0xFFCD7F32).withOpacity(0.15),
-      tileBorderColor: const Color(0xFFF5E6C8).withOpacity(0.3),
-      tileSelectedBorderColor: const Color(0xFFCD7F32),
+      tileBackgroundColor: GameTheme.piratesGrid.background.withOpacity(0.6),
+      tileSelectedBackgroundColor: GameTheme.piratesGrid.accent.withOpacity(0.15),
+      tileBorderColor: GameTheme.piratesGrid.onDark.withOpacity(0.3),
+      tileSelectedBorderColor: GameTheme.piratesGrid.accent,
       tileDateTextStyle: GoogleFonts.lora(
-        color: const Color(0xFFF5E6C8).withOpacity(0.7),
+        color: GameTheme.piratesGrid.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tilePlayersTextStyle: GoogleFonts.lora(
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
@@ -391,22 +393,22 @@ class ResumeGameModalConfig {
         fontSize: 14,
       ),
       tileModeTextStyle: GoogleFonts.lora(
-        color: const Color(0xFFF5E6C8).withOpacity(0.7),
+        color: GameTheme.piratesGrid.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tileLeaderTextStyle: GoogleFonts.lora(
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
         fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
       deleteButtonColor: const Color(0xFF8B0000), // Blood Red
-      resumeButtonColor: const Color(0xFFCD7F32), // Compass Bronze
-      resumeButtonTextColor: const Color(0xFFF5E6C8),
+      resumeButtonColor: GameTheme.piratesGrid.accent, // Compass Bronze
+      resumeButtonTextColor: GameTheme.piratesGrid.onDark,
       resumeButtonTextStyle: GoogleFonts.pirataOne(fontSize: 18, letterSpacing: 1.0),
       resumeButtonDisabledColor: Colors.grey,
-      startNewButtonColor: const Color(0xFFF5E6C8).withOpacity(0.2),
-      startNewButtonTextColor: const Color(0xFFF5E6C8),
+      startNewButtonColor: GameTheme.piratesGrid.onDark.withOpacity(0.2),
+      startNewButtonTextColor: GameTheme.piratesGrid.onDark,
       startNewButtonTextStyle: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w600),
       deleteAllButtonColor: const Color(0xFF8B0000), // Blood Red
       deleteAllButtonTextStyle: GoogleFonts.lora(
@@ -419,55 +421,55 @@ class ResumeGameModalConfig {
 
   factory ResumeGameModalConfig.clockworkQuest() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF2C2C34), // Dark Iron
-      borderColor: const Color(0xFFC5A54E), // Brass Gold
+      backgroundColor: GameTheme.clockworkQuest.background, // Dark Iron
+      borderColor: GameTheme.clockworkQuest.accent, // Brass Gold
       boxShadowColor: const Color(0xFFFFBF00), // Amber Glow
       boxShadowOpacity: 0.4,
       titleTextStyle: GoogleFonts.cinzelDecorative(
-        color: const Color(0xFFC5A54E),
+        color: GameTheme.clockworkQuest.accent,
         fontSize: 24,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.5,
       ),
-      tileBackgroundColor: const Color(0xFF2C2C34).withOpacity(0.6),
-      tileSelectedBackgroundColor: const Color(0xFFC5A54E).withOpacity(0.15),
+      tileBackgroundColor: GameTheme.clockworkQuest.background.withOpacity(0.6),
+      tileSelectedBackgroundColor: GameTheme.clockworkQuest.accent.withOpacity(0.15),
       tileBorderColor: const Color(0xFFB87333).withOpacity(0.3), // Copper Rose
-      tileSelectedBorderColor: const Color(0xFFC5A54E),
+      tileSelectedBorderColor: GameTheme.clockworkQuest.accent,
       tileDateTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8).withOpacity(0.6),
+        color: GameTheme.clockworkQuest.onDark.withOpacity(0.6),
         fontSize: 11,
         fontWeight: FontWeight.w400,
       ),
       tilePlayersTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+        color: GameTheme.clockworkQuest.onDark.withOpacity(0.7),
         fontSize: 13,
       ),
       tileProgressTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.clockworkQuest.onDark,
         fontSize: 16,
         fontWeight: FontWeight.bold,
       ),
       tileModeTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8), // Steam White
+        color: GameTheme.clockworkQuest.onDark, // Steam White
         fontSize: 12,
         fontWeight: FontWeight.w600,
       ),
       tileLeaderTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFC5A54E),
+        color: GameTheme.clockworkQuest.accent,
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       deleteButtonColor: const Color(0xFFFF6B6B),
-      resumeButtonColor: const Color(0xFFC5A54E), // Brass Gold
-      resumeButtonTextColor: const Color(0xFF2C2C34),
+      resumeButtonColor: GameTheme.clockworkQuest.accent, // Brass Gold
+      resumeButtonTextColor: GameTheme.clockworkQuest.background,
       resumeButtonTextStyle: GoogleFonts.cinzelDecorative(
         fontSize: 18,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
       ),
       resumeButtonDisabledColor: Colors.grey,
-      startNewButtonColor: const Color(0xFFF5F0E8).withOpacity(0.2),
-      startNewButtonTextColor: const Color(0xFFF5F0E8),
+      startNewButtonColor: GameTheme.clockworkQuest.onDark.withOpacity(0.2),
+      startNewButtonTextColor: GameTheme.clockworkQuest.onDark,
       startNewButtonTextStyle: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w600),
       startNewButtonPadding: const EdgeInsets.only(top: 12, bottom: 16),
       deleteAllButtonColor: const Color(0xFFFF6B6B),
@@ -482,7 +484,7 @@ class ResumeGameModalConfig {
   /// Gladiator Arena — Dark Arena bg, Gladiator Gold border, Cinzel/Lato fonts
   factory ResumeGameModalConfig.gladiatorArena() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF3A2010), // Dark Arena
+      backgroundColor: GameTheme.gladiatorArena.background, // Dark Arena
       borderColor: const Color(0xFFDAA520), // Gladiator Gold
       boxShadowColor: const Color(0xFFDAA520),
       boxShadowOpacity: 0.3,
@@ -492,17 +494,17 @@ class ResumeGameModalConfig {
         fontWeight: FontWeight.bold,
         letterSpacing: 1.2,
       ),
-      tileBackgroundColor: const Color(0xFF3A2010).withOpacity(0.6),
+      tileBackgroundColor: GameTheme.gladiatorArena.background.withOpacity(0.6),
       tileSelectedBackgroundColor: const Color(0xFFDAA520).withOpacity(0.15),
-      tileBorderColor: const Color(0xFFF5F0E8).withOpacity(0.3),
+      tileBorderColor: GameTheme.gladiatorArena.onDark.withOpacity(0.3),
       tileSelectedBorderColor: const Color(0xFFDAA520), // Gladiator Gold
       tileDateTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+        color: GameTheme.gladiatorArena.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tilePlayersTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.gladiatorArena.onDark,
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
@@ -512,18 +514,18 @@ class ResumeGameModalConfig {
         fontWeight: FontWeight.bold,
       ),
       tileModeTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+        color: GameTheme.gladiatorArena.onDark.withOpacity(0.7),
         fontSize: 11,
         fontWeight: FontWeight.w600,
       ),
       tileLeaderTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.gladiatorArena.onDark,
         fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
       deleteButtonColor: const Color(0xFFC0392B), // Blood Red
-      resumeButtonColor: const Color(0xFFCD7F32), // Bronze
-      resumeButtonTextColor: const Color(0xFFF5F0E8), // Marble White
+      resumeButtonColor: GameTheme.gladiatorArena.accent, // Bronze
+      resumeButtonTextColor: GameTheme.gladiatorArena.onDark, // Marble White
       resumeButtonTextStyle: GoogleFonts.cinzel(
         fontSize: 18,
         fontWeight: FontWeight.bold,
@@ -531,8 +533,8 @@ class ResumeGameModalConfig {
       ),
       resumeButtonPadding: const EdgeInsets.only(top: 14, bottom: 14),
       resumeButtonDisabledColor: const Color(0xFF8B8682), // Colosseum Gray
-      startNewButtonColor: const Color(0xFFF5F0E8).withOpacity(0.2),
-      startNewButtonTextColor: const Color(0xFFF5F0E8),
+      startNewButtonColor: GameTheme.gladiatorArena.onDark.withOpacity(0.2),
+      startNewButtonTextColor: GameTheme.gladiatorArena.onDark,
       startNewButtonTextStyle: GoogleFonts.lato(
         fontSize: 16,
         fontWeight: FontWeight.w600,
@@ -549,12 +551,12 @@ class ResumeGameModalConfig {
   /// Tiki Golf — Palm Green bg, Lagoon Blue border, Boogaloo/Nunito fonts
   factory ResumeGameModalConfig.tikiGolf() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF2D6A4F), // Palm Green
-      borderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      backgroundColor: GameTheme.tikiGolf.background, // Palm Green
+      borderColor: GameTheme.tikiGolf.accent, // Lagoon Blue
       boxShadowColor: Colors.black,
       boxShadowOpacity: 0.5,
       titleTextStyle: GoogleFonts.boogaloo(
-        color: const Color(0xFFFFF5E1), // Sand White
+        color: GameTheme.tikiGolf.onDark, // Sand White
         fontSize: 26,
         shadows: const [
           Shadow(color: Color(0xFF8B5E3C), offset: Offset(1, 1), blurRadius: 0),
@@ -563,17 +565,17 @@ class ResumeGameModalConfig {
           Shadow(color: Color(0xFF8B5E3C), offset: Offset(-1, 1), blurRadius: 0),
         ],
       ),
-      tileBackgroundColor: const Color(0xFF2D6A4F).withOpacity(0.6),
-      tileSelectedBackgroundColor: const Color(0xFF00B4D8).withOpacity(0.15),
-      tileBorderColor: const Color(0xFFFFF5E1).withOpacity(0.3),
-      tileSelectedBorderColor: const Color(0xFF00B4D8), // Lagoon Blue
+      tileBackgroundColor: GameTheme.tikiGolf.background.withOpacity(0.6),
+      tileSelectedBackgroundColor: GameTheme.tikiGolf.accent.withOpacity(0.15),
+      tileBorderColor: GameTheme.tikiGolf.onDark.withOpacity(0.3),
+      tileSelectedBorderColor: GameTheme.tikiGolf.accent, // Lagoon Blue
       tileDateTextStyle: GoogleFonts.nunito(
-        color: const Color(0xFFFFF5E1).withOpacity(0.7),
+        color: GameTheme.tikiGolf.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tilePlayersTextStyle: GoogleFonts.nunito(
-        color: const Color(0xFFFFF5E1),
+        color: GameTheme.tikiGolf.onDark,
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
@@ -582,22 +584,22 @@ class ResumeGameModalConfig {
         fontSize: 14,
       ),
       tileModeTextStyle: GoogleFonts.nunito(
-        color: const Color(0xFFFFF5E1).withOpacity(0.7),
+        color: GameTheme.tikiGolf.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tileLeaderTextStyle: GoogleFonts.nunito(
-        color: const Color(0xFFFFF5E1),
+        color: GameTheme.tikiGolf.onDark,
         fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
       deleteButtonColor: const Color(0xFFFF69B4), // Hibiscus Pink
-      resumeButtonColor: const Color(0xFF00B4D8), // Lagoon Blue
-      resumeButtonTextColor: const Color(0xFFFFF5E1),
+      resumeButtonColor: GameTheme.tikiGolf.accent, // Lagoon Blue
+      resumeButtonTextColor: GameTheme.tikiGolf.onDark,
       resumeButtonTextStyle: GoogleFonts.boogaloo(fontSize: 22),
       resumeButtonDisabledColor: Colors.grey,
-      startNewButtonColor: const Color(0xFFFFF5E1).withOpacity(0.2),
-      startNewButtonTextColor: const Color(0xFFFFF5E1),
+      startNewButtonColor: GameTheme.tikiGolf.onDark.withOpacity(0.2),
+      startNewButtonTextColor: GameTheme.tikiGolf.onDark,
       startNewButtonTextStyle: GoogleFonts.nunito(
         fontSize: 18,
         fontWeight: FontWeight.w600,
@@ -614,51 +616,51 @@ class ResumeGameModalConfig {
   /// Treasure Divide — Ocean Teal bg, Treasure Gold border, PirataOne title + Merriweather body
   factory ResumeGameModalConfig.treasureDivide() {
     return ResumeGameModalConfig(
-      backgroundColor: const Color(0xFF008B8B), // Ocean Teal
-      borderColor: const Color(0xFFFFD700), // Treasure Gold
-      boxShadowColor: const Color(0xFFFFD700),
+      backgroundColor: GameTheme.treasureDivide.background, // Ocean Teal
+      borderColor: GameTheme.treasureDivide.accent, // Treasure Gold
+      boxShadowColor: GameTheme.treasureDivide.accent,
       boxShadowOpacity: 0.3,
       titleTextStyle: GoogleFonts.pirataOne(
-        color: const Color(0xFFFFD700), // Treasure Gold
+        color: GameTheme.treasureDivide.accent, // Treasure Gold
         fontSize: 22,
         letterSpacing: 1.2,
       ),
-      tileBackgroundColor: const Color(0xFF008B8B).withOpacity(0.6),
-      tileSelectedBackgroundColor: const Color(0xFFFFD700).withOpacity(0.15),
-      tileBorderColor: const Color(0xFFFFF8E7).withOpacity(0.3),
-      tileSelectedBorderColor: const Color(0xFFFFD700), // Treasure Gold
+      tileBackgroundColor: GameTheme.treasureDivide.background.withOpacity(0.6),
+      tileSelectedBackgroundColor: GameTheme.treasureDivide.accent.withOpacity(0.15),
+      tileBorderColor: GameTheme.treasureDivide.onDark.withOpacity(0.3),
+      tileSelectedBorderColor: GameTheme.treasureDivide.accent, // Treasure Gold
       tileDateTextStyle: GoogleFonts.merriweather(
-        color: const Color(0xFFFFF8E7).withOpacity(0.7),
+        color: GameTheme.treasureDivide.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tilePlayersTextStyle: GoogleFonts.merriweather(
-        color: const Color(0xFFFFF8E7),
+        color: GameTheme.treasureDivide.onDark,
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
       tileProgressTextStyle: GoogleFonts.pirataOne(
-        color: const Color(0xFFFFD700), // Treasure Gold
+        color: GameTheme.treasureDivide.accent, // Treasure Gold
         fontSize: 14,
         letterSpacing: 0.5,
       ),
       tileModeTextStyle: GoogleFonts.merriweather(
-        color: const Color(0xFFFFF8E7).withOpacity(0.7),
+        color: GameTheme.treasureDivide.onDark.withOpacity(0.7),
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
       tileLeaderTextStyle: GoogleFonts.merriweather(
-        color: const Color(0xFFFFF8E7),
+        color: GameTheme.treasureDivide.onDark,
         fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
       deleteButtonColor: const Color(0xFFC41E3A), // Blood Red
-      resumeButtonColor: const Color(0xFFFFD700), // Treasure Gold
-      resumeButtonTextColor: const Color(0xFF008B8B), // Ocean Teal
+      resumeButtonColor: GameTheme.treasureDivide.accent, // Treasure Gold
+      resumeButtonTextColor: GameTheme.treasureDivide.background, // Ocean Teal
       resumeButtonTextStyle: GoogleFonts.pirataOne(fontSize: 18, letterSpacing: 1.0),
       resumeButtonDisabledColor: Colors.grey,
-      startNewButtonColor: const Color(0xFFFFF8E7).withOpacity(0.2),
-      startNewButtonTextColor: const Color(0xFFFFF8E7),
+      startNewButtonColor: GameTheme.treasureDivide.onDark.withOpacity(0.2),
+      startNewButtonTextColor: GameTheme.treasureDivide.onDark,
       startNewButtonTextStyle: GoogleFonts.merriweather(fontSize: 16, fontWeight: FontWeight.w600),
       deleteAllButtonColor: const Color(0xFFC41E3A), // Blood Red
       deleteAllButtonTextStyle: GoogleFonts.merriweather(

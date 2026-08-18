@@ -610,6 +610,7 @@ class SaveGameModalKeys {
   static const message = Key('save_game_modal_message');
   static const saveButton = Key('save_game_modal_save_button');
   static const dontSaveButton = Key('save_game_modal_dont_save_button');
+  static const errorMessage = Key('save_game_modal_error');
 }
 
 // ============================================================================
@@ -631,6 +632,8 @@ class ResumeGameModalKeys {
   static const resumeGameButton = Key('resume_game_modal_resume_button');
   static const startNewGameButton = Key('resume_game_modal_start_new_button');
   static const deleteAllButton = Key('resume_game_modal_delete_all_button');
+  static const errorMessage = Key('resume_game_modal_error');
+  static const retryButton = Key('resume_game_modal_retry_button');
   static const emptyStateText = Key('resume_game_modal_empty_state');
 }
 

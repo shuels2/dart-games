@@ -80,4 +80,20 @@ class MonsterMashSoundEffects {
     startSeconds: 0.0,
     endSeconds: null, // Play entire file
   );
+
+  /// Every effect this game uses. Preloaded at game start so
+  /// the first play does not pay the asset-load cost.
+  static const List<SoundEffectConfig> all = [
+    gameStart,
+    turnStart,
+    removeDarts,
+    dartHit,
+    healing,
+    attack,
+    healthWarning,
+    elimination,
+    hatTrick,
+    clutchHeal,
+    buffActivation,
+  ];
 }

@@ -395,25 +395,9 @@ void main() {
   });
 
   // -------------------------------------------------------
-  // 8. editScore (updateDartScore / updateAllDartScores)
+  // 8. editScore (updateAllDartScores)
   // -------------------------------------------------------
   group('editScore', () {
-    test('updateDartScore replays turn with corrected dart', () {
-      startStandardGame(easyClaim: false);
-
-      provider.processDartThrow('S20'); // 1 mark on 20
-      provider.processDartThrow('S19'); // 1 mark on 19
-      provider.processDartThrow('S18'); // 1 mark on 18
-
-      // Correct dart 0 from S20 to T20 (3 marks on 20 = claim)
-      provider.updateDartScore('p1', 0, 'T20');
-
-      expect(provider.getPlayerMarks('p1', 20), 3);
-      expect(provider.hasPlayerClaimed('p1', 20), true);
-      // Other darts should still be applied
-      expect(provider.getPlayerMarks('p1', 19), 1);
-      expect(provider.getPlayerMarks('p1', 18), 1);
-    });
 
     test('updateAllDartScores replays all three darts', () {
       startStandardGame(easyClaim: false);
@@ -428,20 +412,6 @@ void main() {
       expect(provider.getPlayerMarks('p1', 20), 0);
       expect(provider.getPlayerMarks('p1', 19), 0);
       expect(provider.getPlayerMarks('p1', 18), 0);
-    });
-
-    test('updateDartScore ignores wrong player', () {
-      startStandardGame();
-
-      provider.processDartThrow('S20');
-      provider.processDartThrow('S19');
-      provider.processDartThrow('S18');
-
-      // Try to edit for p2 (not the current player)
-      provider.updateDartScore('p2', 0, 'T20');
-
-      // p1's marks should be unchanged
-      expect(provider.getPlayerMarks('p1', 20), 1);
     });
   });
 

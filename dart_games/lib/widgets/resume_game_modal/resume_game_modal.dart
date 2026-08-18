@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../themed_modal_shell.dart';
 import '../../constants/test_keys.dart';
 import '../../models/saved_game_metadata.dart';
 import '../../services/save_game_service.dart';
@@ -33,6 +35,11 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
   List<SavedGameMetadata> _savedGames = [];
   String? _selectedGameId;
   bool _isLoading = true;
+  String? _errorText;
+
+  /// One service for the modal's lifetime. Constructing a new one per
+  /// operation created (and leaked) a fresh http client each time.
+  late final SaveGameService _saveService = SaveGameService(widget.apiClient);
 
   @override
   void initState() {
@@ -40,27 +47,53 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
     _loadSavedGames();
   }
 
+  /// Loads saved games, surfacing failures instead of spinning forever.
   Future<void> _loadSavedGames() async {
-    final games = await SaveGameService(widget.apiClient).loadSavedGames(widget.gameType);
     if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorText = null;
+      });
+    }
+    try {
+      final games = await _saveService.loadSavedGames(widget.gameType);
+      if (!mounted) return;
       setState(() {
         _savedGames = games;
         _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorText = "Couldn't load saved games.\nCheck the connection and try again.";
       });
     }
   }
 
   Future<void> _deleteGame(String id) async {
-    await SaveGameService(widget.apiClient).deleteSavedGame(widget.gameType, id);
-    if (_selectedGameId == id) {
-      _selectedGameId = null;
+    try {
+      await _saveService.deleteSavedGame(widget.gameType, id);
+      if (_selectedGameId == id) {
+        _selectedGameId = null;
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _errorText = "Couldn't delete that saved game.");
+      return;
     }
     await _loadSavedGames();
   }
 
   Future<void> _deleteAllGames() async {
-    await SaveGameService(widget.apiClient).deleteAllSavedGames(widget.gameType);
-    _selectedGameId = null;
+    try {
+      await _saveService.deleteAllSavedGames(widget.gameType);
+      _selectedGameId = null;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _errorText = "Couldn't delete the saved games.");
+      return;
+    }
     await _loadSavedGames();
   }
 
@@ -68,37 +101,23 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
   Widget build(BuildContext context) {
     final config = widget.config;
 
-    return Positioned.fill(
-      child: Material(
-        type: MaterialType.transparency,
-        child: Container(
-          key: ResumeGameModalKeys.overlay,
-          color: Colors.black.withOpacity(0.7),
-          child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: config.maxWidth,
-              maxHeight: config.maxHeight,
-            ),
-            child: Container(
-              key: ResumeGameModalKeys.container,
-              margin: config.margin,
-              padding: config.padding,
-              decoration: BoxDecoration(
-                color: config.backgroundColor.withOpacity(config.backgroundOpacity),
-                borderRadius: BorderRadius.circular(config.borderRadius),
-                border: Border.all(
-                  color: config.borderColor,
-                  width: config.borderWidth,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: config.boxShadowColor.withOpacity(config.boxShadowOpacity),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
+    // Chrome lives in ThemedModalShell (WS03 §3.7). This is the only modal
+    // that caps HEIGHT as well as width — its saved-game list has to stop
+    // growing before it runs off the screen — so the shell takes maxHeight.
+    return ThemedModalShell(
+      barrierKey: ResumeGameModalKeys.overlay,
+      panelKey: ResumeGameModalKeys.container,
+      backgroundColor: config.backgroundColor,
+      backgroundOpacity: config.backgroundOpacity,
+      borderColor: config.borderColor,
+      borderWidth: config.borderWidth,
+      borderRadius: config.borderRadius,
+      boxShadowColor: config.boxShadowColor,
+      boxShadowOpacity: config.boxShadowOpacity,
+      maxWidth: config.maxWidth,
+      maxHeight: config.maxHeight,
+      margin: config.margin,
+      padding: config.padding,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -116,6 +135,28 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
                     const Padding(
                       padding: EdgeInsets.all(32),
                       child: CircularProgressIndicator(),
+                    )
+                  else if (_errorText != null)
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _errorText!,
+                            key: ResumeGameModalKeys.errorMessage,
+                            style: config.tileModeTextStyle
+                                .copyWith(color: const Color(0xFFFF8A80)),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          TextButton(
+                            key: ResumeGameModalKeys.retryButton,
+                            onPressed: _loadSavedGames,
+                            child: Text('Retry', style: config.tileModeTextStyle),
+                          ),
+                        ],
+                      ),
                     )
                   else if (_savedGames.isEmpty)
                     Padding(
@@ -146,11 +187,6 @@ class _ResumeGameModalState extends State<ResumeGameModal> {
                   // Buttons
                   _buildButtons(config),
                 ],
-              ),
-            ),
-          ),
-        ),
-        ),
       ),
     );
   }

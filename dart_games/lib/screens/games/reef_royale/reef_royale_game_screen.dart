@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,13 +7,10 @@ import '../../../models/player.dart';
 import '../../../models/reef_royale_game.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/reef_royale_provider.dart';
-import '../../../providers/dartboard_provider.dart';
-import '../../../services/mock_scolia_api_service.dart';
-import '../../../services/game_announcement_queue_service.dart';
 import '../../../services/reef_royale_announcement_helper.dart';
 import '../../../services/play_to_complete/reef_royale_strategy.dart';
 import '../../../services/play_to_tie/reef_royale_strategy.dart';
-import '../../../widgets/dartboard_emulator/play_to_tie_runner.dart';
+import '../../../services/reef_royale_sound_effects.dart';
 import '../../../widgets/interactive_dartboard.dart';
 import '../../../widgets/dartboard_emulator/dartboard_emulator.dart';
 import '../../../widgets/dartboard_connection_info/dartboard_connection_info.dart';
@@ -22,10 +18,12 @@ import '../../../widgets/dartboard_connection_info/dartboard_connection_info_con
 import '../../../widgets/edit_score/edit_score.dart';
 import '../../../widgets/remove_darts_modal/remove_darts_modal.dart';
 import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
-import '../../../widgets/dartboard_paused_modal/auto_save_on_pause.dart';
 import '../../../widgets/save_game_modal/save_game_modal.dart';
 import '../../../utils/dartboard_layout.dart';
+import '../shared/game_screen_controller.dart';
+import '../shared/game_screen_shell.dart';
 import 'reef_royale_results_screen.dart';
+import '../../../widgets/game_background.dart';
 
 class ReefRoyaleGameScreen extends StatefulWidget {
   const ReefRoyaleGameScreen({super.key});
@@ -35,18 +33,11 @@ class ReefRoyaleGameScreen extends StatefulWidget {
 }
 
 class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
-    with SingleTickerProviderStateMixin {
-  StreamSubscription? _dartboardSubscription;
+    with SingleTickerProviderStateMixin,
+        GameScreenController<ReefRoyaleGameScreen> {
   final GlobalKey<InteractiveDartboardState> _dartboardKey =
       GlobalKey<InteractiveDartboardState>();
-  MockScoliaApiService? _mockApi;
   ReefRoyaleAnnouncementHelper? _audioQueue;
-  final DartboardEmulatorController _dartboardEmulatorController =
-      DartboardEmulatorController();
-  PlayToCompleteRunner? _playToCompleteRunner;
-  PlayToTieRunner? _playToTieRunner;
-  bool _gameCompleted = false;
-  bool _showSaveModal = false;
   late final AnimationController _pulseController;
 
   // Reef Royale color palette
@@ -66,106 +57,44 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeGame();
-    });
-  }
-
-  Future<void> _initializeGame() async {
-    final dartboardProvider = context.read<DartboardProvider>();
-    _mockApi = dartboardProvider.apiService;
-    if (mounted) setState(() {});
-
-    // Initialize audio
-    final globalQueue = GameAnnouncementQueueService();
-    await globalQueue.loadSettings();
-    _audioQueue = ReefRoyaleAnnouncementHelper(globalQueue);
-
-    // Subscribe to dartboard events (works for both WebSocket and emulator)
-    final eventStream = dartboardProvider.dartboardEventStream;
-    if (eventStream != null) {
-      _dartboardSubscription = eventStream.listen((event) {
-        _handleDartboardEvent(event);
-      });
-    }
-
-    // Announce game start
-    final reefProvider = context.read<ReefRoyaleProvider>();
-    _audioQueue?.announceGameStart();
-
-    if (reefProvider.currentGame?.randomReefs ?? false) {
-      _audioQueue?.announceRandomReefs();
-    }
-
-    // Announce first player turn
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted) _announceCurrentPlayerTurn();
+      initGameScreen(
+        preloadEffects: ReefRoyaleSoundEffects.all,
+        buildAudio: (queue) =>
+            _audioQueue = ReefRoyaleAnnouncementHelper(queue),
+        onReady: () {
+          final reefProvider = context.read<ReefRoyaleProvider>();
+          _audioQueue?.announceGameStart();
+          if (reefProvider.currentGame?.randomReefs ?? false) {
+            _audioQueue?.announceRandomReefs();
+          }
+        },
+        firstTurnDelay: const Duration(milliseconds: 1000),
+        announceFirstTurn: _announceCurrentPlayerTurn,
+      );
     });
   }
 
   @override
   void dispose() {
-    _playToCompleteRunner?.dispose();
-    _playToTieRunner?.dispose();
+    disposeGameScreen();
     _pulseController.dispose();
-    _dartboardSubscription?.cancel();
     _audioQueue?.dispose();
-    _dartboardEmulatorController.dispose();
     super.dispose();
   }
 
-  void _onPlayToComplete() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
+  // ─── GameScreenController contract ───────────────────────────────────────────
 
-    _playToCompleteRunner = PlayToCompleteRunner(
-      strategy: ReefRoyaleStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToCompleteRunner!.run();
-  }
+  @override
+  PlayToCompleteStrategy get playToCompleteStrategy => ReefRoyaleStrategy();
 
-  void _onPlayToTie() {
-    if (_mockApi == null) return;
-    _dartboardEmulatorController.setAutoPlaying(true);
-    _dartboardEmulatorController.hide();
+  @override
+  Future<void> whenAnnouncementsIdle() =>
+      _audioQueue?.whenIdle() ?? Future<void>.value();
 
-    _playToTieRunner = PlayToTieRunner(
-      strategy: ReefRoyaleTieStrategy(),
-      mockApi: _mockApi!,
-      context: context,
-      onComplete: () {
-        if (mounted) {
-          _dartboardEmulatorController.setAutoPlaying(false);
-        }
-      },
-    );
-    _playToTieRunner!.run();
-  }
+  void _onPlayToTie() => startPlayToTie(ReefRoyaleTieStrategy());
 
-  void _onCancelAutoPlay() {
-    _playToCompleteRunner?.cancel();
-    _playToTieRunner?.cancel();
-    _dartboardEmulatorController.setAutoPlaying(false);
-    _dartboardEmulatorController.show();
-  }
-
-  void _handleDartboardEvent(Map<String, dynamic> event) {
-    final type = event['type'];
-    if (type == 'throw_detected') {
-      _handleDartThrow(event);
-    } else if (type == 'takeout_finished') {
-      _handleTakeoutFinished();
-    }
-  }
-
-  void _handleDartThrow(Map<String, dynamic> event) {
+  @override
+  void onDartThrowEvent(Map<String, dynamic> event) {
     final reefProvider = context.read<ReefRoyaleProvider>();
     if (!mounted || !reefProvider.isGameActive) return;
 
@@ -178,27 +107,25 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     reefProvider.processDartThrow(sector);
 
     // Announce dart result
-    if (!_dartboardEmulatorController.isAutoPlaying) {
+    if (!isAutoPlaying) {
       _announceDartResult(reefProvider, playerId, sector);
     }
 
     final dartsThrown = reefProvider.getCurrentPlayerDartsThrown();
-    if (!_dartboardEmulatorController.isAutoPlaying &&
-        (dartsThrown >= 3 || reefProvider.hasWinner)) {
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _audioQueue?.announceRemoveDarts();
-      });
-      Future.delayed(const Duration(milliseconds: 3500), () {
-        if (mounted) _mockApi?.simulateTakeoutStarted();
-      });
+    if (!isAutoPlaying && (dartsThrown >= 3 || reefProvider.hasWinner)) {
+      scheduleTakeoutSequence(
+        dartsOnBoard: true,
+        announceRemoveDarts: () => _audioQueue?.announceRemoveDarts(),
+      );
     }
-
-    setState(() {});
   }
 
-  void _handleTakeoutFinished() {
+  @override
+  void onTakeoutFinished() {
     final reefProvider = context.read<ReefRoyaleProvider>();
     if (!mounted) return;
+
+    cancelTakeoutSequence();
 
     if (reefProvider.hasWinner) {
       _handleGameWon();
@@ -214,74 +141,54 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
 
     // Check for buff change (new round)
     final buffAfter = reefProvider.getActiveBuff();
-    if (!_dartboardEmulatorController.isAutoPlaying &&
-        buffAfter != null &&
-        buffAfter != buffBefore) {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) _audioQueue?.announceBuff(buffAfter);
+    if (!isAutoPlaying && buffAfter != null && buffAfter != buffBefore) {
+      runAfter(const Duration(milliseconds: 300), () {
+        _audioQueue?.announceBuff(buffAfter);
       });
     }
 
     if (reefProvider.hasWinner) {
-      if (_dartboardEmulatorController.isAutoPlaying) {
+      if (isAutoPlaying) {
         _handleGameWon();
       } else {
         _audioQueue?.announceSpeedPlayEnd();
-        _audioQueue?.whenIdle().then((_) {
-          Future.delayed(const Duration(milliseconds: 250), () {
-            if (mounted) _handleGameWon();
-          });
+        (_audioQueue?.whenIdle() ?? Future<void>.value())
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
+          .then((_) {
+          if (!mounted) return;
+          runAfter(const Duration(milliseconds: 250), _handleGameWon);
         });
       }
       return;
     }
 
     // Announce next player's turn
-    if (!_dartboardEmulatorController.isAutoPlaying) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) _announceCurrentPlayerTurn();
-      });
+    if (!isAutoPlaying) {
+      runAfter(const Duration(milliseconds: 500), _announceCurrentPlayerTurn);
     }
-
-    setState(() {});
   }
 
   void _handleGameWon() {
-    if (_gameCompleted) return;
-    _gameCompleted = true;
-
-    void navigateToResults() {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-            builder: (context) => const ReefRoyaleResultsScreen()),
-      );
-    }
-
-    if (_dartboardEmulatorController.isAutoPlaying) {
-      navigateToResults();
-    } else {
-      final reefProvider = context.read<ReefRoyaleProvider>();
-      final playerProvider = context.read<PlayerProvider>();
-      // Read winnerIds (list), not winnerId (single). The model
-      // explicitly computes a multi-winner list when two or more
-      // players hit the required-corals target on the same turn —
-      // reading only winnerId in that case silences all-but-one
-      // tied winner in the announcement (same bug that was fixed
-      // in Tiki Golf). Falls back to the id if a name lookup misses.
-      final winnerIds = reefProvider.currentGame?.winnerIds ?? const [];
-      if (winnerIds.isNotEmpty) {
-        final winnerNames = winnerIds
-            .map((id) =>
-                playerProvider.getPlayerById(id)?.name ?? id)
-            .toList();
-        _audioQueue?.announceVictory(winnerNames);
-      }
-      _audioQueue?.whenIdle().then((_) {
-        Future.delayed(const Duration(milliseconds: 250), navigateToResults);
-      });
-    }
+    handleGameWon(
+      announceWinner: () {
+        final reefProvider = context.read<ReefRoyaleProvider>();
+        final playerProvider = context.read<PlayerProvider>();
+        // Read winnerIds (list), not winnerId (single). The model
+        // explicitly computes a multi-winner list when two or more
+        // players hit the required-corals target on the same turn —
+        // reading only winnerId in that case silences all-but-one
+        // tied winner in the announcement (same bug that was fixed
+        // in Tiki Golf). Falls back to the id if a name lookup misses.
+        final winnerIds = reefProvider.currentGame?.winnerIds ?? const [];
+        if (winnerIds.isNotEmpty) {
+          final winnerNames = winnerIds
+              .map((id) => playerProvider.getPlayerById(id)?.name ?? id)
+              .toList();
+          _audioQueue?.announceVictory(winnerNames);
+        }
+      },
+      resultsBuilder: (_) => const ReefRoyaleResultsScreen(),
+    );
   }
 
   void _announceDartResult(
@@ -332,7 +239,7 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     final coralName = currentGame.getCoralDisplayName(target);
     final playerProvider = context.read<PlayerProvider>();
     final playerName =
-        playerProvider.allPlayers.firstWhere((p) => p.id == playerId).name;
+        playerProvider.nameOf(playerId);
 
     // Priority: claim > lock > score > mark (max 2 per dart)
     int count = 0;
@@ -405,7 +312,6 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
   Widget build(BuildContext context) {
     final reefProvider = context.watch<ReefRoyaleProvider>();
     final playerProvider = context.watch<PlayerProvider>();
-    final dartboardProvider = context.watch<DartboardProvider>();
 
     final currentGame = reefProvider.currentGame;
     if (currentGame == null) {
@@ -423,29 +329,81 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
     final hasDartsThrown =
         currentGame.totalDartsThrown.values.any((c) => c > 0);
 
-    return AutoSaveOnPause(
-      onPaused: () {
-        if (!hasDartsThrown) return;
-        reefProvider.saveGame(allPlayers, isAutoSave: true);
+    return GameScreenShell(
+      hasDartsThrown: hasDartsThrown,
+      showSaveModal: showSaveModal,
+      onRequestSaveModal: openSaveModal,
+      onAutoSave: () => reefProvider.saveGame(allPlayers, isAutoSave: true),
+      onSave: () async {
+        await reefProvider.saveGame(allPlayers);
+        if (mounted) Navigator.of(context).pop();
       },
-      child: PopScope(
-      canPop: !hasDartsThrown || _showSaveModal,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _showSaveModal) return;
-        setState(() => _showSaveModal = true);
+      onDontSave: () => Navigator.of(context).pop(),
+      saveGameModalConfig: SaveGameModalConfig.reefRoyale(),
+      shouldPromptTakeout: shouldPromptTakeout,
+      removeDartsConfig: RemoveDartsModalConfig.reefRoyale(),
+      removeDartsPlayerName: currentPlayer?.name ?? 'Player',
+      editScoreButtonKey: ReefRoyaleGameKeys.editScoreButton,
+      onEditScore: () {
+        if (currentPlayer == null) return;
+        showEditScoreDialog(
+          context: context,
+          playerName: currentPlayer.name,
+          initialSegments:
+              reefProvider.getCurrentTurnDarts(currentPlayer.id),
+          onSubmit: (newSegments) => reefProvider.updateAllDartScores(
+              currentPlayer.id, newSegments),
+          config: EditScoreDialogConfig.reefRoyale(),
+          dartBorderColors:
+              _computeDartBorderColors(currentPlayer.id, reefProvider),
+        );
       },
-      child: Stack(
-        children: [
-          Scaffold(
-            backgroundColor: _deepReefBlue,
-            appBar: AppBar(
+      emulatorController: dartboardEmulatorController,
+      mockApi: mockApi,
+      dartboardKey: _dartboardKey,
+      emulatorSectionConfig: DartboardSectionConfig.reefRoyale(),
+      fabConfig: DartboardFABConfig.reefRoyale(),
+      onCancelAutoPlay: cancelAutoPlay,
+      onPlayToComplete: mockApi != null ? startPlayToComplete : null,
+      playToCompleteConfig:
+          mockApi != null ? PlayToCompleteButtonConfig.reefRoyale() : null,
+      // Play to Tie — needs Speed Play to be reachable. Without it, the game
+      // ends via "pearl + most corals" or "all targets locked", neither of
+      // which can be driven to a deterministic tie via all-miss play.
+      onPlayToTie: mockApi != null ? _onPlayToTie : null,
+      playToTieConfig:
+          mockApi != null ? PlayToTieButtonConfig.reefRoyale() : null,
+      playToTieEnabled: currentGame.speedPlayEnabled,
+      buffToggles: mockApi != null
+          ? ReefBuff.values
+              .map<BuffToggleSpec<Object>>((b) => BuffToggleSpec<Object>(
+                    buff: b,
+                    label: ReefRoyaleGame.getBuffDisplayName(b),
+                    isActive: currentGame.activeBuff == b,
+                    isEnabled: currentGame.bonusBuffsEnabled,
+                    buttonKey:
+                        DartboardEmulatorKeys.buffToggleButton(b.name),
+                    config: BuffToggleButtonConfig.reefRoyale(b),
+                  ))
+              .toList()
+          : null,
+      onBuffToggle: mockApi != null
+          ? (Object buff) {
+              final b = buff as ReefBuff;
+              final current = reefProvider.currentGame?.activeBuff;
+              reefProvider.setActiveBuff(current == b ? null : b);
+            }
+          : null,
+      pausedModalConfig: DartboardPausedModalConfig.reefRoyale(),
+      backgroundColor: _deepReefBlue,
+      appBar: AppBar(
               leading: IconButton(
                 key: ReefRoyaleGameKeys.backButton,
                 icon:
                     const Icon(Icons.arrow_back, color: _pearlWhite, size: 32),
                 onPressed: () {
                   if (hasDartsThrown) {
-                    setState(() => _showSaveModal = true);
+                    openSaveModal();
                   } else {
                     Navigator.of(context).pop();
                   }
@@ -588,14 +546,14 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
             ),
             body: Stack(
               children: [
-                // Background
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/games/reef_royale/images/ReefRoyale-Background.png',
-                    fit: BoxFit.cover,
-                    color: Colors.black.withOpacity(0.3),
-                    colorBlendMode: BlendMode.darken,
-                  ),
+                // Background, darkened. GameBackground caps the decoded
+                // raster; this screen rebuilds on every dart.
+                GameBackground(
+                  asset:
+                      'assets/games/reef_royale/images/ReefRoyale-Background.png',
+                  fallbackColor: const Color(0xFF06263B),
+                  imageColor: Colors.black.withOpacity(0.3),
+                  imageBlendMode: BlendMode.darken,
                 ),
 
                 // Main game area
@@ -636,132 +594,8 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                 ),
               ],
             ),
-          ),
-          // Outer-Stack modals — paint above Scaffold (incl. AppBar + FAB) so they
-          // block ALL screen interactions while shown.
-          // RemoveDartsModal sits BEHIND the emulator so DARTS REMOVED stays
-          // visible/tappable on top of the takeout overlay.
-          if (shouldPromptTakeout)
-            RemoveDartsModal(
-              config: RemoveDartsModalConfig.reefRoyale(),
-              playerName: currentPlayer?.name ?? 'Player',
-              editScoreButtonKey: ReefRoyaleGameKeys.editScoreButton,
-              onEditScore: () {
-                if (currentPlayer == null) return;
-                showEditScoreDialog(
-                  context: context,
-                  playerName: currentPlayer.name,
-                  initialSegments:
-                      reefProvider.getCurrentTurnDarts(currentPlayer.id),
-                  onSubmit: (newSegments) => reefProvider.updateAllDartScores(
-                      currentPlayer.id, newSegments),
-                  config: EditScoreDialogConfig.reefRoyale(),
-                  dartBorderColors:
-                      _computeDartBorderColors(currentPlayer.id, reefProvider),
-                );
-              },
-            ),
-
-          // Emulator above RemoveDartsModal; below SaveGameModal.
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DartboardEmulatorSection(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              shouldPromptTakeout: shouldPromptTakeout,
-              dartboardKey: _dartboardKey,
-              onDartThrow: (score, multiplier, baseScore, position) {
-                if (_mockApi != null) {
-                  _mockApi!.simulateDartThrow(
-                    score: score,
-                    multiplier: multiplier,
-                    playerName: 'Player',
-                    baseScore: baseScore,
-                    widgetX: position.dx,
-                    widgetY: position.dy,
-                    widgetSize: 250,
-                  );
-                }
-              },
-              onRemoveDarts: () {
-                _mockApi?.simulateTakeoutFinished();
-              },
-              config: DartboardSectionConfig.reefRoyale(),
-              onPlayToComplete: _mockApi != null ? _onPlayToComplete : null,
-              playToCompleteConfig: _mockApi != null
-                  ? PlayToCompleteButtonConfig.reefRoyale()
-                  : null,
-              // Play to Tie — needs Speed Play to be reachable. Without
-              // it, the game ends via "pearl + most corals" or "all
-              // targets locked", neither of which can be driven to a
-              // deterministic tie via all-miss play.
-              onPlayToTie: _mockApi != null ? _onPlayToTie : null,
-              playToTieConfig: _mockApi != null
-                  ? PlayToTieButtonConfig.reefRoyale()
-                  : null,
-              playToTieEnabled: currentGame.speedPlayEnabled,
-              buffToggles: _mockApi != null
-                  ? ReefBuff.values
-                      .map<BuffToggleSpec<Object>>((b) => BuffToggleSpec<Object>(
-                            buff: b,
-                            label: ReefRoyaleGame.getBuffDisplayName(b),
-                            isActive: currentGame.activeBuff == b,
-                            isEnabled: currentGame.bonusBuffsEnabled,
-                            buttonKey:
-                                DartboardEmulatorKeys.buffToggleButton(b.name),
-                            config: BuffToggleButtonConfig.reefRoyale(b),
-                          ))
-                      .toList()
-                  : null,
-              onBuffToggle: _mockApi != null
-                  ? (Object buff) {
-                      final b = buff as ReefBuff;
-                      final current = reefProvider.currentGame?.activeBuff;
-                      reefProvider.setActiveBuff(current == b ? null : b);
-                    }
-                  : null,
-            ),
-          ),
-
-          // FAB as outer-Stack sibling, above the emulator (so RemoveDartsModal
-          // can block the AppBar back arrow without also blocking the FAB).
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DartboardEmulatorFAB(
-              controller: _dartboardEmulatorController,
-              isConnected: !dartboardProvider.isEmulator,
-              config: DartboardFABConfig.reefRoyale(),
-              onCancelAutoPlay: _onCancelAutoPlay,
-            ),
-          ),
-
-          // Save Game Modal
-          if (_showSaveModal)
-            SaveGameModal(
-              config: SaveGameModalConfig.reefRoyale(),
-              onSave: () async {
-                await reefProvider.saveGame(allPlayers);
-                if (mounted) Navigator.of(context).pop();
-              },
-              onDontSave: () => Navigator.of(context).pop(),
-            ),
-
-          // Dartboard Paused Modal — last child, paints on top.
-          if (!dartboardProvider.isEmulator &&
-              dartboardProvider.status != DartboardConnectionStatus.connected &&
-              dartboardProvider.status != DartboardConnectionStatus.emulator)
-            DartboardPausedModal(
-              config: DartboardPausedModalConfig.reefRoyale(),
-            ),
-        ],
-      ),
-      ),
     );
   }
-
   Widget _buildBuffBanner(ReefBuff buff) {
     return Container(
       key: ReefRoyaleGameKeys.buffBanner,
@@ -1095,23 +929,9 @@ class _ReefRoyaleGameScreenState extends State<ReefRoyaleGameScreen>
                 final reefProvider = context.read<ReefRoyaleProvider>();
                 final dartsThrown = reefProvider.getCurrentPlayerDartsThrown();
                 reefProvider.skipTurn();
-                if (dartsThrown > 0) {
-                  // Darts in board — wait for physical takeout or emulator button
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (mounted) _mockApi?.simulateTakeoutStarted();
-                  });
-                } else {
-                  // No darts thrown, advance directly
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (mounted) {
-                      if (_mockApi != null) {
-                        _mockApi!.simulateTakeoutFinished();
-                      } else {
-                        _handleTakeoutFinished();
-                      }
-                    }
-                  });
-                }
+                // Darts on board → wait for DARTS REMOVED (Reef's skip has
+                // never announced); 0 darts → 500ms auto-advance.
+                scheduleTakeoutSequence(dartsOnBoard: dartsThrown > 0);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _coralPink,

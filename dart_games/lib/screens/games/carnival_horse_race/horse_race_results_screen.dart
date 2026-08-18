@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+
+import '../../../widgets/victory_celebration_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:math';
 import '../../../models/player.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/horse_race_provider.dart';
@@ -15,8 +16,6 @@ import '../../../widgets/dartboard_paused_modal/dartboard_paused_modal.dart';
 import '../../../providers/dartboard_provider.dart';
 import '../../../widgets/carnival_string_lights.dart';
 import '../../../widgets/carnival_target_logo.dart';
-import '../../../services/game_announcement_queue_service.dart';
-import '../../../services/carnival_derby_announcement_helper.dart';
 import '../../../services/victory_music_service.dart';
 import '../../../constants/test_keys.dart';
 import 'horse_race_menu_screen.dart';
@@ -35,7 +34,9 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   late Animation<double> _scaleAnimation;
   late ConfettiController _confettiController;
   final AudioPlayer _audioPlayer = AudioPlayer();
-  CarnivalDerbyAnnouncementHelper? _audioQueue;
+  /// Detaches the victory-music duck listener. The notifier it hooks is
+  /// app-wide, so failing to call this on dispose leaks into the next screen.
+  VoidCallback? _stopDucking;
   bool _statsUpdated = false;
 
   @override
@@ -63,7 +64,6 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _deleteResumedSavedGame();
       _updatePlayerStats();
-      _announceGameCompletion();
       // Start confetti after a short delay
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
@@ -79,36 +79,11 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
     });
   }
 
-  void _playVictoryMusic() async {
-    try {
-      final musicService = VictoryMusicService();
-      final customMusicSource = await musicService.getRandomMusicSource();
-
-      await _audioPlayer.setVolume(0.7);
-
-      if (customMusicSource != null && customMusicSource.isNotEmpty) {
-        if (customMusicSource.startsWith('data:')) {
-          await _audioPlayer.play(UrlSource(customMusicSource)).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => debugPrint('Audio playback timed out'),
-              );
-        } else {
-          await _audioPlayer.play(DeviceFileSource(customMusicSource)).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => debugPrint('Audio playback timed out'),
-              );
-        }
-      } else {
-        await _audioPlayer
-            .play(UrlSource(
-                'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'))
-            .timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => debugPrint('Audio playback timed out'),
-            );
-      }
-    } catch (e) {
-      debugPrint('Error playing victory music: $e');
+  Future<void> _playVictoryMusic() async {
+    final started =
+        await VictoryMusicService().playVictoryMusic(_audioPlayer);
+    if (started) {
+      _stopDucking ??= VictoryMusicService.duckUnderSpeech(_audioPlayer);
     }
   }
 
@@ -116,8 +91,9 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
   void dispose() {
     _animationController.dispose();
     _confettiController.dispose();
+    _stopDucking?.call();
+    _stopDucking = null;
     _audioPlayer.dispose();
-    _audioQueue?.dispose();
     super.dispose();
   }
 
@@ -168,41 +144,6 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
       }
     } catch (e) {
       debugPrint('Error deleting resumed saved game: $e');
-    }
-  }
-
-  void _announceGameCompletion() async {
-    try {
-      // Initialize global announcement queue with Carnival Derby helper
-      final globalQueue = GameAnnouncementQueueService();
-      await globalQueue.loadSettings();
-      if (!mounted) return;
-      _audioQueue = CarnivalDerbyAnnouncementHelper(globalQueue);
-
-      final horseRaceProvider = context.read<HorseRaceProvider>();
-      final playerProvider = context.read<PlayerProvider>();
-      final currentGame = horseRaceProvider.currentGame;
-
-      if (currentGame == null) return;
-
-      final players = currentGame.playerIds
-          .map((id) => playerProvider.getPlayerById(id))
-          .whereType<Player>()
-          .toList();
-
-      final winner = horseRaceProvider.getWinner(players);
-
-      if (winner != null) {
-        // Announce game completion first
-        _audioQueue?.announceGameComplete();
-
-        // Then announce the winner after a delay (longer to ensure first announcement finishes)
-        Future.delayed(const Duration(milliseconds: 3000), () {
-          if (mounted) _audioQueue?.announceWinner(winner.name);
-        });
-      }
-    } catch (e) {
-      debugPrint('Error announcing game completion: $e');
     }
   }
 
@@ -326,63 +267,24 @@ class _HorseRaceResultsScreenState extends State<HorseRaceResultsScreen>
               // Content
               Stack(
                 children: [
-                  // Confetti widgets - positioned at different locations (behind content)
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: ConfettiWidget(
-                      confettiController: _confettiController,
-                      blastDirection: pi / 4,
-                      emissionFrequency: 0.05,
-                      numberOfParticles: 20,
-                      gravity: 0.1,
-                      colors: const [
-                        Colors.amber,
-                        Colors.orange,
-                        Colors.red,
-                        Colors.pink,
-                        Colors.purple,
-                        Colors.blue,
-                        Colors.green,
-                      ],
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: ConfettiWidget(
-                      confettiController: _confettiController,
-                      blastDirection: 3 * pi / 4,
-                      emissionFrequency: 0.05,
-                      numberOfParticles: 20,
-                      gravity: 0.1,
-                      colors: const [
-                        Colors.amber,
-                        Colors.orange,
-                        Colors.red,
-                        Colors.pink,
-                        Colors.purple,
-                        Colors.blue,
-                        Colors.green,
-                      ],
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: ConfettiWidget(
-                      confettiController: _confettiController,
-                      blastDirection: pi / 2,
-                      emissionFrequency: 0.05,
-                      numberOfParticles: 30,
-                      gravity: 0.1,
-                      colors: const [
-                        Colors.amber,
-                        Colors.orange,
-                        Colors.red,
-                        Colors.pink,
-                        Colors.purple,
-                        Colors.blue,
-                        Colors.green,
-                      ],
-                    ),
+                  // Confetti — three emitters, shared scaffolding (WS03 §3.7).
+                  //
+                  // Carnival is the one game whose emitters differ: the centre
+                  // fires 30 particles and each corner 20, a heavier central
+                  // burst. That is preserved rather than averaged away.
+                  VictoryCelebrationOverlay(
+                    controller: _confettiController,
+                    numberOfParticlesFor: (alignment) =>
+                        alignment == Alignment.topCenter ? 30 : 20,
+                    colors: const [
+                      Colors.amber,
+                      Colors.orange,
+                      Colors.red,
+                      Colors.pink,
+                      Colors.purple,
+                      Colors.blue,
+                      Colors.green,
+                    ],
                   ),
                   Consumer2<HorseRaceProvider, PlayerProvider>(
                     builder:

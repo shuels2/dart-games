@@ -3,11 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/mock_scolia_api_service.dart';
 
 import '../../shared/dart_throw_helpers.dart';
+import '../../shared/element_finders.dart';
 import '../../shared/pump_sequences.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/results_helpers.dart';
 import '../../shared/settings_helpers.dart';
+import '../../shared/navigation_suite.dart';
+import '../../shared/ui_test_helpers.dart';
 
 final config = GameUIConfig.targetTag();
 
@@ -80,3 +83,50 @@ Future<void> completeGameToVictory(WidgetTester tester, String player1Name, Stri
   // Wait for _handleGameWon 3s navigation delay
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== NAVIGATION SUITE SPEC =====
+//
+// Shared bodies live in shared/navigation_suite.dart; everything
+// game-specific for Target Tag is supplied here. Shield Max 3 and the two
+// players are the exact setup the four hand-written files used.
+
+Future<void> _setupAndStart(WidgetTester tester) async {
+  await UITestHelpers.navigateToGameMenu(tester, config);
+  await setShieldMax(tester, 3);
+  await UITestHelpers.addPlayer(tester, 'Player A', config);
+  await UITestHelpers.addPlayer(tester, 'Player B', config);
+  await UITestHelpers.startGame(tester, config);
+}
+
+void _verifySettings(WidgetTester tester) {
+  // Two spaces between "Max:" and the value — see commit a1fbe11.
+  expect(find.text('Shield Max:  3'), findsOneWidget);
+  expect(find.text('Player A'), findsWidgets);
+  expect(find.text('Player B'), findsWidgets);
+}
+
+/// Reaches a backable game screen: finish a game, then Play Again for a fresh
+/// board with 0 darts thrown (so the back tap raises no Save prompt).
+Future<void> _reachGameScreen(WidgetTester tester) async {
+  await _setupAndStart(tester);
+  await completeGameToVictory(tester, 'Player A', 'Player B');
+  await ResultsHelpers.pumpUntilResults(tester, config);
+  expect(config.getPlayAgainButton(), findsOneWidget);
+  await UITestHelpers.clickPlayAgain(tester, config);
+
+  // Extra settle after Play Again before the game screen is interactive.
+  await tester.pump(const Duration(seconds: 3));
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pump();
+}
+
+final navigationSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getTargetTagBackButton,
+  setupAndStart: _setupAndStart,
+  playToVictory: (tester) =>
+      completeGameToVictory(tester, 'Player A', 'Player B'),
+  reachGameScreen: _reachGameScreen,
+  verifySettings: _verifySettings,
+);

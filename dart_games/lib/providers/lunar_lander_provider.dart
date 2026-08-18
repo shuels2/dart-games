@@ -3,19 +3,19 @@ import '../models/lunar_lander_game.dart';
 import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
-import '../services/game_skip_turn_helper.dart';
 import '../services/api/api_client.dart';
+import 'game_provider_base.dart';
 
-class LunarLanderProvider extends ChangeNotifier {
-  LunarLanderGame? _currentGame;
-  bool _waitingForTakeout = false;
-  ApiClient? _apiClient;
+class LunarLanderProvider extends GameProviderBase<LunarLanderGame> {
+  /// Internal alias for [GameProviderBase.game] — keeps the game logic below
+  /// untouched while the storage lives in the base.
+  LunarLanderGame? get _currentGame => game;
+  set _currentGame(LunarLanderGame? value) => game = value;
+
+  final ApiClient? _apiClient;
 
   /// Wall-clock time when the current game started (for gameDuration).
   DateTime? _gameStartTime;
-
-  String? _resumedSavedGameId;
-  bool _saving = false;
 
   LunarLanderProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
@@ -23,11 +23,11 @@ class LunarLanderProvider extends ChangeNotifier {
 
   LunarLanderGame? get currentGame => _currentGame;
 
+  @override
   bool get isGameActive =>
       _currentGame?.state == LunarLanderGameState.playing;
 
-  bool get shouldPromptTakeout => _waitingForTakeout;
-
+  @override
   bool get hasWinner => _currentGame?.hasWinner() ?? false;
 
   Player? getCurrentPlayer(List<Player> players) {
@@ -62,8 +62,6 @@ class LunarLanderProvider extends ChangeNotifier {
     return DateTime.now().difference(_gameStartTime!);
   }
 
-  String? get resumedSavedGameId => _resumedSavedGameId;
-
   // ─── startGame ───────────────────────────────────────────────────────────────
 
   void startGame({
@@ -80,12 +78,17 @@ class LunarLanderProvider extends ChangeNotifier {
       return;
     }
 
+    // A genuinely new game must not inherit the previous game's saved-game
+    // slot — otherwise this game's first save overwrites (and destroys) a
+    // still-resumable abandoned game. See F2 in the plan notes.
+    clearResumedSavedGameId();
+
     _currentGame = LunarLanderGame.create(
       playerIds: playerIds,
       startingAltitude: startingAltitude,
       hardLandingEnabled: hardLandingEnabled,
     );
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
     _gameStartTime = DateTime.now();
 
     // Snapshot the initial turn start state
@@ -114,7 +117,7 @@ class LunarLanderProvider extends ChangeNotifier {
     required String sector,
   }) {
     if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (shouldPromptTakeout) return;
 
     final game = _currentGame!;
     final playerId = game.getCurrentPlayerId();
@@ -181,10 +184,10 @@ class LunarLanderProvider extends ChangeNotifier {
     }
 
     // End-of-turn check: 3 darts thrown, bust, or win
-    if ((game.dartsThrown[playerId] ?? 0) >= game.maxDartsPerTurn ||
-        game.hasWinner()) {
-      _waitingForTakeout = true;
-    }
+    checkTakeoutCondition(
+      dartsThrown: game.dartsThrown[playerId] ?? 0,
+      maxDartsPerTurn: game.maxDartsPerTurn,
+    );
 
     notifyListeners();
   }
@@ -196,23 +199,12 @@ class LunarLanderProvider extends ChangeNotifier {
 
   // ─── advanceTurn ─────────────────────────────────────────────────────────────
 
-  /// Advances to the next player after takeout is complete.
-  void advanceTurn() {
-    if (_currentGame == null) return;
-    if (!_waitingForTakeout) return;
+  /// Advances to the next player after takeout is complete. Lunar Lander's
+  /// historical name for the base flow — screen and tests call this.
+  void advanceTurn() => handleTakeoutFinished();
 
-    if (_currentGame!.hasWinner()) {
-      _waitingForTakeout = false;
-      notifyListeners();
-      return;
-    }
-
-    if (!isGameActive) return;
-
-    _currentGame!.advanceToNextPlayer();
-    _waitingForTakeout = false;
-    notifyListeners();
-  }
+  @override
+  void advanceToNextPlayer() => _currentGame!.advanceToNextPlayer();
 
   // ─── skipTurn ────────────────────────────────────────────────────────────────
 
@@ -220,20 +212,9 @@ class LunarLanderProvider extends ChangeNotifier {
     if (_currentGame == null) return;
 
     final playerId = _currentGame!.getCurrentPlayerId();
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
 
-    if (!GameSkipTurnHelper.canSkipTurn(
-      gameActive: isGameActive,
-      waitingForTakeout: _waitingForTakeout,
-      currentDartCount: dartsThrown,
-      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
-    )) {
-      return;
-    }
-
-    // Visual skip markers for dart slots
-    GameSkipTurnHelper.skipRemainingDarts(
-      currentDartCount: dartsThrown,
+    runSkipTurn(
+      dartsThrown: _currentGame!.getCurrentPlayerDartsThrown(),
       maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
       addVisualMarker: (marker) {
         _currentGame!.currentTurnDartScores[playerId] ??= [];
@@ -243,9 +224,6 @@ class LunarLanderProvider extends ChangeNotifier {
         _currentGame!.dartThrowWasBust[playerId]!.add(false);
       },
     );
-
-    _waitingForTakeout = true;
-    notifyListeners();
   }
 
   // ─── checkWinCondition ───────────────────────────────────────────────────────
@@ -368,30 +346,18 @@ class LunarLanderProvider extends ChangeNotifier {
     game.currentPlayerIndex = savedPlayerIndex;
 
     // Re-evaluate takeout condition
-    if ((game.dartsThrown[playerId] ?? 0) >= game.maxDartsPerTurn ||
-        game.hasWinner()) {
-      _waitingForTakeout = true;
-    }
+    checkTakeoutCondition(
+      dartsThrown: game.dartsThrown[playerId] ?? 0,
+      maxDartsPerTurn: game.maxDartsPerTurn,
+    );
 
     notifyListeners();
   }
 
   // ─── Save / Restore ──────────────────────────────────────────────────────────
 
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
-  }
-
   Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
-    debugPrint(
-        '[LunarLanderProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
-    if (_currentGame == null || _saving) {
-      debugPrint(
-          '[LunarLanderProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
-      return;
-    }
-    _saving = true;
-    try {
+    await persistSave(SaveGameService(_apiClient), (existingId) {
       final game = _currentGame!;
 
       // Find leading player (lowest altitude)
@@ -410,7 +376,7 @@ class LunarLanderProvider extends ChangeNotifier {
         orElse: () => players.first,
       );
 
-      final metadata = SavedGameMetadata.create(
+      return SavedGameMetadata.create(
         gameType: 'lunar_lander',
         playerNames: players
             .where((p) => game.playerIds.contains(p.id))
@@ -423,39 +389,28 @@ class LunarLanderProvider extends ChangeNotifier {
         leadingPlayerName: leaderPlayer.name,
         leadingPlayerScore: 'Alt: $lowestAlt',
         gameState: game.toJson(),
-        waitingForTakeout: _waitingForTakeout,
+        waitingForTakeout: shouldPromptTakeout,
         isAutoSave: isAutoSave,
-        existingId: _resumedSavedGameId,
+        existingId: existingId,
       );
-
-      debugPrint(
-          '[LunarLanderProvider] saving with id=${metadata.id}');
-      final saved = await SaveGameService(_apiClient).saveGame(metadata);
-      if (saved) {
-        _resumedSavedGameId = metadata.id;
-      }
-      debugPrint(
-          '[LunarLanderProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
-    } finally {
-      _saving = false;
-    }
+    });
   }
 
-  Future<void> restoreGame(SavedGameMetadata savedGame) async {
-    _currentGame = LunarLanderGame.fromJson(
-        Map<String, dynamic>.from(savedGame.gameState));
-    _waitingForTakeout = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = LunarLanderGame.fromJson(json);
+  }
+
+  @override
+  void onRestored() {
     _gameStartTime = DateTime.now(); // Resume timing from now
-    notifyListeners();
   }
 
   // ─── clearGame ───────────────────────────────────────────────────────────────
 
+  @override
   void clearGame() {
-    _currentGame = null;
-    _waitingForTakeout = false;
     _gameStartTime = null;
-    notifyListeners();
+    super.clearGame();
   }
 }

@@ -11,6 +11,9 @@ import '../services/app_settings.dart';
 import '../services/victory_music_service.dart';
 import '../services/photo_service.dart';
 import '../services/test_data_service.dart';
+// Deferred: keeps ~1.7MB of base64 test MP3 out of the main bundle. Loaded
+// only when the user asks for test data.
+import '../services/embedded_test_audio.dart' deferred as embedded_test_audio;
 import '../services/test_headshot_landmarks_service.dart';
 import '../models/victory_music_file.dart';
 import '../widgets/add_player/add_player.dart';
@@ -1571,7 +1574,19 @@ class _OptionsScreenState extends State<OptionsScreen> {
     // totals from the very first frame.
     final testPlayers = TestDataService.generateTestPlayers();
     final headshotPaths = TestDataService.getTestHeadshotAssetPaths();
-    final testMusicDataUrls = TestDataService.getTestVictoryMusicDataUrls();
+    // ~1.7MB of base64 MP3 lives behind this deferred import so it stays out
+    // of the main bundle; it is only fetched when someone loads test data.
+    await embedded_test_audio.loadLibrary();
+    final testMusicDataUrls = <Map<String, String>>[
+      {
+        'name': TestDataService.testVictoryMusicNames[0],
+        'dataUrl': embedded_test_audio.EmbeddedTestAudio.getMusicDataUrl1(),
+      },
+      {
+        'name': TestDataService.testVictoryMusicNames[1],
+        'dataUrl': embedded_test_audio.EmbeddedTestAudio.getMusicDataUrl2(),
+      },
+    ];
     final musicService = VictoryMusicService();
 
     // ── Progress tracker ────────────────────────────────────────────────

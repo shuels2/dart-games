@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../theme/game_theme.dart';
 import '../add_player/add_player_dialog_config.dart';
 
 /// Configuration class controlling all visual aspects of the dual-list
@@ -102,23 +104,23 @@ class DualPlayerListPanelConfig {
   /// button with Canary Yellow border, Bangers font, Montserrat headers.
   factory DualPlayerListPanelConfig.carnivalDerby() {
     return DualPlayerListPanelConfig(
-      containerColor: const Color(0xFF1D3557),
+      containerColor: GameTheme.carnivalDerby.background,
       containerOpacity: 0.85,
-      containerBorderColor: const Color(0xFFF1FAEE),
+      containerBorderColor: GameTheme.carnivalDerby.onDark,
       containerBorderWidth: 1,
       headerTextStyle: GoogleFonts.montserrat(
         fontSize: 16,
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
         fontWeight: FontWeight.w900,
       ),
       emptyStateTextStyle: GoogleFonts.montserrat(
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
         fontSize: 16,
         fontWeight: FontWeight.w500,
       ),
       selectedEmptyText: 'Select at least 1 player',
       addButtonColor: const Color(0xFFE63946),
-      addButtonForegroundColor: const Color(0xFFF1FAEE),
+      addButtonForegroundColor: GameTheme.carnivalDerby.onDark,
       addButtonBorderSide: const BorderSide(
         color: Color(0xFFFFD700),
         width: 3,
@@ -126,12 +128,12 @@ class DualPlayerListPanelConfig {
       addButtonTextStyle: GoogleFonts.bangers(
         fontSize: 12,
         letterSpacing: 1.0,
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
       ),
       emptyStateAddButtonTextStyle: GoogleFonts.bangers(
         fontSize: 16,
         letterSpacing: 1.0,
-        color: const Color(0xFFF1FAEE),
+        color: GameTheme.carnivalDerby.onDark,
       ),
       maxPlayers: 8,
       addPlayerDialogConfig: AddPlayerDialogConfig.carnivalDerby(),
@@ -142,31 +144,31 @@ class DualPlayerListPanelConfig {
   /// headers, purple selected/lime border cards, Creepster card names.
   factory DualPlayerListPanelConfig.monsterMash() {
     return DualPlayerListPanelConfig(
-      containerColor: const Color(0xFF2F4F4F),
+      containerColor: GameTheme.monsterMash.background,
       containerOpacity: 0.80,
       containerBorderColor: Color(0xFFF5F5DC).withOpacity(0.3),
       containerBorderWidth: 1,
       headerTextStyle: GoogleFonts.pirataOne(
         fontSize: 22,
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
       ),
-      selectedBorderColorWhenReady: const Color(0xFF7FFF00),
+      selectedBorderColorWhenReady: GameTheme.monsterMash.accent,
       selectedBorderWidthWhenReady: 2,
       minPlayersForReady: 2,
-      selectedHeaderColorWhenReady: const Color(0xFF7FFF00),
+      selectedHeaderColorWhenReady: GameTheme.monsterMash.accent,
       emptyStateTextStyle: GoogleFonts.montserrat(
         color: Color(0xFFF5F5DC).withOpacity(0.7),
         fontSize: 20,
       ),
       selectedEmptyText: 'Select at least 2 players',
-      addButtonColor: const Color(0xFF2F4F4F),
-      addButtonForegroundColor: const Color(0xFFF5F5DC),
+      addButtonColor: GameTheme.monsterMash.background,
+      addButtonForegroundColor: GameTheme.monsterMash.onDark,
       addButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 18,
-        color: const Color(0xFFF5F5DC),
+        color: GameTheme.monsterMash.onDark,
       ),
       selectedColor: const Color(0xFF4B0082),
-      selectedBorderColor: const Color(0xFF7FFF00),
+      selectedBorderColor: GameTheme.monsterMash.accent,
       unselectedBackgroundColor: const Color(0xFF1D3557),
       unselectedBorderColor: const Color(0xFF48CAE4),
       cardNameStyle: GoogleFonts.creepster(
@@ -196,39 +198,39 @@ class DualPlayerListPanelConfig {
   /// Fredoka headers, Pearl White text.
   factory DualPlayerListPanelConfig.reefRoyale() {
     return DualPlayerListPanelConfig(
-      containerColor: const Color(0xFF0B3D91),
+      containerColor: GameTheme.reefRoyale.background,
       containerOpacity: 0.85,
-      containerBorderColor: const Color(0xFF48D1CC).withOpacity(0.3),
+      containerBorderColor: GameTheme.reefRoyale.accent.withOpacity(0.3),
       containerBorderWidth: 1,
       headerTextStyle: GoogleFonts.fredoka(
         fontSize: 22,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
       ),
-      selectedBorderColorWhenReady: const Color(0xFF48D1CC),
+      selectedBorderColorWhenReady: GameTheme.reefRoyale.accent,
       selectedBorderWidthWhenReady: 2,
       minPlayersForReady: 2,
-      selectedHeaderColorWhenReady: const Color(0xFF48D1CC),
+      selectedHeaderColorWhenReady: GameTheme.reefRoyale.accent,
       emptyStateTextStyle: GoogleFonts.nunito(
-        color: const Color(0xFFFFF8F0).withOpacity(0.7),
+        color: GameTheme.reefRoyale.onDark.withOpacity(0.7),
         fontSize: 20,
       ),
       selectedEmptyText: 'Select at least 2 players',
-      addButtonColor: const Color(0xFF0B3D91),
-      addButtonForegroundColor: const Color(0xFFFFF8F0),
+      addButtonColor: GameTheme.reefRoyale.background,
+      addButtonForegroundColor: GameTheme.reefRoyale.onDark,
       addButtonTextStyle: GoogleFonts.fredoka(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
       ),
-      selectedColor: const Color(0xFF48D1CC).withOpacity(0.2),
-      selectedBorderColor: const Color(0xFF48D1CC),
-      unselectedBackgroundColor: const Color(0xFF0B3D91).withOpacity(0.6),
-      unselectedBorderColor: const Color(0xFF48D1CC).withOpacity(0.3),
+      selectedColor: GameTheme.reefRoyale.accent.withOpacity(0.2),
+      selectedBorderColor: GameTheme.reefRoyale.accent,
+      unselectedBackgroundColor: GameTheme.reefRoyale.background.withOpacity(0.6),
+      unselectedBorderColor: GameTheme.reefRoyale.accent.withOpacity(0.3),
       cardNameStyle: GoogleFonts.fredoka(
         fontSize: 21,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFFF8F0),
+        color: GameTheme.reefRoyale.onDark,
       ),
       nameStatsSpacing: 1.4,
       maxPlayers: 8,
@@ -242,27 +244,27 @@ class DualPlayerListPanelConfig {
   /// Lunar Lander theme — Earth Blue containers, Rocket Flame accents, Orbitron/Exo2 fonts
   factory DualPlayerListPanelConfig.lunarLander() {
     return DualPlayerListPanelConfig(
-      containerColor: const Color(0xFF1B4965), // Earth Blue
+      containerColor: GameTheme.lunarLander.background, // Earth Blue
       containerOpacity: 0.85,
-      containerBorderColor: const Color(0xFFF26430).withOpacity(0.5), // Rocket Flame
+      containerBorderColor: GameTheme.lunarLander.accent.withOpacity(0.5), // Rocket Flame
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.orbitron(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF26430), // Rocket Flame
+        color: GameTheme.lunarLander.accent, // Rocket Flame
         letterSpacing: 1.0,
       ),
-      selectedBorderColorWhenReady: const Color(0xFFF26430),
+      selectedBorderColorWhenReady: GameTheme.lunarLander.accent,
       selectedBorderWidthWhenReady: 2,
       minPlayersForReady: 2,
-      selectedHeaderColorWhenReady: const Color(0xFFF26430),
+      selectedHeaderColorWhenReady: GameTheme.lunarLander.accent,
       emptyStateTextStyle: GoogleFonts.exo2(
-        color: const Color(0xFFFAFDF6).withOpacity(0.7),
+        color: GameTheme.lunarLander.onDark.withOpacity(0.7),
         fontSize: 16,
       ),
       selectedEmptyText: 'Select at least 2 players',
-      addButtonColor: const Color(0xFF1B4965),
-      addButtonForegroundColor: const Color(0xFFFAFDF6),
+      addButtonColor: GameTheme.lunarLander.background,
+      addButtonForegroundColor: GameTheme.lunarLander.onDark,
       addButtonBorderSide: const BorderSide(
         color: Color(0xFFF26430), // Rocket Flame
         width: 2,
@@ -270,17 +272,17 @@ class DualPlayerListPanelConfig {
       addButtonTextStyle: GoogleFonts.orbitron(
         fontSize: 13,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
         letterSpacing: 0.5,
       ),
-      selectedColor: const Color(0xFFF26430).withOpacity(0.2),
-      selectedBorderColor: const Color(0xFFF26430),
-      unselectedBackgroundColor: const Color(0xFF1B4965).withOpacity(0.6),
-      unselectedBorderColor: const Color(0xFFF26430).withOpacity(0.3),
+      selectedColor: GameTheme.lunarLander.accent.withOpacity(0.2),
+      selectedBorderColor: GameTheme.lunarLander.accent,
+      unselectedBackgroundColor: GameTheme.lunarLander.background.withOpacity(0.6),
+      unselectedBorderColor: GameTheme.lunarLander.accent.withOpacity(0.3),
       cardNameStyle: GoogleFonts.exo2(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFFAFDF6),
+        color: GameTheme.lunarLander.onDark,
       ),
       nameStatsSpacing: 1.4,
       maxPlayers: 8,
@@ -295,9 +297,9 @@ class DualPlayerListPanelConfig {
   /// Exactly 2 players (no team mode).
   factory DualPlayerListPanelConfig.piratesGrid() {
     return DualPlayerListPanelConfig(
-      containerColor: const Color(0xFF1B2838), // Ocean Navy
+      containerColor: GameTheme.piratesGrid.background, // Ocean Navy
       containerOpacity: 0.85,
-      containerBorderColor: const Color(0xFFCD7F32).withOpacity(0.5), // Compass Bronze
+      containerBorderColor: GameTheme.piratesGrid.accent.withOpacity(0.5), // Compass Bronze
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.pirataOne(
         fontSize: 22,
@@ -309,29 +311,29 @@ class DualPlayerListPanelConfig {
       minPlayersForReady: 2,
       selectedHeaderColorWhenReady: const Color(0xFFDAA520),
       emptyStateTextStyle: GoogleFonts.lora(
-        color: const Color(0xFFF5E6C8).withOpacity(0.7),
+        color: GameTheme.piratesGrid.onDark.withOpacity(0.7),
         fontSize: 16,
       ),
       selectedEmptyText: 'Select exactly 2 players',
-      addButtonColor: const Color(0xFF1B2838),
-      addButtonForegroundColor: const Color(0xFFF5E6C8),
+      addButtonColor: GameTheme.piratesGrid.background,
+      addButtonForegroundColor: GameTheme.piratesGrid.onDark,
       addButtonBorderSide: const BorderSide(
         color: Color(0xFFCD7F32), // Compass Bronze
         width: 2,
       ),
       addButtonTextStyle: GoogleFonts.pirataOne(
         fontSize: 16,
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
         letterSpacing: 0.5,
       ),
-      selectedColor: const Color(0xFFCD7F32).withOpacity(0.2),
-      selectedBorderColor: const Color(0xFFCD7F32),
-      unselectedBackgroundColor: const Color(0xFF1B2838).withOpacity(0.6),
-      unselectedBorderColor: const Color(0xFFCD7F32).withOpacity(0.3),
+      selectedColor: GameTheme.piratesGrid.accent.withOpacity(0.2),
+      selectedBorderColor: GameTheme.piratesGrid.accent,
+      unselectedBackgroundColor: GameTheme.piratesGrid.background.withOpacity(0.6),
+      unselectedBorderColor: GameTheme.piratesGrid.accent.withOpacity(0.3),
       cardNameStyle: GoogleFonts.lora(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5E6C8),
+        color: GameTheme.piratesGrid.onDark,
       ),
       nameStatsSpacing: 1.4,
       maxPlayers: 2,
@@ -347,7 +349,7 @@ class DualPlayerListPanelConfig {
     return DualPlayerListPanelConfig(
       containerColor: const Color(0xFF4A3520), // Dark Arena Brown
       containerOpacity: 0.85,
-      containerBorderColor: const Color(0xFFCD7F32).withOpacity(0.5), // Bronze
+      containerBorderColor: GameTheme.gladiatorArena.accent.withOpacity(0.5), // Bronze
       containerBorderWidth: 2,
       headerTextStyle: GoogleFonts.cinzel(
         fontSize: 18,
@@ -360,12 +362,12 @@ class DualPlayerListPanelConfig {
       minPlayersForReady: 2,
       selectedHeaderColorWhenReady: const Color(0xFFDAA520), // Gladiator Gold
       emptyStateTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8).withOpacity(0.7), // Marble White
+        color: GameTheme.gladiatorArena.onDark.withOpacity(0.7), // Marble White
         fontSize: 16,
       ),
       selectedEmptyText: 'Select at least 2 gladiators',
       addButtonColor: const Color(0xFF4A3520),
-      addButtonForegroundColor: const Color(0xFFF5F0E8),
+      addButtonForegroundColor: GameTheme.gladiatorArena.onDark,
       addButtonBorderSide: const BorderSide(
         color: Color(0xFFCD7F32), // Bronze
         width: 2,
@@ -373,22 +375,22 @@ class DualPlayerListPanelConfig {
       addButtonTextStyle: GoogleFonts.cinzel(
         fontSize: 13,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.gladiatorArena.onDark,
         letterSpacing: 0.5,
       ),
       selectedColor: const Color(0xFFDAA520).withOpacity(0.2),
       selectedBorderColor: const Color(0xFFDAA520), // Gladiator Gold
       unselectedBackgroundColor: const Color(0xFF4A3520).withOpacity(0.6),
-      unselectedBorderColor: const Color(0xFFCD7F32).withOpacity(0.3),
+      unselectedBorderColor: GameTheme.gladiatorArena.accent.withOpacity(0.3),
       cardNameStyle: GoogleFonts.cinzel(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8), // Marble White
+        color: GameTheme.gladiatorArena.onDark, // Marble White
         letterSpacing: 0.5,
       ),
       cardStatsStyle: GoogleFonts.lato(
         fontSize: 13,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.gladiatorArena.onDark,
       ),
       checkIconColor: const Color(0xFFDAA520), // Gladiator Gold
       removeIconColor: const Color(0xFFC0392B), // Blood Red
@@ -411,44 +413,44 @@ class DualPlayerListPanelConfig {
 
   factory DualPlayerListPanelConfig.clockworkQuest() {
     return DualPlayerListPanelConfig(
-      containerColor: const Color(0xFF2C2C34), // Dark Iron
+      containerColor: GameTheme.clockworkQuest.background, // Dark Iron
       containerOpacity: 0.80,
       containerBorderColor: const Color(0xFFB87333).withOpacity(0.3), // Copper Rose
       containerBorderWidth: 1,
       headerTextStyle: GoogleFonts.cinzelDecorative(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFC5A54E), // Brass Gold
+        color: GameTheme.clockworkQuest.accent, // Brass Gold
         letterSpacing: 1.2,
       ),
-      selectedBorderColorWhenReady: const Color(0xFFC5A54E),
+      selectedBorderColorWhenReady: GameTheme.clockworkQuest.accent,
       selectedBorderWidthWhenReady: 2,
       minPlayersForReady: 2,
-      selectedHeaderColorWhenReady: const Color(0xFFC5A54E),
+      selectedHeaderColorWhenReady: GameTheme.clockworkQuest.accent,
       emptyStateTextStyle: GoogleFonts.lato(
-        color: const Color(0xFFF5F0E8).withOpacity(0.7),
+        color: GameTheme.clockworkQuest.onDark.withOpacity(0.7),
         fontSize: 16,
       ),
       selectedEmptyText: 'Select at least 2 players',
-      addButtonColor: const Color(0xFF2C2C34),
-      addButtonForegroundColor: const Color(0xFFF5F0E8),
+      addButtonColor: GameTheme.clockworkQuest.background,
+      addButtonForegroundColor: GameTheme.clockworkQuest.onDark,
       addButtonTextStyle: GoogleFonts.cinzelDecorative(
         fontSize: 14,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.clockworkQuest.onDark,
       ),
-      selectedColor: const Color(0xFFC5A54E).withOpacity(0.2),
-      selectedBorderColor: const Color(0xFFC5A54E),
-      unselectedBackgroundColor: const Color(0xFF2C2C34).withOpacity(0.6),
+      selectedColor: GameTheme.clockworkQuest.accent.withOpacity(0.2),
+      selectedBorderColor: GameTheme.clockworkQuest.accent,
+      unselectedBackgroundColor: GameTheme.clockworkQuest.background.withOpacity(0.6),
       unselectedBorderColor: const Color(0xFFB87333).withOpacity(0.3),
       cardNameStyle: GoogleFonts.cinzelDecorative(
         fontSize: 21,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.clockworkQuest.onDark,
         letterSpacing: 1.0,
       ),
       cardStatsStyle: GoogleFonts.lato(
         fontSize: 13,
-        color: const Color(0xFFF5F0E8),
+        color: GameTheme.clockworkQuest.onDark,
       ),
       nameStatsSpacing: 1.4,
       maxPlayers: 8,

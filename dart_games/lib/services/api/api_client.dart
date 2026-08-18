@@ -66,6 +66,11 @@ class ApiClient {
     await _delete('/api/v1/settings/$key');
   }
 
+  /// DELETE /api/v1/settings - Delete every setting in one request.
+  Future<void> deleteAllSettings() async {
+    await _delete('/api/v1/settings');
+  }
+
   /// PUT /api/v1/settings - Bulk update settings.
   Future<void> putSettings(Map<String, String> settings) async {
     await _put('/api/v1/settings', settings);
@@ -285,6 +290,22 @@ class ApiClient {
     required int gamesWon,
   }) async {
     await _put('/api/v1/players/$id/stats', {
+      'gamesPlayed': gamesPlayed,
+      'gamesWon': gamesWon,
+    });
+  }
+
+  /// POST /api/v1/players/<id>/stats/increment - Add to a player's stats.
+  ///
+  /// Use this to record a finished game. The server does the addition, so two
+  /// games finishing at once cannot overwrite each other's increment the way
+  /// a client-computed absolute value does.
+  Future<void> incrementPlayerStats(
+    String id, {
+    int gamesPlayed = 0,
+    int gamesWon = 0,
+  }) async {
+    await _post('/api/v1/players/$id/stats/increment', {
       'gamesPlayed': gamesPlayed,
       'gamesWon': gamesWon,
     });

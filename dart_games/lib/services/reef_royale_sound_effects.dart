@@ -67,4 +67,18 @@ class ReefRoyaleSoundEffects {
     startSeconds: 11.0,
     endSeconds: 14.25,
   );
+
+  /// Every effect this game uses. Preloaded at game start so
+  /// the first play does not pay the asset-load cost.
+  static const List<SoundEffectConfig> all = [
+    bubblePop,
+    doubleBubble,
+    coralBloom,
+    pearlChime,
+    splash,
+    currentWhoosh,
+    victoryFanfare,
+    turnBell,
+    reefLock,
+  ];
 }

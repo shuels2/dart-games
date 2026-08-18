@@ -7,6 +7,8 @@ import '../../shared/pump_sequences.dart';
 import '../../shared/game_ui_config.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/results_helpers.dart';
+import '../../shared/element_finders.dart';
+import '../../shared/navigation_suite.dart';
 
 final config = GameUIConfig.carnivalDerby();
 
@@ -42,3 +44,39 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
 
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== NAVIGATION SUITE SPEC =====
+
+Future<void> _setupAndStart(WidgetTester tester) async {
+  await UITestHelpers.navigateToGameMenu(tester, config);
+  expect(find.textContaining('Target score:'), findsOneWidget);
+  await setTargetScore(tester, 180);
+  await UITestHelpers.addPlayer(tester, 'Player A', config);
+  await UITestHelpers.addPlayer(tester, 'Player B', config);
+  await startGame(tester);
+}
+
+Future<void> _reachGameScreen(WidgetTester tester) async {
+  await _setupAndStart(tester);
+  await completeGameToVictory(tester);
+  await ResultsHelpers.pumpUntilResults(tester, config);
+  expect(config.getPlayAgainButton(), findsOneWidget);
+  await UITestHelpers.clickPlayAgain(tester, config);
+
+  // Extra settle after Play Again before the game screen is interactive.
+  await tester.pump(const Duration(seconds: 3));
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pump();
+}
+
+final navigationSpec = NavigationSpec(
+  config: config,
+  menuBackButton: ElementFinders.getCarnivalDerbyBackButton,
+  setupAndStart: _setupAndStart,
+  playToVictory: completeGameToVictory,
+  reachGameScreen: _reachGameScreen,
+  verifySettings: (tester) {
+    expect(find.textContaining('180'), findsOneWidget);
+  },
+);

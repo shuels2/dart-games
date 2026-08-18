@@ -4,17 +4,18 @@ import '../models/gladiator_arena_game.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
 import '../services/api/api_client.dart';
+import 'game_provider_base.dart';
 
-class GladiatorArenaProvider extends ChangeNotifier {
-  GladiatorArenaGame? _currentGame;
-  bool _waitingForTakeout = false;
-  ApiClient? _apiClient;
+class GladiatorArenaProvider extends GameProviderBase<GladiatorArenaGame> {
+  /// Internal alias for [GameProviderBase.game] — keeps the game logic below
+  /// untouched while the storage lives in the base.
+  GladiatorArenaGame? get _currentGame => game;
+  set _currentGame(GladiatorArenaGame? value) => game = value;
+
+  final ApiClient? _apiClient;
 
   /// Wall-clock time when the current game started (for gameDuration).
   DateTime? _gameStartTime;
-
-  String? _resumedSavedGameId;
-  bool _saving = false;
 
   // ─── Pending menu settings (persisted across menu back/forward navigation) ──
 
@@ -65,18 +66,14 @@ class GladiatorArenaProvider extends ChangeNotifier {
 
   GladiatorArenaGame? get currentGame => _currentGame;
 
+  @override
   bool get isGameActive =>
       _currentGame?.state == GladiatorArenaGameState.playing;
 
+  @override
   bool get hasWinner => _currentGame?.winnerId != null;
 
-  /// True when the takeout prompt should be shown.
-  /// Fires when the active player has thrown 3 darts, called skipTurn, or won.
-  bool get shouldPromptTakeout => _waitingForTakeout;
-
   String? get currentPlayerId => _currentGame?.currentPlayerId;
-
-  String? get resumedSavedGameId => _resumedSavedGameId;
 
   Duration? get gameDuration {
     if (_gameStartTime == null) return null;
@@ -127,8 +124,8 @@ class GladiatorArenaProvider extends ChangeNotifier {
     );
     _currentGame!.currentPlayerIndex = startIndex;
 
-    _waitingForTakeout = false;
-    _resumedSavedGameId = null;
+    waitingForTakeout = false;
+    clearResumedSavedGameId();
     _gameStartTime = DateTime.now();
     _clearTurnTracking();
 
@@ -148,7 +145,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
     required String sector,
   }) {
     if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (shouldPromptTakeout) return;
 
     final game = _currentGame!;
     final playerId = game.currentPlayerId;
@@ -235,7 +232,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
         // BUST: overshoot at any point — score stays at preTurnScore.
         // Forfeit remaining darts so takeout fires immediately.
         game.dartsThrown[playerId] = 3;
-        _waitingForTakeout = true;
+        waitingForTakeout = true;
         return;
       }
       if (prospective == game.targetScore) {
@@ -248,19 +245,19 @@ class GladiatorArenaProvider extends ChangeNotifier {
           game.scores[playerId] = game.targetScore;
           _triggerWin(playerId);
           game.dartsThrown[playerId] = 3;
-          _waitingForTakeout = true;
+          waitingForTakeout = true;
           return;
         }
         // BUST: reached target but not on a double — forfeit remaining darts.
         game.dartsThrown[playerId] = 3;
-        _waitingForTakeout = true;
+        waitingForTakeout = true;
         return;
       }
       // prospective < targetScore — only commit at turn end
       if (isLastDart) {
         game.scores[playerId] = prospective;
         _runKnockoffCheck(playerId);
-        _waitingForTakeout = true;
+        waitingForTakeout = true;
       }
     } else {
       // --- Double Finish OFF path ---
@@ -269,13 +266,13 @@ class GladiatorArenaProvider extends ChangeNotifier {
         game.scores[playerId] = game.targetScore; // cap at target for display
         _triggerWin(playerId);
         game.dartsThrown[playerId] = 3;
-        _waitingForTakeout = true;
+        waitingForTakeout = true;
         return;
       }
       if (isLastDart) {
         game.scores[playerId] = prospective;
         _runKnockoffCheck(playerId);
-        _waitingForTakeout = true;
+        waitingForTakeout = true;
       }
     }
   }
@@ -331,7 +328,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
   void skipTurn() {
     if (_currentGame == null) return;
     if (!isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (shouldPromptTakeout) return;
 
     final game = _currentGame!;
     final playerId = game.currentPlayerId;
@@ -366,6 +363,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
   /// Advances to the next player. Called by the screen after takeout is complete
   /// (via handleTakeoutFinished). Do NOT call directly from _processTurnEnd —
   /// the screen orchestrates the takeout-then-advance flow.
+  @override
   void advanceToNextPlayer() {
     if (_currentGame == null) return;
 
@@ -394,7 +392,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
       game.speedPlayTimeRemaining = 25;
     }
 
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
 
     notifyListeners();
   }
@@ -403,7 +401,10 @@ class GladiatorArenaProvider extends ChangeNotifier {
 
   /// Called by the screen when the dartboard signals takeout is complete.
   /// If the game has a winner, this is a no-op (screen handles navigation).
-  /// Otherwise, advances to the next player.
+  /// Otherwise, advances to the next player. Overrides the base flow —
+  /// Gladiator's advance clears the takeout flag itself and has no
+  /// winner-clear branch (the flag stays up until results navigation).
+  @override
   void handleTakeoutFinished() {
     if (hasWinner) return;
     advanceToNextPlayer();
@@ -476,7 +477,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
     _knockoffVictimsThisTurn.clear();
 
     // 9. Reset takeout flag so processDartThrow doesn't early-return during replay
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
 
     // 10. Replay the turn with new segments
     for (final segment in newSegments) {
@@ -484,7 +485,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
       // Don't replay beyond 3 real darts
       final currentDarts = game.dartsThrown[playerId] ?? 0;
       if (currentDarts >= 3) break;
-      if (_waitingForTakeout) break;
+      if (shouldPromptTakeout) break;
 
       final parsed = _parseSegment(segment);
       processDartThrow(
@@ -549,7 +550,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
   /// Processes the turn with whatever darts were already thrown.
   void onSpeedPlayTimerExpired() {
     if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (shouldPromptTakeout) return;
 
     final game = _currentGame!;
     final playerId = game.currentPlayerId;
@@ -585,25 +586,20 @@ class GladiatorArenaProvider extends ChangeNotifier {
       _currentGame!.state = GladiatorArenaGameState.finished;
       _currentGame!.endedAt = DateTime.now();
     }
-    _resumedSavedGameId = null;
+    clearResumedSavedGameId();
     notifyListeners();
   }
 
   // ─── clearGame ───────────────────────────────────────────────────────────────
 
+  /// Gladiator forgets the saved-game slot on clear (its endGame already
+  /// cleared it too), plus its own clock and turn tracking.
+  @override
   void clearGame() {
-    _currentGame = null;
-    _waitingForTakeout = false;
     _gameStartTime = null;
-    _resumedSavedGameId = null;
+    clearResumedSavedGameId();
     _clearTurnTracking();
-    notifyListeners();
-  }
-
-  // ─── clearResumedSavedGameId ─────────────────────────────────────────────────
-
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
+    super.clearGame();
   }
 
   void toggleShieldRoundOverride() {
@@ -616,9 +612,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
   // ─── saveGame ─────────────────────────────────────────────────────────────────
 
   Future<void> saveGame(List<dynamic> players, {bool isAutoSave = false}) async {
-    if (_currentGame == null || _saving) return;
-    _saving = true;
-    try {
+    await persistSave(SaveGameService(_apiClient), (existingId) {
       final game = _currentGame!;
 
       // Find the leading player (highest score)
@@ -657,7 +651,7 @@ class GladiatorArenaProvider extends ChangeNotifier {
       if (game.shieldRoundEnabled) modes.add('SR');
       if (game.speedPlayEnabled) modes.add('SP');
 
-      final metadata = SavedGameMetadata.create(
+      return SavedGameMetadata.create(
         gameType: 'gladiator_arena',
         playerNames: playerNames,
         // Compact format: ~16-20 chars max (peer games use 10-18 chars)
@@ -667,30 +661,31 @@ class GladiatorArenaProvider extends ChangeNotifier {
         leadingPlayerName: leaderName,
         leadingPlayerScore: leaderScore,
         gameState: game.toJson(),
-        waitingForTakeout: _waitingForTakeout,
+        waitingForTakeout: shouldPromptTakeout,
         isAutoSave: isAutoSave,
-        existingId: _resumedSavedGameId,
+        existingId: existingId,
       );
-
-      final saved = await SaveGameService(_apiClient).saveGame(metadata);
-      if (saved) {
-        _resumedSavedGameId = metadata.id;
-      }
-    } finally {
-      _saving = false;
-    }
+    });
   }
 
   // ─── restoreGame ──────────────────────────────────────────────────────────────
 
+  /// Async wrapper over the base flow — pre-migration this returned a Future
+  /// and the save/restore tests await it.
+  @override
   Future<void> restoreGame(SavedGameMetadata savedGame) async {
-    _currentGame = GladiatorArenaGame.fromJson(
-        Map<String, dynamic>.from(savedGame.gameState));
-    _waitingForTakeout = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
+    super.restoreGame(savedGame);
+  }
+
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = GladiatorArenaGame.fromJson(json);
+  }
+
+  @override
+  void onRestored() {
     _gameStartTime = DateTime.now();
     _clearTurnTracking();
-    notifyListeners();
   }
 
   // ─── _clearTurnTracking ──────────────────────────────────────────────────────

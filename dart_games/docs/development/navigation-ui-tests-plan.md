@@ -186,7 +186,7 @@ Update test counts to include the new navigation tests (19 new UI tests → upda
 Add a Navigation Tests section listing the 4 required test files with the expected patterns and file names.
 
 ## Verification
-1. Run `flutter test` — all 1190+ non-UI tests still pass
+1. Run `flutter test` — the non-UI suite still passes
 2. Run each new test individually via `run_ui_tests.bat` to confirm they pass
 3. Verify the "change settings → back → home" test would have caught the original CQ bug (it navigates the exact broken path)
 4. Review updated docs to confirm a developer following the adding-games guide would know to create all 4 navigation tests

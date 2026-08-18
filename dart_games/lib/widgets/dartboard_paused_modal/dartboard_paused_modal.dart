@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../themed_modal_shell.dart';
 import 'dartboard_paused_modal_config.dart';
 
 export 'dartboard_paused_modal_config.dart';
@@ -25,41 +27,20 @@ class DartboardPausedModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Material(
-        type: MaterialType.transparency,
-        child: Container(
-          color: Colors.black.withOpacity(0.7),
-          child: Center(
-            child: _buildModalContent(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModalContent() {
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: config.maxWidth),
-      child: Container(
-        margin: config.margin,
-        padding: config.padding,
-        decoration: BoxDecoration(
-          color: config.backgroundColor.withOpacity(config.backgroundOpacity),
-          borderRadius: BorderRadius.circular(config.borderRadius),
-          border: Border.all(
-            color: config.borderColor,
-            width: config.borderWidth,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: config.boxShadowColor.withOpacity(config.boxShadowOpacity),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-          ],
-        ),
-        child: Column(
+    // Chrome (barrier, centring, width cap, panel decoration) lives in
+    // ThemedModalShell (WS03 §3.7); only the contents below are this modal's.
+    return ThemedModalShell(
+      backgroundColor: config.backgroundColor,
+      backgroundOpacity: config.backgroundOpacity,
+      borderColor: config.borderColor,
+      borderWidth: config.borderWidth,
+      borderRadius: config.borderRadius,
+      boxShadowColor: config.boxShadowColor,
+      boxShadowOpacity: config.boxShadowOpacity,
+      maxWidth: config.maxWidth,
+      margin: config.margin,
+      padding: config.padding,
+      child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
@@ -79,8 +60,7 @@ class DartboardPausedModal extends StatelessWidget {
               style: config.messageTextStyle,
               textAlign: TextAlign.center,
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

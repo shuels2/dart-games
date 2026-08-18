@@ -63,7 +63,7 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   await throwBullseyeViaMock(tester);
   await throwOuterBullViaMock(tester);
 
-  // Wait for takeout prompt (3500ms delay triggers simulateTakeoutStarted)
+  // Let the takeout prompt and its scheduled callbacks settle
   await tester.pump(const Duration(seconds: 4));
   await tester.pump();
 

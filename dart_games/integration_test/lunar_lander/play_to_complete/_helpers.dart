@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../shared/dart_throw_helpers.dart';
 import '../../shared/game_ui_config.dart';
+import '../../shared/play_to_complete_suite.dart';
 import '../../shared/game_setup_helpers.dart';
 import '../../shared/provider_helpers.dart';
 import '../../shared/play_to_complete_helpers.dart';
@@ -43,3 +45,24 @@ Future<void> waitForGameCompletion(
       isComplete: isComplete,
       maxIterations: maxIterations,
     );
+
+// ===== PLAY TO COMPLETE SUITE SPEC =====
+//
+// Shared bodies live in shared/play_to_complete_suite.dart; everything
+// specific to Lunar Lander is supplied here. Only the two commodity scenarios
+// (default settings, mid-game pickup) use it — the per-option tests in this
+// folder stay hand-written.
+
+final playToCompleteSpec = PlayToCompleteSpec(
+  config: config,
+  setupAndStart: (tester) =>
+      GameSetupHelpers.setupAndStartLunarLander(tester, config),
+  hasWinner: (tester) =>
+      ProviderHelpers.getLunarLanderProvider(tester).hasWinner,
+  // Descend 20 + 20 = 40 of the default 200.
+  midGameDarts: (tester) async {
+    await DartThrowHelpers.throwDartViaMock(tester, 20);
+    await DartThrowHelpers.throwDartViaMock(tester, 20);
+  },
+  verifyNotWonBeforeAutoPlay: true,
+);

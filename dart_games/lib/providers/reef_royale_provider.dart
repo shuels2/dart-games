@@ -3,24 +3,28 @@ import '../models/reef_royale_game.dart';
 import '../models/player.dart';
 import '../models/saved_game_metadata.dart';
 import '../services/save_game_service.dart';
-import '../services/game_skip_turn_helper.dart';
 import '../services/api/api_client.dart';
+import '../utils/dart_sector.dart';
+import 'game_provider_base.dart';
 
-class ReefRoyaleProvider extends ChangeNotifier {
-  ReefRoyaleGame? _currentGame;
-  bool _waitingForTakeout = false;
-  ApiClient? _apiClient;
+class ReefRoyaleProvider extends GameProviderBase<ReefRoyaleGame> {
+  /// Internal alias for [GameProviderBase.game] — keeps the game logic below
+  /// untouched while the storage lives in the base.
+  ReefRoyaleGame? get _currentGame => game;
+  set _currentGame(ReefRoyaleGame? value) => game = value;
+
+  final ApiClient? _apiClient;
 
   ReefRoyaleProvider({ApiClient? apiClient}) : _apiClient = apiClient;
 
   // Getters
   ReefRoyaleGame? get currentGame => _currentGame;
 
+  @override
   bool get isGameActive =>
       _currentGame?.state == ReefRoyaleGameState.playing;
 
-  bool get shouldPromptTakeout => _waitingForTakeout;
-
+  @override
   bool get hasWinner => _currentGame?.hasWinner() ?? false;
 
   String? getCurrentPlayerId() => _currentGame?.getCurrentPlayerId();
@@ -113,6 +117,11 @@ class ReefRoyaleProvider extends ChangeNotifier {
     }
 
     final playerIds = players.map((p) => p.id).toList();
+    // A genuinely new game must not inherit the previous game's saved-game
+    // slot — otherwise this game's first save overwrites (and destroys) a
+    // still-resumable abandoned game. See F2 in the plan notes.
+    clearResumedSavedGameId();
+
     _currentGame = ReefRoyaleGame.create(
       playerIds: playerIds,
       gameMode: gameMode,
@@ -125,7 +134,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
       speedPlayEnabled: speedPlay,
       roundLimit: roundLimit,
     );
-    _waitingForTakeout = false;
+    waitingForTakeout = false;
     _currentGame!.saveInitialTurnStartState();
     notifyListeners();
   }
@@ -133,7 +142,7 @@ class ReefRoyaleProvider extends ChangeNotifier {
   // Process a dart throw from dartboard event
   void processDartThrow(String sector) {
     if (_currentGame == null || !isGameActive) return;
-    if (_waitingForTakeout) return;
+    if (shouldPromptTakeout) return;
 
     final parsed = _parseSector(sector);
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
@@ -179,37 +188,20 @@ class ReefRoyaleProvider extends ChangeNotifier {
   }
 
   void _checkTakeoutCondition() {
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
-    if (dartsThrown >= 3 || _currentGame!.hasWinner()) {
-      _waitingForTakeout = true;
-    }
+    checkTakeoutCondition(
+      dartsThrown: _currentGame!.getCurrentPlayerDartsThrown(),
+      maxDartsPerTurn: 3,
+    );
   }
 
-  // Parse dartboard sector string
+  /// Parses a board sector string into this game's legacy map shape.
+  ///
+  /// Delegates to [DartSector]; null still means "treat as a miss", which is
+  /// what every caller here already does.
   Map<String, dynamic>? _parseSector(String sector) {
-    if (sector == 'Bull') {
-      return {'number': 50, 'multiplier': 'single'};
-    }
-    if (sector == '25') {
-      return {'number': 25, 'multiplier': 'single'};
-    }
-    if (sector == 'None' || sector.isEmpty) {
-      return null;
-    }
-
-    final match = RegExp(r'[A-Za-z](\d+)').firstMatch(sector);
-    if (match == null) return null;
-
-    final baseNumber = int.parse(match.group(1)!);
-    String multiplier = 'single';
-
-    if (sector.startsWith('D') || sector.startsWith('d')) {
-      multiplier = 'double';
-    } else if (sector.startsWith('T') || sector.startsWith('t')) {
-      multiplier = 'triple';
-    }
-
-    return {'number': baseNumber, 'multiplier': multiplier};
+    final dart = DartSector.parse(sector);
+    if (dart.isMiss) return null;
+    return {'number': dart.legacyNumber, 'multiplier': dart.multiplierName};
   }
 
   // Skip remaining darts in current turn
@@ -217,85 +209,21 @@ class ReefRoyaleProvider extends ChangeNotifier {
     if (_currentGame == null) return;
 
     final currentPlayerId = _currentGame!.getCurrentPlayerId();
-    final dartsThrown = _currentGame!.getCurrentPlayerDartsThrown();
 
-    if (!GameSkipTurnHelper.canSkipTurn(
-      gameActive: isGameActive,
-      waitingForTakeout: _waitingForTakeout,
-      currentDartCount: dartsThrown,
-      maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
-    )) {
-      return;
-    }
-
-    GameSkipTurnHelper.skipRemainingDarts(
-      currentDartCount: dartsThrown,
+    runSkipTurn(
+      dartsThrown: _currentGame!.getCurrentPlayerDartsThrown(),
       maxDartsPerTurn: _currentGame!.maxDartsPerTurn,
       addVisualMarker: (marker) {
         _currentGame!.currentTurnDarts[currentPlayerId] ??= [];
         _currentGame!.currentTurnDarts[currentPlayerId]!.add(marker);
       },
     );
-
-    _waitingForTakeout = true;
-    notifyListeners();
   }
 
-  // Handle takeout finished event
-  void handleTakeoutFinished() {
-    if (_currentGame == null) return;
-    if (!_waitingForTakeout) return;
-
-    if (_currentGame!.hasWinner()) {
-      _waitingForTakeout = false;
-      notifyListeners();
-      return;
-    }
-
-    if (!isGameActive) return;
-
-    _currentGame!.advanceToNextPlayer();
-    _waitingForTakeout = false;
-    notifyListeners();
-  }
-
-  // Update a specific dart score and recalculate turn
-  void updateDartScore(
-      String playerId, int dartIndex, String newSector) {
-    if (_currentGame == null) return;
-    if (playerId != _currentGame!.getCurrentPlayerId()) return;
-
-    final currentTurnDarts =
-        _currentGame!.currentTurnDarts[playerId] ?? [];
-    if (dartIndex >= currentTurnDarts.length) return;
-
-    final currentPlayerIndex = _currentGame!.currentPlayerIndex;
-
-    // Reset dart tracking
-    _currentGame!.currentTurnDarts[playerId] = [];
-    _currentGame!.dartsThrown[playerId] = 0;
-    _currentGame!.dartThrowMarksAdded[playerId] = [];
-    _currentGame!.dartThrowPearlsScored[playerId] = [];
-    _currentGame!.dartThrowClaimedCoral[playerId] = [];
-    _currentGame!.dartThrowLockedReef[playerId] = [];
-    _currentGame!.dartThrowTargetNumber[playerId] = [];
-    _currentGame!.dartThrowIsNeighbor[playerId] = [];
-    _currentGame!.dartThrowPearlRecipientIds[playerId] = [];
-    _currentGame!.dartThrowTargetCount[playerId] = [];
-
-    _currentGame!.resetToStartOfTurn(playerId);
-
-    // Replay all darts with the updated one
-    for (int i = 0; i < currentTurnDarts.length; i++) {
-      final sector =
-          i == dartIndex ? newSector : currentTurnDarts[i];
-      _replayDart(playerId, sector);
-    }
-
-    _currentGame!.currentPlayerIndex = currentPlayerIndex;
-    _checkTakeoutCondition();
-    notifyListeners();
-  }
+  // Takeout-finish flow: Reef Royale matches the base exactly
+  // (winner-short-circuit → advance → clear), so only the advance is local.
+  @override
+  void advanceToNextPlayer() => _currentGame!.advanceToNextPlayer();
 
   // Update all three dart scores at once
   void updateAllDartScores(
@@ -359,64 +287,38 @@ class ReefRoyaleProvider extends ChangeNotifier {
 
   // --- Save/Restore ---
 
-  String? _resumedSavedGameId;
-  bool _saving = false;
-  String? get resumedSavedGameId => _resumedSavedGameId;
-
-  void clearResumedSavedGameId() {
-    _resumedSavedGameId = null;
-  }
-
   Future<void> saveGame(List<Player> players, {bool isAutoSave = false}) async {
-    debugPrint('[ReefRoyaleProvider] saveGame called — _saving=$_saving, resumedId=$_resumedSavedGameId');
-    if (_currentGame == null || _saving) {
-      debugPrint('[ReefRoyaleProvider] saveGame BLOCKED — game=${_currentGame != null}, _saving=$_saving');
-      return;
-    }
-    _saving = true;
-    try {
-    final game = _currentGame!;
+    await persistSave(SaveGameService(_apiClient), (existingId) {
+      final game = _currentGame!;
 
-    // Find leading player (most corals, then most/fewest pearls based on mode)
-    final ranked = game.getRankedPlayerIds();
-    final leaderId = ranked.isNotEmpty ? ranked.first : game.playerIds.first;
-    final leaderPlayer = players.firstWhere((p) => p.id == leaderId,
-        orElse: () => players.first);
-    final leaderCorals = game.getPlayerClaimedCount(leaderId);
+      // Find leading player (most corals, then most/fewest pearls based on mode)
+      final ranked = game.getRankedPlayerIds();
+      final leaderId = ranked.isNotEmpty ? ranked.first : game.playerIds.first;
+      final leaderPlayer = players.firstWhere((p) => p.id == leaderId,
+          orElse: () => players.first);
+      final leaderCorals = game.getPlayerClaimedCount(leaderId);
 
-    final metadata = SavedGameMetadata.create(
-      gameType: 'reef_royale',
-      playerNames: players
-          .where((p) => game.playerIds.contains(p.id))
-          .map((p) => p.name)
-          .toList(),
-      progressInfo: 'Round ${game.currentRound}',
-      gameModeName: '${game.gameMode == ReefRoyaleGameMode.cursedTide ? "Cursed Tide" : "Standard"}${game.easyClaim ? ", Easy" : ""}${game.neighborNumbers ? ", Neighbors" : ""}${game.randomReefs ? ", Random" : ""}${game.bonusBuffsEnabled ? ", Buffs" : ""}${game.speedPlayEnabled ? ", Speed (${game.roundLimit})" : ""}',
-      leadingPlayerName: leaderPlayer.name,
-      leadingPlayerScore: '$leaderCorals/7 corals',
-      gameState: game.toJson(),
-      waitingForTakeout: _waitingForTakeout,
-      isAutoSave: isAutoSave,
-      existingId: _resumedSavedGameId,
-    );
-
-    debugPrint('[ReefRoyaleProvider] saving with id=${metadata.id}');
-    final saved = await SaveGameService(_apiClient).saveGame(metadata);
-    if (saved) {
-      _resumedSavedGameId = metadata.id;
-    }
-    debugPrint('[ReefRoyaleProvider] saveGame completed — saved=$saved, resumedId=$_resumedSavedGameId');
-    } finally {
-      _saving = false;
-    }
+      return SavedGameMetadata.create(
+        gameType: 'reef_royale',
+        playerNames: players
+            .where((p) => game.playerIds.contains(p.id))
+            .map((p) => p.name)
+            .toList(),
+        progressInfo: 'Round ${game.currentRound}',
+        gameModeName: '${game.gameMode == ReefRoyaleGameMode.cursedTide ? "Cursed Tide" : "Standard"}${game.easyClaim ? ", Easy" : ""}${game.neighborNumbers ? ", Neighbors" : ""}${game.randomReefs ? ", Random" : ""}${game.bonusBuffsEnabled ? ", Buffs" : ""}${game.speedPlayEnabled ? ", Speed (${game.roundLimit})" : ""}',
+        leadingPlayerName: leaderPlayer.name,
+        leadingPlayerScore: '$leaderCorals/7 corals',
+        gameState: game.toJson(),
+        waitingForTakeout: shouldPromptTakeout,
+        isAutoSave: isAutoSave,
+        existingId: existingId,
+      );
+    });
   }
 
-  void restoreGame(SavedGameMetadata savedGame) {
-    _currentGame = ReefRoyaleGame.fromJson(
-        Map<String, dynamic>.from(savedGame.gameState));
-    _waitingForTakeout = savedGame.waitingForTakeout;
-    _resumedSavedGameId = savedGame.id;
-    notifyListeners();
+  @override
+  void loadGameState(Map<String, dynamic> json) {
+    _currentGame = ReefRoyaleGame.fromJson(json);
   }
 
   // End the current game
@@ -424,13 +326,6 @@ class ReefRoyaleProvider extends ChangeNotifier {
     if (_currentGame != null) {
       _currentGame!.state = ReefRoyaleGameState.finished;
     }
-    notifyListeners();
-  }
-
-  // Clear the current game
-  void clearGame() {
-    _currentGame = null;
-    _waitingForTakeout = false;
     notifyListeners();
   }
 }

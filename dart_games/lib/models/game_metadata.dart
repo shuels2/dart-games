@@ -11,6 +11,10 @@
 /// data stays so older code paths don't break).
 library;
 
+import 'package:flutter/material.dart';
+
+import '../theme/game_theme.dart';
+
 /// Maximum number of players a game supports.
 ///
 /// Bucketed because individual games' true caps (2, 8, 10) are useful as
@@ -126,6 +130,29 @@ class GameMetadata {
   /// filter UI but useful for diagnostic logging when a filter row changes.
   final String displayName;
 
+  /// How this game's name is drawn on its home-screen card.
+  ///
+  /// WS03 §3.2. The home screen used to pick this with an eleven-way ternary
+  /// keyed on the DISPLAY STRING (`title == 'Carnival Derby' ? ... : title ==
+  /// 'Target Tag' ? ...`), which meant renaming a game silently dropped it to
+  /// the default style. Registering it here makes the styling data rather
+  /// than control flow, and impossible to forget for game #11.
+  ///
+  /// Null means "use the app's default title style" — Pirate's Grid does.
+  final GameCardTitleStyle? cardTitleStyle;
+
+  /// The game's own [GameTheme] (WS03 §3.1).
+  final GameTheme? theme;
+
+  /// Widget key for this game's home-screen card, used by the UI suites.
+  final Key? cardKey;
+
+  /// Card artwork.
+  final String? cardImageAsset;
+
+  /// Card tint behind the artwork.
+  final Color? cardColor;
+
   final MaxPlayersBucket maxPlayers;
   final Set<GameplayStyle> gameplayStyles;
   final PlayerInteraction playerInteraction;
@@ -135,6 +162,11 @@ class GameMetadata {
   const GameMetadata({
     required this.gameId,
     required this.displayName,
+    this.cardTitleStyle,
+    this.theme,
+    this.cardKey,
+    this.cardImageAsset,
+    this.cardColor,
     required this.maxPlayers,
     required this.gameplayStyles,
     required this.playerInteraction,
@@ -171,4 +203,42 @@ class GameMetadata {
     }
     return true;
   }
+}
+
+/// Per-game styling for the home-screen card label.
+///
+/// The sizes are DELTAS on the ambient `titleMedium` size, exactly as the
+/// original ternary expressed them, so the cards keep responding to text
+/// scaling. `height` and `letterSpacing` carry the two games that needed
+/// optical corrections.
+@immutable
+class GameCardTitleStyle {
+  const GameCardTitleStyle({
+    required this.font,
+    required this.sizeDelta,
+    this.fontWeight,
+    this.letterSpacing,
+    this.height,
+  });
+
+  /// The GoogleFonts builder for this game's display face.
+  final GameFont font;
+
+  /// Added to the ambient titleMedium size (16 when unset).
+  final double sizeDelta;
+
+  final FontWeight? fontWeight;
+  final double? letterSpacing;
+
+  /// Line-height override. Tiki Golf uses 0.6 because Boogaloo's descender
+  /// pushes its baseline visually low against its peers.
+  final double? height;
+
+  TextStyle resolve({required double baseSize, required Color color}) => font(
+        fontSize: baseSize + sizeDelta,
+        color: color,
+        fontWeight: fontWeight,
+        letterSpacing: letterSpacing,
+        height: height,
+      );
 }

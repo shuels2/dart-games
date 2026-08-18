@@ -14,6 +14,10 @@ class PlayerProvider extends ChangeNotifier {
   String? _error;
   DateTime? _lastSortedAt;
 
+  /// Whether [_lastSortedKey] has been read from the server this session.
+  /// Guards a redundant settings GET on every roster refresh (WS04 4.8).
+  bool _lastSortedFetched = false;
+
   /// Populated after a photo upload when the server-side face-landmark
   /// detection ran and failed. Set to the sidecar's `errorReason`
   /// (`no-face-detected`, `python-not-found`, `timeout`, etc.) so the
@@ -41,6 +45,14 @@ class PlayerProvider extends ChangeNotifier {
   Player? byId(String id) {
     return (_byIdCache ??= {for (final p in _allPlayers) p.id: p})[id];
   }
+
+  /// Display name for [id], falling back to the id itself.
+  ///
+  /// Use this anywhere a name is rendered. The alternatives all throw if the
+  /// roster changes mid-game — `allPlayers.firstWhere((p) => p.id == id).name`
+  /// throws StateError, and `byId(id)!.name` throws on null — which takes down
+  /// the game screen mid-turn rather than showing one odd label.
+  String nameOf(String id) => byId(id)?.name ?? id;
 
   /// Guard against concurrent loadPlayers() calls.  If a load is already
   /// in flight, subsequent callers await the same future instead of
@@ -93,6 +105,7 @@ class PlayerProvider extends ChangeNotifier {
     _isLoading = false;
     _error = null;
     _lastSortedAt = null;
+    _lastSortedFetched = false;
     _photoBusts.clear();
     notifyListeners();
   }
@@ -167,10 +180,18 @@ class PlayerProvider extends ChangeNotifier {
           _allPlayers.where((p) => !serverIds.contains(p.id)).toList();
       _allPlayers = [...serverPlayers, ...localOnly];
 
-      // Load last sorted timestamp from settings
-      final lastSortedStr = await _api.getSetting(_lastSortedKey);
-      if (lastSortedStr != null) {
-        _lastSortedAt = DateTime.parse(lastSortedStr);
+      // Load the last-sorted timestamp once, not on every load (WS04 4.8).
+      // _doLoadPlayers runs on every roster refresh, and this settings GET is
+      // a separate HTTP round-trip each time. The value only changes when
+      // THIS provider sorts (see sortPlayersNow), which updates _lastSortedAt
+      // in memory anyway — so after the first successful fetch there is
+      // nothing new to learn from the server.
+      if (!_lastSortedFetched) {
+        final lastSortedStr = await _api.getSetting(_lastSortedKey);
+        if (lastSortedStr != null) {
+          _lastSortedAt = DateTime.parse(lastSortedStr);
+        }
+        _lastSortedFetched = true;
       }
 
       // Sort players (alphabetically, with new players at bottom)
@@ -575,10 +596,12 @@ class PlayerProvider extends ChangeNotifier {
         }
       } else {
         try {
-          await _api.updatePlayerStats(
+          // Deltas, not absolutes: two games finishing at once must not
+          // clobber each other's increment.
+          await _api.incrementPlayerStats(
             playerId,
-            gamesPlayed: player.gamesPlayed + 1,
-            gamesWon: won ? player.gamesWon + 1 : player.gamesWon,
+            gamesPlayed: 1,
+            gamesWon: won ? 1 : 0,
           );
         } catch (e) {
           print('updatePlayerStats: server rejected stats for $playerId: $e');

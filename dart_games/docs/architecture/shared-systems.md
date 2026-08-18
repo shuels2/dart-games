@@ -76,10 +76,31 @@ class Player {
 #### savePlayer(Player player)
 Add a new player to the global list.
 
-#### updatePlayerStats(String playerId, {required bool won, required String gameName, required Duration gameDuration})
-Update player stats after a game completes.
+#### updatePlayerStats
 
-**CRITICAL:** Call this for ALL players (both winners AND losers) with the same game duration.
+```dart
+Future<void> updatePlayerStats(
+  String playerId, {
+  bool won = false,
+  String? gameName,
+  Duration? gameDuration,
+  int? dartThrows,
+  int? turns,
+  int? playerCount,
+})
+```
+
+Update player stats after a game completes. Nothing is required beyond the id,
+but a game that omits `gameName`/`gameDuration` records no history entry, and
+one that omits `dartThrows`/`turns`/`playerCount` silently loses those stats —
+they are easy to miss because nothing fails.
+
+**CRITICAL:** Call this for ALL players (both winners AND losers) with the same
+game duration.
+
+Increments go to the server as deltas
+(`POST /players/<id>/stats/increment`), so two games finishing at once cannot
+overwrite each other's count.
 
 #### allPlayers
 Get list of all players (alphabetically sorted).
@@ -202,12 +223,42 @@ Global priority-based announcement queue that prevents announcement overlap and 
 - Use `DartAnnouncerService` for voice output
 - Manage announcement lifecycle
 
-### Priority Levels
-1. **turnTransition (1):** Turn start/end announcements - highest priority
-2. **hitConfirm (2):** Immediate feedback for dart throws
-3. **shieldStatus (3):** Status changes (shields, tagged-in, etc.)
-4. **statusChange (4):** General game state changes
-5. **victory (5):** Game over and winner announcements - lowest priority
+### Playback order
+
+**The queue is strict FIFO. `AudioPriority` does not affect playback order.**
+It is retained on `QueuedAnnouncement` for debug logging only — see the class
+doc on `GameAnnouncementQueueService`. Announcements play in the order they
+were enqueued, full stop.
+
+The enum, verbatim from `lib/services/game_announcement_models.dart`:
+
+```dart
+enum AudioPriority {
+  turnTransition(1), // Lowest - turn changes
+  hitConfirm(2),     // Hit/miss announcements
+  shieldStatus(3),   // Shield milestones (Target Tag specific)
+  statusChange(4),   // Status changes (tagged in/out, busts, eliminations)
+  victory(5);        // Highest - game completion
+}
+```
+
+To control what a player hears, decide at **enqueue** time, not by priority:
+
+- Don't queue the line at all (the stacking rule: at most two announcements
+  per dart).
+- `maxAge:` — drop the line if it has waited too long to still be true. Use
+  for anything tied to the current moment (hit confirmations, "you're up").
+- `coalesceKey:` — a newer line on the same subject replaces the queued older
+  one. Use for state that only matters in its latest form (whose turn it is).
+
+```dart
+_queue.announce(
+  '$playerName, your turn',
+  AudioPriority.turnTransition,
+  maxAge: const Duration(seconds: 4),
+  coalesceKey: 'turn',
+);
+```
 
 ### Game Integration Pattern
 

@@ -10,7 +10,7 @@ Before starting:
 - Familiarity with Flutter and Dart
 - Understanding of the [Container App Architecture](../architecture/container-app.md)
 - Knowledge of [Shared Systems](../architecture/shared-systems.md)
-- Review existing games (Carnival Derby, Target Tag) as references
+- Review the most recently built games (Treasure Divide, Tiki Golf) as references — they reflect the current patterns. Older games predate several rules and should not be copied.
 
 ## Step-by-Step Guide
 
@@ -90,7 +90,7 @@ final player = await showAddPlayerDialog(
 1. `_handleTakeoutFinished()`: Check `hasWinner` at the TOP (before any provider advance call). If winner, call `_handleGameWon()` and return. Otherwise advance the turn.
 2. `_handleGameWon()`: Guard with `_gameCompleted` flag. If `isAutoPlaying`, navigate immediately. Otherwise wait 3000ms (for victory announcement), then navigate via `Navigator.pushReplacement`.
 
-All 6 existing games follow this exact pattern. Reference any game screen for the canonical implementation.
+Every game follows this pattern. Copy it from the most recently built game (Treasure Divide or Tiki Golf) — older games predate parts of it.
 
 **Standardized `_handleTakeoutFinished()` pattern:**
 ```dart
@@ -501,32 +501,57 @@ Also update `test/models/game_metadata_test.dart`'s `expectedIds` Set to include
 
 See [Game Filter Bar](game-filter-bar.md) for the full criteria reference and the procedure for adding a brand-new filter dimension.
 
-### 14. Add Routes
+### 14. Navigation (do NOT add named routes)
 
-**File:** `lib/main.dart`
+Games navigate with `MaterialPageRoute`, not named routes. The home screen's
+`_navigateToMenu` builds the menu screen directly, and each screen pushes the
+next the same way (see step 3, which requires
+`Navigator.pushReplacement` with `MaterialPageRoute`).
 
-```dart
-routes: {
-  // ... existing routes
-  '/your_game_menu': (context) => YourGameMenuScreen(),
-  '/your_game_game': (context) => YourGameGameScreen(),
-  '/your_game_results': (context) => YourGameResultsScreen(),
-}
-```
+Do not add entries to `lib/main.dart`'s `routes:` map. Only 3 of the 10 games
+have them, several of those registrations have zero call sites, and mixing the
+two schemes is how Tiki Golf ended up with dead `/tiki-golf-*` routes and
+Treasure Divide with a `/treasure-divide/results` nothing calls. Copying those
+files as a template is what propagates it.
+
+The one exception: register a route if a shared helper genuinely needs to
+resolve one by name — check whether anything reads `GameUIConfig.menuRoute`
+for your game before deciding.
 
 ### 15. Create Tests and Run Spec Coverage Audit
 
-Create test files in a game-specific subfolder under `integration_test/`:
-- `integration_test/your_game/your_game_menu_test.dart`
-- `integration_test/your_game/your_game_gameplay_test.dart`
-- `integration_test/your_game/your_game_results_test.dart`
-- `integration_test/your_game/your_game_visual_validation_test.dart`
-- `integration_test/your_game/your_game_edit_score_test.dart`
-- `integration_test/your_game/edit_score/edit_creates_winner_stats_test.dart` (mandatory)
-- `integration_test/your_game/edit_score/edit_removes_winner_no_stats_test.dart` (mandatory)
-- `integration_test/your_game/your_game_showcase_test.dart`
-- `test/screens/games/your_game/your_game_game_test.dart`
-- `test/screens/games/your_game/your_game_user_management_test.dart`
+UI tests live in **category subfolders** under `integration_test/your_game/`,
+one `testWidgets` per file. This is the layout every one of the 10 games uses —
+the flat `your_game_menu_test.dart` style described here previously does not
+exist anywhere in the repo:
+
+```
+integration_test/your_game/
+  add_player/          edit_score/          gameplay/
+  menu_and_settings/   navigation/          pause_modal/
+  play_to_complete/    results_screen/      save_resume/
+  team_setup/          team_mode_gameplay/  visual_validation/
+```
+
+Mandatory within those:
+- `edit_score/edit_creates_winner_stats_test.dart`
+- `edit_score/edit_removes_winner_no_stats_test.dart`
+- `visual_validation/your_game_screenshot_test.dart` (see the screenshot rules
+  in CLAUDE.md — one `testWidgets`, helpers inlined, under 600s)
+
+Non-UI tests (these run in `flutter test` and are the ones that gate a build):
+- `test/providers/your_game_provider_game_test.dart` — game mechanics
+- `test/providers/your_game_save_restore_test.dart` — save/resume round-trip
+- `test/models/your_game_serialization_test.dart` — toJson/fromJson
+- `test/screens/games/your_game/your_game_announcement_test.dart`
+- `test/mocks/mock_your_game_audio_queue_service.dart` — recorder used by the
+  announcement tests
+
+Both `test/meta/` lints (style and option-wiring) apply automatically to any
+new game — no per-game wiring needed. Run them early; they catch raw Material
+colours, a missing display font on the AppBar title, a back button that
+doesn't match the others, and any menu setting that never reaches
+`startGame()`.
 
 Follow patterns from existing games.
 
@@ -586,7 +611,7 @@ Create `integration_test/your_game/navigation/` with these 4 tests:
 3. **`change_settings_back_to_home_test.dart`** — Complete game, click Change Settings, tap menu back, verify home screen (catches `(route) => false` vs `route.isFirst` bugs)
 4. **`change_settings_preserves_settings_test.dart`** — Complete game, click Change Settings, verify settings and players preserved on menu
 
-See existing implementations in `integration_test/*/navigation/` for all 5 games, and [Navigation Rules](game-integration.md#6-navigation-rules) for the correct `Navigator` patterns.
+See existing implementations in `integration_test/*/navigation/`, and [Navigation Rules](game-integration.md#6-navigation-rules) for the correct `Navigator` patterns.
 
 #### User Management Non-UI Tests
 
@@ -696,7 +721,7 @@ Use this checklist to ensure complete integration:
 - [ ] Created navigation UI tests (4 tests in `integration_test/your_game/navigation/`)
 - [ ] Created game documentation (8 files)
 - [ ] Updated main CLAUDE.md
-- [ ] All tests pass (272+ non-UI tests)
+- [ ] All non-UI tests pass
 - [ ] Manually tested on web
 - [ ] Manually tested on tablet (if available)
 

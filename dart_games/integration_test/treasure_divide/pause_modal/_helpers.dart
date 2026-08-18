@@ -18,6 +18,10 @@ export '../../shared/provider_helpers.dart';
 export '../../shared/edit_score_helpers.dart';
 export '../../shared/element_finders.dart';
 
+import '../../shared/element_finders.dart';
+import '../../shared/pause_modal_suite.dart';
+import '../../shared/ui_test_helpers.dart';
+
 final config = GameUIConfig.treasureDivide();
 
 // ===== DELEGATES TO SHARED HELPERS =====
@@ -143,3 +147,53 @@ Future<void> completeGameToVictory(WidgetTester tester) async {
   // Wait for results screen navigation (Play Again button mounts).
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== PAUSE MODAL SUITE SPEC =====
+//
+// Shared bodies live in shared/pause_modal_suite.dart; everything
+// game-specific for Treasure Divide is supplied here.
+
+/// TD opens Edit Score by hand rather than via EditScoreHelpers: its button
+/// needs an ensureVisible before the tap on this layout.
+Future<void> _openEditScore(WidgetTester tester) async {
+  final editButton = config.getEditScoreButton();
+  expect(editButton, findsOneWidget,
+      reason: 'Edit score button should be present after 3 misses');
+  await tester.ensureVisible(editButton);
+  await tester.pump();
+  await tester.tap(editButton);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pump();
+}
+
+final pauseModalSpec = PauseModalSpec(
+  config: config,
+  menuBackButton: ElementFinders.getTreasureDivideBackButton,
+  ownGameCard: ElementFinders.getTreasureDivideCard,
+  menuSettingsControls: [ElementFinders.getTreasureDivideGameModeSolo],
+  menuAddPlayerButton:
+      ElementFinders.getTreasureDivideAddPlayerButtonEmptyState,
+  startGame: (tester) => setupAndStartGame(tester),
+  throwOneDart: throwMissViaMock,
+  throwTurnToTakeout: (tester) async {
+    // Three misses ends the turn; TD's provider needs a beat to commit it
+    // before the takeout prompt mounts.
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await throwMissViaMock(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  },
+  finishTakeout: clickDartsRemoved,
+  openEditScore: _openEditScore,
+  reachResults: (tester) async {
+    await setupAndStartGame(tester);
+    await completeGameToVictory(tester);
+  },
+  resultsAfterReconnect: (tester) async {
+    await UITestHelpers.clickBackToMenu(tester, config);
+    expect(ElementFinders.getTreasureDivideCard(), findsOneWidget,
+        reason: 'Back to Menu did not work after reconnect');
+  },
+);

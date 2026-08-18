@@ -11,9 +11,10 @@ import '_helpers.dart';
 //   - Mechanism: dart:async Timer.periodic(Duration(seconds: 1), ...) in widget state
 //   - On expiry: _onSpeedPlayTimerExpired() is called:
 //       * provider.skipTurn() → _waitingForTakeout = true, remaining darts skipped
-//       * If dartsThrown > 0: fires simulateTakeoutStarted() after 3500 ms
-//         (the DARTS REMOVED UI button then fires simulateTakeoutFinished to
-//          actually advance the turn — the player must still tap DARTS REMOVED)
+//       * If dartsThrown > 0: waits — the DARTS REMOVED UI button fires
+//         simulateTakeoutFinished to actually advance the turn. (The old
+//         3500ms simulateTakeoutStarted was deleted: its takeout_started
+//         event had no consumer anywhere in the app.)
 //       * If dartsThrown == 0: fires simulateTakeoutFinished() after 500 ms
 //         (turn auto-advances with no human interaction required)
 //
@@ -68,9 +69,8 @@ void main() {
     // With 1 dart thrown: _onSpeedPlayTimerExpired calls:
     //   provider.skipTurn()         → _waitingForTakeout = true
     //   [1500 ms] announceRemoveDarts (audio only — no UI gate)
-    //   [3500 ms] _mockApi.simulateTakeoutStarted() (emits takeout_started;
-    //             the game screen does NOT handle takeout_started — only
-    //             takeout_finished triggers advanceToNextPlayer)
+    //   (only takeout_finished triggers advanceToNextPlayer — the turn then
+    //    waits for DARTS REMOVED)
     //
     // After the timer expires, shouldPromptTakeout = true and the DARTS
     // REMOVED button is visible in the emulator. We click it to complete

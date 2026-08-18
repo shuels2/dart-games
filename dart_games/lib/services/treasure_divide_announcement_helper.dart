@@ -1,3 +1,4 @@
+import 'game_announcement_helper_base.dart';
 import 'game_announcement_queue_service.dart';
 import 'treasure_divide_sound_effects.dart';
 
@@ -20,16 +21,15 @@ import 'treasure_divide_sound_effects.dart';
 /// - For a solo crew (1 member throwing 6 darts): only one Crew Turn
 ///   announcement fires at the start; no mid-turn hand-off chatter between
 ///   dart 3 and dart 4.
-class TreasureDivideAnnouncementHelper {
-  final GameAnnouncementQueueService _queueService;
+class TreasureDivideAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  TreasureDivideAnnouncementHelper(this._queueService);
+  TreasureDivideAnnouncementHelper(super.queue);
 
   // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
   /// "Set sail! {rounds} islands to plunder!" — fired once at game start.
   void announceGameStart(int rounds) {
-    _queueService.announce(
+    queue.announce(
       'Set sail! $rounds islands to plunder!',
       AudioPriority.statusChange,
       soundEffect: TreasureDivideSoundEffects.mapUnfurl,
@@ -41,7 +41,7 @@ class TreasureDivideAnnouncementHelper {
   /// "{playerName}, grab your darts!" — fired for any solo-mode player turn
   /// and for the SECOND (and beyond) player within a crew in team mode.
   void announcePlayerTurn(String playerName) {
-    _queueService.announce(
+    queue.announce(
       '$playerName, grab your darts!',
       AudioPriority.turnTransition,
       soundEffect: TreasureDivideSoundEffects.turnBell,
@@ -51,7 +51,7 @@ class TreasureDivideAnnouncementHelper {
   /// "The {crewName} are up — {playerName}, grab yer darts!" — fired on the
   /// FIRST player of a crew taking the floor for that round (team mode only).
   void announceCrewTurn(String crewName, String playerName) {
-    _queueService.announce(
+    queue.announce(
       'The $crewName are up — $playerName, grab yer darts!',
       AudioPriority.turnTransition,
       soundEffect: TreasureDivideSoundEffects.turnBell,
@@ -80,7 +80,7 @@ class TreasureDivideAnnouncementHelper {
     required bool customTargetsEnabled,
   }) {
     if (isLastRound) {
-      _queueService.announce(
+      queue.announce(
         'Final island! Last chance for treasure!',
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.mapUnfurl,
@@ -90,7 +90,7 @@ class TreasureDivideAnnouncementHelper {
 
     if (target == 25) {
       // kTargetBull
-      _queueService.announce(
+      queue.announce(
         'Treasure Island! Hit the bullseye!',
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.mapUnfurl,
@@ -100,7 +100,7 @@ class TreasureDivideAnnouncementHelper {
 
     if (target == -2) {
       // kTargetAnyTriple
-      _queueService.announce(
+      queue.announce(
         'Triple Treasure round! Hit any triple!',
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.mapUnfurl,
@@ -110,7 +110,7 @@ class TreasureDivideAnnouncementHelper {
 
     if (target == -1) {
       // kTargetAnyDouble
-      _queueService.announce(
+      queue.announce(
         'Double Doubloon round! Hit any double!',
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.mapUnfurl,
@@ -119,7 +119,7 @@ class TreasureDivideAnnouncementHelper {
     }
 
     if (customTargetsEnabled) {
-      _queueService.announce(
+      queue.announce(
         'The map reveals... $target!',
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.mapUnfurl,
@@ -128,7 +128,7 @@ class TreasureDivideAnnouncementHelper {
     }
 
     // Standard fallback (1-indexed round for display)
-    _queueService.announce(
+    queue.announce(
       'Island ${roundIndex + 1}: Target is $target!',
       AudioPriority.statusChange,
       soundEffect: TreasureDivideSoundEffects.mapUnfurl,
@@ -161,28 +161,28 @@ class TreasureDivideAnnouncementHelper {
 
     if (wasMatched && isBull) {
       // Rank 1: Bull Hit
-      _queueService.announce(
+      queue.announce(
         'X marks the spot! $value gold!',
         AudioPriority.hitConfirm,
         soundEffect: TreasureDivideSoundEffects.coinShower,
       );
     } else if (wasMatched && multiplier.toLowerCase() == 'triple') {
       // Rank 2: Big Hit (Triple)
-      _queueService.announce(
+      queue.announce(
         'Triple treasure! $value gold!',
         AudioPriority.hitConfirm,
         soundEffect: TreasureDivideSoundEffects.coinShower,
       );
     } else if (wasMatched) {
       // Rank 3: Hit Target
-      _queueService.announce(
+      queue.announce(
         'Plunder! $value gold coins!',
         AudioPriority.hitConfirm,
         soundEffect: TreasureDivideSoundEffects.coinClink,
       );
     } else {
       // Rank 4: Miss
-      _queueService.announce(
+      queue.announce(
         "Splash! That one's in the ocean!",
         AudioPriority.hitConfirm,
         soundEffect: TreasureDivideSoundEffects.missSplash,
@@ -209,13 +209,13 @@ class TreasureDivideAnnouncementHelper {
   }) {
     if (allMissed && scoreBeforeTurn > 0) {
       if (quarterItEnabled) {
-        _queueService.announce(
+        queue.announce(
           'A storm hits! Three-quarters of the treasure is lost!',
           AudioPriority.statusChange,
           soundEffect: TreasureDivideSoundEffects.quarterStorm,
         );
       } else {
-        _queueService.announce(
+        queue.announce(
           'Treasure overboard! Half the loot is gone!',
           AudioPriority.statusChange,
           soundEffect: TreasureDivideSoundEffects.splash,
@@ -223,7 +223,7 @@ class TreasureDivideAnnouncementHelper {
       }
     } else {
       // Safe — at least one hit, OR score was already 0 (no penalty to announce)
-      _queueService.announce(
+      queue.announce(
         'The treasure holds! Moving on!',
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.coinClink,
@@ -250,14 +250,14 @@ class TreasureDivideAnnouncementHelper {
   }) {
     if (crewAllMissed && crewTreasureBefore > 0) {
       // Crew Wipeout — combine into one announcement (no separate Halved on top)
-      _queueService.announce(
+      queue.announce(
         "All hands lost! The $crewName's treasure spills overboard!",
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.splash,
       );
     } else {
       // Crew Plunder — at least one hit (crewAllMissed==false) OR score was 0
-      _queueService.announce(
+      queue.announce(
         'The $crewName haul in $crewHaulThisRound gold!',
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.coinShower,
@@ -276,13 +276,13 @@ class TreasureDivideAnnouncementHelper {
     required bool isTeam,
   }) {
     if (isTeam) {
-      _queueService.announce(
+      queue.announce(
         'The $name lead with $value gold!',
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.coinShower,
       );
     } else {
-      _queueService.announce(
+      queue.announce(
         '$name leads with $value gold!',
         AudioPriority.statusChange,
         soundEffect: TreasureDivideSoundEffects.coinShower,
@@ -295,7 +295,7 @@ class TreasureDivideAnnouncementHelper {
   /// enumerate names here to keep the read-out short and avoid arbitrarily
   /// picking one. The score itself is enough information.
   void announceLeadersTied(int value) {
-    _queueService.announce(
+    queue.announce(
       'The leaders have $value gold!',
       AudioPriority.statusChange,
       soundEffect: TreasureDivideSoundEffects.coinShower,
@@ -306,7 +306,7 @@ class TreasureDivideAnnouncementHelper {
 
   /// "Remove your darts!" — TTS-only, ALWAYS called unconditionally.
   void announceRemoveDarts() {
-    _queueService.announce(
+    queue.announce(
       'Remove your darts!',
       AudioPriority.statusChange,
     );
@@ -324,7 +324,7 @@ class TreasureDivideAnnouncementHelper {
   void announceVictory(List<String> winnerNames) {
     if (winnerNames.isEmpty) return;
     if (winnerNames.length == 1) {
-      _queueService.announce(
+      queue.announce(
         '${winnerNames.first} is crowned Pirate Captain! '
             'Richest on the seas!',
         AudioPriority.victory,
@@ -332,8 +332,8 @@ class TreasureDivideAnnouncementHelper {
       );
       return;
     }
-    final names = _joinWithAnd(winnerNames);
-    _queueService.announce(
+    final names = GameAnnouncementHelperBase.joinWithAnd(winnerNames);
+    queue.announce(
       "Divided treasure! $names share the captain's title!",
       AudioPriority.victory,
       soundEffect: TreasureDivideSoundEffects.victoryFanfare,
@@ -349,7 +349,7 @@ class TreasureDivideAnnouncementHelper {
   void announceTeamVictory(List<String> crewNames) {
     if (crewNames.isEmpty) return;
     if (crewNames.length == 1) {
-      _queueService.announce(
+      queue.announce(
         "The ${crewNames.first} are crowned Captain's Crew! "
             'Richest on the seas!',
         AudioPriority.victory,
@@ -359,8 +359,8 @@ class TreasureDivideAnnouncementHelper {
     }
     // Each crew gets its own "the" prefix so the read-out sounds natural.
     final prefixed = crewNames.map((c) => 'the $c').toList();
-    final crews = _joinWithAnd(prefixed);
-    _queueService.announce(
+    final crews = GameAnnouncementHelperBase.joinWithAnd(prefixed);
+    queue.announce(
       "Divided treasure! $crews share the captain's title!",
       AudioPriority.victory,
       soundEffect: TreasureDivideSoundEffects.victoryFanfare,
@@ -371,18 +371,7 @@ class TreasureDivideAnnouncementHelper {
   /// ['A']            => 'A'
   /// ['A', 'B']       => 'A and B'
   /// ['A', 'B', 'C']  => 'A, B, and C' (Oxford comma)
-  String _joinWithAnd(List<String> parts) {
-    if (parts.length == 1) return parts.single;
-    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
-    final head = parts.sublist(0, parts.length - 1).join(', ');
-    return '$head, and ${parts.last}';
-  }
 
   // ─── Idle / dispose ───────────────────────────────────────────────────────────
 
-  Future<void> whenIdle() => _queueService.whenIdle();
-
-  void dispose() {
-    _queueService.dispose();
-  }
 }

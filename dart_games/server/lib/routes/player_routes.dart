@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -64,6 +65,9 @@ class PlayerRoutes {
 
     // PUT /api/v1/players/<id>/stats - Update player stats
     router.put('/<id>/stats', _updateStats);
+
+    // POST /api/v1/players/<id>/stats/increment - Add to a player's stats
+    router.post('/<id>/stats/increment', _incrementStats);
 
     // PATCH /api/v1/players/<id>/face-landmarks - Overwrite stored landmarks
     // with a manually-corrected payload from the inspector UI.
@@ -377,8 +381,16 @@ class PlayerRoutes {
     // Decoding can return null for unsupported formats (e.g. HEIC); in that
     // case we fall through to writing the raw bytes so the caller at least
     // gets a usable file, mirroring pre-canonicalization behavior.
-    final canonicalBytes = _canonicalizePhoto(bytes);
-    File(filePath).writeAsBytesSync(canonicalBytes);
+    // Decode + cubic resize + JPEG re-encode of a multi-megapixel upload is
+    // hundreds of ms of pure CPU. On the single shelf isolate that stalled
+    // EVERY other request — including the dartboard-facing ones — for the
+    // duration (WS04 4.7). Isolate.run moves it off the request isolate.
+    //
+    // _canonicalizePhoto must stay a top-level/static function with no
+    // captured state: the closure is sent to another isolate, so anything it
+    // closes over has to be sendable.
+    final canonicalBytes = await Isolate.run(() => _canonicalizePhoto(bytes));
+    await File(filePath).writeAsBytes(canonicalBytes);
 
     // Update the player's photo_path in the database.
     executeUpdate(
@@ -467,11 +479,16 @@ class PlayerRoutes {
 
     final mimeType =
         lookupMimeType(photoPath) ?? 'application/octet-stream';
-    final bytes = file.readAsBytesSync();
 
+    // Streamed, not readAsBytesSync: the sync read blocked the request
+    // isolate and held the whole file in memory at once (WS04 4.7).
+    // content-length is set explicitly so clients still get a progress bar.
     return Response.ok(
-      bytes,
-      headers: {'content-type': mimeType},
+      file.openRead(),
+      headers: {
+        'content-type': mimeType,
+        'content-length': '${await file.length()}',
+      },
     );
   }
 
@@ -865,7 +882,43 @@ class PlayerRoutes {
     );
   }
 
-  /// PUT /<id>/stats - Directly update a player's stats.
+  /// POST /<id>/stats/increment - Add deltas to a player's stats.
+  ///
+  /// Preferred over PUT /<id>/stats for recording game results. The client
+  /// computing `gamesPlayed + 1` from its own copy loses increments when two
+  /// games finish close together; the addition happens here instead, against
+  /// whatever the row currently holds.
+  Future<Response> _incrementStats(Request request, String id) async {
+    if (!rowExists(_db, 'players', 'id = ?', [id])) {
+      return Response.notFound(
+        jsonEncode({'error': 'Player not found'}),
+        headers: _jsonHeaders,
+      );
+    }
+
+    final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    final gamesPlayedDelta = (body['gamesPlayed'] as int?) ?? 0;
+    final gamesWonDelta = (body['gamesWon'] as int?) ?? 0;
+
+    executeUpdate(
+      _db,
+      'UPDATE players SET games_played = games_played + ?, '
+          'games_won = games_won + ? WHERE id = ?;',
+      [gamesPlayedDelta, gamesWonDelta, id],
+    );
+
+    final player = _loadPlayer(id)!;
+    return Response.ok(
+      jsonEncode(player.toJson()),
+      headers: _jsonHeaders,
+    );
+  }
+
+  /// PUT /<id>/stats - Directly set a player's stats.
+  ///
+  /// Retained for administrative corrections. Game results should use
+  /// POST /<id>/stats/increment so concurrent finishes cannot clobber
+  /// each other.
   Future<Response> _updateStats(Request request, String id) async {
     if (!rowExists(_db, 'players', 'id = ?', [id])) {
       return Response.notFound(

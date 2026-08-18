@@ -48,39 +48,86 @@ Future<Player?> showAddPlayerDialog({
   required AddPlayerDialogConfig config,
   Future<void> Function(Player player)? onSubmit,
   String progressLabel = 'Saving player…',
-}) async {
-  final photoService = PhotoService();
-  final nameController = TextEditingController();
-  String? photoPath;
-  bool showError = false;
-  bool busy = false;
-  String? busyError;
-
+}) {
   return showDialog<Player>(
     context: context,
     barrierDismissible: false,
-    builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setDialogState) => AlertDialog(
-        key: AddPlayerDialogKeys.dialogContainer,
-        backgroundColor: config.backgroundColor,
-        insetPadding: config.dialogInsetPadding ?? const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        title: Text(
-          'Add New Player',
-          style: config.titleStyle,
-        ),
-        content: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: config.dialogContentWidth ?? 0,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    builder: (_) => _AddPlayerDialog(
+      config: config,
+      onSubmit: onSubmit,
+      progressLabel: progressLabel,
+    ),
+  );
+}
+
+/// The dialog body.
+///
+/// A real StatefulWidget rather than a `StatefulBuilder` over closure
+/// variables, so the [TextEditingController] is disposed when the route is —
+/// after the exit transition has stopped rebuilding the field. Disposing it
+/// when the dialog future completes throws "A TextEditingController was used
+/// after being disposed".
+class _AddPlayerDialog extends StatefulWidget {
+  const _AddPlayerDialog({
+    required this.config,
+    required this.onSubmit,
+    required this.progressLabel,
+  });
+
+  final AddPlayerDialogConfig config;
+  final Future<void> Function(Player player)? onSubmit;
+  final String progressLabel;
+
+  @override
+  State<_AddPlayerDialog> createState() => _AddPlayerDialogState();
+}
+
+class _AddPlayerDialogState extends State<_AddPlayerDialog> {
+  final PhotoService _photoService = PhotoService();
+  final TextEditingController _nameController = TextEditingController();
+
+  String? _photoPath;
+  bool _showError = false;
+  bool _busy = false;
+  String? _busyError;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final config = widget.config;
+    final onSubmit = widget.onSubmit;
+    final progressLabel = widget.progressLabel;
+    final photoService = _photoService;
+    final nameController = _nameController;
+    final dialogContext = context;
+
+    return AlertDialog(
+      key: AddPlayerDialogKeys.dialogContainer,
+      backgroundColor: config.backgroundColor,
+      insetPadding: config.dialogInsetPadding ??
+          const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      title: Text(
+        'Add New Player',
+        style: config.titleStyle,
+      ),
+      content: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: config.dialogContentWidth ?? 0,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Photo preview section
-              if (photoPath != null)
+              if (_photoPath != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
                   child: Stack(
@@ -91,8 +138,8 @@ Future<Player?> showAddPlayerDialog({
                         radius: 60,
                         backgroundColor: Colors.grey[300],
                         backgroundImage: kIsWeb
-                            ? NetworkImage(photoPath!)
-                            : FileImage(File(photoPath!)) as ImageProvider,
+                            ? NetworkImage(_photoPath!)
+                            : FileImage(File(_photoPath!)) as ImageProvider,
                       ),
                       Container(
                         decoration: const BoxDecoration(
@@ -101,14 +148,15 @@ Future<Player?> showAddPlayerDialog({
                         ),
                         child: IconButton(
                           key: AddPlayerDialogKeys.removePhotoButton,
-                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          icon: const Icon(Icons.close,
+                              color: Colors.white, size: 20),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          onPressed: busy
+                          onPressed: _busy
                               ? null
                               : () {
-                                  setDialogState(() {
-                                    photoPath = null;
+                                  setState(() {
+                                    _photoPath = null;
                                   });
                                 },
                         ),
@@ -143,23 +191,26 @@ Future<Player?> showAddPlayerDialog({
                     borderSide: BorderSide(color: config.inputBorderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: config.inputFocusedBorderColor, width: 2),
+                    borderSide: BorderSide(
+                        color: config.inputFocusedBorderColor, width: 2),
                   ),
-                  errorText: showError ? 'Please enter a player name' : null,
+                  errorText: _showError ? 'Please enter a player name' : null,
                   errorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: config.inputErrorBorderColor, width: 2),
+                    borderSide: BorderSide(
+                        color: config.inputErrorBorderColor, width: 2),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: config.inputErrorBorderColor, width: 2),
+                    borderSide: BorderSide(
+                        color: config.inputErrorBorderColor, width: 2),
                   ),
                 ),
                 autofocus: true,
-                enabled: !busy,
+                enabled: !_busy,
                 onChanged: (value) {
                   // Clear error when user starts typing
-                  if (showError && value.trim().isNotEmpty) {
-                    setDialogState(() {
-                      showError = false;
+                  if (_showError && value.trim().isNotEmpty) {
+                    setState(() {
+                      _showError = false;
                     });
                   }
                 },
@@ -183,10 +234,11 @@ Future<Player?> showAddPlayerDialog({
                         icon: Icons.camera_alt,
                         label: 'CAMERA',
                         onPressed: () async {
-                          final path = await photoService.takePhoto(context: context);
+                          final path =
+                              await photoService.takePhoto(context: context);
                           if (path != null) {
-                            setDialogState(() {
-                              photoPath = path;
+                            setState(() {
+                              _photoPath = path;
                             });
                           }
                         },
@@ -201,10 +253,11 @@ Future<Player?> showAddPlayerDialog({
                         icon: Icons.camera_alt,
                         label: 'CAMERA',
                         onPressed: () async {
-                          final path = await photoService.takePhoto(context: context);
+                          final path =
+                              await photoService.takePhoto(context: context);
                           if (path != null) {
-                            setDialogState(() {
-                              photoPath = path;
+                            setState(() {
+                              _photoPath = path;
                             });
                           }
                         },
@@ -223,8 +276,8 @@ Future<Player?> showAddPlayerDialog({
                         onPressed: () async {
                           final path = await photoService.selectFromGallery();
                           if (path != null) {
-                            setDialogState(() {
-                              photoPath = path;
+                            setState(() {
+                              _photoPath = path;
                             });
                           }
                         },
@@ -241,8 +294,8 @@ Future<Player?> showAddPlayerDialog({
                         onPressed: () async {
                           final path = await photoService.selectFromGallery();
                           if (path != null) {
-                            setDialogState(() {
-                              photoPath = path;
+                            setState(() {
+                              _photoPath = path;
                             });
                           }
                         },
@@ -253,175 +306,170 @@ Future<Player?> showAddPlayerDialog({
               // Progress / status area — only rendered while an
               // async onSubmit is running (or has just failed).
               // Matches the dialog's style using colors from `config`.
-              if (busy || busyError != null) ...[
+              if (_busy || _busyError != null) ...[
                 const SizedBox(height: 16),
                 _AddPlayerStatusRow(
                   config: config,
-                  busy: busy,
-                  errorMessage: busyError,
+                  busy: _busy,
+                  errorMessage: _busyError,
                   label: progressLabel,
                 ),
               ],
             ],
           ),
-          ),
         ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          Builder(builder: (_) {
-            Future<void> handleSubmit() async {
-              if (busy) return;
-              if (nameController.text.trim().isEmpty) {
-                setDialogState(() {
-                  showError = true;
-                });
-                return;
-              }
-
-              final player = Player.create(
-                name: nameController.text.trim(),
-                photoPath: photoPath,
-              );
-
-              if (onSubmit == null) {
-                Navigator.pop(dialogContext, player);
-                return;
-              }
-
-              setDialogState(() {
-                busy = true;
-                busyError = null;
+      ),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        Builder(builder: (_) {
+          Future<void> handleSubmit() async {
+            if (_busy) return;
+            if (nameController.text.trim().isEmpty) {
+              setState(() {
+                _showError = true;
               });
-              try {
-                await onSubmit(player);
-                if (dialogContext.mounted) {
-                  Navigator.pop(dialogContext, player);
-                }
-              } catch (e) {
-                setDialogState(() {
-                  busy = false;
-                  busyError = e.toString();
-                });
-              }
+              return;
             }
 
-            VoidCallback? cancelHandler =
-                busy ? null : () => Navigator.pop(dialogContext, null);
-            VoidCallback addHandler = () {
-              // Fire-and-forget — errors are caught inside handleSubmit
-              // and surfaced via busyError.
-              handleSubmit();
-            };
-
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (config.photoButtonWidth != null)
-                  SizedBox(
-                    width: config.photoButtonWidth,
-                    child: ElevatedButton(
-                      key: AddPlayerDialogKeys.cancelButton,
-                      onPressed: cancelHandler,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: config.cancelButtonColor,
-                        foregroundColor: config.cancelButtonForegroundColor,
-                        side: BorderSide(
-                          color: config.cancelButtonBorderColor,
-                          width: 3,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child:
-                          Text('CANCEL', style: config.cancelButtonTextStyle),
-                    ),
-                  )
-                else if (config.customCancelButton != null)
-                  Expanded(
-                    child: config.customCancelButton!(
-                      AddPlayerDialogKeys.cancelButton,
-                      cancelHandler ?? () {},
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: ElevatedButton(
-                      key: AddPlayerDialogKeys.cancelButton,
-                      onPressed: cancelHandler,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: config.cancelButtonColor,
-                        foregroundColor: config.cancelButtonForegroundColor,
-                        padding: config.buttonPadding,
-                        side: BorderSide(
-                          color: config.cancelButtonBorderColor,
-                          width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child:
-                          Text('Cancel', style: config.cancelButtonTextStyle),
-                    ),
-                  ),
-                const SizedBox(width: 16),
-                if (config.photoButtonWidth != null)
-                  SizedBox(
-                    width: config.photoButtonWidth,
-                    child: ElevatedButton(
-                      key: AddPlayerDialogKeys.addButton,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: config.addButtonColor,
-                        foregroundColor: config.addButtonForegroundColor,
-                        side: BorderSide(
-                          color: config.addButtonBorderColor,
-                          width: 3,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: busy ? null : addHandler,
-                      child: Text('ADD PLAYER',
-                          style: config.addButtonTextStyle),
-                    ),
-                  )
-                else if (config.customAddButton != null)
-                  Expanded(
-                    child: config.customAddButton!(
-                      AddPlayerDialogKeys.addButton,
-                      busy ? () {} : addHandler,
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: ElevatedButton(
-                      key: AddPlayerDialogKeys.addButton,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: config.addButtonColor,
-                        foregroundColor: config.addButtonForegroundColor,
-                        padding: config.buttonPadding,
-                        side: BorderSide(
-                          color: config.addButtonBorderColor,
-                          width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: busy ? null : addHandler,
-                      child: Text('Add Player',
-                          style: config.addButtonTextStyle),
-                    ),
-                  ),
-              ],
+            final player = Player.create(
+              name: nameController.text.trim(),
+              photoPath: _photoPath,
             );
-          }),
-        ],
-      ),
-    ),
-  );
+
+            if (onSubmit == null) {
+              Navigator.pop(dialogContext, player);
+              return;
+            }
+
+            setState(() {
+              _busy = true;
+              _busyError = null;
+            });
+            try {
+              await onSubmit(player);
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext, player);
+              }
+            } catch (e) {
+              setState(() {
+                _busy = false;
+                _busyError = e.toString();
+              });
+            }
+          }
+
+          VoidCallback? cancelHandler =
+              _busy ? null : () => Navigator.pop(dialogContext, null);
+          VoidCallback addHandler = () {
+            // Fire-and-forget — errors are caught inside handleSubmit
+            // and surfaced via _busyError.
+            handleSubmit();
+          };
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (config.photoButtonWidth != null)
+                SizedBox(
+                  width: config.photoButtonWidth,
+                  child: ElevatedButton(
+                    key: AddPlayerDialogKeys.cancelButton,
+                    onPressed: cancelHandler,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: config.cancelButtonColor,
+                      foregroundColor: config.cancelButtonForegroundColor,
+                      side: BorderSide(
+                        color: config.cancelButtonBorderColor,
+                        width: 3,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text('CANCEL', style: config.cancelButtonTextStyle),
+                  ),
+                )
+              else if (config.customCancelButton != null)
+                Expanded(
+                  child: config.customCancelButton!(
+                    AddPlayerDialogKeys.cancelButton,
+                    cancelHandler ?? () {},
+                  ),
+                )
+              else
+                Expanded(
+                  child: ElevatedButton(
+                    key: AddPlayerDialogKeys.cancelButton,
+                    onPressed: cancelHandler,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: config.cancelButtonColor,
+                      foregroundColor: config.cancelButtonForegroundColor,
+                      padding: config.buttonPadding,
+                      side: BorderSide(
+                        color: config.cancelButtonBorderColor,
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text('Cancel', style: config.cancelButtonTextStyle),
+                  ),
+                ),
+              const SizedBox(width: 16),
+              if (config.photoButtonWidth != null)
+                SizedBox(
+                  width: config.photoButtonWidth,
+                  child: ElevatedButton(
+                    key: AddPlayerDialogKeys.addButton,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: config.addButtonColor,
+                      foregroundColor: config.addButtonForegroundColor,
+                      side: BorderSide(
+                        color: config.addButtonBorderColor,
+                        width: 3,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: _busy ? null : addHandler,
+                    child: Text('ADD PLAYER', style: config.addButtonTextStyle),
+                  ),
+                )
+              else if (config.customAddButton != null)
+                Expanded(
+                  child: config.customAddButton!(
+                    AddPlayerDialogKeys.addButton,
+                    _busy ? () {} : addHandler,
+                  ),
+                )
+              else
+                Expanded(
+                  child: ElevatedButton(
+                    key: AddPlayerDialogKeys.addButton,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: config.addButtonColor,
+                      foregroundColor: config.addButtonForegroundColor,
+                      padding: config.buttonPadding,
+                      side: BorderSide(
+                        color: config.addButtonBorderColor,
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: _busy ? null : addHandler,
+                    child: Text('Add Player', style: config.addButtonTextStyle),
+                  ),
+                ),
+            ],
+          );
+        }),
+      ],
+    );
+  }
 }
 
 /// Progress / error status row shown at the bottom of the Add Player
@@ -536,7 +584,9 @@ Widget _buildPhotoButton({
         width: 2,
       ),
     ),
-    icon: Icon(icon, color: config.photoButtonForegroundColor, shadows: config.photoIconShadows),
+    icon: Icon(icon,
+        color: config.photoButtonForegroundColor,
+        shadows: config.photoIconShadows),
     label: Text(label, style: config.photoButtonTextStyle),
   );
 }

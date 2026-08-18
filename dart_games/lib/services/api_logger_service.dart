@@ -8,6 +8,10 @@ import 'api_logger_download.dart'
     if (dart.library.js_interop) 'api_logger_download_web.dart';
 
 class ApiLoggerService {
+  /// Cap on retained log entries. A long session with the emulator running
+  /// adds one entry per throw plus a status poll every 10s.
+  static const int maxEntries = 2000;
+
   final List<ApiLogEntry> _entries = [];
   final _controller = StreamController<List<ApiLogEntry>>.broadcast();
   final _uuid = const Uuid();
@@ -52,7 +56,14 @@ class ApiLoggerService {
       response: response,
     );
     _entries.add(entry);
-    _controller.add(_entries);
+    // Logging runs for as long as the user leaves it on, and every throw adds
+    // an entry — keep the buffer bounded.
+    if (_entries.length > maxEntries) {
+      _entries.removeRange(0, _entries.length - maxEntries);
+    }
+    // Emit a copy: handing out the live list lets listeners mutate our state
+    // and makes every emission compare equal to the last.
+    _controller.add(List.unmodifiable(_entries));
   }
 
   void updateNote(String entryId, String note) {

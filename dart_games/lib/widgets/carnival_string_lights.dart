@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'pulse_animation.dart';
 import 'dart:math' as math;
 
 class CarnivalStringLights extends StatefulWidget {
@@ -10,51 +12,61 @@ class CarnivalStringLights extends StatefulWidget {
 
 class _CarnivalStringLightsState extends State<CarnivalStringLights>
     with TickerProviderStateMixin {
-  late List<AnimationController> _controllers;
-  late List<Animation<double>> _opacityAnimations;
-  late List<Animation<double>> _glowAnimations;
+  /// Number of bulbs (6 on the left string, 5 on the right).
+  static const int _bulbCount = 11;
+
+  /// Phase offset between adjacent bulbs, as a fraction of one cycle.
+  ///
+  /// The original used a 150ms `Future.delayed` per bulb against a 2000ms
+  /// cycle; 150/2000 = 0.075 reproduces the same visual stagger exactly,
+  /// but as a curve offset instead of eleven independently-started tickers.
+  static const double _phaseStep = 150 / 2000;
+
+  /// ONE controller drives all eleven bulbs (WS04 4.8).
+  ///
+  /// There used to be eleven `AnimationController`s, each with its own ticker
+  /// registered with the scheduler, each rebuilding its own subtree every
+  /// frame — on a decorative background element that is never interacted
+  /// with. The stagger came from starting them at 150ms intervals, which also
+  /// meant eleven pending `Future.delayed` callbacks racing widget disposal.
+  ///
+  /// Now: one ticker, and each bulb reads it through a phase-shifted curve.
+  late final AnimationController _controller;
+  late final List<Animation<double>> _opacityAnimations;
+  late final List<Animation<double>> _glowAnimations;
+
+  /// A 0..1 sawtooth for [index], phase-shifted then folded into a
+  /// there-and-back ramp so it matches the old `repeat(reverse: true)`.
+  Animation<double> _phased(int index, {required double begin, required double end}) {
+    return PulseAnimation(
+      parent: _controller,
+      phase: (index * _phaseStep) % 1.0,
+    ).drive(
+      Tween<double>(begin: begin, end: end)
+          .chain(CurveTween(curve: Curves.easeInOut)),
+    );
+  }
 
   @override
   void initState() {
     super.initState();
 
-    // Create 11 controllers (6 for left + 5 for right) with different delays
-    _controllers = List.generate(11, (index) {
-      final controller = AnimationController(
-        duration: const Duration(milliseconds: 2000),
-        vsync: this,
-      );
+    // reverse:true is not used — _PhaseShiftedAnimation folds the ramp
+    // itself, so every bulb can share one monotonically repeating cycle.
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 4000),
+      vsync: this,
+    )..repeat();
 
-      // Start each bulb with a different delay for desynchronization (150ms offset each)
-      Future.delayed(Duration(milliseconds: index * 150), () {
-        if (mounted) {
-          controller.repeat(reverse: true);
-        }
-      });
-
-      return controller;
-    });
-
-    // Create opacity animations (pulse between 0.9 and 1.0 for 20% brighter)
-    _opacityAnimations = _controllers.map((controller) {
-      return Tween<double>(begin: 0.9, end: 1.0).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut),
-      );
-    }).toList();
-
-    // Create glow animations (pulse the shadow spread - brighter)
-    _glowAnimations = _controllers.map((controller) {
-      return Tween<double>(begin: 1.0, end: 2.0).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut),
-      );
-    }).toList();
+    _opacityAnimations = List.generate(
+        _bulbCount, (i) => _phased(i, begin: 0.9, end: 1.0));
+    _glowAnimations = List.generate(
+        _bulbCount, (i) => _phased(i, begin: 1.0, end: 2.0));
   }
 
   @override
   void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
+    _controller.dispose();
     super.dispose();
   }
 

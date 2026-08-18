@@ -1,19 +1,19 @@
 import '../models/reef_royale_game.dart';
+import 'game_announcement_helper_base.dart';
 import 'game_announcement_queue_service.dart';
 import 'reef_royale_sound_effects.dart';
 
 /// Announcement helper for Reef Royale.
 /// Max 2 announcements per dart throw (priority: claim > score > mark).
 /// "Remove your darts" ALWAYS plays.
-class ReefRoyaleAnnouncementHelper {
-  final GameAnnouncementQueueService _queue;
+class ReefRoyaleAnnouncementHelper extends GameAnnouncementHelperBase {
 
-  ReefRoyaleAnnouncementHelper(this._queue);
+  ReefRoyaleAnnouncementHelper(super.queue);
 
   // --- Game Events ---
 
   void announceGameStart() {
-    _queue.announce(
+    queue.announce(
       'Dive in! The reef awaits!',
       AudioPriority.statusChange,
       soundEffect: ReefRoyaleSoundEffects.bubblePop,
@@ -21,7 +21,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceRandomReefs() {
-    _queue.announce(
+    queue.announce(
       'The reef has shifted!',
       AudioPriority.statusChange,
       soundEffect: ReefRoyaleSoundEffects.currentWhoosh,
@@ -29,7 +29,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceTurn(String playerName) {
-    _queue.announce(
+    queue.announce(
       '$playerName, your turn to swim!',
       AudioPriority.turnTransition,
       soundEffect: ReefRoyaleSoundEffects.turnBell,
@@ -37,7 +37,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceRemoveDarts() {
-    _queue.announce(
+    queue.announce(
       'Remove your darts',
       AudioPriority.turnTransition,
     );
@@ -46,7 +46,7 @@ class ReefRoyaleAnnouncementHelper {
   // --- Dart Events (max 2 per dart) ---
 
   void announceMiss() {
-    _queue.announce(
+    queue.announce(
       'That one drifted with the current!',
       AudioPriority.hitConfirm,
       soundEffect: ReefRoyaleSoundEffects.splash,
@@ -54,7 +54,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceNonTarget() {
-    _queue.announce(
+    queue.announce(
       "That reef isn't on the map!",
       AudioPriority.hitConfirm,
       soundEffect: ReefRoyaleSoundEffects.splash,
@@ -62,7 +62,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceSingleMark(String coralName) {
-    _queue.announce(
+    queue.announce(
       'A fish arrives at $coralName!',
       AudioPriority.hitConfirm,
       soundEffect: ReefRoyaleSoundEffects.bubblePop,
@@ -70,7 +70,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceDoubleMark(String coralName) {
-    _queue.announce(
+    queue.announce(
       'A school gathers at $coralName!',
       AudioPriority.hitConfirm,
       soundEffect: ReefRoyaleSoundEffects.doubleBubble,
@@ -78,7 +78,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceTripleMark(String coralName) {
-    _queue.announce(
+    queue.announce(
       'A triple! $coralName blooms!',
       AudioPriority.hitConfirm,
       soundEffect: ReefRoyaleSoundEffects.coralBloom,
@@ -86,7 +86,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceNeighborMark(String coralName) {
-    _queue.announce(
+    queue.announce(
       'A neighbor fish drifts to $coralName!',
       AudioPriority.hitConfirm,
       soundEffect: ReefRoyaleSoundEffects.bubblePop,
@@ -94,7 +94,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceCoralClaimed(String playerName, String coralName) {
-    _queue.announce(
+    queue.announce(
       '$playerName claims $coralName! It blooms!',
       AudioPriority.shieldStatus,
       soundEffect: ReefRoyaleSoundEffects.coralBloom,
@@ -102,7 +102,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceReefLocked(String coralName) {
-    _queue.announce(
+    queue.announce(
       '$coralName is locked! The reef is sealed!',
       AudioPriority.shieldStatus,
       soundEffect: ReefRoyaleSoundEffects.reefLock,
@@ -111,13 +111,13 @@ class ReefRoyaleAnnouncementHelper {
 
   void announceScoring(String playerName, int pearls) {
     if (pearls >= 40) {
-      _queue.announce(
+      queue.announce(
         'A massive pearl haul! $pearls pearls!',
         AudioPriority.hitConfirm,
         soundEffect: ReefRoyaleSoundEffects.pearlChime,
       );
     } else {
-      _queue.announce(
+      queue.announce(
         '$pearls pearls harvested!',
         AudioPriority.hitConfirm,
         soundEffect: ReefRoyaleSoundEffects.pearlChime,
@@ -137,7 +137,7 @@ class ReefRoyaleAnnouncementHelper {
       final excluded = excludedNames.join(' and ');
       text = 'Cursed tide! $pearls pearls weigh down all opponents except $excluded!';
     }
-    _queue.announce(
+    queue.announce(
       text,
       AudioPriority.hitConfirm,
       soundEffect: ReefRoyaleSoundEffects.splash,
@@ -145,7 +145,7 @@ class ReefRoyaleAnnouncementHelper {
   }
 
   void announceNearVictory(String playerName) {
-    _queue.announce(
+    queue.announce(
       '$playerName has six corals! One more!',
       AudioPriority.statusChange,
       soundEffect: ReefRoyaleSoundEffects.pearlChime,
@@ -165,7 +165,7 @@ class ReefRoyaleAnnouncementHelper {
         text = 'Ink cloud! The reef goes dark!';
     }
 
-    _queue.announce(
+    queue.announce(
       text,
       AudioPriority.statusChange,
       soundEffect: ReefRoyaleSoundEffects.currentWhoosh,
@@ -175,7 +175,7 @@ class ReefRoyaleAnnouncementHelper {
   // --- Game Completion ---
 
   void announceSpeedPlayEnd() {
-    _queue.announce(
+    queue.announce(
       "Time's up! The tides decide the winner!",
       AudioPriority.statusChange,
       soundEffect: ReefRoyaleSoundEffects.currentWhoosh,
@@ -194,15 +194,15 @@ class ReefRoyaleAnnouncementHelper {
   void announceVictory(List<String> winnerNames) {
     if (winnerNames.isEmpty) return;
     if (winnerNames.length == 1) {
-      _queue.announce(
+      queue.announce(
         'All hail ${winnerNames.first}, Crown of the Reef!',
         AudioPriority.victory,
         soundEffect: ReefRoyaleSoundEffects.victoryFanfare,
       );
       return;
     }
-    final names = _joinWithAnd(winnerNames);
-    _queue.announce(
+    final names = GameAnnouncementHelperBase.joinWithAnd(winnerNames);
+    queue.announce(
       'The reef is shared! $names tie for the Crown of the Reef!',
       AudioPriority.victory,
       soundEffect: ReefRoyaleSoundEffects.victoryFanfare,
@@ -213,38 +213,9 @@ class ReefRoyaleAnnouncementHelper {
   /// ['A']            => 'A'
   /// ['A', 'B']       => 'A and B'
   /// ['A', 'B', 'C']  => 'A, B, and C' (Oxford comma)
-  String _joinWithAnd(List<String> parts) {
-    if (parts.length == 1) return parts.single;
-    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
-    final head = parts.sublist(0, parts.length - 1).join(', ');
-    return '$head, and ${parts.last}';
-  }
 
   void announceLockedOnTarget(int target) {
     // Locked target - no effect, no announcement
   }
 
-  /// Voice-only "game paused — dartboard disconnected" announcement.
-  /// Fired by [DartboardStatusAnnouncer] when the dartboard drops mid-game.
-  void announceGamePaused() {
-    _queue.announce(
-      'Dartboard disconnected. Game paused. Will resume when the connection is restored.',
-      AudioPriority.statusChange,
-    );
-  }
-
-  /// Voice-only "dartboard reconnected" announcement, fired by
-  /// [DartboardStatusAnnouncer] when the dartboard returns to connected.
-  void announceConnectionRestored() {
-    _queue.announce(
-      'Dartboard reconnected. Resume play when ready.',
-      AudioPriority.statusChange,
-    );
-  }
-
-  Future<void> whenIdle() => _queue.whenIdle();
-
-  void dispose() {
-    _queue.dispose();
-  }
 }

@@ -15,6 +15,13 @@ export '../../shared/edit_score_helpers.dart';
 
 import '../../shared/results_helpers.dart';
 
+import 'package:dart_games/constants/test_keys.dart';
+
+import '../../shared/element_finders.dart';
+import '../../shared/pause_modal_suite.dart';
+import '../../shared/pump_sequences.dart';
+import '../../shared/pause_modal_helpers.dart';
+
 final config = GameUIConfig.lunarLander();
 
 // ===== DELEGATES TO SHARED HELPERS =====
@@ -103,3 +110,63 @@ Future<void> completeGameToVictory(
 
   await ResultsHelpers.pumpUntilResults(tester, config);
 }
+
+// ===== PAUSE MODAL SUITE SPEC =====
+//
+// Shared bodies live in shared/pause_modal_suite.dart; everything
+// game-specific for Lunar Lander is supplied here.
+//
+// As with Clockwork, slot 4 is named "Pause blocks settings controls" but its
+// hand-written body only tapped Add Player. Both controls are listed so the
+// name is honoured without dropping the tap the test actually made.
+
+/// Lunar's Edit Score button belongs to a completed turn, so this finishes
+/// the pending takeout and plays a second turn first — matching the
+/// hand-written test.
+Future<void> _openEditScoreOnSecondTurn(WidgetTester tester) async {
+  await clickDartsRemoved(tester);
+  await throwDartViaMock(tester, 5);
+  await throwDartViaMock(tester, 5);
+  await throwDartViaMock(tester, 5);
+  await openEditScore(tester);
+}
+
+final pauseModalSpec = PauseModalSpec(
+  config: config,
+  // The KEYED back arrow, not find.byTooltip('Back'): the menu's back button
+  // carries no 'Back' tooltip, so the tooltip finder matches nothing. The
+  // hand-written test hid that behind an `isNotEmpty` guard and so never
+  // tapped the back button at all.
+  menuBackButton: ElementFinders.getLunarLanderBackButton,
+  ownGameCard: ElementFinders.getLunarLanderCard,
+  verifyOnMenu: (tester) =>
+      expect(find.text('LUNAR LANDER GAME SETUP'), findsWidgets,
+          reason: 'Menu screen not showing — setup heading not found'),
+  menuSettingsControls: [
+    ElementFinders.getLunarLanderAltitudeSlider,
+    ElementFinders.getLunarLanderAddPlayerButtonEmptyState,
+  ],
+  startGame: (tester) => setupAndStartGame(tester, config),
+  throwOneDart: (tester) => throwDartViaMock(tester, 20),
+  throwTurnToTakeout: (tester) async {
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+    await throwDartViaMock(tester, 20);
+  },
+  verifyNoSavePrompt: (tester) => expect(find.text('Save Game?'), findsNothing,
+      reason: 'Save prompt appeared despite the pause overlay'),
+  finishTakeout: clickDartsRemoved,
+  openEditScore: _openEditScoreOnSecondTurn,
+  reachResults: (tester) async {
+    await setupAndStartGame(tester, config, altitude: 100);
+    await completeGameToVictory(tester);
+  },
+  verifyOnResults: (tester) => expect(
+      find.byKey(LunarLanderResultsKeys.winnerName), findsOneWidget,
+      reason: 'Results screen not showing — winner name not found'),
+  resultsAfterReconnect: (tester) async {
+    await tester.tap(config.getPlayAgainButton());
+    await PumpSequences.navigation(tester);
+    PauseModalHelpers.verifyPauseModalNotVisible(tester);
+  },
+);
