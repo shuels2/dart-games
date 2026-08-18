@@ -39,6 +39,21 @@ Set<String> _skillNames() {
   return names;
 }
 
+/// Reads a skill file for comparison, with line endings normalised away.
+///
+/// Only ONE of the two copies is tracked, and this repo is developed on
+/// Windows with `core.autocrlf=true`. Git rewrites the tracked copy with CRLF
+/// on every checkout, while the installed copy under `.claude/` is gitignored
+/// so nothing ever rewrites it. Comparing raw bytes therefore turns an
+/// ordinary branch switch into a wall of failures whose diagnostic prints two
+/// identical-looking lines — the only difference being an invisible trailing
+/// carriage return. That happened on 2026-08-18 right after PR #52 merged.
+///
+/// Line endings are not skill content. What must not diverge is what the file
+/// SAYS, so normalise them and compare that.
+String _content(File f) =>
+    f.readAsStringSync().replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+
 /// Every markdown file a skill owns, relative to its own directory.
 Set<String> _markdownFiles(String base, String name) {
   final dir = Directory('$base/$name');
@@ -89,8 +104,8 @@ void main() {
               reason: '.claude/skills/$name/$rel is missing, so THIS session '
                   'is not running what is committed.');
 
-          final a = tracked.readAsStringSync();
-          final b = installed.readAsStringSync();
+          final a = _content(tracked);
+          final b = _content(installed);
           if (a == b) return;
 
           // A useful failure, not "strings differ" on a 5,600-line file.
