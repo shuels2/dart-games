@@ -119,6 +119,49 @@ When it finishes, browse `http://localhost/` on the kiosk, or
 Run **`update_service.bat` as Administrator**. It pulls, recompiles
 the server, rebuilds the web app, and restarts the service.
 
+⚠️ **Pull first, then run the updater.** `cmd.exe` re-reads a batch
+file from a byte offset as it executes, so if the script's own
+`git pull` step updates `update_service.bat` itself, the rest of the
+run can jump to garbage. Run `git pull` manually beforehand — the
+script's pull then becomes a harmless no-op.
+
+### Confirming the update landed
+
+The console window stays open at the end (see the `:hold` note below)
+and prints a summary:
+
+```
+   Branch:   master
+   Commit:   6a90872
+   Build:    825      (was: 791)
+
+  HOW TO CONFIRM THE UPDATE WORKED
+   1. Open the app:  http://localhost/
+   2. Go to  Options  ->  System Settings
+   3. Look at the BOTTOM of the left sidebar
+   4. It must read:   Build 825
+```
+
+That build number is `git rev-list --count HEAD`, computed the same
+way `build.bat` computes it, and baked into the bundle via
+`--dart-define=BUILD_NUMBER`. It renders as **"Build N"** at the
+bottom of the Options → System Settings sidebar. If the app still
+shows the old number, the browser is serving a cached bundle —
+hard-refresh with **Ctrl+F5**.
+
+The same summary is written to **`last_update.txt`** in the repo root
+(gitignored), so the details survive even if the window is lost. The
+previously-deployed number is tracked in `build/web/build_number.txt`,
+stamped at the end of each successful run — so the first run after
+this feature landed reports `previous: unknown`.
+
+**Why `:hold` instead of `pause`:** `pause` reads stdin, and the child
+processes the script runs (`flutter build web`, `dart pub get`) leave
+the inherited stdin handle at EOF. `pause` then reads EOF, returns
+instantly, and the window closes before the summary can be read. The
+`:hold` subroutine uses `pause <CON` to reattach the real console
+keyboard so it blocks as intended.
+
 `update_service.bat` **does not touch** the pinned Python `<env>`
 vars in the WinSW XML — it reuses whatever `install_service.bat`
 last wrote. If you change Python versions or move MediaPipe to a

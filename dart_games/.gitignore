@@ -55,6 +55,11 @@ app.*.map.json
 integration_test_output/*.log
 integration_test_output/*.txt
 
+# Written by update_service.bat - records the branch/commit/build
+# number of the last kiosk deploy so the summary survives the console
+# window closing. Machine-local, never committed.
+last_update.txt
+
 # Python dependency sentinel (local machine state, not repo state)
 .python_deps_verified
 
