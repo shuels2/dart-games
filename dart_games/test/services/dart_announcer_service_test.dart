@@ -450,28 +450,10 @@ void main() {
       await next;
     });
 
-    test('announceGameStart is serialized too', () async {
-      final rv = _FakeResponsiveVoice();
-      final announcer = DartAnnouncerService(responsiveVoice: rv);
-      await announcer.ready;
-      announcer.useResponsiveVoice();
-
-      final first = announcer.speak('a line already being spoken');
-      await pumpEventQueue();
-
-      final start = announcer.announceGameStart();
-      await pumpEventQueue();
-      expect(rv.spoken.length, 1,
-          reason: 'announceGameStart bypassed the chain as well');
-
-      rv.finish();
-      await first;
-      await pumpEventQueue();
-      expect(rv.spoken.length, 2);
-
-      rv.finish();
-      await start;
-    });
+    // There is no announceGameStart test here: that method was the third
+    // engine bypass and has been deleted as dead code (every game announces
+    // its own start through its helper). The meta lint is what now prevents a
+    // replacement growing its own speech path.
 
     test('interleaved browser-TTS callers never overlap', () async {
       // The flutter_tts completion handler is global and resolves whatever

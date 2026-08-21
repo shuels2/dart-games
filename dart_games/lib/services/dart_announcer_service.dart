@@ -567,31 +567,20 @@ class DartAnnouncerService {
     }
   }
 
-  /// Announce game start
-  Future<void> announceGameStart() async {
-    if (!_enabled) return;
-
-    String phrase;
-    switch (_currentVoice) {
-      case AnnouncerVoice.professional:
-        phrase = 'Game on. Good luck.';
-        break;
-      case AnnouncerVoice.excited:
-        phrase = 'Let\'s gooo! Game on! Show me what you got!';
-        break;
-      case AnnouncerVoice.calm:
-        phrase = 'Game beginning. Take your time.';
-        break;
-      case AnnouncerVoice.funny:
-        phrase = 'Alright folks! Let the dart slinging begin!';
-        break;
-      case AnnouncerVoice.drill:
-        phrase = 'GAME ON! Give me your best shot! Let\'s go!';
-        break;
-    }
-
-    return _enqueueSpeak(phrase);
-  }
+  // DELETED: announceGameStart().
+  //
+  // It spoke a per-personality "Game on" line and had no callers. All ten
+  // games announce their own start through their helper's announceGameStart,
+  // which calls queue.announce() with game-specific wording and a sound
+  // effect — nine helpers define a method of that exact name. That collision
+  // is why the service's copy looked used: grepping the name returns eighty
+  // hits, every one of them a helper or a mock.
+  //
+  // It is recorded here rather than silently removed because it was also one
+  // of the three methods that spoke to the engines directly, bypassing
+  // _speakChain. If a future "announcer says the game is starting" feature
+  // wants this, it belongs in a game helper going through queue.announce(),
+  // not as a second speech path on the service.
 
   /// Speak a custom phrase using current engine and voice settings.
   ///
@@ -608,11 +597,11 @@ class DartAnnouncerService {
   /// when it has been spoken.
   ///
   /// EVERY utterance must go through here. Three methods used to call the
-  /// engines directly instead — `announceDart`, `announceGameStart`, and the
-  /// old body of this method — which meant they could talk over whatever the
-  /// chain was speaking, and on the browser path their utterance's completion
-  /// resolved somebody else's `_ttsCompleter` (the handler is global), quietly
-  /// advancing a game's queue mid-sentence.
+  /// engines directly instead — `announceDart`, the old body of this method,
+  /// and `announceGameStart` (since deleted as dead code) — which meant they
+  /// could talk over whatever the chain was speaking, and on the browser path
+  /// their utterance's completion resolved somebody else's `_ttsCompleter`
+  /// (the handler is global), quietly advancing a game's queue mid-sentence.
   /// `test/meta/speech_engine_completion_lint_test.dart` now enforces that the
   /// engines are only ever touched from [_speakNow].
   Future<void> _enqueueSpeak(String text) {
