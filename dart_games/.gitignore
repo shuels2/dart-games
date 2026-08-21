@@ -90,3 +90,16 @@ server/bin/server.exe
 windows/flutter/generated_plugin_registrant.cc
 windows/flutter/generated_plugin_registrant.h
 windows/flutter/generated_plugins.cmake
+
+# ChromeDriver — a 60 MB binary payload that is downloaded, not authored.
+# `update_chromedriver.bat` fetches the build matching the locally installed
+# Chrome and writes all four files (chromedriver.exe, the zip it came in,
+# LICENSE and THIRD_PARTY_NOTICES). Tracking them meant every driver update
+# landed as a 60 MB binary diff, and a machine whose Chrome had auto-updated
+# showed a permanently dirty working tree it could not meaningfully commit.
+#
+# Nothing needs them in git: run_ui_tests_parallel.bat calls
+# update_chromedriver.bat before every run, and that script bootstraps from
+# nothing — a missing driver reports major version 0, which forces the
+# download and creates the directories it extracts into.
+chromedriver/
