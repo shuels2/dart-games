@@ -55,7 +55,7 @@ class DartAnnouncerService {
       _shared ??= DartAnnouncerService();
 
   final FlutterTts _tts = FlutterTts();
-  final ResponsiveVoiceService _responsiveVoice = ResponsiveVoiceService();
+  final ResponsiveVoiceService _responsiveVoice;
   VoiceEngine _engine = VoiceEngine.browser;
   AnnouncerVoice _currentVoice = AnnouncerVoice.professional;
   bool _enabled = true;
@@ -79,6 +79,10 @@ class DartAnnouncerService {
   // queues sharing this singleton cannot talk over each other.
   Future<void> _speakChain = Future<void>.value();
 
+  // Upper bound on how long one link of that chain may stay pending. See
+  // _defaultChainWatchdog.
+  final Duration Function(String text) _chainWatchdogFor;
+
   // Future completed when _initializeTts() finishes populating
   // _availableVoices. Callers that need to set a specific system voice
   // must `await ready` first; otherwise setSystemVoice() runs against an
@@ -93,7 +97,19 @@ class DartAnnouncerService {
   /// on a freshly-constructed instance.
   Future<void> get ready => _initFuture;
 
-  DartAnnouncerService() {
+  /// [responsiveVoice] exists only so tests can supply an engine that behaves
+  /// like the real browser one — in particular one whose utterance never
+  /// reports completion. Off the web the production value is a stub that
+  /// reports "not ready", so the ResponsiveVoice path (the DEFAULT engine in
+  /// `loadSettings`) was unreachable in tests and its deadlock went unseen.
+  ///
+  /// [chainWatchdog] likewise exists for tests: the production budget is
+  /// seconds long by design, which no unit test should sit through.
+  DartAnnouncerService({
+    @visibleForTesting ResponsiveVoiceService? responsiveVoice,
+    @visibleForTesting Duration Function(String text)? chainWatchdog,
+  })  : _responsiveVoice = responsiveVoice ?? ResponsiveVoiceService(),
+        _chainWatchdogFor = chainWatchdog ?? _defaultChainWatchdog {
     _initFuture = _initializeTts();
   }
 
@@ -591,10 +607,36 @@ class DartAnnouncerService {
     final previous = _speakChain;
     final done = Completer<void>();
     _speakChain = done.future;
-    return previous.then((_) => _speakNow(text)).whenComplete(() {
+
+    final spoken = previous.then((_) => _speakNow(text));
+
+    // Bound the link. `whenComplete` alone is not enough: if the engine never
+    // reports completion, `spoken` stays pending, `done` is never completed,
+    // and EVERY later speak() waits on it forever — speech dies for the rest
+    // of the session while the queue keeps draining on its own timeout and
+    // sound effects keep playing. That is the failure seen on a real
+    // dartboard (game start and the first player announced, then silence).
+    //
+    // The queue applies its own tighter timeout to the future returned below,
+    // so this only fires when that path failed to unwedge things too. It is a
+    // deadlock breaker, not a pacing mechanism — hence the generous budget.
+    unawaited(spoken
+        .timeout(_chainWatchdogFor(text), onTimeout: () {})
+        // A link that threw must not poison the chain either.
+        .catchError((Object _) {})
+        .whenComplete(() {
       if (!done.isCompleted) done.complete();
-    });
+    }));
+
+    return spoken;
   }
+
+  /// How long one link of [_speakChain] may stay pending before it is treated
+  /// as wedged. Scales with utterance length so a long line is not cut loose
+  /// early, with generous headroom over the queue's own
+  /// `wordCount * 1000 + 1500` timeout so this stays the last resort.
+  static Duration _defaultChainWatchdog(String text) =>
+      Duration(milliseconds: text.split(' ').length * 1000 + 5000);
 
   Future<void> _speakNow(String text) async {
     if (!_enabled) return;

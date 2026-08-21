@@ -68,12 +68,38 @@ class ResponsiveVoiceService {
     }
   }
 
+  /// The utterance currently waiting on `onend`, if any.
+  ///
+  /// Held so [cancel] can resolve it. `onend` is the ONLY thing that used to
+  /// complete the future returned by [speak], which meant an utterance whose
+  /// `onend` never arrived left that future pending forever — and since
+  /// `DartAnnouncerService` serializes every caller through one chain, one
+  /// such utterance silenced the whole app for the rest of the session while
+  /// sound effects carried on playing. Observed on a real dartboard: the game
+  /// announced its start and the first player, then never spoke again.
+  Completer<void>? _pending;
+
+  /// Resolves the in-flight utterance's future, if there is one.
+  ///
+  /// Completing (rather than erroring) is deliberate: callers await this to
+  /// mean "the engine is no longer speaking", which is exactly true after a
+  /// cancel.
+  void _releasePending() {
+    final pending = _pending;
+    _pending = null;
+    if (pending != null && !pending.isCompleted) pending.complete();
+  }
+
   /// Speak text using ResponsiveVoice.
   ///
   /// Returns a `Future<void>` that resolves when the underlying JS engine
   /// fires its `onend` callback (i.e. speech has actually finished). If the
   /// service is not ready or the call throws synchronously, the future
   /// resolves immediately (so callers can always `await` safely).
+  ///
+  /// It also resolves if [cancel] is called first — `onend` is not guaranteed
+  /// to fire for a cancelled utterance, and a caller left awaiting one is how
+  /// speech dies for the session (see [_pending]).
   ///
   /// The queue service relies on this future to know exactly when the
   /// current utterance ended, so the next announcement can start without
@@ -84,6 +110,11 @@ class ResponsiveVoiceService {
     double rate = 1.0,
     double volume = 1.0,
   }) {
+    // A new utterance supersedes any still-pending one. Without this, the
+    // superseded completer would be dropped on the floor with nothing left
+    // holding a reference that could ever complete it.
+    _releasePending();
+
     final completer = Completer<void>();
     try {
       if (!isReady()) {
@@ -106,8 +137,13 @@ class ResponsiveVoiceService {
         final elapsedMs =
             DateTime.now().millisecondsSinceEpoch - startTimeMs;
         print('[Audio][RV] onend fired after ${elapsedMs}ms for: "$text"');
+        if (identical(_pending, completer)) _pending = null;
         if (!completer.isCompleted) completer.complete();
       }).toJS;
+
+      // Only track it once we are actually going to wait on `onend`; the
+      // early-return paths above complete inline and never park anything.
+      _pending = completer;
 
       final options = ResponsiveVoiceOptions(
         pitch: pitch.toJS,
@@ -121,12 +157,19 @@ class ResponsiveVoiceService {
       print('Speaking: "$text" with voice: $voiceName (rate: $rate)');
     } catch (e) {
       print('ResponsiveVoice speak error: $e');
+      _releasePending();
       if (!completer.isCompleted) completer.complete();
     }
     return completer.future;
   }
 
-  /// Cancel current speech
+  /// Cancel current speech.
+  ///
+  /// Always resolves the in-flight utterance's future, including when the
+  /// engine is gone, never became ready, or throws on cancel. This is the
+  /// watchdog path — `DartAnnouncerService.stopSpeaking()` calls it precisely
+  /// when `onend` has failed to arrive — so it must not itself depend on the
+  /// engine behaving.
   void cancel() {
     try {
       if (isReady()) {
@@ -137,6 +180,8 @@ class ResponsiveVoiceService {
       }
     } catch (e) {
       print('ResponsiveVoice cancel error: $e');
+    } finally {
+      _releasePending();
     }
   }
 
