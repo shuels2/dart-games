@@ -27,6 +27,11 @@ void main() {
   late bool speaking;
   late List<String> overlaps;
 
+  /// Rates and pitches the browser engine was configured with, in order, so
+  /// the browser path can be proven unchanged by the ResponsiveVoice work.
+  late List<double> speechRates;
+  late List<double> pitches;
+
   /// Completes the current utterance the way the platform does — by calling
   /// back into flutter_tts, which fires the completion handler the announcer
   /// awaits.
@@ -45,6 +50,8 @@ void main() {
     spoken = [];
     overlaps = [];
     speaking = false;
+    speechRates = [];
+    pitches = [];
 
     messenger.setMockMethodCallHandler(channel, (call) async {
       switch (call.method) {
@@ -56,6 +63,12 @@ void main() {
           return 1;
         case 'stop':
           speaking = false;
+          return 1;
+        case 'setSpeechRate':
+          speechRates.add((call.arguments as num).toDouble());
+          return 1;
+        case 'setPitch':
+          pitches.add((call.arguments as num).toDouble());
           return 1;
         case 'getVoices':
           // init polls this until it returns something; one entry is enough
@@ -256,6 +269,251 @@ void main() {
     });
   });
 
+  group('voice personality is global', () {
+    // Rate, pitch and the playback slider are ONE global setting. Every game
+    // must honour all three, and so must the Options screen's test button.
+    //
+    // Before this, the ResponsiveVoice path — the DEFAULT engine, and the one
+    // the kiosk speaks through — passed bare _playbackRate and no pitch at
+    // all. The announcer style was therefore inaudible in every game;
+    // "excited" and "calm" sounded identical. Only announceDart applied the
+    // personality, and nothing but the Test Dartboard screen called it.
+
+    /// Personality -> (ResponsiveVoice base rate, pitch), slider at 1.0.
+    const expected = <AnnouncerVoice, (double, double)>{
+      AnnouncerVoice.professional: (0.95, 1.0),
+      AnnouncerVoice.excited: (1.15, 1.3),
+      AnnouncerVoice.calm: (0.85, 0.9),
+      AnnouncerVoice.funny: (1.05, 1.1),
+      AnnouncerVoice.drill: (1.2, 0.95),
+    };
+
+    for (final entry in expected.entries) {
+      test('${entry.key.name} speaks at its own rate and pitch', () async {
+        final rv = _FakeResponsiveVoice();
+        final announcer = DartAnnouncerService(responsiveVoice: rv);
+        await announcer.ready;
+        announcer.useResponsiveVoice();
+        announcer.setVoice(entry.key);
+
+        final future = announcer.speak('a line');
+        await pumpEventQueue();
+
+        expect(rv.rates.single, closeTo(entry.value.$1, 0.0001),
+            reason: 'personality rate must reach the engine');
+        expect(rv.pitches.single, closeTo(entry.value.$2, 0.0001),
+            reason: 'personality pitch must reach the engine');
+
+        rv.finish();
+        await future;
+      });
+    }
+
+    test('the playback slider multiplies the personality rate', () async {
+      final rv = _FakeResponsiveVoice();
+      final announcer = DartAnnouncerService(responsiveVoice: rv);
+      await announcer.ready;
+      announcer.useResponsiveVoice();
+      announcer.setVoice(AnnouncerVoice.excited);
+      announcer.setPlaybackRate(1.2);
+
+      final future = announcer.speak('a line');
+      await pumpEventQueue();
+
+      // 1.15 * 1.2 = 1.38, not the bare slider value.
+      expect(rv.rates.single, closeTo(1.38, 0.0001));
+
+      rv.finish();
+      await future;
+    });
+
+    test('the effective rate is clamped before it reaches the engine',
+        () async {
+      final rv = _FakeResponsiveVoice();
+      final announcer = DartAnnouncerService(responsiveVoice: rv);
+      await announcer.ready;
+      announcer.useResponsiveVoice();
+      // Drill at the slider's maximum asks for 1.2 * 1.5 = 1.8, past what
+      // speech engines render cleanly. The browser path always clamped; this
+      // path did not.
+      announcer.setVoice(AnnouncerVoice.drill);
+      announcer.setPlaybackRate(1.5);
+
+      final future = announcer.speak('a line');
+      await pumpEventQueue();
+
+      expect(rv.rates.single, lessThanOrEqualTo(1.5));
+
+      rv.finish();
+      await future;
+    });
+
+    test('a game announcement gets the same treatment as any other line',
+        () async {
+      // Games speak through GameAnnouncementQueueService, which calls speak().
+      // Covering it here (rather than per game) is deliberate: all ten share
+      // this one path, so one assertion covers every game and any game added
+      // later.
+      final rv = _FakeResponsiveVoice();
+      final announcer = DartAnnouncerService(responsiveVoice: rv);
+      await announcer.ready;
+      announcer.useResponsiveVoice();
+      announcer.setVoice(AnnouncerVoice.drill);
+
+      final future = announcer.speak('Alice, step into the arena!');
+      await pumpEventQueue();
+
+      expect(rv.spoken.single, 'Alice, step into the arena!');
+      expect(rv.rates.single, closeTo(1.2, 0.0001));
+      expect(rv.pitches.single, closeTo(0.95, 0.0001));
+
+      rv.finish();
+      await future;
+    });
+
+    test('announceDart no longer has a personality of its own', () async {
+      // It used to carry a private copy of the rate/pitch table — the only
+      // place they were applied. It must now be indistinguishable from any
+      // other utterance.
+      final rv = _FakeResponsiveVoice();
+      final announcer = DartAnnouncerService(responsiveVoice: rv);
+      await announcer.ready;
+      announcer.useResponsiveVoice();
+      announcer.setVoice(AnnouncerVoice.calm);
+
+      final dart = announcer.announceDart(60, 'triple');
+      await pumpEventQueue();
+      expect(rv.rates.single, closeTo(0.85, 0.0001));
+      expect(rv.pitches.single, closeTo(0.9, 0.0001));
+      rv.finish();
+      await dart;
+
+      final plain = announcer.speak('a line');
+      await pumpEventQueue();
+      expect(rv.rates.last, closeTo(0.85, 0.0001),
+          reason: 'the same personality, whatever the entry point');
+      expect(rv.pitches.last, closeTo(0.9, 0.0001));
+      rv.finish();
+      await plain;
+    });
+  });
+
+  group('every entry point is serialized', () {
+    test('announceDart waits for an in-flight utterance', () async {
+      final rv = _FakeResponsiveVoice();
+      final announcer = DartAnnouncerService(responsiveVoice: rv);
+      await announcer.ready;
+      announcer.useResponsiveVoice();
+
+      final first = announcer.speak('a line already being spoken');
+      await pumpEventQueue();
+      expect(rv.spoken, ['a line already being spoken']);
+
+      // It used to hit the engine immediately, talking over the line above.
+      final dart = announcer.announceDart(60, 'triple');
+      await pumpEventQueue();
+      expect(rv.spoken, ['a line already being spoken'],
+          reason: 'announceDart must not start while something is speaking');
+
+      rv.finish();
+      await first;
+      await pumpEventQueue();
+      expect(rv.spoken.length, 2, reason: 'it speaks once the chain is free');
+
+      rv.finish();
+      await dart;
+    });
+
+    test('an utterance waits for an in-flight announceDart', () async {
+      // The reverse direction: announceDart must JOIN the chain, not merely
+      // defer to it. If it only deferred, the next speak() would not wait.
+      final rv = _FakeResponsiveVoice();
+      final announcer = DartAnnouncerService(responsiveVoice: rv);
+      await announcer.ready;
+      announcer.useResponsiveVoice();
+
+      final dart = announcer.announceDart(60, 'triple');
+      await pumpEventQueue();
+      expect(rv.spoken.length, 1);
+
+      final next = announcer.speak('a later line');
+      await pumpEventQueue();
+      expect(rv.spoken.length, 1,
+          reason: 'the later line must wait for the dart call to finish');
+
+      rv.finish();
+      await dart;
+      await pumpEventQueue();
+      expect(rv.spoken.last, 'a later line');
+
+      rv.finish();
+      await next;
+    });
+
+    // There is no announceGameStart test here: that method was the third
+    // engine bypass and has been deleted as dead code (every game announces
+    // its own start through its helper). The meta lint is what now prevents a
+    // replacement growing its own speech path.
+
+    test('interleaved browser-TTS callers never overlap', () async {
+      // The flutter_tts completion handler is global and resolves whatever
+      // _ttsCompleter currently holds. announceDart used to dispatch an
+      // utterance without setting it, so its completion resolved another
+      // caller's completer and advanced that queue mid-sentence.
+      final announcer = DartAnnouncerService();
+      await announcer.ready;
+
+      final first = announcer.speak('first line');
+      final dart = announcer.announceDart(60, 'triple');
+      final third = announcer.speak('third line');
+
+      await pumpEventQueue();
+      expect(spoken, ['first line'],
+          reason: 'only one utterance may be in flight');
+
+      for (var i = 0; i < 3; i++) {
+        await pumpEventQueue();
+        await finishUtterance();
+      }
+      await Future.wait([first, dart, third]);
+
+      expect(spoken.length, 3);
+      expect(overlaps, isEmpty, reason: 'utterances must never overlap');
+      expect(spoken.first, 'first line');
+      expect(spoken.last, 'third line');
+    });
+  });
+
+  group('browser-TTS path is unchanged', () {
+    test('rate is the personality base times the slider, clamped', () async {
+      final announcer = DartAnnouncerService();
+      await announcer.ready;
+      announcer.useBrowserVoices();
+      announcer.setVoice(AnnouncerVoice.excited);
+      announcer.setPlaybackRate(1.5);
+
+      final future = announcer.speak('a line');
+      await pumpEventQueue();
+
+      // 0.6 * 1.5 = 0.9 — the browser scale, NOT the ResponsiveVoice one.
+      // If the two tables were ever collapsed into one this would catch it.
+      expect(speechRates.last, closeTo(0.9, 0.0001));
+
+      await finishUtterance();
+      await future;
+    });
+
+    test('pitch still comes from the personality', () async {
+      final announcer = DartAnnouncerService();
+      await announcer.ready;
+      announcer.useBrowserVoices();
+      announcer.setVoice(AnnouncerVoice.calm);
+      await pumpEventQueue();
+
+      expect(pitches.last, closeTo(0.8, 0.0001));
+    });
+  });
+
   group('enabled flag', () {
     test('speak is a no-op while disabled, and works again once re-enabled',
         () async {
@@ -287,6 +545,18 @@ void main() {
 /// unreachable under `flutter test`.
 class _FakeResponsiveVoice implements ResponsiveVoiceService {
   final List<String> spoken = [];
+
+  /// The rate/pitch each utterance was sent with, so tests can assert the
+  /// announcer applies the personality tables and the playback slider.
+  ///
+  /// NOTE: these assert what the announcer PASSES the engine. Whether
+  /// ResponsiveVoice audibly applies pitch is voice-dependent and cannot be
+  /// checked here — that is a listening test on the device. Passing it is
+  /// safe either way; the options object is a plain JS literal and an unread
+  /// property is inert.
+  final List<double> rates = [];
+  final List<double> pitches = [];
+
   Completer<void>? _pending;
 
   /// The real engine firing `onend`.
@@ -308,6 +578,8 @@ class _FakeResponsiveVoice implements ResponsiveVoiceService {
     double volume = 1.0,
   }) {
     spoken.add(text);
+    rates.add(rate);
+    pitches.add(pitch);
     final completer = Completer<void>();
     _pending = completer;
     return completer.future;

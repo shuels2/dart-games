@@ -304,6 +304,62 @@ class DartAnnouncerService {
     }
   }
 
+  /// Personality base rate for ResponsiveVoice.
+  ///
+  /// A DIFFERENT SCALE from [_browserBaseRate]. ResponsiveVoice treats 1.0 as
+  /// normal speed, while `SpeechSynthesisUtterance.rate` (what flutter_tts
+  /// drives on web) wants ~0.5 for an announcer cadence. Collapsing the two
+  /// tables would make one of the engines unlistenable, so they stay separate.
+  ///
+  /// These are the values `announceDart` has always used; they are lifted here
+  /// so every utterance gets them, not just that one method.
+  double _responsiveVoiceBaseRate() {
+    switch (_currentVoice) {
+      case AnnouncerVoice.professional:
+        return 0.95;
+      case AnnouncerVoice.excited:
+        return 1.15;
+      case AnnouncerVoice.calm:
+        return 0.85;
+      case AnnouncerVoice.funny:
+        return 1.05;
+      case AnnouncerVoice.drill:
+        return 1.2;
+    }
+  }
+
+  /// Personality pitch for ResponsiveVoice.
+  ///
+  /// Whether ResponsiveVoice actually applies this is voice-dependent — it
+  /// proxies to the browser's SpeechSynthesis for some voices (where pitch
+  /// works) and streams its own audio for others (where it may be ignored).
+  /// Passing it is safe regardless: the options object is a plain JS literal,
+  /// and a property the library does not read is inert rather than an error.
+  /// No automated test can confirm the audible result; that is a listening
+  /// check on the device.
+  double _responsiveVoicePitch() {
+    switch (_currentVoice) {
+      case AnnouncerVoice.professional:
+        return 1.0;
+      case AnnouncerVoice.excited:
+        return 1.3;
+      case AnnouncerVoice.calm:
+        return 0.9;
+      case AnnouncerVoice.funny:
+        return 1.1;
+      case AnnouncerVoice.drill:
+        return 0.95;
+    }
+  }
+
+  /// Effective ResponsiveVoice rate: `personality base × user slider`, clamped.
+  ///
+  /// The clamp is the counterpart of the one in [_setBrowserSpeechRate], which
+  /// the ResponsiveVoice path never had. Drill (1.2) at the slider's maximum
+  /// (1.5) asks for 1.8, which is past what speech engines render cleanly.
+  double _effectiveResponsiveVoiceRate() =>
+      (_responsiveVoiceBaseRate() * _playbackRate).clamp(0.1, 1.5);
+
   /// Update TTS settings based on selected voice. Pitch stays fixed
   /// per personality; the effective SPEECH rate is set right before
   /// each speak call in [_setBrowserSpeechRate] so the user's live
@@ -324,54 +380,15 @@ class DartAnnouncerService {
   }
 
   /// Announce a dart throw
-  Future<void> announceDart(int score, String multiplier) async {
-    if (!_enabled) return;
-
-    final phrase = _getPhrase(score, multiplier);
-
-    // Use appropriate engine
-    if (_engine == VoiceEngine.responsiveVoice && _responsiveVoice.isReady()) {
-      // Get speech rate and pitch based on personality
-      double rate = 1.0;
-      double pitch = 1.0;
-
-      switch (_currentVoice) {
-        case AnnouncerVoice.professional:
-          rate = 0.95;
-          pitch = 1.0;
-          break;
-        case AnnouncerVoice.excited:
-          rate = 1.15;
-          pitch = 1.3;
-          break;
-        case AnnouncerVoice.calm:
-          rate = 0.85;
-          pitch = 0.9;
-          break;
-        case AnnouncerVoice.funny:
-          rate = 1.05;
-          pitch = 1.1;
-          break;
-        case AnnouncerVoice.drill:
-          rate = 1.2;
-          pitch = 0.95;
-          break;
-      }
-
-      _responsiveVoice.speak(
-        phrase,
-        voiceName: _responsiveVoiceName,
-        rate: rate * _playbackRate,
-        pitch: pitch,
-      );
-    } else {
-      // Browser TTS: multiply the personality base rate by the user's
-      // playback-rate slider so the slider is honored consistently
-      // with the ResponsiveVoice path above.
-      await _setBrowserSpeechRate();
-      await _tts.speak(phrase);
-    }
-  }
+  /// Announce a dart throw.
+  ///
+  /// The per-personality rate/pitch switch that used to live here now lives in
+  /// [_responsiveVoiceBaseRate] / [_responsiveVoicePitch] and applies to every
+  /// utterance, so this is just a phrase plus the shared speech path. The
+  /// returned future now resolves when the line has actually been spoken; on
+  /// the ResponsiveVoice path it used to resolve immediately.
+  Future<void> announceDart(int score, String multiplier) =>
+      _enqueueSpeak(_getPhrase(score, multiplier));
 
   /// Get announcement phrase based on score, multiplier, and voice
   String _getPhrase(int score, String multiplier) {
@@ -550,40 +567,20 @@ class DartAnnouncerService {
     }
   }
 
-  /// Announce game start
-  Future<void> announceGameStart() async {
-    if (!_enabled) return;
-
-    String phrase;
-    switch (_currentVoice) {
-      case AnnouncerVoice.professional:
-        phrase = 'Game on. Good luck.';
-        break;
-      case AnnouncerVoice.excited:
-        phrase = 'Let\'s gooo! Game on! Show me what you got!';
-        break;
-      case AnnouncerVoice.calm:
-        phrase = 'Game beginning. Take your time.';
-        break;
-      case AnnouncerVoice.funny:
-        phrase = 'Alright folks! Let the dart slinging begin!';
-        break;
-      case AnnouncerVoice.drill:
-        phrase = 'GAME ON! Give me your best shot! Let\'s go!';
-        break;
-    }
-
-    if (_engine == VoiceEngine.responsiveVoice && _responsiveVoice.isReady()) {
-      _responsiveVoice.speak(
-        phrase,
-        voiceName: _responsiveVoiceName,
-        rate: _playbackRate,
-      );
-    } else {
-      await _setBrowserSpeechRate();
-      await _tts.speak(phrase);
-    }
-  }
+  // DELETED: announceGameStart().
+  //
+  // It spoke a per-personality "Game on" line and had no callers. All ten
+  // games announce their own start through their helper's announceGameStart,
+  // which calls queue.announce() with game-specific wording and a sound
+  // effect — nine helpers define a method of that exact name. That collision
+  // is why the service's copy looked used: grepping the name returns eighty
+  // hits, every one of them a helper or a mock.
+  //
+  // It is recorded here rather than silently removed because it was also one
+  // of the three methods that spoke to the engines directly, bypassing
+  // _speakChain. If a future "announcer says the game is starting" feature
+  // wants this, it belongs in a game helper going through queue.announce(),
+  // not as a second speech path on the service.
 
   /// Speak a custom phrase using current engine and voice settings.
   ///
@@ -594,7 +591,20 @@ class DartAnnouncerService {
   /// start the next utterance — no wordCount-based estimate required.
   ///
   /// The user-configurable [playbackRate] is applied to both engines.
-  Future<void> speak(String text) {
+  Future<void> speak(String text) => _enqueueSpeak(text);
+
+  /// Links one utterance onto [_speakChain] and returns a future that resolves
+  /// when it has been spoken.
+  ///
+  /// EVERY utterance must go through here. Three methods used to call the
+  /// engines directly instead — `announceDart`, the old body of this method,
+  /// and `announceGameStart` (since deleted as dead code) — which meant they
+  /// could talk over whatever the chain was speaking, and on the browser path
+  /// their utterance's completion resolved somebody else's `_ttsCompleter`
+  /// (the handler is global), quietly advancing a game's queue mid-sentence.
+  /// `test/meta/speech_engine_completion_lint_test.dart` now enforces that the
+  /// engines are only ever touched from [_speakNow].
+  Future<void> _enqueueSpeak(String text) {
     if (!_enabled) return Future.value();
 
     // Serialize every caller through one chain. There is always more than
@@ -642,10 +652,16 @@ class DartAnnouncerService {
     if (!_enabled) return;
 
     if (_engine == VoiceEngine.responsiveVoice && _responsiveVoice.isReady()) {
+      // Personality rate AND pitch, not just the slider. This path used to
+      // pass bare _playbackRate and no pitch, so on the DEFAULT engine the
+      // announcer style was inaudible in every game — "excited" and "calm"
+      // sounded identical. Only announceDart honoured the personality, and
+      // nothing but the Test Dartboard screen called it.
       await _responsiveVoice.speak(
         text,
         voiceName: _responsiveVoiceName,
-        rate: _playbackRate,
+        rate: _effectiveResponsiveVoiceRate(),
+        pitch: _responsiveVoicePitch(),
       );
     } else {
       // flutter_tts: the completion callback resolves _ttsCompleter
