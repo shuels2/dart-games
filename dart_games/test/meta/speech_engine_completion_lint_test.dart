@@ -88,4 +88,91 @@ void main() {
               'later utterance for the rest of the session.');
     });
   });
+
+  group('no speech bypasses the serialization chain', () {
+    // Three methods once talked to the engines directly instead of going
+    // through _speakNow: announceDart, announceGameStart, and speak()'s own
+    // body. Each could start an utterance over whatever the chain was already
+    // saying, and on the browser path each one's completion resolved somebody
+    // else's `_ttsCompleter` — the flutter_tts completion handler is global —
+    // which advanced a game's queue mid-sentence.
+    //
+    // They were easy to miss because per-game helpers define methods with the
+    // SAME NAMES that correctly call queue.announce(). Grepping for the name
+    // finds the helpers and hides the bypass, so this lint anchors on the
+    // engine calls themselves.
+
+    test('the engines are only touched inside _speakNow', () {
+      final path = 'lib/services/dart_announcer_service.dart';
+      final lines = File(path).readAsLinesSync();
+
+      // Find _speakNow's span by brace matching. An earlier version of this
+      // walked backwards for a member declaration by regex and mistook
+      // `await _setBrowserSpeechRate();` for one — indentation slipped into
+      // the type pattern. Counting braces is exact.
+      final start =
+          lines.indexWhere((l) => l.contains('Future<void> _speakNow('));
+      expect(start, greaterThan(-1), reason: '_speakNow not found');
+
+      var depth = 0;
+      var opened = false;
+      var end = lines.length - 1;
+      for (var i = start; i < lines.length; i++) {
+        for (final ch in lines[i].split('')) {
+          if (ch == '{') {
+            depth++;
+            opened = true;
+          } else if (ch == '}') {
+            depth--;
+          }
+        }
+        if (opened && depth == 0) {
+          end = i;
+          break;
+        }
+      }
+
+      // `_tts.speak` and `_responsiveVoice.speak` actually start speech.
+      // Setter/config calls (setPitch, setSpeechRate, stop, cancel) are fine
+      // anywhere — they do not produce an utterance.
+      final engineCall = RegExp(r'(_tts|_responsiveVoice)\.speak\(');
+      final offenders = <String>[];
+      for (var i = 0; i < lines.length; i++) {
+        if (!engineCall.hasMatch(lines[i])) continue;
+        if (i < start || i > end) {
+          offenders.add('line ${i + 1}: ${lines[i].trim()}');
+        }
+      }
+
+      expect(offenders, isEmpty,
+          reason: 'These start speech outside _speakNow, so they bypass '
+              '_speakChain: they can talk over an in-flight utterance, and on '
+              'the browser path their completion resolves another caller\'s '
+              '_ttsCompleter. Route them through _enqueueSpeak() instead:\n'
+              '${offenders.join('\n')}');
+    });
+
+    test('the personality tables are applied on both engine paths', () {
+      final source =
+          File('lib/services/dart_announcer_service.dart').readAsStringSync();
+
+      // The ResponsiveVoice path used to pass bare _playbackRate and no pitch,
+      // which made the announcer style inaudible on the DEFAULT engine.
+      expect(source, contains('_effectiveResponsiveVoiceRate()'),
+          reason: 'The ResponsiveVoice path must apply the personality rate, '
+              'not just the playback slider.');
+      expect(source, contains('_responsiveVoicePitch()'),
+          reason: 'The ResponsiveVoice path must pass the personality pitch.');
+      expect(source, contains('_browserBaseRate()'), reason: 'browser rate');
+      expect(source, contains('_browserPitch()'), reason: 'browser pitch');
+
+      // Both engine rates must be bounded. The browser path always clamped;
+      // the ResponsiveVoice path did not, so drill (1.2) at the slider maximum
+      // (1.5) asked for 1.8.
+      final clamps = RegExp(r'\.clamp\(').allMatches(source).length;
+      expect(clamps, greaterThanOrEqualTo(2),
+          reason: 'Both the browser and ResponsiveVoice effective rates must '
+              'be clamped before reaching an engine.');
+    });
+  });
 }
