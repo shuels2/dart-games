@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_games/services/dart_announcer_service.dart';
+import 'package:dart_games/services/responsive_voice_service.dart';
 
 /// Tests for the shared announcer's speech serialization.
 ///
@@ -143,6 +144,116 @@ void main() {
       await finishUtterance();
       await next;
     });
+
+    test('an utterance that never completes does not silence the app forever',
+        () async {
+      // The failure this guards, seen on a real dartboard with Gladiator
+      // Arena: the game announced its start and the first player, then never
+      // spoke again for the rest of the session, while sound effects kept
+      // playing normally.
+      //
+      // Cause: speak() serializes every caller through _speakChain, and the
+      // tail link was only ever completed by the engine reporting completion.
+      // One utterance whose completion never arrived left that link pending,
+      // so every later speak() waited on it and _speakNow was never reached
+      // again. The queue kept draining on its own timeout — which is why the
+      // sound effects, played by the queue rather than the engine, carried on.
+      //
+      // The test above covers the case where stopSpeaking() rescues the chain.
+      // This one covers the case where nothing does.
+      final announcer = DartAnnouncerService(
+        chainWatchdog: (_) => const Duration(milliseconds: 50),
+      );
+      await announcer.ready;
+
+      final wedged = announcer.speak('wedged line');
+      await pumpEventQueue();
+      expect(spoken, ['wedged line']);
+
+      // Deliberately no finishUtterance() and no stopSpeaking(): the engine
+      // has simply gone quiet, exactly as the browser speech engine does when
+      // an `onend` is dropped.
+      final next = announcer.speak('later line');
+      await pumpEventQueue();
+      expect(spoken, ['wedged line'],
+          reason: 'still correctly serialized behind the wedged utterance');
+
+      // Once the watchdog fires the chain must move on by itself.
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      await pumpEventQueue();
+
+      expect(spoken, ['wedged line', 'later line'],
+          reason: 'a wedged utterance must not silence every later one');
+
+      await finishUtterance();
+      await next;
+      // The wedged future is abandoned by design; nothing awaits it in
+      // production either (the queue applies its own timeout).
+      unawaited(wedged);
+    });
+  });
+
+  group('ResponsiveVoice engine', () {
+    // The DEFAULT engine in GameAnnouncementQueueService.loadSettings is
+    // ResponsiveVoice, and it is what the kiosk speaks through. Off the web
+    // the production implementation is a stub that reports "not ready", so
+    // this path had no coverage at all — which is precisely where the
+    // session-long silence came from.
+    //
+    // NOTE: this exercises the announcer's half of the contract using a fake.
+    // The real browser implementation lives in responsive_voice_service_web
+    // and cannot be compiled by the VM test runner; the invariant it must
+    // uphold (cancel() completes the in-flight utterance) is guarded
+    // separately by test/meta/responsive_voice_cancel_test.dart.
+
+    test('stopSpeaking releases an utterance whose onend never fires',
+        () async {
+      final rv = _FakeResponsiveVoice();
+      final announcer = DartAnnouncerService(responsiveVoice: rv);
+      await announcer.ready;
+      announcer.useResponsiveVoice();
+
+      final stuck = announcer.speak('stuck line');
+      await pumpEventQueue();
+      expect(rv.spoken, ['stuck line']);
+
+      // What the queue's watchdog does. Before the fix the ResponsiveVoice
+      // completer was not tracked, so this stopped the JS engine but left the
+      // Dart future pending — and the chain never moved again.
+      await announcer.stopSpeaking();
+      await stuck;
+
+      final next = announcer.speak('next line');
+      await pumpEventQueue();
+      expect(rv.spoken, ['stuck line', 'next line']);
+
+      rv.finish();
+      await next;
+    });
+
+    test('the chain watchdog releases it even if stopSpeaking is never called',
+        () async {
+      final rv = _FakeResponsiveVoice();
+      final announcer = DartAnnouncerService(
+        responsiveVoice: rv,
+        chainWatchdog: (_) => const Duration(milliseconds: 50),
+      );
+      await announcer.ready;
+      announcer.useResponsiveVoice();
+
+      unawaited(announcer.speak('wedged line'));
+      await pumpEventQueue();
+      expect(rv.spoken, ['wedged line']);
+
+      final next = announcer.speak('later line');
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      await pumpEventQueue();
+
+      expect(rv.spoken, ['wedged line', 'later line']);
+
+      rv.finish();
+      await next;
+    });
   });
 
   group('enabled flag', () {
@@ -166,4 +277,48 @@ void main() {
       await future;
     });
   });
+}
+
+/// A ResponsiveVoice engine that behaves like the browser one: [speak] resolves
+/// only when the engine says so, via [finish] (the real `onend`) or [cancel].
+///
+/// The production off-web implementation is a no-op stub that reports "not
+/// ready", so without this fake the ResponsiveVoice branch of `_speakNow` is
+/// unreachable under `flutter test`.
+class _FakeResponsiveVoice implements ResponsiveVoiceService {
+  final List<String> spoken = [];
+  Completer<void>? _pending;
+
+  /// The real engine firing `onend`.
+  void finish() {
+    final pending = _pending;
+    _pending = null;
+    if (pending != null && !pending.isCompleted) pending.complete();
+  }
+
+  @override
+  bool isReady() => true;
+
+  @override
+  Future<void> speak(
+    String text, {
+    String voiceName = 'US English Female',
+    double pitch = 1.0,
+    double rate = 1.0,
+    double volume = 1.0,
+  }) {
+    spoken.add(text);
+    final completer = Completer<void>();
+    _pending = completer;
+    return completer.future;
+  }
+
+  /// Mirrors the contract the web implementation must uphold: cancelling
+  /// resolves whatever was in flight, because `onend` is not guaranteed to
+  /// arrive for a cancelled utterance.
+  @override
+  void cancel() => finish();
+
+  @override
+  List<String> getVoices() => const [];
 }
