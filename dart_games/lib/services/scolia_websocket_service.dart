@@ -9,7 +9,7 @@ import 'api_logger_service.dart';
 /// Exposes events in the same stream format as MockScoliaApiService
 /// so game screens can consume events identically.
 class ScoliaWebSocketService {
-  static const String _wsBaseUrl = 'wss://game.scoliadarts.com/api/v1/social';
+  static const String _wsBaseUrl = 'wss://game.scoliadarts.com/api/v1/external';
 
   final _uuid = const Uuid();
   final StreamController<Map<String, dynamic>> _eventStreamController =
@@ -162,7 +162,7 @@ class ScoliaWebSocketService {
 
       ApiLoggerService.logApiCall(
         method: 'WS_IN',
-        endpoint: '/api/v1/social',
+        endpoint: '/api/v1/external',
         request: null,
         response: message,
       );
@@ -344,7 +344,7 @@ class ScoliaWebSocketService {
 
     ApiLoggerService.logApiCall(
       method: 'WS_OUT',
-      endpoint: '/api/v1/social',
+      endpoint: '/api/v1/external',
       request: message,
       response: null,
     );
